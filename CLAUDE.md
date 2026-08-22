@@ -1,0 +1,163 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
+
+## What this is
+
+**tinymachines.ai**: the front door for the 6502 work, and eventually for the
+rest of the shop. Six pieces already exist and run; none of them share a
+homepage, a documentation tree, or an account. This repository is where that
+roof goes.
+
+Three surfaces:
+
+| | |
+|---|---|
+| `tinymachines.ai` | the site. 6502 work front and centre, other projects later |
+| `tinymachines.ai/api` | one API, spoken as REST **and** MCP, with a doc-maxxed `openapi.json` |
+| `tinymachines.ai/docs` | a markdown hierarchy, rendered to HTML by the backend |
+
+`notes/inventory.md` is the survey of what already exists and where. **Read it
+before proposing anything**: it records several things that are not what they
+look like, including a docs stack that is configured and unused.
+
+## Status
+
+**Nothing is built yet.** This is a scaffold plus a plan. `START-HERE.md` is
+the brief and the order of work.
+
+What is already true and does not need doing:
+
+- The apex `tinymachines.ai` and `www` have A records, and a certificate for
+  `www.tinymachines.ai` exists. **No DNS work is needed to stand the site up.**
+- `6502.tinymachines.ai`, `games.tinymachines.ai` and
+  `halfwave.tinymachines.ai` are live and must keep working. This repo adds a
+  roof; it does not move the furniture out from under them.
+- `tinymachines/halfphi` and `tinymachines/6502` are public on GitHub.
+
+What is deliberately open, and is **the owner's**, not yours to invent:
+
+- **The style guide, the CSS, the design language.** The owner is working on
+  these. Do not generate a visual identity, do not pick fonts, do not invent a
+  palette. Build structure that a stylesheet can be dropped into, and say
+  where the seams are.
+
+## The rules that carried over, and why they are worth keeping
+
+These came from the 6502 repo, which paid for each of them. They are not
+stylistic preferences.
+
+### Measure, then write
+
+**Prose is the part of a site most likely to go quietly wrong**, because it is
+written once against what was true that afternoon and nothing checks it
+afterwards. The 6502 site's answer is that no number is typed into a page: every
+figure is a slot filled from a published file, and a harness re-derives them and
+scans the prose for stray digits. Anything this repo ships that states a number
+should be able to say where the number came from.
+
+### A refusal beats a plausible answer
+
+A cartridge that overlaps its own screen is refused with the reason, not minted
+into a game that draws over itself. A ROM that never finishes a frame is not
+listed. An instruction that transfers control reports **no length** rather than
+a number that would be wrong. Build things that decline rather than guess.
+
+### The thing that publishes must not be the thing that claims
+
+The registry re-runs every cartridge on the chip rather than believing the
+`verify` block the file arrived with, because a file is something its author
+can edit. Where a number will be shown next to somebody's work, measure it
+here.
+
+### One copy of a fact
+
+Ten hand-copied nav lists had already drifted three ways before anybody
+noticed, because a nav missing one link still looks exactly like a nav. Every
+shared thing in the 6502 tree is a module for that reason. If a fact is about
+to exist in two files, it needs to exist in one and be read by both.
+
+### House style for shipped text
+
+- **No em dashes in anything shipped.** Not in prose, not in a `title=`, not as
+  a placeholder in a readout. Use a colon, a comma, brackets, or a real word.
+  Code comments use `--`. Grepping shipped files for the character should
+  print zeroes. (The one occurrence in this file is inside that grep command,
+  where it has to be. A scan firing on the sentence that explains the scan is
+  a false positive to leave alone, not a hit to fix.)
+- **Headings state a fact, not a promise.** "Twelve opcodes never finish", not
+  "∞ is a measurement too."
+- Say what is not covered. An archive that hides its gaps is worth less than
+  one that shows them.
+
+### Nothing generated is committed
+
+A fresh clone must build. Verify with a real `git clone` into a temp directory,
+which is how the 6502 repo's "tests fail out of the box" bug was found.
+
+### No host-specific detail in this repository
+
+Addresses, zone paths and the local runbook live in `deploy/HOSTING.local.md`,
+which is gitignored. This split exists because a public repo once documented an
+internal LAN address and a weakness on the host. Localhost ports are fine and
+are already committed elsewhere; public addresses are not.
+
+## Traps already paid for, that will bite again here
+
+Each of these cost a round somewhere in the 6502 work. They are listed because
+this repo will hit the same ground.
+
+- **A port that is already held fails to bind silently, and every request then
+  goes to production.** `127.0.0.1:6502` is the live API. A local uvicorn
+  started there looked local, answered every request from the deployed service,
+  and a test passed against production while claiming to test the tree. Run
+  `ss -ltn` before believing a local server is yours. 6503, 6510 and 6520 were
+  free at the time of writing.
+- **A relative `src` resolves against the path, not the site root.** A document
+  served at both `/` and `/b/x/y` asked for `/b/x/game.js` at the second depth
+  and got a 404. **The page still rendered**, because the markup is static and
+  only the script was missing, so it read as a console that failed to boot.
+  Absolute references, and `new URL(..., import.meta.url)` for module-relative
+  fetches.
+- **nginx reads `{` as the start of a block.** A location regex containing
+  `{2,32}` fails with "unknown directive" naming the middle of the pattern.
+  Quote the regex. The same is true of a `map` key.
+- **One `add_header` in an nginx location discards every inherited one.** A
+  location that sets Cache-Control silently drops the CSP and HSTS. Either
+  declare the complete set or declare none.
+- **Anything a deploy shells out to runs under systemd's `PATH`**, which has no
+  nvm in it. `/usr/bin/node` here is v12 and cannot parse `??`. Check the
+  version; do not assume the binary.
+- **A `var()` naming a token that does not exist drops the whole declaration,
+  silently.** The usual symptom is "slightly wrong", not an error.
+- **`pkill -f <pattern>` kills the shell running it**, because the pattern
+  matches its own command line. List with `ps -eo pid,comm` and kill by pid.
+- **A check that can pass on nothing is not a check.** An assertion about an
+  empty list matching an empty list passed for a while. So did one where the
+  probe threw and the thrown string was truthy.
+- **A fix is not justified until the test fails without it.** Revert it and
+  watch the assertion go red; two earlier versions of one assertion passed with
+  and without the fix and were therefore worthless.
+
+## Licensing
+
+Read `NOTICE.md` before anything ships. The short version: our code is ours,
+the die data is **CC BY-NC-SA 3.0**, and NonCommercial and ShareAlike travel
+with anything derived from it, which includes every cartridge. `halfphi` is the
+clean MIT piece because it embeds no die data.
+
+**The coins idea points at commercial use of an NC-licensed work.** That is
+worth deciding deliberately, with the facts, before it is built. `NOTICE.md`
+lays out the shape of the question without pretending to answer it.
+
+## Working agreement
+
+- The owner is in the 6502 repo (the skunkworks lab) with other work in
+  flight. This repo is for a separate agent to build in.
+- **Do not touch `~/projects/tinymachines/6502` from here.** If something there
+  needs to change, say so and why; do not reach across.
+- Build from source, never copy artefacts. The 6502 stack has a documented
+  build order; `notes/inventory.md` has it.
+- The three live sites must keep working. Anything that would change their
+  nginx, their units or their ports is a proposal, not an action.

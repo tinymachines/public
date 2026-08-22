@@ -1,0 +1,24 @@
+# Nothing generated is committed. A fresh clone must build.
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+dist/
+build/
+target/
+.env
+*.db
+*.db-wal
+*.db-shm
+
+# Host-specific detail never lands here. See deploy/HOSTING.local.md.
+deploy/HOSTING.local.md
+*.local.md
+!docs/**/*.local.md
+
+# Editor and OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
