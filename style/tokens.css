@@ -1,0 +1,190 @@
+/* ============================================================================
+   tinymachines.ai: design tokens
+   Tailwind 4, CSS-first. This is the @theme block START-HERE.md §4 reserves
+   as the seam. Drop into web/app/globals.css.
+
+   Every colour below was sampled off the owner's binder scans and
+   white-balanced against the paper white (237,238,242 -> 255,255,255).
+   Nothing here was invented. Every contrast ratio in the comments was
+   computed, not estimated: same rule as the measured tables.
+   ========================================================================= */
+
+@import "tailwindcss";
+
+@theme {
+
+  /* --------------------------------------------------------------------
+     THE TWO GROUNDS
+
+     Paper is documentation. Panel is the machine talking.
+     This is a semantic distinction, not a light/dark theme. A dark box on
+     a tinymachines page means the value inside it came out of the engine.
+     Never use panel for decoration; never render live node state on paper.
+     -------------------------------------------------------------------- */
+
+  --color-paper:          #F4F2EC;  /* datasheet stock, warm off-white   */
+  --color-paper-sunk:     #E8E5DD;  /* recessed wells, table zebra       */
+  --color-panel:          #131311;  /* instrument face                   */
+  --color-panel-raised:   #1E1D1A;  /* module inside a panel             */
+  --color-panel-sunk:     #0B0B0A;  /* readout wells, trace backgrounds  */
+
+  --color-ink:            #16150F;  /* 16.3:1 on paper                   */
+  --color-ink-muted:      #6E6B66;  /*  4.7:1 on paper, AA body          */
+  --color-ink-faint:      #A8A49C;  /* hairlines and disabled only       */
+  --color-glass:          #E9E6DE;  /* text on panel, 13.6:1             */
+  --color-glass-muted:    #8C8A85;  /*  5.4:1 on panel, AA body          */
+
+  --color-rule:           #16150F;  /* hairlines are ink, never grey     */
+  --color-rule-panel:     #34322C;
+
+  /* --------------------------------------------------------------------
+     THE EARTH CONDUCTOR
+
+     Categorical. Assigns identity to a region, a bus, a signal class.
+     Each hue ships in two forms because contrast is ground-dependent:
+     the base reads on panel, the -ink form reads on paper. Using the
+     wrong one is the single most common way this palette goes illegible.
+     -------------------------------------------------------------------- */
+
+  --color-burnt:          #D06B40;  /* Burnt Silicon  · 5.2:1 on panel   */
+  --color-burnt-ink:      #8E3D1C;  /*                · 6.6:1 on paper   */
+  --color-mustard:        #D2B771;  /* Mustard Cond.  · 9.5:1 on panel   */
+  --color-mustard-ink:    #7A6220;  /*                · 5.2:1 on paper   */
+  --color-forest:         #5FA772;  /* Forest Logic   · 6.4:1 on panel   */
+  --color-forest-ink:     #2D583A;  /*                · 7.3:1 on paper   */
+  --color-ocean:          #5FB8C0;  /* Ocean Data     · 8.1:1 on panel   */
+  --color-ocean-ink:      #1A5A61;  /*                · 7.0:1 on paper   */
+
+  /* --------------------------------------------------------------------
+     LOGIC ACCENTS
+
+     Not categorical. State only, and each one has exactly one meaning.
+     If you find yourself using red because a thing is important rather
+     than because an invariant broke, use ink.
+     -------------------------------------------------------------------- */
+
+  --color-blue:           #5E92FF;  /* ACTIVE / driven high              */
+  --color-blue-ink:       #0F3FB8;  /*                · 7.7:1 on paper   */
+  --color-orange:         #E4670F;  /* ATTENTION / needs a human         */
+  --color-orange-ink:     #9A5A12;  /*                · 4.9:1 on paper   */
+  --color-red:            #FF6A5C;  /* ASSERTION FAILED. Nothing else.   */
+  --color-red-ink:        #B0281B;  /*                · 5.9:1 on paper   */
+
+  /* --------------------------------------------------------------------
+     THE CHROME CORE
+
+     Bezel material. Chrome is an *edge*, never a fill and never a
+     background for content. It exists to mark where paper stops and the
+     machine starts. Two gradients, four flats, and that is the whole set.
+     -------------------------------------------------------------------- */
+
+  --color-chrome-hi:      #EDEFF0;
+  --color-chrome:         #C4C7C6;
+  --color-chrome-mid:     #9C9C9E;
+  --color-chrome-lo:      #6B6C6E;
+  --color-brushed:        #B2B1B0;
+
+  --bezel-polish: linear-gradient(180deg,
+                    #F6F7F8 0%, #D9DCDC 18%, #9EA0A1 50%,
+                    #C8CBCB 70%, #EDEFF0 100%);
+  --bezel-brushed: linear-gradient(180deg,
+                    #C9C8C6 0%, #ADACAA 40%, #9A9997 60%, #BEBDBB 100%);
+
+  /* --------------------------------------------------------------------
+     NODE DRIVE STATE
+
+     halfphi's Drive enum, given colour. Ordinal order is preserved left
+     to right so a legend reads in resolution order:
+       Floating < ChargedHigh < PullDown < PullUp < Vcc < Vss
+     ChargedHigh is deliberately dimmer than the real pulls: the ranking
+     is what makes dynamic retention work, and the colour should say so.
+     Contested is red because contested_groups is asserted zero.
+     -------------------------------------------------------------------- */
+
+  --color-drive-float:    #4A4842;
+  --color-drive-charged:  #8C7A45;
+  --color-drive-pulldn:   #2E6E75;
+  --color-drive-pullup:   #4C8A5E;
+  --color-drive-vcc:      #5E92FF;
+  --color-drive-vss:      #262521;
+  --color-drive-contest:  #FF6A5C;
+
+  /* --------------------------------------------------------------------
+     TYPE
+
+     Four voices, three of them one superfamily so the page stays coherent
+     when a doc page carries prose, a table and a register dump at once.
+     --font-display is the swap seam: change this one line to drop in a
+     licensed display face without touching a component.
+     -------------------------------------------------------------------- */
+
+  --font-display: "Archivo", "IBM Plex Sans Condensed", "Helvetica Neue",
+                  system-ui, sans-serif;
+  --font-sans:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono:    "IBM Plex Mono", "Berkeley Mono", ui-monospace,
+                  "SFMono-Regular", monospace;
+  --font-serif:   "IBM Plex Serif", Georgia, serif;
+
+  /* Grid unit. Every spacing value is a multiple of 4px. The binder calls
+     it the primary grid unit; it is the reason panels line up. */
+  --u: 0.25rem;
+
+  --text-micro:   0.6875rem;  /* 11px: tags, axis labels                */
+  --text-fine:    0.75rem;    /* 12px: source chips, table headers      */
+  --text-data:    0.8125rem;  /* 13px: mono readouts, the workhorse     */
+  --text-body:    0.9375rem;  /* 15px: UI copy                          */
+  --text-prose:   1.0625rem;  /* 17px: serif documentation              */
+  --text-lead:    1.3125rem;  /* 21px                                   */
+  --text-h3:      1.5rem;     /* 24px                                   */
+  --text-h2:      2rem;       /* 32px                                   */
+  --text-h1:      3rem;       /* 48px                                   */
+  --text-hero:    4.5rem;     /* 72px: display only, caps, tight        */
+
+  --tracking-caps: 0.08em;   /* Silicon Sans label voice                */
+  --tracking-tight: -0.02em; /* display headers                         */
+  --leading-data: 1.45;      /* mono rows; keeps a hex dump scannable   */
+
+  /* --------------------------------------------------------------------
+     MOTION: TAC-MOTION
+
+     Mechanical, not cinematic. The binder's rule stands: no slow retro
+     fades, no zooms. A control snaps and stops. The only slow curve in
+     the system is the attention glow, and it is slow on purpose so it
+     reads as breathing rather than blinking.
+     -------------------------------------------------------------------- */
+
+  --t-snap:    90ms;   /* press, chip toggle                            */
+  --t-detent:  150ms;  /* encoder step, switch throw: the binder spec   */
+  --t-slide:   180ms;  /* module slide-and-snap                         */
+  --t-glow:    1400ms; /* attention pulse, one full cycle               */
+  --t-strobe:  160ms;  /* assertion strobe, four pulses then hold       */
+
+  --ease-detent: cubic-bezier(0.2, 0.9, 0.1, 1);   /* fast out, hard stop */
+  --ease-travel: cubic-bezier(0.4, 0.0, 0.6, 1);   /* linear-feeling      */
+  --ease-snap:   cubic-bezier(0.15, 0.85, 0.25, 1);
+
+  /* --------------------------------------------------------------------
+     ELEVATION
+
+     Two shadows. A third would be someone inventing a level.
+     -------------------------------------------------------------------- */
+
+  --shadow-card:  0 1px 0 rgb(22 21 15 / 0.12), 0 2px 8px rgb(22 21 15 / 0.06);
+  --shadow-panel: 0 2px 0 rgb(0 0 0 / 0.35), 0 12px 28px rgb(0 0 0 / 0.28);
+
+  --radius-hair: 2px;   /* the only radius on paper                     */
+  --radius-mod:  4px;   /* module corners inside a panel                */
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion. Detents become instant; the glow holds at its lit value
+   rather than pulsing. State is still legible with zero animation: that is
+   the test, and every specimen in the zoo passes it.
+   ------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

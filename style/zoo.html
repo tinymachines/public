@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#131311">
+<title>Widget zoo · tinymachines.ai</title>
+<meta name="description" content="Every component in the 6502 system, rendered on the real page ground with the exact markup that produced it.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="tokens.static.css">
+<link rel="stylesheet" href="components.css">
+
+<style>
+/* ---------------------------------------------------------------------------
+   The zoo's own chrome. NOT part of the kit: nothing below ships. Kept in
+   this file on purpose so there is no chance of a zoo-only class leaking into
+   components.css and turning up on a real page.
+   ------------------------------------------------------------------------ */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+/* Paper texture: a very faint grid at the primary unit. The page literally
+   sits on the grid it asks you to align to. */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1;
+  background-image:
+    linear-gradient(rgb(22 21 15 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(22 21 15 / 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+.wrap { max-width: 74rem; margin: 0 auto; padding: 0 1.5rem; }
+
+.zoo-head {
+  position: sticky; top: 0; z-index: 20;
+  background: rgb(244 242 236 / 0.94);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--color-rule);
+}
+.zoo-head .wrap { display: flex; align-items: center; gap: 1.5rem; height: 3.25rem; }
+.zoo-mark {
+  font-family: var(--font-mono); font-weight: 600; font-size: .82rem;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--color-ink);
+  text-decoration: none; white-space: nowrap;
+}
+.zoo-mark em { font-style: normal; color: var(--color-burnt-ink); }
+.zoo-nav { margin-left: auto; display: flex; gap: 1rem; font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; }
+.zoo-nav a { color: var(--color-ink-muted); text-decoration: none; }
+.zoo-nav a:hover, .zoo-nav a[aria-current] { color: var(--color-ink); }
+
+.hero { padding: 4rem 0 2.5rem; border-bottom: 2px solid var(--color-rule); }
+.hero h1 {
+  font-family: var(--font-display); font-weight: 900; font-size: clamp(2.6rem, 8vw, 4.5rem);
+  text-transform: uppercase; letter-spacing: -.03em; line-height: .9; margin: .5rem 0 1rem;
+}
+.hero p { max-width: 60ch; font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.6; margin: 0 0 1.5rem; }
+.hero .count { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--color-ink-muted); }
+
+.jump { display: flex; flex-wrap: wrap; gap: .5rem; padding: 1.25rem 0; border-bottom: 1px solid var(--color-rule); position: sticky; top: 3.25rem; background: rgb(244 242 236 / 0.94); backdrop-filter: blur(6px); z-index: 15; }
+.jump a {
+  font-family: var(--font-mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase;
+  padding: .25rem .6rem; border: 1px solid var(--color-ink-faint); color: var(--color-ink-muted); text-decoration: none;
+}
+.jump a:hover { border-color: var(--color-ink); color: var(--color-ink); }
+
+.sect { padding: 3.5rem 0 1rem; scroll-margin-top: 8rem; }
+.sect-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-rule); padding-bottom: .75rem; margin-bottom: .75rem; }
+.sect-head h2 { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; font-size: 2rem; margin: 0; }
+.sect-head span { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--color-ink-muted); white-space: nowrap; }
+.sect > p { max-width: 68ch; color: var(--color-ink-muted); font-size: var(--text-fine); margin: 0 0 2rem; }
+
+.spec { margin: 0 0 3rem; }
+.spec-head { display: flex; align-items: center; gap: .75rem; margin-bottom: .35rem; }
+.spec-head h3 { font-family: var(--font-sans); font-weight: 700; font-size: 1.0625rem; margin: 0; }
+.badge {
+  font-family: var(--font-mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase;
+  padding: 1px .45rem; border: 1px solid currentColor;
+}
+.badge.shipped { color: var(--color-forest-ink); }
+.badge.draft   { color: var(--color-orange-ink); }
+.badge.idea    { color: var(--color-ink-faint); }
+.spec-why { max-width: 72ch; font-size: var(--text-fine); color: var(--color-ink-muted); margin: 0 0 1rem; line-height: 1.6; }
+.spec-why code { font-family: var(--font-mono); font-size: .95em; color: var(--color-ink); }
+
+.spec-stage { border: 1px solid var(--color-rule); padding: 1.5rem; background: var(--color-paper); }
+.spec-stage.dark { background: var(--color-panel); border-color: var(--color-ink); }
+.spec-stage.plain { border: 0; padding: 0; background: none; }
+.spec-stage.row { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
+
+details.markup { margin-top: .5rem; border-top: 1px dashed var(--color-ink-faint); }
+details.markup summary {
+  cursor: pointer; padding: .5rem 0; list-style: none;
+  font-family: var(--font-mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--color-ink-muted);
+}
+details.markup summary::-webkit-details-marker { display: none; }
+details.markup summary::before { content: "\25B8  "; }
+details[open].markup summary::before { content: "\25BE  "; }
+details.markup pre {
+  margin: 0 0 1rem; padding: 1rem; overflow-x: auto;
+  background: var(--color-panel); color: var(--color-glass);
+  font-family: var(--font-mono); font-size: .72rem; line-height: 1.55;
+}
+.zoo-foot { border-top: 2px solid var(--color-rule); margin-top: 4rem; padding: 2rem 0 4rem; font-family: var(--font-mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-ink-muted); display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+
+.g2 { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.stack { display: grid; gap: 1rem; }
+:focus-visible { outline-offset: 2px; }
+
+@media (max-width: 48rem) {
+  /* Three rows of sticky jump links is most of a phone screen. Let it scroll. */
+  .jump { position: static; overflow-x: auto; flex-wrap: nowrap; }
+  .jump a { white-space: nowrap; }
+  .sect { scroll-margin-top: 4rem; }
+  .zoo-nav { display: none; }
+  .spec-stage { padding: 1rem; }
+}
+</style>
+</head>
+
+<body>
+
+<header class="zoo-head">
+  <div class="wrap">
+    <a class="zoo-mark" href="#top">tiny<em>machines</em> · zoo</a>
+    <nav class="zoo-nav">
+      <a href="#found">Foundations</a>
+      <a href="#frame">Frame</a>
+      <a href="#panel">Panel</a>
+      <a href="#die">Die</a>
+      <a href="#tactile">Controls</a>
+      <a href="#rails">Rails</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+
+  <section class="hero">
+    <p class="count"><span id="spec-count">…</span> specimens · sampled from the binder, not invented</p>
+    <h1>Widget<br>zoo</h1>
+    <p>Every component in the tinymachines system, rendered on the real page ground with the exact markup that produced it: the markup blocks are read out of the live DOM at load, so a specimen and its listing cannot drift apart. Specimens are marked <b>shipped</b>, <b>draft</b> or <b>idea</b> so it is always clear what you can use today.</p>
+    <div class="chips" style="margin-bottom:1.25rem">
+      <span class="measured"><b>Palette</b> sampled from IMG_5318 · white-balanced Aug 22</span>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <a class="btn btn-primary" href="#found">Start at foundations</a>
+      <a class="btn btn-ghost" href="#panel">Jump to the panel</a>
+    </div>
+  </section>
+
+  <nav class="jump">
+    <a href="#found">01 Foundations</a>
+    <a href="#frame">02 The frame</a>
+    <a href="#panel">03 The panel</a>
+    <a href="#die">04 Die &amp; engine</a>
+    <a href="#tactile">05 Tactile controls</a>
+    <a href="#rails">06 Data &amp; rails</a>
+  </nav>
+
+  <!-- ==================================================================
+       01 FOUNDATIONS
+       ================================================================== -->
+  <section class="sect" id="found">
+    <div class="sect-head"><h2>Foundations</h2><span>8 specimens</span></div>
+    <p>The pieces every page uses. Nothing here knows anything about the 6502: if a specimen only makes sense next to live engine state, it belongs in The panel.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>The grid unit</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">One number, <code>--u: 4px</code>, and every spacing value in the system is a multiple of it. The binder calls this the primary grid unit and it is the reason a memory monitor lines up with the table beside it. This page is sitting on the grid: the faint rule behind everything is 8&times;<code>--u</code>.</p>
+      <div class="spec-stage">
+        <div class="data" style="display:grid;gap:8px">
+          <div style="display:flex;align-items:center;gap:12px"><i style="display:block;width:4px;height:16px;background:var(--color-burnt-ink)"></i><span>1u &nbsp;4px &nbsp;<span class="quiet">hairline gaps, tag padding</span></span></div>
+          <div style="display:flex;align-items:center;gap:12px"><i style="display:block;width:8px;height:16px;background:var(--color-burnt-ink)"></i><span>2u &nbsp;8px &nbsp;<span class="quiet">inside a control</span></span></div>
+          <div style="display:flex;align-items:center;gap:12px"><i style="display:block;width:16px;height:16px;background:var(--color-burnt-ink)"></i><span>4u &nbsp;16px &nbsp;<span class="quiet">module padding</span></span></div>
+          <div style="display:flex;align-items:center;gap:12px"><i style="display:block;width:32px;height:16px;background:var(--color-burnt-ink)"></i><span>8u &nbsp;32px &nbsp;<span class="quiet">between modules</span></span></div>
+          <div style="display:flex;align-items:center;gap:12px"><i style="display:block;width:64px;height:16px;background:var(--color-burnt-ink)"></i><span>16u &nbsp;64px &nbsp;<span class="quiet">between sections</span></span></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Type scale</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Four voices. Display for section headers only, in caps and tight. Sans for interface. Mono for anything the machine produced: an address, a count, a node id. Serif for documentation prose, and only there, because a serif paragraph next to a hex dump is what makes the hex dump look like data rather than text.</p>
+      <div class="spec-stage stack">
+        <div style="font-family:var(--font-display);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;font-size:3rem;line-height:.92">Half-wave</div>
+        <div style="font-family:var(--font-sans);font-weight:600;font-size:1.3125rem">Switch-level, verified at every half-cycle</div>
+        <div class="data" style="font-size:1.0625rem">0x3F40 &nbsp; NODE_657 &nbsp; h=255 &nbsp; &phi;2</div>
+        <p class="prose" style="margin:0">The simulator resolves every one of the 1,725 nodes twice per cycle, and a datasheet oracle checks the result, which is what catches the readings of the die that everybody shares and nobody questions.</p>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Palette, both grounds</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Every Earth Conductor hue ships twice: a base that reads on the panel and an <code>-ink</code> form that reads on paper. Using the wrong one is the fastest way to make this palette illegible, so the pairs are named rather than derived at the call site. Ratios below are computed, not eyeballed.</p>
+      <div class="spec-stage stack" style="padding:0;border:0">
+        <div style="padding:1.5rem;border:1px solid var(--color-rule);background:var(--color-paper)">
+          <p class="eyebrow">On paper</p>
+          <div style="display:grid;gap:.5rem;font-family:var(--font-mono);font-size:.75rem">
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-burnt-ink)"></i><b style="color:var(--color-burnt-ink)">#8E3D1C</b> Burnt Silicon ink <span class="quiet">6.6:1</span></div>
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-mustard-ink)"></i><b style="color:var(--color-mustard-ink)">#7A6220</b> Mustard ink <span class="quiet">5.2:1</span></div>
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-forest-ink)"></i><b style="color:var(--color-forest-ink)">#2D583A</b> Forest Logic ink <span class="quiet">7.3:1</span></div>
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-ocean-ink)"></i><b style="color:var(--color-ocean-ink)">#1A5A61</b> Ocean Data ink <span class="quiet">7.0:1</span></div>
+          </div>
+        </div>
+        <div style="padding:1.5rem;border:1px solid var(--color-ink);background:var(--color-panel)">
+          <p class="eyebrow" style="color:var(--color-burnt)">On panel</p>
+          <div style="display:grid;gap:.5rem;font-family:var(--font-mono);font-size:.75rem;color:var(--color-glass-muted)">
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-burnt)"></i><b style="color:var(--color-burnt)">#D06B40</b> Burnt Silicon <span>5.2:1</span></div>
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-mustard)"></i><b style="color:var(--color-mustard)">#D2B771</b> Mustard Conductor <span>9.5:1</span></div>
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-forest)"></i><b style="color:var(--color-forest)">#5FA772</b> Forest Logic <span>6.4:1</span></div>
+            <div style="display:flex;gap:.75rem;align-items:center"><i style="width:2rem;height:1.5rem;background:var(--color-ocean)"></i><b style="color:var(--color-ocean)">#5FB8C0</b> Ocean Data <span>8.1:1</span></div>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Buttons</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Two variants, no third. Primary carries a 3px hard shadow and translates the full 3px on <code>:active</code>, so the press is a detent with a hard stop rather than a fade. Press one: the travel is the whole point, and it is 90ms.</p>
+      <div class="spec-stage row">
+        <a class="btn btn-primary" href="#">Run to breakpoint</a>
+        <a class="btn btn-ghost" href="#">Export trace</a>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Eyebrow</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Mono, uppercase, burnt ink, with a rule that fills the rest of the line. Marks a section without spending a heading level, which matters on docs pages where the heading levels are the table of contents.</p>
+      <div class="spec-stage">
+        <p class="eyebrow" style="margin:0">Verification · datasheet oracle</p>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Status tags</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Read-only status. Not interactive: if it can be clicked it is a chip, not a tag. <code>.fail</code> is red and red means one thing in this system: an invariant that is asserted somewhere in the test suite did not hold. Not "bad", not "important". Broken.</p>
+      <div class="spec-stage row">
+        <span class="tag">1725 nodes</span>
+        <span class="tag live">Oracle clean</span>
+        <span class="tag warn">Settle rounds 41/100</span>
+        <span class="tag fail">contested_groups = 3</span>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Measured chip</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The repo's own rule made visible: every number on the site says which run produced it. The glyph lives in <code>::before</code> so it never lands in a copy-paste. A figure without one of these is a figure somebody typed, and the reader is entitled to know which they are looking at.</p>
+      <div class="spec-stage row">
+        <span class="measured"><b>halfphi</b> ff3c81a · run Aug 21</span>
+        <span class="measured"><b>visual6502</b> netlist · read Aug 09</span>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Notice</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">One per page at most: a second one means neither gets read. Orange edge for something a human needs to know; red edge only when an assertion fired.</p>
+      <div class="spec-stage stack">
+        <div class="notice"><b>Die data is not ours.</b> The node numbering and die photography follow visual6502. See <code>NOTICE.md</code> before redistributing anything under <code>/atlas</code>.</div>
+        <div class="notice fail"><b>Rail violation.</b> Node 657 is declared VCC and toggled at h=118. The trace below is served as-is; it has not been clamped, because clamping it at export would hide where the solver went wrong.</div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <!-- ==================================================================
+       02 THE FRAME
+       ================================================================== -->
+  <section class="sect" id="frame">
+    <div class="sect-head"><h2>The frame</h2><span>4 specimens</span></div>
+    <p>Page identity and navigation. The docs nav is the one with a rule attached to it: it is derived from the directory tree and never from a list, because a nav missing one link still looks exactly like a nav.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Masthead</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The page identity block. The tile is a die pad (ink ground, mustard legend) and it carries the card shadow so it reads as a component sitting on the paper rather than a shape printed on it.</p>
+      <div class="spec-stage">
+        <div class="masthead">
+          <div class="die">6502</div>
+          <div>
+            <p class="eyebrow" style="margin-bottom:.25rem">Switch-level engine</p>
+            <h1 class="display" style="font-size:2rem">halfphi</h1>
+            <div class="mh-meta">
+              <span class="tag">1,725 nodes</span>
+              <span class="tag">3,510 transistors</span>
+              <span class="tag live">Verified Aug 21</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Breadcrumb</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Mono uppercase. The current level is a <code>&lt;b&gt;</code>, not a link: a link to the page you are on is a dead control.</p>
+      <div class="spec-stage">
+        <nav class="crumb" aria-label="Breadcrumb"><a href="#">tinymachines</a> · <a href="#">docs</a> · <a href="#">6502</a> · <b>The console contract</b></nav>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Docs tree nav</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Rendered from the directory under <code>docs/</code>, never from a <code>nav.ts</code>. Two levels of visual treatment because the tree has two kinds of node, directory and page; if a third appears, the answer is to flatten the tree rather than invent a third style. A page with no frontmatter title fails the build instead of appearing here as "Untitled".</p>
+      <div class="spec-stage">
+        <nav class="tree" style="max-width:20rem">
+          <p class="sect">docs/</p>
+          <a href="#">index</a>
+          <p class="sect">6502/</p>
+          <a class="d" href="#">index</a>
+          <a class="d" href="#" aria-current="page">the-console-contract</a>
+          <a class="d" href="#">cartridges</a>
+          <p class="sect">service/</p>
+          <a class="d" href="#">index</a>
+          <a class="d" href="#">atlas</a>
+          <a class="d" href="#">mcp</a>
+        </nav>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Filter chips</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Real <code>&lt;button&gt;</code>s with <code>aria-pressed</code>, because colour is never the only status signal: the pressed state inverts the fill <em>and</em> the text colour. Try them.</p>
+      <div class="spec-stage">
+        <div class="chips" data-single>
+          <button class="chip" type="button" aria-pressed="true">All instructions</button>
+          <button class="chip" type="button" aria-pressed="false">Load / store</button>
+          <button class="chip" type="button" aria-pressed="false">Arithmetic</button>
+          <button class="chip" type="button" aria-pressed="false">Undocumented</button>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <!-- ==================================================================
+       03 THE PANEL
+       ================================================================== -->
+  <section class="sect" id="panel">
+    <div class="sect-head"><h2>The panel</h2><span>7 specimens</span></div>
+    <p>The panel is the machine talking. A dark box on a tinymachines page means the values inside it came out of the engine on a run that happened: it is a semantic, not a dark theme. Never put marketing copy on a panel; never render live node state on paper.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Panel and bezel</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Chrome is an edge, never a fill. The bezel is a 3px brushed gradient ring with an inner dark lip, and its whole job is to mark where the documentation stops and the instrument starts. If chrome shows up anywhere that is not that boundary, it has become decoration and should be deleted.</p>
+      <div class="spec-stage plain">
+        <div class="panel">
+          <div class="panel-face">
+            <div class="panel-bar"><b>Memory explorer</b> <span>v1.0</span></div>
+            <p class="data quiet" style="margin:0">The face. Everything else in this section goes inside one of these.</p>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Phase rail</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The signature of the whole system, and the one component that exists because of what this simulator <em>is</em>. Two cells, &phi;1 and &phi;2, and they are never both lit: the non-overlap guarantee is an axiom of the engine, so the component makes the illegal state unrenderable: lit-ness comes from one <code>data-phase</code> attribute on the parent, not from a class on each cell. Every live panel wears one.</p>
+      <div class="spec-stage dark">
+        <div class="phase" data-phase="1" data-demo-phase>
+          <span>&phi;1</span><i></i><i></i><span>&phi;2</span>
+          <b style="margin-left:.75rem">h=118</b>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Half-cycle scrubber</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Ticks are half-cycles, not cycles. <code>h</code> is the unit the engine counts in and an axis that quietly converts to cycles will disagree with every log line the reader is holding. Alternating fills carry the phase so a glance tells you whether you are parked on a precharge or an evaluate.</p>
+      <div class="spec-stage dark">
+        <div class="hcycle" data-scrub>
+          <div class="hcycle-track"></div>
+          <div class="hcycle-foot"><span>h=0 &nbsp;&phi;1</span><span>h=118 &nbsp;&phi;2 &nbsp;<b style="color:var(--color-blue)">HERE</b></span><span>h=255 &nbsp;&phi;2</span></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Register file</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Left rule is forest when the value held across the half-cycle and blue when it changed, so a scan down the column reads as "what moved". The settle flash is 150ms and does not repeat: a register that changes every half-cycle would otherwise strobe the page.</p>
+      <div class="spec-stage dark">
+        <div class="regs" style="max-width:18rem">
+          <div class="reg"><span>PC</span><b>0x0605</b></div>
+          <div class="reg"><span>A</span><b class="changed">0x43</b></div>
+          <div class="reg"><span>X</span><b>0x00</b></div>
+          <div class="reg"><span>Y</span><b>0x00</b></div>
+          <div class="reg"><span>S</span><b>0xFD</b></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Status flags</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Eight cells, always eight, always in NV&#8209;BDIZC order. Bit 5 does not exist as a flag but still occupies its position at reduced opacity, because renumbering the bits to close the gap is how a reader ends up counting wrong against the datasheet.</p>
+      <div class="spec-stage dark">
+        <div class="flags">
+          <i>N</i><i>V</i><i class="unused">–</i><i>B</i><i>D</i><i class="set">I</i><i>Z</i><i class="set">C</i>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Memory monitor</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Address is ocean, data is glass, and they are different hues on purpose: an address is an index and a byte is a value, and reading one as the other is the classic error a hex dump invites. Bytes touched this cycle are marked (burnt fill for a write, mustard text for a read) so the dummy write on a read-modify-write instruction is visible rather than inferred.</p>
+      <div class="spec-stage dark">
+        <div class="dump">
+          <div class="dump-row"><span class="addr">0600</span><span class="bytes"><u class="r">A9</u><u class="r">42</u><u>8D</u><u>00</u><u>02</u><u>69</u><u>01</u><u>EA</u></span><span class="ascii">·B····↑·</span></div>
+          <div class="dump-row"><span class="addr">0608</span><span class="bytes"><u>4C</u><u>00</u><u>06</u><u>00</u><u>00</u><u>00</u><u>00</u><u>00</u></span><span class="ascii">L·······</span></div>
+          <div class="dump-row"><span class="addr">0200</span><span class="bytes"><u class="w">42</u><u>00</u><u>00</u><u>00</u><u>00</u><u>00</u><u>00</u><u>00</u></span><span class="ascii">B·······</span></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Signal trace</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Rows are grids of half-cycle cells: a high cell draws a top border, a low cell draws a bottom border, and the vertical edge falls out of adjacency. That is why transitions land exactly on the grid and never a pixel off: the geometry is doing the alignment rather than a hand-placed line. Bus rows carry values, not levels, and hatched means high-Z.</p>
+      <div class="spec-stage dark">
+        <div class="trace">
+          <div class="trace-row"><span>&phi;1</span><div class="wave clk" data-wave="10101010101010101010"></div></div>
+          <div class="trace-row"><span>&phi;2</span><div class="wave clk" data-wave="01010101010101010101"></div></div>
+          <div class="trace-row"><span>SYNC</span><div class="wave ctl" data-wave="11000000001100000000"></div></div>
+          <div class="trace-row"><span>R/W&#773;</span><div class="wave ctl" data-wave="11111111111111001111"></div></div>
+          <div class="trace-row"><span>ADDR</span><div class="lane"><i>0600</i><i>0601</i><i>0602</i><i>0603</i><i>0604</i><i class="z">z</i><i>0200</i><i>0605</i></div></div>
+          <div class="trace-row"><span>DATA</span><div class="lane"><i>A9</i><i>42</i><i>8D</i><i>00</i><i>02</i><i class="z">z</i><i>42</i><i>69</i></div></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <!-- ==================================================================
+       04 DIE & ENGINE
+       ================================================================== -->
+  <section class="sect" id="die">
+    <div class="sect-head"><h2>Die &amp; engine</h2><span>4 specimens</span></div>
+    <p>Specimens that only make sense for this project. Everything here is coloured by the solver's own vocabulary, so a screenshot and a stack trace use the same words.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Node inspector</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Colour follows the <code>Drive</code> enum, and the legend is printed in ordinal order (Floating, ChargedHigh, PullDown, PullUp, Vcc, Vss), because that order <em>is</em> the resolution rule. Do not sort it alphabetically. ChargedHigh is deliberately the dimmest lit state: it ranks below the real pulls, and that ranking is what makes dynamic retention work across a phase, so the colour should say "held, not driven".</p>
+      <div class="spec-stage dark stack">
+        <div class="nodes" style="max-width:9.5rem">
+          <i class="vss"></i><i class="pullup"></i><i class="charged"></i><i></i><i class="pulldn"></i><i class="vcc"></i><i class="pullup"></i><i></i>
+          <i class="charged"></i><i class="pulldn"></i><i class="vss"></i><i class="pullup"></i><i></i><i class="charged"></i><i class="vcc"></i><i class="pulldn"></i>
+          <i class="pullup"></i><i></i><i class="charged"></i><i class="vss"></i><i class="pulldn"></i><i class="pullup"></i><i class="charged"></i><i class="vcc"></i>
+        </div>
+        <div class="legend">
+          <span><em style="background:var(--color-drive-float)"></em>Floating</span>
+          <span><em style="background:var(--color-drive-charged)"></em>ChargedHigh</span>
+          <span><em style="background:var(--color-drive-pulldn)"></em>PullDown</span>
+          <span><em style="background:var(--color-drive-pullup)"></em>PullUp</span>
+          <span><em style="background:var(--color-drive-vcc)"></em>Vcc</span>
+          <span><em style="background:var(--color-drive-vss)"></em>Vss</span>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Contested strobe</h3><span class="badge idea">idea</span></div>
+      <p class="spec-why">A node in two groups pulling against each other. <code>contested_groups</code> is asserted zero in the test suite, so this cell should be unreachable in a healthy run, which is exactly why it gets the only red in the system and the only strobe. Four hard steps in 160ms and then it holds red; it does not blink forever, because a permanent blink becomes wallpaper within a minute.</p>
+      <div class="spec-stage dark row">
+        <div class="nodes"><i class="pullup"></i><i class="pulldn"></i><i class="contest" data-restrobe></i><i class="charged"></i><i class="vss"></i></div>
+        <span class="data" style="color:var(--color-red)">node 657 · contested · h=118 &phi;2</span>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>State grid</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Binary status at a glance for a set of like things: one cell per opcode, per test, per cartridge. Each cell carries its label as text so the grid is readable with colour removed entirely.</p>
+      <div class="spec-stage dark">
+        <div class="states">
+          <i class="ok">LDA</i><i class="ok">LDX</i><i class="ok">LDY</i><i class="ok">STA</i><i class="ok">STX</i><i class="ok">STY</i>
+          <i class="ok">ADC</i><i class="warn">SBC</i><i class="ok">AND</i><i class="ok">ORA</i><i class="ok">EOR</i><i class="ok">BIT</i>
+          <i class="ok">JMP</i><i class="warn">JMP()</i><i class="ok">JSR</i><i class="ok">RTS</i><i class="fail">ARR</i><i class="fail">XAA</i>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Settle histogram</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Rounds to convergence against the <code>MAX_SETTLE_ROUNDS = 100</code> ceiling: X is rounds taken, Y is how many half-cycles took that many. The number that matters is the <em>rightmost</em> bar, not the tallest: the mode tells you what is typical, the tail tells you what the ceiling has to survive. So the tail gets the red and the mode gets nothing, because colouring the mode would answer the wrong question.</p>
+      <div class="spec-stage dark stack">
+        <div class="hist" data-hist></div>
+        <div class="hcycle-foot"><span>rounds to converge &rarr;</span><span>worst observed <b style="color:var(--color-red)">41</b> · ceiling 100</span></div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <!-- ==================================================================
+       05 TACTILE CONTROLS
+       ================================================================== -->
+  <section class="sect" id="tactile">
+    <div class="sect-head"><h2>Tactile controls</h2><span>5 specimens</span></div>
+    <p>All five share one rule: the moving part travels a real distance in 150ms and stops hard, and the lit state is a glow on the part that moved, never a colour change on the housing. Simulate mechanical resistance, not nostalgia. No slow fades, no zooms.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Precision toggle</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The lever throws the full height of its slot on the detent curve: fast out, hard stop. On is signalled three ways at once: position, glow, and the label's colour, so it survives both greyscale and reduced motion. Click it.</p>
+      <div class="spec-stage dark row">
+        <button class="toggle" type="button" aria-pressed="false" data-toggle>
+          <span class="housing"><span class="lever"></span></span>
+          <span>RUN</span>
+        </button>
+        <button class="toggle" type="button" aria-pressed="true" data-toggle>
+          <span class="housing"><span class="lever"></span></span>
+          <span>TRACE</span>
+        </button>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Rotary encoder</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Knurled ring, polished cap, and a value that steps rather than slides: the knob rotates to the next detent in 150ms and never lands between them. The readout carries both the decimal and the hex because the person turning it is picking an address. Drag it or use the arrow keys.</p>
+      <div class="spec-stage dark row">
+        <div class="encoder" data-encoder tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="255" aria-valuenow="75" aria-label="Byte value">
+          <span class="knob"><span class="cap">75</span></span>
+          <span class="val">VALUE: 8bit (0x4B)</span>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Push-button</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Linear travel, 3px down and no bounce. The armed variant is backlit in Signal Orange and is reserved for an action that changes machine state you cannot get back: a reset, a flash. If nothing is destroyed, it is not armed.</p>
+      <div class="spec-stage dark row">
+        <button class="push" type="button">Start</button>
+        <button class="push armed" type="button">Reset</button>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Logic slider</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">The track is ticked at the grid so drag feels granular rather than continuous, and the ends print their values because a fader with no scale is a guess. Handle is brushed, not polished: it is the part that gets touched, and polish on a touched surface reads wrong.</p>
+      <div class="spec-stage dark">
+        <div class="slider" style="max-width:22rem" data-slider>
+          <div class="track"><span class="handle" style="left:46%"></span></div>
+          <div class="ends"><span>0x0000</span><span>ADDRESS</span><span>0xFFFF</span></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>DIP bank</h3><span class="badge idea">idea</span></div>
+      <p class="spec-why">Eight switches on a burnt-silicon carrier, for the places where the setting genuinely is a bit field: trace channel enables, a mask. Do not reach for this when a checkbox would do; it earns its keep only when the reader is thinking in bits and the on-screen arrangement should match the one in the register.</p>
+      <div class="spec-stage dark row">
+        <div class="dip" data-dip>
+          <i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i>
+        </div>
+        <span class="data" style="color:var(--color-mustard)">MASK = 0b10110010 · 0xB2</span>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <!-- ==================================================================
+       06 DATA & RAILS
+       ================================================================== -->
+  <section class="sect" id="rails">
+    <div class="sect-head"><h2>Data &amp; rails</h2><span>6 specimens</span></div>
+    <p>Dense display on paper. Everything here is tabular-nums mono so columns line up, and every table scrolls inside its own container rather than widening the page.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Ledger</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The dense table. Numeric columns are right-aligned and tabular so digits stack; the name column is sans, because it is the only column that is prose. Status carries a word, never a bare dot.</p>
+      <div class="spec-stage">
+        <div class="ledger">
+          <div class="scroller" tabindex="0" role="region" aria-label="Opcode ledger">
+            <table>
+              <thead><tr><th>Opcode</th><th>Mode</th><th class="num">Cycles</th><th class="num">Half-cycles</th><th>Oracle</th></tr></thead>
+              <tbody>
+                <tr><td class="name">LDA</td><td>immediate</td><td class="num">2</td><td class="num">4</td><td><span class="tag live">Match</span></td></tr>
+                <tr><td class="name">LDA</td><td>absolute</td><td class="num">4</td><td class="num">8</td><td><span class="tag live">Match</span></td></tr>
+                <tr><td class="name">INC</td><td>absolute</td><td class="num">6</td><td class="num">12</td><td><span class="tag live">Match</span></td></tr>
+                <tr><td class="name">JMP</td><td>indirect</td><td class="num">5</td><td class="num">10</td><td><span class="tag warn">Page bug</span></td></tr>
+                <tr><td class="name">ARR</td><td>immediate</td><td class="num">2</td><td class="num">4</td><td><span class="tag fail">Diverges</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="tbl-foot"><span>5 of 256 shown</span><a href="#">Full matrix &rarr;</a></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Rail panel · key/value</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Sticky at &ge;64rem. Keys are mono uppercase muted, values are bold and right-aligned. Values stack under their keys on narrow screens rather than squeezing to three characters.</p>
+      <div class="spec-stage">
+        <aside class="rail" style="max-width:22rem">
+          <h3>At a glance</h3>
+          <dl class="kv">
+            <div><dt>Nodes</dt><dd>1,725</dd></div>
+            <div><dt>Transistors</dt><dd>3,510</dd></div>
+            <div><dt>Verified at</dt><dd>every &frac12;-cycle</dd></div>
+            <div><dt>Max settle</dt><dd>41 / 100</dd></div>
+          </dl>
+        </aside>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Coverage bar</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The hatched fill means partial or provisional. A placeholder must stay visually distinguishable from verified data at a glance and in greyscale, which is why the difference is a texture and not a lighter shade of the same green.</p>
+      <div class="spec-stage">
+        <div style="max-width:22rem">
+          <div class="bar-row"><div class="bar-top"><span>Opcodes matching oracle</span><b>243 / 256</b></div><div class="bar"><i style="width:95%"></i></div></div>
+          <div class="bar-row"><div class="bar-top"><span>Undocumented coverage</span><b>Partial</b></div><div class="bar"><i class="p" style="width:38%"></i></div></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Coin meter</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Coins are given away, never sold: decided, and closed. So the meter shows a budget remaining and there is deliberately no "buy more" affordance to design around; when it empties, the copy points at a way to earn rather than a checkout. Designing a price into this reopens a question that is currently shut.</p>
+      <div class="spec-stage">
+        <div class="coins">
+          <span class="stack"><i></i><i></i><i></i><i></i><i></i><i></i><i class="spent"></i><i class="spent"></i></span>
+          <span>6 of 8 runs left today</span>
+          <a class="btn btn-ghost" href="#" style="padding:.25rem .6rem;font-size:.75rem">Earn more</a>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Code block with run marker</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Code is panel, because a code block <em>is</em> the machine talking. Any block that states an output carries a <code>RAN</code> stamp with the date, which is the docs rule with a place to live: if it says the answer is <code>$42</code>, somebody ran it, and the page says when.</p>
+      <div class="spec-stage plain">
+        <div class="code">
+          <div class="code-bar"><span>halfphi · shell</span><span>bash</span></div>
+<pre><span class="c"># step one instruction and dump the accumulator</span>
+halfphi run <span class="s">"LDA #\$42"</span> <span class="k">--halt-on</span> sync <span class="k">--dump</span> a</pre>
+          <div class="out" data-ran="AUG 21 2026">
+<pre>A = <span class="n">0x42</span>   h=<span class="n">4</span>   &phi;2   settled in <span class="n">7</span> rounds</pre>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>API endpoint card</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">One card per route, generated from the Pydantic model that validates the request, so the field list here and the validation cannot drift. Every parameter carries a description because a parameter with no description is the thing the reference is for.</p>
+      <div class="spec-stage">
+        <div class="endpoint">
+          <div class="ep-head"><span class="verb">GET</span><span class="path">/api/v1/node/{id}/trace</span></div>
+          <div class="ep-body">
+            Drive state for one node across a half-cycle window. Returns the resolved <code>Drive</code> per <code>h</code>, plus the group it resolved in.
+            <table class="params">
+              <tr><td>id</td><td>visual6502 node number, 0–1724.</td></tr>
+              <tr><td>from_h</td><td>First half-cycle, inclusive. Defaults to 0.</td></tr>
+              <tr><td>to_h</td><td>Last half-cycle, inclusive. Defaults to from_h + 32.</td></tr>
+              <tr><td>groups</td><td>Include the resolution group membership. Costs a coin.</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <footer class="zoo-foot">
+    <span>tinymachines.ai · widget zoo</span>
+    <span>Palette measured, not chosen · Aug 22 2026</span>
+  </footer>
+</main>
+
+<script>
+
+/* --------------------------------------------------------------------------
+   SPECIMEN BEHAVIOUR
+   Each block is the minimum needed to demonstrate the interaction. None of
+   this ships: the real components get their state from the engine.
+   -------------------------------------------------------------------------- */
+(function () {
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Waveform rows: expand a bit string into cells. */
+  document.querySelectorAll("[data-wave]").forEach(function (w) {
+    w.innerHTML = w.dataset.wave.split("").map(function (b) {
+      return '<i class="' + (b === "1" ? "h" : "l") + '"></i>';
+    }).join("");
+  });
+
+  /* Half-cycle track. */
+  document.querySelectorAll("[data-scrub] .hcycle-track").forEach(function (t) {
+    var html = "";
+    for (var i = 0; i < 64; i++) {
+      var cls = i % 2 ? "p2" : "p1";
+      if (i === 29) cls = "here";
+      html += '<i class="' + cls + '"></i>';
+    }
+    t.innerHTML = html;
+  });
+
+  /* Settle histogram: a plausible distribution, peak marked. */
+  document.querySelectorAll("[data-hist]").forEach(function (h) {
+    /* counts of half-cycles per round-bucket; a long thin tail, which is the
+       point: the ceiling has to clear the tail, not the mode. */
+    var v = [0, 41, 188, 402, 610, 528, 331, 196, 120, 74, 45, 28, 19, 12, 9,
+             6, 5, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0,
+             0, 1, 0, 0, 1];
+    var max = Math.max.apply(null, v);
+    var last = v.reduce(function (acc, n, i) { return n > 0 ? i : acc; }, 0);
+    h.innerHTML = v.map(function (n, i) {
+      var cls = i === last ? "peak" : (n && n < 20 ? "cold" : "");
+      var pct = n ? Math.max(2, Math.round(Math.sqrt(n / max) * 100)) : 0;
+      return '<i class="' + cls + '" style="height:' + pct + '%"></i>';
+    }).join("");
+  });
+
+  /* Phase rail demo: alternates so the non-overlap is visible. */
+  if (!reduce) {
+    document.querySelectorAll("[data-demo-phase]").forEach(function (p) {
+      var h = 118;
+      setInterval(function () {
+        var next = p.dataset.phase === "1" ? "2" : "1";
+        p.dataset.phase = next;
+        if (next === "1") h++;
+        var b = p.querySelector("b");
+        if (b) b.textContent = "h=" + h;
+      }, 900);
+    });
+  }
+
+  /* Toggles. */
+  document.querySelectorAll("[data-toggle]").forEach(function (t) {
+    t.addEventListener("click", function () {
+      t.setAttribute("aria-pressed", t.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    });
+  });
+
+  /* Chips: single-select group. */
+  document.querySelectorAll("[data-single]").forEach(function (g) {
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest(".chip");
+      if (!b) return;
+      g.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+    });
+  });
+
+  /* DIP bank. */
+  document.querySelectorAll("[data-dip]").forEach(function (d) {
+    d.addEventListener("click", function (e) {
+      if (e.target.tagName === "I") e.target.classList.toggle("on");
+    });
+  });
+
+  /* Encoder: steps to detents, never lands between them. */
+  document.querySelectorAll("[data-encoder]").forEach(function (enc) {
+    var val = 75, knob = enc.querySelector(".knob"), cap = enc.querySelector(".cap"), out = enc.querySelector(".val");
+    function set(v) {
+      val = Math.max(0, Math.min(255, v));
+      knob.style.transform = "rotate(" + (val / 255 * 300 - 150) + "deg)";
+      cap.style.transform = "rotate(" + -(val / 255 * 300 - 150) + "deg)";
+      cap.textContent = val;
+      out.textContent = "VALUE: 8bit (0x" + val.toString(16).toUpperCase().padStart(2, "0") + ")";
+      enc.setAttribute("aria-valuenow", val);
+    }
+    enc.addEventListener("keydown", function (e) {
+      var d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      set(val + d * (e.shiftKey ? 16 : 1));
+    });
+    var dragging = false, lastY = 0;
+    knob.addEventListener("pointerdown", function (e) { dragging = true; lastY = e.clientY; knob.setPointerCapture(e.pointerId); });
+    knob.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      var dy = lastY - e.clientY;
+      if (Math.abs(dy) < 6) return;
+      set(val + (dy > 0 ? 1 : -1));
+      lastY = e.clientY;
+    });
+    knob.addEventListener("pointerup", function () { dragging = false; });
+  });
+
+  /* Slider. */
+  document.querySelectorAll("[data-slider]").forEach(function (s) {
+    var track = s.querySelector(".track"), handle = s.querySelector(".handle"), label = s.querySelectorAll(".ends span")[1];
+    function place(clientX) {
+      var r = track.getBoundingClientRect();
+      var pct = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      var step = Math.round(pct * 32) / 32;                 /* ticked, not smooth */
+      handle.style.left = (step * 100) + "%";
+      label.textContent = "0x" + Math.round(step * 65535).toString(16).toUpperCase().padStart(4, "0");
+    }
+    var down = false;
+    track.addEventListener("pointerdown", function (e) { down = true; track.setPointerCapture(e.pointerId); place(e.clientX); });
+    track.addEventListener("pointermove", function (e) { if (down) place(e.clientX); });
+    track.addEventListener("pointerup", function () { down = false; });
+  });
+
+  /* Contested strobe: replays on click so the specimen can be seen twice. */
+  document.querySelectorAll("[data-restrobe]").forEach(function (n) {
+    n.addEventListener("click", function () {
+      n.style.animation = "none";
+      void n.offsetWidth;
+      n.style.animation = "";
+    });
+  });
+})();
+
+/* --------------------------------------------------------------------------
+   MARKUP EXTRACTION: runs last, after the specimens above have built
+   themselves, so a listing always shows what actually rendered. The listing
+   is read out of the specimen itself; one that disagrees with its render is
+   not a thing that can happen.
+   -------------------------------------------------------------------------- */
+(function () {
+  function dedent(s) {
+    var lines = s.replace(/\t/g, "  ").split("\n");
+    while (lines.length && !lines[0].trim()) lines.shift();
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    var min = Infinity;
+    lines.forEach(function (l) {
+      if (!l.trim()) return;
+      min = Math.min(min, l.match(/^ */)[0].length);
+    });
+    if (!isFinite(min)) min = 0;
+    return lines.map(function (l) { return l.slice(min); }).join("\n");
+  }
+  var specs = document.querySelectorAll(".spec");
+  specs.forEach(function (spec) {
+    var stage = spec.querySelector(".spec-stage");
+    var code = spec.querySelector("details.markup code");
+    if (!stage || !code) return;
+    var html = dedent(stage.innerHTML)
+      .replace(/ data-(demo-phase|scrub|wave|hist|toggle|encoder|slider|dip|single|restrobe)(="[^"]*")?/g, "");
+    code.textContent = html;
+  });
+  var c = document.getElementById("spec-count");
+  if (c) c.textContent = specs.length;
+})();
+</script>
+</body>
+</html>

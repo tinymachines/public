@@ -1,0 +1,847 @@
+/* ============================================================================
+   tinymachines.ai: components
+   Reads tokens.css. No framework. Every class here is rendered in zoo.html
+   with the exact markup that produced it.
+
+   Naming: tm- prefix on anything structural, bare class on primitives that
+   docs authors will type by hand in MDX.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------------
+   1. GROUNDS
+   ------------------------------------------------------------------------ */
+
+.paper {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+}
+
+/* The panel is the machine talking. Bezel is a real edge: a chrome gradient
+   ring, an inner dark lip, and a hard shadow. Nothing inside a panel is
+   allowed to be decorative. */
+.panel {
+  background: var(--bezel-brushed);
+  padding: 3px;
+  border-radius: 6px;
+  box-shadow: var(--shadow-panel);
+  color: var(--color-glass);
+  font-family: var(--font-sans);
+}
+.panel > .panel-face {
+  background: var(--color-panel);
+  border: 1px solid #05050400;
+  border-radius: var(--radius-mod);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06),
+              inset 0 0 0 1px rgb(0 0 0 / 0.6);
+  padding: calc(var(--u) * 4);
+}
+.panel--polish { background: var(--bezel-polish); }
+
+/* Panel header strip: name left, phase rail right. */
+.panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 3);
+  padding-bottom: calc(var(--u) * 2.5);
+  margin-bottom: calc(var(--u) * 3);
+  border-bottom: 1px solid var(--color-rule-panel);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-glass-muted);
+}
+.panel-bar b { color: var(--color-glass); font-weight: 600; }
+
+/* ---------------------------------------------------------------------------
+   2. THE PHASE RAIL: the signature
+   Two cells, phi-one and phi-two, and they are never both lit. The
+   non-overlap guarantee is an axiom of the engine, so the component makes
+   it structurally impossible to render a state that violates it: lit-ness
+   is carried by one attribute on the parent, not by a class on each cell.
+   ------------------------------------------------------------------------ */
+
+.phase {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.5);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.06em;
+}
+.phase i {
+  display: block;
+  width: calc(var(--u) * 7);
+  height: calc(var(--u) * 2.5);
+  border: 1px solid var(--color-rule-panel);
+  background: var(--color-panel-sunk);
+  transition: background var(--t-snap) var(--ease-snap);
+}
+.phase[data-phase="1"] i:first-of-type,
+.phase[data-phase="2"] i:last-of-type {
+  background: var(--color-blue);
+  box-shadow: 0 0 8px rgb(94 146 255 / 0.5);
+}
+.phase span { color: var(--color-glass-muted); }
+.phase[data-phase] b {
+  color: var(--color-glass);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Half-cycle scrubber. Ticks are half-cycles, not cycles: h is the unit the
+   engine counts in and the axis should not quietly convert it. */
+.hcycle { display: grid; gap: calc(var(--u) * 2); }
+.hcycle-track {
+  display: flex;
+  gap: 1px;
+  height: calc(var(--u) * 6);
+  background: var(--color-panel-sunk);
+  border: 1px solid var(--color-rule-panel);
+  padding: 2px;
+}
+.hcycle-track i {
+  flex: 1;
+  background: var(--color-drive-float);
+  transition: background var(--t-snap) var(--ease-snap);
+}
+.hcycle-track i.p1 { background: #1F3A6B; }
+.hcycle-track i.p2 { background: #14304F; }
+.hcycle-track i.here { background: var(--color-blue); }
+.hcycle-foot {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--color-glass-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   3. TYPE PRIMITIVES
+   ------------------------------------------------------------------------ */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-tight);
+  line-height: 0.94;
+  margin: 0;
+}
+h1.display { font-size: var(--text-h1); }
+h2.display { font-size: var(--text-h2); }
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-burnt-ink);
+  margin: 0 0 calc(var(--u) * 3);
+}
+.eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-rule);
+  opacity: 0.35;
+}
+
+.prose { font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.62; max-width: 68ch; }
+.data  { font-family: var(--font-mono); font-size: var(--text-data); font-variant-numeric: tabular-nums; }
+.quiet { color: var(--color-ink-muted); }
+
+/* ---------------------------------------------------------------------------
+   4. BUTTONS: two variants, no third.
+   The press is a detent: 1px of travel and a hard stop, not a fade.
+   ------------------------------------------------------------------------ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 4);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-hair);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform var(--t-snap) var(--ease-detent),
+              box-shadow var(--t-snap) var(--ease-detent),
+              background var(--t-snap) var(--ease-detent);
+}
+.btn-primary {
+  background: var(--color-burnt-ink);
+  color: var(--color-paper);
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-ink);
+  box-shadow: 3px 3px 0 transparent;
+}
+.btn-ghost:hover { background: var(--color-paper-sunk); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--color-ink); }
+.btn:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------------------
+   5. TAGS, CHIPS, SOURCE MARKS
+   ------------------------------------------------------------------------ */
+
+.tag {
+  display: inline-block;
+  padding: 2px calc(var(--u) * 2);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-ink-faint);
+  color: var(--color-ink-muted);
+  background: var(--color-paper);
+}
+.tag.live  { border-color: var(--color-forest-ink); color: var(--color-forest-ink); }
+.tag.warn  { border-color: var(--color-orange-ink); color: var(--color-orange-ink); }
+.tag.fail  { border-color: var(--color-red-ink);    color: var(--color-red-ink); }
+
+/* The measured chip. START-HERE's rule made visible: if a number is on the
+   page, this says which run produced it. The mark is a ::before glyph so it
+   never lands in a copy-paste. */
+.measured {
+  display: inline-flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 1.5);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  border-bottom: 1px dotted var(--color-ink-faint);
+}
+.measured::before {
+  content: "\25A4";
+  color: var(--color-ocean-ink);
+  font-size: 0.9em;
+}
+.measured b { color: var(--color-ink); font-weight: 500; }
+
+.chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); }
+.chip {
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
+  font-family: var(--font-sans);
+  font-size: var(--text-fine);
+  font-weight: 500;
+  background: var(--color-paper);
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: all var(--t-snap) var(--ease-snap);
+}
+.chip[aria-pressed="true"] {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+}
+.chip:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------------------
+   6. NOTICE / BREADCRUMB / MASTHEAD
+   ------------------------------------------------------------------------ */
+
+.notice {
+  border-left: 3px solid var(--color-orange-ink);
+  background: var(--color-paper-sunk);
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+.notice.fail { border-left-color: var(--color-red-ink); }
+.notice b { font-weight: 700; }
+
+.crumb {
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.crumb a { color: var(--color-ink-muted); text-decoration: none; border-bottom: 1px solid var(--color-ink-faint); }
+.crumb a:hover { color: var(--color-ink); }
+.crumb b { color: var(--color-ink); font-weight: 600; }
+
+.masthead {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(var(--u) * 4);
+  align-items: center;
+  padding-bottom: calc(var(--u) * 4);
+  border-bottom: 2px solid var(--color-rule);
+}
+.masthead .die {
+  width: calc(var(--u) * 14);
+  height: calc(var(--u) * 14);
+  display: grid;
+  place-items: center;
+  background: var(--color-ink);
+  color: var(--color-mustard);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-hair);
+  box-shadow: var(--shadow-card);
+}
+.masthead h1 { margin: 0; }
+.mh-meta { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 2); }
+
+/* ---------------------------------------------------------------------------
+   7. REGISTER FILE: the processor status block from P.5
+   ------------------------------------------------------------------------ */
+
+.regs { display: grid; gap: calc(var(--u) * 1.5); }
+.reg {
+  display: grid;
+  grid-template-columns: calc(var(--u) * 8) 1fr;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+}
+.reg > span { color: var(--color-glass-muted); letter-spacing: 0.08em; }
+.reg > b {
+  background: var(--color-panel-sunk);
+  border: 1px solid var(--color-rule-panel);
+  border-left: 2px solid var(--color-forest);
+  color: var(--color-mustard);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.reg > b.changed {
+  border-left-color: var(--color-blue);
+  color: var(--color-glass);
+  animation: tm-settle var(--t-detent) var(--ease-detent);
+}
+@keyframes tm-settle {
+  from { background: #1B3560; }
+  to   { background: var(--color-panel-sunk); }
+}
+
+/* Status register: eight flags, always eight, always in NV-BDIZC order.
+   A flag that does not exist on the 6502 still occupies its bit. */
+.flags { display: flex; gap: 2px; font-family: var(--font-mono); font-size: var(--text-data); }
+.flags i {
+  width: calc(var(--u) * 6);
+  height: calc(var(--u) * 6);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  background: var(--color-panel-sunk);
+  border: 1px solid var(--color-rule-panel);
+  color: var(--color-drive-float);
+}
+.flags i.set { background: var(--color-forest-ink); color: var(--color-paper); border-color: var(--color-forest); }
+.flags i.unused { opacity: 0.4; }
+
+/* ---------------------------------------------------------------------------
+   8. MEMORY MONITOR: hex dump
+   Address column is a different hue from data on purpose: address is an
+   index, data is a value, and confusing them is the classic reading error.
+   ------------------------------------------------------------------------ */
+
+.dump {
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  line-height: var(--leading-data);
+  font-variant-numeric: tabular-nums;
+  background: var(--color-panel-sunk);
+  border: 1px solid var(--color-rule-panel);
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  overflow-x: auto;
+}
+.dump-row { display: flex; gap: calc(var(--u) * 3); white-space: nowrap; }
+.dump-row .addr { color: var(--color-ocean); }
+.dump-row .bytes { color: var(--color-glass); display: flex; gap: calc(var(--u) * 2); }
+.dump-row .bytes u { text-decoration: none; }
+.dump-row .bytes u.w { background: var(--color-burnt); color: var(--color-panel); padding: 0 2px; }
+.dump-row .bytes u.r { color: var(--color-mustard); }
+.dump-row .ascii { color: var(--color-glass-muted); }
+
+/* ---------------------------------------------------------------------------
+   9. SIGNAL TRACE: logic analyzer
+   Rows are CSS grids of half-cycle cells. A high cell is a top border, a low
+   cell is a bottom border; the vertical edge falls out of adjacency, which is
+   why the transitions land exactly on the grid and never a pixel off.
+   ------------------------------------------------------------------------ */
+
+.trace {
+  background: var(--color-panel-sunk);
+  border: 1px solid var(--color-rule-panel);
+  padding: calc(var(--u) * 3);
+  overflow-x: auto;
+}
+.trace-row {
+  display: grid;
+  grid-template-columns: calc(var(--u) * 18) 1fr;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  margin-bottom: calc(var(--u) * 2);
+}
+.trace-row > span {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.06em;
+  color: var(--color-glass-muted);
+  text-align: right;
+  text-transform: uppercase;
+}
+.wave { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: calc(var(--u) * 5); min-width: calc(var(--u) * 90); }
+.wave i { border-bottom: 2px solid currentColor; }
+.wave i.h { border-bottom: none; border-top: 2px solid currentColor; }
+.wave i.h + i.l, .wave i.l + i.h { box-shadow: inset 2px 0 0 currentColor; }
+.wave.clk  { color: var(--color-blue); }
+.wave.bus  { color: var(--color-ocean); }
+.wave.ctl  { color: var(--color-mustard); }
+.wave.err  { color: var(--color-red); }
+
+/* Bus lanes carry a value, not a level. */
+.lane { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; height: calc(var(--u) * 5); min-width: calc(var(--u) * 90); }
+.lane i {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-style: normal;
+  color: var(--color-panel);
+  background: var(--color-ocean);
+  border-right: 1px solid var(--color-panel-sunk);
+  overflow: hidden;
+}
+.lane i.z { background: repeating-linear-gradient(45deg, #2A2925 0 4px, #201F1C 4px 8px); color: var(--color-glass-muted); }
+
+/* ---------------------------------------------------------------------------
+   10. NODE INSPECTOR: Drive state
+   Legend order is the enum's ordinal order. Do not sort this alphabetically;
+   the order is the resolution rule.
+   ------------------------------------------------------------------------ */
+
+.nodes { display: flex; flex-wrap: wrap; gap: 3px; }
+.nodes { max-width: 100%; }
+.nodes i {
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 4);
+  border-radius: 1px;
+  background: var(--color-drive-float);
+  cursor: pointer;
+}
+.nodes i.charged { background: var(--color-drive-charged); }
+.nodes i.pulldn  { background: var(--color-drive-pulldn); }
+.nodes i.pullup  { background: var(--color-drive-pullup); }
+.nodes i.vcc     { background: var(--color-drive-vcc); }
+.nodes i.vss     { background: var(--color-drive-vss); box-shadow: inset 0 0 0 1px var(--color-rule-panel); }
+.nodes i.contest {
+  background: var(--color-drive-contest);
+  animation: tm-strobe var(--t-strobe) steps(1) 4;
+}
+@keyframes tm-strobe { 50% { background: var(--color-panel-sunk); } }
+
+.legend { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 3); font-family: var(--font-mono); font-size: var(--text-micro); color: var(--color-glass-muted); }
+.legend span { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5); }
+.legend em { width: calc(var(--u) * 3); height: calc(var(--u) * 3); border-radius: 1px; }
+
+/* ---------------------------------------------------------------------------
+   11. STATE GRID / HISTOGRAM
+   ------------------------------------------------------------------------ */
+
+.states { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 3px; }
+.states i {
+  height: calc(var(--u) * 7);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-style: normal;
+  letter-spacing: 0.04em;
+  background: var(--color-panel-raised);
+  color: var(--color-glass-muted);
+  border-radius: 1px;
+}
+.states i.ok   { background: var(--color-forest-ink); color: #DDF0E2; }
+.states i.warn { background: var(--color-mustard-ink); color: #F6ECCF; }
+.states i.fail { background: var(--color-red-ink); color: #FFE2DE; }
+
+.hist { display: flex; align-items: flex-end; gap: 2px; height: calc(var(--u) * 24); }
+.hist i { flex: 1; background: var(--color-mustard); border-radius: 1px 1px 0 0; }
+.hist i.peak { background: var(--color-red); }
+.hist i.cold { background: var(--color-ocean); }
+
+/* ---------------------------------------------------------------------------
+   12. TACTILE CONTROLS
+   All four share one rule: the moving part travels a real distance in
+   --t-detent, and the lit state is carried by a glow that is a box-shadow on
+   the moving part, never a background change on the housing.
+   ------------------------------------------------------------------------ */
+
+/* Toggle */
+.toggle {
+  --throw: calc(var(--u) * 5);
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.06em;
+  color: var(--color-glass-muted);
+}
+.toggle .housing {
+  position: relative;
+  width: calc(var(--u) * 13);
+  height: calc(var(--u) * 17);
+  background: var(--bezel-brushed);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), var(--shadow-card);
+}
+/* The slot. Without a recess the lever reads as a bar sitting on a plate,
+   and the throw stops meaning anything. */
+.toggle .housing::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 8%; bottom: 8%;
+  width: calc(var(--u) * 3.5);
+  margin-left: calc(var(--u) * -1.75);
+  border-radius: 2px;
+  background: #2B2C2D;
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7);
+}
+.toggle .lever {
+  position: absolute;
+  left: 50%;
+  width: calc(var(--u) * 2);
+  height: calc(var(--u) * 9);
+  margin-left: calc(var(--u) * -1);
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(90deg, #8E9092, #F0F1F2 45%, #A9ABAC);
+  z-index: 1;
+  top: calc(var(--u) * 6.5);
+  transition: top var(--t-detent) var(--ease-detent);
+}
+.toggle[aria-pressed="true"] .lever {
+  top: calc(var(--u) * 1.5);
+  box-shadow: 0 0 10px 2px rgb(94 146 255 / 0.65);
+}
+.toggle[aria-pressed="true"] { color: var(--color-blue); }
+.toggle:focus-visible .housing { outline: 2px solid var(--color-blue); outline-offset: 3px; }
+
+/* Rotary encoder */
+.encoder { display: inline-grid; justify-items: center; gap: calc(var(--u) * 2); font-family: var(--font-mono); }
+.encoder .knob {
+  width: calc(var(--u) * 20);
+  height: calc(var(--u) * 20);
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(#B7B9BA 0deg 3deg, #85878A 3deg 6deg);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 3px #6E7072, var(--shadow-card);
+  position: relative;
+  transition: transform var(--t-detent) var(--ease-detent);
+}
+.encoder .knob::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--u) * 1.5);
+  width: 2px;
+  height: calc(var(--u) * 4);
+  background: var(--color-panel);
+}
+.encoder .cap {
+  width: calc(var(--u) * 13);
+  height: calc(var(--u) * 13);
+  border-radius: 50%;
+  background: var(--bezel-polish);
+  display: grid;
+  place-items: center;
+  font-size: var(--text-data);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+.encoder .val { font-size: var(--text-micro); color: var(--color-glass-muted); letter-spacing: 0.06em; }
+
+/* Push-button */
+.push {
+  width: calc(var(--u) * 22);
+  height: calc(var(--u) * 14);
+  border-radius: 3px;
+  border: 1px solid #6E7072;
+  background: var(--bezel-polish);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-body);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: all var(--t-snap) var(--ease-travel);
+  box-shadow: 0 3px 0 #5A5C5E;
+}
+.push:active { transform: translateY(3px); box-shadow: 0 0 0 #5A5C5E; }
+.push.armed {
+  background: linear-gradient(180deg, #F2A15C, #D9631A);
+  color: #2A1405;
+  border-color: #A64A10;
+  box-shadow: 0 3px 0 #8A3D0C, 0 0 16px 2px rgb(228 103 15 / 0.55);
+}
+.push:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 3px; }
+
+/* Logic slider */
+.slider { display: grid; gap: calc(var(--u) * 2); font-family: var(--font-mono); font-size: var(--text-micro); color: var(--color-glass-muted); }
+.slider .track {
+  position: relative;
+  height: calc(var(--u) * 8);
+  background: var(--color-panel-sunk);
+  border: 1px solid var(--color-rule-panel);
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(90deg, var(--color-rule-panel) 0 1px, transparent 1px 12px);
+}
+.slider .handle {
+  position: absolute;
+  top: -3px;
+  width: calc(var(--u) * 5);
+  height: calc(var(--u) * 11);
+  margin-left: calc(var(--u) * -2.5);
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, #C6C8C9 0 2px, #8D8F91 2px 4px);
+  box-shadow: var(--shadow-card);
+  transition: left var(--t-slide) var(--ease-travel);
+}
+.slider .ends { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+
+/* DIP bank */
+.dip { display: inline-flex; gap: 2px; padding: calc(var(--u) * 2); background: var(--color-burnt-ink); border-radius: 2px; }
+.dip i {
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 9);
+  background: var(--color-paper-sunk);
+  position: relative;
+  border-radius: 1px;
+  cursor: pointer;
+}
+.dip i::after {
+  content: "";
+  position: absolute;
+  left: 1px; right: 1px;
+  height: calc(var(--u) * 4);
+  bottom: 1px;
+  background: var(--color-ink);
+  transition: bottom var(--t-detent) var(--ease-detent), top var(--t-detent) var(--ease-detent);
+}
+.dip i.on::after { bottom: auto; top: 1px; background: var(--color-forest-ink); }
+
+/* ---------------------------------------------------------------------------
+   13. TABLES AND RAILS  (paper)
+   ------------------------------------------------------------------------ */
+
+.ledger { border: 1px solid var(--color-rule); background: var(--color-paper); }
+.ledger .scroller { overflow-x: auto; }
+.ledger table { width: 100%; border-collapse: collapse; font-size: var(--text-fine); }
+.ledger th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border-bottom: 1px solid var(--color-rule);
+  white-space: nowrap;
+}
+.ledger td {
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border-bottom: 1px solid var(--color-ink-faint);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ledger tr:last-child td { border-bottom: 0; }
+.ledger .num { text-align: right; }
+.ledger .name { font-family: var(--font-sans); font-weight: 600; }
+.ledger tbody tr:hover { background: var(--color-paper-sunk); }
+.tbl-foot {
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border-top: 1px solid var(--color-rule);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--color-ink-muted);
+}
+
+.rail {
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  padding: calc(var(--u) * 4);
+}
+.rail h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-lead);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 calc(var(--u) * 3);
+}
+.kv { margin: 0; display: grid; gap: calc(var(--u) * 2); }
+.kv > div { display: flex; justify-content: space-between; gap: calc(var(--u) * 3); align-items: baseline; }
+.kv dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.kv dd { margin: 0; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.bar-row { margin-bottom: calc(var(--u) * 3); }
+.bar-top { display: flex; justify-content: space-between; font-size: var(--text-fine); margin-bottom: calc(var(--u) * 1.5); }
+.bar-top b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.bar { height: calc(var(--u) * 3); background: var(--color-paper-sunk); border: 1px solid var(--color-ink-faint); }
+.bar i { display: block; height: 100%; background: var(--color-forest-ink); }
+.bar i.p { background: repeating-linear-gradient(45deg, var(--color-mustard-ink) 0 4px, transparent 4px 8px); }
+
+/* Coin meter. Coins are given away, never sold, so the meter shows a budget
+   remaining, never a price, and there is deliberately no "buy more" affordance
+   to design around. */
+.coins { display: flex; align-items: center; gap: calc(var(--u) * 3); font-family: var(--font-mono); font-size: var(--text-fine); }
+.coins .stack { display: flex; gap: 2px; }
+.coins .stack i {
+  width: calc(var(--u) * 3);
+  height: calc(var(--u) * 3);
+  border-radius: 50%;
+  background: var(--color-mustard-ink);
+  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.3);
+}
+.coins .stack i.spent { background: transparent; box-shadow: inset 0 0 0 1px var(--color-ink-faint); }
+
+/* ---------------------------------------------------------------------------
+   14. CODE AND API
+   ------------------------------------------------------------------------ */
+
+.code {
+  background: var(--color-panel);
+  color: var(--color-glass);
+  border-radius: var(--radius-mod);
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  line-height: var(--leading-data);
+  overflow-x: auto;
+}
+.code-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border-bottom: 1px solid var(--color-rule-panel);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-glass-muted);
+}
+.code pre { margin: 0; padding: calc(var(--u) * 3); }
+.code .k { color: var(--color-ocean); }
+.code .s { color: var(--color-forest); }
+.code .n { color: var(--color-mustard); }
+.code .c { color: var(--color-glass-muted); font-style: italic; }
+.code .out { border-top: 1px solid var(--color-rule-panel); background: var(--color-panel-sunk); }
+.code .out::before {
+  content: "RAN " attr(data-ran);
+  display: block;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3) 0;
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-forest);
+}
+
+.endpoint { border: 1px solid var(--color-rule); background: var(--color-paper); }
+.endpoint .ep-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 3);
+  border-bottom: 1px solid var(--color-rule);
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+}
+.endpoint .verb {
+  padding: 2px calc(var(--u) * 2);
+  background: var(--color-forest-ink);
+  color: var(--color-paper);
+  font-size: var(--text-micro);
+  letter-spacing: 0.08em;
+}
+.endpoint .verb.post { background: var(--color-burnt-ink); }
+.endpoint .path { font-weight: 600; }
+.endpoint .ep-body { padding: calc(var(--u) * 3); font-size: var(--text-fine); }
+.endpoint .params { width: 100%; border-collapse: collapse; margin-top: calc(var(--u) * 2); }
+.endpoint .params td {
+  padding: calc(var(--u) * 1.5) 0;
+  border-bottom: 1px solid var(--color-ink-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  vertical-align: top;
+}
+.endpoint .params td:first-child { width: 30%; color: var(--color-ocean-ink); }
+.endpoint .params td:last-child { font-family: var(--font-sans); color: var(--color-ink-muted); }
+
+/* ---------------------------------------------------------------------------
+   15. DOCS TREE NAV
+   Derived from the directory, never hand-listed. Depth is one indent step;
+   there is no third level of visual treatment because the tree has no third
+   kind of node.
+   ------------------------------------------------------------------------ */
+
+.tree { font-family: var(--font-mono); font-size: var(--text-fine); }
+.tree a {
+  display: block;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+}
+.tree a:hover { color: var(--color-ink); background: var(--color-paper-sunk); }
+.tree a[aria-current="page"] {
+  color: var(--color-ink);
+  font-weight: 600;
+  border-left-color: var(--color-burnt-ink);
+  background: var(--color-paper-sunk);
+}
+.tree .d { padding-left: calc(var(--u) * 4); }
+.tree .sect {
+  padding: calc(var(--u) * 3) calc(var(--u) * 2) calc(var(--u) * 1);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+/* ---------------------------------------------------------------------------
+   16. ATTENTION GLOW
+   The one slow curve in the system. Used on a container edge, never on text.
+   ------------------------------------------------------------------------ */
+
+.attn { animation: tm-glow var(--t-glow) var(--ease-travel) infinite; }
+@keyframes tm-glow {
+  0%, 100% { box-shadow: inset 0 0 0 1px var(--color-rule-panel); }
+  50%      { box-shadow: inset 0 0 0 1px var(--color-orange), 0 0 14px rgb(228 103 15 / 0.35); }
+}
