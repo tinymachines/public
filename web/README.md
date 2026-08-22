@@ -24,7 +24,7 @@ Note that `next dev` does not fail when 6511 is taken, it picks the next free
 port and says so in one line. nginx will still be pointed at 6511, so read
 that line rather than assuming.
 
-## Three configuration facts, each one found by the build failing
+## Five configuration facts, each one found by the build failing
 
 - **`mdx-components.tsx` must exist at the repository root of the app.**
   Without it MDX pages fail to render and the message does not say that this
@@ -40,7 +40,48 @@ that line rather than assuming.
   and a plugin function fails the build with `does not have serializable
   options`, naming the loader rather than the plugin.
 
+- **`@next/mdx` defaults to `extension: /\.mdx$/`, which is `.mdx` only.**
+  Listing `md` in `pageExtensions` does not change that; the two settings are
+  unrelated. With the default, every `.md` file reaches Turbopack with no
+  loader attached and the build fails with `Unknown module type`, naming the
+  file rather than the mismatch. The tree is almost entirely `.md`, so the
+  extension is widened to `/\.mdx?$/`.
+- **The remark plugin is passed as an absolute path.** Both obvious forms
+  fail, in different places. An imported function fails as above. A bare
+  `"remark-gfm"` fails at load time, because `@next/mdx` resolves a named
+  plugin with `require.resolve(name, { paths: [this.context] })` and
+  `this.context` is the directory of the file being loaded, which is `../docs`
+  and has no `node_modules`. An absolute path is still a string, so it stays
+  serializable, and it resolves from anywhere.
+
 The config is `next.config.ts`, not `.mjs`: that is what Next 16 generates now.
+
+## `/docs`
+
+`lib/docs.ts` walks `../docs` and is the only thing that knows the shape of the
+tree. `app/docs/[[...slug]]/page.tsx` routes it, `app/docs/layout.tsx` renders
+the navigation from the same walk, and all pages are prerendered as static HTML
+via `generateStaticParams`.
+
+**There is no nav list, no ordering array and no slug-to-file map**, because
+each of those is a second copy of something the directory already says.
+
+Four things fail the build rather than rendering something plausible, and each
+was checked by breaking it on a scratch copy and watching the build go red:
+
+| broken | what the build says |
+|---|---|
+| a page with no `title` | names the file, and says a page with no title is a build failure rather than a page called "Untitled" |
+| frontmatter carrying `url:` or a parent | names the key, and says the URL is the path and the parent is the directory |
+| a directory with no `index.md` | names the directory, and says it would be a URL that 404s while its children resolve |
+| `order:` that is not a number | names the file and the type it got |
+
+`docs/README.md` documents the conventions for whoever edits the tree and is
+excluded by name, so it is not a page. `/docs/README` is a 404.
+
+Sibling order is `order` ascending, and a page with no `order` sorts **last**,
+alphabetically by title. Last rather than first: a page that forgot to declare
+a position should not silently claim the top of the list.
 
 ## Styles: Tailwind 4, configured in CSS
 
