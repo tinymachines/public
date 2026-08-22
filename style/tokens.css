@@ -1,15 +1,25 @@
 /* ============================================================================
    tinymachines.ai: design tokens
    Tailwind 4, CSS-first. This is the @theme block START-HERE.md §4 reserves
-   as the seam. Drop into web/app/globals.css.
+   as the seam. web/app/globals.css imports this file; it is never copied,
+   because two copies of a palette drift and a drifted palette looks exactly
+   like a palette.
+
+   The importer owns the Tailwind entry point. This file deliberately does
+   not carry its own @import "tailwindcss", and both reasons were measured
+   against tailwindcss 4.3.3:
+
+     - A bare specifier resolves from the directory of the file that writes
+       it. style/ sits outside web/ and has no node_modules, so the build
+       fails outright: "Can't resolve 'tailwindcss' in .../style".
+     - Even where it does resolve, importing it twice emits preflight twice.
+       One box-sizing block became two.
 
    Every colour below was sampled off the owner's binder scans and
    white-balanced against the paper white (237,238,242 -> 255,255,255).
    Nothing here was invented. Every contrast ratio in the comments was
    computed, not estimated: same rule as the measured tables.
    ========================================================================= */
-
-@import "tailwindcss";
 
 @theme {
 

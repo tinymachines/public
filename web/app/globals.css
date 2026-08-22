@@ -1,0 +1,22 @@
+/* ============================================================================
+   The seam. START-HERE.md §4 reserved it; ../../style/ fills it.
+
+   These are imports, not copies. The palette, the type scale and the kit all
+   live in style/ and are read from here, because a fact that exists in two
+   files drifts in one of them and nobody notices: a nav missing one link
+   still looks like a nav, and a palette off by one token still looks like a
+   palette. style/README.md says how to regenerate the zoo's standalone copy
+   after editing tokens.
+
+   Tailwind must come first: @theme in tokens.css extends it, and CSS requires
+   every @import to precede other rules.
+   ========================================================================= */
+
+@import "tailwindcss";
+@import "../../style/tokens.css";
+@import "../../style/components.css";
+
+/* Nothing else belongs in this file. A colour, a size or a font added below
+   is a token that the style guide cannot reach: put it in style/tokens.css
+   and use it by name. A component that needs a new rule goes in
+   style/components.css, which is the kit, and the kit is not forked. */

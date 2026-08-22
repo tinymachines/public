@@ -25,16 +25,32 @@ Or just open `zoo.html`: it works from `file://`.
 
 ## Wire it into `web/`
 
-```bash
-cp tokens.css      web/app/globals.css      # replaces the placeholder @theme
-cp components.css  web/app/components.css
+Already wired. `web/app/globals.css` is three lines and reads this directory:
+
+```css
+@import "tailwindcss";
+@import "../../style/tokens.css";
+@import "../../style/components.css";
 ```
 
-Then in `web/app/layout.tsx`, after the globals import:
+**Nothing is copied into `web/`.** One copy of a fact: edit a token here and
+the app has it, with no step in between that somebody can forget. Tailwind
+resolves both imports at build time, so the browser still gets one stylesheet.
+
+Two things that follow, and both were measured against tailwindcss 4.3.3:
+
+- **Tailwind comes first**, because `@theme` extends it and because CSS
+  requires every `@import` to precede other rules.
+- **`tokens.css` carries no `@import "tailwindcss"` of its own.** A bare
+  specifier resolves from the directory of the file that writes it, and
+  `style/` has no `node_modules`, so the build fails with
+  `Can't resolve 'tailwindcss'`. Where it does resolve, it emits preflight
+  twice.
+
+Then in `web/app/layout.tsx`:
 
 ```ts
 import "./globals.css";
-import "./components.css";
 ```
 
 Fonts: all four are OFL, all four are on Google Fonts, so `next/font/google`
