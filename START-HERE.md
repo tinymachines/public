@@ -116,10 +116,13 @@ The registry already has the mechanism worth keeping: a token is shown once and
 only its SHA-256 is stored, so a copy of the database is not a copy of
 everybody's credentials. Extend that rather than starting again.
 
-**Before building the coins half, read the coins section of `NOTICE.md` and get
-a decision.** Coins that are never sold engage nothing. Coins that are sold are
-commercial use of a work derived from NonCommercial data, and that is a
-conversation to have before it ships rather than after.
+**Coins are never sold. They are given away.** Decided 2026-08-22, so the
+licensing question is closed and you are not waiting on it: coins are a quota,
+an anti-abuse budget, and something to earn by playing. Build it that way.
+
+Treat that as a constraint rather than a note. Anything that would put a price
+on a coin reopens a question that is currently closed, and reopens it as a
+conversation with the rightsholder. See `NOTICE.md`.
 
 ## Open questions for the owner
 
@@ -127,7 +130,7 @@ conversation to have before it ships rather than after.
 2. **Do the subdomains stay, or move under the apex?** `6502.tinymachines.ai`
    versus `tinymachines.ai/6502`. Both work; the second means redirects and a
    single origin, the first means less to break today.
-3. **Are coins ever sold?** See `NOTICE.md`.
+3. ~~Are coins ever sold?~~ **Answered: no, given away.** See `NOTICE.md`.
 4. **Which bradley.io projects come over**, and do they move or mirror?
 
 ## What not to do

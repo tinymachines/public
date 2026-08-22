@@ -33,19 +33,28 @@ it, carries them:
 `halfphi` is the clean piece. It parses and solves switch networks and names no
 chip; adding die data to it would undo the only reason it is MIT.
 
-## The coins question, stated plainly rather than left to be discovered
+## The coins question: decided, 2026-08-22
 
-A token mechanism used as **coins for playing a game** is the first thing in
-this project that points at commercial use, and the game is built on the
-NC-licensed data. That is worth deciding deliberately, with the facts, before
-it is built rather than after it ships. **I am not a lawyer and this is not
-advice**; what follows is the shape of the question.
+**Coins are never sold. They are given away.** The owner settled this on
+2026-08-22, before any of it was built.
 
-Roughly, the room to move is:
+That is option 1 below, and it engages NonCommercial not at all: no money
+changes hands for the derived work, so the question closes. Coins are a
+quota, an anti-abuse budget and something to earn by playing.
+
+**This is a constraint on what gets built, not a note about intent.** Anything
+that would put a price on a coin, or on access to the chip work, reopens a
+question that is currently closed, and it reopens it as a conversation with
+the rightsholder rather than as a licence file edit. If that ever comes up,
+stop and ask.
+
+The other options are kept below because knowing why the closed one is closed
+is worth more than the sentence saying it is. **I am not a lawyer and this is
+not advice.**
 
 1. **Coins that are never sold.** Rate limiting, quotas, an anti-abuse budget,
    something earned by playing. No money changes hands, so NonCommercial is
-   not engaged. This is the default and it needs no further thought.
+   not engaged. **This is the one chosen.**
 2. **Money for something that is not the NC work.** Hosting, support, a
    private deployment of `halfphi` (which is MIT and carries none of this),
    consulting. The line is whether what is being paid for is the derived work.
