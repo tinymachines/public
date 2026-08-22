@@ -15,6 +15,12 @@ target/
 # Host-specific detail never lands here. See deploy/HOSTING.local.md.
 deploy/HOSTING.local.md
 *.local.md
+# Any host-local file, not only markdown. A copy of the box's nginx carries
+# every vhost on it and their ports, and *.local.md did not match it: the
+# trimmed apex config was staged for a public repo once before this line
+# existed.
+*.local
+*.local.*
 !docs/**/*.local.md
 
 # Editor and OS noise

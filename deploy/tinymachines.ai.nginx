@@ -56,10 +56,25 @@ server {
     # cross-origin today; the 6502 API sends Access-Control-Allow-Origin: *
     # for exactly that reason. Narrow this at the move, not before.
     #
-    # 'unsafe-inline' in style-src is what Next's streamed inline styles need.
-    # If the app is verified not to emit them, drop it: it is the weakest part
-    # of this policy.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    # script-src carries 'unsafe-inline' and it is not decoration. Next's app
+    # router inlines the RSC payload as two <script> tags of
+    # self.__next_f.push(...) on every page. Without them React never
+    # hydrates, and the failure is the quiet kind this repo keeps a list of:
+    # the HTML is prerendered, so the page LOOKS right and only stops
+    # behaving. Counted on the built output, not assumed: 2 inline scripts,
+    # every page.
+    #
+    # The way to remove it is a per-request nonce from Next middleware, which
+    # costs static rendering, since middleware makes every response dynamic.
+    # That is a trade to make deliberately when there is something dynamic
+    # here, not while the site is nine prerendered documents.
+    #
+    # style-src does NOT carry it, and that was measured on the same output:
+    # zero inline <style> elements and zero style="" attributes. If a future
+    # page needs one the symptom is unstyled content plus a console
+    # violation, which is loud enough to find. font-src is 'self' because
+    # next/font self-hosts into /_next/static/media.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;

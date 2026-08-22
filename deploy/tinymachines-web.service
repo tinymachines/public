@@ -1,0 +1,40 @@
+# tinymachines.ai: the Next front end behind nginx.
+#
+# One `next start` on 127.0.0.1:6511, serving / and /docs. It is prerendered
+# static output, so restarting it mid-anything loses nothing.
+#
+# The PATH here is load-bearing, for the trap this project has already paid
+# for once: systemd's PATH is /usr/local/sbin:...:/snap/bin and nothing else.
+# bun is not on it, and /usr/bin/node on this box is v12 and cannot parse `??`.
+# "Whatever the shell finds" is not what this unit finds, so both are named by
+# absolute path rather than discovered.
+#
+# Loopback only. nginx proxies to 127.0.0.1 and this box serves many other
+# vhosts; there is no reason for this port to be reachable from outside.
+#
+# Install:
+#   cd web && bun install && bun run build
+#   sudo cp deploy/tinymachines-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now tinymachines-web
+#
+# After changing anything under docs/ or web/, this needs a rebuild AND a
+# restart: the docs are compiled at build time, which is the documented
+# consequence of choosing MDX (START-HERE.md).
+
+[Unit]
+Description=tinymachines.ai front end (Next 16, prerendered)
+After=network.target
+
+[Service]
+Type=simple
+User=bisenbek
+WorkingDirectory=/home/bisenbek/projects/tinymachines/public/web
+Environment=NODE_ENV=production
+Environment=PATH=/home/bisenbek/.bun/bin:/home/bisenbek/.nvm/versions/node/v24.0.1/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/bisenbek/.bun/bin/bun run start
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
