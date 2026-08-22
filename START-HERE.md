@@ -188,9 +188,13 @@ conversation with the rightsholder. See `NOTICE.md`.
 
 1. ~~Next+MDX, or Python and server-rendered markdown?~~ **Answered: Next+MDX
    frontend, FastAPI backend.** See "The shape, decided".
-2. **Do the subdomains stay, or move under the apex?** `6502.tinymachines.ai`
-   versus `tinymachines.ai/6502`. Both work; the second means redirects and a
-   single origin, the first means less to break today.
+2. ~~Do the subdomains stay, or move under the apex?~~ **Answered: they stay
+   for now, and move later.** `6502.`, `games.` and `halfwave.` keep serving
+   from where they are. Two things follow. **Build nothing that assumes a
+   single origin**: cross-origin fetches between the apex and a subdomain need
+   CORS, and the 6502 API already sends `*` on purpose. And **treat every
+   inbound link as one that will have to be redirected**, so keep the paths
+   worth preserving stable and expect a redirect map at the move.
 3. ~~Are coins ever sold?~~ **Answered: no, given away.** See `NOTICE.md`.
 4. **Which bradley.io projects come over**, and do they move or mirror?
 

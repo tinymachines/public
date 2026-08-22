@@ -188,3 +188,8 @@ lays out the shape of the question without pretending to answer it.
   build order; `notes/inventory.md` has it.
 - The three live sites must keep working. Anything that would change their
   nginx, their units or their ports is a proposal, not an action.
+- **The subdomains stay for now and move under the apex later.** So do not
+  assume a single origin: a fetch from `tinymachines.ai` to
+  `6502.tinymachines.ai` is cross-origin today, and the 6502 API sends
+  `Access-Control-Allow-Origin: *` deliberately for that reason. Keep public
+  paths stable, because they become a redirect map at the move.
