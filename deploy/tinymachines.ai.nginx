@@ -1,0 +1,96 @@
+# tinymachines.ai and www -- the apex, the docs tree and the API.
+#
+# NOT INSTALLED. This file is the proposal for START-HERE.md step 1. It is
+# written here so it can be reviewed before it is anywhere near a reload, for
+# reasons in deploy/README.md and in the notes below.
+#
+# Two processes behind it, both on loopback and both built from source:
+#   127.0.0.1:6511  Next 16, serving / and /docs
+#   127.0.0.1:6510  uvicorn, serving /api
+#
+# Cache policy lives in a map rather than in per-location `add_header`, and
+# that is load-bearing rather than stylistic: nginx's add_header does not merge
+# across levels, so a location containing ANY add_header discards every
+# inherited one. The 6502 vhost lost its CSP and HSTS that way once. With the
+# value in a variable, every header is declared once at server level and no
+# location needs add_header at all.
+
+map $uri $tmapex_cache {
+    # Quoted: nginx parses a bare { in a map key as the start of a block.
+    "~^/_next/static/"                                         "public, max-age=31536000, immutable";
+    "~*\.(css|js|woff2?|png|jpg|svg|ico)$"                     "public, max-age=3600";
+    default                                                    "no-cache";
+}
+
+server {
+    include snippets/scanner-trap.conf;
+    server_name tinymachines.ai www.tinymachines.ai;
+    listen 80;
+    listen [::]:80;
+
+    location /.well-known/acme-challenge/ { root /var/www/html; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    include snippets/scanner-trap.conf;
+    server_name tinymachines.ai www.tinymachines.ai;
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+
+    # The existing certificate is for www.tinymachines.ai. It covers the apex
+    # only if the apex name is on it; check before enabling, and extend with
+    #   certbot certonly --webroot -w /var/www/html \
+    #     -d tinymachines.ai -d www.tinymachines.ai
+    # if it is not. A cert that does not cover the apex fails in the browser,
+    # not at reload, so `nginx -t` will not catch it.
+    ssl_certificate     /etc/letsencrypt/live/www.tinymachines.ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/www.tinymachines.ai/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # connect-src allows the three live subdomains on purpose. They stay where
+    # they are for now, so a fetch from here to 6502.tinymachines.ai is
+    # cross-origin today; the 6502 API sends Access-Control-Allow-Origin: *
+    # for exactly that reason. Narrow this at the move, not before.
+    #
+    # 'unsafe-inline' in style-src is what Next's streamed inline styles need.
+    # If the app is verified not to emit them, drop it: it is the weakest part
+    # of this policy.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Cache-Control $tmapex_cache always;
+
+    # The API: uvicorn with --root-path /api, so it generates its own URLs
+    # under the prefix and openapi.json stays correct behind the proxy.
+    #
+    # This location deliberately declares no add_header. Adding one would
+    # discard all five above.
+    location /api/ {
+        proxy_pass http://127.0.0.1:6510/;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+
+    # Everything else is Next: / and /docs, plus /_next/static, which the map
+    # above marks immutable because those names are content-hashed by the
+    # build and their bytes therefore cannot change.
+    #
+    # No add_header here either, for the same reason as above.
+    location / {
+        proxy_pass http://127.0.0.1:6511;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 120s;
+    }
+}
