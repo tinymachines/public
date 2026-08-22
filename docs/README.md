@@ -1,22 +1,46 @@
-# `/docs`
+# `docs/`: the content tree
 
-A markdown hierarchy, rendered to HTML by the backend. The directory structure
-is the navigation: **no hand-kept index of pages**, because a list that has to
-be updated alongside the thing it lists is the copy that drifts.
+Markdown and MDX. The Next app in `../web/` renders it at `/docs`; the content
+lives here rather than inside the app because it is the thing somebody who is
+not a developer should be able to edit.
 
-Nothing here yet. See [`../START-HERE.md`](../START-HERE.md) step 2, and read
-the MDX section there before choosing a renderer: the toolchain next door is
-MDX and the content is not.
+Empty for now. See [`../START-HERE.md`](../START-HERE.md) step 2, which is
+where work starts.
+
+## The conventions, and why each one
+
+```
+docs/
+  index.md                     ->  /docs
+  6502/
+    index.md                   ->  /docs/6502
+    the-console-contract.md    ->  /docs/6502/the-console-contract
+    cartridges.mdx             ->  /docs/6502/cartridges
+```
+
+- **Navigation is derived from the tree, never from a list.** Ten hand-copied
+  nav lists in the 6502 repo had drifted three ways before anybody noticed,
+  because a nav missing one link still looks exactly like a nav. A page that
+  exists must appear; a page deleted must vanish. If you are writing `nav.ts`,
+  stop.
+- **Frontmatter carries only what the tree cannot say**: `title`, a one-line
+  `description`, and `order` for sibling sorting (absent sorts last,
+  alphabetically). Not the URL, which is the path. Not the parent, which is the
+  directory.
+- **A page with no title is a build failure**, not a page called "Untitled". A
+  silent omission reads as a design choice.
+- **Every code block that states an output has been run.** If it says the
+  answer is `$42`, somebody ran it.
 
 ## Where the first content comes from
 
-Good reference material already exists and is currently only reachable by
+Good, measured reference material already exists and is reachable only by
 cloning a repo:
 
-- the 6502 repo's `README.md`, `service/README.md`, `games/README.md`
-- the cartridge format and the console contract, published at
-  `6502.tinymachines.ai/api/#cartridges`
-- the archive's account of what was recovered and what was not
+1. the 6502 repo's `README.md`: what the simulator is, and the verification
+2. `service/README.md`: the API, the chip atlas, cartridges, MCP
+3. `games/README.md`: the console contract, the cartridge format, builder pages
+4. the cartridge and console reference currently inside `service/api.html`
 
-Moving it here is step 2's first job. It is honest, measured writing that
-nobody outside the repository can currently find.
+**Move it, do not rewrite it.** Where it states a number, that number was
+measured; keep it, and keep the sentence saying where it came from.

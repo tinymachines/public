@@ -20,67 +20,84 @@ of its own.
 Three of these are live on subdomains. The apex is a placeholder pointing at
 the GitHub org.
 
-## The shape being proposed
+## The shape, decided
 
-One process, three surfaces, built from source.
+Two processes behind nginx, built from source. Settled 2026-08-22.
 
 ```
-            tinymachines.ai
-                  |
-      +-----------+-----------+
-      |           |           |
-     /          /api        /docs
-   static     REST+MCP    markdown tree
-   pages      openapi     rendered server side
-      |           |           |
-      +-----------+-----------+
-                  |
-        one FastAPI app on a free
-        loopback port, behind nginx
+                      tinymachines.ai
+                            |
+                          nginx
+                    TLS, routing, static
+              +-------------+-------------+
+              |                           |
+         /  and  /docs                  /api
+       Next 16 + MDX                FastAPI + uvicorn
+       bun, Tailwind 4              Pydantic -> openapi.json
+       127.0.0.1:6511               127.0.0.1:6510
+              |                           |
+              +-------------+-------------+
+                            |
+                  halfphi / halfwave (Rust)
+                  called by the Python side
 ```
 
-**Why one process.** `/api` and `/docs` both want to be generated rather than
-authored: the OpenAPI document from the models that validate requests, the docs
-from a markdown tree. FastAPI already generates the first from Pydantic and the
-6502 service is FastAPI, so a second language buys nothing and costs a second
-deploy. The front page is static and can be served by nginx directly.
+| | | |
+|---|---|---|
+| **frontend** | Next 16, React 19, MDX, Tailwind 4, built with `bun` | seamless with bradley.io: same major versions, so components and the design system port rather than being rewritten |
+| **backend** | Python 3.10, FastAPI, uvicorn, Pydantic | `openapi.json` is generated from the models that validate the requests, so the reference cannot drift from the behaviour |
+| **engine** | Rust: `halfphi`, `halfwave` | unchanged, and reached from the Python side where the process-pool plumbing already exists |
 
-**Port:** 6503, 6510 and 6520 were free at the time of writing. **6502 is
-held by the live API**, and a uvicorn started there fails to bind while every
-request quietly goes to production. Check `ss -ltn`.
+Verified present on the host: bun 1.3.14, node v24.0.1 (nvm), Python 3.10.12,
+FastAPI 0.121.2, uvicorn 0.38.0, Pydantic 2.11.7, rustc 1.97.1. **6510, 6511
+and 6512 were free.**
 
-## The MDX question, answered with what is on disk
+**`/usr/bin/node` on this host is v12 and cannot parse `??`.** systemd's `PATH`
+does not include nvm, so a unit that does not say otherwise will find it. The
+bradley.io unit hardcodes `PATH=/home/.../v24.0.1/bin:...` for exactly this
+reason; copy that, do not rediscover it.
 
-You will be told the shop is on MDX. Here is what is actually true:
+## One consequence of choosing MDX, recorded rather than discovered later
+
+The original ask was a markdown hierarchy **rendered as HTML by the backend**.
+With Next and MDX, docs are compiled **at build time in the frontend** instead.
+That is the standard Next docs pattern and it is what has been chosen, but the
+difference is real and worth writing down:
+
+- a docs edit needs a rebuild, not just a file save
+- the backend has no route for docs content, so nothing else can consume it
+- in exchange, docs pages get React components, and share the site's layout
+  and design system for free
+
+If content ever needs to change without a deploy, the hybrid is available:
+FastAPI serves the markdown tree as data and the frontend renders it. That is a
+later decision and does not block anything now.
+
+## The MDX finding, kept because it changes what you inherit
+
+The stack decision is made, but this is still true and still matters:
 
 - bradley.io is **Next 16 + React 19 + Tailwind 4**, built with `bun`, and its
-  Next config does list `md` and `mdx` in `pageExtensions` with `@next/mdx`
+  Next config lists `md` and `mdx` in `pageExtensions` with `@next/mdx`
   installed.
-- **There are zero `.mdx` files in the tree.** The toolchain is MDX; the
+- **There are zero `.mdx` files in that tree.** The toolchain is MDX; the
   content is not.
 
-So "we are MDX" is a statement about a dependency, not about a workflow. That
-matters, because the ask here is a markdown hierarchy **rendered as HTML by the
-backend**, and MDX is a compile-time format that produces JSX. Those are
-different things wearing similar names.
+So there is no existing MDX content to copy patterns from, and no proven
+in-house convention for frontmatter, navigation or components in MDX. **This
+repo establishes it.** Do not go looking next door for a pattern that is not
+there.
 
-**Recommendation: plain markdown, rendered server side, in the same Python app
-as `/api`.** A docs tree is then a directory of `.md` files with front matter,
-the navigation is the directory structure, and there is no JavaScript build in
-a deploy that is otherwise Rust and Python.
-
-**When to overrule that:** if tinymachines.ai should share components, layout
-and design system with bradley.io, the answer is Next, and then `/docs` is
-build-time rather than backend-rendered and this whole plan changes shape.
-That is the owner's call and it is the **first thing to settle**, because
-almost everything else follows from it.
+What bradley.io *does* have worth taking: `app/globals.css` is Tailwind 4 with
+`@import "tailwindcss"` and a `@theme {}` block, which is the CSS-first
+configuration. That is the same shape the style guide will land in.
 
 ## Order of work
 
 Nothing below is started. Each step should leave the site working.
 
-### 0. Settle the stack question above
-One decision, everything follows. Do not begin step 2 without it.
+### 0. ~~Settle the stack question~~ DONE
+Next + MDX on the frontend, FastAPI on the backend. See "The shape, decided".
 
 ### 1. Stand the apex up, empty but real
 nginx server block for `tinymachines.ai` and `www`, certificate (one already
@@ -88,17 +105,54 @@ exists for `www`), a holding page, and a `deploy.sh` that builds rather than
 copies. **The three live subdomains must keep working**; verify each after the
 nginx reload, because a config error takes the whole server's reload with it.
 
-### 2. `/docs`: the tree and the renderer
-A directory of markdown, a renderer, and navigation derived from the tree
-rather than a hand-kept list. **One copy of a fact**: nothing that maintains a
-separate index of pages. Start by moving the honest reference material that
-already exists in the 6502 repo's READMEs, which are good and are currently
-only reachable by cloning.
+### 2. `/docs`: the tree and the renderer  <- START HERE
+
+Content lives in `docs/` as `.md` and `.mdx`. The Next app in `web/` reads it;
+**content and code stay in separate directories** because the content is the
+thing a non-developer should be able to edit.
+
+```
+docs/
+  index.md                     ->  /docs
+  6502/
+    index.md                   ->  /docs/6502
+    the-console-contract.md    ->  /docs/6502/the-console-contract
+    cartridges.mdx             ->  /docs/6502/cartridges
+```
+
+Four conventions, and the reason for each:
+
+- **Navigation is derived from the directory tree, never from a list.** Ten
+  hand-copied nav lists in the 6502 repo had drifted three ways before anybody
+  noticed, because a nav missing one link still looks exactly like a nav. A
+  page that exists must appear; a page that is deleted must vanish. If you find
+  yourself writing `nav.ts`, stop.
+- **Frontmatter carries only what the tree cannot say**: `title`, a one-line
+  `description`, and `order` for sibling sorting (absent sorts last,
+  alphabetically). Not the URL, which is the path. Not the parent, which is the
+  directory.
+- **A page with no title is a build failure, not a page called "Untitled".**
+  The 6502 primer fails the page rather than blanking a word, for the reason
+  that a silent omission reads as a design choice.
+- **Every code block that states an output has been run.** Same rule as the
+  measured tables: if it says the answer is `$42`, somebody ran it.
+
+**First content, in this order.** All of it already exists and is good, and all
+of it is currently reachable only by cloning a repo:
+
+1. `6502/README.md` -> what the simulator is, and the verification story
+2. `service/README.md` -> the API, the atlas, cartridges, MCP
+3. `games/README.md` -> the console contract, the cartridge format, builder pages
+4. the cartridge and console reference now living in `service/api.html`
+
+Move it, do not rewrite it. Where it says a number, the number was measured;
+keep it that way and keep the sentence that says where it came from.
 
 ### 3. `/api`: one surface, spoken two ways
-The existing service already answers REST and MCP over the same models, and
-that is the pattern to reuse rather than reinvent: Pydantic models generate
-both the OpenAPI document and the request validation, so they cannot drift.
+FastAPI in `api/`, uvicorn on 6510, nginx proxying `/api`. The existing 6502
+service already answers REST and MCP over the same models, and that is the
+pattern to reuse rather than reinvent: Pydantic models generate both the
+OpenAPI document and the request validation, so they cannot drift.
 
 Doc-maxxing `openapi.json` is an explicit goal. What makes that real rather
 than decorative: every field carries a description, every example is one that
@@ -107,9 +161,15 @@ this already, and the check that earns its keep is the one that fails when a
 route exists and the reference page does not mention it.
 
 ### 4. The front page
-6502 work front and centre. Structure only: **the style guide, the CSS and the
-design language are the owner's and are being worked on separately.** Leave
-clean seams and say where they are.
+6502 work front and centre. **Tailwind 4, CSS-first**: `@import "tailwindcss"`
+and a `@theme {}` block in `app/globals.css`, which is what bradley.io already
+does. Design tokens are CSS custom properties, not a JavaScript config file,
+which is precisely the shape a style guide arrives in.
+
+**The style guide, the palette, the fonts and the type scale are the owner's
+and are in progress.** Build structure and semantic class usage; leave the
+`@theme` block as the seam and say so in a comment. Do not pick a palette, do
+not choose fonts, do not invent a design system to be replaced later.
 
 ### 5. Tokens as coins
 The registry already has the mechanism worth keeping: a token is shown once and
@@ -126,7 +186,8 @@ conversation with the rightsholder. See `NOTICE.md`.
 
 ## Open questions for the owner
 
-1. **Next+MDX, or Python and server-rendered markdown?** Everything follows.
+1. ~~Next+MDX, or Python and server-rendered markdown?~~ **Answered: Next+MDX
+   frontend, FastAPI backend.** See "The shape, decided".
 2. **Do the subdomains stay, or move under the apex?** `6502.tinymachines.ai`
    versus `tinymachines.ai/6502`. Both work; the second means redirects and a
    single origin, the first means less to break today.

@@ -22,10 +22,30 @@ Three surfaces:
 before proposing anything**: it records several things that are not what they
 look like, including a docs stack that is configured and unused.
 
+## The stack, decided
+
+| | |
+|---|---|
+| **frontend** | Next 16, React 19, **MDX**, **Tailwind 4**, built with `bun`. `127.0.0.1:6511` |
+| **backend** | Python 3.10, **FastAPI**, uvicorn, Pydantic. `127.0.0.1:6510` |
+| **engine** | Rust: `halfphi`, `halfwave`, reached from the Python side |
+| **front door** | nginx: TLS, static assets, `/` and `/docs` to Next, `/api` to uvicorn |
+
+Two reasons this split rather than one process, both worth keeping in mind
+when something tempts you to move a responsibility across the line:
+
+- **The frontend matches bradley.io's major versions**, so components and the
+  design system port rather than being rewritten. That is what "seamless"
+  meant.
+- **`openapi.json` is generated from the Pydantic models that validate the
+  requests.** The reference cannot drift from the behaviour because they are
+  the same object. Do not hand-write an OpenAPI document, and do not add a
+  second schema layer to describe what the models already describe.
+
 ## Status
 
 **Nothing is built yet.** This is a scaffold plus a plan. `START-HERE.md` is
-the brief and the order of work.
+the brief and the order of work; **step 2, `/docs`, is where to start.**
 
 What is already true and does not need doing:
 
@@ -42,6 +62,13 @@ What is deliberately open, and is **the owner's**, not yours to invent:
   these. Do not generate a visual identity, do not pick fonts, do not invent a
   palette. Build structure that a stylesheet can be dropped into, and say
   where the seams are.
+
+  The seam is concrete: **Tailwind 4 is configured CSS-first**, with
+  `@import "tailwindcss"` and a `@theme {}` block in `app/globals.css`. Design
+  tokens are CSS custom properties there, not a JavaScript config file, which
+  is exactly the shape a style guide arrives in. Leave that block minimal and
+  commented as the owner's, and use semantic utility classes above it so a
+  token change reaches everything at once.
 
 ## The rules that carried over, and why they are worth keeping
 
