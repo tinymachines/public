@@ -13,10 +13,13 @@ import type { NextConfig } from "next";
 // import.meta.resolve returns a file:// URL under plain ESM but a bare path
 // here, because Next compiles next.config.ts to CJS first. Handle both rather
 // than picking one and having it break on the other.
-const resolvedGfm = import.meta.resolve("remark-gfm");
-const remarkGfm = resolvedGfm.startsWith("file:")
-  ? fileURLToPath(resolvedGfm)
-  : resolvedGfm;
+function pluginPath(name: string): string {
+  const resolved = import.meta.resolve(name);
+  return resolved.startsWith("file:") ? fileURLToPath(resolved) : resolved;
+}
+
+const remarkGfm = pluginPath("remark-gfm");
+const remarkFrontmatter = pluginPath("remark-frontmatter");
 
 const nextConfig: NextConfig = {
   // md and mdx are routable page extensions. Without these two entries an
@@ -57,7 +60,20 @@ const withMDX = createMDX({
     // the build with "does not have serializable options" because Turbopack
     // serializes loader options, and a bare name fails at load time because of
     // where @next/mdx resolves it from. See the note beside remarkGfm above.
-    remarkPlugins: [[remarkGfm, {}]],
+    // remark-frontmatter must be here even though nothing reads frontmatter
+    // through MDX. lib/docs.ts parses it with gray-matter for the title and
+    // the ordering, but the MDX compiler is handed the RAW file, and markdown
+    // has its own reading of a YAML block: `---` is a thematic break and the
+    // line above it is a setext heading. So every docs page shipped with its
+    // own frontmatter printed at the top as an <h2> reading
+    // "title: ... description: ... order: 2", followed by a rule.
+    //
+    // It did not error and it did not warn. It rendered, which is why it
+    // survived a build, a deploy and a review: the page looked like a page.
+    // With this plugin the YAML is parsed as a frontmatter node and dropped
+    // from the output, which is the behaviour the frontmatter convention in
+    // START-HERE.md assumed all along.
+    remarkPlugins: [[remarkFrontmatter, ["yaml"]], [remarkGfm, {}]],
   },
 });
 

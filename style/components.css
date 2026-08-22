@@ -845,3 +845,200 @@ h2.display { font-size: var(--text-h2); }
   0%, 100% { box-shadow: inset 0 0 0 1px var(--color-rule-panel); }
   50%      { box-shadow: inset 0 0 0 1px var(--color-orange), 0 0 14px rgb(228 103 15 / 0.35); }
 }
+
+/* ---------------------------------------------------------------------------
+   17. THE DOCUMENT SURFACE
+   The /docs shell, and the flow rules for rendered markdown.
+
+   This section exists because of a measured failure, not a preference.
+   Tailwind's preflight sets `h1,h2,h3,h4,h5,h6 { font-size: inherit;
+   font-weight: inherit }`. A markdown tree rendered under it has no heading
+   hierarchy at all: every page is one flat column of body text, which is
+   exactly what the site looked like. Nothing errors. There is no console
+   warning. It reads as "the design is not done yet" rather than as a bug,
+   which is the quiet failure mode this repo keeps a list of.
+
+   Section 1 assigns the grounds and this section obeys it: documentation is
+   paper, and a code block is the machine talking, so `pre` is a panel. That
+   is the one place a dark box appears in a document, and it appears because
+   the content came off the chip, not for contrast.
+
+   No colour, face or size is introduced here. Every value is a token from
+   tokens.css or a multiple of --u, so the style guide still reaches all of
+   it: `check-tokens.py` beside this file fails if any var() below names a
+   token that does not exist, which is the silent-drop trap.
+   ------------------------------------------------------------------------ */
+
+.docs-shell {
+  display: grid;
+  grid-template-columns: minmax(0, calc(var(--u) * 58)) minmax(0, 1fr);
+  gap: calc(var(--u) * 12);
+  max-width: calc(var(--u) * 280);
+  margin: 0 auto;
+  padding: calc(var(--u) * 12) calc(var(--u) * 8);
+}
+
+/* One column below the point the two stop fitting. The nav goes first because
+   in a single column it is a table of contents, which is where a reader
+   expects one. */
+@media (max-width: 60rem) {
+  .docs-shell { grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 8); }
+  .docs-nav { position: static; max-height: none; }
+}
+
+.docs-nav {
+  position: sticky;
+  top: calc(var(--u) * 12);
+  align-self: start;
+  max-height: calc(100vh - var(--u) * 24);
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  font-size: var(--text-fine);
+  line-height: 1.5;
+}
+.docs-nav ul  { list-style: none; margin: 0; padding: 0; }
+.docs-nav > a {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-ink);
+  text-decoration: none;
+  padding-bottom: calc(var(--u) * 3);
+  margin-bottom: calc(var(--u) * 3);
+  border-bottom: 1px solid var(--color-rule);
+}
+/* Nesting is one indent per level, drawn as a rule rather than as padding
+   alone, so depth is visible when a branch is long. */
+.docs-nav ul ul {
+  margin-left: calc(var(--u) * 2);
+  padding-left: calc(var(--u) * 3);
+  border-left: 1px solid var(--color-rule);
+}
+.docs-nav li > a {
+  display: block;
+  padding: calc(var(--u) * 1.5) 0;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  transition: color var(--t-snap) var(--ease-snap);
+}
+.docs-nav li > a:hover { color: var(--color-ink); }
+
+.docs-body { min-width: 0; }
+
+/* --- flow: rendered markdown ------------------------------------------- */
+
+/* Headings are display, and the scale is the one in tokens.css. The reason
+   they are restated at all is preflight, above. */
+.prose > h1,
+.prose > h2,
+.prose > h3,
+.prose > h4 {
+  font-family: var(--font-display);
+  color: var(--color-ink);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.prose > h1 { font-size: var(--text-h1); font-weight: 800; margin: 0 0 calc(var(--u) * 5); }
+.prose > h2 { font-size: var(--text-h2); font-weight: 700; margin: calc(var(--u) * 12) 0 calc(var(--u) * 4); }
+.prose > h3 { font-size: var(--text-h3); font-weight: 700; margin: calc(var(--u) * 9) 0 calc(var(--u) * 3); }
+.prose > h4 {
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-ink-muted);
+  margin: calc(var(--u) * 8) 0 calc(var(--u) * 2);
+}
+
+/* An h2 opens a section, so it carries the section rule. Not the first one:
+   a rule directly under the title separates a heading from nothing. */
+.prose > h2 { padding-top: calc(var(--u) * 4); border-top: 1px solid var(--color-rule); }
+.prose > h1 + h2 { padding-top: 0; border-top: 0; margin-top: calc(var(--u) * 6); }
+
+.prose > p  { margin: 0 0 calc(var(--u) * 5); }
+.prose > ul,
+.prose > ol { margin: 0 0 calc(var(--u) * 5); padding-left: calc(var(--u) * 6); }
+.prose li   { margin-bottom: calc(var(--u) * 2); }
+.prose li > ul,
+.prose li > ol { margin: calc(var(--u) * 2) 0 0; }
+
+.prose a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-orange);
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-thickness var(--t-snap) var(--ease-snap);
+}
+.prose a:hover { text-decoration-thickness: 2px; }
+
+.prose strong { font-weight: 700; color: var(--color-ink); }
+.prose em     { font-style: italic; }
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin: calc(var(--u) * 10) 0;
+}
+
+.prose blockquote {
+  margin: 0 0 calc(var(--u) * 5);
+  padding-left: calc(var(--u) * 4);
+  border-left: 2px solid var(--color-rule);
+  color: var(--color-ink-muted);
+}
+
+/* Inline code stays on paper: it is a name being mentioned, not a value that
+   came out of a run. */
+.prose :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  padding: 0.1em 0.35em;
+}
+
+/* A code block is the machine talking, so it is a panel. Section 1. */
+.prose pre {
+  margin: 0 0 calc(var(--u) * 6);
+  padding: calc(var(--u) * 4);
+  background: var(--color-panel);
+  color: var(--color-glass);
+  border-radius: var(--radius-mod);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  line-height: var(--leading-data);
+}
+.prose pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+
+/* Tables are documentation, so they stay on paper. A wide one scrolls inside
+   its own box rather than widening the page. */
+.prose table {
+  width: 100%;
+  margin: 0 0 calc(var(--u) * 6);
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: var(--text-fine);
+  text-align: left;
+}
+.prose thead th {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  font-size: var(--text-micro);
+  color: var(--color-ink-muted);
+  border-bottom: 1px solid var(--color-rule);
+  padding: calc(var(--u) * 2);
+}
+.prose tbody td {
+  padding: calc(var(--u) * 2);
+  border-bottom: 1px solid var(--color-rule);
+  vertical-align: top;
+}
+.prose tbody tr:last-child td { border-bottom: 0; }
+
+.prose img { max-width: 100%; height: auto; }

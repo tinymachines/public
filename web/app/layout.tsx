@@ -40,7 +40,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${sans.variable} ${mono.variable} ${serif.variable}`}
     >
-      <body>{children}</body>
+      {/* `paper` is the documentation ground from ../style/STYLE.md section 1,
+          and it is load-bearing rather than decorative. Without it the body has
+          no background and no base family, so every page falls back to the
+          browser's defaults and reads as unstyled. Panel is the other ground
+          and is never put here: it means "these values came off the chip", so
+          it is applied to the element making that claim, not to the page. */}
+      <body className="paper">{children}</body>
     </html>
   );
 }
