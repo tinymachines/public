@@ -1,8 +1,12 @@
 # tinymachines.ai and www -- the apex, the docs tree and the API.
 #
-# NOT INSTALLED. This file is the proposal for START-HERE.md step 1. It is
-# written here so it can be reviewed before it is anywhere near a reload, for
-# reasons in deploy/README.md and in the notes below.
+# INSTALLED 2026-08-22, as sites-available/tinymachines.ai.apex.nginx with a
+# symlink from sites-enabled. This is the source of truth; the copy under
+# /etc/nginx is a copy. Change it here, then reinstall, `nginx -t`, reload.
+#
+# The apex used to live in the first two server blocks of the shared
+# tinymachines.ai.nginx, behind a PIN gate and reverse-proxying to GitHub.
+# Those blocks were removed when this went in, which is what dropped the gate.
 #
 # Two processes behind it, both on loopback and both built from source:
 #   127.0.0.1:6511  Next 16, serving / and /docs
@@ -17,6 +21,13 @@
 
 map $uri $tmapex_cache {
     # Quoted: nginx parses a bare { in a map key as the start of a block.
+    #
+    # /api/ maps to the empty string on purpose. add_header skips a header
+    # whose final value is empty, so this is how nginx declines to have an
+    # opinion and lets the API speak for its own responses. Measured, not
+    # assumed: with "" here, the /api/ response carries no nginx
+    # Cache-Control at all.
+    "~^/api/"                                                  "";
     "~^/_next/static/"                                         "public, max-age=31536000, immutable";
     "~*\.(css|js|woff2?|png|jpg|svg|ico)$"                     "public, max-age=3600";
     default                                                    "no-cache";
@@ -99,7 +110,18 @@ server {
     # build and their bytes therefore cannot change.
     #
     # No add_header here either, for the same reason as above.
+    #
+    # proxy_hide_header IS here, and it is a bug fix rather than tidying.
+    # add_header adds; it does not replace. Next sends its own Cache-Control
+    # (s-maxage=31536000 on a prerendered page), so without this the response
+    # carried TWO Cache-Control headers saying different things, and a shared
+    # cache is free to resolve "s-maxage=31536000, no-cache" either way.
+    # Measured on the live response before and after.
+    #
+    # Note this is not the add_header trap: proxy_hide_header is a different
+    # directive and declaring it here discards no inherited add_header.
     location / {
+        proxy_hide_header Cache-Control;
         proxy_pass http://127.0.0.1:6511;
         proxy_set_header Host              $host;
         proxy_set_header X-Real-IP         $remote_addr;
