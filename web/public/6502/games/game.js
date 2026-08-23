@@ -509,7 +509,14 @@ if (WANT) {
     // there even if the cartridge turns out not to load.
     const back = document.createElement('span');
     back.className = 'sub';
-    back.innerHTML = ' &middot; <a href="/b/' + WANT.from.handle + '">by '
+    /* The second and last line changed in the move. It was href="/b/<handle>",
+     * which is right where this page lived and a 404 here: the builder pages
+     * are still on games.tinymachines.ai, and a page that has moved must not
+     * link to where it used to be as though it were still there. Read off the
+     * page for the same reason the API is, so neither copy hardcodes the
+     * other's host. */
+    const base = document.querySelector('[data-builders-base]')?.dataset.buildersBase ?? '';
+    back.innerHTML = ' &middot; <a href="' + base + '/b/' + WANT.from.handle + '">by '
       + WANT.from.handle.replace(/[<>&"]/g, '') + '</a>';
     document.querySelector('header .sub').after(back);
   }

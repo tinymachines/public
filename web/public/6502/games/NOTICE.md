@@ -1,9 +1,13 @@
 # The console, and the terms on it
 
 `game.js`, `console.js` and `chr.js` are copied byte for byte from
-`tinymachines/6502` (`games/`), with **one line changed**: the chip API is read
-from the page rather than assumed to be at this origin. `game.js` says why at
-the line itself.
+`tinymachines/6502` (`games/`), with **two lines changed**, both in `game.js`
+and both saying why at the line itself:
+
+- the chip API is read from the page rather than assumed to be at this origin
+- the "by <handle>" credit on a linked cartridge points at the builder pages,
+  which are still on the subdomain, rather than at a `/b/` this site does not
+  serve
 
 The ROMs under `rom/` and the tile sheet under `art/` are copied unchanged.
 

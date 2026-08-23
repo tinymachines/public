@@ -41,6 +41,10 @@ import "./console.css";
  */
 
 const CHIP_API = "https://6502.tinymachines.ai/api";
+// The builder pages have not moved. A cartridge linked in with ?cart=
+// credits its builder, and that link has to point where they actually
+// are rather than at a /b/ this site does not serve.
+const BUILDERS = "https://games.tinymachines.ai";
 
 export const metadata: Metadata = {
   title: "Die Runner",
@@ -49,7 +53,7 @@ export const metadata: Metadata = {
 
 export default function GamesPage() {
   return (
-    <div className="page" data-chip-api={CHIP_API}>
+    <div className="page" data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
       <Masthead
         die="RUN"
         title="Die Runner"
