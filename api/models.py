@@ -605,6 +605,15 @@ class Surface(BaseModel):
         examples=["console here, registry pages not"],
     )
     nav: bool = Field(description="Whether the site navigation carries it.", examples=[False])
+    prerendered: bool = Field(
+        description="Whether this site builds the page, or something else serves it. "
+                    "False for the API, which is uvicorn, and for the archive, which "
+                    "is nginx handing back a directory. It is the difference between a "
+                    "link the client router can follow and one that has to be a plain "
+                    "navigation, and between a path the build can check and one it "
+                    "cannot.",
+        examples=[True],
+    )
 
 
 class Project(BaseModel):

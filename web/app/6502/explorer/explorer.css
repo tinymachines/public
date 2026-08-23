@@ -1,0 +1,82 @@
+/* ---------------------------------------------------------------------------
+   The 6502 explorer, wearing the house palette.
+
+   The lab's arrangement, third time. lib/explorer.ts strips the one :root
+   block out of the explorer's 180 KB stylesheet and scopes every remaining
+   selector to .explorer-shell; this file supplies the twenty names those 1,329
+   var() uses expect, from style/tokens.css. Not one of the explorer's own
+   rules is edited.
+
+   No colour is chosen here. Every value is a var() on the kit or a color-mix
+   of two, so style/check-tokens.py fails on a name that does not exist and a
+   palette change in the binder reaches the explorer.
+
+   The explorer is an INSTRUMENT, so it lands on panel throughout. STYLE.md
+   section 1: a dark box means the value inside it came off the chip, and on
+   this page nearly every value did.
+   ------------------------------------------------------------------------ */
+
+.explorer-shell {
+  /* THE GROUND. Three steps, matching the three it had: the page, a raised
+     card, and the recess inside one. */
+  --space:      var(--color-panel);
+  --surface:    var(--color-panel-raised);
+  --subtle:     color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
+  --line:       var(--color-rule-panel);
+
+  /* TEXT. glass is 13.6:1 on panel and glass-muted 5.4:1, so nothing here is
+     dimmer than AA body. */
+  --foreground: var(--color-glass);
+  --muted:      var(--color-glass-muted);
+
+  /* THE ACCENT, and its text. The explorer's accent was a cyan and Ocean Data
+     is the cyan in this palette, so this is the one mapping that needed no
+     decision at all. accent-foreground sits ON the accent, so it takes the
+     panel ground rather than the glass. */
+  --accent:            var(--color-ocean);
+  --accent-foreground: var(--color-panel);
+
+  /* THE CATEGORICAL FOUR, which is exactly what tokens.css says these hues are
+     for: "Assigns identity to a region, a bus, a signal class". gold, pink and
+     mint were three signal classes with three arbitrary hues; they are the
+     house's three now, and hot is the fourth. */
+  --gold: var(--color-mustard);
+  --pink: var(--color-burnt);
+  --mint: var(--color-forest);
+  --hot:  var(--color-ocean);
+
+  /* warn is state rather than identity, and it is the one mapping that is a
+     correction. It was #fb7185, a red, used for a value that needs looking at.
+     Red means ASSERTION FAILED in this palette and nothing else, so a warning
+     drawn in it would make "worth a look" and "an invariant broke" the same
+     colour. ATTENTION is the accent for something that needs a human. */
+  --warn: var(--color-orange);
+
+  /* TYPE is deliberately absent, and that is not an omission.
+     The explorer's names for its two faces are --font-sans and --font-mono,
+     which are the kit's names too. Its :root defined them as Inter and
+     SFMono-Regular, neither of which it serves, so the page rendered in
+     whatever the machine happened to have. With that block gone the same
+     var() resolves to the site's own inherited value instead, and the
+     explorer gets IBM Plex Sans and IBM Plex Mono, self-hosted.
+
+     Writing `--font-sans: var(--font-sans)` here would be a CYCLE: the var()
+     resolves against the element being defined, so the property becomes
+     invalid at computed-value time and every rule using it is dropped. It was
+     written that way first, and the symptom would have been a page in the
+     browser's default face with nothing in the console. */
+
+  /* The rest are geometry rather than palette and are left as they were, in
+     the explorer's own values, because nothing in the kit has an opinion about
+     a panel width or a safe-area inset. They are restated here only because
+     the :root block that held them is gone. */
+  --hard:      5px 5px 0 rgb(0 0 0 / 0.5);
+  --hard-card: 8px 8px 0 rgb(0 0 0 / 0.48);
+  --sec-gap:   clamp(2.5rem, 7vw, 4.5rem);
+  --panel-w:   20rem;
+  --sa-b:      env(safe-area-inset-bottom, 0px);
+
+  background: var(--space);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

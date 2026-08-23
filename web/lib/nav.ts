@@ -21,6 +21,12 @@ export interface MenuItem {
   label: string;
   /** One line on what it is. A bare list of nouns cannot say why to choose one. */
   hint?: string;
+  /**
+   * False when something other than this site's build serves it. Those need a
+   * plain anchor: the client router would try to navigate to a route it does
+   * not have and land on the not-found page.
+   */
+  prerendered?: boolean;
 }
 
 export interface MenuGroup {
@@ -69,7 +75,12 @@ export function menuGroups(): MenuGroup[] {
       when: p.landing,
       items: [
         { href: p.landing, label: `${p.name} overview`, hint: "what this project is, and where each surface lives" },
-        ...here.map((s) => ({ href: s.lands_at, label: s.name, hint: s.what.split(/(?<=\.)\s/)[0] })),
+        ...here.map((s) => ({
+          href: s.lands_at,
+          label: s.name,
+          hint: s.what.split(/(?<=\.)\s/)[0],
+          prerendered: s.prerendered,
+        })),
       ],
     });
   }

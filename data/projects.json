@@ -19,7 +19,8 @@
           "serves_today": "https://tinymachines.ai",
           "lands_at": "/",
           "lands_at_settled": true,
-          "status": "here"
+          "status": "here",
+          "prerendered": true
         },
         {
           "key": "docs",
@@ -31,7 +32,8 @@
           "serves_today": "https://tinymachines.ai/docs",
           "lands_at": "/docs",
           "lands_at_settled": true,
-          "status": "here"
+          "status": "here",
+          "prerendered": true
         },
         {
           "key": "style",
@@ -43,7 +45,8 @@
           "serves_today": "https://tinymachines.ai/style",
           "lands_at": "/style",
           "lands_at_settled": true,
-          "status": "here"
+          "status": "here",
+          "prerendered": true
         },
         {
           "key": "admin",
@@ -55,7 +58,8 @@
           "serves_today": "https://tinymachines.ai/admin",
           "lands_at": "/admin",
           "lands_at_settled": true,
-          "status": "here"
+          "status": "here",
+          "prerendered": true
         },
         {
           "key": "api",
@@ -67,7 +71,8 @@
           "serves_today": "https://tinymachines.ai/api/",
           "lands_at": "/api",
           "lands_at_settled": true,
-          "status": "here"
+          "status": "here",
+          "prerendered": false
         }
       ],
       "landing": "/"
@@ -82,14 +87,15 @@
         {
           "key": "explorer",
           "name": "The explorer",
-          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer.",
+          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer. Its modules and its die data are served from the 6502 site's own directory rather than copied: the geometry is CC BY-NC-SA and this repository does not redistribute it.",
           "piece": "explorer",
           "serves_today": "https://6502.tinymachines.ai",
-          "lands_at": "/6502",
-          "lands_at_settled": false,
-          "status": "not started",
+          "lands_at": "/6502/explorer",
+          "lands_at_settled": true,
+          "status": "here",
           "nav": false,
-          "nav_label": null
+          "nav_label": null,
+          "prerendered": true
         },
         {
           "key": "api",
@@ -101,7 +107,8 @@
           "lands_at_settled": false,
           "status": "not started",
           "nav": false,
-          "nav_label": null
+          "nav_label": null,
+          "prerendered": true
         },
         {
           "key": "games",
@@ -113,7 +120,8 @@
           "lands_at_settled": true,
           "status": "console here, registry pages not",
           "nav": false,
-          "nav_label": null
+          "nav_label": null,
+          "prerendered": true
         },
         {
           "key": "lab",
@@ -125,7 +133,21 @@
           "lands_at_settled": true,
           "status": "here",
           "nav": false,
-          "nav_label": null
+          "nav_label": null,
+          "prerendered": true
+        },
+        {
+          "key": "archive",
+          "name": "The visual6502 archive",
+          "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it, including the wiki whose MediaWiki has been answering 500 since some point after 2021. Served from where it already lives; none of it is ours.",
+          "nav": false,
+          "nav_label": null,
+          "piece": null,
+          "serves_today": "https://6502.tinymachines.ai/archive/",
+          "lands_at": "/6502/archive/",
+          "lands_at_settled": true,
+          "status": "here, unstyled",
+          "prerendered": false
         }
       ],
       "landing": "/6502"
@@ -147,7 +169,8 @@
           "serves_today": "https://hotbits.tinymachines.ai/v1/seeds",
           "lands_at": "/hotbits/api",
           "lands_at_settled": false,
-          "status": "not started"
+          "status": "not started",
+          "prerendered": true
         },
         {
           "key": "trng",
@@ -159,7 +182,8 @@
           "serves_today": "https://hotbits.tinymachines.ai/openapi.json",
           "lands_at": "/hotbits",
           "lands_at_settled": false,
-          "status": "not started"
+          "status": "not started",
+          "prerendered": true
         }
       ],
       "landing": null

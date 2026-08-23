@@ -353,6 +353,14 @@ if (manifest) {
       .map((f) => "/" + path.relative(APP, f).replace(/\.html$/, ""))
       .map((r) => (r === "/index" ? "/" : r.replace(/\/index$/, ""))),
   );
+  // Only what this site actually builds. The API is uvicorn and the archive is
+  // nginx serving a directory, and both say so in the manifest rather than
+  // being special-cased here: a hardcoded exception is one that stops matching
+  // the day something else is served the same way.
+  const served = new Set();
+  for (const p of manifest.projects) {
+    for (const s of p.surfaces) if (s.prerendered === false) served.add(s.lands_at);
+  }
   const entries = [];
   for (const p of manifest.projects) {
     if (p.key === "roof") {
@@ -385,7 +393,7 @@ if (manifest) {
   }
 
   for (const href of entries) {
-    if (href === "/api") continue;   // proxied to uvicorn, not prerendered here
+    if (served.has(href)) continue;   // served by something other than this build
     if (!routes.has(href)) {
       failures.push(
         `the navigation carries ${href}, which this build does not serve.\n` +

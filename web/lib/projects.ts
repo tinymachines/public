@@ -20,6 +20,13 @@ export interface Surface {
   /** Whether the site navigation carries it, and what it is called there. */
   nav: boolean;
   nav_label: string | null;
+  /**
+   * Whether this site builds the page. False for the API (uvicorn) and the
+   * archive (nginx serving a directory), which matters twice: the build cannot
+   * check a route it did not render, and the client router cannot navigate to
+   * one, so those links have to be plain anchors.
+   */
+  prerendered: boolean;
   /** The key in data/pieces.json this surface is, or null when it is the roof's own. */
   piece: string | null;
   /** Probed, not remembered. Where it answers right now. */

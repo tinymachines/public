@@ -110,10 +110,14 @@ export function Menu({ groups }: { groups: MenuGroup[] }) {
                     {item.hint ? <span>{item.hint}</span> : null}
                   </>
                 );
-                // The API leaves the app, so there is nothing for the client
-                // router to prefetch and a plain anchor is the honest element.
-                return item.href.startsWith("/api") ? (
-                  <a key={item.href} href={`${item.href}/`} {...props}>
+                // Anything this site does not prerender gets a plain anchor.
+                // The API is uvicorn and the archive is nginx serving a
+                // directory: there is nothing for the client router to
+                // prefetch, and asking it to navigate to a route the build
+                // never made lands the reader on the not-found page.
+                const external = item.prerendered === false;
+                return external ? (
+                  <a key={item.href} href={item.href.startsWith("/api") ? `${item.href}/` : item.href} {...props}>
                     {inner}
                   </a>
                 ) : (

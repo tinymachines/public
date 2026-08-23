@@ -145,6 +145,13 @@ server {
     # stays 'self', and the fonts are vendored into the repo, so nothing
     # reaches the network at all.
     #
+    # 'wasm-unsafe-eval' is here for the explorer, and it is narrower than it
+    # sounds. It permits WebAssembly compilation and nothing else: it does not
+    # restore eval(), new Function(), or any of what 'unsafe-eval' allows. The
+    # 6502 vhost has carried it for the same reason since that page shipped,
+    # and without it the explorer's chip module fails to instantiate with a
+    # console error and a blank canvas, which reads as a broken renderer.
+    #
     # worker-src is stated rather than inherited. The site registers a service
     # worker, and with the directive absent a worker falls back through
     # child-src to script-src, which carries 'unsafe-inline' for the reason
@@ -152,7 +159,7 @@ server {
     # page, it is loosened for the worker too, silently. This is the one place
     # where naming a directive costs nothing and not naming it couples two
     # decisions that have no reason to be coupled.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
@@ -161,6 +168,56 @@ server {
     # cacheable. The error case is handled by the line below instead.
     add_header Cache-Control $tmapex_cache;
     add_header Cache-Control $tmapex_error_cache always;
+
+    # ---------------------------------------------------------------------
+    # The 6502 explorer and its archive, served from where they already live.
+    #
+    # Both are on this box already, published by 6502.tinymachines.ai out of
+    # /var/www/6502.tinymachines.ai. These two locations serve the SAME FILES
+    # under the apex rather than copying them, and that is a licensing
+    # decision rather than an optimisation.
+    #
+    # The explorer's data is die geometry traced from photographs and the
+    # measured tables built from it: layout.bin, the JSON graphs, and a wasm
+    # bundle that embeds netlist.bin. All of it is CC BY-NC-SA 3.0. NOTICE.md
+    # records that extern/visual6502 is a submodule in the 6502 repo precisely
+    # so that repository does not redistribute NC-SA data, and copying 1.5 MB
+    # of it into tinymachines/public would undo that by accident, which is how
+    # it would happen. An alias is not a second copy: it is one publisher
+    # serving one set of bytes at a second address it also owns.
+    #
+    # /6502/chip/ carries the modules and the stylesheet, which are ours and
+    # MIT, and it is where a page loads them from.
+    location /6502/chip/ {
+        alias /var/www/6502.tinymachines.ai/current/;
+        # Their build writes a .gz beside every file and their vhost serves it.
+        # Without this the same bytes go out uncompressed from here, which is
+        # the sort of difference nobody notices and everybody pays for.
+        gzip_static on;
+    }
+
+    # The data files, at the paths the explorer's own code asks for.
+    #
+    # It fetches them DOCUMENT-relative: the deployed app.js says
+    # fetch('layout.334bf277.bin'), so from a page at /6502/explorer that
+    # resolves to /6502/layout.334bf277.bin. Serving them there means nothing
+    # in their code has to be patched, and nothing here has to know a hash:
+    # the script asks for whatever name it was built with, and this hands back
+    # whatever is in current/. Their deploy and ours stay independent.
+    #
+    # Narrow on purpose. Only these extensions, only one optional pkg/
+    # segment, so it cannot shadow /6502/games or /6502/lab, which are pages
+    # and carry no dot.
+    location ~ "^/6502/(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
+        alias /var/www/6502.tinymachines.ai/current/$chipasset;
+    }
+
+    # The archive: 174 MB of visual6502.org recovered from the Wayback
+    # Machine. Same reasoning, more so. It is somebody else's site.
+    location /6502/archive/ {
+        alias /var/www/6502.tinymachines.ai/archive/;
+        gzip_static on;
+    }
 
     # The API: uvicorn with --root-path /api, so it generates its own URLs
     # under the prefix and openapi.json stays correct behind the proxy.

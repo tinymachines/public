@@ -29,13 +29,20 @@ switches, and the behaviour falls out of simulating them.
 
 ## What is running now
 
-Three sites are live and keep serving from where they are:
-[6502.tinymachines.ai](https://6502.tinymachines.ai) is the explorer and its
-measured tables, [the console](/6502/games) and its
-[builder pages](https://games.tinymachines.ai/builders) are Die Runner, and
-[the lab](/6502/lab) is the reviewer's
-lab. They are separate origins from this one today, so a fetch between them is
-cross-origin and the 6502 API sends `Access-Control-Allow-Origin: *` on purpose.
+Four surfaces are here: [the explorer](/6502/explorer) and its measured
+tables, [the console](/6502/games), [the lab](/6502/lab), and
+[the visual6502 archive](/6502/archive/). Each still answers at its own
+subdomain as well, because nothing has been switched off.
+
+The chip data is the exception, and deliberately so. The explorer's die
+geometry, its measured tables and its wasm bundle are served from the 6502
+site's own directory rather than copied here: all of it is CC BY-NC-SA, and
+this repository does not redistribute it. See `NOTICE.md`.
+
+What has not moved is the registry: the
+[builder pages](https://games.tinymachines.ai/builders) and the cartridge
+editor are still on games.tinymachines.ai. Those read live data, and moving
+them waits on the listings the roof asked that service for.
 
 ## What is not here yet
 
