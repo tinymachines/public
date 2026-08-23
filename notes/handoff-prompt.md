@@ -28,27 +28,26 @@ Read these four first, in this order, before proposing anything:
   notes/inventory.md  what already exists on this machine, surveyed not recalled
   NOTICE.md           licensing. The die data is CC BY-NC-SA and it travels
 
-Then start on step 2 of START-HERE.md: /docs.
+START-HERE.md has the order of work and what is still open. Steps 1 to 4 are
+done and live; read "Still open" there before picking anything up.
 
 THE STACK IS DECIDED. Next 16 + React 19 + MDX + Tailwind 4 (bun) on
 127.0.0.1:6511 serving / and /docs; FastAPI + uvicorn + Pydantic on
 127.0.0.1:6510 serving /api; nginx in front. Bootstrap commands are in
 web/README.md. Do not relitigate this; the reasoning is in START-HERE.md.
 
-STEP 2, CONCRETELY:
-  1. Bootstrap the Next app in web/
-  2. Build the /docs renderer. Content lives in docs/ as .md and .mdx.
-     Navigation is derived from the directory tree, never from a list.
-  3. Move the existing reference content in (the list is in docs/README.md).
-     Move it, don't rewrite it. Where it states a number, that number was
-     measured: keep it, and keep the sentence saying where it came from.
+WHAT IS ALREADY LIVE: the apex, /docs, /style, /style/zoo, and /api with its
+openapi.json. Two systemd units, tinymachines-web and tinymachines-api. 28 API
+tests pass. Do not rebuild any of it; extend it.
 
 HARD CONSTRAINTS:
 
-- The style guide, palette, fonts and type scale are the OWNER'S and are in
-  progress. The @theme block in app/globals.css is the seam: leave it minimal
-  and commented as theirs. No hardcoded colours in components. A literal
-  text-[#0B1120] is a token their stylesheet can never reach.
+- The style guide has LANDED and lives in style/. STYLE.md is the guide,
+  tokens.css is the @theme deliverable, components.css is the kit, zoo.html
+  is the normative set of specimens. globals.css imports the tokens, it does
+  not copy them: keep it that way. Use the kit. No hardcoded colours in
+  components. A literal text-[#0B1120] is a token the guide can never reach,
+  and check-tokens.py / check-cascade.py exist to catch exactly that.
 
 - Do NOT edit ~/projects/tinymachines/6502. It's the source for the docs
   content and it is read-only from here. If something there needs changing,

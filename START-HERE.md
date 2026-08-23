@@ -184,6 +184,80 @@ Treat that as a constraint rather than a note. Anything that would put a price
 on a coin reopens a question that is currently closed, and reopens it as a
 conversation with the rightsholder. See `NOTICE.md`.
 
+### 6. halfphi on the home page, with its mark
+
+**halfphi is the piece an outsider can actually pick up**, and it is the only
+one that is cleanly MIT, because it embeds no die data. It should be reachable
+from the front door rather than three clicks into the docs.
+
+One line of what it is: switch-level simulation of chip netlists traced from
+die photographs. It loads the 6502, the 6800 and the Z80 through identical
+calls. Link to `github.com/tinymachines/halfphi`.
+
+**The mark needs a decision, not a drop-in.** `assets/` in that repo has it at
+1408, 512 and 180 pixels, and **the dark background is baked in rather than
+transparent**. The style guide's whole first idea is two grounds, so either it
+sits on the dark ground, or it needs a cut-out. Its own README says the
+background is a subtle gradient rather than a flat colour, so a flood fill will
+not produce that cut-out: the subject has to be masked. Take the 512 and
+display it small, as its README already does, rather than shipping two
+megabytes for a logo.
+
+### 7. One engine, two ways in, roughly the same surface
+
+The ask: somebody advanced should be able to wire the engine into **their own
+JavaScript page**, or call the **API**, and work with roughly the same
+interface either way.
+
+**The gap today, measured rather than guessed:**
+
+| | |
+|---|---|
+| the wasm surface | fine-grained and **stateful**: an object you drive, about 50 methods, `half_step()`, `pc()`, `peek()` |
+| the HTTP surface | coarse-grained and **stateless**: a value you pass, POST a whole machine and get one back |
+
+**The blocker is concrete: the wasm crate cannot export or import a machine.**
+Zero state functions on it. So the two surfaces cannot exchange anything at
+all, which is a harder problem than the naming difference it looks like.
+
+**What makes parity reachable is already built.** The state codec exists in
+Rust and is written down: `crates/v6502-sim/src/state.rs`, lowercase hex, bit
+*i* of a set in byte *i*/8 LSB first, node sets 216 bytes, the transistor set
+439. It is proven bit-exact restoring into a **fresh** machine, which is the
+whole point: a machine is a value, not a session.
+
+So the shape is:
+
+1. Expose export and import on the wasm crate, using the codec that already
+   exists rather than a second one.
+2. Both surfaces then speak the same `Machine` object.
+3. One thin JavaScript wrapper presents a single interface over two backends,
+   local wasm or remote fetch.
+
+The property that makes this worth doing, rather than merely tidy: **because
+the API is stateless and carries the whole machine, the two backends are
+interchangeable by construction.** Start a run locally, finish it on the
+server, or the reverse. The service suite already proves that hop is
+bit-exact; nothing new has to be true for it to work.
+
+**The licence decides how it ships, and this one is easy to get wrong.** The
+current 106 KB wasm bundle **embeds the die data**: `v6502-wasm` depends on
+`v6502-sim` depends on `v6502-netlist`, which `include_bytes!`s `netlist.bin`.
+So that bundle carries CC BY-NC-SA and is **not** MIT, whatever the repo's
+licence file says about the code.
+
+A JavaScript package that wants to be MIT the way the crate is must therefore
+**ship no die data and take it at runtime**, exactly as `halfphi` does in Rust.
+That is also the better product: chip-agnostic, and it loads the 6800 and the
+Z80 as well. Two packages then, split along the line the Rust side already
+draws. See `NOTICE.md`.
+
+**Most of step 7 is work in `tinymachines/6502`, not here.** Exposing the codec
+and building the wasm package belongs in that repo. What belongs here is the
+JavaScript wrapper, the documentation of the shared shape, and the page that
+shows somebody how to do it both ways. Say what you need from the other side
+rather than reaching across.
+
 ## Open questions for the owner
 
 1. ~~Next+MDX, or Python and server-rendered markdown?~~ **Answered: Next+MDX
@@ -200,8 +274,9 @@ conversation with the rightsholder. See `NOTICE.md`.
 
 ## What not to do
 
-- Do not invent a visual identity. Fonts, palette, and the stylesheet are the
-  owner's and in progress.
+- Do not invent a visual identity. The style guide has landed in `style/`:
+  use `tokens.css`, `components.css` and the specimens in `zoo.html`, and
+  keep `globals.css` importing the tokens rather than copying them.
 - Do not touch `~/projects/tinymachines/6502`. If something there needs to
   change, say so and why.
 - Do not copy built artefacts. Build from source; `notes/inventory.md` has the
