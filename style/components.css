@@ -1042,3 +1042,35 @@ h2.display { font-size: var(--text-h2); }
 .prose tbody tr:last-child td { border-bottom: 0; }
 
 .prose img { max-width: 100%; height: auto; }
+
+/* ---------------------------------------------------------------------------
+   18. THE PAGE FRAME
+   A single-column page that is not the docs tree.
+
+   This exists because the front page had no frame at all and it showed. The
+   prose measure caps the line length but sets no padding, so on a phone the
+   text ran hard into the left edge and the display heading was clipped by it.
+   Nothing errored, and on a wide screen the measure hid the fault entirely:
+   it only appeared below the width where the column stops being narrower than
+   the viewport.
+
+   Same values as .docs-shell, because it is the same frame with one column
+   rather than two, and two frames that are meant to match should not be able
+   to drift apart.
+   ------------------------------------------------------------------------ */
+
+.page {
+  max-width: calc(var(--u) * 280);
+  margin: 0 auto;
+  padding: calc(var(--u) * 12) calc(var(--u) * 8);
+}
+
+@media (max-width: 40rem) {
+  .page,
+  .docs-shell { padding: calc(var(--u) * 8) calc(var(--u) * 5); }
+}
+
+/* The measured chip is inline-flex, so a long provenance string on a narrow
+   screen pushed its parts apart instead of wrapping. It is a stamp; it should
+   wrap like a stamp. */
+.measured { flex-wrap: wrap; }

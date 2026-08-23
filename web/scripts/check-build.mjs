@@ -116,6 +116,46 @@ if (FACES < 20) {
   failures.push(`stylesheet: only ${FACES} @font-face rules; the vendored families are not reaching the build.`);
 }
 
+// 6. The shipped output must agree with the deployed Content-Security-Policy.
+//    This is a cross-check between two files that have no other reason to
+//    know about each other, and it exists because they disagreed once and the
+//    only symptom was a page that looked half-designed.
+//
+//    /style/zoo carries the widget zoo verbatim, and the zoo is built out of
+//    inline style: 73 style attributes, its own <style> block, and a script
+//    that writes element.style. Under style-src 'self' every one of those was
+//    dropped, silently, while the kit's classes kept working. So if the build
+//    emits inline styles, the policy has to permit them.
+const NGINX = path.join(import.meta.dirname, "..", "..", "deploy", "tinymachines.ai.nginx");
+let policy = null;
+try { policy = await readFile(NGINX, "utf8"); } catch { /* not deployed from here */ }
+if (policy) {
+  const inlineStyles = files.reduce((n, f) => n, 0);
+  let sawInline = false;
+  for (const file of files) {
+    const body = await readFile(file, "utf8");
+    if (/<style[\s>]/i.test(body) || /\sstyle="/i.test(body)) { sawInline = true; break; }
+  }
+  // Parse the DIRECTIVE, not the file. The first version matched
+  // /style-src ([^;"]+)/ against the whole config and hit the comment above
+  // the header, which explains style-src and contains the words
+  // 'unsafe-inline'. So the check read its own documentation, found what it
+  // was looking for, and passed while the policy said the opposite. Caught by
+  // tightening the real policy and watching the check stay green.
+  const header = policy.match(/add_header\s+Content-Security-Policy\s+"([^"]+)"/);
+  const styleSrc = header && header[1].match(/style-src ([^;]+)/);
+  if (!header) {
+    failures.push("deploy/tinymachines.ai.nginx: no add_header Content-Security-Policy found.");
+  } else if (!styleSrc) {
+    failures.push("deploy/tinymachines.ai.nginx: no style-src in the Content-Security-Policy.");
+  } else if (sawInline && !styleSrc[1].includes("'unsafe-inline'")) {
+    failures.push(
+      `deploy/tinymachines.ai.nginx: style-src is "${styleSrc[1].trim()}" but the build emits inline styles.\n` +
+      "    They will be dropped in the browser with no error on the page. Either remove the inline\n" +
+      "    styles or allow them in the policy, and say which in a comment.");
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

@@ -5,7 +5,7 @@
  */
 export default function Home() {
   return (
-    <main className="prose">
+    <main className="page prose">
       <h1>tinymachines</h1>
       <p>
         A transistor-level MOS 6502, and the things built on it. The

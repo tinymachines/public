@@ -98,12 +98,33 @@ server {
     # That is a trade to make deliberately when there is something dynamic
     # here, not while the site is nine prerendered documents.
     #
-    # style-src does NOT carry it, and that was measured on the same output:
-    # zero inline <style> elements and zero style="" attributes. If a future
-    # page needs one the symptom is unstyled content plus a console
-    # violation, which is loud enough to find. font-src is 'self' because
-    # next/font self-hosts into /_next/static/media.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    # style-src carries 'unsafe-inline' too, and it did not at first. That was
+    # measured and correct when it was written: the app then had zero inline
+    # <style> elements and zero style="" attributes. Then /style/zoo shipped,
+    # and the widget zoo is built out of inline style: 73 style attributes on
+    # the specimens, one <style> block of its own chrome, and a script that
+    # writes element.style.transform to drive the sliders. Every one of them
+    # was blocked.
+    #
+    # The failure is the quiet kind again. Nothing 404s and the page is not
+    # blank: the kit's classes still apply, so the buttons and the type look
+    # right and only the LAYOUT is missing. It reads as a half-finished design
+    # rather than as a policy blocking a stylesheet, and it was reported that
+    # way.
+    #
+    # Scoping the relaxation to the one route was tried on paper and does not
+    # work. Next's app router navigates on the client, so a reader who lands
+    # on /style and clicks through to /style/zoo is still governed by the
+    # document CSP of /style. A per-location header would apply only to
+    # readers who load the zoo cold, which is the worse kind of fix: it works
+    # when you test it and not when somebody uses the site.
+    #
+    # What this costs is bounded. There is no user input rendered into any
+    # page here: every page is prerendered from files in the repository, so
+    # there is no injection vector for a style to arrive through. font-src
+    # stays 'self', and the fonts are vendored into the repo, so nothing
+    # reaches the network at all.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
