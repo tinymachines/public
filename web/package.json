@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 6511",
-    "build": "next build && bun scripts/check-build.mjs",
+    "build": "python3 ../style/build-icon.py && next build && bun scripts/check-build.mjs",
     "start": "next start -H 127.0.0.1 -p 6511",
     "lint": "eslint",
-    "check": "bun scripts/check-build.mjs"
+    "check": "bun scripts/check-build.mjs",
+    "icons": "python3 ../style/build-icon.py"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",

@@ -28,3 +28,10 @@ deploy/HOSTING.local.md
 *.swp
 .idea/
 .vscode/
+
+# Generated from style/tokens.css by style/build-icon.py on every build.
+# Committing them would make the icon a second copy of the palette, and a tab
+# icon one revision behind the tokens looks exactly like a tab icon.
+web/app/icon.svg
+web/app/apple-icon.png
+web/app/favicon.ico
