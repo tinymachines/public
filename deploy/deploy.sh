@@ -33,6 +33,9 @@ say "1. Lint"
 say "2. Tokens"
 python3 style/check-tokens.py || fail "check-tokens"
 
+say "2b. Cascade"
+python3 style/check-cascade.py || fail "check-cascade"
+
 say "3. API tests"
 (cd api && python3 -m pytest . -q) || fail "pytest"
 

@@ -890,7 +890,6 @@ h2.display { font-size: var(--text-h2); }
    expects one. */
 @media (max-width: 60rem) {
   .docs-shell { grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 8); }
-  .docs-nav { position: static; max-height: none; }
 }
 
 .docs-nav {
@@ -931,6 +930,23 @@ h2.display { font-size: var(--text-h2); }
   transition: color var(--t-snap) var(--ease-snap);
 }
 .docs-nav li > a:hover { color: var(--color-ink); }
+
+/* Immediately after .docs-nav, not up in the shell's media query, and this
+   placement is the whole fix. Written there first, it lost: .docs-nav below
+   sets position: sticky, comes later in the file, and has the same
+   specificity, so the override silently did nothing.
+
+   The result was not subtle. Below 60rem the shell is one column, so the nav
+   and the document occupy the SAME column, and a sticky nav with no
+   background sat on top of the prose scrolling under it. Two sets of words in
+   the same place. Measured across thirteen viewport widths: every one at
+   960px and below.
+
+   This is the second time this file has been bitten by an override that a
+   later rule defeats. style/check-cascade.py now fails on it. */
+@media (max-width: 60rem) {
+  .docs-nav { position: static; max-height: none; overflow-y: visible; }
+}
 
 .docs-body { min-width: 0; }
 
@@ -1123,3 +1139,19 @@ h2.display { font-size: var(--text-h2); }
 a.tag { text-decoration: none; transition: color var(--t-snap) var(--ease-snap), border-color var(--t-snap) var(--ease-snap); }
 a.tag:hover { color: var(--color-ink); border-color: var(--color-ink-muted); }
 a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-burnt-ink); }
+
+/* A colour swatch inside an inline code chip. Used by the docs renderer when
+   a code span is a hex value, so the style guide's palette shows the colours
+   it names instead of six characters of monospace.
+
+   The size is in ems rather than units on purpose: it has to match the text
+   it sits in, and that text is already one step down from the body size. */
+.swatch {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-right: 0.4em;
+  vertical-align: -0.05em;
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+}
