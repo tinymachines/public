@@ -83,9 +83,60 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "HEAD", "POST", "OPTIONS"],
     allow_headers=["content-type"],
 )
+
+
+class HeadAsGet:
+    """Answer HEAD wherever GET is answered.
+
+    FastAPI's @app.get() registers GET alone. Starlette's own Route adds HEAD
+    to any GET route; FastAPI's APIRoute does not, so every route here replied
+    405 to HEAD. That is the wrong answer twice over: HTTP defines HEAD as GET
+    without a body, so a resource that answers GET answers HEAD by definition,
+    and a 405 tells a monitor the endpoint is broken rather than that it is
+    fine.
+
+    It was found by this project's own prober. probe.py sends HEAD first and
+    falls back to GET on 405, which is why /v1/status kept working and why the
+    fault stayed invisible until something looked at the header directly.
+
+    Done here rather than by listing methods=["GET", "HEAD"] on six decorators,
+    for a documentation reason. Adding HEAD to the decorators puts a HEAD
+    operation in openapi.json for every path, which is six entries describing
+    something HTTP already guarantees, in a document whose whole claim is that
+    every line of it earns its place. This is transport behaviour, so it lives
+    in the transport.
+
+    RFC 9110 is explicit that the headers should be the ones GET would send,
+    Content-Length included, so the body is dropped and nothing else is
+    touched. A client can therefore ask "how big is this" without fetching it.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") != "http" or scope.get("method") != "HEAD":
+            await self.app(scope, receive, send)
+            return
+
+        scope = dict(scope, method="GET")
+
+        async def send_without_body(message):
+            if message["type"] == "http.response.body":
+                # Keep the framing, drop the bytes. more_body is forced off so
+                # a streaming response cannot leave the connection waiting for
+                # a chunk that will never come.
+                await send({"type": "http.response.body", "body": b"", "more_body": False})
+                return
+            await send(message)
+
+        await self.app(scope, receive, send_without_body)
+
+
+app.add_middleware(HeadAsGet)
 
 
 def _uptime() -> int:

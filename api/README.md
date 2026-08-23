@@ -33,6 +33,14 @@ declares them.
 | `POST /mcp` | The same surface, spoken to a language model |
 | `GET /mcp` | 405 with `Allow: POST`. There is no stream to open |
 
+**HEAD is answered wherever GET is**, because HTTP defines HEAD as GET without
+a body and a resource that answers one answers the other. It is not in the
+document: adding it would put a HEAD operation on every path describing
+something HTTP already guarantees, in a reference whose claim is that every
+line earns its place. It is transport behaviour and lives in the transport, as
+`HeadAsGet` in `app.py`. The headers are the ones GET would send, Content-Length
+included, so a client can ask how big something is without fetching it.
+
 `GET /api/openapi.json` is the reference. There is no Swagger or ReDoc page,
 and that is a decision rather than an omission: both load their JavaScript from
 a CDN, and this site's CSP is `script-src 'self'`. They would render as a blank

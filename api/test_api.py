@@ -198,6 +198,50 @@ def test_licence_fields_are_not_collapsed():
 # ---------------------------------------------------------------------------
 
 
+def test_head_is_answered_wherever_get_is(client):
+    """HTTP defines HEAD as GET without a body, so a resource that answers GET
+    answers HEAD. Every route here replied 405 until the transport did that,
+    and a 405 tells a monitor the endpoint is broken rather than that it is
+    fine.
+
+    Found by this project's own prober: probe.py sends HEAD first and falls
+    back to GET on 405, which is exactly why it kept working and the fault
+    stayed invisible."""
+    paths = [p for p in served_paths() if p != "/v1/pieces/{key}"]
+    paths.append("/v1/pieces/chip-api")
+    assert len(paths) >= 5, "not enough routes; this check would pass on nothing"
+
+    for path in paths:
+        got = client.get(path)
+        head = client.head(path)
+        assert head.status_code == got.status_code, (
+            f"HEAD {path} answered {head.status_code}, GET answered {got.status_code}"
+        )
+        assert head.content == b"", f"HEAD {path} returned a body"
+
+
+def test_head_keeps_the_headers_get_would_send(client):
+    """RFC 9110: the headers should be the ones GET would send, Content-Length
+    included, so a client can ask how big something is without fetching it.
+    Dropping the body while keeping the framing is the whole trick, and getting
+    it wrong the other way (dropping Content-Length too) would make HEAD
+    useless for the one thing it is for."""
+    got, head = client.get("/v1/pieces"), client.head("/v1/pieces")
+    assert head.headers.get("content-type") == got.headers.get("content-type")
+    assert head.headers.get("content-length") == got.headers.get("content-length")
+    assert int(head.headers["content-length"]) > 0
+    assert head.content == b""
+
+
+def test_head_on_a_post_only_route_still_refuses(client):
+    """/mcp is POST. Its GET says so with an Allow header, and HEAD gets the
+    same refusal rather than being quietly accepted: answering HEAD everywhere
+    would be a different bug from the one being fixed."""
+    got, head = client.get("/mcp"), client.head("/mcp")
+    assert got.status_code == 405 and head.status_code == 405
+    assert head.headers.get("allow") == "POST"
+
+
 def test_health_reports_only_itself(client):
     body = client.get("/health").json()
     assert body["status"] == "ok"
