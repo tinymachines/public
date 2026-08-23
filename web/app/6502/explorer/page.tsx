@@ -23,6 +23,20 @@ import "./explorer.css";
  * that data. An alias is one publisher serving one set of bytes at a second
  * address it also owns; a copy in this repo would be a second publisher.
  *
+ * ## One console line, known and left alone
+ *
+ * Their `app.js` calls `navigator.serviceWorker.register('sw.js')`, which
+ * resolves against the document and asks this site for `/6502/sw.js`. There is
+ * none, so it 404s and Chrome logs it. The call is wrapped in
+ * `.catch(() => {})` so nothing breaks, and the site already has its own
+ * worker at `/sw.js` scoped to everything.
+ *
+ * Not fixed here, because fixing it means either copying their modules into
+ * this repo so they can be patched, or serving something at `/6502/sw.js` that
+ * would install a SECOND worker scoped to `/6502/` and take those pages away
+ * from ours. Both cost more than the line is worth. It goes when the page is
+ * rewritten, which is next.
+ *
  * ## This is the functional pass, not the finished page
  *
  * The sections are the explorer's own and the headings are its own words. The
