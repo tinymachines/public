@@ -1,4 +1,5 @@
 import type { MDXComponents } from "mdx/types";
+import { TwoWaysDemo } from "./app/components/TwoWaysDemo";
 
 /**
  * Required at the project root. Without this file MDX pages fail to render,
@@ -50,5 +51,8 @@ function Code({ children, ...props }: React.ComponentPropsWithoutRef<"code">) {
 }
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
-  return { ...components, code: Code };
+  // Components a document may use by name. Registered here rather than
+  // imported inside each .mdx file, so a document stays markdown with one
+  // element in it rather than markdown with an import path in it.
+  return { ...components, code: Code, TwoWaysDemo };
 }

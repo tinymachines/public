@@ -1189,3 +1189,51 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 @media (max-width: 40rem) {
   .halfphi { grid-template-columns: minmax(0, 1fr); justify-items: start; gap: calc(var(--u) * 4); }
 }
+
+/* ---------------------------------------------------------------------------
+   19. READOUT: a table on a panel
+
+   .ledger is the tabular component and it is paper: it sets a paper ground and
+   ink hairlines, which is right for documentation and wrong for values that
+   came off the engine. The panel had .trace for waveforms and .regs for a
+   register file, and nothing for rows of measured numbers, so a page that
+   wanted one had to fork a table inline. This is that component.
+
+   Scoped inside .panel-face on purpose. Section 1's rule is that live engine
+   state belongs on a panel, and a readout that could be dropped onto paper
+   would be an invitation to break it.
+   ------------------------------------------------------------------------ */
+
+.panel-face .readout {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  line-height: var(--leading-data);
+  color: var(--color-glass);
+}
+.panel-face .readout th {
+  text-align: left;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-glass-muted);
+  padding: 0 calc(var(--u) * 2) calc(var(--u) * 2);
+  border-bottom: 1px solid var(--color-rule-panel);
+  white-space: nowrap;
+}
+.panel-face .readout td {
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+  border-bottom: 1px solid var(--color-rule-panel);
+}
+.panel-face .readout tbody tr:last-child td { border-bottom: 0; }
+
+/* Numbers right-align and share a column width, so a changing value does not
+   move the ones beside it. */
+.panel-face .readout .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* The value that just changed. Mustard is the value colour in section 2's
+   standing assignments, so a changed byte is a value being emphasised rather
+   than a new meaning. */
+.panel-face .readout .changed { color: var(--color-mustard); }

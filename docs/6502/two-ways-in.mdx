@@ -1,0 +1,108 @@
+---
+title: Two ways in
+description: The same engine in a page or over HTTP, and a machine that moves between them.
+order: 9
+---
+
+# Two ways in
+
+A transistor-level 6502 can be driven two ways, and they look nothing alike.
+
+In a page, through the wasm build, the chip is **an object you hold**: about
+fifty methods, `halfStep()`, `pc()`, `peek()`. Over HTTP, through the API, it
+is **a value you pass**: the whole machine travels out and comes back, and the
+server keeps nothing between requests.
+
+That difference is not an accident of two teams. It follows from where the
+state lives, and each shape is right for its side. What was missing was a way
+to get a machine from one to the other.
+
+## That gap has closed
+
+The wasm crate exports `exportMachine()` and `importState()`, both built on the
+same codec the service uses: `state::snapshot` and `MachineState::from_hex`, in
+`crates/v6502-sim/src/state.rs`. `exportMachine()` emits the API's own JSON.
+
+So the two surfaces already exchange a machine. Verified against the live API
+rather than read off the source: a machine shaped exactly as the wasm emits it,
+**including the missing `version` field**, is accepted by `POST /v1/step` and
+steps correctly. `version` carries a default, so its absence is not an error.
+
+| | the wasm surface | the HTTP surface |
+|---|---|---|
+| a machine is | an object you drive | a value you pass |
+| granularity | fine: `halfStep()`, `pc()`, `peek()` | coarse: post a machine, get one back |
+| run n half-cycles | `runHalfCycles(n)` | `{"half_cycles": n}` |
+| run one instruction | `stepInstruction(max)` | `{"until": "instruction"}` |
+| the registers | methods on the object | the `observe` block in the response |
+| assemble | not available | `POST /v1/assemble` |
+| get the machine out | `exportMachine()` | it is the response |
+| put a machine in | `importState(...)` plus memory | it is the request |
+
+## One interface over both
+
+`tm6502.mjs` presents the same session over either backend. No build step, no
+dependencies:
+
+```js
+import { remote, local } from "https://tinymachines.ai/engine/tm6502.mjs";
+
+const cpu = remote();                       // or local({ engine })
+await cpu.boot({ source: "  LDA #$2E\n  BRK\n" });
+await cpu.runUntil("instruction");
+cpu.registers();                            // { pc, a, x, y, s, p, ir }
+```
+
+The property that makes this worth building rather than merely tidy: **because
+the API is stateless and carries the whole machine, the two backends are
+interchangeable by construction.** Start a run in the browser, hand the machine
+to the server, finish it there, or the reverse.
+
+```js
+const snapshot = cpu.export();   // { state, memory }
+const second = remote();
+second.import(snapshot);         // continues exactly where the first stopped
+await second.step(10);
+```
+
+Nothing new has to be true for that to work. It is the same four hex bitsets
+either way: 432 characters each for the node sets, 878 for the transistors.
+
+## The sum lands two half-cycles late
+
+Run it. This is not a recording:
+
+<TwoWaysDemo />
+
+The instructions finish at half-cycle 12 with `A` still `$2E`, and `A` becomes
+`$42` at half-cycle 14. That is not a bug in the reading. The write lands after
+the next fetch is already underway, which is the kind of thing that falls out
+of simulating switches rather than modelling an instruction set. Nothing here
+decided when a register updates.
+
+## The licence splits the packaging
+
+This one is easy to get wrong, and getting it wrong relicenses somebody else's
+work.
+
+The wasm bundle **embeds the die data**: `v6502-wasm` depends on `v6502-sim`
+depends on `v6502-netlist`, which `include_bytes!`s `netlist.bin`. That bundle
+therefore carries **CC BY-NC-SA 3.0**, whatever a licence file says about the
+code around it.
+
+So `tm6502.mjs` is MIT and **contains no chip**. It never fetches, bundles or
+builds one: `local({ engine })` is handed an engine the caller already has, and
+refuses with a reason if it is not. That is the same line the Rust side already
+draws between `halfphi`, which names no chip, and `v6502-netlist`, which is the
+die data. See `NOTICE.md`.
+
+## What is not here
+
+The `local` backend is written and unused on this page. Driving it needs a wasm
+build in the reader's own page, and this site ships no die data, so there is
+nothing here to demonstrate it against. The code path is real and the shape is
+right; it has not been exercised against a live wasm engine from this
+repository.
+
+`local()` also cannot assemble, because the wasm build has no assembler. It
+says so and points at the remote backend rather than returning empty bytes.

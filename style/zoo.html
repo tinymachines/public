@@ -360,7 +360,7 @@ details.markup pre {
        03 THE PANEL
        ================================================================== -->
   <section class="sect" id="panel">
-    <div class="sect-head"><h2>The panel</h2><span>7 specimens</span></div>
+    <div class="sect-head"><h2>The panel</h2><span>8 specimens</span></div>
     <p>The panel is the machine talking. A dark box on a tinymachines page means the values inside it came out of the engine on a run that happened: it is a semantic, not a dark theme. Never put marketing copy on a panel; never render live node state on paper.</p>
 
     <article class="spec">
@@ -460,6 +460,27 @@ details.markup pre {
   <!-- ==================================================================
        04 DIE & ENGINE
        ================================================================== -->
+    <article class="spec">
+      <div class="spec-head"><h3>Readout table</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The tabular component for values that came off the engine. <code>.ledger</code> is the paper table and stays paper: ink hairlines and a paper ground are right for documentation and wrong for measurements. This is scoped inside <code>.panel-face</code> so it cannot be dropped onto paper by accident, which is section 1's rule made structural rather than remembered. The changed value is mustard, because mustard is the value colour and a byte that just moved is a value being emphasised, not a new meaning.</p>
+      <div class="spec-stage plain">
+        <div class="panel">
+          <div class="panel-face">
+            <div class="panel-bar"><b>$2E + $14</b> <span>measured</span></div>
+            <table class="readout">
+              <thead><tr><th>after</th><th class="num">half-cycle</th><th class="num">A</th><th class="num">PC</th></tr></thead>
+              <tbody>
+                <tr><td>LDA #$2E</td><td class="num">4</td><td class="num">$2E</td><td class="num">$0202</td></tr>
+                <tr><td>ADC #$14</td><td class="num">12</td><td class="num">$2E</td><td class="num">$0205</td></tr>
+                <tr><td>+1 half-cycle</td><td class="num">14</td><td class="num changed">$42</td><td class="num">$0206</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
   <section class="sect" id="die">
     <div class="sect-head"><h2>Die &amp; engine</h2><span>4 specimens</span></div>
     <p>Specimens that only make sense for this project. Everything here is coloured by the solver's own vocabulary, so a screenshot and a stack trace use the same words.</p>
