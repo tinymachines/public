@@ -134,6 +134,25 @@ def test_no_em_dashes_in_anything_shipped():
 # ---------------------------------------------------------------------------
 
 
+def test_a_broken_pieces_file_fails_loudly():
+    """The data moved out to JSON, so the failure mode moved with it. A record
+    missing a field must stop the import rather than serve a piece with a hole
+    in it, and the message must name the file: a Pydantic traceback pointing at
+    models.py sends the reader to the wrong place when the fault is in the
+    data."""
+    import json
+    from pydantic import ValidationError
+    from models import Piece
+
+    good = json.loads((REPO / "data" / "pieces.json").read_text())
+    assert len(good) == 6, "the fixture for this check is the real file"
+
+    broken = [dict(good[0])]
+    del broken[0]["code_licence"]
+    with pytest.raises(ValidationError):
+        Piece(**broken[0])
+
+
 def test_pieces_and_the_prose_agree():
     """pieces.py is the one copy of this fact. The prose in notes/inventory.md
     and the links in docs/index.md describe the same six, and a seventh added

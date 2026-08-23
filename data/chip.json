@@ -1,0 +1,13 @@
+{
+  "chip": "mos6502",
+  "nodes": 1725,
+  "transistors": 3510,
+  "atlas_partition_groups": 132,
+  "atlas_partition_nodes": 1547,
+  "measured_from": "https://6502.tinymachines.ai/api/v1/meta",
+  "atlas_measured_from": "https://6502.tinymachines.ai/api/v1/groups",
+  "measured_on": "2026-08-22",
+  "why_this_file_exists": "No number is typed into a page. These figures are stated on the front page and across the documentation tree, and they are the chip's own rather than ours, so they live here with the endpoints and date that produced them.",
+  "how_the_atlas_figures_are_derived": "atlas_partition_groups is the count field of GET /v1/groups. atlas_partition_nodes is the sum of each group's count over all 132 groups, which is 1547 and is NOT the same as nodes: the partition covers 1547 of the die's 1725 nodes. Summing over leaf groups instead gives 1443, and over depth 1 gives 1493, so the derivation matters and is written down rather than left to be rediscovered.",
+  "verify": "python3 data/verify-chip.py re-derives all four from the two endpoints above. It is not part of the build, because the build reaches no network by design."
+}

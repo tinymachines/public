@@ -1155,3 +1155,18 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   border: 1px solid var(--color-ink-faint);
   border-radius: var(--radius-hair);
 }
+
+/* The front page's piece grid. Cards are .rail, which the kit already
+   provides; this is only how they are placed. auto-fit with a minimum keeps
+   it one column on a phone and three on a wide screen with no breakpoint of
+   its own, so there is no width where it is nearly right. */
+.piece-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 68), 1fr));
+  gap: calc(var(--u) * 4);
+  margin: calc(var(--u) * 6) 0 calc(var(--u) * 12);
+}
+.piece-grid .rail p { margin: 0 0 calc(var(--u) * 3); font-size: var(--text-fine); line-height: 1.55; }
+.piece-grid .rail h3 { display: flex; align-items: center; gap: calc(var(--u) * 2); flex-wrap: wrap; }
+.piece-links { display: flex; gap: calc(var(--u) * 2); margin: calc(var(--u) * 3) 0 0; }
+.piece-note { font-size: var(--text-micro); margin-top: calc(var(--u) * 2); }

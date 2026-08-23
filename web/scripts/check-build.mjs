@@ -186,6 +186,38 @@ if (!robots) {
   }
 }
 
+// 8. Figures on a page come from data/, not from the page.
+//    START-HERE.md's rule: no number is typed into a page, every figure is a
+//    slot filled from a published file. Checked both ways, because either
+//    half alone is easy to satisfy while breaking the other: the built HTML
+//    must SHOW the recorded figures, and the source must not CONTAIN them.
+const CHIP = path.join(import.meta.dirname, "..", "..", "data", "chip.json");
+let chip = null;
+try { chip = JSON.parse(await readFile(CHIP, "utf8")); } catch { /* reported below */ }
+if (!chip) {
+  failures.push("data/chip.json is missing or unparseable. The front page reads its figures from it.");
+} else {
+  const home = files.find((f) => path.relative(APP, f) === "index.html");
+  if (!home) {
+    console.error("check-build: no prerendered index.html; the figure check would pass on nothing.");
+    process.exit(2);
+  }
+  const html = await readFile(home, "utf8");
+  for (const field of ["nodes", "transistors"]) {
+    if (!html.includes(String(chip[field]))) {
+      failures.push(`the front page does not show data/chip.json's ${field} (${chip[field]}).`);
+    }
+  }
+  const src = await readFile(path.join(import.meta.dirname, "..", "app", "page.tsx"), "utf8");
+  for (const field of ["nodes", "transistors"]) {
+    if (src.includes(String(chip[field]))) {
+      failures.push(
+        `app/page.tsx contains the literal ${chip[field]}. Figures are read from data/chip.json,\n` +
+        "    so a typed one is a second copy that nothing re-derives.");
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

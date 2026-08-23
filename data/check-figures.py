@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""The chip's figures, wherever prose states them, must be the recorded ones.
+
+START-HERE.md: "no number is typed into a page: every figure is a slot filled
+from a published file, and a harness re-derives them and scans the prose for
+stray digits." The front page reads data/chip.json directly, so it cannot
+drift. The documentation tree cannot: it is markdown that a non-developer
+edits, and seven sentences across six files state the wire and switch counts
+in passing.
+
+So this is the scan. It finds four-digit numbers used as a chip figure, by
+looking for the words that make them one, and fails when any of them is not a
+value in chip.json.
+
+    python3 data/check-figures.py
+
+What it catches is the case that actually happens: chip.json is updated after
+verify-chip.py finds a disagreement, and six prose files quietly keep the old
+number. Prose is the part of a site most likely to go quietly wrong, because
+it is written once against what was true that afternoon and nothing checks it
+afterwards.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+CHIP = ROOT / "data" / "chip.json"
+
+# A four-digit number counts as a chip figure when one of these words follows
+# it closely. Deliberately narrow: "6502" is a chip name and "2026" is a year,
+# and neither should be dragged into this.
+CONTEXT = r"(?:wires?|switches|switch|nodes?|transistors?|byte)"
+FIGURE = re.compile(rf"\b(\d{{4}})\b[\s\-]*(?:\S+\s+){{0,2}}?{CONTEXT}\b", re.I)
+
+SEARCH = [ROOT / "docs", ROOT / "web" / "app", ROOT / "style"]
+SUFFIXES = {".md", ".mdx", ".tsx", ".ts", ".html"}
+
+
+def main() -> int:
+    chip = json.loads(CHIP.read_text())
+    # Every recorded integer figure, not a hand-kept subset. The atlas
+    # partition covers 1547 of the die's 1725 nodes, and the docs state both.
+    # Recording 1547 as a figure with its own derivation is the right answer;
+    # adding it to an exception list would have been the wrong one, because an
+    # exception list is where failures go to be silenced.
+    allowed = {v for v in chip.values() if isinstance(v, int)}
+    print(f"chip.json figures: {sorted(allowed)} (measured {chip['measured_on']})")
+
+    bad, seen = 0, 0
+    for base in SEARCH:
+        if not base.exists():
+            continue
+        for path in sorted(base.rglob("*")):
+            if path.suffix not in SUFFIXES or not path.is_file():
+                continue
+            for n, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
+                for m in FIGURE.finditer(line):
+                    value = int(m.group(1))
+                    seen += 1
+                    if value not in allowed:
+                        rel = path.relative_to(ROOT)
+                        print(f"{rel}:{n}: states {value} as a chip figure, "
+                              f"which is not in chip.json {sorted(allowed)}.")
+                        print(f"    {line.strip()[:96]}")
+                        bad += 1
+
+    if seen < 5:
+        print(f"check-figures: only {seen} figures found in the tree. These are "
+              "stated in several places, so the scan is wrong and this check "
+              "would pass on nothing.")
+        return 2
+    if bad:
+        print(f"\ncheck-figures: {bad} stray figure(s) across {seen} found.")
+        return 1
+    print(f"check-figures: {seen} stated figures, all agree with chip.json")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

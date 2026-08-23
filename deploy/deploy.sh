@@ -36,6 +36,9 @@ python3 style/check-tokens.py || fail "check-tokens"
 say "2b. Cascade"
 python3 style/check-cascade.py || fail "check-cascade"
 
+say "2c. Figures"
+python3 data/check-figures.py || fail "check-figures"
+
 say "3. API tests"
 (cd api && python3 -m pytest . -q) || fail "pytest"
 
