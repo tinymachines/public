@@ -108,7 +108,26 @@ const cssFiles = (await readdir(cssDir, { withFileTypes: true }))
   .filter((e) => e.isFile() && e.name.endsWith(".css"))
   .map((e) => path.join(cssDir, e.name));
 
-for (const file of [...files, ...cssFiles]) {
+// public/ is scanned too, and it was a hole. Everything under it is served
+// verbatim without passing through the build, so a vendored page or module
+// that reaches a CDN was invisible to this check: it inspects what the build
+// produced, and public/ is what the build did not touch. Die Runner's modules
+// went in there before anybody noticed, and the halfwave lab arrived carrying
+// a <link> to fonts.googleapis.com.
+async function underPublic(dir) {
+  const out = [];
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...(await underPublic(full)));
+    else if (/\.(html|js|mjs|css)$/.test(e.name)) out.push(full);
+  }
+  return out;
+}
+const PUBLIC = path.join(import.meta.dirname, "..", "public");
+let publicFiles = [];
+try { publicFiles = await underPublic(PUBLIC); } catch { /* no public/ */ }
+
+for (const file of [...files, ...cssFiles, ...publicFiles]) {
   const body = await readFile(file, "utf8");
   for (const re of [LOADS, CSS_URL]) {
     for (const m of body.matchAll(re)) {

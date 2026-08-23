@@ -1,0 +1,129 @@
+/* ---------------------------------------------------------------------------
+   The Halfwave Lab, wearing the house palette.
+
+   The lab arrived fully tokenised: 38 custom properties in one :root block and
+   369 var() uses across 35 KB of rules. That is the whole reason homogenising
+   it is a remap rather than a rewrite. lib/lab.ts strips the :root block and
+   leaves every rule below it exactly as it was; this file supplies the 38
+   names from style/tokens.css instead.
+
+   So there are no colours here. Every value is a var() on the kit, or a
+   color-mix of two, and style/check-tokens.py fails on a name that does not
+   exist. Change the palette in the style guide and the lab changes with it,
+   which was not true of any of these five sites this morning.
+
+   ## Why color-mix rather than one token per name
+
+   The lab uses a LADDER of near-blacks: ground, panel, panel2, sunk, code,
+   foot, cell, lane, mcell, cell2, cell3, hotfill, hover, onbg. Fourteen steps,
+   and they are not decoration: they are how a cell reads as raised, a lane as
+   recessed, and a hover as different from the thing it is over. Collapsing
+   them onto the kit's three panel tokens would leave hover the same colour as
+   the cell it hovers, which is a feature quietly deleted rather than restyled.
+
+   So the ladder is DERIVED from the kit's panel tokens rather than replaced by
+   them. A palette change still reaches every step, and the depth survives.
+
+   ## The light theme is deliberately not remapped
+
+   The lab has a theme toggle, and :root[data-theme="light"] restates all 38.
+   That block is left as the lab's own, and it is the one thing here that is
+   not homogenised.
+
+   The reason is a rule rather than an omission. STYLE.md section 1: paper is
+   documentation, panel is the machine talking, and that is "a semantic
+   distinction, not a light/dark theme". The kit has no light INSTRUMENT
+   ground, so a light lab would have to be either paper, which would mean
+   rendering live node state on the documentation ground and breaking the one
+   rule the two grounds exist to enforce, or a new set of tokens, which is
+   inventing palette and is the owner's.
+
+   That is a decision to make, not a gap to fill in quietly: either the lab's
+   light theme keeps the lab's own colours, as it does today, or the style
+   guide grows a light instrument ground. Until then, dark is the house and
+   light is the lab's.
+   ------------------------------------------------------------------------ */
+
+.lab-shell {
+  /* THE GROUND AND ITS LADDER.
+     panel is the instrument face; raised and sunk are the two directions off
+     it. Everything between is mixed, and the percentages preserve the
+     ordering the lab's own values had. */
+  --ground:   var(--color-panel);
+  --panel:    var(--color-panel-raised);
+  --panel2:   color-mix(in srgb, var(--color-panel) 70%, var(--color-panel-raised));
+  --sunk:     var(--color-panel-sunk);
+  --code:     var(--color-panel-sunk);
+  --foot:     color-mix(in srgb, var(--color-panel) 85%, var(--color-panel-sunk));
+  --lane:     color-mix(in srgb, var(--color-panel) 88%, var(--color-panel-sunk));
+  --cell:     color-mix(in srgb, var(--color-panel-raised) 92%, var(--color-glass));
+  --mcell:    color-mix(in srgb, var(--color-panel-raised) 97%, var(--color-panel));
+  --cell2:    color-mix(in srgb, var(--color-panel-raised) 84%, var(--color-glass));
+  --cell3:    color-mix(in srgb, var(--color-panel-raised) 94%, var(--color-panel));
+  --hotfill:  color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
+  --hover:    color-mix(in srgb, var(--color-panel-raised) 95%, var(--color-glass));
+  --onbg:     color-mix(in srgb, var(--color-panel-raised) 89%, var(--color-glass));
+
+  /* HAIRLINES. The kit's rule on panel, and two weaker steps toward it. */
+  --rule:     var(--color-rule-panel);
+  --cellrule: color-mix(in srgb, var(--color-rule-panel) 80%, var(--color-glass));
+  --grid:     color-mix(in srgb, var(--color-rule-panel) 70%, var(--color-panel));
+  --faint:    color-mix(in srgb, var(--color-rule-panel) 60%, var(--color-glass));
+
+  /* TEXT. Two levels in the kit, four in the lab, so the two middles are
+     mixed. glass is AA on panel at 13.6:1 and glass-muted at 5.4:1, so
+     nothing below is dimmer than glass-muted. */
+  --bright:   var(--color-glass);
+  --text:     color-mix(in srgb, var(--color-glass) 88%, var(--color-glass-muted));
+  --mid:      var(--color-glass-muted);
+  --dim:      var(--color-glass-muted);
+  --reg:      color-mix(in srgb, var(--color-glass-muted) 70%, var(--color-glass));
+  --axis:     var(--color-glass-muted);
+
+  /* THE BUSES. This is what the categorical hues are for: tokens.css calls
+     them "Categorical. Assigns identity to a region, a bus, a signal class",
+     and address, data and ALU are three signal classes. The base forms are
+     used, not the -ink forms, because everything here is on panel. */
+  --addr:     var(--color-ocean);      /* Ocean Data, and it was already cyan */
+  --data:     var(--color-burnt);      /* Burnt Silicon */
+  --alu:      var(--color-mustard);    /* Mustard Conductor, and it was amber */
+  --teal:     var(--color-ocean);      /* one more address-side accent */
+
+  /* THE CLOCK. The kit's phase rail already lights the active half in
+     --color-blue, so phi1 takes it and the two components agree on what an
+     active phase looks like. phi2 is Forest Logic: it is the evaluate phase,
+     and forest is the one categorical hue the buses did not take. */
+  --phi1:     var(--color-blue);
+  --phi2:     var(--color-forest);
+  --glow:     var(--phi1);
+
+  /* TRACES AND THE CURSOR. Categorical again, and distinct from the buses. */
+  --cursor:   var(--color-mustard);
+  --t2:       var(--color-forest);
+  --t3:       var(--color-mustard);
+
+  /* POWER, and this one is a correction rather than a mapping.
+     It was #E2574B, a red, for the control that throws the machine away. In
+     this palette red means ASSERTION FAILED and nothing else, so a red power
+     button would make a destructive control and a broken invariant look the
+     same. ATTENTION is the accent for something that needs a human, which is
+     exactly what a power switch is. */
+  --power:    var(--color-orange);
+
+  /* TYPE. The lab and the style guide had already converged on these three
+     families without knowing it, which is why dropping the lab's <head> costs
+     nothing: the kit self-hosts the same Archivo, IBM Plex Sans and IBM Plex
+     Mono that the lab was fetching from Google. */
+  --mono:     var(--font-mono);
+  --sans:     var(--font-sans);
+  --disp:     var(--font-display);
+}
+
+/* The lab's own rules set `body` colours, which reach nothing now that it is
+   a div inside this site. Restated on the shell so the page still has its
+   ground and its base voice. */
+.lab-shell {
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--sans);
+}

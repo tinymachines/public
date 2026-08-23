@@ -122,8 +122,8 @@
           "piece": "halfwave",
           "serves_today": "https://halfwave.tinymachines.ai",
           "lands_at": "/6502/lab",
-          "lands_at_settled": false,
-          "status": "not started",
+          "lands_at_settled": true,
+          "status": "here",
           "nav": false,
           "nav_label": null
         }
