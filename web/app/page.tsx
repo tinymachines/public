@@ -5,6 +5,7 @@ import { pieces } from "@/lib/pieces";
 import { specimenCount } from "@/lib/zoo";
 import { Masthead, SiteNav, SiteFooter } from "./components/SiteFrame";
 import { PieceStatus } from "./components/PieceStatus";
+import { Halfphi } from "./components/Halfphi";
 
 /**
  * The front page. START-HERE.md step 4.
@@ -32,6 +33,16 @@ export default function Home() {
   const six = pieces();
   const die = chip();
   const hosted = six.filter((p) => p.public_url);
+
+  // START-HERE.md step 6. Read from the list rather than hardcoded, so a key
+  // rename is a build failure here instead of a section that quietly vanishes.
+  const halfphi = six.find((p) => p.key === "halfphi");
+  if (!halfphi) {
+    throw new Error(
+      'data/pieces.json has no piece keyed "halfphi". The front page features it ' +
+        "by name, so this is a build failure rather than a missing section.",
+    );
+  }
 
   return (
     <main className="page">
@@ -70,6 +81,10 @@ export default function Home() {
           <b>{specimens} specimens</b> counted from style/zoo.html at build
         </span>
       </div>
+
+      <h2 className="eyebrow">Start here if you build things</h2>
+
+      <Halfphi piece={halfphi} />
 
       <h2 className="eyebrow">The six pieces</h2>
 

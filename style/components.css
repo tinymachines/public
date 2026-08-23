@@ -1170,3 +1170,22 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 .piece-grid .rail h3 { display: flex; align-items: center; gap: calc(var(--u) * 2); flex-wrap: wrap; }
 .piece-links { display: flex; gap: calc(var(--u) * 2); margin: calc(var(--u) * 3) 0 0; }
 .piece-note { font-size: var(--text-micro); margin-top: calc(var(--u) * 2); }
+
+/* halfphi on the front page: the mark beside its sentence. .rail is the card;
+   this is only the arrangement. It collapses to one column on a narrow screen
+   at the same breakpoint the page frame uses, so there is no width where the
+   mark and the text are fighting over 300 pixels. */
+.halfphi {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: calc(var(--u) * 6);
+  align-items: center;
+  margin: calc(var(--u) * 6) 0 calc(var(--u) * 10);
+}
+.halfphi img { display: block; }
+.halfphi p { margin: 0 0 calc(var(--u) * 3); font-size: var(--text-fine); line-height: 1.55; }
+.halfphi-links { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin: 0; }
+
+@media (max-width: 40rem) {
+  .halfphi { grid-template-columns: minmax(0, 1fr); justify-items: start; gap: calc(var(--u) * 4); }
+}
