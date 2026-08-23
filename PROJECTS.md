@@ -55,11 +55,22 @@ web/app/
     ...             the explorer, the games and the lab arrive here
   hotbits/          when there is a hotbits
 api/                the roof's own API
+projects/
+  6502/
+    archive/        the archival drip: tools a project owns that are not routes
 style/
   tokens.css  components.css  zoo.html         the kit, shared, never forked
   projects/6502.css  projects/hotbits.css      the silos
 data/projects.json                             the manifest
 ```
+
+**A project's web surfaces go under `web/app/<project>/`; everything else it
+owns goes under `projects/<project>/`.** That second half was not in the first
+draft of this file, and it was added by the first thing that arrived: the
+archival drip is a Python harvester belonging to the 6502 project, and it is
+not a route. A structure with nowhere to put it would have put it in `tools/`
+at the top level, which is where a project's code goes to stop belonging to a
+project.
 
 **A route is in a project because of where it sits.** `web/app/6502/layout.tsx`
 stamps `data-project="6502"` on everything beneath it, so a surface is siloed on

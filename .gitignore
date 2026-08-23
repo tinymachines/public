@@ -29,6 +29,21 @@ deploy/HOSTING.local.md
 .idea/
 .vscode/
 
+# The archival drip writes outside the checkout by default (TM_ARCHIVE, or
+# systemd's $STATE_DIRECTORY). These are belt and braces for the case where
+# somebody points TM_ARCHIVE at the tree for a one-off run: what comes down is
+# three gigabytes of CC BY-NC-SA content that must not be redistributed from a
+# public repo. See NOTICE.md and projects/6502/archive/README.md.
+# Anchored and named, NOT a bare `archive/`. That was the first version and it
+# matched projects/6502/archive/, silently untracking the tool along with its
+# output: `git status` simply stopped mentioning the files. Caught with
+# `git check-ignore -v` before the commit, which is the only way to see it.
+/archive/
+wayback/
+cdx-full/
+**/archive/cdx/
+**/archive/files/
+
 # Generated from style/tokens.css by style/build-icon.py on every build.
 # Committing them would make the icon a second copy of the palette, and a tab
 # icon one revision behind the tokens looks exactly like a tab icon.

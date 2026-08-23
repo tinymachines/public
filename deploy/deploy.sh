@@ -48,6 +48,13 @@ python3 style/check-silo.py || fail "check-silo"
 say "3. API tests"
 (cd api && python3 -m pytest . -q) || fail "pytest"
 
+# The projects' own tools. A separate invocation rather than one rooted at the
+# repo, because api/ has a conftest that points TM_DB at a temp file and
+# collecting both under one root would put that fixture in charge of tests it
+# knows nothing about.
+say "3b. Project tools"
+python3 -m pytest projects -q || fail "pytest projects"
+
 # The build regenerates the icons from the palette and runs the output checks,
 # which is where the airgap, frontmatter, CSP and robots assertions live.
 say "4. Build"
