@@ -49,12 +49,31 @@ fi
 say "5. Restart"
 sudo systemctl restart tinymachines-api
 sudo systemctl restart tinymachines-web
-sleep 4
+
+# Wait for the ports, do not sleep and hope. A fixed sleep was here first and
+# it raced: `next start` was not answering yet when the verification began, so
+# one endpoint came back 000 and the deploy reported a failure that was really
+# a stopwatch. Polling makes the outcome depend on the service rather than on
+# how fast this box happens to be today.
+wait_for() {
+  local name=$1 port=$2 tries=60
+  while [ "$tries" -gt 0 ]; do
+    if curl -sf -o /dev/null -m 2 "http://127.0.0.1:$port/" 2>/dev/null; then
+      printf '  %-20s listening on %s\n' "$name" "$port"
+      return 0
+    fi
+    tries=$((tries - 1))
+    sleep 0.5
+  done
+  fail "$name never answered on 127.0.0.1:$port"
+}
+
 for unit in tinymachines-web tinymachines-api; do
   state=$(systemctl is-active "$unit" || true)
   [ "$state" = "active" ] || fail "$unit is $state"
-  printf '  %-20s %s\n' "$unit" "$state"
 done
+wait_for tinymachines-web 6511
+wait_for tinymachines-api 6510
 
 say "6. Verify"
 BASE="https://tinymachines.ai"

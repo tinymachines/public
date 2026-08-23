@@ -280,7 +280,13 @@ h2.display { font-size: var(--text-h2); }
 
 .masthead {
   display: grid;
-  grid-template-columns: auto 1fr;
+  /* minmax(0, 1fr), not 1fr. A bare 1fr will not shrink below the min-content
+     width of its contents, and the contents include a single unbreakable word
+     at --text-h1. On a 390px viewport "tinymachines" at 48px is wider than the
+     column, so the grid track grew and the whole PAGE scrolled sideways. The
+     symptom is not a clipped heading, it is a document that slides under your
+     thumb, and it was on three routes. */
+  grid-template-columns: auto minmax(0, 1fr);
   gap: calc(var(--u) * 4);
   align-items: center;
   padding-bottom: calc(var(--u) * 4);
@@ -300,6 +306,7 @@ h2.display { font-size: var(--text-h2); }
   box-shadow: var(--shadow-card);
 }
 .masthead h1 { margin: 0; }
+.masthead > div { min-width: 0; }
 .mh-meta { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 2); }
 
 /* ---------------------------------------------------------------------------
@@ -869,13 +876,13 @@ h2.display { font-size: var(--text-h2); }
    token that does not exist, which is the silent-drop trap.
    ------------------------------------------------------------------------ */
 
+/* The grid only. The frame around it is .page, which wraps this, so the two
+   cannot apply their padding twice or drift to different widths. */
 .docs-shell {
   display: grid;
   grid-template-columns: minmax(0, calc(var(--u) * 58)) minmax(0, 1fr);
   gap: calc(var(--u) * 12);
-  max-width: calc(var(--u) * 280);
-  margin: 0 auto;
-  padding: calc(var(--u) * 12) calc(var(--u) * 8);
+  margin-top: calc(var(--u) * 10);
 }
 
 /* One column below the point the two stop fitting. The nav goes first because
@@ -1066,11 +1073,53 @@ h2.display { font-size: var(--text-h2); }
 }
 
 @media (max-width: 40rem) {
-  .page,
-  .docs-shell { padding: calc(var(--u) * 8) calc(var(--u) * 5); }
+  .page { padding: calc(var(--u) * 8) calc(var(--u) * 5); }
+
 }
 
 /* The measured chip is inline-flex, so a long provenance string on a narrow
    screen pushed its parts apart instead of wrapping. It is a stamp; it should
    wrap like a stamp. */
 .measured { flex-wrap: wrap; }
+
+/* The page footer. A rule, and the same mono caps as a crumb, because a
+   footer is a crumb at the other end of the document. Lives here rather than
+   as an inline style on the component: a page does not fork the kit. */
+.site-foot {
+  margin-top: calc(var(--u) * 16);
+  padding-top: calc(var(--u) * 4);
+  border-top: 1px solid var(--color-rule);
+}
+
+/* The masthead's title is a display h1, but .prose > h1 does not reach it:
+   the masthead sits outside the prose column. Stated here so the two cannot
+   drift to different sizes.
+
+   The narrow override sits immediately below rather than up in the page frame
+   media query, and that placement is the fix for a real bug. It was written
+   there first, and this block came later in the file: same specificity, later
+   rule wins, so the override silently did nothing and the heading kept
+   overflowing at 390px. Two rules for one property belong next to each
+   other. */
+.masthead h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+  color: var(--color-ink);
+}
+
+@media (max-width: 40rem) {
+  /* Measured, not guessed: at 390px the frame leaves 350px, the die and its
+     gap take 60 of that, and the longest title the site has, "Documentation",
+     needs about 250 at --text-h2. */
+  .masthead { gap: calc(var(--u) * 3); }
+  .masthead h1 { font-size: var(--text-h2); }
+  .masthead .die { width: calc(var(--u) * 12); height: calc(var(--u) * 12); }
+}
+
+/* A tag used as a link is still a tag, but it has to say so on hover. */
+a.tag { text-decoration: none; transition: color var(--t-snap) var(--ease-snap), border-color var(--t-snap) var(--ease-snap); }
+a.tag:hover { color: var(--color-ink); border-color: var(--color-ink-muted); }
+a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-burnt-ink); }

@@ -1,38 +1,34 @@
-import Link from "next/link";
-import { docsTree, rootPage, type TreeNode } from "@/lib/docs";
+import { docsTree, rootPage } from "@/lib/docs";
+import { DocsNav } from "../components/DocsNav";
+import { Masthead, SiteNav, SiteFooter } from "../components/SiteFrame";
 
 /**
- * The navigation, derived from the directory tree on every build.
+ * The docs shell: masthead, tree navigation, document.
  *
- * A page that exists appears here. A page that is deleted vanishes from here.
- * Neither takes an edit to this file, which is the entire point: a nav missing
- * one link still looks exactly like a nav, so the only safe nav is one nobody
- * maintains.
+ * The navigation is still derived from the directory tree on every build. A
+ * page that exists appears; a page that is deleted vanishes; neither takes an
+ * edit here. What changed is that it now renders as the kit's .tree rather
+ * than as a bare list, and marks where you are standing.
  */
-function NavList({ nodes }: { nodes: TreeNode[] }) {
-  return (
-    <ul>
-      {nodes.map((node) => (
-        <li key={node.page.route}>
-          <Link href={node.page.route}>{node.page.title}</Link>
-          {node.children.length > 0 && <NavList nodes={node.children} />}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default function DocsLayout({ children }: LayoutProps<"/docs">) {
   const root = rootPage();
   const tree = docsTree();
 
   return (
-    <div className="docs-shell">
-      <nav className="docs-nav" aria-label="Documentation">
-        <Link href={root.route}>{root.title}</Link>
-        <NavList nodes={tree} />
-      </nav>
-      <main className="docs-body prose">{children}</main>
+    <div className="page">
+      <Masthead
+        die="6502"
+        title="Documentation"
+        crumb={<><b>tinymachines</b> / docs</>}
+        meta={<SiteNav here="docs" />}
+      />
+      <div className="docs-shell">
+        <div className="docs-nav">
+          <DocsNav nodes={tree} root={root} />
+        </div>
+        <main className="docs-body prose">{children}</main>
+      </div>
+      <SiteFooter />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Guide from "../../../style/STYLE.md";
 import { specimenCount } from "@/lib/zoo";
+import { Masthead, SiteNav, SiteFooter } from "../components/SiteFrame";
 
 /**
  * The style guide: ../../style/STYLE.md, rendered through the same MDX
@@ -30,15 +31,14 @@ export default function StylePage() {
   const specimens = specimenCount();
 
   return (
-    <div className="docs-shell">
-      <nav className="docs-nav" aria-label="Style">
-        <Link href="/style">Style guide</Link>
-        <ul>
-          <li><Link href="/style/zoo">Widget zoo</Link></li>
-          <li><Link href="/docs">Documentation</Link></li>
-        </ul>
-      </nav>
-      <main className="docs-body prose">
+    <div className="page">
+      <Masthead
+        die="STY"
+        title="Style guide"
+        crumb={<><b>tinymachines</b> / style</>}
+        meta={<SiteNav here="style" />}
+      />
+      <main className="prose">
         {/* The measured chip, used the way the zoo uses it: an inline span
             carrying a figure and where the figure came from, inside a chips
             row. It is not a paragraph class. The first version of this put it
@@ -56,6 +56,7 @@ export default function StylePage() {
         </p>
         <Guide />
       </main>
+      <SiteFooter />
     </div>
   );
 }
