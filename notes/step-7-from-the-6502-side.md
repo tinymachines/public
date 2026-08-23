@@ -1,10 +1,18 @@
-# Step 7: what is needed from `tinymachines/6502`
+# What `tinymachines/6502` needs to do for step 7
 
-Written from this repository, which does not reach across. Everything below is
-a request or a finding, not a change. Measured 2026-08-22 against the checkout
-at `~/projects/tinymachines/6502` and the live API.
+Written from `tinymachines/public`, which does not reach across. Everything
+below is a request or a finding, never a change. Every claim was measured
+against the checkout at `~/projects/tinymachines/6502` and the live API on
+2026-08-22, and the measurement is given so it can be re-run rather than
+believed.
 
-## The brief's blocker is gone
+**Nothing here blocks the roof.** `/engine/tm6502.mjs` and
+`/docs/6502/two-ways-in` are built and serving. This is the list of things that
+would close the remaining gaps, in the order they unblock each other.
+
+---
+
+## First: the brief's blocker is gone
 
 `START-HERE.md` step 7 says:
 
@@ -13,83 +21,122 @@ at `~/projects/tinymachines/6502` and the live API.
 
 **That is no longer true.** `crates/v6502-wasm/src/lib.rs` exports
 `exportMachine()` at line 323 and `importState()` at line 385, both built on
-the same codec the service uses: `state::snapshot` and
-`MachineState::from_hex`. `exportMachine()` emits the API's own `{state,
-memory}` JSON.
+the codec the service already uses: `state::snapshot` and
+`MachineState::from_hex` in `crates/v6502-sim/src/state.rs`. `exportMachine()`
+emits the API's own `{state, memory}` JSON.
 
-So the two surfaces already exchange a machine, and the interchangeability
-property step 7 is aiming at is available today.
+**Measured, not read.** A machine shaped exactly as the wasm emits it,
+including the missing `version` field, was posted to the live `POST /v1/step`
+and stepped from half-cycle 0 to 8. `version` is `const 1` with a default and
+is absent from the schema's `required` list, so its absence validates.
 
-**Verified rather than read.** A machine shaped exactly as the wasm emits it,
-including the missing `version` field, was posted to the live
-`POST /v1/step` and stepped from half-cycle 0 to 8. `version` is `const 1` with
-a default and is not in the schema's `required` list, so its absence validates.
+So the two surfaces already exchange a machine, and the interchangeability step
+7 is aiming at is available today. **The paragraph beginning "The blocker is
+concrete" is what needs rewriting in `START-HERE.md`.**
 
-`START-HERE.md` step 7 should be updated, and the wording that needs changing
-is the paragraph beginning "The blocker is concrete".
+---
 
-## What this repository has built
+## 1. Memory should travel with `importState`, or the asymmetry should be documented
 
-- `web/public/engine/tm6502.mjs`, served at `/engine/tm6502.mjs`. One session
-  interface over two backends, no build step and no dependencies. MIT, and it
-  contains no chip.
-- `docs/6502/two-ways-in.mdx`, which documents the shared shape and the name
-  mapping, and runs the worked example live against the API.
+**What is true now.** `importState` restores the chip half only. Memory goes
+separately through `fillMemory` and `load`, which the crate's own doc comment
+says plainly.
 
-## What is wanted from the 6502 side
+**Why it matters.** It is the one place the two surfaces genuinely differ
+rather than differ in naming. Over HTTP a machine is one value and arrives
+whole. In the browser it is two calls, and a caller who makes only the first
+gets a chip that is correct running a program that is not there. That failure
+looks like a simulation bug, not a missing call.
 
-Four things, in the order they unblock each other.
+`/engine/tm6502.mjs` does both, in `restoreInto()`, so the wrapper is not
+blocked. The request is so that a reader who skips the wrapper is not.
 
-### 1. Memory should travel with `importState`, or the asymmetry should be documented
+**Either would do.** An `importMachine(json)` that does both, which is nicer.
+Or one sentence on `importState` saying a machine is not restored until memory
+is too, which costs nothing.
 
-`importState` restores the chip half only. Memory goes separately through
-`fillMemory` and `load`, which the crate's own comment says. The wrapper does
-this and it works, but it is the one place the two backends genuinely differ
-rather than differ in naming, and a caller who forgets it gets a chip that is
-correct running a program that is not there.
+## 2. A JavaScript package that ships no die data
 
-Either an `importMachine(json)` that does both, or a doc comment on
-`importState` saying plainly that a machine is not restored until memory is
-too. The first is nicer; the second costs nothing.
+**This is the one with a licence consequence, and it is easy to get backwards.**
 
-### 2. A published JavaScript package that ships no die data
+**Measured.** `v6502-wasm` depends on `v6502-sim` depends on `v6502-netlist`,
+and `crates/v6502-netlist/src/lib.rs:26` does
+`include_bytes!(concat!(env!("OUT_DIR"), "/netlist.bin"))`. That blob is 32,628
+bytes. The built bundle at `dist/pkg/v6502_wasm_bg.84797a3e.wasm` is 108,956
+bytes and contains it.
 
-The current 106 KB wasm bundle **embeds the die data**: `v6502-wasm` depends on
-`v6502-sim` depends on `v6502-netlist`, which `include_bytes!`s `netlist.bin`.
-That bundle carries CC BY-NC-SA 3.0 whatever the repo's licence file says about
-the code.
+So **that bundle carries CC BY-NC-SA 3.0**, whatever the repository's licence
+file says about the code around it. A JavaScript package that bundled it would
+put NonCommercial and ShareAlike on something advertised as MIT.
 
-A JavaScript package that wants to be MIT the way the crate is has to ship no
-die data and take a netlist at runtime, exactly as `halfphi` does in Rust. Two
-packages, split along the line the Rust side already draws. That is also the
-better product: chip-agnostic, and it loads the 6800 and the Z80 as well.
+**What to build.** A package that ships no die data and takes a netlist at
+runtime, exactly as `halfphi` does in Rust. Two packages, split along the line
+the Rust side already draws between `halfphi`, which names no chip, and
+`v6502-netlist`, which is the die data. That is also the better product:
+chip-agnostic, and it loads the 6800 and the Z80 as well.
 
-Until that exists, `local({ engine })` in the wrapper is code with nothing to
-run against from here, and this site cannot demonstrate the local backend
-without serving NonCommercial data from an MIT page.
+**What it unblocks here.** Until it exists, `local({ engine })` in the wrapper
+is code with nothing to run against, and this site cannot demonstrate the local
+backend without serving NonCommercial data from a page that is MIT.
 
-### 3. An assembler on the wasm side, or a clear statement that there is not one
+## 3. Publish the assembler that already exists
 
-`local()` cannot assemble, because the wasm build has no assembler. The wrapper
-refuses with that reason and points at the remote backend. That is honest but
-it means "the same interface either way" has one hole in it, and it is the hole
-a beginner hits first.
+**This one turned out to need no Rust work at all, and my earlier note asking
+for a Rust assembler was wrong.**
 
-### 4. Two names that could match and do not
+**Measured.** `web/asm.js` is a 376-line ES module exporting `assemble(source,
+{org})` and `AsmError`. It imports exactly one thing, `OPCODES` from
+`./disasm.js`, which is 96 lines and imports nothing. Neither file mentions the
+netlist, the die data or any `.bin`, and neither makes a network call. Run
+straight out of the tree under node it assembles `LDA #$2E / CLC / ADC #$14 /
+BRK` to `a9 2e 18 69 14 00`, byte for byte what the API returns for the same
+source.
 
-Not important, and cheap:
+It is also **the only assembler in the project**: `service/asm-bridge.mjs` says
+so, and the Python service shells out to it rather than keeping a second one,
+so the two cannot drift.
+
+**So the request is small.** Publish `asm.js` and `disasm.js` as an MIT package,
+or simply serve them at a stable URL. 19 KB for the pair, no dependencies, no
+die data. That closes the one hole in "the same interface either way": `local()`
+currently cannot assemble and says so, and it is the hole a beginner hits first.
+
+## 4. Two names that could match and do not
+
+Not important, and cheap.
 
 | wasm | HTTP |
 |---|---|
 | `runHalfCycles(n)` | `half_cycles` |
-| `stepInstruction(max)` | `until: "instruction"`, `max_half_cycles` |
+| `stepInstruction(max)` | `until: "instruction"` plus `max_half_cycles` |
 
 The wrapper maps them. If the crate ever grows a convenience method, matching
-the request field names would remove the mapping.
+the request field names would delete the mapping rather than move it.
+
+---
+
+## What is already right, and should not be disturbed
+
+Worth stating, because the list above is all deficits and the balance is
+misleading.
+
+- **The codec is the same on both sides and it is written down.** Lowercase
+  hex, bit *i* of a set in byte *i*/8 LSB first. Measured on a live machine:
+  216 bytes for each node set, 432 hex characters, and 439 bytes for the
+  transistor set, 878 characters. Exactly the numbers `START-HERE.md` states.
+- **`exportMachine` emits the service's shape rather than a second one.** That
+  decision is the reason step 7 is a wrapper and not a protocol.
+- **The API is stateless and carries the whole machine.** This is what makes
+  the two backends interchangeable by construction rather than by effort. Start
+  a run in the browser, finish it on the server, or the reverse. Demonstrated
+  from this repository: a machine exported after 40 half-cycles, imported into
+  a second session, and continued to 50.
+- **`importState` clears the rewind history**, with a comment saying why:
+  keeping it would let `stepBack` walk into a machine this one never was. That
+  is the right call and worth not losing.
 
 ## One thing found on the way that is not step 7
 
-`POST /v1/step` takes `half_cycles`. An earlier attempt here sent `n` and got a
-422 with no hint about which field was wrong, which cost a round. Not a bug:
-FastAPI's validation error does name the field, and reading it was faster than
-guessing. Recorded only because the next person will make the same guess.
+`POST /v1/step` takes `half_cycles`. An attempt here sent `n` and got a 422.
+Not a bug: FastAPI named the field in the response and reading it was faster
+than guessing. Recorded only because the next person will make the same guess.

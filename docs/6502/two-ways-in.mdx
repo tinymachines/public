@@ -106,3 +106,10 @@ repository.
 
 `local()` also cannot assemble, because the wasm build has no assembler. It
 says so and points at the remote backend rather than returning empty bytes.
+
+That gap is smaller than it looks. The assembler is already JavaScript:
+`web/asm.js` in the 6502 repository is an ES module exporting `assemble()`, it
+imports one opcode table and nothing else, and it touches no die data. It is
+the only assembler in that project, which is why the Python service shells out
+to it rather than keeping a second one. Publishing it would close this hole
+with no Rust work at all. See `notes/step-7-from-the-6502-side.md`.
