@@ -186,12 +186,19 @@ h2.display { font-size: var(--text-h2); }
   color: var(--color-paper);
   box-shadow: 3px 3px 0 var(--color-ink);
 }
+/* The secondary variant, and it is SHADED rather than transparent.
+   It was `background: transparent` with no shadow, which made it a rectangle
+   of text inside a hairline: on a page whose every static box is also a
+   rectangle inside a hairline, nothing about it said it could be pressed. The
+   report was "very hard to see what is clickable", and it was right.
+   A sunk ground and the same 3px detent as the primary put it in the same
+   family: one is the action, both are controls. */
 .btn-ghost {
-  background: transparent;
+  background: var(--color-paper-sunk);
   color: var(--color-ink);
-  box-shadow: 3px 3px 0 transparent;
+  box-shadow: 3px 3px 0 var(--color-ink-faint);
 }
-.btn-ghost:hover { background: var(--color-paper-sunk); }
+.btn-ghost:hover { background: var(--color-paper); box-shadow: 3px 3px 0 var(--color-ink); }
 .btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--color-ink); }
 .btn:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
 
@@ -234,18 +241,22 @@ h2.display { font-size: var(--text-h2); }
 .measured b { color: var(--color-ink); font-weight: 500; }
 
 .chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); }
+/* A chip is a toggle, so it is shaded like one. Same reasoning as .btn-ghost:
+   on paper, a hairline box is what every static thing already is. The pressed
+   state below is unchanged and is the strongest signal in the component. */
 .chip {
   padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
   font-family: var(--font-sans);
   font-size: var(--text-fine);
   font-weight: 500;
-  background: var(--color-paper);
+  background: var(--color-paper-sunk);
   border: 1px solid var(--color-ink-faint);
   border-radius: var(--radius-hair);
-  color: var(--color-ink-muted);
+  color: var(--color-ink);
   cursor: pointer;
   transition: all var(--t-snap) var(--ease-snap);
 }
+.chip:hover:not([aria-pressed="true"]) { border-color: var(--color-ink); }
 .chip[aria-pressed="true"] {
   background: var(--color-ink);
   border-color: var(--color-ink);
@@ -1495,4 +1506,135 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    scroll-margin-top for it, and it is not inside this shell. */
 .app-shell :is(h1, h2, h3, h4, h5, h6, [id]) {
   scroll-margin-top: calc(var(--app-head-h, 11rem) + var(--u) * 4);
+}
+
+/* ---------------------------------------------------------------------------
+   22. THE MENU: one hamburger, and the section you are standing in
+
+   Every page carries the same control and it opens a different menu, because
+   what a reader wants next depends on where they are. The site's own sections
+   are always there; below them, the contents of whichever section they are in.
+   Neither list is written down: lib/nav.ts derives the first from
+   data/projects.json and the second from the directory tree, and a group
+   appears when the path matches its prefix.
+
+   The button carries the word MENU rather than three bare lines. A hamburger
+   drawn as an icon alone is the ghost button's problem one step worse: an icon
+   with no border, no ground and no word is a thing a reader has to already
+   know.
+
+   The panel is a sheet on paper rather than a dark overlay. Panel means the
+   machine talking, and a navigation menu is not the machine talking.
+   ------------------------------------------------------------------------ */
+
+.menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-hair);
+  box-shadow: 3px 3px 0 var(--color-ink-faint);
+  cursor: pointer;
+  transition: box-shadow var(--t-snap) var(--ease-detent),
+              transform var(--t-snap) var(--ease-detent);
+}
+.menu-btn:hover { box-shadow: 3px 3px 0 var(--color-ink); }
+.menu-btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--color-ink); }
+.menu-btn:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+
+/* The three bars, drawn rather than typed. A glyph would come from whatever
+   font resolved, and the one thing this control cannot afford is to render as
+   a box in a fallback face. */
+.menu-btn .bars { display: grid; gap: 2px; width: calc(var(--u) * 4); }
+.menu-btn .bars i {
+  display: block;
+  height: 2px;
+  background: currentColor;
+  transition: transform var(--t-detent) var(--ease-detent), opacity var(--t-snap) linear;
+}
+/* Open, the bars become a cross: the control says what pressing it does now
+   rather than what it did a moment ago. */
+.menu-btn[aria-expanded="true"] .bars i:first-child { transform: translateY(4px) rotate(45deg); }
+.menu-btn[aria-expanded="true"] .bars i:nth-child(2) { opacity: 0; }
+.menu-btn[aria-expanded="true"] .bars i:last-child { transform: translateY(-4px) rotate(-45deg); }
+
+/* The sheet. Positioned against the masthead, which is the only element that
+   knows where the button is. */
+.menu-wrap { position: relative; }
+.menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--u) * 2);
+  z-index: 30;
+  min-width: min(24rem, calc(100vw - var(--u) * 8));
+  max-height: min(70vh, calc(100vh - var(--app-head-h, 11rem)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  box-shadow: var(--shadow-card);
+  padding: calc(var(--u) * 3);
+}
+
+.menu-group + .menu-group { margin-top: calc(var(--u) * 4); }
+.menu-group > h2 {
+  margin: 0 0 calc(var(--u) * 2);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  font-weight: 600;
+}
+
+.menu-item {
+  display: block;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border-radius: var(--radius-hair);
+  text-decoration: none;
+  color: var(--color-ink);
+  border-left: 3px solid transparent;
+}
+.menu-item b { display: block; font-family: var(--font-sans); font-size: var(--text-body); font-weight: 600; }
+/* One line on what it is. A bare list of nouns cannot tell a reader that
+   "Blueprint" and "Schematic" are two drawings of the same silicon. */
+.menu-item span { display: block; font-size: var(--text-fine); color: var(--color-ink-muted); line-height: 1.4; }
+.menu-item:hover { background: var(--color-paper-sunk); }
+.menu-item:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: -2px; }
+.menu-item[aria-current="page"] {
+  background: var(--color-paper-sunk);
+  border-left-color: var(--color-burnt-ink);
+}
+
+/* The crumb trail is navigation now rather than a label, so its parts look
+   like the links they are. The last one is where you are standing and is
+   deliberately not a link: a link to the page you are on is a control that
+   does nothing. */
+.crumb a { color: var(--color-ink-muted); text-decoration: none; border-bottom: 1px solid var(--color-ink-faint); }
+.crumb a:hover { color: var(--color-ink); border-bottom-color: var(--color-ink); }
+.crumb a:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+.crumb [aria-current="page"] { color: var(--color-ink); font-weight: 600; }
+
+/* The head band's two halves: the masthead, and the control beside it.
+   align-items: flex-start so the menu stays level with the crumb whether the
+   title runs to one line or two, rather than drifting down a page with a long
+   name. It wraps below 40rem, where the two of them side by side leave the
+   title about a hundred pixels. */
+.app-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--u) * 4);
+}
+.app-head-row > .masthead { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 40rem) {
+  .app-head-row { flex-wrap: wrap; }
 }

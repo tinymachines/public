@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { nav } from "@/lib/projects";
-import { NavLinks } from "./NavLinks";
+import { labels, menuGroups } from "@/lib/nav";
+import { Crumbs } from "./Crumbs";
+import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
 import { AppMetrics } from "./AppMetrics";
 
@@ -64,27 +66,6 @@ export function Masthead({
 }
 
 /**
- * The site navigation, read from data/projects.json.
- *
- * It takes no props. It used to take `here`, naming the current section
- * against a union of four strings, and five pages passed it by hand: `/6502`
- * shipped passing `here="home"`, which nothing caught because a nav where
- * nothing is marked current looks exactly like a nav where you are somewhere
- * else. NavLinks reads the pathname instead, so no page passes anything and no
- * page can pass it wrong.
- *
- * The entries are derived, not listed. See lib/projects.ts: there is no
- * nav.ts, and if you find yourself writing one, stop.
- */
-export function SiteNav() {
-  return (
-    <nav className="mh-meta" aria-label="Site">
-      <NavLinks entries={nav()} />
-    </nav>
-  );
-}
-
-/**
  * The footer, from the same list as the navigation.
  *
  * It used to hold its own copy: docs, style, api, written out here. That copy
@@ -136,11 +117,15 @@ export function SiteFooter() {
  * The zoo does not use this and must not. It brings its own full-page chrome
  * and its sticky header expects the document to be the scroller, so it stays
  * outside the shell exactly as it stayed outside the frame before.
+ *
+ * There is no `crumb` prop any more. Seven pages each wrote their own literal,
+ * none of them checked against anything; Crumbs derives the trail from the
+ * path and its labels from the same place the menu takes them, so a crumb
+ * cannot call a page something the menu does not.
  */
 export function Shell({
   die,
   title,
-  crumb,
   navExtra,
   titleIsHeading,
   children,
@@ -148,7 +133,6 @@ export function Shell({
 }: {
   die: string;
   title: string;
-  crumb?: React.ReactNode;
   /** False where the content carries its own h1. See Masthead. */
   titleIsHeading?: boolean;
   /** An extra node beside the nav, inside <header>. One page needs it: the
@@ -163,14 +147,18 @@ export function Shell({
           Renders nothing; the CSS has a fallback for every value it sets. */}
       <AppMetrics />
       <header className="app-head">
-        <div className="band">
+        {/* The menu sits beside the masthead rather than inside it: it is a
+            control, and the masthead is a heading. Aligned to the top so it
+            stays put whether the title is one line or two. */}
+        <div className="band app-head-row">
           <Masthead
             die={die}
             title={title}
-            crumb={crumb}
+            crumb={<Crumbs labels={labels()} />}
             titleIsHeading={titleIsHeading}
-            meta={<><SiteNav />{navExtra}</>}
+            meta={navExtra}
           />
+          <Menu groups={menuGroups()} />
         </div>
       </header>
 

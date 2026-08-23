@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function AdminPage() {
   return (
-    <Shell die="ADM" title="Admin" crumb={<><b>tinymachines</b> / admin</>}>
+    <Shell die="ADM" title="Admin">
       <AdminConsole />
     </Shell>
   );

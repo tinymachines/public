@@ -47,7 +47,7 @@ export default function LabPage() {
   const { body, data, assets } = lab();
 
   return (
-    <Shell die="PHI" title="Halfwave Lab" crumb={<><b>tinymachines</b> / 6502 / lab</>}>
+    <Shell die="PHI" title="Halfwave Lab">
 
       {/* The lab's own 35 KB of rules, with its :root replaced by lab.css and
           every selector scoped to .lab-shell. A LINK rather than an inline

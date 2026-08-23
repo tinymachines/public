@@ -11,21 +11,65 @@
 # So: set -e, the build gates the restart, and the verification is part of the
 # run rather than something to remember afterwards.
 #
-#   ./deploy/deploy.sh            build, restart, verify
-#   ./deploy/deploy.sh --check    build and verify only, no restart
+# This is the ONE command between a change and it being live. Everything that
+# has to happen, happens here, in order, and each stage gates the next.
 #
-# It does NOT touch nginx. A reload there is server wide across every vhost on
-# this box, so it stays a deliberate act with `nginx -t` in front of it. See
+#   ./scripts/deploy.sh           every gate, build, restart, verify
+#   ./scripts/deploy.sh --check   every gate and the build, nothing restarted
+#   ./scripts/deploy.sh --dirty   deploy with uncommitted changes, see below
+#
+# **Commit before deploying.** The default refuses a dirty tree, and that is
+# not tidiness. The API reads its own commit out of .git and reports it at
+# /v1/meta, and stage 8 holds the running service to it: with uncommitted
+# changes the service is running code that no commit contains, and it will
+# report a commit that is not what is running. A service that misreports what
+# it is, is worse than one that is out of date. --dirty is there for
+# iterating, and says so on the way past.
+#
+# The order matters and is not obvious in one place: the build stamps
+# public/sw.js with the current commit, because a browser installs a new
+# service worker only when the file's bytes change. Committing and then
+# deploying gets the right stamp. Deploying and then committing does not, and
+# nothing would say so.
+#
+# It does NOT touch nginx. A reload there is process wide across 37 files, 80
+# server blocks and 58 server names on this box, most of them nothing to do
+# with tinymachines, so it stays a deliberate act with `nginx -t` in front of
+# it and a before/after sweep of every hostname behind it. See
 # deploy/README.md.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
-CHECK_ONLY="${1:-}"
+
+MODE=""
+for arg in "$@"; do
+  case "$arg" in
+    --check|--dirty) MODE="$MODE $arg" ;;
+    *) printf 'unknown option: %s\n' "$arg" >&2; exit 2 ;;
+  esac
+done
+case "$MODE" in *--check*) CHECK_ONLY=1 ;; *) CHECK_ONLY= ;; esac
+case "$MODE" in *--dirty*) ALLOW_DIRTY=1 ;; *) ALLOW_DIRTY= ;; esac
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
+warn() { printf '\033[33m   %s\033[0m\n' "$1"; }
 fail() { printf '\033[31mFAILED: %s\033[0m\n' "$1" >&2; exit 1; }
+
+say "0. The tree"
+DIRTY=$(git -C "$ROOT" status --porcelain)
+if [ -n "$DIRTY" ]; then
+  if [ -n "$ALLOW_DIRTY" ] || [ -n "$CHECK_ONLY" ]; then
+    warn "uncommitted changes: the service will report a commit that is not what is running"
+    printf '%s\n' "$DIRTY" | sed 's/^/     /'
+  else
+    printf '%s\n' "$DIRTY" | sed 's/^/     /'
+    fail "uncommitted changes. Commit first so /v1/meta can say what is running, or pass --dirty."
+  fi
+else
+  printf '  clean at %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+fi
 
 say "1. Lint"
 (cd web && bun run lint) || fail "eslint"
@@ -55,19 +99,29 @@ say "3. API tests"
 say "3b. Project tools"
 python3 -m pytest projects -q || fail "pytest projects"
 
-# The build regenerates the icons from the palette and runs the output checks,
-# which is where the airgap, frontmatter, CSP and robots assertions live.
+# The build is four things in a row, and each is here rather than in this
+# script because a `bun run build` in a fresh clone has to do all of them:
+# the icons and the manifest colours from the palette, the service worker
+# stamped with the commit, the lab's content-hashed assets, and then the
+# output checks, which is where the airgap, frontmatter, CSP, robots, PWA,
+# heading and DOM-contract assertions live.
 say "4. Build"
 (cd web && bun run build) || fail "build: NOT restarting, the running site is untouched"
 
-if [ "$CHECK_ONLY" = "--check" ]; then
+if [ -n "$CHECK_ONLY" ]; then
   say "Built and checked. Nothing was restarted."
   exit 0
 fi
 
+# Restarted one at a time rather than together, so a unit that fails to come
+# back is attributable. They are independent: nginx routes /api to one and
+# everything else to the other, so the site is degraded rather than down while
+# either is restarting.
 say "5. Restart"
-sudo systemctl restart tinymachines-api
-sudo systemctl restart tinymachines-web
+for unit in tinymachines-api tinymachines-web; do
+  printf '  %s\n' "$unit"
+  sudo systemctl restart "$unit"
+done
 
 # Wait for the ports, do not sleep and hope. A fixed sleep was here first and
 # it raced: `next start` was not answering yet when the verification began, so
@@ -120,12 +174,36 @@ for p in /api/v1/admin/whoami /api/v1/admin/keys /api/v1/admin/users; do
   [ "$code" = "401" ] || fail "$p answered $code with no key; expected 401"
 done
 
+# The service worker's stamp, checked from outside. It is what makes a deploy
+# replace an installed worker at all, and it is generated by the build rather
+# than committed, so this is the one place the two can be compared.
+say "7. The worker"
+swv=$(curl -s -m 20 "$BASE/sw.js" | sed -n 's/^const VERSION = "\(.*\)";$/\1/p')
+head12=$(git -C "$ROOT" rev-parse --short=12 HEAD)
+printf '  sw.js %s\n  git   %s\n' "${swv:-MISSING}" "$head12"
+if [ -z "$swv" ]; then
+  fail "sw.js carries no version; scripts/build-sw.mjs did not run or did not reach public/"
+elif [ "$swv" != "$head12" ] && [ -z "$ALLOW_DIRTY" ]; then
+  fail "sw.js is stamped $swv but HEAD is $head12; the build ran against a different commit"
+fi
+
 # The API reads its commit out of .git, so this is the deployed tree saying
 # what it is rather than this script asserting what it deployed.
-say "7. Provenance"
+say "8. Provenance"
 running=$(curl -s -m 20 "$BASE/api/v1/meta" | python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"])')
 head=$(git -C "$ROOT" rev-parse HEAD)
 printf '  git   %s\n  api   %s\n' "$head" "$running"
 [ "$running" = "$head" ] || fail "the API reports a different commit than the checkout"
+
+# The three sites this repository is a roof over. They are not deployed here
+# and nothing above touches them, which is exactly why they are checked: a
+# reload, a port, or a systemd unit that went in sideways shows up here and
+# nowhere else in this script.
+say "9. The sites this does not deploy"
+for h in 6502.tinymachines.ai games.tinymachines.ai halfwave.tinymachines.ai; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$h/" || echo 000)
+  printf '  %-28s %s\n' "$h" "$code"
+  [ "$code" = "200" ] || fail "$h answered $code; something in this deploy reached further than it should have"
+done
 
 say "Deployed."

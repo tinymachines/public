@@ -32,7 +32,7 @@ export default function ProjectPage() {
   const settled = p.surfaces.filter((s) => s.lands_at_settled).length;
 
   return (
-    <Shell die="6502" title={p.name} crumb={<><b>tinymachines</b> / 6502</>}>
+    <Shell die="6502" title={p.name}>
       <main className="prose">
         <div className="chips">
           <span className="measured">

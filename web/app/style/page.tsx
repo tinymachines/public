@@ -34,7 +34,6 @@ export default function StylePage() {
     <Shell
         die="STY"
         title="Style guide"
-        crumb={<><b>tinymachines</b> / style</>}
         /* STYLE.md opens with its own h1. */
         titleIsHeading={false}
       >

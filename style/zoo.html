@@ -146,6 +146,7 @@ details.markup pre {
       <a href="#tactile">Controls</a>
       <a href="#rails">Rails</a>
       <a href="#forms">Forms</a>
+      <a href="#nav">Navigation</a>
     </nav>
   </div>
 </header>
@@ -789,6 +790,68 @@ halfphi run <span class="s">"LDA #\$42"</span> <span class="k">--halt-on</span> 
           <span class="avatar off">G</span>
           <span class="quiet" style="font-size:.75rem">Second is a disabled account.</span>
         </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <section class="sect" id="nav">
+    <div class="sect-head"><h2>Navigation</h2><span></span></div>
+    <p>Two of these exist because a reader said the site was <b>hard to read for what is clickable</b>. On paper, a hairline box is what every static thing already is, so a control drawn as a hairline box says nothing. Everything that can be pressed is shaded and carries the 3px detent; everything that cannot, is not.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Buttons</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Two variants and no third. Both are shaded now: the secondary was <code>background: transparent</code> with no shadow, which made it a rectangle of text inside a hairline. One is the action, both are controls, and the difference between them is weight rather than whether they look pressable at all.</p>
+      <div class="spec-stage">
+        <div class="toolbar">
+          <button class="btn btn-primary" type="button">Mint key</button>
+          <button class="btn btn-ghost" type="button">Cancel</button>
+          <button class="btn btn-ghost" type="button" disabled>Unavailable</button>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Menu button</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">It carries the word. A hamburger drawn as three bare lines is an icon with no border, no ground and no label: a control a reader has to already know. The bars are drawn as elements rather than typed as a glyph, because a glyph comes from whatever font resolved and this is the one control that cannot afford to render as a box in a fallback face. Open, they become a cross, so it says what pressing it does now rather than what it did a moment ago.</p>
+      <div class="spec-stage">
+        <div class="toolbar">
+          <button class="menu-btn" type="button" aria-expanded="false"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>Menu</button>
+          <button class="menu-btn" type="button" aria-expanded="true"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>Menu</button>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Menu sheet</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Paper, not panel: panel means the machine talking and a navigation menu is not the machine talking. Each entry carries one line of what it is, which is the part a bare list of nouns cannot do. Where you are standing gets the Burnt Silicon edge, the same mark the docs tree uses, so the two navigations agree about what "here" looks like.</p>
+      <div class="spec-stage">
+        <div class="menu-panel" style="position:static;max-width:24rem;max-height:none">
+          <nav class="menu-group" aria-label="The site">
+            <h2>The site</h2>
+            <a class="menu-item" href="#nav"><b>Home</b><span>the front door</span></a>
+            <a class="menu-item" href="#nav" aria-current="page"><b>Documentation</b><span>markdown and MDX, navigation derived from the tree</span></a>
+            <a class="menu-item" href="#nav"><b>6502</b><span>a transistor-level MOS 6502 and everything built on it</span></a>
+          </nav>
+          <nav class="menu-group" aria-label="6502">
+            <h2>6502</h2>
+            <a class="menu-item" href="#nav"><b>Die Runner</b><span>the console, the cartridge format and the registry</span></a>
+            <a class="menu-item" href="#nav"><b>The halfwave lab</b><span>a 6502, half a clock phase at a time</span></a>
+          </nav>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Breadcrumbs</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">Derived from the path, not written per page. Every part is a link except the last, because a link to the page you are already on is a control that does nothing, and it is marked <code>aria-current</code> rather than merely styled. They were plain text before: the one element on a page that most looks like a way back was the one thing you could not click.</p>
+      <div class="spec-stage">
+        <nav class="crumb" aria-label="Breadcrumb">
+          <a href="#nav">tinymachines.ai</a> / <a href="#nav">6502</a> / <span aria-current="page">The halfwave lab</span>
+        </nav>
       </div>
       <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
     </article>

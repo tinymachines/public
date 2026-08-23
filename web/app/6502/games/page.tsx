@@ -56,7 +56,6 @@ export default function GamesPage() {
     <Shell
       die="RUN"
       title="Die Runner"
-      crumb={<><b>tinymachines</b> / 6502 / games</>}
       data-chip-api={CHIP_API}
       data-builders-base={BUILDERS}
       /* game.js writes the loaded cartridge's blurb into `header .sub`. The

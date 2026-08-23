@@ -7,6 +7,12 @@ and serving**, as of 2026-08-22, with `tinymachines-web.service` behind it on
 These files are the source of truth. The copies under `/etc` are copies: edit
 here, reinstall, `nginx -t`, reload.
 
+**`../scripts/deploy.sh` is the one command between a change and it being
+live.** Every gate, the build, the restarts and the verification, in order,
+each stage gating the next. It lives under `scripts/` rather than here because
+it is not a deployment artefact: this directory holds the files that get
+installed on the host, and that script is the thing that runs.
+
 See [`../START-HERE.md`](../START-HERE.md) step 1.
 
 ## Rules that already apply
@@ -36,7 +42,7 @@ in. Three consequences, all of them things a deploy has to respect from now on.
   the file from that. So nothing types the path: not the unit, not the code,
   not this file. `TM_DB` overrides it for a one-off run, and the test suite
   points it at a temp file and refuses to run if it resolves anywhere else.
-- **`deploy.sh` does not reload systemd.** It restarts units; it does not
+- **`scripts/deploy.sh` does not reload systemd.** It restarts units; it does not
   reinstall them. Changing the unit file needs
   `sudo systemctl daemon-reload` by hand, exactly as changing the nginx config
   needs `nginx -t` and a reload by hand. Both are deliberate: a script that
@@ -49,7 +55,7 @@ in. Three consequences, all of them things a deploy has to respect from now on.
   drops writes it cannot represent. Back the file up before a migration that
   matters.
 
-`deploy.sh` verifies the gate from outside as part of every run: every route
+`scripts/deploy.sh` verifies the gate from outside as part of every run: every route
 under `/api/v1/admin` must answer 401 without a key. The test suite proves that
 about the app object; this proves it about the thing on the internet, and a
 proxy rule or a stale unit can make those differ.

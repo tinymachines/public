@@ -102,15 +102,22 @@ export interface NavEntry {
  * in the manifest today and correctly not in the navigation.
  */
 export function nav(): NavEntry[] {
-  const out: NavEntry[] = [];
+  const roof: NavEntry[] = [];
+  const rest: NavEntry[] = [];
   for (const p of read().projects) {
     if (p.key === "roof") {
       for (const s of p.surfaces) {
-        if (s.nav && s.nav_label) out.push({ href: s.lands_at, label: s.nav_label });
+        if (s.nav && s.nav_label) roof.push({ href: s.lands_at, label: s.nav_label });
       }
     } else if (p.landing) {
-      out.push({ href: p.landing, label: p.name });
+      rest.push({ href: p.landing, label: p.name });
     }
   }
-  return out;
+  // The API sorts last, and it is the one ordering rule here. It is a surface
+  // rather than a section: a reader choosing where to go is choosing between
+  // the documentation, the projects and the style guide, and the API is a
+  // thing you call rather than a place you read. Listed first, as it was, it
+  // pushed the 6502 work to the end of a menu the 6502 work is the point of.
+  const isApi = (e: NavEntry) => e.href.startsWith("/api");
+  return [...roof.filter((e) => !isApi(e)), ...rest, ...roof.filter(isApi)];
 }

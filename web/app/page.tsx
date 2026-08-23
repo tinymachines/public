@@ -45,7 +45,7 @@ export default function Home() {
   }
 
   return (
-    <Shell die="6502" title="tinymachines" crumb="A transistor-level MOS 6502">
+    <Shell die="6502" title="tinymachines">
 
       <section className="prose">
         <p>
