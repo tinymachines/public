@@ -38,7 +38,17 @@ import admin
 import db
 import mcp_server
 import probe as probe_mod
-from models import Health, Index, Meta, Piece, PiecesResponse, PieceStatus, StatusResponse
+import projects as projects_mod
+from models import (
+    Health,
+    Index,
+    Meta,
+    Piece,
+    PiecesResponse,
+    PieceStatus,
+    ProjectsResponse,
+    StatusResponse,
+)
 from pieces import BY_KEY, PIECES
 from provenance import commit_and_branch
 from release import VERSION
@@ -268,6 +278,38 @@ def get_piece(key: str) -> Piece:
             detail=f"no piece named {key!r}. Valid keys: {', '.join(sorted(BY_KEY))}",
         )
     return piece
+
+
+@app.get(
+    "/v1/projects",
+    response_model=ProjectsResponse,
+    summary="The projects, their surfaces, and how much of the move has happened",
+    description=(
+        "The structure the site is organised by, which is a different question from "
+        "what the pieces are. A piece is a thing that exists; a surface is one "
+        "addressable thing a project serves. halfphi is a piece and not a surface, "
+        "because it is a library with no address. The documentation tree is a surface "
+        "and not a piece, because it is not one of the six.\n\n"
+        "Five sites are being brought under one roof, and every surface carries both "
+        "addresses: `serves_today`, where it has always answered, and `lands_at`, "
+        "where it lands here. Those stay separate on purpose. A surface that has "
+        "moved still answers at the old address, so collapsing the two would make "
+        "the API unable to say where a reader should be sent.\n\n"
+        "`lands_at_settled` is false while the path is a proposal. A public path that "
+        "moves becomes a redirect map, and a proposal written as a fact reads as "
+        "decided the next time somebody looks.\n\n"
+        "The counts are derived from the surfaces rather than tracked beside them, so "
+        "they cannot disagree with the list they describe."
+    ),
+)
+def list_projects() -> ProjectsResponse:
+    return ProjectsResponse(
+        measured_on=projects_mod.MEASURED_ON,
+        count=len(projects_mod.PROJECTS),
+        surfaces=len(projects_mod.SURFACES),
+        arrived=len(projects_mod.ARRIVED),
+        projects=projects_mod.PROJECTS,
+    )
 
 
 @app.get(

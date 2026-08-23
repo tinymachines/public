@@ -550,3 +550,105 @@ class DisabledState(BaseModel):
                     "either way.",
         examples=[True],
     )
+
+
+# ---------------------------------------------------------------------------
+# Projects and surfaces: the structure the site is organised by.
+#
+# A piece is a thing that exists. A SURFACE is one addressable thing a project
+# serves, and a project is a body of work with an identity. The two lists
+# overlap without being the same: halfphi is a piece and not a surface, because
+# it is a library with no address; the documentation tree is a surface and not
+# a piece, because it is not one of the six.
+#
+# They are joined by `Surface.piece`, and a test holds that join in both
+# directions, because either half alone is easy to satisfy while the other
+# quietly breaks.
+# ---------------------------------------------------------------------------
+
+
+class Surface(BaseModel):
+    """One addressable thing a project serves."""
+
+    key: str = Field(description="Stable identifier within its project.", examples=["games"])
+    name: str = Field(description="What it is called in prose.", examples=["Die Runner"])
+    what: str = Field(description="What it is, in a few sentences.")
+    piece: Optional[str] = Field(
+        default=None,
+        description="The key in /v1/pieces this surface is, or null when it is not one "
+                    "of the six. The documentation tree and the style guide are "
+                    "surfaces and not pieces.",
+        examples=["console"],
+    )
+    serves_today: str = Field(
+        description="Where it answers right now, probed rather than remembered. For a "
+                    "surface that has moved under the apex this is still true: it is "
+                    "where it has always answered, which is a different question from "
+                    "where to read it.",
+        examples=["https://games.tinymachines.ai"],
+    )
+    lands_at: str = Field(
+        description="The path under the apex it lands at.",
+        examples=["/6502/games"],
+    )
+    lands_at_settled: bool = Field(
+        description="False while `lands_at` is a proposal rather than a decision. A "
+                    "public path that moves becomes a redirect map, so the difference "
+                    "is worth carrying: a proposal written as a fact reads as decided "
+                    "the next time somebody looks.",
+        examples=[True],
+    )
+    status: str = Field(
+        description="Where the move has got to, in the words the manifest uses. "
+                    "`not started` means it has not moved; anything else describes "
+                    "what has arrived, which can be part of a surface.",
+        examples=["console here, registry pages not"],
+    )
+    nav: bool = Field(description="Whether the site navigation carries it.", examples=[False])
+
+
+class Project(BaseModel):
+    """A body of work with an identity, and the surfaces it serves."""
+
+    key: str = Field(description="Stable identifier, used in paths.", examples=["6502"])
+    name: str = Field(description="What it is called in prose.", examples=["6502"])
+    what: str = Field(description="What the project is.")
+    silo: Optional[str] = Field(
+        default=None,
+        description="The stylesheet scoping this project's identity tokens, or null. A "
+                    "project looks like itself by overriding a short list of tokens "
+                    "under `[data-project]`, never by forking the design system: what "
+                    "may be overridden is identity, and what may not is meaning.",
+        examples=["style/projects/6502.css"],
+    )
+    landing: Optional[str] = Field(
+        default=None,
+        description="Its page on this site, or null when it has none yet. A project "
+                    "with no landing page is absent from the navigation rather than "
+                    "dead-linked.",
+        examples=["/6502"],
+    )
+    status: str = Field(description="Where the project as a whole stands.", examples=["moving"])
+    surfaces: list[Surface] = Field(description="Everything it serves.")
+
+
+class ProjectsResponse(BaseModel):
+    """The projects, and how much of each has arrived.
+
+    The counts are derived from the surfaces rather than tracked beside them,
+    so they cannot disagree with the list they describe.
+    """
+
+    measured_on: str = Field(
+        description="When `serves_today` was last probed, from the manifest. These are "
+                    "addresses that were checked, not addresses that were remembered.",
+        examples=["2026-08-23"],
+    )
+    count: int = Field(description="How many projects.", examples=[3])
+    surfaces: int = Field(description="How many surfaces across all of them.", examples=[11])
+    arrived: int = Field(
+        description="How many surfaces are served from this site. The difference "
+                    "between this and `surfaces` is how much of the move is left.",
+        examples=[7],
+    )
+    projects: list[Project] = Field(description="Every project, the roof itself included.")

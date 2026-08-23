@@ -559,3 +559,35 @@ def test_the_version_is_the_file_and_nothing_else():
 def test_meta_reports_the_version(client):
     body = client.get("/v1/meta").json()
     assert body["version"] == (REPO / "VERSION").read_text().strip()
+
+
+def test_projects_route_reports_the_manifest(client):
+    """The counts are derived, so they cannot disagree with the list."""
+    body = client.get("/v1/projects").json()
+    assert body["count"] == len(body["projects"])
+    assert body["surfaces"] == sum(len(p["surfaces"]) for p in body["projects"])
+    assert body["surfaces"] >= 5, "not enough surfaces; this check would pass on nothing"
+    arrived = [s for p in body["projects"] for s in p["surfaces"] if s["status"] != "not started"]
+    assert body["arrived"] == len(arrived)
+    assert 0 < body["arrived"] < body["surfaces"], (
+        "either nothing or everything has arrived, which makes the count meaningless "
+        "as a check"
+    )
+
+
+def test_a_surface_carries_both_addresses(client):
+    """serves_today and lands_at stay separate because a surface that has
+    moved still answers at the old address. Collapsing them is the bug the
+    front page shipped: it linked to two subdomains for surfaces already here."""
+    body = client.get("/v1/projects").json()
+    for p in body["projects"]:
+        for s in p["surfaces"]:
+            assert s["serves_today"] and s["lands_at"], f"{p['key']}/{s['key']} is missing an address"
+            assert s["lands_at"].startswith("/"), (
+                f"{p['key']}/{s['key']} lands_at {s['lands_at']!r}, which is not a path on this site"
+            )
+            if s["status"] != "not started":
+                assert s["lands_at_settled"], (
+                    f"{p['key']}/{s['key']} has arrived but its path is still a proposal, "
+                    "which means something links to a route that may move"
+                )

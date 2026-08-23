@@ -133,10 +133,35 @@
     {
       "key": "hotbits",
       "name": "hotbits",
-      "what": "The next project after 6502 settles. Nothing has been moved and nothing has been decided about it here beyond the fact that it is next.",
+      "what": "True random bytes from the decay of a radioactive source: a Geiger counter on a Pi, with bits extracted from the inter-arrival times of decay events. Two surfaces already run and neither has moved here.",
       "silo": "style/projects/hotbits.css",
       "status": "not started",
-      "surfaces": [],
+      "surfaces": [
+        {
+          "key": "gateway",
+          "name": "The entropy gateway",
+          "what": "Keys and byte budgets in front of the TRNG. `/v1/bytes` needs `Authorization: Bearer`; `/v1/seeds` needs no key and cannot drain the pool. The open `/random/*` endpoints answer 410 and say why: the pool refills at about 75 bytes a minute and was reachable by anyone.",
+          "nav": false,
+          "nav_label": null,
+          "piece": null,
+          "serves_today": "https://hotbits.tinymachines.ai/v1/seeds",
+          "lands_at": "/hotbits/api",
+          "lands_at_settled": false,
+          "status": "not started"
+        },
+        {
+          "key": "trng",
+          "name": "The Geiger TRNG",
+          "what": "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors. It publishes its own OpenAPI document.",
+          "nav": false,
+          "nav_label": null,
+          "piece": null,
+          "serves_today": "https://hotbits.tinymachines.ai/openapi.json",
+          "lands_at": "/hotbits",
+          "lands_at_settled": false,
+          "status": "not started"
+        }
+      ],
       "landing": null
     }
   ]

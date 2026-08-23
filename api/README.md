@@ -29,6 +29,7 @@ declares them.
 | `GET /v1/meta` | What commit is running, and what built the document |
 | `GET /v1/pieces` | The six pieces: what, where, how they ship, and their terms |
 | `GET /v1/pieces/{key}` | One piece. An unknown key is a 404 naming the valid ones |
+| `GET /v1/projects` | The projects, their surfaces, and how much of the move has happened |
 | `GET /v1/status` | Which pieces are answering, **measured** |
 | `POST /mcp` | The same surface, spoken to a language model |
 | `GET /mcp` | 405 with `Allow: POST`. There is no stream to open |
@@ -213,6 +214,30 @@ work and it is not started.
   when a route has no summary. Those are here on day one rather than added
   after the first thing goes undocumented.
 - **Coins are a quota, never a price.** See `../NOTICE.md`. Not built yet.
+
+## Pieces and surfaces are different questions
+
+`/v1/pieces` is what exists. `/v1/projects` is how the site is organised, and
+the two lists overlap without being the same.
+
+A **piece** is a thing: halfphi is one, and it has no address at all, because
+it is a library. A **surface** is one addressable thing a project serves: the
+documentation tree is a surface and is not one of the six. `Surface.piece` is
+the join, and a test holds it in both directions, because either half alone is
+easy to satisfy while the other quietly breaks. The one that actually happens
+is a surface naming a piece that was renamed, since the two live in different
+files.
+
+Every surface carries **both addresses**. `serves_today` is where it has always
+answered and `lands_at` is where it lands here, and they stay separate because
+a surface that has moved still answers at the old address. Collapsing them
+would leave the API unable to say where a reader should be sent, which is
+exactly the bug the front page shipped: it linked to two subdomains for
+surfaces that had already arrived.
+
+`lands_at_settled` is false while the path is a proposal. A public path that
+moves becomes a redirect map, and a proposal written as a fact reads as decided
+the next time somebody looks.
 
 ## Reachability is measured, not asserted
 
