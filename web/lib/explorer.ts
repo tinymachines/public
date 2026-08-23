@@ -52,9 +52,31 @@ function scope(css: string): string {
   const root = postcss.parse(css);
   let scoped = 0;
 
+  // Rules for component names the kit already owns are DROPPED rather than
+  // scoped, and this is what "one entity" means in practice. A .btn inside
+  // the explorer was getting the kit's button and this page's button at once:
+  // the scoped rule won on whatever it set and the kit filled in the rest, so
+  // a control looked like neither. A button should look like a button
+  // everywhere on the site, so the kit's definition is the only one left.
+  //
+  // Deliberately a short list of self-contained CONTROLS. The structural
+  // classes that happen to share a name, .panel and .reg and .bar among them,
+  // are this page's layout and dropping those would take the page apart.
+  const KIT_OWNS = new Set(["btn", "btn-ghost", "btn-primary", "chip", "tag", "eyebrow"]);
+  let dropped = 0;
+
   root.walkRules((rule) => {
     const parent = rule.parent;
     if (parent && parent.type === "atrule" && /keyframes$/i.test(parent.name)) return;
+    // Only when EVERY selector on the rule is a kit-owned control on its own.
+    // A compound like `.btn.wide` or `.toolbar .btn` is this page saying
+    // something the kit does not, and is kept.
+    if (rule.selectors.every((sel) => KIT_OWNS.has(sel.trim().replace(/^\./, "")) && /^\.[\w-]+$/.test(sel.trim()))) {
+      dropped += 1;
+      rule.remove();
+      return;
+    }
+
     rule.selectors = rule.selectors.map((sel) => {
       const s = sel.trim();
       if (!s || s.startsWith(SCOPE)) return s;
@@ -73,6 +95,13 @@ function scope(css: string): string {
 
   if (scoped < 500) {
     throw new Error(`lib/explorer.ts: only ${scoped} rules scoped; that is not style.css.`);
+  }
+  if (dropped < 1) {
+    throw new Error(
+      `lib/explorer.ts: no rules were handed to the kit. Either this stylesheet stopped ` +
+        "defining any of the shared control names, in which case this can go, or the " +
+        "match broke and the page is about to render two buttons in one.",
+    );
   }
   return root.toString();
 }
