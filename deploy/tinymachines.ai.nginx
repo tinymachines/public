@@ -46,6 +46,17 @@ map $uri $tmapex_cache {
     # assumed: with "" here, the /api/ response carries no nginx
     # Cache-Control at all.
     "~^/api/"                                                  "";
+    # The service worker, and it must not be held. sw.js falls to the *.js
+    # rule below and was served "public, max-age=31536000"'s smaller cousin,
+    # an hour, which is an hour of a returning visitor running the previous
+    # deploy's worker. A browser installs a new worker only when the file's
+    # BYTES change, and it will not see new bytes it is not allowed to fetch.
+    #
+    # The registration already passes updateViaCache: "none", which fixes it
+    # in the browser. This fixes it at the origin, which is where it belongs:
+    # the client-side flag is one line in one app, and anything else that ever
+    # fetches /sw.js gets the right answer from the server instead.
+    "~^/sw\.js$"                                               "no-store";
     "~^/_next/static/"                                         "public, max-age=31536000, immutable";
     # Next's image optimiser. Safe to treat like a hashed asset even though it
     # is a route with a query string: the source it points at is already
@@ -133,7 +144,15 @@ server {
     # there is no injection vector for a style to arrive through. font-src
     # stays 'self', and the fonts are vendored into the repo, so nothing
     # reaches the network at all.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    #
+    # worker-src is stated rather than inherited. The site registers a service
+    # worker, and with the directive absent a worker falls back through
+    # child-src to script-src, which carries 'unsafe-inline' for the reason
+    # above. Inheriting that would mean the day script-src is loosened for a
+    # page, it is loosened for the worker too, silently. This is the one place
+    # where naming a directive costs nothing and not naming it couples two
+    # decisions that have no reason to be coupled.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
