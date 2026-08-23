@@ -1,0 +1,42 @@
+# tinymachines.ai/api: FastAPI on 127.0.0.1:6510, behind nginx.
+#
+# --root-path /api is not cosmetic. nginx proxies with a trailing slash, so
+# /api/v1/pieces arrives here as /v1/pieces and uvicorn would otherwise
+# generate a document describing paths no client can call. With it, the
+# servers block and every generated URL carry the prefix the caller uses.
+#
+# NOT 6502. 127.0.0.1:6502 is the live 6502 API. A uvicorn started on a port
+# that is already held fails to bind, and every request then goes to
+# production while looking local. That has already happened once here.
+#
+# The interpreter is named by absolute path for the reason the web unit names
+# bun by absolute path: systemd's PATH is /usr/local/sbin:...:/snap/bin and
+# nothing else, so "whatever the shell finds" is not what this unit finds.
+#
+# Loopback only. nginx reaches it on 127.0.0.1 and this box serves many other
+# vhosts; there is no reason for this port to be reachable from outside.
+#
+# Install:
+#   sudo cp deploy/tinymachines-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now tinymachines-api
+#
+# Unlike the web unit, this needs no build step: it reads its own source. But
+# it holds the six pieces in memory, so a change to api/ needs a restart.
+
+[Unit]
+Description=tinymachines.ai API (FastAPI, REST and MCP)
+After=network.target
+
+[Service]
+Type=simple
+User=bisenbek
+WorkingDirectory=/home/bisenbek/projects/tinymachines/public
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/python3 -m uvicorn app:app --app-dir api --host 127.0.0.1 --port 6510 --root-path /api
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

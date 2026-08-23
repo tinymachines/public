@@ -19,6 +19,24 @@
 # value in a variable, every header is declared once at server level and no
 # location needs add_header at all.
 
+# A second map, on status rather than path, because the first one cannot see
+# whether the response succeeded.
+#
+# This exists because of a measured bug. /_next/static/ is marked immutable
+# for a year, which is right for a content-hashed asset and catastrophic for a
+# 404: `next start` serves only the CURRENT build's chunks, so every rebuild
+# deletes the previous hashes. A browser that asked for a chunk during a
+# deploy got a 404 carrying "public, max-age=31536000, immutable" and cached
+# THAT for a year. The symptom is a page with no stylesheet at all, which
+# looks like the design was never applied rather than like a caching fault.
+#
+# add_header skips a header whose final value is empty, so exactly one of this
+# and the map below ever produces a value.
+map $status $tmapex_error_cache {
+    default    "";
+    "~^[45]"   "no-store";
+}
+
 map $uri $tmapex_cache {
     # Quoted: nginx parses a bare { in a map key as the start of a block.
     #
@@ -89,7 +107,11 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header Cache-Control $tmapex_cache always;
+    # No `always` on this one, deliberately. Without it nginx applies the
+    # header only to 2xx and 3xx, which is precisely the set that should be
+    # cacheable. The error case is handled by the line below instead.
+    add_header Cache-Control $tmapex_cache;
+    add_header Cache-Control $tmapex_error_cache always;
 
     # The API: uvicorn with --root-path /api, so it generates its own URLs
     # under the prefix and openapi.json stays correct behind the proxy.

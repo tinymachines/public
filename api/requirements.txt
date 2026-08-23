@@ -1,0 +1,17 @@
+# The versions this was built and measured against, read off the interpreter
+# that runs it rather than pinned from memory.
+#
+# These are NOT installed into a virtualenv on this host. The service runs on
+# the system interpreter, which is how 6502-api.service already runs here, and
+# diverging would be a second deployment story for one box to maintain. This
+# file is what a fresh clone elsewhere needs.
+#
+# Python 3.10.12 on the host at the time of writing.
+
+fastapi==0.121.2
+uvicorn==0.38.0
+pydantic==2.11.7
+httpx==0.28.1
+
+# Tests only.
+pytest>=8.0
