@@ -437,6 +437,68 @@ if (game) {
   }
 }
 
+// 13. The three things that make this a PWA, checked as one set.
+//     Each fails silently on its own, which is why they are checked together:
+//     a manifest naming an icon that is not there does not error, the install
+//     prompt simply never appears; a worker with no version stamp installs
+//     once and is never replaced; and a manifest with no maskable icon gets
+//     the mark cropped by whatever shape a launcher likes. None of the three
+//     shows up on the page or in the console.
+const MANIFEST = path.join(APP, "manifest.webmanifest.body");
+let mf = null;
+try { mf = JSON.parse(await readFile(MANIFEST, "utf8")); } catch { /* reported below */ }
+if (!mf) {
+  failures.push("manifest.webmanifest was not generated. app/manifest.ts should produce it.");
+} else {
+  if (!mf.icons?.length) failures.push("the manifest declares no icons, so the site cannot be installed.");
+  for (const icon of mf.icons ?? []) {
+    const onDisk = path.join(import.meta.dirname, "..", "public", icon.src.replace(/^\//, ""));
+    try {
+      await readFile(onDisk);
+    } catch {
+      failures.push(
+        `the manifest names ${icon.src}, which is not in public/.\n` +
+        "    style/build-icon.py draws it from the palette. A manifest naming an icon that is\n" +
+        "    not there does not error: the install prompt simply never appears.");
+    }
+  }
+  if (!(mf.icons ?? []).some((i) => i.purpose === "maskable")) {
+    failures.push("the manifest has no maskable icon; a launcher will crop the mark to its own shape.");
+  }
+  // The colours come from tokens.css and must still be the ones in it.
+  const tokens = await readFile(path.join(import.meta.dirname, "..", "..", "style", "tokens.css"), "utf8");
+  for (const [field, name] of [["theme_color", "color-ink"], ["background_color", "color-paper"]]) {
+    const want = tokens.match(new RegExp(`--${name}\\s*:\\s*(#[0-9A-Fa-f]{3,8})`));
+    if (want && mf[field]?.toLowerCase() !== want[1].toLowerCase()) {
+      failures.push(
+        `the manifest's ${field} is ${mf[field]}, but --${name} is ${want[1]}.\n` +
+        "    It is read from tokens.css at build time so it cannot drift; if it has, the read broke.");
+    }
+  }
+}
+
+const SW = path.join(import.meta.dirname, "..", "public", "sw.js");
+let sw = null;
+try { sw = await readFile(SW, "utf8"); } catch { /* reported below */ }
+if (!sw) {
+  failures.push("public/sw.js was not generated. scripts/build-sw.mjs should produce it before next build.");
+} else {
+  if (/const VERSION = "unversioned"/.test(sw)) {
+    failures.push(
+      "sw.js is stamped 'unversioned', so a deploy will not replace the installed worker.\n" +
+      "    A browser installs a new worker only when the file's bytes change, and nothing at\n" +
+      "    the origin can evict one that never changes.");
+  }
+  // The two rules the worker exists to keep. Both are one edit away from
+  // becoming the /_next/static 404-cached-for-a-year bug with a longer memory.
+  for (const [re, why] of [
+    [/\/api\\\//, "/api must never be cached: a cached measurement is a lie with a timestamp on it"],
+    [/\/admin/, "/admin must never be cached: it carries credentials and people's addresses"],
+  ]) {
+    if (!re.test(sw)) failures.push(`sw.js no longer excludes a path it must: ${why}.`);
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

@@ -14,8 +14,15 @@ of a shape, and they diverge the first time somebody nudges a rectangle.
 
 Outputs, both gitignored:
 
-    web/app/icon.svg        the tab icon, and what Next links as the favicon
-    web/app/apple-icon.png  180x180, because iOS accepts only PNG here
+    web/app/icon.svg               the tab icon, and what Next links as favicon
+    web/app/apple-icon.png         180x180, because iOS accepts only PNG here
+    web/public/icons/icon-192.png  the manifest's small icon
+    web/public/icons/icon-512.png  the manifest's large icon
+    web/public/icons/maskable.png  512, with the mark inside the safe circle
+
+The three under public/ are what makes the site installable. A manifest naming
+an icon that is not there does not fail: the install prompt simply never
+appears, and there is nothing on screen or in the console to say why.
 
 The mark is a DIP package. It is the subject of the whole site and it is the
 one shape that still reads at 16 pixels, where a letterform would not.
@@ -39,6 +46,15 @@ HERE = Path(__file__).resolve().parent
 TOKENS = HERE / "tokens.css"
 OUT_SVG = HERE.parent / "web" / "app" / "icon.svg"
 OUT_PNG = HERE.parent / "web" / "app" / "apple-icon.png"
+OUT_ICONS = HERE.parent / "web" / "public" / "icons"
+
+# A maskable icon is cropped by the platform to whatever shape it likes, and
+# the guarantee is only that a centred circle of 80% diameter survives. The
+# mark spans x=4..28 of a 32 grid, so its corners sit about 47% of the size
+# from the centre: outside that circle, and a launcher would clip the pins.
+# Drawn at this scale instead, which puts the furthest corner at 0.75 * 47%,
+# comfortably inside. Measured off the geometry above rather than eyeballed.
+MASKABLE_SCALE = 0.75
 
 # A 32 unit grid, 8 units to the site's 4px --u, so the mark sits on the same
 # grid as everything else. Nothing is thinner than 3 units: at 16px a pin any
@@ -77,11 +93,17 @@ def svg(paper: str, ink: str, burnt: str) -> str:
 '''
 
 
-def raster(paper: str, ink: str, burnt: str, size: int, rounded: bool):
-    """One raster of the mark at `size` pixels."""
+def raster(paper: str, ink: str, burnt: str, size: int, rounded: bool, scale: float = 1.0):
+    """One raster of the mark at `size` pixels.
+
+    `scale` shrinks the mark within the same canvas, for the maskable icon.
+    The ground still fills the square: a maskable icon with transparent corners
+    is one the platform crops into empty space.
+    """
     from PIL import Image, ImageDraw
 
-    s = size / 32  # one grid unit in pixels
+    s = size / 32 * scale       # one grid unit in pixels
+    pad = (size - 32 * s) / 2   # centre the mark when it is scaled down
     # Drawn at 4x and downsampled, because PIL has no antialiasing on shapes.
     ss = 4
     img = Image.new("RGB", (size * ss, size * ss), paper)
@@ -89,7 +111,8 @@ def raster(paper: str, ink: str, burnt: str, size: int, rounded: bool):
 
     def box(x, y, w, h, radius, fill):
         d.rounded_rectangle(
-            [x * s * ss, y * s * ss, (x + w) * s * ss, (y + h) * s * ss],
+            [(pad + x * s) * ss, (pad + y * s) * ss,
+             (pad + (x + w) * s) * ss, (pad + (y + h) * s) * ss],
             radius=radius * s * ss, fill=fill,
         )
 
@@ -98,7 +121,8 @@ def raster(paper: str, ink: str, burnt: str, size: int, rounded: bool):
     for x, y in PINS:
         box(x, y, PIN_W, PIN_H, 1, ink)
     cx, cy, r = DOT
-    d.ellipse([(cx - r) * s * ss, (cy - r) * s * ss, (cx + r) * s * ss, (cy + r) * s * ss], fill=burnt)
+    d.ellipse([(pad + (cx - r) * s) * ss, (pad + (cy - r) * s) * ss,
+               (pad + (cx + r) * s) * ss, (pad + (cy + r) * s) * ss], fill=burnt)
 
     return img.resize((size, size), Image.LANCZOS)
 
@@ -109,6 +133,12 @@ def rasters(paper: str, ink: str, burnt: str) -> None:
     # No rounded corner on the Apple icon: iOS masks it itself, and a rounded
     # source under that mask shows a paper rim inside the system's own radius.
     raster(paper, ink, burnt, 180, rounded=False).save(OUT_PNG, "PNG", optimize=True)
+
+    OUT_ICONS.mkdir(parents=True, exist_ok=True)
+    raster(paper, ink, burnt, 192, rounded=False).save(OUT_ICONS / "icon-192.png", "PNG", optimize=True)
+    raster(paper, ink, burnt, 512, rounded=False).save(OUT_ICONS / "icon-512.png", "PNG", optimize=True)
+    raster(paper, ink, burnt, 512, rounded=False, scale=MASKABLE_SCALE).save(
+        OUT_ICONS / "maskable.png", "PNG", optimize=True)
 
     # No favicon.ico. Next's image pipeline rejected the multi-size ICO that
     # Pillow writes ("Processing image failed"), and app/favicon.ico is a
@@ -127,8 +157,8 @@ def main() -> int:
         rasters(paper, ink, burnt)
     except ImportError:
         sys.exit("build-icon: Pillow is needed for the raster icons (pip install Pillow).")
-    print(f"build-icon: icon.svg and apple-icon.png from tokens.css "
-          f"(paper {paper}, ink {ink}, burnt {burnt})")
+    print(f"build-icon: icon.svg, apple-icon.png and 3 manifest icons from "
+          f"tokens.css (paper {paper}, ink {ink}, burnt {burnt})")
     return 0
 
 

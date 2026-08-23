@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ServiceWorker } from "./components/ServiceWorker";
 // No next/font. The four families are self-hosted from ../../style/fonts.css,
 // which globals.css imports.
 //
@@ -27,7 +28,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           browser's defaults and reads as unstyled. Panel is the other ground
           and is never put here: it means "these values came off the chip", so
           it is applied to the element making that claim, not to the page. */}
-      <body className="paper">{children}</body>
+      <body className="paper">
+        {children}
+        {/* Installability and offline. Renders nothing, and the site is
+            identical if it never runs: see components/ServiceWorker.tsx. */}
+        <ServiceWorker />
+      </body>
     </html>
   );
 }
