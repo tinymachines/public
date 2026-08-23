@@ -35,6 +35,15 @@ EXTERNAL = {
     "--font-sans",
     "--font-mono",
     "--font-serif",
+
+    # Measured by web/app/components/AppMetrics.tsx and written onto the
+    # document element: the heights of the two sticky bands. They are not
+    # palette, they are geometry the browser owns, and they cannot be in
+    # tokens.css because the number changes with the viewport. Every var()
+    # reading them carries a fallback, so a page is correct before the script
+    # runs and correct if it never does.
+    "--app-head-h",
+    "--app-foot-h",
 }
 
 DEFINE = re.compile(r"^\s*(--[A-Za-z0-9-]+)\s*:", re.MULTILINE)

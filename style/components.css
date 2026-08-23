@@ -1475,3 +1475,24 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   .app-shell .masthead h1 { font-size: var(--text-h3); }
   .app-shell .band { padding-top: calc(var(--u) * 2); padding-bottom: calc(var(--u) * 2); }
 }
+
+/* A sticky masthead hides whatever a fragment link scrolls to.
+   `#some-heading` scrolls its target to y = 0, which is underneath the band,
+   so the link works, the URL changes, and the one thing hidden is the heading
+   that was asked for. scroll-margin-top is the browser's answer: it is how far
+   above the target the scroll should stop.
+
+   The height comes from AppMetrics, which measures the band, because it is not
+   a constant: the title wraps at a narrow width, the nav wraps with it, and a
+   media query already changes the band's padding twice. The fallback is the
+   desktop measurement plus a little, so the page is correct before the script
+   runs and correct if it never does.
+
+   On every heading rather than only on the ones with ids today, because an id
+   arrives when somebody writes a heading, not when somebody remembers a rule.
+
+   .zoo-head is not covered here: the zoo has its own sticky header and its own
+   scroll-margin-top for it, and it is not inside this shell. */
+.app-shell :is(h1, h2, h3, h4, h5, h6, [id]) {
+  scroll-margin-top: calc(var(--app-head-h, 11rem) + var(--u) * 4);
+}

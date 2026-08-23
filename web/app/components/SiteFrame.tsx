@@ -2,6 +2,7 @@ import Link from "next/link";
 import { nav } from "@/lib/projects";
 import { NavLinks } from "./NavLinks";
 import { VersionFooter } from "./VersionFooter";
+import { AppMetrics } from "./AppMetrics";
 
 /**
  * The page frame: masthead, and footer.
@@ -137,6 +138,9 @@ export function Shell({
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className="app-shell" {...rest}>
+      {/* Publishes the bands' heights so anchors can clear the masthead.
+          Renders nothing; the CSS has a fallback for every value it sets. */}
+      <AppMetrics />
       <header className="app-head">
         <div className="band">
           <Masthead die={die} title={title} crumb={crumb} meta={<><SiteNav />{navExtra}</>} />

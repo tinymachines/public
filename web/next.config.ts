@@ -20,6 +20,10 @@ function pluginPath(name: string): string {
 
 const remarkGfm = pluginPath("remark-gfm");
 const remarkFrontmatter = pluginPath("remark-frontmatter");
+// Local, and resolved the same way. See lib/rehype-headings.mjs for why the
+// slug rule is written here rather than taken from rehype-slug: a heading's id
+// is a public address the moment somebody links to it.
+const rehypeHeadings = pluginPath("./lib/rehype-headings.mjs");
 
 const nextConfig: NextConfig = {
   // md and mdx are routable page extensions. Without these two entries an
@@ -74,6 +78,7 @@ const withMDX = createMDX({
     // from the output, which is the behaviour the frontmatter convention in
     // START-HERE.md assumed all along.
     remarkPlugins: [[remarkFrontmatter, ["yaml"]], [remarkGfm, {}]],
+    rehypePlugins: [[rehypeHeadings, {}]],
   },
 });
 
