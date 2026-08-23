@@ -44,16 +44,19 @@ export const metadata: Metadata = {
 };
 
 export default function LabPage() {
-  const { style, body, data, script } = lab();
+  const { body, data, assets } = lab();
 
   return (
     <Shell die="PHI" title="Halfwave Lab" crumb={<><b>tinymachines</b> / 6502 / lab</>}>
 
-      {/* The lab's own 35 KB of rules, with its :root replaced by lab.css.
-          Scoped to this route by being rendered only here, the same way the
-          zoo's chrome is: these are the lab's classes, not the kit's, and a
-          lab-only rule in components.css turns up on a real page eventually. */}
-      <style dangerouslySetInnerHTML={{ __html: style }} />
+      {/* The lab's own 35 KB of rules, with its :root replaced by lab.css and
+          every selector scoped to .lab-shell. A LINK rather than an inline
+          <style>: a server component's props are serialised into the RSC
+          payload as well as rendered into the HTML, so inlining sent it twice.
+          scripts/build-lab.mjs writes the file from the same lab(), and the
+          name carries a content hash so an hour of nginx caching cannot serve
+          the previous deploy's stylesheet against this deploy's markup. */}
+      <link rel="stylesheet" href={assets.css} />
 
       {/* .lab-shell carries the token mapping and the ground. The lab's own
           rules style `body`, which no longer reaches anything now that it is a
@@ -75,8 +78,12 @@ export default function LabPage() {
       {/* afterInteractive, so the lab is also built on a client-side
           navigation into this route. An inline tag in the HTML runs on first
           load and never again, which is the bug where a page works when you
-          reload it and not when you click to it. */}
-      <Script id="halfwave-lab" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: script }} />
+          reload it and not when you click to it.
+
+          src rather than inline, for the same reason as the stylesheet above:
+          126 KB inlined is 126 KB in the HTML and 126 KB again in the payload,
+          re-sent on every visit. As a file it is fetched once and cached. */}
+      <Script id="halfwave-lab" src={assets.js} strategy="afterInteractive" />
 
     </Shell>
   );

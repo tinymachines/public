@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import postcss from "postcss";
 
 /**
@@ -38,6 +39,22 @@ export const CHIP_API = "https://6502.tinymachines.ai/api";
 export interface Lab {
   style: string;
   body: string;
+  /**
+   * Where the stylesheet and script are served from, with a content hash in
+   * the name.
+   *
+   * The hash is not decoration. The apex nginx maps *.css and *.js to
+   * "public, max-age=3600", so a file at a stable URL is one a returning
+   * visitor holds for an hour: they would get the previous deploy's script
+   * against this deploy's markup, which is a page that is subtly wrong for
+   * fifty-nine minutes and correct afterwards, and nothing at the origin can
+   * reach it. A name derived from the bytes cannot go stale, because
+   * different bytes are a different URL.
+   *
+   * This is what /_next/static gets for free from the build. The lab's assets
+   * are generated outside it, so they have to ask.
+   */
+  assets: { css: string; js: string };
   /** The canned demo trace, a <script type="application/json"> the lab reads
       by id. Data, not code: it is rendered as an element and never run. */
   data: { id: string; json: string } | null;
@@ -245,10 +262,17 @@ export function lab(): Lab {
   if (bodyOpen <= 0 || bodyEnd < 0) throw new Error("halfwave-lab.html: could not find the body.");
   const body = src.slice(bodyOpen, bodyEnd);
 
+  const script = patched[0];
+  const stamp = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 10);
+
   return {
     style,
     body,
+    assets: {
+      css: `/6502/lab/lab.${stamp(style)}.css`,
+      js: `/6502/lab/lab.${stamp(script)}.js`,
+    },
     data: json && id ? { id, json: json[2] } : null,
-    script: patched[0],
+    script,
   };
 }
