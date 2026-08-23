@@ -82,10 +82,27 @@ export function lab(): Lab {
   // proxying 127.0.0.1:6502, and here would be the roof's API, which does not
   // run 6502 code. Cross-origin today; the 6502 API sends
   // Access-Control-Allow-Origin: * and the apex CSP names it in connect-src.
-  const patched = scripts.map((s, i) =>
+  let patched = scripts.map((s, i) =>
     i === scripts.findIndex((t) => t.includes('location.origin + "/api"'))
       ? replaceOnce(s, 'location.origin + "/api"', JSON.stringify(CHIP_API), "the chip API")
       : s,
+  );
+
+  // The service worker registration goes. The lab was a standalone offline
+  // app on its own subdomain, with its own manifest and icons and a sw.js
+  // beside it; here it is one route on a site, so `register("sw.js")` resolves
+  // to /6502/lab/sw.js and 404s. It is wrapped in .catch(() => {}), so the
+  // page works and logs an error on every load, which is the worst of both:
+  // nothing to fix and something to see.
+  //
+  // Shipping the worker instead would be worse. It would put a second caching
+  // layer scoped to one route in front of a site whose caching is already
+  // decided in nginx, and a service worker holding a stale lab after a deploy
+  // is the /_next/static 404-cached-for-a-year bug with a longer memory and no
+  // server-side way to reach it.
+  const sw = 'serviceWorker.register("sw.js").catch(()=>{})';
+  patched = patched.map((s) =>
+    s.includes(sw) ? replaceOnce(s, sw, "serviceWorker /* not registered here: see lib/lab.ts */", "the service worker") : s,
   );
 
   const bodyOpen = src.indexOf(">", src.search(/<body\b/)) + 1;
