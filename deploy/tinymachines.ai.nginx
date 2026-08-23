@@ -216,7 +216,29 @@ server {
     # Machine. Same reasoning, more so. It is somebody else's site.
     location /6502/archive/ {
         alias /var/www/6502.tinymachines.ai/archive/;
-        gzip_static on;
+
+        # Its navigation is absolute and rooted at the 6502 site: every page
+        # links to /programs, /primer, /trace and /schematic, and a CTA to /.
+        # Served here those become /programs on the apex, which does not exist,
+        # so all four 404 and the archive arrives with its nav broken. Measured
+        # on wiki, gallery and mirror alike: four such links on every page.
+        #
+        # Rewritten on the way out rather than in the files, because the files
+        # are a preservation of somebody else's site and this repository does
+        # not edit them. The simulator pages have not moved, so the links point
+        # at where they still are; the CTA points at the explorer, which has.
+        #
+        # gzip_static goes off here for a reason that would otherwise be
+        # mysterious: sub_filter cannot rewrite a response nginx did not build,
+        # and a precompressed .gz is handed back untouched. On-the-fly gzip
+        # still applies. It costs CPU on 8 KB of HTML and buys a nav that works.
+        gzip_static off;
+        sub_filter_once off;
+        sub_filter 'href="/programs"'  'href="https://6502.tinymachines.ai/programs"';
+        sub_filter 'href="/primer"'    'href="https://6502.tinymachines.ai/primer"';
+        sub_filter 'href="/trace"'     'href="https://6502.tinymachines.ai/trace"';
+        sub_filter 'href="/schematic"' 'href="https://6502.tinymachines.ai/schematic"';
+        sub_filter 'class="nav-cta" href="/"' 'class="nav-cta" href="/6502/explorer"';
     }
 
     # The API: uvicorn with --root-path /api, so it generates its own URLs
