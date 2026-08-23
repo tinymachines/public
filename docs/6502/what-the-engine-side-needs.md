@@ -1,6 +1,6 @@
 ---
 title: What the engine side needs
-description: Four measured requests for tinymachines/6502. Two have landed, one is on a branch, two are open.
+description: Four measured requests for tinymachines/6502. Three landed; the fourth was withdrawn once it was measured.
 order: 10
 ---
 
@@ -17,10 +17,12 @@ described here.
 
 | | | |
 |---|---|---|
-| 1 | Memory should travel with `importState` | open |
+| 1 | Memory should travel with `importState` | **landed** in `d5122f2` |
 | 2 | A build that ships no die data | **landed** in `06eb9fb` |
-| 3 | Publish the assembler that already exists | on branch `packaging/asm` |
-| 4 | Two names that could match | open |
+| 3 | Publish the assembler that already exists | **landed** in `7d280c0` |
+| 4 | Two names that could match | **withdrawn**, and the reason is below |
+
+Checked against `origin/main` on 2026-08-23, three commits after the merges.
 
 Nothing here blocks the roof. `/engine/tm6502.mjs` and
 [Two ways in](/docs/6502/two-ways-in) are built and serving.
@@ -47,7 +49,7 @@ is absent from the schema's `required` list, so its absence validates.
 
 ## 1. Memory should travel with `importState`
 
-**Open.**
+**Landed** in `d5122f2`, as `importMachine`.
 
 `importState` restores the chip half only. Memory goes separately through
 `fillMemory` and `load`. The doc comment says so, in the sense that it tells
@@ -60,11 +62,20 @@ is two calls, and a caller who makes only the first gets a chip that is correct
 running a program that is not there. **That failure looks like a simulation
 bug, not a missing call.**
 
-Either would do: an `importMachine(json)` that does both, which is nicer, or a
-sentence saying a machine is not restored until memory is too, which costs
-nothing. `/engine/tm6502.mjs` already does both in `restoreInto()`, so the
-wrapper is not blocked. The request is so that a reader who skips the wrapper
-is not.
+Either would have done: an `importMachine(json)` that does both, or a sentence
+saying a machine is not restored until memory is too.
+
+**Both are there now.** `importMachine` takes decoded bytes and does the pair
+in one call, and `importState`'s own doc comment now warns that it leaves
+memory alone. `tools/check-wasm-import.py` holds it to that: it asserts that
+`importMachine` agrees with `importState` plus `writeMemory` byte for byte,
+that the registers match, that a program restored whole computes its sum, and
+that `importState` alone leaves the old memory in place, which is the failure
+the request was about.
+
+Run against a wasm built from the merged tree, all six assertions pass.
+`/engine/tm6502.mjs` still does the pair itself in `restoreInto()`, and can
+now do it in one call instead.
 
 ## 2. A build that ships no die data
 
@@ -92,7 +103,7 @@ MIT.
 
 ## 3. Publish the assembler that already exists
 
-**On branch `packaging/asm`, not merged.**
+**Landed** in `7d280c0`.
 
 This one needed no Rust work at all, and an earlier version of this page asked
 for the wrong thing.
@@ -106,23 +117,32 @@ network call. Run out of the tree under node it assembles the worked example to
 It is also the only assembler in the project: `service/asm-bridge.mjs` says so,
 and the Python service shells out to it rather than keeping a second one.
 
-The branch packages it as `@tinymachines/6502-asm`, MIT, no dependencies,
-8.7 kB. `dist/` is generated from `web/` at build time and gitignored, because
-a published copy would reintroduce exactly what the single-assembler
-arrangement prevents. The build refuses to produce anything if either file
+It is packaged as `@tinymachines/6502-asm`, MIT, no dependencies, 8.7 kB.
+`dist/` is generated from `web/` at build time and gitignored, because a
+published copy would reintroduce exactly what the single-assembler arrangement
+prevents. The build refuses to produce anything if either file
 mentions die data or grows an import reaching outside the package.
 
 ## 4. Two names that could match and do not
 
-**Open.** Not important, and cheap.
+**Withdrawn.** It was described here as cheap, and measuring it showed it is
+not.
 
 | wasm | HTTP |
 |---|---|
 | `runHalfCycles(n)` | `half_cycles` |
 | `stepInstruction(max)` | `until: "instruction"` plus `max_half_cycles` |
 
-The wrapper maps them. Matching the request field names would delete the
-mapping rather than move it.
+The wrapper maps them, and the mapping is two lines. Renaming to match would
+delete those two lines and break six callers plus a published API surface: the
+names are part of what `v6502-wasm` exports, so changing them is a breaking
+change to anything already using it, in exchange for deleting a mapping that
+costs nothing to keep.
+
+Left alone deliberately, and written down here so the next person to notice the
+mismatch finds the measurement rather than repeating it. A rename is worth
+doing if that crate ever has a breaking release for another reason; it is not
+worth causing one.
 
 ---
 
