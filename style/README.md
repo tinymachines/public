@@ -17,11 +17,35 @@ that distinction matters.
 
 ## Look at it
 
+Two ways, and they render the same specimens from the same file.
+
+**On the site**, which is the one that matters, because it renders against
+what the app actually ships rather than against the standalone copy:
+
+| | |
+|---|---|
+| `/style` | `STYLE.md`, imported through the app's MDX pipeline |
+| `/style/zoo` | `zoo.html`, read at build time by `web/lib/zoo.ts` |
+
+Neither page reimplements anything. The zoo route lifts the chrome, the body
+and the script straight out of `zoo.html` and drops the head, because the site
+self-hosts the same four families through `next/font` and defines the same
+tokens through `@theme`. That makes the zoo a live check on the app: if a
+token drifts between `tokens.css` and what the build emits, the zoo is where
+it shows.
+
+`web/lib/zoo.ts` refuses rather than rendering a page that looks finished and
+is not. It throws if the chrome, the body or the script comes back short, if
+it finds fewer than 20 specimens, or if it finds an em dash.
+
+**Standalone**, with no build step at all:
+
 ```
 python3 -m http.server 8000    # then open zoo.html
 ```
 
-Or just open `zoo.html`: it works from `file://`.
+Or just open `zoo.html`: it works from `file://`. This is the path
+`tokens.static.css` exists for.
 
 ## Wire it into `web/`
 
@@ -41,6 +65,13 @@ Two things that follow, and both were measured against tailwindcss 4.3.3:
 
 - **Tailwind comes first**, because `@theme` extends it and because CSS
   requires every `@import` to precede other rules.
+- **The block is `@theme static`, not `@theme`.** Without `static`, Tailwind
+  emits only the theme variables something in the build happens to reference
+  and drops the rest. Measured here: six of the 70 tokens (`--color-brushed`,
+  the four `--color-chrome-*` and `--text-hero`) were absent from the built
+  stylesheet, because no rule used them yet. A `var()` naming a token that is
+  not there does not error, it drops the whole declaration. A palette that
+  silently contains only the colours already in use is not a palette.
 - **`tokens.css` carries no `@import "tailwindcss"` of its own.** A bare
   specifier resolves from the directory of the file that writes it, and
   `style/` has no `node_modules`, so the build fails with
@@ -81,5 +112,6 @@ exactly like a palette.
 - No JavaScript ships. The behaviour in `zoo.html` demonstrates interactions;
   the real components get their state from the engine.
 - No React components yet. The kit is CSS so it ports to MDX, to a FastAPI
-  template, and to the three live subdomains without a build.
+  template, and to the three live subdomains without a build. The zoo route is
+  not an exception: it renders `zoo.html`, it does not reimplement it.
 - No print stylesheet. Noted as open in `STYLE.md` §9.

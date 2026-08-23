@@ -21,7 +21,18 @@
    computed, not estimated: same rule as the measured tables.
    ========================================================================= */
 
-@theme {
+/* `static` is load-bearing, and it is a build instruction rather than a design
+   decision, so it sits here rather than in the importer.
+
+   Without it Tailwind emits only the theme variables something in the build
+   happens to reference, and drops the rest. Measured on this file: six of the
+   70 tokens below (--color-brushed, the four --color-chrome-*, and
+   --text-hero) were absent from the built stylesheet entirely, because no
+   rule used them yet. A var() naming a token that is not there does not
+   error; the whole declaration is dropped and the symptom is "slightly
+   wrong". A palette that silently contains only the colours already in use is
+   not a palette, and the widget zoo renders against the whole of it. */
+@theme static {
 
   /* --------------------------------------------------------------------
      THE TWO GROUNDS
