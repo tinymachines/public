@@ -358,6 +358,66 @@ if (manifest) {
   }
 }
 
+// 12. The console page must satisfy game.js's DOM contract.
+//     A cross-check between two files with no other reason to know about each
+//     other, the same shape as the CSP check above, and it exists because the
+//     first deploy of /6502/games failed exactly this way. game.js queries
+//     $('.screen') to size the canvas; the page called that container
+//     .con-screen and nothing else. Nothing 404d, no console error was logged,
+//     and the page rendered completely: it just said "could not boot" in its
+//     own error slot, which reads as a broken cartridge rather than as a
+//     renamed div.
+//
+//     The selectors are read out of game.js rather than listed here, so a
+//     module that starts querying something new is covered by doing so.
+const GAME = path.join(import.meta.dirname, "..", "public", "6502", "games", "game.js");
+let game = null;
+try { game = await readFile(GAME, "utf8"); } catch { /* the surface may not exist */ }
+if (game) {
+  const consolePage = files.find((f) =>
+    ["6502/games.html", "6502/games/index.html"].includes(
+      path.relative(APP, f).split(path.sep).join("/")));
+  if (!consolePage) {
+    failures.push("game.js is present but /6502/games was not prerendered; this check would pass on nothing.");
+  } else {
+    const html = await readFile(consolePage, "utf8");
+    const wanted = new Set();
+    for (const m of game.matchAll(/\$\(\s*'([#.][A-Za-z0-9_-]+)'\s*\)/g)) wanted.add(m[1]);
+    for (const m of game.matchAll(/querySelector(?:All)?\(\s*'([^']+)'\s*\)/g)) wanted.add(m[1]);
+    if (wanted.size < 10) {
+      console.error(`check-build: only ${wanted.size} selectors found in game.js; this would pass on nothing.`);
+      process.exit(2);
+    }
+    // Class names are collected as WHOLE TOKENS rather than matched as a
+    // substring. The first version of this used /class="[^"]*\bscreen\b/, and
+    // \b matches at a hyphen, so `class="panel-face con-screen"` satisfied a
+    // check for `.screen`. It passed on the exact page that was broken, which
+    // it was written for. Caught by deliberately reintroducing the bug and
+    // watching the build stay green: the same way the .docs-shell check was
+    // caught doing the same thing with includes().
+    const classes = new Set();
+    for (const m of html.matchAll(/class="([^"]*)"/g)) {
+      for (const c of m[1].split(/\s+/)) if (c) classes.add(c);
+    }
+
+    for (const sel of wanted) {
+      // Only the simple forms are checked. A descendant or attribute selector
+      // needs a parser, and a check that half-parses CSS is one that fires on
+      // things that are fine.
+      let present = null;
+      if (/^#[A-Za-z0-9_-]+$/.test(sel)) present = new RegExp(`id="${sel.slice(1)}"`).test(html);
+      else if (/^\.[A-Za-z0-9_-]+$/.test(sel)) present = classes.has(sel.slice(1));
+      else if (/^\[data-[a-z-]+\]$/.test(sel)) present = new RegExp(sel.slice(1, -1) + "=").test(html);
+      if (present === false) {
+        failures.push(
+          `/6502/games does not carry ${sel}, which game.js queries.\n` +
+          "    The page renders and the console reports a boot failure in its own error slot,\n" +
+          "    which reads as a broken cartridge rather than as a renamed element.");
+      }
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

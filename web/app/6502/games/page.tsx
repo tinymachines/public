@@ -82,7 +82,12 @@ export default function GamesPage() {
               <span>screen</span>
               <span>$0400, 16 x 16</span>
             </div>
-            <div className="panel-face con-screen">
+            {/* `screen` is a hook, not a style: game.js measures $('.screen')
+                to size the canvas to its container. It styles nothing here,
+                and renaming it away is exactly what broke the first deploy of
+                this page: the console reported "could not boot: Cannot read
+                properties of null" and it read as a broken cartridge. */}
+            <div className="panel-face con-screen screen">
               <canvas id="screen" width={256} height={256} />
             </div>
           </div>
