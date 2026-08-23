@@ -65,11 +65,32 @@ export function SiteNav() {
   );
 }
 
+/**
+ * The footer, from the same list as the navigation.
+ *
+ * It used to hold its own copy: docs, style, api, written out here. That copy
+ * had already drifted by the time this was noticed, because /6502 was added to
+ * the manifest and appeared in the nav and not down here. Nobody would have
+ * seen it: a footer missing one link looks exactly like a footer.
+ *
+ * So it renders nav() too. The two read differently on the page because .crumb
+ * sets the voice, not because they are different lists.
+ */
 export function SiteFooter() {
+  const entries = nav();
   return (
     <footer className="crumb site-foot">
-      <span>tinymachines.ai</span> · <Link href="/docs">docs</Link> ·{" "}
-      <Link href="/style">style</Link> · <a href="/api/">api</a>
+      <Link href="/">tinymachines.ai</Link>
+      {entries.map(({ href, label }) => (
+        <span key={href}>
+          {" · "}
+          {href.startsWith("/api") ? (
+            <a href={`${href}/`}>{label}</a>
+          ) : (
+            <Link href={href}>{label}</Link>
+          )}
+        </span>
+      ))}
       {/* What is running, asked of the running process rather than baked in.
           Renders nothing at all when the API cannot answer. */}
       <VersionFooter />

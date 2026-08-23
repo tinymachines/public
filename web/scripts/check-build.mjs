@@ -328,6 +328,25 @@ if (manifest) {
     console.error(`check-build: only ${entries.length} nav entries derived; this would pass on nothing.`);
     process.exit(2);
   }
+  // Both places the list is rendered must carry all of it. The footer held its
+  // own hand-written copy until it was noticed that /6502 had reached the nav
+  // and not the footer, which is a footer missing one link and therefore a
+  // footer that looks entirely normal.
+  for (const file of files) {
+    const body = await readFile(file, "utf8");
+    const foot = body.match(/<footer[^>]*class="[^"]*site-foot[^"]*"[\s\S]*?<\/footer>/);
+    if (!foot) continue;
+    for (const href of entries) {
+      const target = href === "/api" ? "/api/" : href;
+      if (!foot[0].includes(`href="${target}"`)) {
+        failures.push(
+          `${path.relative(APP, file)}: the footer does not carry ${target}, which the navigation does.\n` +
+          "    Both render lib/projects.ts nav(). A footer missing one link looks exactly like a footer.");
+      }
+    }
+    break;   // the frame is one component; one page proves it
+  }
+
   for (const href of entries) {
     if (href === "/api") continue;   // proxied to uvicorn, not prerendered here
     if (!routes.has(href)) {
