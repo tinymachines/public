@@ -23,6 +23,24 @@
 @import "../../style/tokens.css";
 @import "../../style/components.css";
 
+/* The project silos. Each one scopes a handful of identity tokens to
+   [data-project="..."], so a project looks like itself without forking the
+   kit: same components, same type scale, same spacing rhythm, different
+   identity. A route declares which project it is in by sitting under that
+   project's layout, which stamps the attribute, so nothing has to be
+   remembered per page.
+
+   What may be siloed is a short list and it is enforced: style/check-silo.py
+   fails when a silo assigns a token that carries meaning rather than identity
+   (red is ASSERTION FAILED on every project), invents a token the kit cannot
+   reach, or lands a text pair below WCAG AA against the palette it would
+   actually render with. See PROJECTS.md.
+
+   These come last so a silo wins over the house value it overrides. Both files
+   are deliberately empty of overrides today. */
+@import "../../style/projects/6502.css";
+@import "../../style/projects/hotbits.css";
+
 /* Nothing else belongs in this file. A colour, a size or a font added below
    is a token that the style guide cannot reach: put it in style/tokens.css
    and use it by name. A component that needs a new rule goes in

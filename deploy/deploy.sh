@@ -39,6 +39,12 @@ python3 style/check-cascade.py || fail "check-cascade"
 say "2c. Figures"
 python3 data/check-figures.py || fail "check-figures"
 
+# The project silos. This one carries its own self test, because every silo
+# that exists today overrides nothing and the rules would otherwise have
+# nothing to bite on.
+say "2d. Silos"
+python3 style/check-silo.py || fail "check-silo"
+
 say "3. API tests"
 (cd api && python3 -m pytest . -q) || fail "pytest"
 

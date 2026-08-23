@@ -1,0 +1,56 @@
+/* ---------------------------------------------------------------------------
+   hotbits: the project silo. Reserved, and nothing has been chosen.
+
+   The next project after 6502 settles. Its palette, its display face and its
+   mark are the owner's, exactly as the house palette was, so nothing is picked
+   here. What this file does is show where the levers are, so that designing
+   hotbits is a matter of filling in values rather than working out which
+   values a project is allowed to have.
+
+   Every line below is commented out. Uncomment what hotbits actually wants
+   and leave the rest: an override that restates the house value is a second
+   copy of that value, and it will drift.
+
+   style/check-silo.py enforces this list. It fails if a silo assigns anything
+   outside it, invents a token, or lands a text pair below WCAG AA against the
+   palette it would really render with. That last one matters most here,
+   because the grounds are the loudest lever available and also the fastest
+   way to make a page illegible.
+   ------------------------------------------------------------------------ */
+
+[data-project="hotbits"] {
+
+  /* THE CATEGORICAL HUES. Four, each in two forms, because contrast is
+     ground-dependent: the base reads on panel, the -ink form reads on paper.
+     Using the wrong one is the single most common way this palette goes
+     illegible, and the checker computes both. */
+
+  /* --color-burnt:       ; --color-burnt-ink:   ; */
+  /* --color-mustard:     ; --color-mustard-ink: ; */
+  /* --color-forest:      ; --color-forest-ink:  ; */
+  /* --color-ocean:       ; --color-ocean-ink:   ; */
+
+  /* THE GROUNDS. Their meaning is fixed everywhere (paper is documentation,
+     panel is the machine talking) and only their values are a project's. A
+     hotbits page that renders live values on paper is wrong whatever colour
+     the paper is. */
+
+  /* --color-paper:       ; --color-paper-sunk:  ; */
+  /* --color-panel:       ; --color-panel-raised: ; --color-panel-sunk: ; */
+  /* --color-ink:         ; --color-ink-muted:   ; --color-ink-faint: ; */
+  /* --color-glass:       ; --color-glass-muted: ; */
+
+  /* THE DISPLAY FACE. tokens.css calls this the swap seam. The sans, mono and
+     serif do not swap: they are one superfamily so that a page carrying prose,
+     a table and a readout at once stays coherent, and that is a property of
+     the system rather than of any project. */
+
+  /* --font-display:      ; */
+
+  /* NOT AVAILABLE HERE, and the checker will say so: the logic accents
+     (blue is ACTIVE, orange is ATTENTION, red is ASSERTION FAILED), the drive
+     ramp, the chrome set, the type scale, the grid unit, the motion curves,
+     the shadows and the radii. Those are what a reader carries between
+     projects. A red that means something different on hotbits is not an
+     accent, it is a failed assertion that looks fine. */
+}

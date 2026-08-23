@@ -1,6 +1,7 @@
 [
   {
     "key": "halfphi",
+    "project": null,
     "name": "halfphi",
     "what": "The switch-level engine: die-data parser, netlist, solver. It names no chip and embeds no die data, which is the whole reason it can be depended on freely. Loads the 6502, the 6800 and the Z80 through identical calls.",
     "source": "https://github.com/tinymachines/halfphi",
@@ -12,6 +13,7 @@
   },
   {
     "key": "explorer",
+    "project": "6502",
     "name": "the 6502 info site",
     "what": "The info site: a WebGL2 die renderer, around 25 derived container kinds, the chip map, the primer, the labs and the measured tables.",
     "source": "https://github.com/tinymachines/6502",
@@ -23,6 +25,7 @@
   },
   {
     "key": "chip-api",
+    "project": "6502",
     "name": "the 6502 API",
     "what": "Stateless HTTP over the real chip: the whole machine travels in every request and the server keeps no sessions. FastAPI and Pydantic, plus the chip atlas, the cartridge mint and an MCP endpoint.",
     "source": "https://github.com/tinymachines/6502",
@@ -34,6 +37,7 @@
   },
   {
     "key": "halfwave",
+    "project": "6502",
     "name": "halfwave",
     "what": "The warm engine process the API talks to: a line protocol, one parsed netlist, one machine, zero dependencies. Plus a reviewer-built lab on a property of its own.",
     "source": "https://github.com/tinymachines/6502",
@@ -45,6 +49,7 @@
   },
   {
     "key": "console",
+    "project": "6502",
     "name": "Die Runner",
     "what": "The console: a 6502 ROM, a page of its memory as the screen, and the browser drawing it. Cartridges, builder pages and the editor.",
     "source": "https://github.com/tinymachines/6502",
@@ -56,6 +61,7 @@
   },
   {
     "key": "registry",
+    "project": "6502",
     "name": "Die Runner API",
     "what": "The cartridge mint, the console spec and the registry. Publishing re-runs every cartridge on the chip rather than believing the verify block the file arrived with, because a file is something its author can edit.",
     "source": "https://github.com/tinymachines/6502",

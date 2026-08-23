@@ -252,6 +252,53 @@ if (!admin) {
   }
 }
 
+// 10. The project silo has to reach the page, or it is inert.
+//     web/app/6502/layout.tsx stamps data-project on everything beneath it,
+//     and style/projects/6502.css scopes that project's tokens to the
+//     attribute. If the stamp stops being emitted, nothing breaks and nothing
+//     looks wrong: the page renders in the house palette, which is exactly
+//     what it renders in today, so the mechanism would be dead and correct
+//     looking at the same time. This asserts the attribute survived the build.
+//
+//     The CSS half is checked only for silos that actually declare something.
+//     Both silos are empty on purpose right now, and an empty rule is dropped
+//     by the minifier, so asserting the selector is in the stylesheet would
+//     fail on a correct build. When a silo gains its first declaration, this
+//     starts checking it and says so in the message.
+const PROJECTS = path.join(import.meta.dirname, "..", "..", "data", "projects.json");
+let manifest = null;
+try { manifest = JSON.parse(await readFile(PROJECTS, "utf8")); } catch { /* reported below */ }
+if (!manifest) {
+  failures.push("data/projects.json is missing or unparseable. /6502 and the silos read it.");
+} else {
+  const siloed = manifest.projects.filter((p) => p.silo);
+  if (!siloed.length) {
+    console.error("check-build: no project declares a silo; the silo check would pass on nothing.");
+    process.exit(2);
+  }
+  for (const p of siloed) {
+    const page = files.find((f) => [`${p.key}.html`, path.join(p.key, "index.html")]
+      .includes(path.relative(APP, f)));
+    if (page) {
+      const body = await readFile(page, "utf8");
+      if (!body.includes(`data-project="${p.key}"`)) {
+        failures.push(
+          `/${p.key} does not carry data-project="${p.key}".\n` +
+          `    app/${p.key}/layout.tsx should stamp it. Without it the silo in ${p.silo}\n` +
+          "    matches nothing and the page renders in the house palette, which looks correct.");
+      }
+    }
+    const silo = await readFile(path.join(import.meta.dirname, "..", "..", p.silo), "utf8");
+    const declares = /--[A-Za-z0-9-]+\s*:/.test(silo.replace(/\/\*[\s\S]*?\*\//g, ""));
+    if (declares && !css.includes(`[data-project="${p.key}"]`)) {
+      failures.push(
+        `${p.silo} declares tokens but [data-project="${p.key}"] is not in the built stylesheet.\n` +
+        "    Check the @import chain in app/globals.css. A silo that does not reach the build\n" +
+        "    is a project that silently renders as every other project.");
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

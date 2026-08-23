@@ -29,6 +29,18 @@ class Piece(BaseModel):
                     "does not.",
         examples=["chip-api"],
     )
+    project: Optional[str] = Field(
+        default=None,
+        description="Which project this piece belongs to, as a key in "
+                    "data/projects.json, or null when it belongs to none of them. "
+                    "Null is a real answer rather than a missing one: halfphi names no "
+                    "chip and loads the 6502, the 6800 and the Z80 through identical "
+                    "calls, so filing it under one project would describe a dependency "
+                    "as an owner. A test holds both directions, so a piece cannot name "
+                    "a project that does not exist and a project cannot claim a piece "
+                    "that does not.",
+        examples=["6502"],
+    )
     name: str = Field(
         description="What the piece is called in prose.",
         examples=["the 6502 API"],

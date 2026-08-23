@@ -1,0 +1,92 @@
+{
+  "measured_on": "2026-08-23",
+  "note": "serves_today was probed, not remembered. lands_at is a proposal until lands_at_settled is true: see PROJECTS.md.",
+  "projects": [
+    {
+      "key": "roof",
+      "name": "tinymachines.ai",
+      "what": "The front door, the documentation tree, the style guide and the roof's own API. Not a project in the sense the others are: it is the thing they arrive under.",
+      "silo": null,
+      "status": "serving",
+      "surfaces": [
+        {
+          "key": "site",
+          "name": "The main site",
+          "what": "The front page, /docs, /style and /admin.",
+          "piece": null,
+          "serves_today": "https://tinymachines.ai",
+          "lands_at": "/",
+          "lands_at_settled": true,
+          "status": "here"
+        },
+        {
+          "key": "api",
+          "name": "The roof API",
+          "what": "What the pieces are and which of them are answering, spoken as REST and as MCP.",
+          "piece": null,
+          "serves_today": "https://tinymachines.ai/api/",
+          "lands_at": "/api",
+          "lands_at_settled": true,
+          "status": "here"
+        }
+      ]
+    },
+    {
+      "key": "6502",
+      "name": "6502",
+      "what": "A transistor-level MOS 6502 traced from die photographs, and everything built on it: the explorer, the API over the real chip, the warm engine process and the console.",
+      "silo": "style/projects/6502.css",
+      "status": "moving",
+      "surfaces": [
+        {
+          "key": "explorer",
+          "name": "The explorer",
+          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer.",
+          "piece": "explorer",
+          "serves_today": "https://6502.tinymachines.ai",
+          "lands_at": "/6502",
+          "lands_at_settled": false,
+          "status": "not started"
+        },
+        {
+          "key": "api",
+          "name": "The 6502 API",
+          "what": "Stateless HTTP over the real chip, with the registry on the same app and an MCP endpoint.",
+          "piece": "chip-api",
+          "serves_today": "https://6502.tinymachines.ai/api/",
+          "lands_at": "/6502/api",
+          "lands_at_settled": false,
+          "status": "not started"
+        },
+        {
+          "key": "games",
+          "name": "Die Runner",
+          "what": "The console, the cartridge format, the builder pages and the registry that measures what it publishes.",
+          "piece": "console",
+          "serves_today": "https://games.tinymachines.ai",
+          "lands_at": "/6502/games",
+          "lands_at_settled": false,
+          "status": "not started"
+        },
+        {
+          "key": "lab",
+          "name": "The halfwave lab",
+          "what": "A 6502, half a clock phase at a time. The R&D surface, and it stays R&D.",
+          "piece": "halfwave",
+          "serves_today": "https://halfwave.tinymachines.ai",
+          "lands_at": "/6502/lab",
+          "lands_at_settled": false,
+          "status": "not started"
+        }
+      ]
+    },
+    {
+      "key": "hotbits",
+      "name": "hotbits",
+      "what": "The next project after 6502 settles. Nothing has been moved and nothing has been decided about it here beyond the fact that it is next.",
+      "silo": "style/projects/hotbits.css",
+      "status": "not started",
+      "surfaces": []
+    }
+  ]
+}

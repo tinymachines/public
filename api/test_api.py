@@ -470,3 +470,59 @@ def test_licensing_does_not_disagree_with_the_pieces(client):
         assert per[key]["code_licence"] == piece.code_licence
         assert per[key]["data_terms"] == piece.data_terms
     assert "never sold" in body["coins"]
+
+
+# ---------------------------------------------------------------------------
+# Projects, and the two directions between them and the pieces.
+# ---------------------------------------------------------------------------
+
+
+def test_pieces_and_projects_agree_in_both_directions():
+    """One copy of the fact, held to by a check rather than by care.
+
+    Both directions, because either alone is easy to satisfy while the other
+    quietly breaks: a piece filed under a project nobody defined, and a project
+    claiming a surface whose piece was renamed. The second is the one that
+    actually happens, because a surface is edited in data/projects.json and the
+    piece it names lives in a different file.
+    """
+    import json
+
+    manifest = json.loads((REPO / "data" / "projects.json").read_text())
+    project_keys = {p["key"] for p in manifest["projects"]}
+    assert len(project_keys) >= 2, "not enough projects; this check would pass on nothing"
+
+    for piece in PIECES:
+        if piece.project is not None:
+            assert piece.project in project_keys, (
+                f"piece {piece.key!r} names project {piece.project!r}, which "
+                f"data/projects.json does not define. Valid: {sorted(project_keys)}"
+            )
+
+    surfaces = [(p["key"], s) for p in manifest["projects"] for s in p["surfaces"]]
+    assert surfaces, "no surfaces; this check would pass on nothing"
+    for project_key, surface in surfaces:
+        named = surface["piece"]
+        if named is None:
+            continue
+        assert named in BY_KEY, (
+            f"project {project_key!r} surface {surface['key']!r} names piece "
+            f"{named!r}, which data/pieces.json does not define. "
+            f"Valid: {', '.join(sorted(BY_KEY))}"
+        )
+        assert BY_KEY[named].project == project_key, (
+            f"project {project_key!r} claims piece {named!r}, but that piece says "
+            f"it belongs to {BY_KEY[named].project!r}."
+        )
+
+
+def test_every_project_with_a_silo_has_one_on_disk():
+    """A silo named in the manifest and absent from the tree is a project that
+    renders as the house palette while the manifest says it has an identity."""
+    import json
+
+    manifest = json.loads((REPO / "data" / "projects.json").read_text())
+    named = [(p["key"], p["silo"]) for p in manifest["projects"] if p["silo"]]
+    assert named, "no project declares a silo; this check would pass on nothing"
+    for key, silo in named:
+        assert (REPO / silo).is_file(), f"project {key!r} names {silo}, which does not exist"
