@@ -28,7 +28,19 @@ export function ServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     // After load, so registration never competes with the first paint for
     // bandwidth on the visit that matters most.
-    const go = () => navigator.serviceWorker.register("/sw.js").catch(() => {});
+    // updateViaCache: "none" is a fix, not a default. The apex nginx maps
+    // *.js to "public, max-age=3600", so /sw.js is an asset like any other as
+    // far as the origin is concerned, and a browser holding it for an hour is
+    // a browser running the previous deploy's worker for an hour. This makes
+    // the update check always go to the network for the worker and anything
+    // it imports.
+    //
+    // The alternative is a no-cache rule for /sw.js in the apex config, which
+    // is the tidier place for it and costs an nginx reload across every vhost
+    // on this box. Worth doing next time that file is opened for another
+    // reason; not worth a server-wide reload on its own.
+    const go = () =>
+      navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(() => {});
     if (document.readyState === "complete") go();
     else window.addEventListener("load", go, { once: true });
   }, []);

@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ServiceWorker } from "./components/ServiceWorker";
+import { token } from "@/lib/tokens";
 // No next/font. The four families are self-hosted from ../../style/fonts.css,
 // which globals.css imports.
 //
@@ -17,6 +18,23 @@ import { ServiceWorker } from "./components/ServiceWorker";
 export const metadata: Metadata = {
   title: "tinymachines",
   description: "A transistor-level MOS 6502, and the things built on it.",
+};
+
+/**
+ * The theme colour, which is a different thing from the manifest's.
+ *
+ * The manifest's theme_color paints the window of an INSTALLED app. This meta
+ * tag paints the browser's own chrome around a normal tab, and a phone shows
+ * that to every reader whether they install anything or not. They are two
+ * surfaces and both want the same answer, so both read the same token.
+ *
+ * viewportFit: "cover" so a phone with a notch fills to the edges rather than
+ * letterboxing the page inside the safe area. The page frame's padding already
+ * keeps text off the physical edge.
+ */
+export const viewport: Viewport = {
+  themeColor: token("color-ink"),
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
