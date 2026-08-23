@@ -27,11 +27,25 @@ Both families are under the **SIL Open Font License 1.1**.
 - **Archivo**: Omnibus-Type. <https://github.com/Omnibus-Type/Archivo>
 - **IBM Plex**: IBM. <https://github.com/IBM/plex>
 
-**The full OFL 1.1 text is not in this directory yet, and it has to be before
-these files are redistributed.** The OFL requires the licence to travel with
-the font, and writing it out from memory is exactly the kind of thing this
-repository does not do. Fetch it from either project above, or from
-<https://openfontlicense.org>, and commit it here as `OFL.txt`.
+The licences are here, one per family, taken from each project rather than
+written out:
+
+| | |
+|---|---|
+| `OFL-Archivo.txt` | Copyright 2020 The Archivo Project Authors |
+| `OFL-IBMPlex.txt` | Copyright 2017 IBM Corp., with Reserved Font Name "Plex" |
+
+**Both are the upstream files, not a generic copy of the licence.** That
+distinction is the whole point. The OFL requires the copyright notice to travel
+with the font, and IBM's carries a Reserved Font Name, which is a condition on
+what a modified version may be called. A generic OFL text has neither line in
+it, so shipping one would have satisfied the letter of "include the licence"
+while dropping the part that names who is owed the attribution.
+
+This directory previously recorded that obligation as outstanding rather than
+guessing at it. That was the right call: the copyright lines above could not
+have been written from memory correctly, and the Reserved Font Name in
+particular would have been missed.
 
 This is the same discipline `../../NOTICE.md` applies to the die data: the
 terms travel with the artefact, and attribution is not decoration.
