@@ -130,7 +130,6 @@ const NGINX = path.join(import.meta.dirname, "..", "..", "deploy", "tinymachines
 let policy = null;
 try { policy = await readFile(NGINX, "utf8"); } catch { /* not deployed from here */ }
 if (policy) {
-  const inlineStyles = files.reduce((n, f) => n, 0);
   let sawInline = false;
   for (const file of files) {
     const body = await readFile(file, "utf8");
