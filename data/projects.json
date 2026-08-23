@@ -106,12 +106,12 @@
         {
           "key": "games",
           "name": "Die Runner",
-          "what": "The console, the cartridge format, the builder pages and the registry that measures what it publishes.",
+          "what": "The console, the cartridge format, the builder pages and the registry that measures what it publishes. The console is here and dressed in the kit; /builders, /b/<handle> and /manage are still on the subdomain, because they read live registry data and moving them is tinymachines/6502#9 rather than a restyle.",
           "piece": "console",
           "serves_today": "https://games.tinymachines.ai",
           "lands_at": "/6502/games",
-          "lands_at_settled": false,
-          "status": "not started",
+          "lands_at_settled": true,
+          "status": "console here, registry pages not",
           "nav": false,
           "nav_label": null
         },

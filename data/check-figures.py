@@ -37,6 +37,26 @@ CHIP = ROOT / "data" / "chip.json"
 CONTEXT = r"(?:wires?|switches|switch|nodes?|transistors?|byte)"
 FIGURE = re.compile(rf"\b(\d{{4}})\b[\s\-]*(?:\S+\s+){{0,2}}?{CONTEXT}\b", re.I)
 
+# Chip designations, which are four digits and are never a count of anything.
+# The comment above already claimed 6502 would not be dragged in, and the
+# narrowing above was not enough to keep that promise: the Die Runner page says
+# a module was copied "byte for byte from tinymachines/6502", and `6502` two
+# words before `byte` is exactly the shape this looks for. It fired on the
+# chip's own name in a sentence about a file copy.
+#
+# This is a designation list rather than an exception list, and the difference
+# matters: an exception list is where failures go to be silenced, so it grows
+# whenever the check is inconvenient.
+#
+# The first version of this skipped a designation outright, which bought
+# silence at the price of a real blind spot: a page stating "6502 nodes" would
+# have passed, and the die has 1725. So the skip is conditional on DISTANCE.
+# "6502 nodes" is a claim about the chip and is still checked; "6502`, apart
+# from one line ... byte" has words in between and is prose about a part
+# number. ADJACENT matches only the first shape.
+DESIGNATIONS = {6502, 6800}
+ADJACENT = re.compile(rf"^\d{{4}}[\s\-]*{CONTEXT}$", re.I)
+
 SEARCH = [ROOT / "docs", ROOT / "web" / "app", ROOT / "style"]
 SUFFIXES = {".md", ".mdx", ".tsx", ".ts", ".html"}
 
@@ -61,6 +81,8 @@ def main() -> int:
             for n, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
                 for m in FIGURE.finditer(line):
                     value = int(m.group(1))
+                    if value in DESIGNATIONS and not ADJACENT.match(m.group(0)):
+                        continue          # a part number in prose, not a count
                     seen += 1
                     if value not in allowed:
                         rel = path.relative_to(ROOT)

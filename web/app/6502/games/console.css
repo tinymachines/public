@@ -1,0 +1,135 @@
+/* ---------------------------------------------------------------------------
+   Die Runner: the components this one surface needs, and no others.
+
+   A surface-local stylesheet rather than an addition to the kit, and that is
+   the structural point of this file. `.gate` and `.pad` are Die Runner's, not
+   the design system's: putting them in style/components.css would make the kit
+   the place surface-specific rules go to accumulate, and the kit is shared by
+   every project. The move exposed this the same way the drip exposed
+   projects/: a structure with nowhere to put a thing puts it somewhere wrong.
+
+   Everything below is var() on style/tokens.css. Nothing here defines a
+   colour, a size, a duration or a radius of its own, so a token change in the
+   style guide reaches this console without touching this file, and
+   style/check-tokens.py fails if a name here does not exist.
+
+   Three of these class names are not chosen. `.gate`, `.legend i` and the
+   `t<N>` swatch classes are the DOM contract game.js was written against, and
+   game.js is copied byte for byte from tinymachines/6502 apart from one line.
+   Renaming them here would mean forking the module, which is how two copies of
+   a console start disagreeing about what a gate is.
+   ------------------------------------------------------------------------ */
+
+.con-stage {
+  display: grid;
+  gap: calc(var(--u) * 4);
+  /* minmax(0, 1fr), not 1fr: a grid track is min-content by default and the
+     canvas is 256px wide, which pushed the page sideways at 390px the first
+     time this was laid out. The masthead shipped that exact bug once. */
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 60rem) {
+  .con-stage { grid-template-columns: minmax(0, 1fr) 20rem; }
+}
+
+.con-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(var(--u) * 30);
+}
+.con-screen canvas {
+  display: block;
+  image-rendering: pixelated;
+  max-width: 100%;
+  height: auto;
+  touch-action: none;                 /* the d-pad is a control, not a scroll */
+}
+
+.con-side { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+
+/* A label/value pair on panel. The kit's .kv is the paper form and its colours
+   are ink; these values came off the engine, so they are glass on panel.
+   STYLE.md section 1: never render live node state on paper. */
+.con-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(var(--u) * 0.5) calc(var(--u) * 3);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+}
+.con-kv span { color: var(--color-glass-muted); }
+.con-kv b {
+  color: var(--color-glass);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.con-note {
+  margin: calc(var(--u) * 3) 0 0;
+  font-size: var(--text-micro);
+  line-height: 1.55;
+  color: var(--color-glass-muted);
+}
+.con-note b { color: var(--color-glass); font-weight: 500; }
+.con-bar { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 3); }
+
+/* The eight watched gates. game.js emits .gate.hi and .gate.lo, so those names
+   are its contract rather than a choice. Conducting is Ocean Data, which is
+   the data hue on panel; not conducting is Mustard Conductor. Neither is red:
+   a gate that is shut is not a failed assertion. */
+.gates { display: grid; gap: 1px; margin-top: calc(var(--u) * 2); }
+.gate {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: calc(var(--u) * 1.5);
+  align-items: baseline;
+  padding: 1px 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--color-glass-muted);
+}
+.gate b { font-weight: 600; color: var(--color-glass-muted); }
+.gate span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gate i {
+  font-style: normal;
+  font-weight: 600;
+  width: calc(var(--u) * 4);
+  text-align: center;
+  border-radius: 1px;
+}
+.gate.hi b { color: var(--color-ocean); }
+.gate.hi i { color: var(--color-panel); background: var(--color-ocean); }
+.gate.lo i { color: var(--color-panel); background: var(--color-mustard); }
+
+/* The d-pad. Square, thumb-sized, and laid out as the cross it is: a row of
+   four arrows is a different instrument. */
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, calc(var(--u) * 11));
+  gap: calc(var(--u) * 1);
+  justify-content: center;
+  margin-top: calc(var(--u) * 2);
+}
+.pad .u { grid-column: 2; }
+.pad .l { grid-column: 1; grid-row: 2; }
+.pad .d { grid-column: 2; grid-row: 2; }
+.pad .r { grid-column: 3; grid-row: 2; }
+
+/* The legend's swatches. game.js paints each one with the actual tile the
+   screen draws from, as a data: URL, so a key cannot show something the
+   screen does not. The kit's .legend styles `em`; this styles `i`, which is
+   what game.js queries, and it must carry no class but its `t<N>` one:
+   `legend()` reads className.slice(1) as the tile number. */
+.legend { display: grid; gap: calc(var(--u) * 1); margin-top: calc(var(--u) * 2); }
+.legend span { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--u) * 2); align-items: center; }
+.legend i {
+  width: calc(var(--u) * 4);
+  height: calc(var(--u) * 4);
+  image-rendering: pixelated;
+  border: 1px solid var(--color-rule-panel);
+}
+
+.con-err { color: var(--color-red); font-family: var(--font-mono); font-size: var(--text-micro); margin: calc(var(--u) * 2) 0 0; }

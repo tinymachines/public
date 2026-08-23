@@ -57,7 +57,14 @@ def main() -> int:
     tokens = HERE / "tokens.css"
     # Everything in the kit that can reference a token. tokens.css is included
     # because a token may be defined in terms of another one.
+    # The kit, plus every surface-local stylesheet under web/app. A surface may
+    # carry its own components (Die Runner's .gate and .pad are not the design
+    # system's), and those are exactly as able to name a token that does not
+    # exist. Globbed rather than listed, so the next surface to arrive is
+    # covered by arriving rather than by somebody remembering this file.
     consumers = [HERE / "components.css", HERE / "tokens.css", HERE / "zoo.html"]
+    consumers += sorted((HERE.parent / "web" / "app").rglob("*.css"))
+    consumers += sorted((HERE / "projects").glob("*.css"))
 
     defined = defined_in(tokens) | EXTERNAL
     if len(defined) < 20:
