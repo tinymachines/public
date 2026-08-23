@@ -2,6 +2,7 @@ import Link from "next/link";
 import { allPages } from "@/lib/docs";
 import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
+import { whereToRead } from "@/lib/nav";
 import { specimenCount } from "@/lib/zoo";
 import { Shell } from "./components/SiteFrame";
 import { PieceStatus } from "./components/PieceStatus";
@@ -111,11 +112,23 @@ export default function Home() {
               </div>
             </dl>
             <p className="piece-links">
-              {p.public_url ? (
-                <a className="tag" href={p.public_url}>
-                  live
-                </a>
-              ) : null}
+              {/* Where to READ it, which stopped being the same question as
+                  where it has always answered. Two surfaces have moved onto
+                  this site and this page was still sending people to their
+                  subdomains. See lib/nav.ts. */}
+              {(() => {
+                const { href, onSite } = whereToRead(p.key, p.public_url);
+                if (!href) return null;
+                return onSite ? (
+                  <Link className="tag live" href={href}>
+                    read it here
+                  </Link>
+                ) : (
+                  <a className="tag" href={href}>
+                    live
+                  </a>
+                );
+              })()}
               <a className="tag" href={p.source}>
                 source
               </a>

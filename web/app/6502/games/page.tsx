@@ -68,10 +68,10 @@ export default function GamesPage() {
         <p>
           A console whose frames are run on a transistor-level MOS 6502. The
           screen is a page of the chip&rsquo;s own memory and nothing draws it
-          but this page. Still served from{" "}
-          <a href="https://games.tinymachines.ai">games.tinymachines.ai</a> as
-          well, which is where the builder pages and the cartridge editor
-          remain.
+          but this page. The{" "}
+          <a href="https://games.tinymachines.ai/builders">builder pages</a> and
+          the cartridge editor have not moved and are still on
+          games.tinymachines.ai.
         </p>
 
         <div className="con-stage">

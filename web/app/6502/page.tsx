@@ -68,7 +68,15 @@ export default function ProjectPage() {
                     <td className="name">{s.name}</td>
                     <td style={{ whiteSpace: "normal", minWidth: "18rem" }}>{s.what}</td>
                     <td>
-                      <a href={s.serves_today}>{s.serves_today.replace("https://", "")}</a>
+                      {/* data-address marks a link that IS the address rather
+                          than a way to read the thing. This column's whole job
+                          is to say where each surface answers today, including
+                          the ones that have also arrived here, so check-build
+                          skips it: an opt-out that names itself, rather than
+                          the check quietly not covering this page. */}
+                      <a data-address href={s.serves_today}>
+                        {s.serves_today.replace("https://", "")}
+                      </a>
                     </td>
                     <td>
                       {s.lands_at}{" "}

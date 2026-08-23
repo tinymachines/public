@@ -538,6 +538,50 @@ if (!declared) {
   }
 }
 
+// 15. Nothing links to a subdomain for a surface that has arrived here.
+//     The front page sent readers to games.tinymachines.ai and
+//     halfwave.tinymachines.ai after both had moved onto this site. It was
+//     reading public_url from data/pieces.json, which was still true and no
+//     longer the answer, and nothing looked wrong: the links worked, they just
+//     took you off the site to the older copy.
+//
+//     This is the check that stops it recurring, and it will fire again on the
+//     day the explorer or the 6502 API moves, which is exactly when it should.
+if (manifest) {
+  const moved = [];
+  for (const p of manifest.projects) {
+    for (const s of p.surfaces) {
+      if (s.status !== "not started" && s.lands_at_settled && /^https?:\/\//.test(s.serves_today)) {
+        moved.push({ from: s.serves_today.replace(/\/+$/, ""), to: s.lands_at, name: s.name });
+      }
+    }
+  }
+  if (!moved.length) {
+    console.error("check-build: no surface is marked as arrived; this check would pass on nothing.");
+    process.exit(2);
+  }
+  for (const file of files) {
+    const body = await readFile(file, "utf8");
+    for (const m of moved) {
+      // An <a href> only. The console and the lab legitimately FETCH their
+      // chip from the other origin, and prose may name a subdomain as a fact.
+      // What is wrong is sending a reader there to read a thing that is here.
+      // data-address opts a link out: the /6502 table's job is to say where
+      // each surface answers today, which for an arrived surface is both
+      // places. An opt-out that names itself, rather than the check quietly
+      // skipping a page.
+      const host = m.from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(`<a\\b(?![^>]*\\bdata-address\\b)[^>]*href="${host}/?"`, "i");
+      if (re.test(body)) {
+        failures.push(
+          `${path.relative(APP, file)}: links to ${m.from}, but ${m.name} is served here at ${m.to}.\n` +
+          "    Use lib/nav.ts whereToRead(): a piece's public_url is where it has always answered,\n" +
+          "    and where to read it is a different question once it has moved.");
+      }
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

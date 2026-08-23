@@ -116,3 +116,38 @@ export function labels(): Record<string, string> {
 
   return out;
 }
+
+/**
+ * Where to send a reader for a piece: here, if it has arrived; its own
+ * subdomain, if it has not.
+ *
+ * The front page was sending people to games.tinymachines.ai and
+ * halfwave.tinymachines.ai for two surfaces that now live on this site. It was
+ * reading `public_url` from data/pieces.json, which is still true and no
+ * longer the answer: a piece's public URL is where it has always answered, and
+ * where to READ it is a different question once it has moved.
+ *
+ * Two files described the same thing and the page read the older one, which is
+ * the arrangement this repository keeps finding at the bottom of its bugs. So
+ * the answer is derived from the manifest, joined to the piece by the key that
+ * already ties them, and the subdomain is the fallback rather than the
+ * default.
+ *
+ * `onSite` is returned rather than inferred from the href, so a caller can say
+ * "live here" or "still on its own subdomain" without parsing a URL.
+ */
+export function whereToRead(pieceKey: string, publicUrl: string | null): { href: string | null; onSite: boolean } {
+  for (const p of projects()) {
+    for (const s of p.surfaces) {
+      if (s.piece !== pieceKey) continue;
+      // "not started" is the manifest saying it has not moved. Anything else
+      // means at least part of it is here, and lands_at_settled means the path
+      // is a decision rather than a proposal: linking to a proposed path would
+      // be linking to a route that does not exist yet.
+      if (s.status !== "not started" && s.lands_at_settled) {
+        return { href: s.lands_at, onSite: true };
+      }
+    }
+  }
+  return { href: publicUrl, onSite: false };
+}

@@ -31,8 +31,9 @@ switches, and the behaviour falls out of simulating them.
 
 Three sites are live and keep serving from where they are:
 [6502.tinymachines.ai](https://6502.tinymachines.ai) is the explorer and its
-measured tables, [games.tinymachines.ai](https://games.tinymachines.ai) is the
-console and the builder pages, and halfwave.tinymachines.ai is the reviewer's
+measured tables, [the console](/6502/games) and its
+[builder pages](https://games.tinymachines.ai/builders) are Die Runner, and
+[the lab](/6502/lab) is the reviewer's
 lab. They are separate origins from this one today, so a fetch between them is
 cross-origin and the 6502 API sends `Access-Control-Allow-Origin: *` on purpose.
 
