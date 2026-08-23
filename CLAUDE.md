@@ -204,3 +204,41 @@ lays out the shape of the question without pretending to answer it.
   `6502.tinymachines.ai` is cross-origin today, and the 6502 API sends
   `Access-Control-Allow-Origin: *` deliberately for that reason. Keep public
   paths stable, because they become a redirect map at the move.
+
+## Where this is going, decided 2026-08-23
+
+**Everything moves under this project, as five separate sub-projects:**
+the engine, the API, games, the lab page, and the main site.
+
+Two things follow, and they are constraints rather than notes.
+
+**Nothing else is disturbed while the move happens.** The existing repos keep
+their shape and the three live subdomains keep serving, exactly as before. A
+move is a sequence of small arrivals here, not a flag day. Until a piece has
+arrived and is proved serving from here, the thing that answers is still the
+thing that answers today, and this repo talks to it over HTTP.
+
+**The sub-project boundary has to follow the licence line, not the product
+line**, and this is the part that is easy to get wrong once and expensive to
+undo. `NOTICE.md` records that `extern/visual6502` is a submodule in the 6502
+repo *precisely so that repository does not redistribute NC-SA data*, and says
+that choice should not be quietly undone here. Consolidating into one tree is
+the most natural way to undo it by accident.
+
+So, per sub-project:
+
+| | |
+|---|---|
+| halfphi | MIT, and it must keep embedding **no die data**. That is the only reason it is MIT |
+| the 6502 engine | MIT code over a **submodule**, never a copy. It arrives as a submodule or it does not arrive |
+| the API, games | derived from the die data, so **CC BY-NC-SA 3.0 travels** with them and with every cartridge |
+| the lab page, the main site | whichever applies to what they actually embed, decided when they land |
+
+A single top-level `LICENSE` covering all five would be wrong in both
+directions: it would either claim MIT over NC-SA work, or put NC-SA on
+halfphi and destroy the one clean piece. Each sub-project carries its own, and
+`NOTICE.md` stays the map.
+
+**When the first piece with die data arrives, add the check that fails if it
+reaches halfphi's tree.** The rule this repo already runs on: a boundary that
+is only a convention is one nobody notices crossing.

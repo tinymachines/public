@@ -263,7 +263,12 @@ rather than reaching across.
 1. ~~Next+MDX, or Python and server-rendered markdown?~~ **Answered: Next+MDX
    frontend, FastAPI backend.** See "The shape, decided".
 2. ~~Do the subdomains stay, or move under the apex?~~ **Answered: they stay
-   for now, and move later.** `6502.`, `games.` and `halfwave.` keep serving
+   for now, and move later.** As of 2026-08-23 "later" has a shape:
+   **everything moves under this project as five sub-projects**, being the
+   engine, the API, games, the lab page and the main site, with nothing else
+   disturbed while it happens. See "Where this is going" in `CLAUDE.md`,
+   including why the sub-project boundary has to follow the licence line.
+   The rest of this answer still holds during the move: `6502.`, `games.` and `halfwave.` keep serving
    from where they are. Two things follow. **Build nothing that assumes a
    single origin**: cross-origin fetches between the apex and a subdomain need
    CORS, and the 6502 API already sends `*` on purpose. And **treat every
