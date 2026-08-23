@@ -23,11 +23,29 @@ export function Masthead({
   title,
   crumb,
   meta,
+  titleIsHeading = true,
 }: {
   die: string;
   title: string;
   crumb?: React.ReactNode;
   meta?: React.ReactNode;
+  /**
+   * Whether the masthead's title is the document's <h1>.
+   *
+   * False where the CONTENT owns the heading, which is every documentation
+   * page and the style guide: those carry their own title in the markdown, so
+   * the masthead was giving the page a second h1 and the two disagreed about
+   * which one it was. On /docs/6502/verification the masthead said
+   * "Documentation" and the document said "Verification", and the second is
+   * the page. A screen reader announcing two top-level headings has no way to
+   * tell which one names the thing you asked for.
+   *
+   * It looks identical either way: .mh-title carries the same rules as
+   * .masthead h1, so this changes the semantics and nothing else. A build
+   * check counts h1s per page, because this is a prop and a prop can be
+   * forgotten.
+   */
+  titleIsHeading?: boolean;
 }) {
   return (
     <header className="masthead">
@@ -38,7 +56,7 @@ export function Masthead({
       <div className="die">{die}</div>
       <div>
         {crumb ? <div className="crumb">{crumb}</div> : null}
-        <h1>{title}</h1>
+        {titleIsHeading ? <h1>{title}</h1> : <p className="mh-title">{title}</p>}
         {meta ? <div className="mh-meta">{meta}</div> : null}
       </div>
     </header>
@@ -124,12 +142,15 @@ export function Shell({
   title,
   crumb,
   navExtra,
+  titleIsHeading,
   children,
   ...rest
 }: {
   die: string;
   title: string;
   crumb?: React.ReactNode;
+  /** False where the content carries its own h1. See Masthead. */
+  titleIsHeading?: boolean;
   /** An extra node beside the nav, inside <header>. One page needs it: the
       Die Runner console's game.js writes into `header .sub`, and that
       selector is its contract rather than a choice. */
@@ -143,7 +164,13 @@ export function Shell({
       <AppMetrics />
       <header className="app-head">
         <div className="band">
-          <Masthead die={die} title={title} crumb={crumb} meta={<><SiteNav />{navExtra}</>} />
+          <Masthead
+            die={die}
+            title={title}
+            crumb={crumb}
+            titleIsHeading={titleIsHeading}
+            meta={<><SiteNav />{navExtra}</>}
+          />
         </div>
       </header>
 

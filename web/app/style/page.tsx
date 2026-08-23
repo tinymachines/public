@@ -31,7 +31,13 @@ export default function StylePage() {
   const specimens = specimenCount();
 
   return (
-    <Shell die="STY" title="Style guide" crumb={<><b>tinymachines</b> / style</>}>
+    <Shell
+        die="STY"
+        title="Style guide"
+        crumb={<><b>tinymachines</b> / style</>}
+        /* STYLE.md opens with its own h1. */
+        titleIsHeading={false}
+      >
       <main className="prose">
         {/* The measured chip, used the way the zoo uses it: an inline span
             carrying a figure and where the figure came from, inside a chips

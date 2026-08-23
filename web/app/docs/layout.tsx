@@ -15,7 +15,13 @@ export default function DocsLayout({ children }: LayoutProps<"/docs">) {
   const tree = docsTree();
 
   return (
-    <Shell die="6502" title="Documentation" crumb={<><b>tinymachines</b> / docs</>}>
+    <Shell
+      die="6502"
+      title="Documentation"
+      crumb={<><b>tinymachines</b> / docs</>}
+      /* Every document carries its own title as an h1. */
+      titleIsHeading={false}
+    >
       <div className="docs-shell">
         <div className="docs-nav">
           <DocsNav nodes={tree} root={root} />

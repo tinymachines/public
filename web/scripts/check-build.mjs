@@ -54,8 +54,26 @@ for (const file of files) {
     "remark-frontmatter is missing from next.config.ts remarkPlugins.");
 
   // 2. House style: no em dashes in anything shipped.
-  check(file, body, "em dash in shipped output", /—/,
+  check(file, body, "em dash in shipped output", /\u2014/,
     "Use a colon, a comma, brackets or a real word. See CLAUDE.md.");
+
+  // 2b. Exactly one <h1>, because a page has one name.
+  //     Six routes shipped with two: the masthead's title and the document's
+  //     own, and on /docs/6502/verification they disagreed about what the page
+  //     was called. The masthead said "Documentation" and the document said
+  //     "Verification", and a screen reader announcing two top-level headings
+  //     has no way to say which one names the thing you asked for. Nothing
+  //     about it is visible, which is why it needs a check rather than an eye.
+  //
+  //     Whether the masthead's title is the h1 is a PROP now, and a prop can
+  //     be forgotten on the next page somebody adds. This is what remembers.
+  const h1s = (body.match(/<h1[\s>]/gi) ?? []).length;
+  if (h1s !== 1) {
+    failures.push(
+      `${path.relative(APP, file)}: ${h1s} <h1> elements, expected exactly 1.\n` +
+      "    If the content carries its own heading, the masthead's title should not be one:\n" +
+      "    pass titleIsHeading={false} to Shell. It looks identical either way.");
+  }
 }
 
 // 3. The document surface must be in the stylesheet. The docs layout uses

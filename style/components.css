@@ -305,7 +305,7 @@ h2.display { font-size: var(--text-h2); }
   border-radius: var(--radius-hair);
   box-shadow: var(--shadow-card);
 }
-.masthead h1 { margin: 0; }
+.masthead :is(h1, .mh-title) { margin: 0; }
 .masthead > div { min-width: 0; }
 .mh-meta { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 2); }
 
@@ -1130,7 +1130,7 @@ h2.display { font-size: var(--text-h2); }
    rule wins, so the override silently did nothing and the heading kept
    overflowing at 390px. Two rules for one property belong next to each
    other. */
-.masthead h1 {
+.masthead :is(h1, .mh-title) {
   font-family: var(--font-display);
   font-size: var(--text-h1);
   font-weight: 800;
@@ -1144,7 +1144,7 @@ h2.display { font-size: var(--text-h2); }
      gap take 60 of that, and the longest title the site has, "Documentation",
      needs about 250 at --text-h2. */
   .masthead { gap: calc(var(--u) * 3); }
-  .masthead h1 { font-size: var(--text-h2); }
+  .masthead :is(h1, .mh-title) { font-size: var(--text-h2); }
   .masthead .die { width: calc(var(--u) * 12); height: calc(var(--u) * 12); }
 }
 
@@ -1472,7 +1472,7 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    check-cascade.py exists to enforce: the same override written further up
    was silently defeated twice in this file. */
 @media (max-height: 46rem) {
-  .app-shell .masthead h1 { font-size: var(--text-h3); }
+  .app-shell .masthead :is(h1, .mh-title) { font-size: var(--text-h3); }
   .app-shell .band { padding-top: calc(var(--u) * 2); padding-bottom: calc(var(--u) * 2); }
 }
 
