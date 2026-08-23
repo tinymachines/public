@@ -41,6 +41,7 @@ import probe as probe_mod
 from models import Health, Index, Meta, Piece, PiecesResponse, PieceStatus, StatusResponse
 from pieces import BY_KEY, PIECES
 from provenance import commit_and_branch
+from release import VERSION
 
 STARTED_MONO = time.monotonic()
 STARTED_AT = datetime.now(timezone.utc)
@@ -68,7 +69,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="tinymachines.ai",
-    version="1.0.0",
+    # From VERSION, the one file that holds it. It was a literal here and a
+    # different literal in web/package.json, and neither was ever incremented.
+    version=VERSION,
     description=(
         "The roof over six pieces of transistor-level MOS 6502 work.\n\n"
         "This API describes the pieces and measures which of them are answering. "
@@ -220,6 +223,7 @@ def meta() -> Meta:
     commit, branch = commit_and_branch()
     return Meta(
         service="tinymachines-api",
+        version=VERSION,
         commit=commit,
         branch=branch,
         started_at=STARTED_AT,

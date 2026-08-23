@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
  */
 
 interface Meta {
+  version: string;
   commit: string | null;
   branch: string | null;
   started_at: string;
@@ -72,6 +73,10 @@ export function VersionFooter() {
   const short = meta.commit.slice(0, 7);
   return (
     <>
+      {/* Both, because they answer different questions. The version is what a
+          person says out loud; the commit is what a bug report needs. */}
+      {" · "}
+      <span>v{meta.version}</span>
       {" · "}
       <a
         href={`https://github.com/tinymachines/public/commit/${meta.commit}`}

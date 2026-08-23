@@ -517,6 +517,27 @@ if (!sw) {
   }
 }
 
+// 14. One version, in one file.
+//     It was a literal in the API's decorator and a different literal in
+//     package.json, neither ever incremented, and both wrong in different
+//     directions. scripts/deploy.sh writes both from VERSION; this fails if
+//     anything else edits one of them, which is the only way they can part.
+const VERSION_FILE = path.join(import.meta.dirname, "..", "..", "VERSION");
+let declared = null;
+try { declared = (await readFile(VERSION_FILE, "utf8")).trim(); } catch { /* reported below */ }
+if (!declared) {
+  failures.push("VERSION is missing. scripts/deploy.sh increments it and the API reports it.");
+} else if (!/^\d+\.\d+\.\d+$/.test(declared)) {
+  failures.push(`VERSION is ${JSON.stringify(declared)}, which is not a semver; deploy.sh parses it back.`);
+} else {
+  const pkg = JSON.parse(await readFile(path.join(import.meta.dirname, "..", "package.json"), "utf8"));
+  if (pkg.version !== declared) {
+    failures.push(
+      `web/package.json says ${pkg.version} and VERSION says ${declared}.\n` +
+      "    scripts/deploy.sh writes both; if they differ, something else edited one.");
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

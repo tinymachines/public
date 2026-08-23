@@ -182,6 +182,16 @@ class Meta(BaseModel):
     """
 
     service: str = Field(description="The name of this service.", examples=["tinymachines-api"])
+    version: str = Field(
+        description="The deployed version, from the repository's VERSION file. It "
+                    "counts changes that were deployed rather than releases planned "
+                    "in advance: the patch digit moves on every deploy carrying a "
+                    "change, and scripts/deploy.sh is the only thing that moves it. "
+                    "It does not replace `commit`, which says exactly what is running "
+                    "and is what a bug report needs; this is what a person can say "
+                    "out loud.",
+        examples=["1.0.0"],
+    )
     commit: Optional[str] = Field(
         default=None,
         description="The git commit this process was started from, read out of .git "

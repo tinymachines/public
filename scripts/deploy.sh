@@ -14,23 +14,43 @@
 # This is the ONE command between a change and it being live. Everything that
 # has to happen, happens here, in order, and each stage gates the next.
 #
-#   ./scripts/deploy.sh           every gate, build, restart, verify
-#   ./scripts/deploy.sh --check   every gate and the build, nothing restarted
-#   ./scripts/deploy.sh --dirty   deploy with uncommitted changes, see below
+#   ./scripts/deploy.sh -m "what changed"   bump, commit, build, deploy, push
+#   ./scripts/deploy.sh                     a clean tree: build, deploy, push
+#   ./scripts/deploy.sh --check             every gate and the build, no more
+#   ./scripts/deploy.sh --minor|--major     bump that digit instead of patch
+#   ./scripts/deploy.sh --no-push           everything except the push
+#   ./scripts/deploy.sh --dirty             deploy uncommitted work, see below
 #
-# **Commit before deploying.** The default refuses a dirty tree, and that is
-# not tidiness. The API reads its own commit out of .git and reports it at
-# /v1/meta, and stage 8 holds the running service to it: with uncommitted
-# changes the service is running code that no commit contains, and it will
-# report a commit that is not what is running. A service that misreports what
-# it is, is worse than one that is out of date. --dirty is there for
-# iterating, and says so on the way past.
+# ## What it does with the tree
 #
-# The order matters and is not obvious in one place: the build stamps
+# A DIRTY tree needs -m and gets committed: the version is incremented, VERSION
+# and web/package.json are written, and everything is committed with that
+# message. Without -m it refuses rather than inventing one. A commit message in
+# this repository is where the reason for a change lives, and a generated
+# "deploy 2026-08-23" is a line that will be read later by somebody trying to
+# find out why.
+#
+# A CLEAN tree is not bumped and not committed. The version counts changes that
+# were deployed, so redeploying the same code twice must not move it, or the
+# number stops meaning anything.
+#
+# ## Why it refuses a dirty tree without a message
+#
+# The API reads its own commit out of .git and reports it at /v1/meta, and a
+# stage below holds the running service to it. With uncommitted changes the
+# service runs code that no commit contains while reporting a commit that is
+# not what is running, and a service that misreports what it is, is worse than
+# one that is out of date. --dirty is there for iterating and says so on the
+# way past.
+#
+# ## The order, which is not obvious anywhere else
+#
+# Bump, commit, build, restart, verify, THEN push. The build stamps
 # public/sw.js with the current commit, because a browser installs a new
-# service worker only when the file's bytes change. Committing and then
-# deploying gets the right stamp. Deploying and then committing does not, and
-# nothing would say so.
+# service worker only when the file's bytes change, so committing has to come
+# first. And the push comes last so that origin only ever receives a commit
+# that has been deployed and verified: a failed deploy leaves the commit local,
+# where it can be amended.
 #
 # It does NOT touch nginx. A reload there is process wide across 37 files, 80
 # server blocks and 58 server names on this box, most of them nothing to do
@@ -43,15 +63,20 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 
-MODE=""
-for arg in "$@"; do
-  case "$arg" in
-    --check|--dirty) MODE="$MODE $arg" ;;
-    *) printf 'unknown option: %s\n' "$arg" >&2; exit 2 ;;
+CHECK_ONLY= ; ALLOW_DIRTY= ; NO_PUSH= ; BUMP=patch ; MESSAGE=
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --check)   CHECK_ONLY=1 ;;
+    --dirty)   ALLOW_DIRTY=1 ;;
+    --no-push) NO_PUSH=1 ;;
+    --minor)   BUMP=minor ;;
+    --major)   BUMP=major ;;
+    -m)        shift; MESSAGE="${1:-}"; [ -n "$MESSAGE" ] || { echo "-m needs a message" >&2; exit 2; } ;;
+    -m*)       MESSAGE="${1#-m}" ;;
+    *) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
   esac
+  shift
 done
-case "$MODE" in *--check*) CHECK_ONLY=1 ;; *) CHECK_ONLY= ;; esac
-case "$MODE" in *--dirty*) ALLOW_DIRTY=1 ;; *) ALLOW_DIRTY= ;; esac
 
 say() { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 warn() { printf '\033[33m   %s\033[0m\n' "$1"; }
@@ -59,16 +84,56 @@ fail() { printf '\033[31mFAILED: %s\033[0m\n' "$1" >&2; exit 1; }
 
 say "0. The tree"
 DIRTY=$(git -C "$ROOT" status --porcelain)
-if [ -n "$DIRTY" ]; then
-  if [ -n "$ALLOW_DIRTY" ] || [ -n "$CHECK_ONLY" ]; then
-    warn "uncommitted changes: the service will report a commit that is not what is running"
+BUMPED=
+
+if [ -n "$DIRTY" ] && [ -z "$CHECK_ONLY" ] && [ -z "$ALLOW_DIRTY" ]; then
+  if [ -z "$MESSAGE" ]; then
     printf '%s\n' "$DIRTY" | sed 's/^/     /'
-  else
-    printf '%s\n' "$DIRTY" | sed 's/^/     /'
-    fail "uncommitted changes. Commit first so /v1/meta can say what is running, or pass --dirty."
+    fail "uncommitted changes and no -m. Say what changed, or pass --dirty to deploy without committing."
   fi
+
+  # The version, incremented here and nowhere else. Parsed back out of the
+  # file rather than tracked separately, so the file is the state.
+  cur=$(tr -d '[:space:]' < "$ROOT/VERSION")
+  case "$cur" in
+    *.*.*) : ;;
+    *) fail "VERSION is '$cur', which is not a semver" ;;
+  esac
+  IFS=. read -r MA MI PA <<EOF
+$cur
+EOF
+  case "$BUMP" in
+    major) MA=$((MA + 1)); MI=0; PA=0 ;;
+    minor) MI=$((MI + 1)); PA=0 ;;
+    patch) PA=$((PA + 1)) ;;
+  esac
+  NEXT="$MA.$MI.$PA"
+  printf '%s\n' "$NEXT" > "$ROOT/VERSION"
+
+  # package.json carries the same number, and a test holds the two together.
+  # Written with python rather than sed because a JSON file edited by regex is
+  # a JSON file that eventually stops parsing.
+  python3 - "$ROOT" "$NEXT" <<'PY'
+import json, pathlib, sys
+root, nxt = pathlib.Path(sys.argv[1]), sys.argv[2]
+p = root / "web" / "package.json"
+d = json.loads(p.read_text())
+d["version"] = nxt
+p.write_text(json.dumps(d, indent=2) + "\n")
+PY
+
+  printf '  %s -> %s (%s)\n' "$cur" "$NEXT" "$BUMP"
+  git -C "$ROOT" add -A
+  git -C "$ROOT" commit -q -m "$MESSAGE" || fail "nothing to commit after staging, which should not happen"
+  BUMPED=1
+  printf '  committed %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+
+elif [ -n "$DIRTY" ]; then
+  warn "uncommitted changes: the service will report a commit that is not what is running"
+  printf '%s\n' "$DIRTY" | sed 's/^/     /'
 else
-  printf '  clean at %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+  printf '  clean at %s, version %s\n' \
+    "$(git -C "$ROOT" rev-parse --short=12 HEAD)" "$(tr -d '[:space:]' < "$ROOT/VERSION")"
 fi
 
 say "1. Lint"
@@ -206,4 +271,28 @@ for h in 6502.tinymachines.ai games.tinymachines.ai halfwave.tinymachines.ai; do
   [ "$code" = "200" ] || fail "$h answered $code; something in this deploy reached further than it should have"
 done
 
-say "Deployed."
+# Last, deliberately. origin only ever receives a commit that has been
+# deployed and verified, so a failed deploy leaves the commit local where it
+# can still be amended. Nothing above this line depends on the push, and a push
+# that fails does not undeploy anything.
+say "10. Push"
+if [ -n "$NO_PUSH" ]; then
+  printf '  skipped (--no-push)\n'
+elif ! git -C "$ROOT" rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then
+  warn "no upstream for this branch; nothing pushed"
+else
+  ahead=$(git -C "$ROOT" rev-list --count '@{u}'..HEAD)
+  if [ "$ahead" = 0 ]; then
+    printf '  nothing to push\n'
+  else
+    printf '  %s commit(s)\n' "$ahead"
+    git -C "$ROOT" push -q origin HEAD || fail "push failed; the deploy stands, the commit is local"
+    printf '  pushed to %s\n' "$(git -C "$ROOT" rev-parse --abbrev-ref '@{u}')"
+  fi
+fi
+
+if [ -n "$BUMPED" ]; then
+  say "Deployed $(tr -d '[:space:]' < "$ROOT/VERSION")."
+else
+  say "Deployed."
+fi

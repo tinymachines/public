@@ -526,3 +526,36 @@ def test_every_project_with_a_silo_has_one_on_disk():
     assert named, "no project declares a silo; this check would pass on nothing"
     for key, silo in named:
         assert (REPO / silo).is_file(), f"project {key!r} names {silo}, which does not exist"
+
+
+def test_the_version_is_the_file_and_nothing_else():
+    """One number, one home.
+
+    It was a literal in a decorator and a different literal in package.json,
+    neither incremented, and both wrong in different directions. This fails if
+    a copy comes back: the API's declared version, the version it reports, and
+    web/package.json all have to be what VERSION says.
+    """
+    import json
+
+    declared = (REPO / "VERSION").read_text().strip()
+    assert re.fullmatch(r"\d+\.\d+\.\d+", declared), (
+        f"VERSION is {declared!r}, which is not a semver. scripts/deploy.sh "
+        "increments it and parses it back."
+    )
+
+    doc = app.openapi()
+    assert doc["info"]["version"] == declared, (
+        f"openapi.json declares {doc['info']['version']}, VERSION says {declared}"
+    )
+
+    pkg = json.loads((REPO / "web" / "package.json").read_text())
+    assert pkg["version"] == declared, (
+        f"web/package.json says {pkg['version']}, VERSION says {declared}. "
+        "scripts/deploy.sh writes both; if they differ, something else edited one."
+    )
+
+
+def test_meta_reports_the_version(client):
+    body = client.get("/v1/meta").json()
+    assert body["version"] == (REPO / "VERSION").read_text().strip()
