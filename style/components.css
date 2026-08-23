@@ -1584,6 +1584,22 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   padding: calc(var(--u) * 3);
 }
 
+/* On a narrow screen the sheet stops hanging off the button and spans the
+   viewport instead. Anchored to the window rather than to the control, because
+   at 390px a 24rem panel is wider than the space to either side of anything.
+   The top is the measured band, so it opens just under the chrome however tall
+   that has become. */
+@media (max-width: 40rem) {
+  .menu-panel {
+    position: fixed;
+    left: calc(var(--u) * 3);
+    right: calc(var(--u) * 3);
+    top: calc(var(--app-head-h, 11rem) + var(--u) * 2);
+    min-width: 0;
+    max-height: calc(100dvh - var(--app-head-h, 11rem) - var(--u) * 6);
+  }
+}
+
 .menu-group + .menu-group { margin-top: calc(var(--u) * 4); }
 .menu-group > h2 {
   margin: 0 0 calc(var(--u) * 2);
@@ -1635,6 +1651,9 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   gap: calc(var(--u) * 4);
 }
 .app-head-row > .masthead { flex: 1 1 auto; min-width: 0; }
-@media (max-width: 40rem) {
-  .app-head-row { flex-wrap: wrap; }
-}
+/* The menu does not wrap below the masthead, and that was a correction. It did
+   at first, and the panel then opened off the left of the screen: it is
+   positioned right: 0 against the button, so a button that has moved to the
+   start of its own line anchors a 24rem sheet somewhere past the left edge.
+   Keeping it in the corner is also where a reader looks for it. */
+.app-head-row > .menu-wrap { flex: 0 0 auto; }
