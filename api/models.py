@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Piece(BaseModel):
@@ -237,4 +237,294 @@ class Index(BaseModel):
                     "this site's Content-Security-Policy is script-src 'self'. They "
                     "would render as a blank page with a console error, which is a "
                     "worse answer than saying there is not one.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Administration: dev keys and the people they belong to.
+#
+# These are the first models in this file that describe something STORED. Every
+# model above is derived from pieces.py or measured at request time, which is
+# why the service could be restarted at any moment and why a copy of it was
+# worth nothing. From here down there is a SQLite file behind the shape.
+#
+# One field is deliberately absent from every model here, and its absence is
+# the design: there is no field anywhere that carries a key's secret, except
+# `MintedKey.key`, which exists for exactly one response and is documented as
+# such. A "show me the key" route cannot be added without changing a model,
+# which is the point of putting the boundary in the schema rather than in a
+# convention.
+# ---------------------------------------------------------------------------
+
+
+Scope = Literal["dev", "admin"]
+
+
+class User(BaseModel):
+    """A person, as four facts and three timestamps.
+
+    Four fields because four are needed to know who somebody is and address
+    them by URL. There is no password, no session and no verified flag: with no
+    mail capability there is no reset path, so choosing a sign-in mechanism now
+    would be choosing one whose recovery story does not exist. A row here is a
+    record of a person; a dev key is the only credential this service accepts.
+    """
+
+    id: str = Field(
+        description="Stable identifier. Used by every other route that refers to a "
+                    "person, so that changing a handle does not orphan anything.",
+        examples=["u_9f2c41ab73d05e18"],
+    )
+    email: str = Field(
+        description="Stored lowercased, and unique. Validated for shape only: nothing "
+                    "here can send mail, and the only proof an address works is "
+                    "sending to it, so this is a record rather than a verification.",
+        examples=["ada@example.org"],
+    )
+    handle: str = Field(
+        description="Two to thirty-two characters, lowercase, digits and hyphens. "
+                    "Unique, and lowercased on the way in, because a handle becomes a "
+                    "path segment and `Ada` and `ada` being two rows is one person "
+                    "with two accounts. Handles that collide with a path this site "
+                    "serves are refused.",
+        examples=["ada"],
+    )
+    first_name: str = Field(
+        description="What to call them. One field rather than given/family, because "
+                    "the only thing this site does with a name is greet somebody, and "
+                    "a name model that assumes two parts is wrong for a large "
+                    "fraction of the world.",
+        examples=["Ada"],
+    )
+    pic: Optional[str] = Field(
+        default=None,
+        description="A site-relative path, an http(s) URL, or a data:image URI. Null "
+                    "when there is none. Note that this site's Content-Security-Policy "
+                    "is `img-src 'self' data:`, so a picture on another host is stored "
+                    "and reported but cannot be rendered as an image by a page here: "
+                    "the admin screen shows it as a link rather than as a broken "
+                    "image. Widening the policy is a decision about the policy.",
+        examples=["/pics/ada.png"],
+    )
+    created_at: datetime = Field(description="When the row was created, UTC.")
+    updated_at: datetime = Field(description="When any field last changed, UTC.")
+    disabled_at: Optional[datetime] = Field(
+        default=None,
+        description="When the account was disabled, or null when it is active. Rows "
+                    "are disabled rather than deleted: the keys that reference a "
+                    "person are the record of what that credential did, and a handle "
+                    "that was somebody is a fact worth keeping once handles are URLs.",
+    )
+
+
+class UsersResponse(BaseModel):
+    """Everybody, newest first."""
+
+    count: int = Field(description="How many users, counted rather than stated.", examples=[3])
+    users: list[User] = Field(
+        description="Every user, newest first. There is no paging yet, and there is no "
+                    "pretend paging either: when the list is long enough to need it, "
+                    "the parameters arrive here and this description changes with them."
+    )
+
+
+class NewUser(BaseModel):
+    """What creating a user requires."""
+
+    # A field this model does not declare is a 422, not a silently ignored key.
+    # Pydantic ignores unknown fields by default, so without this a request
+    # naming `first_nmae` would be accepted, change nothing, and return 200:
+    # a save that appears to succeed and does not. That is the exact failure
+    # the PATCH rule below is written against, so it is closed in the schema
+    # rather than trusted to the handler.
+    model_config = ConfigDict(extra="forbid")
+
+    email: str = Field(description="Their address. Lowercased and checked for shape, not delivered to.", examples=["ada@example.org"])
+    handle: str = Field(description="Two to thirty-two characters, lowercase letters, digits and hyphens.", examples=["ada"])
+    first_name: str = Field(description="What to call them.", examples=["Ada"])
+    pic: Optional[str] = Field(
+        default=None,
+        description="Optional picture reference: a site-relative path, an http(s) URL, "
+                    "or a data:image URI.",
+        examples=["/pics/ada.png"],
+    )
+
+
+class UserPatch(BaseModel):
+    """A partial update. Absent is not the same as null.
+
+    Every field is optional, and the route sends only the ones the request
+    actually named. That is the registry's rule carried over because it was
+    paid for there: **a PATCH touches only what it names**, so a client saving
+    a first name cannot blank a picture it never loaded.
+
+    The distinction is real and it is the reason this model exists rather than
+    reusing NewUser with defaults: `pic` omitted leaves the picture alone,
+    `"pic": null` removes it. A field this model does not declare is rejected
+    rather than ignored, because silently dropping `first_nmae` is how a save
+    appears to succeed and changes nothing.
+    """
+
+    # A field this model does not declare is a 422, not a silently ignored key.
+    # Pydantic ignores unknown fields by default, so without this a request
+    # naming `first_nmae` would be accepted, change nothing, and return 200:
+    # a save that appears to succeed and does not. That is the exact failure
+    # the PATCH rule below is written against, so it is closed in the schema
+    # rather than trusted to the handler.
+    model_config = ConfigDict(extra="forbid")
+
+    email: Optional[str] = Field(default=None, description="New address. Omit to leave it alone.")
+    handle: Optional[str] = Field(default=None, description="New handle. Omit to leave it alone.")
+    first_name: Optional[str] = Field(default=None, description="New name. Omit to leave it alone.")
+    pic: Optional[str] = Field(
+        default=None,
+        description="New picture reference. Omit to leave it alone; send null to remove it.",
+    )
+
+
+class ApiKey(BaseModel):
+    """A dev key, as everything about it except the key.
+
+    The secret is not here and cannot be: only its SHA-256 is stored, so this
+    model describes all that survives minting. That is the registry's rule and
+    the one part of its auth story worth copying exactly, because a copy of the
+    database is then not a copy of everybody's credentials.
+    """
+
+    id: str = Field(description="Stable identifier, used to revoke it.", examples=["k_41ab73d05e189f2c"])
+    pub: str = Field(
+        description="The public half of the key: eight hex characters, stored in clear "
+                    "and safe in a log. It is what makes a key in a list "
+                    "recognisable to the person holding it, so revoking the right one "
+                    "stops being a guess. It is not part of the secret and cannot "
+                    "narrow it.",
+        examples=["2f9a1b3c"],
+    )
+    scope: Scope = Field(
+        description="`dev` or `admin`, ordered: an admin key satisfies a route that "
+                    "needs dev. Two scopes is not a permission system; it is a place "
+                    "for the third one to go that is not a boolean called is_admin.",
+        examples=["dev"],
+    )
+    note: str = Field(description="Who or what the key is for, in the minter's words. Empty string when none was given.", examples=["ada, local development"])
+    user_id: Optional[str] = Field(
+        default=None,
+        description="The user this key belongs to, or null. Null is a real state: the "
+                    "bootstrap admin key belongs to nobody, and a key can be minted "
+                    "for someone before they have a row.",
+        examples=["u_9f2c41ab73d05e18"],
+    )
+    created_at: datetime = Field(description="When it was minted, UTC.")
+    last_used_at: Optional[datetime] = Field(
+        default=None,
+        description="When it last authenticated a request, UTC, or null if it never "
+                    "has. Recorded at most once a minute, so it is accurate to the "
+                    "minute and not to the request: every authenticated GET would "
+                    "otherwise be a write.",
+    )
+    revoked_at: Optional[datetime] = Field(
+        default=None,
+        description="When it was revoked, or null while it is live. Revoked keys are "
+                    "kept and reported rather than deleted, because the row is the "
+                    "record that the credential existed.",
+    )
+    active: bool = Field(
+        description="Whether it would authenticate right now. Derived from revoked_at "
+                    "and returned so a client does not have to reimplement the rule "
+                    "that decides it.",
+        examples=[True],
+    )
+
+
+class KeysResponse(BaseModel):
+    """Every key, newest first."""
+
+    count: int = Field(description="How many keys, counted rather than stated.", examples=[4])
+    active: int = Field(description="How many of them are not revoked.", examples=[3])
+    keys: list[ApiKey] = Field(description="Every key, revoked ones included, newest first.")
+
+
+class NewKey(BaseModel):
+    """What minting a key requires."""
+
+    # A field this model does not declare is a 422, not a silently ignored key.
+    # Pydantic ignores unknown fields by default, so without this a request
+    # naming `first_nmae` would be accepted, change nothing, and return 200:
+    # a save that appears to succeed and does not. That is the exact failure
+    # the PATCH rule below is written against, so it is closed in the schema
+    # rather than trusted to the handler.
+    model_config = ConfigDict(extra="forbid")
+
+    scope: Scope = Field(default="dev", description="`dev` unless there is a reason. An admin key can mint and revoke keys, including its own.", examples=["dev"])
+    note: str = Field(default="", description="Who or what it is for. Not required, and strongly worth filling in: a key with no note is a key nobody can decide to revoke.", examples=["ada, local development"])
+    user_id: Optional[str] = Field(
+        default=None,
+        description="The user it belongs to. Optional, because a key can exist before "
+                    "a person does. An unknown id is refused rather than stored.",
+        examples=["u_9f2c41ab73d05e18"],
+    )
+
+
+class MintedKey(BaseModel):
+    """The one response that carries a secret.
+
+    `key` appears here and in no other model, no log line and no database
+    column. It cannot be retrieved afterwards: what is stored is its SHA-256,
+    so the only copy after this response is the one the caller keeps. Losing it
+    means minting another and revoking this one.
+    """
+
+    key: str = Field(
+        description="The key itself, in full. This is the only time it exists outside "
+                    "the holder's hands: only its digest is stored, so it cannot be "
+                    "shown again by anything, including an admin.",
+        examples=["tmk_2f9a1b3c_kZ8w2Qx1nR7vB4tL9pY0sM3jH6cF5dA8gE1uT2iO4rK"],
+    )
+    record: ApiKey = Field(description="The stored row, which is everything about the key except the key.")
+
+
+class WhoAmI(BaseModel):
+    """What the presented key is, and what it can do.
+
+    The route that answers this is the one an admin screen calls first, because
+    the alternative to asking is guessing from whether some other request
+    returned 401, and a screen that infers its own permissions from a failure
+    shows the wrong thing whenever the failure has another cause.
+    """
+
+    key: ApiKey = Field(description="The key that authenticated this request.")
+    user: Optional[User] = Field(
+        default=None,
+        description="The person it belongs to, or null when it belongs to nobody.",
+    )
+    can_administer: bool = Field(
+        description="Whether this key satisfies the admin scope. Stated rather than "
+                    "left to the client to derive from `key.scope`, so that adding a "
+                    "third scope does not silently change what an old client believes "
+                    "it is allowed to show.",
+        examples=[True],
+    )
+
+
+class DisabledState(BaseModel):
+    """Whether an account is disabled.
+
+    A body with one field rather than two routes named `disable` and `enable`,
+    so the operation is symmetric and idempotent: sending the state you want is
+    the same call whichever direction you are going, and repeating it is not a
+    second event.
+    """
+
+    # A field this model does not declare is a 422, not a silently ignored key.
+    # Pydantic ignores unknown fields by default, so without this a request
+    # naming `first_nmae` would be accepted, change nothing, and return 200:
+    # a save that appears to succeed and does not. That is the exact failure
+    # the PATCH rule below is written against, so it is closed in the schema
+    # rather than trusted to the handler.
+    model_config = ConfigDict(extra="forbid")
+
+    disabled: bool = Field(
+        description="True disables the account, false restores it. Nothing is deleted "
+                    "either way.",
+        examples=[True],
     )

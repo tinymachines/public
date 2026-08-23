@@ -84,13 +84,28 @@ wait_for tinymachines-api 6510
 say "6. Verify"
 BASE="https://tinymachines.ai"
 bad=0
-for p in / /docs /docs/6502 /style /style/zoo /icon.svg /apple-icon.png /robots.txt \
+for p in / /docs /docs/6502 /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   printf '  %-28s %s\n' "$p" "$code"
   [ "$code" = "200" ] || bad=$((bad + 1))
 done
 [ "$bad" -eq 0 ] || fail "$bad endpoint(s) did not return 200"
+
+# The administered surface, checked from outside. Every route under
+# /v1/admin must refuse an anonymous request, and the suite already proves that
+# against the app object. This proves it about the thing on the internet, which
+# is a different claim: a proxy rule, a stale unit or a cached response can all
+# make the deployed answer differ from the tested one.
+#
+# 401 is the pass here. A 200 would mean the gate is open; a 404 would mean the
+# routes did not deploy and this check is passing on nothing, so both fail.
+say "6b. The gate"
+for p in /api/v1/admin/whoami /api/v1/admin/keys /api/v1/admin/users; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
+  printf '  %-28s %s\n' "$p" "$code"
+  [ "$code" = "401" ] || fail "$p answered $code with no key; expected 401"
+done
 
 # The API reads its commit out of .git, so this is the deployed tree saying
 # what it is rather than this script asserting what it deployed.

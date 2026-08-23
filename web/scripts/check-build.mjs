@@ -74,7 +74,15 @@ if (css.length < 1000) {
 // this used css.includes(".docs-shell"), which stayed true when the rule was
 // renamed to .docs-shellXX, so the check passed while the class it was
 // guarding did not exist. It was caught by deliberately breaking it.
-for (const cls of ["docs-shell", "docs-nav", "docs-body", "prose", "paper"]) {
+//
+// The form control names were added when /admin became the first page that
+// takes something in. They matter for the same reason: an <input> with no
+// .input rule is not a broken page, it is browser chrome sitting inside a
+// designed one, which is precisely how the "no style" reports read.
+for (const cls of [
+  "docs-shell", "docs-nav", "docs-body", "prose", "paper",
+  "field", "input", "form-grid", "toolbar", "avatar", "sr-only",
+]) {
   if (!new RegExp(`\\.${cls}(?![\\w-])`).test(css)) {
     failures.push(`stylesheet: .${cls} is used in the app but defined nowhere.\n    A class that does not exist styles nothing, silently. Add it to style/components.css.`);
   }
@@ -215,6 +223,32 @@ if (!chip) {
         `app/page.tsx contains the literal ${chip[field]}. Figures are read from data/chip.json,\n` +
         "    so a typed one is a second copy that nothing re-derives.");
     }
+  }
+}
+
+// 9. The admin route must tell crawlers to stay out, in the page rather than
+//    in robots.txt. Check 7 above explains why the two are not interchangeable:
+//    a Disallow stops the fetch, so the noindex is never read, and the URL can
+//    still be listed from an inbound link with no description. So the noindex
+//    is the mechanism and this is the assertion that it survived.
+//
+//    Asserted on the built HTML rather than on the source, because a metadata
+//    export that Next drops (the usual cause: the file becoming a client
+//    component) still type-checks and still builds.
+// Next emits a route as <route>.html here, not <route>/index.html. Matched
+// against both so this does not become a check that quietly stops running
+// if that changes: a missing page is reported, never skipped.
+const admin = files.find((f) => ["admin.html", path.join("admin", "index.html")]
+  .includes(path.relative(APP, f)));
+if (!admin) {
+  failures.push("no prerendered /admin page; the noindex check would pass on nothing.");
+} else {
+  const body = await readFile(admin, "utf8");
+  if (!/<meta[^>]+name="robots"[^>]+content="[^"]*noindex/i.test(body)) {
+    failures.push(
+      "/admin does not carry <meta name=\"robots\" content=\"noindex\">.\n" +
+      "    It is the one route on this site that must, and robots.txt is not a substitute:\n" +
+      "    a Disallow means a crawler never fetches the page and never reads the noindex.");
   }
 }
 

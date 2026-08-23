@@ -26,6 +26,34 @@ See [`../START-HERE.md`](../START-HERE.md) step 1.
 - The apex and `www` already have A records, and a certificate exists for
   `www.tinymachines.ai`. No DNS work is needed to stand the site up.
 
+## The API now holds state, which changes what a deploy is
+
+`tinymachines-api.service` was stateless until the administered surface went
+in. Three consequences, all of them things a deploy has to respect from now on.
+
+- **The database is not in the checkout.** `StateDirectory=tinymachines` in the
+  unit creates it, systemd exports `$STATE_DIRECTORY`, and `api/db.py` resolves
+  the file from that. So nothing types the path: not the unit, not the code,
+  not this file. `TM_DB` overrides it for a one-off run, and the test suite
+  points it at a temp file and refuses to run if it resolves anywhere else.
+- **`deploy.sh` does not reload systemd.** It restarts units; it does not
+  reinstall them. Changing the unit file needs
+  `sudo systemctl daemon-reload` by hand, exactly as changing the nginx config
+  needs `nginx -t` and a reload by hand. Both are deliberate: a script that
+  quietly reinstalls units is a script that can change what runs on this box
+  without anybody deciding to.
+- **A rollback is no longer just a checkout.** Migrations are forward-only and
+  a file written by a newer build is refused rather than opened, so deploying
+  an older commit over a migrated database is a service that will not start.
+  That is the intended failure: the alternative is one that starts and silently
+  drops writes it cannot represent. Back the file up before a migration that
+  matters.
+
+`deploy.sh` verifies the gate from outside as part of every run: every route
+under `/api/v1/admin` must answer 401 without a key. The test suite proves that
+about the app object; this proves it about the thing on the internet, and a
+proxy rule or a stale unit can make those differ.
+
 ## As built
 
 The apex now serves the Next front end. Four things had to be answered first,

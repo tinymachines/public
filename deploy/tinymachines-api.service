@@ -23,6 +23,19 @@
 #
 # Unlike the web unit, this needs no build step: it reads its own source. But
 # it holds the six pieces in memory, so a change to api/ needs a restart.
+#
+# It now also holds state. StateDirectory below creates /var/lib/tinymachines,
+# owned by this user, and systemd exports it as $STATE_DIRECTORY; api/db.py
+# resolves the database to $STATE_DIRECTORY/roof.db when TM_DB is not set. The
+# path is therefore never typed anywhere: not in this file, not in the code.
+#
+# It lives outside the checkout on purpose. A database inside the working tree
+# survives exactly until somebody moves the clone, and is one `git clean` away
+# from being gone. Set TM_DB to override for a one-off run.
+#
+# Reinstalling this file needs a daemon-reload, which deploy.sh does NOT do:
+#   sudo cp deploy/tinymachines-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl restart tinymachines-api
 
 [Unit]
 Description=tinymachines.ai API (FastAPI, REST and MCP)
@@ -34,6 +47,32 @@ User=bisenbek
 WorkingDirectory=/home/bisenbek/projects/tinymachines/public
 Environment=PYTHONUNBUFFERED=1
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+# The state directory, and the mode it is created with. 0700 rather than the
+# 0755 default because what is in there is credential digests and people's
+# addresses, and this box serves about forty other vhosts: "only readable by
+# the user that owns it" should be a property of the directory rather than of
+# nobody having looked. UMask makes the database file itself match, since a
+# 0600 file in a 0700 directory is the pair that has to hold.
+StateDirectory=tinymachines
+StateDirectoryMode=0700
+UMask=0077
+
+# Modest hardening, added when this service stopped being stateless. Each line
+# is here because it costs nothing that this service does: it reads its own
+# source and .git, writes only to StateDirectory, and makes outbound HTTPS
+# requests from the prober.
+#
+# ProtectSystem=full, not strict: strict would make the checkout read-only
+# too, which is correct today and would turn the next legitimate write into a
+# confusing permissions error rather than a decision. full covers /usr, /boot
+# and /etc, which is where an escalation would want to land.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectControlGroups=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
 ExecStart=/usr/bin/python3 -m uvicorn app:app --app-dir api --host 127.0.0.1 --port 6510 --root-path /api
 Restart=on-failure
 RestartSec=2

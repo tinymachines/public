@@ -41,8 +41,12 @@ export function Masthead({
   );
 }
 
-export function SiteNav({ here }: { here: "docs" | "style" | "home" }) {
-  const items: [string, string, "docs" | "style" | "home"][] = [
+/** `admin` is a valid position with no nav entry: nothing is marked current,
+    which is right, because /admin is not a place a reader navigates to. */
+type Where = "docs" | "style" | "home" | "admin";
+
+export function SiteNav({ here }: { here: Where }) {
+  const items: [string, string, Where][] = [
     ["/docs", "Documentation", "docs"],
     ["/style", "Style guide", "style"],
   ];

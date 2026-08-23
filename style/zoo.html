@@ -145,6 +145,7 @@ details.markup pre {
       <a href="#die">Die</a>
       <a href="#tactile">Controls</a>
       <a href="#rails">Rails</a>
+      <a href="#forms">Forms</a>
     </nav>
   </div>
 </header>
@@ -177,7 +178,7 @@ details.markup pre {
        01 FOUNDATIONS
        ================================================================== -->
   <section class="sect" id="found">
-    <div class="sect-head"><h2>Foundations</h2><span>8 specimens</span></div>
+    <div class="sect-head"><h2>Foundations</h2><span></span></div>
     <p>The pieces every page uses. Nothing here knows anything about the 6502: if a specimen only makes sense next to live engine state, it belongs in The panel.</p>
 
     <article class="spec">
@@ -289,7 +290,7 @@ details.markup pre {
        02 THE FRAME
        ================================================================== -->
   <section class="sect" id="frame">
-    <div class="sect-head"><h2>The frame</h2><span>4 specimens</span></div>
+    <div class="sect-head"><h2>The frame</h2><span></span></div>
     <p>Page identity and navigation. The docs nav is the one with a rule attached to it: it is derived from the directory tree and never from a list, because a nav missing one link still looks exactly like a nav.</p>
 
     <article class="spec">
@@ -360,7 +361,7 @@ details.markup pre {
        03 THE PANEL
        ================================================================== -->
   <section class="sect" id="panel">
-    <div class="sect-head"><h2>The panel</h2><span>8 specimens</span></div>
+    <div class="sect-head"><h2>The panel</h2><span></span></div>
     <p>The panel is the machine talking. A dark box on a tinymachines page means the values inside it came out of the engine on a run that happened: it is a semantic, not a dark theme. Never put marketing copy on a panel; never render live node state on paper.</p>
 
     <article class="spec">
@@ -482,7 +483,7 @@ details.markup pre {
     </article>
 
   <section class="sect" id="die">
-    <div class="sect-head"><h2>Die &amp; engine</h2><span>4 specimens</span></div>
+    <div class="sect-head"><h2>Die &amp; engine</h2><span></span></div>
     <p>Specimens that only make sense for this project. Everything here is coloured by the solver's own vocabulary, so a screenshot and a stack trace use the same words.</p>
 
     <article class="spec">
@@ -544,7 +545,7 @@ details.markup pre {
        05 TACTILE CONTROLS
        ================================================================== -->
   <section class="sect" id="tactile">
-    <div class="sect-head"><h2>Tactile controls</h2><span>5 specimens</span></div>
+    <div class="sect-head"><h2>Tactile controls</h2><span></span></div>
     <p>All five share one rule: the moving part travels a real distance in 150ms and stops hard, and the lit state is a glow on the part that moved, never a colour change on the housing. Simulate mechanical resistance, not nostalgia. No slow fades, no zooms.</p>
 
     <article class="spec">
@@ -614,7 +615,7 @@ details.markup pre {
        06 DATA & RAILS
        ================================================================== -->
   <section class="sect" id="rails">
-    <div class="sect-head"><h2>Data &amp; rails</h2><span>6 specimens</span></div>
+    <div class="sect-head"><h2>Data &amp; rails</h2><span></span></div>
     <p>Dense display on paper. Everything here is tabular-nums mono so columns line up, and every table scrolls inside its own container rather than widening the page.</p>
 
     <article class="spec">
@@ -713,6 +714,80 @@ halfphi run <span class="s">"LDA #\$42"</span> <span class="k">--halt-on</span> 
               <tr><td>groups</td><td>Include the resolution group membership. Costs a coin.</td></tr>
             </table>
           </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+  </section>
+
+  <section class="sect" id="forms">
+    <div class="sect-head"><h2>Forms</h2><span></span></div>
+    <p>The kit had no way to take anything in until the admin screen needed one. A control here is a <b>well</b>: paper-sunk inside an ink hairline, the same figure the panel uses for a readout. On this ground the hairline alone says nothing, because it is already the border of every static box above, so "you may type here" is carried by depth.</p>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Field</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Label in the mono uppercase voice the rail's keys already use, so a form and a readout describe their contents the same way. The hint sits under the control rather than beside it: beside it, it is the first thing lost when the column narrows.</p>
+      <div class="spec-stage">
+        <div style="max-width:24rem" class="form-grid">
+          <div class="field">
+            <label for="z-name">First name</label>
+            <input class="input" id="z-name" value="Ada">
+          </div>
+          <div class="field">
+            <label for="z-handle">Handle</label>
+            <input class="input data" id="z-handle" value="ada" placeholder="lowercase, digits, hyphens">
+            <span class="hint">Becomes a path segment, so it is folded to lowercase.</span>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Field, refused</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">The invalid state is a border <em>and</em> a message, never colour alone: red means ASSERTION FAILED in this palette, and it is also invisible to a reader who cannot see it. The message says what is wrong, so the control is not merely marked bad.</p>
+      <div class="spec-stage">
+        <div style="max-width:24rem">
+          <div class="field bad">
+            <label for="z-bad">Handle</label>
+            <input class="input data" id="z-bad" value="admin" aria-invalid="true" aria-describedby="z-bad-why">
+            <span class="hint" id="z-bad-why">Reserved: it is a path this site serves.</span>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Select and toolbar</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Two button variants and no third, so a toolbar is one primary action and the rest ghost. The select keeps its native control: replacing the disclosure arrow means drawing one, and a drawn arrow is a mark rather than structure.</p>
+      <div class="spec-stage">
+        <div style="max-width:24rem;display:grid;gap:1rem">
+          <div class="field">
+            <label for="z-scope">Scope</label>
+            <select class="input data" id="z-scope">
+              <option>dev</option>
+              <option>admin</option>
+            </select>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-primary" type="button">Mint key</button>
+            <button class="btn btn-ghost" type="button">Cancel</button>
+            <span class="quiet" style="font-size:.75rem">Shown once.</span>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Monogram</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">Not decoration standing in for a missing avatar: <code>img-src</code> here is <code>'self' data:</code>, so a picture on another host is blocked by the browser and renders as a broken image with no error on the page. A letter is a true thing to draw when the picture cannot be fetched, and the URL goes beside it as a link rather than being pretended into an image.</p>
+      <div class="spec-stage">
+        <div class="toolbar">
+          <span class="avatar">A</span>
+          <span class="avatar off">G</span>
+          <span class="quiet" style="font-size:.75rem">Second is a disabled account.</span>
         </div>
       </div>
       <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
@@ -892,6 +967,19 @@ halfphi run <span class="s">"LDA #\$42"</span> <span class="k">--halt-on</span> 
   });
   var c = document.getElementById("spec-count");
   if (c) c.textContent = specs.length;
+
+  /* Per-section counts, derived rather than typed. They were hand-written
+     numbers in seven places, which is the ten-drifted-nav-lists problem in
+     miniature: a section header claiming six specimens next to five of them
+     still looks exactly like a section header. They happened to be right when
+     this was written, which is the strongest argument for not leaving them as
+     something to keep right by hand. */
+  document.querySelectorAll("section.sect").forEach(function (sect) {
+    var slot = sect.querySelector(".sect-head span");
+    if (!slot) return;
+    var n = sect.querySelectorAll(".spec").length;
+    slot.textContent = n + (n === 1 ? " specimen" : " specimens");
+  });
 })();
 </script>
 </body>

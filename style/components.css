@@ -1237,3 +1237,118 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    standing assignments, so a changed byte is a value being emphasised rather
    than a new meaning. */
 .panel-face .readout .changed { color: var(--color-mustard); }
+
+/* ---------------------------------------------------------------------------
+   20. FORM CONTROLS
+
+   The kit had none. Every component above displays something; the admin
+   screen was the first page that had to take something in, and an unstyled
+   <input> on this ground reads exactly like the "no style" bug this file has
+   already been blamed for twice: browser chrome, browser font, browser blue
+   focus ring, sitting inside a designed page.
+
+   So this is structure over the owner's tokens, not a new visual language.
+   Every value below is a var() from tokens.css and nothing here defines a
+   colour, a size or a duration of its own. The vocabulary is the one already
+   established: paper-sunk for a well, ink hairlines, radius-hair on paper, the
+   blue focus ring from .btn and .chip, and the mono uppercase label voice from
+   .kv dt. Replacing this section wholesale costs nothing above it.
+
+   Two things are deliberate rather than incidental.
+
+   A control is a WELL: paper-sunk inside an ink hairline, which is the same
+   figure the panel uses for a readout. On this ground "you may type here" has
+   to be carried by depth, because the ink hairline is already the border of
+   every static box in the kit and would say nothing on its own.
+
+   The invalid state is a border and a message, never colour alone. Red is
+   ASSERTION FAILED in this palette and it is also invisible to a reader who
+   cannot see it, so .field.bad turns on a hint that says what is wrong.
+   ------------------------------------------------------------------------ */
+
+.field { display: grid; gap: calc(var(--u) * 1.5); }
+.field > label {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.input {
+  width: 100%;
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  color: var(--color-ink);
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+}
+/* An identifier is data, not prose: a handle, an id or a URL is read
+   character by character and belongs in the mono voice for the same reason
+   the ledger's columns do. */
+.input.data { font-family: var(--font-mono); font-size: var(--text-data); }
+.input::placeholder { color: var(--color-ink-faint); }
+.input:focus-visible {
+  outline: 2px solid var(--color-blue-ink);
+  outline-offset: 1px;
+  border-color: var(--color-ink);
+}
+.input:disabled { color: var(--color-ink-faint); cursor: not-allowed; }
+.input[type="checkbox"] { width: auto; accent-color: var(--color-burnt-ink); }
+
+.field .hint { font-size: var(--text-fine); color: var(--color-ink-muted); }
+.field.bad .input { border-color: var(--color-red-ink); }
+.field.bad .hint { color: var(--color-red-ink); }
+
+/* Fields side by side down to one column. minmax(0, 1fr) rather than 1fr,
+   because a grid track defaults to min-content and one long unbroken value in
+   a field widens the whole page: the .masthead bug, which reached production
+   and scrolled three routes sideways at 390px. */
+.form-grid {
+  display: grid;
+  gap: calc(var(--u) * 4);
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+}
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 3); }
+
+/* The monogram. It stands in for a picture rather than decorating one: the
+   site's img-src is 'self' data:, so an avatar on another host is blocked by
+   the browser and renders as a broken image with no error on the page. A
+   letter is a true thing to draw when the picture cannot be fetched, and the
+   URL goes beside it as a link. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--u) * 8);
+  height: calc(var(--u) * 8);
+  flex: none;
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-paper);
+  background: var(--color-ink);
+  border-radius: var(--radius-hair);
+}
+.avatar.off { background: var(--color-ink-faint); }
+
+/* .sr-only is NOT defined here, and its absence is the point.
+   The admin screen needs a label a screen reader announces and nothing else
+   shows, so one was written here first. It shipped as a SECOND .sr-only rule
+   in the built stylesheet, because Tailwind already emits that utility, and
+   this one came later and therefore won. It was also strictly worse: Tailwind's
+   carries margin: -1px, padding: 0 and border-width: 0, which are the parts
+   that stop a visually hidden element from occupying layout in engines that
+   ignore clip-path.
+
+   Found by deliberately renaming it and watching the build check stay green,
+   which is the only reason anybody would notice: two rules with the same name
+   and different contents produce a page that looks entirely correct.
+
+   So the kit uses Tailwind's. A component here that needs a hidden label
+   should use `sr-only` and not define one. If components.css is ever served
+   somewhere Tailwind is not (zoo.html is served exactly that way today, and
+   uses no hidden labels), that page needs the utility, not a copy of it here. */

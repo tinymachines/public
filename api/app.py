@@ -34,6 +34,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.routing import APIRoute
 
+import admin
+import db
 import mcp_server
 import probe as probe_mod
 from models import Health, Index, Meta, Piece, PiecesResponse, PieceStatus, StatusResponse
@@ -48,6 +50,18 @@ _cache = probe_mod.Cache()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Open the database once at startup so a broken schema is a service that
+    # fails to start rather than a service that answers /health and 500s on the
+    # first administered request. Migrations run here for the same reason: the
+    # first request after a deploy should not be the one that pays for them, and
+    # a migration that fails should fail where systemd can see it.
+    conn = db.connect()
+    try:
+        minted = admin.bootstrap(conn)
+        if minted:
+            admin.announce(minted)
+    finally:
+        conn.close()
     yield
     _cache.clear()
 
@@ -137,6 +151,10 @@ class HeadAsGet:
 
 
 app.add_middleware(HeadAsGet)
+
+# The administered surface. It lives in its own module because the line between
+# "anyone may ask" and "a key may ask" should be visible in the file listing.
+app.include_router(admin.router)
 
 
 def _uptime() -> int:

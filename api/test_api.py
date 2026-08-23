@@ -124,9 +124,18 @@ def test_no_em_dashes_in_anything_shipped():
     """House style. The document is shipped text as much as a page is."""
     import json
     doc = json.dumps(app.openapi())
-    assert "—" not in doc, "an em dash reached the OpenAPI document"
-    for f in ("README.md", "models.py", "pieces.py", "app.py", "probe.py", "mcp_server.py", "provenance.py"):
-        assert "—" not in (HERE / f).read_text(), f"em dash in api/{f}"
+    assert "\u2014" not in doc, "an em dash reached the OpenAPI document"
+    # Globbed rather than listed. The list used to be seven filenames typed
+    # out here, which is the ten-drifted-nav-lists problem in miniature: four
+    # modules were added for the administered surface and none of them were
+    # covered, because a hand-written list of files to check looks exactly the
+    # same whether or not it names every file. This one cannot miss a new
+    # module, and it names this file too, which is why the two assertions above
+    # look for the character in a way that does not contain it.
+    checked = sorted(HERE.glob("*.py")) + sorted(HERE.glob("*.md"))
+    assert len(checked) >= 8, f"only {len(checked)} files found; this would pass on nothing"
+    for f in checked:
+        assert "\u2014" not in f.read_text(), f"em dash in api/{f.name}"
 
 
 # ---------------------------------------------------------------------------
