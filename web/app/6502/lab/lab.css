@@ -159,5 +159,12 @@
   position: sticky;
   left: auto;
   right: auto;
-  bottom: 0;
+  /* Above the site's own footer rather than on top of it. Two elements pinned
+     to bottom: 0 in one viewport is one covering the other, and the footer is
+     the one that must stay readable: it is how you leave the page. The offset
+     is the footer's own height, which is one line of crumb text in the band's
+     padding, so it is stated in the same units the band uses rather than
+     measured in script. */
+  bottom: calc(var(--u) * 4 + var(--u) * 4 + var(--text-micro) * 1.6);
+  z-index: 19;
 }

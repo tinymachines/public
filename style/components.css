@@ -1367,56 +1367,85 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    uses no hidden labels), that page needs the utility, not a copy of it here. */
 
 /* ---------------------------------------------------------------------------
-   21. THE APP SHELL: locked chrome, one scrolling region
+   21. THE APP SHELL: locked chrome, and the document still scrolls
 
-   The masthead and the footer hold still and the content between them
-   scrolls. That is what an installed app does, and this site is installable
-   now, so a page that scrolls its own header away reads as a web page inside
-   an app frame.
+   The masthead and the footer hold still and the content between them moves.
+   That is what an installed app does, and this site is installable now, so a
+   page that scrolls its own header away reads as a web page inside an app
+   frame.
 
-   Three rows, and the middle one is the only thing that moves. The grid is
-   what makes that true without measuring anything: `auto minmax(0, 1fr) auto`
-   gives the bands whatever height they need and hands the rest to the middle,
-   so the chrome can change height, wrap on a narrow screen, or gain a line,
-   and nothing has to be told about it.
+   ## Sticky, not a scroll container, and that was a correction
 
-   minmax(0, 1fr) rather than 1fr, and this is the third time that has
-   mattered in this file. A grid track is min-content by default, so with 1fr
-   the middle row would size to its tallest content instead of to the space
-   left, the shell would grow past the viewport, and the whole page would
-   scroll: exactly the thing being removed, and it would look like the rule
-   simply had not been written.
+   The first version made the middle a real scrolling element: a 100dvh grid
+   with overflow hidden on the shell. It locked the chrome perfectly and broke
+   three things, all of which were found by driving a browser rather than by
+   looking at it.
 
-   100dvh, not 100vh. On a phone, vh is the viewport with the URL bar retracted
-   and the bar is usually out, so a 100vh shell is taller than the screen and
-   the footer sits below the fold. dvh tracks the bar. The 100vh line is a
-   fallback for engines with no dvh and is deliberately first: a later property
-   wins, so removing it would change nothing and reordering them would.
+   **The keyboard stopped scrolling.** PageDown, End and space act on the
+   focused element or on the document, and the document no longer scrolled. A
+   reader with no mouse could not get past the first screen of any page on the
+   site, and nothing on screen said so.
+
+   **The wheel did nothing over the chrome.** The masthead is a wide target at
+   the top of every page. Landing the pointer there and scrolling moved
+   nothing, because a wheel event looks for a scrollable ancestor and found an
+   overflow:hidden shell.
+
+   **Find-in-page, scroll restoration on Back, and hash links** all address the
+   document, and all of them would have needed reimplementing.
+
+   Sticky gives up none of that. The document is the scroller, so every one of
+   those behaves exactly as it did before, and the two bands stay put anyway.
+   The lesson is worth keeping: the browser does a great deal for a page that
+   scrolls normally, and taking that over costs all of it at once.
+
+   ## Why the shell is a flex column as well
+
+   Sticky alone is not enough when a page is SHORT. A footer whose natural
+   position is halfway up the viewport sticks nowhere, because it never leaves
+   the screen, so it sits in the middle looking dropped. `min-height: 100dvh`
+   with the middle set to grow puts it at the bottom when there is not enough
+   content, and sticky pins it there when there is.
+
+   100dvh, not 100vh: on a phone vh is the viewport with the URL bar
+   retracted, and the bar is usually out. The 100vh line is a fallback for
+   engines with no dvh and is deliberately first, because a later property
+   wins.
+
+   ## The bands must be opaque
+
+   Content scrolls UNDER a sticky band rather than being clipped by it, so a
+   band with no background is one you read the page through. Both are paper,
+   which is the ground they sit on, stated rather than inherited.
 
    The zoo does not use this and should not. It brings its own full-page
-   chrome, and its sticky header expects the document to be the scroller.
+   chrome, including its own sticky header at top: 0, and two of those on one
+   page is one covering the other.
    ------------------------------------------------------------------------ */
 
 .app-shell {
-  height: 100vh;
-  height: 100dvh;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
-.app-scroll {
-  overflow-y: auto;
-  /* A scroll that reaches the end of this region stops there rather than
-     handing the gesture to the page behind it, which on a phone is what turns
-     a fast flick through the docs into a pull-to-refresh. */
-  overscroll-behavior: contain;
+.app-head,
+.app-foot {
+  position: sticky;
+  /* Above the page, below a dialog. The kit has no dialog yet; when it gets
+     one, it goes above this. */
+  z-index: 20;
+  background: var(--color-paper);
 }
+.app-head { top: 0; border-bottom: 1px solid var(--color-rule); }
+.app-foot { bottom: 0; border-top: 1px solid var(--color-rule); }
 
-/* The two fixed bands. The rule under the head and over the foot is what says
-   they are chrome rather than the top and bottom of the document. */
-.app-head { border-bottom: 1px solid var(--color-rule); }
-.app-foot { border-top: 1px solid var(--color-rule); }
+/* Grow, so a short page still puts its footer on the floor. flex-basis auto
+   rather than 0 so the content's own height is the starting point: with 0 the
+   band would size purely from the flex line and a tall page would be laid out
+   from nothing. */
+.app-main { flex: 1 0 auto; }
 
 /* The measure, shared by all three bands so the chrome lines up with the
    content under it. Same max-width as .page and .docs-shell, because three
@@ -1432,14 +1461,12 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 
 /* Inside the shell the bands own the frame, so the parts that drew their own
    separation stop: the footer's rule is now the band's, and its top margin
-   would push it out of a band that is only as tall as its content. */
+   would open a gap above a band that is pinned to the floor. */
 .app-foot .site-foot { margin-top: 0; padding-top: 0; border-top: 0; }
 .app-shell .masthead { margin-bottom: 0; }
 
-/* The masthead is a page heading and a locked band is not a page. Below the
-   width where the shell is tightest it gives up the most vertical space it
-   can without becoming a different component: the type steps down and the die
-   block comes with it.
+/* A locked band is chrome, not a page heading, so where the screen is short it
+   gives up the vertical space it can without becoming a different component.
 
    Placed immediately after the rules it overrides, which is the placement
    check-cascade.py exists to enforce: the same override written further up

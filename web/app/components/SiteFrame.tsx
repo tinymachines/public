@@ -109,10 +109,10 @@ export function SiteFooter() {
  * nav prop that no longer exists. One component means the structure is stated
  * once and a route cannot get it slightly wrong.
  *
- * The scrolling region is a real element rather than the document, so the
- * chrome holds still. `.app-scroll` is what moves; everything in `children`
- * is inside it. A page that wants a sticky element still gets one: sticky
- * resolves against the nearest scrolling ancestor, which is now this.
+ * The two bands are sticky and the DOCUMENT still scrolls. The first version
+ * made the middle a real scrolling element, which locked the chrome and took
+ * the keyboard, the wheel over the header, find-in-page and scroll restoration
+ * with it. components.css section 21 has the full account.
  *
  * The zoo does not use this and must not. It brings its own full-page chrome
  * and its sticky header expects the document to be the scroller, so it stays
@@ -143,9 +143,9 @@ export function Shell({
         </div>
       </header>
 
-      <div className="app-scroll">
+      <main className="app-main">
         <div className="page">{children}</div>
-      </div>
+      </main>
 
       <footer className="app-foot">
         <div className="band">
