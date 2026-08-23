@@ -663,7 +663,20 @@ h2.display { font-size: var(--text-h2); }
    ------------------------------------------------------------------------ */
 
 .ledger { border: 1px solid var(--color-rule); background: var(--color-paper); }
-.ledger .scroller { overflow-x: auto; }
+/* position: relative is not decoration, and it is not optional.
+   An absolutely positioned descendant with no positioned ancestor is laid out
+   against the INITIAL containing block, which means it escapes this scroll
+   container entirely and its static position lands in the page's scroll
+   width. The admin ledger's visually hidden column label ("Actions", which is
+   position: absolute) sat at x=770 inside a table 819px wide, and dragged the
+   whole document's scrollWidth to 770 at a 390px viewport: the entire page
+   scrolled sideways, on every phone, with nothing visible out there to
+   explain it.
+   Found by driving the real page and asking which elements ended past the
+   viewport with no scrollable ancestor. The answer was "none", and the
+   document still scrolled, which is what pointed at the one element that had
+   left the container instead of overflowing it. */
+.ledger .scroller { overflow-x: auto; position: relative; }
 .ledger table { width: 100%; border-collapse: collapse; font-size: var(--text-fine); }
 .ledger th {
   text-align: left;

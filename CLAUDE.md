@@ -158,6 +158,17 @@ this repo will hit the same ground.
   version; do not assume the binary.
 - **A `var()` naming a token that does not exist drops the whole declaration,
   silently.** The usual symptom is "slightly wrong", not an error.
+- **An absolutely positioned element with no positioned ancestor escapes an
+  `overflow` container** and is laid out against the initial containing block,
+  so its static position lands in the *page's* scroll width. A visually hidden
+  label inside a horizontally scrolling table scrolled the whole document
+  sideways at 390px with nothing visible out there. Scroll containers need
+  `position: relative`.
+- **FastAPI runs a generator dependency's setup and its teardown in different
+  threadpool workers.** Anything opened in the `yield` body and closed after it
+  changes thread, which is how a per-request sqlite3 connection 500s on
+  `close()`. Sequential tests never see it: under one request at a time the
+  pool hands back the same worker.
 - **`pkill -f <pattern>` kills the shell running it**, because the pattern
   matches its own command line. List with `ps -eo pid,comm` and kill by pid.
 - **A check that can pass on nothing is not a check.** An assertion about an

@@ -126,7 +126,7 @@ class Downgrade(RuntimeError):
     """The file was written by a newer version of this service."""
 
 
-def connect() -> sqlite3.Connection:
+def connect(*, handed_between_threads: bool = False) -> sqlite3.Connection:
     """A connection with the pragmas that matter, migrated up to date.
 
     WAL because a read must not block while the admin screen writes, and this
@@ -137,10 +137,32 @@ def connect() -> sqlite3.Connection:
     foreign_keys is ON per connection, not per file. SQLite defaults it OFF for
     backwards compatibility, so a connection that forgets it enforces nothing
     and the REFERENCES above become documentation.
+
+    `handed_between_threads` turns off sqlite3's same-thread assertion, and it
+    is off by default because that assertion is usually catching a real bug.
+    The one caller that sets it is the request dependency in admin.py, and the
+    reason is specific: **FastAPI runs a generator dependency's setup and its
+    teardown in different threadpool workers.** The connection is opened in one
+    worker and closed in another, so the assertion fires on `conn.close()` and
+    the request 500s.
+
+    That is safe here and it is worth saying exactly why, because "we turned
+    the thread check off" is otherwise the sentence in front of a data race.
+    The connection is used by exactly one request, and that request's work is
+    strictly sequential: the route body is a `def`, so it runs to completion in
+    one worker before the teardown runs in another. There is never a moment
+    when two threads hold it, so what is being disabled is a check about
+    concurrent sharing that is not happening. Nothing else in this service may
+    pass this.
+
+    It shipped without it, and every one of the forty sequential tests passed:
+    under one request at a time the pool hands back the same worker. It fired
+    on the first real page load, because the admin screen fetches keys and
+    users with Promise.all. api/test_admin.py now makes concurrent requests.
     """
     p = path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(p, timeout=5.0)
+    conn = sqlite3.connect(p, timeout=5.0, check_same_thread=not handed_between_threads)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")

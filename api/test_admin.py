@@ -18,6 +18,7 @@ assertion was watched to go red before it was kept.
 from __future__ import annotations
 
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi.routing import APIRoute
@@ -462,3 +463,29 @@ def test_only_one_operation_in_the_document_returns_a_key(client):
         if name != "MintedKey" and mentions(spec)
     ]
     assert not others, f"these schemas embed MintedKey: {others}"
+
+
+def test_concurrent_requests_do_not_500(client, admin_key):
+    """Two requests at once, which is what the admin screen actually does.
+
+    This is here because the first version of the connection dependency shipped
+    a bug that every sequential test passed: FastAPI runs a generator
+    dependency's setup and its teardown in DIFFERENT threadpool workers, so
+    `conn.close()` ran on a thread that had not opened the connection and
+    sqlite3 raised ProgrammingError. Under one request at a time the pool hands
+    back the same worker and it never fires.
+
+    The screen loads keys and users with Promise.all, so it fired on the first
+    real page load and on none of the forty tests. Driving the deployed page in
+    a browser is what found it.
+    """
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        codes = [
+            f.result().status_code
+            for f in [
+                pool.submit(client.get, path, headers=auth(admin_key))
+                for path in ["/v1/admin/keys", "/v1/admin/users", "/v1/admin/whoami"] * 6
+            ]
+        ]
+    assert codes, "no requests made; this check would pass on nothing"
+    assert set(codes) == {200}, f"concurrent requests returned {sorted(set(codes))}"

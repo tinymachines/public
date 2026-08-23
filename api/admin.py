@@ -72,17 +72,25 @@ BEARER = {"WWW-Authenticate": 'Bearer realm="tinymachines-api"'}
 def connection() -> Iterator[sqlite3.Connection]:
     """One SQLite connection per request, opened and closed in this thread.
 
-    Per request rather than per process on purpose. A sqlite3 connection is not
-    safe to share across threads, and every route in this module is a `def`
-    rather than an `async def`, so FastAPI runs each one in a worker thread. A
-    module-level connection would work under a test client and fail under load,
-    which is the worst available failure mode.
+    Per request rather than per process on purpose. A module-level connection
+    shared by every request would be a data race the moment two arrive at once,
+    and it would work under a test client, which is the worst available failure
+    mode.
+
+    `handed_between_threads` is the fix for a bug this shipped with. FastAPI
+    runs a generator dependency's setup and teardown in DIFFERENT threadpool
+    workers, so the connection is opened in one and closed in another, and
+    sqlite3's same-thread assertion fires on the close. It is safe to turn off
+    here for a specific reason rather than a general one: this connection
+    belongs to one request, the route body is a `def` and therefore runs to
+    completion in one worker before teardown runs in another, so two threads
+    never hold it at the same time. db.py carries the long form.
 
     FastAPI caches a dependency's result within a request, so the auth
     dependency and the route body get the same connection and therefore the
     same transaction view.
     """
-    conn = db.connect()
+    conn = db.connect(handed_between_threads=True)
     try:
         yield conn
     finally:
