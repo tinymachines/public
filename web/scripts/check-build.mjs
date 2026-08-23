@@ -155,6 +155,37 @@ if (policy) {
   }
 }
 
+// 7. robots.txt must exist, and must not block a page the site serves.
+//    A Disallow on a real route is the quiet kind of mistake: nothing breaks
+//    locally, and the only symptom is that the page never appears in a search
+//    result weeks later. It is also how a noindex gets defeated, since a
+//    crawler that is not allowed to fetch a page never reads the noindex on
+//    it. So the routes the build actually prerendered are checked against it.
+const ROBOTS = path.join(APP, "robots.txt.body");
+let robots = null;
+try { robots = await readFile(ROBOTS, "utf8"); } catch { /* handled below */ }
+if (!robots) {
+  failures.push("robots.txt was not generated. app/robots.ts should produce it.");
+} else {
+  const disallowed = [...robots.matchAll(/^Disallow:\s*(\S+)/gim)].map((m) => m[1]);
+  const routes = files
+    .map((f) => "/" + path.relative(APP, f).replace(/\.html$/, "").replace(/^index$/, ""))
+    .map((r) => (r === "/index" ? "/" : r))
+    .filter((r) => !r.startsWith("/_"));
+  if (routes.length < 5) {
+    console.error(`check-build: only ${routes.length} routes derived; the robots check would pass on nothing.`);
+    process.exit(2);
+  }
+  for (const rule of disallowed) {
+    const blocked = routes.filter((r) => r === rule || r.startsWith(rule.replace(/\*$/, "")));
+    if (blocked.length) {
+      failures.push(
+        `robots.txt disallows ${rule}, which blocks ${blocked.length} page(s) the site serves: ${blocked.slice(0, 4).join(", ")}\n` +
+        "    A crawler that cannot fetch a page never reads the noindex on it either.");
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");
