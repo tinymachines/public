@@ -8,9 +8,12 @@
 <title>Widget zoo · tinymachines.ai</title>
 <meta name="description" content="Every component in the 6502 system, rendered on the real page ground with the exact markup that produced it.">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Self-hosted. This used to be three tags pointing at fonts.googleapis.com
+     and fonts.gstatic.com, which meant the zoo rendered in whatever the
+     browser happened to have whenever there was no route to Google: on a
+     plane, behind a proxy, on an airgapped machine. The faces are in fonts/
+     now and nothing on this page leaves the filesystem. -->
+<link rel="stylesheet" href="fonts.css">
 
 <link rel="stylesheet" href="tokens.static.css">
 <link rel="stylesheet" href="components.css">

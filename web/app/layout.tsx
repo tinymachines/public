@@ -1,33 +1,17 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
-
-// The four voices from ../style/STYLE.md §3, bound to the variable names the
-// tokens already use. All four are OFL and self-hosted by next/font, so no
-// request leaves the page at runtime.
+// No next/font. The four families are self-hosted from ../../style/fonts.css,
+// which globals.css imports.
 //
-// --font-display is the swap seam: change Archivo here and in
-// style/tokens.css to drop in a licensed display face. Nothing else moves.
-const display = Archivo({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
-});
-const sans = IBM_Plex_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-const mono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-const serif = IBM_Plex_Serif({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  weight: ["400", "600"],
-});
+// next/font/google was the obvious choice and it is the wrong one here: the
+// page it serves is self-hosted, but it fetches the woff2 from Google at
+// BUILD time. That makes an internet connection a build dependency, and a
+// build that cannot reach Google does not fail. It silently ships different
+// fonts. Vendoring the files removes the dependency in both directions.
+//
+// The families are named once, in style/tokens.css, as --font-display,
+// --font-sans, --font-serif and --font-mono. Nothing here needs to repeat
+// them, which is why this file no longer binds any variables.
 
 export const metadata: Metadata = {
   title: "tinymachines",
@@ -36,10 +20,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${display.variable} ${sans.variable} ${mono.variable} ${serif.variable}`}
-    >
+    <html lang="en">
       {/* `paper` is the documentation ground from ../style/STYLE.md section 1,
           and it is load-bearing rather than decorative. Without it the body has
           no background and no base family, so every page falls back to the

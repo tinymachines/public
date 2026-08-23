@@ -80,6 +80,42 @@ for (const cls of ["docs-shell", "docs-nav", "docs-body", "prose", "paper"]) {
   }
 }
 
+// 4. Airgap. Nothing shipped may reference a host other than this one.
+//    Two separate things pointed at Google before this check existed, and
+//    neither announced itself: zoo.html linked fonts.googleapis.com, and
+//    next/font/google downloaded woff2 at BUILD time while emitting markup
+//    that looks self-hosted. A build with no route to Google does not fail,
+//    it quietly ships different fonts.
+//
+//    Only things the browser LOADS are inspected: link, script, img, iframe
+//    and CSS url(). An <a href> to 6502.tinymachines.ai or to visual6502.org
+//    is navigation a reader chooses, and the attribution link the die data's
+//    licence requires is one of them. Flagging those would mean the check
+//    could only pass by deleting a licence obligation, which is how a check
+//    teaches people to disable it.
+const LOADS = /<(?:link|script|img|iframe|source|video|audio|embed|object)\b[^>]*?(?:href|src|data)\s*=\s*"(?:https?:)?\/\/([^"\/]+)/gi;
+const CSS_URL = /url\(\s*['"]?(?:https?:)?\/\/([^)'"\/]+)/gi;
+
+const cssFiles = (await readdir(cssDir, { withFileTypes: true }))
+  .filter((e) => e.isFile() && e.name.endsWith(".css"))
+  .map((e) => path.join(cssDir, e.name));
+
+for (const file of [...files, ...cssFiles]) {
+  const body = await readFile(file, "utf8");
+  for (const re of [LOADS, CSS_URL]) {
+    for (const m of body.matchAll(re)) {
+      failures.push(`${path.basename(file)}: loads a resource from an external host: ${m[1]}\n    Nothing shipped may reach the network. Vendor it into the repo instead.`);
+    }
+  }
+}
+
+// 5. The self-hosted faces must actually be in the build. Without this, the
+//    airgap check above passes trivially on a page with no fonts at all.
+const FACES = (css.match(/@font-face/g) ?? []).length;
+if (FACES < 20) {
+  failures.push(`stylesheet: only ${FACES} @font-face rules; the vendored families are not reaching the build.`);
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

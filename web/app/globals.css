@@ -9,10 +9,17 @@
    after editing tokens.
 
    Tailwind must come first: @theme in tokens.css extends it, and CSS requires
-   every @import to precede other rules.
+   every @import to precede other rules. fonts.css comes next because the
+   families it defines are what tokens.css then names in --font-*.
+
+   fonts.css replaced next/font/google, and that was not a style change. The
+   served page looked self-hosted either way, but next/font DOWNLOADS the
+   files from Google at build time, so the build needed the internet and a
+   build without it produces a site with different fonts and no error.
    ========================================================================= */
 
 @import "tailwindcss";
+@import "../../style/fonts.css";
 @import "../../style/tokens.css";
 @import "../../style/components.css";
 
