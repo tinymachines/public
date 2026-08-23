@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
-import { Masthead, SiteNav, SiteFooter } from "../../components/SiteFrame";
+import { Shell } from "../../components/SiteFrame";
 import "./lab.css";
 
 /**
@@ -44,16 +44,10 @@ export const metadata: Metadata = {
 };
 
 export default function LabPage() {
-  const { style, body, scripts } = lab();
+  const { style, body, data, script } = lab();
 
   return (
-    <div className="page">
-      <Masthead
-        die="PHI"
-        title="Halfwave Lab"
-        crumb={<><b>tinymachines</b> / 6502 / lab</>}
-        meta={<SiteNav />}
-      />
+    <Shell die="PHI" title="Halfwave Lab" crumb={<><b>tinymachines</b> / 6502 / lab</>}>
 
       {/* The lab's own 35 KB of rules, with its :root replaced by lab.css.
           Scoped to this route by being rendered only here, the same way the
@@ -66,15 +60,24 @@ export default function LabPage() {
           div inside this site. */}
       <div className="lab-shell" data-chip-api={CHIP_API} dangerouslySetInnerHTML={{ __html: body }} />
 
-      {/* afterInteractive, in source order, so the lab is also built on a
-          client-side navigation into this route. An inline tag in the HTML
-          runs on first load and never again, which is the bug where a page
-          works when you reload it and not when you click to it. */}
-      {scripts.map((src, i) => (
-        <Script key={i} id={`lab-${i}`} strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: src }} />
-      ))}
+      {/* The canned demo trace. A data island the lab looks up by id, so it is
+          rendered as the element it is and never executed. It went through
+          next/script once, which handed 23 KB of JSON to the browser as
+          JavaScript; lib/lab.ts keeps the two apart now. */}
+      {data ? (
+        <script
+          id={data.id}
+          type="application/json"
+          dangerouslySetInnerHTML={{ __html: data.json }}
+        />
+      ) : null}
 
-      <SiteFooter />
-    </div>
+      {/* afterInteractive, so the lab is also built on a client-side
+          navigation into this route. An inline tag in the HTML runs on first
+          load and never again, which is the bug where a page works when you
+          reload it and not when you click to it. */}
+      <Script id="halfwave-lab" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: script }} />
+
+    </Shell>
   );
 }

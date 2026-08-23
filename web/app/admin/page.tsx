@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AdminConsole } from "../components/AdminConsole";
-import { Masthead, SiteNav, SiteFooter } from "../components/SiteFrame";
+import { Shell } from "../components/SiteFrame";
 
 /**
  * /admin: dev keys, and the people they belong to.
@@ -35,15 +35,8 @@ export const metadata: Metadata = {
 
 export default function AdminPage() {
   return (
-    <div className="page">
-      <Masthead
-        die="ADM"
-        title="Admin"
-        crumb={<><b>tinymachines</b> / admin</>}
-        meta={<SiteNav />}
-      />
+    <Shell die="ADM" title="Admin" crumb={<><b>tinymachines</b> / admin</>}>
       <AdminConsole />
-      <SiteFooter />
-    </div>
+    </Shell>
   );
 }

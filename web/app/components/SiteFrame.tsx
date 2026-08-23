@@ -97,3 +97,61 @@ export function SiteFooter() {
     </footer>
   );
 }
+
+
+/**
+ * The app shell: locked masthead, locked footer, one scrolling region.
+ *
+ * Every framed route renders this instead of assembling the three pieces
+ * itself. That was the previous shape and it was a seven-way copy of the same
+ * five lines, which is the arrangement this repository keeps finding at the
+ * bottom of its bugs: /6502 had already drifted, passing `here="home"` to a
+ * nav prop that no longer exists. One component means the structure is stated
+ * once and a route cannot get it slightly wrong.
+ *
+ * The scrolling region is a real element rather than the document, so the
+ * chrome holds still. `.app-scroll` is what moves; everything in `children`
+ * is inside it. A page that wants a sticky element still gets one: sticky
+ * resolves against the nearest scrolling ancestor, which is now this.
+ *
+ * The zoo does not use this and must not. It brings its own full-page chrome
+ * and its sticky header expects the document to be the scroller, so it stays
+ * outside the shell exactly as it stayed outside the frame before.
+ */
+export function Shell({
+  die,
+  title,
+  crumb,
+  navExtra,
+  children,
+  ...rest
+}: {
+  die: string;
+  title: string;
+  crumb?: React.ReactNode;
+  /** An extra node beside the nav, inside <header>. One page needs it: the
+      Die Runner console's game.js writes into `header .sub`, and that
+      selector is its contract rather than a choice. */
+  navExtra?: React.ReactNode;
+  children: React.ReactNode;
+} & React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className="app-shell" {...rest}>
+      <header className="app-head">
+        <div className="band">
+          <Masthead die={die} title={title} crumb={crumb} meta={<><SiteNav />{navExtra}</>} />
+        </div>
+      </header>
+
+      <div className="app-scroll">
+        <div className="page">{children}</div>
+      </div>
+
+      <footer className="app-foot">
+        <div className="band">
+          <SiteFooter />
+        </div>
+      </footer>
+    </div>
+  );
+}

@@ -3,7 +3,7 @@ import { allPages } from "@/lib/docs";
 import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
 import { specimenCount } from "@/lib/zoo";
-import { Masthead, SiteNav, SiteFooter } from "./components/SiteFrame";
+import { Shell } from "./components/SiteFrame";
 import { PieceStatus } from "./components/PieceStatus";
 import { Halfphi } from "./components/Halfphi";
 
@@ -45,13 +45,7 @@ export default function Home() {
   }
 
   return (
-    <main className="page">
-      <Masthead
-        die="6502"
-        title="tinymachines"
-        crumb="A transistor-level MOS 6502"
-        meta={<SiteNav />}
-      />
+    <Shell die="6502" title="tinymachines" crumb="A transistor-level MOS 6502">
 
       <section className="prose">
         <p>
@@ -157,7 +151,6 @@ export default function Home() {
         closed. See NOTICE.md before anything is published or priced.
       </p>
 
-      <SiteFooter />
-    </main>
+    </Shell>
   );
 }

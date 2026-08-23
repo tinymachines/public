@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import postcss from "postcss";
 
 /**
  * The Halfwave Lab, read out of its own file at build time.
@@ -37,7 +38,11 @@ export const CHIP_API = "https://6502.tinymachines.ai/api";
 export interface Lab {
   style: string;
   body: string;
-  scripts: string[];
+  /** The canned demo trace, a <script type="application/json"> the lab reads
+      by id. Data, not code: it is rendered as an element and never run. */
+  data: { id: string; json: string } | null;
+  /** The lab itself. */
+  script: string;
 }
 
 function replaceOnce(src: string, find: string, into: string, why: string): string {
@@ -49,6 +54,76 @@ function replaceOnce(src: string, find: string, into: string, why: string): stri
     );
   }
   return src.replace(find, into);
+}
+
+
+/**
+ * Confine every rule in the lab's stylesheet to `.lab-shell`.
+ *
+ * Necessary rather than tidy, and it was found by measuring rather than by
+ * reading. The lab is one self-contained document, so its CSS quite reasonably
+ * styles `body` and uses short class names, and on its own subdomain both are
+ * correct. Injected into a page on this site, `body` is THIS SITE'S body: one
+ * of its rules is `padding-bottom: calc(58px + env(safe-area-inset-bottom))`,
+ * for the lab's own fixed bottom bar, and it made the document 58 pixels
+ * taller than the app shell. The chrome was locked and the whole page could
+ * still be scrolled, by exactly the height of a bar that is not there.
+ *
+ * The short names were the larger problem and nothing on screen would have
+ * said so. Nine of them collide with the kit: btn, data, eyebrow, flags, lane,
+ * panel, reg, regs and tag. The lab's stylesheet comes after the kit's, so on
+ * this one route the lab was quietly restyling the site's own navigation,
+ * which is built out of .tag.
+ *
+ * Done with a real parser rather than a regex over 35 KB of someone else's
+ * CSS. postcss is already here for Tailwind, and the transform is: prefix
+ * every top-level selector, leave at-rules alone but descend into the ones
+ * that hold rules, and never touch @keyframes, whose "selectors" are
+ * percentages. `body` and `html` become `.lab-shell body`, which matches
+ * nothing at all: that is the leak closed, and app/6502/lab/lab.css restates
+ * the two declarations that were worth keeping.
+ */
+function scope(css: string): string {
+  const SCOPE = ".lab-shell";
+  const root = postcss.parse(css);
+  let scoped = 0;
+
+  root.walkRules((rule) => {
+    // Inside @keyframes the "selectors" are 0%, 50%, from, to.
+    const parent = rule.parent;
+    if (parent && parent.type === "atrule" && /keyframes$/i.test(parent.name)) return;
+
+    rule.selectors = rule.selectors.map((sel) => {
+      const s = sel.trim();
+      if (!s) return sel;
+      if (s.startsWith(SCOPE)) return s;
+
+      // A selector anchored at the document root is a CONDITION, not a
+      // target: `:root[data-theme="light"] .card` means "the card, when the
+      // document is in light mode". Prefixing it gives
+      // `.lab-shell :root[...]`, which can never match, because :root is the
+      // <html> element and nothing is inside .lab-shell that is also <html>.
+      //
+      // That silently killed the lab's theme toggle: the button still worked,
+      // the attribute still landed on <html>, and not one rule responded. So
+      // the root part stays in front and the scope goes after it.
+      const root = s.match(/^(:root|html)((?:\[[^\]]*\]|[:.#][\w-]+(?:\([^)]*\))?)*)/);
+      if (root) {
+        const rest = s.slice(root[0].length).trim();
+        return rest ? `${root[0]} ${SCOPE} ${rest}` : `${root[0]} ${SCOPE}`;
+      }
+      return `${SCOPE} ${s}`;
+    });
+    scoped += 1;
+  });
+
+  if (scoped < 100) {
+    // The lab is 35 KB of rules. If this scoped almost nothing, the parse
+    // found almost nothing, and shipping the result would mean shipping an
+    // unscoped stylesheet that looks like a scoped one.
+    throw new Error(`lib/lab.ts: only ${scoped} rules scoped to ${SCOPE}; that is not the lab's stylesheet.`);
+  }
+  return root.toString();
 }
 
 export function lab(): Lab {
@@ -70,12 +145,31 @@ export function lab(): Lab {
         "app/6502/lab/lab.css is now describing something that does not exist.",
     );
   }
-  const style = styleMatch[1].replace(root[0], "/* :root replaced by app/6502/lab/lab.css */");
+  const style = scope(styleMatch[1].replace(root[0], "/* :root replaced by app/6502/lab/lab.css */"));
 
-  // Both inline scripts, in order. The second is the lab itself; the first is
-  // small and sets up before it.
-  const scripts = [...src.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  if (scripts.length < 1) throw new Error("halfwave-lab.html: no inline <script>.");
+  // The two inline scripts are not the same kind of thing, and treating them
+  // as one list was a bug that the parse check below caught immediately.
+  //
+  // The first is `<script id="demo" type="application/json">`: a canned trace
+  // the lab looks up by id. It is DATA. Rendering it through next/script would
+  // hand 23 KB of JSON to the browser as JavaScript to execute, and the
+  // element the lab looks for would not be there in the shape it expects.
+  //
+  // The second is the lab. Only that one is patched, and only that one is run.
+  const blocks = [...src.matchAll(/<script((?![^>]*\ssrc=)[^>]*)>([\s\S]*?)<\/script>/g)];
+  if (!blocks.length) throw new Error("halfwave-lab.html: no inline <script>.");
+
+  const json = blocks.find((b) => /type\s*=\s*"application\/json"/.test(b[1]));
+  const code = blocks.filter((b) => b !== json);
+  if (code.length !== 1) {
+    throw new Error(
+      `halfwave-lab.html: expected exactly one executable inline script, found ${code.length}. ` +
+        "Two would need an order and this reader does not impose one.",
+    );
+  }
+  const id = json ? (json[1].match(/id\s*=\s*"([^"]+)"/) ?? [])[1] : undefined;
+  if (json && !id) throw new Error("halfwave-lab.html: the JSON block has no id, so the lab cannot find it.");
+  const scripts = [code[0][2]];
 
   // The API. Same fix as the Die Runner console and the same reason: it was
   // location.origin + "/api", which on halfwave.tinymachines.ai is nginx
@@ -100,6 +194,47 @@ export function lab(): Lab {
   // decided in nginx, and a service worker holding a stale lab after a deploy
   // is the /_next/static 404-cached-for-a-year bug with a longer memory and no
   // server-side way to reach it.
+  // The player bar measures itself and pads the body to clear it. On its own
+  // page that is right; here `body` is the SITE's body, so the padding grew the
+  // document past the app shell and the whole page could be scrolled by the
+  // height of the bar. 49 pixels of it, which is small enough to read as the
+  // shell not quite working rather than as a rule from somewhere else.
+  //
+  // lab.css makes the bar sticky inside the scrolling region instead of fixed
+  // to the viewport, which it has to be anyway: this site has its own fixed
+  // footer now, and two bars fixed to the bottom of the same window is one
+  // covering the other. A sticky bar needs no padding to clear it.
+  // The WHOLE statement, `document.` included. The first version of this
+  // matched from `body.style...`, which is a real substring and not a whole
+  // expression: the replacement produced `document.void 0`, the script threw
+  // on parse, and the lab silently stopped booting. replaceOnce did its job
+  // and matched exactly once; matching once is not the same as matching a
+  // thing you may replace. Hence the syntax check below.
+  const pad = 'document.body.style.paddingBottom=Math.ceil(pl.getBoundingClientRect().height)+"px";';
+  patched = patched.map((s) =>
+    s.includes(pad)
+      ? replaceOnce(s, pad, "/* the bar is sticky here, not fixed: see lib/lab.ts */", "the player bar's body padding")
+      : s,
+  );
+
+  // Every substitution above rewrites somebody else's JavaScript, and a
+  // rewrite that produces a syntax error is a page that renders completely and
+  // does nothing: the lab's markup is all there, and not one value is read off
+  // the chip. Parsing it here turns that into a build failure.
+  //
+  // `new Function` compiles without running, which is the whole point: it says
+  // whether the text is valid JavaScript and executes none of it.
+  patched.forEach((src, i) => {
+    try {
+      new Function(src);
+    } catch (e) {
+      throw new Error(
+        `lib/lab.ts: script ${i} does not parse after substitution: ${(e as Error).message}. ` +
+          "A rewrite that breaks the syntax ships a page that renders and does nothing.",
+      );
+    }
+  });
+
   const sw = 'serviceWorker.register("sw.js").catch(()=>{})';
   patched = patched.map((s) =>
     s.includes(sw) ? replaceOnce(s, sw, "serviceWorker /* not registered here: see lib/lab.ts */", "the service worker") : s,
@@ -110,5 +245,10 @@ export function lab(): Lab {
   if (bodyOpen <= 0 || bodyEnd < 0) throw new Error("halfwave-lab.html: could not find the body.");
   const body = src.slice(bodyOpen, bodyEnd);
 
-  return { style, body, scripts: patched };
+  return {
+    style,
+    body,
+    data: json && id ? { id, json: json[2] } : null,
+    script: patched[0],
+  };
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Masthead, SiteNav, SiteFooter } from "../../components/SiteFrame";
+import { Shell } from "../../components/SiteFrame";
 import "./console.css";
 
 /**
@@ -53,21 +53,17 @@ export const metadata: Metadata = {
 
 export default function GamesPage() {
   return (
-    <div className="page" data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
-      <Masthead
-        die="RUN"
-        title="Die Runner"
-        crumb={<><b>tinymachines</b> / 6502 / games</>}
-        meta={
-          <>
-            <SiteNav />
-            {/* game.js writes the loaded cartridge's blurb into `header .sub`.
-                The selector is its contract, so the element is here even
-                though the masthead already carries a crumb. */}
-            <span className="sub quiet" />
-          </>
-        }
-      />
+    <Shell
+      die="RUN"
+      title="Die Runner"
+      crumb={<><b>tinymachines</b> / 6502 / games</>}
+      data-chip-api={CHIP_API}
+      data-builders-base={BUILDERS}
+      /* game.js writes the loaded cartridge's blurb into `header .sub`. The
+         selector is its contract, so the element is in the header even though
+         the masthead already carries a crumb. */
+      navExtra={<span className="sub quiet" />}
+    >
 
       <main className="prose">
         <p>
@@ -213,7 +209,6 @@ export default function GamesPage() {
           A plain <script> tag here would be hoisted by Next and lose both. */}
       <Script src="/6502/games/game.js" type="module" strategy="afterInteractive" />
 
-      <SiteFooter />
-    </div>
+    </Shell>
   );
 }

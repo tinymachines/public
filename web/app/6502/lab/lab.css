@@ -44,6 +44,31 @@
    light is the lab's.
    ------------------------------------------------------------------------ */
 
+/* THE CLOCK, and these three are on :root rather than on the shell.
+   The kit's phase rail already lights the active half in --color-blue, so
+   phi1 takes it and the two components agree on what an active phase looks
+   like. phi2 is Forest Logic: it is the evaluate phase, and forest is the one
+   categorical hue the buses did not take.
+
+   They sit here because the lab drives the glow by writing --glow as an INLINE
+   property on <html>: `documentElement.style.setProperty("--glow", ph2 ?
+   "var(--phi2)" : "var(--phi1)")`. Two things follow, and both were found by
+   reading that line rather than by looking at the page.
+
+   A --glow declared on .lab-shell would beat the inherited inline value, so
+   the glow would sit on phi1 forever and simply never follow the clock. And
+   the var() in that inline value is resolved AT <html>, so --phi1 and --phi2
+   have to be readable there or it resolves to nothing.
+
+   Three custom property names at :root is a small cost. They are referenced by
+   nothing outside the lab, and a custom property with no reader has no
+   effect. */
+:root {
+  --phi1: var(--color-blue);
+  --phi2: var(--color-forest);
+  --glow: var(--phi1);
+}
+
 .lab-shell {
   /* THE GROUND AND ITS LADDER.
      panel is the instrument face; raised and sunk are the two directions off
@@ -89,14 +114,6 @@
   --alu:      var(--color-mustard);    /* Mustard Conductor, and it was amber */
   --teal:     var(--color-ocean);      /* one more address-side accent */
 
-  /* THE CLOCK. The kit's phase rail already lights the active half in
-     --color-blue, so phi1 takes it and the two components agree on what an
-     active phase looks like. phi2 is Forest Logic: it is the evaluate phase,
-     and forest is the one categorical hue the buses did not take. */
-  --phi1:     var(--color-blue);
-  --phi2:     var(--color-forest);
-  --glow:     var(--phi1);
-
   /* TRACES AND THE CURSOR. Categorical again, and distinct from the buses. */
   --cursor:   var(--color-mustard);
   --t2:       var(--color-forest);
@@ -126,4 +143,21 @@
   background: var(--ground);
   color: var(--text);
   font-family: var(--sans);
+}
+
+/* The transport bar, sticky rather than fixed.
+   The lab's own rule is `position: fixed; bottom: 0`, which was right when the
+   lab was the whole window. It is not the whole window here: the app shell has
+   a locked footer of its own, and two bars fixed to the bottom of one viewport
+   is one covering the other.
+
+   Sticky puts it at the bottom of the lab's scrolling region instead, above
+   the site's footer, still visible while the lab is scrolled. It also removes
+   the reason the lab's script padded the body, which is what let the whole
+   page scroll by 49 pixels while the chrome was supposedly locked. */
+.lab-shell .player {
+  position: sticky;
+  left: auto;
+  right: auto;
+  bottom: 0;
 }

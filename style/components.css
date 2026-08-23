@@ -1365,3 +1365,86 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    should use `sr-only` and not define one. If components.css is ever served
    somewhere Tailwind is not (zoo.html is served exactly that way today, and
    uses no hidden labels), that page needs the utility, not a copy of it here. */
+
+/* ---------------------------------------------------------------------------
+   21. THE APP SHELL: locked chrome, one scrolling region
+
+   The masthead and the footer hold still and the content between them
+   scrolls. That is what an installed app does, and this site is installable
+   now, so a page that scrolls its own header away reads as a web page inside
+   an app frame.
+
+   Three rows, and the middle one is the only thing that moves. The grid is
+   what makes that true without measuring anything: `auto minmax(0, 1fr) auto`
+   gives the bands whatever height they need and hands the rest to the middle,
+   so the chrome can change height, wrap on a narrow screen, or gain a line,
+   and nothing has to be told about it.
+
+   minmax(0, 1fr) rather than 1fr, and this is the third time that has
+   mattered in this file. A grid track is min-content by default, so with 1fr
+   the middle row would size to its tallest content instead of to the space
+   left, the shell would grow past the viewport, and the whole page would
+   scroll: exactly the thing being removed, and it would look like the rule
+   simply had not been written.
+
+   100dvh, not 100vh. On a phone, vh is the viewport with the URL bar retracted
+   and the bar is usually out, so a 100vh shell is taller than the screen and
+   the footer sits below the fold. dvh tracks the bar. The 100vh line is a
+   fallback for engines with no dvh and is deliberately first: a later property
+   wins, so removing it would change nothing and reordering them would.
+
+   The zoo does not use this and should not. It brings its own full-page
+   chrome, and its sticky header expects the document to be the scroller.
+   ------------------------------------------------------------------------ */
+
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.app-scroll {
+  overflow-y: auto;
+  /* A scroll that reaches the end of this region stops there rather than
+     handing the gesture to the page behind it, which on a phone is what turns
+     a fast flick through the docs into a pull-to-refresh. */
+  overscroll-behavior: contain;
+}
+
+/* The two fixed bands. The rule under the head and over the foot is what says
+   they are chrome rather than the top and bottom of the document. */
+.app-head { border-bottom: 1px solid var(--color-rule); }
+.app-foot { border-top: 1px solid var(--color-rule); }
+
+/* The measure, shared by all three bands so the chrome lines up with the
+   content under it. Same max-width as .page and .docs-shell, because three
+   frames meant to agree should not be able to drift. */
+.band {
+  max-width: calc(var(--u) * 280);
+  margin: 0 auto;
+  padding: calc(var(--u) * 4) calc(var(--u) * 8);
+}
+@media (max-width: 40rem) {
+  .band { padding: calc(var(--u) * 3) calc(var(--u) * 5); }
+}
+
+/* Inside the shell the bands own the frame, so the parts that drew their own
+   separation stop: the footer's rule is now the band's, and its top margin
+   would push it out of a band that is only as tall as its content. */
+.app-foot .site-foot { margin-top: 0; padding-top: 0; border-top: 0; }
+.app-shell .masthead { margin-bottom: 0; }
+
+/* The masthead is a page heading and a locked band is not a page. Below the
+   width where the shell is tightest it gives up the most vertical space it
+   can without becoming a different component: the type steps down and the die
+   block comes with it.
+
+   Placed immediately after the rules it overrides, which is the placement
+   check-cascade.py exists to enforce: the same override written further up
+   was silently defeated twice in this file. */
+@media (max-height: 46rem) {
+  .app-shell .masthead h1 { font-size: var(--text-h3); }
+  .app-shell .band { padding-top: calc(var(--u) * 2); padding-bottom: calc(var(--u) * 2); }
+}

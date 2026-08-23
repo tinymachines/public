@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { project, measuredOn } from "@/lib/projects";
-import { Masthead, SiteNav, SiteFooter } from "../components/SiteFrame";
+import { Shell } from "../components/SiteFrame";
 
 /**
  * /6502: what the project's surfaces are, and where each one answers today.
@@ -32,13 +32,7 @@ export default function ProjectPage() {
   const settled = p.surfaces.filter((s) => s.lands_at_settled).length;
 
   return (
-    <div className="page">
-      <Masthead
-        die="6502"
-        title={p.name}
-        crumb={<><b>tinymachines</b> / 6502</>}
-        meta={<SiteNav />}
-      />
+    <Shell die="6502" title={p.name} crumb={<><b>tinymachines</b> / 6502</>}>
       <main className="prose">
         <div className="chips">
           <span className="measured">
@@ -114,7 +108,6 @@ export default function ProjectPage() {
           a failed assertion that looks fine.
         </p>
       </main>
-      <SiteFooter />
-    </div>
+    </Shell>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Guide from "../../../style/STYLE.md";
 import { specimenCount } from "@/lib/zoo";
-import { Masthead, SiteNav, SiteFooter } from "../components/SiteFrame";
+import { Shell } from "../components/SiteFrame";
 
 /**
  * The style guide: ../../style/STYLE.md, rendered through the same MDX
@@ -31,13 +31,7 @@ export default function StylePage() {
   const specimens = specimenCount();
 
   return (
-    <div className="page">
-      <Masthead
-        die="STY"
-        title="Style guide"
-        crumb={<><b>tinymachines</b> / style</>}
-        meta={<SiteNav />}
-      />
+    <Shell die="STY" title="Style guide" crumb={<><b>tinymachines</b> / style</>}>
       <main className="prose">
         {/* The measured chip, used the way the zoo uses it: an inline span
             carrying a figure and where the figure came from, inside a chips
@@ -56,7 +50,6 @@ export default function StylePage() {
         </p>
         <Guide />
       </main>
-      <SiteFooter />
-    </div>
+    </Shell>
   );
 }

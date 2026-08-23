@@ -1,6 +1,6 @@
 import { docsTree, rootPage } from "@/lib/docs";
 import { DocsNav } from "../components/DocsNav";
-import { Masthead, SiteNav, SiteFooter } from "../components/SiteFrame";
+import { Shell } from "../components/SiteFrame";
 
 /**
  * The docs shell: masthead, tree navigation, document.
@@ -15,20 +15,13 @@ export default function DocsLayout({ children }: LayoutProps<"/docs">) {
   const tree = docsTree();
 
   return (
-    <div className="page">
-      <Masthead
-        die="6502"
-        title="Documentation"
-        crumb={<><b>tinymachines</b> / docs</>}
-        meta={<SiteNav />}
-      />
+    <Shell die="6502" title="Documentation" crumb={<><b>tinymachines</b> / docs</>}>
       <div className="docs-shell">
         <div className="docs-nav">
           <DocsNav nodes={tree} root={root} />
         </div>
         <main className="docs-body prose">{children}</main>
       </div>
-      <SiteFooter />
-    </div>
+    </Shell>
   );
 }
