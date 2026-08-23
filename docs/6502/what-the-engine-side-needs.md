@@ -1,4 +1,8 @@
-# What `tinymachines/6502` needs to do for step 7
+---
+title: What the engine side needs
+description: Four measured requests for tinymachines/6502, so the engine can be driven the same way in a page and over HTTP.
+order: 10
+---
 
 Written from `tinymachines/public`, which does not reach across. Everything
 below is a request or a finding, never a change. Every claim was measured
