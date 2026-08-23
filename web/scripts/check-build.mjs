@@ -299,6 +299,46 @@ if (!manifest) {
   }
 }
 
+// 11. Every navigation entry must point at something this site serves.
+//     The nav is derived from data/projects.json rather than listed, which
+//     stops it drifting from itself. It does not stop it drifting from the
+//     ROUTES: a surface whose lands_at is wrong, or a project given a landing
+//     page before the page exists, produces a nav link to a 404. A nav with a
+//     dead link in it still looks exactly like a nav, which is the whole
+//     reason the derivation exists in the first place.
+//
+//     /api is excluded and named rather than skipped by a wildcard: it is not
+//     a prerendered page, it is nginx proxying uvicorn, so there is no HTML
+//     here to find and its absence is correct.
+if (manifest) {
+  const routes = new Set(
+    files
+      .map((f) => "/" + path.relative(APP, f).replace(/\.html$/, ""))
+      .map((r) => (r === "/index" ? "/" : r.replace(/\/index$/, ""))),
+  );
+  const entries = [];
+  for (const p of manifest.projects) {
+    if (p.key === "roof") {
+      for (const s of p.surfaces) if (s.nav && s.nav_label) entries.push(s.lands_at);
+    } else if (p.landing) {
+      entries.push(p.landing);
+    }
+  }
+  if (entries.length < 2) {
+    console.error(`check-build: only ${entries.length} nav entries derived; this would pass on nothing.`);
+    process.exit(2);
+  }
+  for (const href of entries) {
+    if (href === "/api") continue;   // proxied to uvicorn, not prerendered here
+    if (!routes.has(href)) {
+      failures.push(
+        `the navigation carries ${href}, which this build does not serve.\n` +
+        `    Prerendered routes: ${[...routes].filter((r) => !r.startsWith("/_")).sort().join(", ")}\n` +
+        "    A nav with a dead link in it still looks exactly like a nav.");
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

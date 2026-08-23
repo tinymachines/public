@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { nav } from "@/lib/projects";
+import { NavLinks } from "./NavLinks";
+import { VersionFooter } from "./VersionFooter";
 
 /**
  * The page frame: masthead, and footer.
@@ -41,28 +44,23 @@ export function Masthead({
   );
 }
 
-/** `admin` is a valid position with no nav entry: nothing is marked current,
-    which is right, because /admin is not a place a reader navigates to. */
-type Where = "docs" | "style" | "home" | "admin";
-
-export function SiteNav({ here }: { here: Where }) {
-  const items: [string, string, Where][] = [
-    ["/docs", "Documentation", "docs"],
-    ["/style", "Style guide", "style"],
-  ];
+/**
+ * The site navigation, read from data/projects.json.
+ *
+ * It takes no props. It used to take `here`, naming the current section
+ * against a union of four strings, and five pages passed it by hand: `/6502`
+ * shipped passing `here="home"`, which nothing caught because a nav where
+ * nothing is marked current looks exactly like a nav where you are somewhere
+ * else. NavLinks reads the pathname instead, so no page passes anything and no
+ * page can pass it wrong.
+ *
+ * The entries are derived, not listed. See lib/projects.ts: there is no
+ * nav.ts, and if you find yourself writing one, stop.
+ */
+export function SiteNav() {
   return (
     <nav className="mh-meta" aria-label="Site">
-      {items.map(([href, label, key]) => (
-        <Link key={href} href={href} className="tag" aria-current={here === key ? "page" : undefined}>
-          {label}
-        </Link>
-      ))}
-      {/* The API is a real surface and worth linking, but it is JSON: a plain
-          anchor, because it leaves the app and there is nothing for the
-          client router to prefetch. */}
-      <a className="tag" href="/api/">
-        API
-      </a>
+      <NavLinks entries={nav()} />
     </nav>
   );
 }
@@ -72,6 +70,9 @@ export function SiteFooter() {
     <footer className="crumb site-foot">
       <span>tinymachines.ai</span> · <Link href="/docs">docs</Link> ·{" "}
       <Link href="/style">style</Link> · <a href="/api/">api</a>
+      {/* What is running, asked of the running process rather than baked in.
+          Renders nothing at all when the API cannot answer. */}
+      <VersionFooter />
     </footer>
   );
 }

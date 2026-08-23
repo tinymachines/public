@@ -36,7 +36,7 @@ export default function StylePage() {
         die="STY"
         title="Style guide"
         crumb={<><b>tinymachines</b> / style</>}
-        meta={<SiteNav here="style" />}
+        meta={<SiteNav />}
       />
       <main className="prose">
         {/* The measured chip, used the way the zoo uses it: an inline span

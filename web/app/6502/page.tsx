@@ -37,7 +37,7 @@ export default function ProjectPage() {
         die="6502"
         title={p.name}
         crumb={<><b>tinymachines</b> / 6502</>}
-        meta={<SiteNav here="home" />}
+        meta={<SiteNav />}
       />
       <main className="prose">
         <div className="chips">

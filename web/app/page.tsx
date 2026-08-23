@@ -50,7 +50,7 @@ export default function Home() {
         die="6502"
         title="tinymachines"
         crumb="A transistor-level MOS 6502"
-        meta={<SiteNav here="home" />}
+        meta={<SiteNav />}
       />
 
       <section className="prose">

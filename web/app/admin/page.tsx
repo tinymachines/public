@@ -40,7 +40,7 @@ export default function AdminPage() {
         die="ADM"
         title="Admin"
         crumb={<><b>tinymachines</b> / admin</>}
-        meta={<SiteNav here="admin" />}
+        meta={<SiteNav />}
       />
       <AdminConsole />
       <SiteFooter />

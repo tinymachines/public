@@ -17,6 +17,9 @@ export interface Surface {
   key: string;
   name: string;
   what: string;
+  /** Whether the site navigation carries it, and what it is called there. */
+  nav: boolean;
+  nav_label: string | null;
   /** The key in data/pieces.json this surface is, or null when it is the roof's own. */
   piece: string | null;
   /** Probed, not remembered. Where it answers right now. */
@@ -34,6 +37,8 @@ export interface Project {
   what: string;
   /** The stylesheet scoping this project's identity tokens, or null for the roof. */
   silo: string | null;
+  /** Where this project's page is on this site, or null when it has none yet. */
+  landing: string | null;
   status: string;
   surfaces: Surface[];
 }
@@ -70,4 +75,42 @@ export function project(key: string): Project {
     );
   }
   return found;
+}
+
+
+/** One entry in the site navigation. */
+export interface NavEntry {
+  href: string;
+  label: string;
+}
+
+/**
+ * The site navigation, derived rather than listed.
+ *
+ * There is no `nav.ts` and there must not be. Ten hand-copied nav lists in the
+ * 6502 repo had drifted three ways before anybody noticed, because a nav
+ * missing one link still looks exactly like a nav, and this one had already
+ * started: `/6502` shipped passing `here="home"` to a component whose idea of
+ * "home" was a hand-maintained union of four strings.
+ *
+ * Two sources, and both are the manifest:
+ *
+ *   - the roof's own surfaces marked `nav`, which is docs, style and the API
+ *   - every other project's landing page, once it has one
+ *
+ * A project with no landing page is absent rather than dead-linked. hotbits is
+ * in the manifest today and correctly not in the navigation.
+ */
+export function nav(): NavEntry[] {
+  const out: NavEntry[] = [];
+  for (const p of read().projects) {
+    if (p.key === "roof") {
+      for (const s of p.surfaces) {
+        if (s.nav && s.nav_label) out.push({ href: s.lands_at, label: s.nav_label });
+      }
+    } else if (p.landing) {
+      out.push({ href: p.landing, label: p.name });
+    }
+  }
+  return out;
 }

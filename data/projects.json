@@ -1,6 +1,6 @@
 {
   "measured_on": "2026-08-23",
-  "note": "serves_today was probed, not remembered. lands_at is a proposal until lands_at_settled is true: see PROJECTS.md.",
+  "note": "serves_today was probed, not remembered. lands_at is a proposal until lands_at_settled is true: see PROJECTS.md. nav decides what the site navigation shows, and it is the only list of that.",
   "projects": [
     {
       "key": "roof",
@@ -12,7 +12,9 @@
         {
           "key": "site",
           "name": "The main site",
-          "what": "The front page, /docs, /style and /admin.",
+          "nav": false,
+          "nav_label": null,
+          "what": "The front page. Reached from the masthead rather than from the nav, because a nav entry for the page you are already on is noise.",
           "piece": null,
           "serves_today": "https://tinymachines.ai",
           "lands_at": "/",
@@ -20,8 +22,46 @@
           "status": "here"
         },
         {
+          "key": "docs",
+          "name": "The documentation tree",
+          "nav": true,
+          "nav_label": "Documentation",
+          "what": "Markdown and MDX under docs/, with the navigation derived from the tree.",
+          "piece": null,
+          "serves_today": "https://tinymachines.ai/docs",
+          "lands_at": "/docs",
+          "lands_at_settled": true,
+          "status": "here"
+        },
+        {
+          "key": "style",
+          "name": "The style guide",
+          "nav": true,
+          "nav_label": "Style guide",
+          "what": "The guide and the widget zoo, which is the normative set of specimens.",
+          "piece": null,
+          "serves_today": "https://tinymachines.ai/style",
+          "lands_at": "/style",
+          "lands_at_settled": true,
+          "status": "here"
+        },
+        {
+          "key": "admin",
+          "name": "Admin",
+          "nav": false,
+          "nav_label": null,
+          "what": "Dev keys and the people they belong to. Deliberately not in the navigation: that is not security, the key the API demands is, but it is not a page a reader has any use for.",
+          "piece": null,
+          "serves_today": "https://tinymachines.ai/admin",
+          "lands_at": "/admin",
+          "lands_at_settled": true,
+          "status": "here"
+        },
+        {
           "key": "api",
           "name": "The roof API",
+          "nav": true,
+          "nav_label": "API",
           "what": "What the pieces are and which of them are answering, spoken as REST and as MCP.",
           "piece": null,
           "serves_today": "https://tinymachines.ai/api/",
@@ -29,7 +69,8 @@
           "lands_at_settled": true,
           "status": "here"
         }
-      ]
+      ],
+      "landing": "/"
     },
     {
       "key": "6502",
@@ -46,7 +87,9 @@
           "serves_today": "https://6502.tinymachines.ai",
           "lands_at": "/6502",
           "lands_at_settled": false,
-          "status": "not started"
+          "status": "not started",
+          "nav": false,
+          "nav_label": null
         },
         {
           "key": "api",
@@ -56,7 +99,9 @@
           "serves_today": "https://6502.tinymachines.ai/api/",
           "lands_at": "/6502/api",
           "lands_at_settled": false,
-          "status": "not started"
+          "status": "not started",
+          "nav": false,
+          "nav_label": null
         },
         {
           "key": "games",
@@ -66,7 +111,9 @@
           "serves_today": "https://games.tinymachines.ai",
           "lands_at": "/6502/games",
           "lands_at_settled": false,
-          "status": "not started"
+          "status": "not started",
+          "nav": false,
+          "nav_label": null
         },
         {
           "key": "lab",
@@ -76,9 +123,12 @@
           "serves_today": "https://halfwave.tinymachines.ai",
           "lands_at": "/6502/lab",
           "lands_at_settled": false,
-          "status": "not started"
+          "status": "not started",
+          "nav": false,
+          "nav_label": null
         }
-      ]
+      ],
+      "landing": "/6502"
     },
     {
       "key": "hotbits",
@@ -86,7 +136,8 @@
       "what": "The next project after 6502 settles. Nothing has been moved and nothing has been decided about it here beyond the fact that it is next.",
       "silo": "style/projects/hotbits.css",
       "status": "not started",
-      "surfaces": []
+      "surfaces": [],
+      "landing": null
     }
   ]
 }

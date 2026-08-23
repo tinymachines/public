@@ -20,7 +20,7 @@ export default function DocsLayout({ children }: LayoutProps<"/docs">) {
         die="6502"
         title="Documentation"
         crumb={<><b>tinymachines</b> / docs</>}
-        meta={<SiteNav here="docs" />}
+        meta={<SiteNav />}
       />
       <div className="docs-shell">
         <div className="docs-nav">
