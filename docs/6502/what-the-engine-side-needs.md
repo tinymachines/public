@@ -4,6 +4,8 @@ description: Four measured requests for tinymachines/6502, so the engine can be 
 order: 10
 ---
 
+# What the engine side needs
+
 Written from `tinymachines/public`, which does not reach across. Everything
 below is a request or a finding, never a change. Every claim was measured
 against the checkout at `~/projects/tinymachines/6502` and the live API on
