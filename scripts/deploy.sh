@@ -289,6 +289,31 @@ for p in / /docs /docs/6502 /style /style/zoo /admin /icon.svg /apple-icon.png /
 done
 [ "$bad" -eq 0 ] || fail "$bad endpoint(s) did not return 200"
 
+# The explorer's seventeen sub-pages, derived from the same directory the
+# route derives them from, so this list cannot drift from the pages the way a
+# hand-copied one would. The fixed list above checked /6502/explorer and left
+# the rest unverified, which is the exact gap it warns about in its own
+# comment, one paragraph up.
+for f in ../6502/web/*.html; do
+  b=$(basename "$f" .html)
+  case "$b" in _*|index) continue ;; esac
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE/6502/$b" || echo 000)
+  printf '  %-28s %s\n' "/6502/$b" "$code"
+  [ "$code" = "200" ] || bad=$((bad + 1))
+done
+[ "$bad" -eq 0 ] || fail "$bad explorer page(s) did not return 200"
+
+# A path that is not a page must say 404, not 500. The dynamic route was
+# turning every stray path under /6502/ into a 500, including /6502/sw.js,
+# which every explorer page requests on load because their app.js registers
+# its worker document-relative. A 200 fails too: that would mean a page about
+# nothing is being served where a refusal belongs.
+for p in /6502/sw.js /6502/no-such-page; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
+  printf '  %-28s %s (404 is the pass)\n' "$p" "$code"
+  [ "$code" = "404" ] || fail "$p answered $code; a path that is not a page must refuse with 404"
+done
+
 # The administered surface, checked from outside. Every route under
 # /v1/admin must refuse an anonymous request, and the suite already proves that
 # against the app object. This proves it about the thing on the internet, which

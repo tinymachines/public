@@ -25,6 +25,14 @@ import "../explorer/explorer.css";
  * already exists.
  */
 
+// The set above is the complete set. Without this, a request for any other
+// path under /6502/ runs this component with a slug it will not find, and the
+// throw below turns a stray URL into a 500. Measured: the explorer's own
+// app.js registers 'sw.js' document-relative, so every explorer page asks
+// this site for /6502/sw.js on load, and it was answering 500 where the
+// explorer page's notes promised a harmless 404.
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return explorerPages()
     .filter((p) => p.slug !== "explorer")
