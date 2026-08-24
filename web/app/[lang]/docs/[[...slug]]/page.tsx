@@ -38,9 +38,13 @@ export async function generateMetadata({
  * The tree, the ordering and the navigation stay derived from the English
  * files: docs/ja/ is a shadow of bodies, never a second structure that could
  * disagree about what pages exist. A document with no Japanese yet serves its
- * English body under the Japanese chrome, which the shell's notice already
- * declares; a 404 would punish the reader for our backlog, and machine
- * translation would put words in the owner's mouth.
+ * English body under the Japanese chrome, with a notice ON that page saying
+ * so; a 404 would punish the reader for our backlog, and machine translation
+ * would put words in the owner's mouth. The notice is rendered here, next to
+ * the import that decides it, so it appears exactly when the fallback does
+ * and nowhere else. The shell used to carry a site-wide version, which
+ * inverted as the translation landed: it showed on translated pages and
+ * missed the untranslated ones.
  */
 function hasJa(file: string): boolean {
   // Shadows are .md only; the one .mdx document needs its interactive parts
@@ -72,5 +76,14 @@ export default async function DocsPage({
     : page.file.endsWith(".mdx")
       ? await import(`../../../../../docs/${page.file.slice(0, -4)}.mdx`)
       : await import(`../../../../../docs/${page.file.slice(0, -3)}.md`);
-  return <Content />;
+  return (
+    <>
+      {lang === "ja" && !useJa ? (
+        <p className="notice" lang="ja">
+          この文書はまだ翻訳されていません。本文は英語のまま表示されています。
+        </p>
+      ) : null}
+      <Content />
+    </>
+  );
 }

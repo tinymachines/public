@@ -74,7 +74,7 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
           instead, and get answers from the wrong service rather than an error.
         </p>
 
-        <Coverage api={api} endpoints={endpoints} />
+        <Coverage api={api} endpoints={endpoints} lang={lang} />
       </main>
 
       {/* The document itself, its :root replaced by apidoc.css and every

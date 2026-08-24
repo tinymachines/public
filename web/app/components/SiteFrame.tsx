@@ -237,17 +237,15 @@ export function Shell({
         </div>
       </header>
 
+      {/* No site-wide "translation in progress" banner here any more. It was
+          honest when most bodies were English; once they were translated it
+          inverted into a false claim on every translated page, and the pages
+          actually serving English bodies (workbenches, pulled docs) never
+          rendered this Shell at all. A notice about an untranslated body now
+          sits ON that body: docs/[[...slug]]/page.tsx renders one per
+          untranslated document, which is the copy of the fact that cannot
+          drift from it. */}
       <main className="app-main">
-        {lang === "ja" ? (
-          // Honest while the translation lands page by page: without this, an
-          // untranslated body under Japanese chrome reads as a bug rather
-          // than as work in progress. Removed when the content is done.
-          <div className="page">
-            <p className="notice" lang="ja">
-              日本語版は準備中です。未訳の本文は英語のまま表示されます。
-            </p>
-          </div>
-        ) : null}
         <div className="page">{children}</div>
       </main>
 

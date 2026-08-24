@@ -15,11 +15,24 @@ import { token } from "@/lib/tokens";
 // --font-sans, --font-serif and --font-mono. Nothing here needs to repeat
 // them, which is why this file no longer binds any variables.
 
-export const metadata: Metadata = {
-  title: "tinymachines",
-  description:
-    "A transistor-level MOS 6502 and the things built on it, and true random bytes from radioactive decay. Everything measured, nothing asserted.",
-};
+/**
+ * Per-language rather than static, because the description is prose and prose
+ * has a language. The title is not translated: tinymachines is the name.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  return {
+    title: "tinymachines",
+    description:
+      lang === "ja"
+        ? "トランジスタレベルの MOS 6502 とその上に築かれたもの、そして放射性崩壊による真の乱数バイト。すべて実測、断言はしない。"
+        : "A transistor-level MOS 6502 and the things built on it, and true random bytes from radioactive decay. Everything measured, nothing asserted.",
+  };
+}
 
 /**
  * The theme colour, which is a different thing from the manifest's.
@@ -41,8 +54,8 @@ export const viewport: Viewport = {
 /**
  * The two languages this site speaks. The segment is the source of truth for
  * which one a page is in: /ja/... is Japanese and everything else is English,
- * with middleware.ts rewriting unprefixed paths to /en so no reader ever sees
- * the internal prefix. dynamicParams is false for the reason /6502/[page]
+ * with next.config.ts rewriting unprefixed paths to /en so no reader ever
+ * sees the internal prefix. dynamicParams is false for the reason /6502/[page]
  * turned it off: an unknown segment is a 404, not a 500 or a page about
  * nothing.
  */
