@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { explorer } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { ChipModules } from "./ChipModules";
+import { ChipTransport } from "./ChipTransport";
 import { Launch } from "./Launch";
 import "./explorer.css";
 
@@ -58,7 +59,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
   return (
     // titleIsHeading is false because the explorer's hero carries the page's
     // own h1. A workbench like the rest of the instrument suite.
-    <div className="workbench" data-workbench>
+    <div className="workbench has-transport" data-workbench>
       <WorkbenchBar
         lang={lang}
         title="The explorer"
@@ -87,6 +88,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       </div>
 
       <ChipModules entry={script} />
+      <ChipTransport lang={lang} />
       </div>
     </div>
   );

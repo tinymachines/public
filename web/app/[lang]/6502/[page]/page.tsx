@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { explorer, explorerPages } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { ChipModules } from "../explorer/ChipModules";
+import { ChipTransport } from "../explorer/ChipTransport";
 import "../explorer/explorer.css";
 
 /**
@@ -72,7 +73,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
     /* A workbench, owner's call 2026-08-24: the instruments were designed
        full-viewport on their own site and lost it inside the content panel.
        titleIsHeading is false because each page's own hero carries the h1. */
-    <div className="workbench" data-workbench>
+    <div className="workbench has-transport" data-workbench>
       <WorkbenchBar
         lang={lang}
         title={title}
@@ -86,6 +87,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={script} />
+      <ChipTransport lang={lang} />
       </div>
     </div>
   );

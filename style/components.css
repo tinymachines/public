@@ -2272,3 +2272,59 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 @media (max-width: 34rem) {
   .wordmark b { font-size: var(--text-body); }
 }
+
+/* ==========================================================================
+   24. THE CHIP TRANSPORT. One bar, fixed to the floor of every page that runs
+   the chip, and a view of the explorer's own transport store. Panel ground
+   because every value on it came off the machine (STYLE.md section 1), the
+   Lab's transport shape because that is the one the owner asked for.
+   ========================================================================== */
+.chip-transport {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2) calc(var(--u) * 4);
+  padding-bottom: calc(var(--u) * 2 + env(safe-area-inset-bottom, 0px));
+  background: var(--color-panel);
+  color: var(--color-glass);
+  border-top: 1px solid var(--color-rule-panel);
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+}
+.chip-transport button {
+  min-width: calc(var(--u) * 10);
+  height: calc(var(--u) * 8);
+  padding: 0 calc(var(--u) * 2);
+  background: var(--color-panel-raised);
+  color: var(--color-glass);
+  border: 1px solid var(--color-rule-panel);
+  border-radius: var(--radius-mod);
+  font: inherit;
+  cursor: pointer;
+}
+.chip-transport button:hover:not(:disabled) { border-color: var(--color-glass-muted); }
+.chip-transport button:disabled { opacity: 0.4; cursor: default; }
+.chip-transport button.on { background: var(--color-accent); color: var(--color-panel); border-color: var(--color-accent); }
+.chip-transport button:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+.ct-clock { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5); color: var(--color-glass-muted); }
+.ct-clock select {
+  background: var(--color-panel-sunk);
+  color: var(--color-glass);
+  border: 1px solid var(--color-rule-panel);
+  border-radius: var(--radius-mod);
+  height: calc(var(--u) * 8);
+  padding: 0 calc(var(--u) * 2);
+  font: inherit;
+}
+.ct-readout { margin-left: auto; color: var(--color-glass-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The page keeps its floor clear of the bar. */
+.workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 16); }
+@media (max-width: 34rem) {
+  .chip-transport { gap: calc(var(--u) * 1.5); padding-inline: calc(var(--u) * 2); }
+  .ct-clock span { display: none; }
+}
