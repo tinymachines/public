@@ -133,3 +133,17 @@
 }
 
 .con-err { color: var(--color-red); font-family: var(--font-mono); font-size: var(--text-micro); margin: calc(var(--u) * 2) 0 0; }
+
+
+/* On a workbench the stage owns the width, so the SCREEN is what grows: the
+   canvas sizes itself from its container, and before this the grid columns
+   were still the ones cut for the site's 1120px column, which parked a small
+   screen beside a wide silence. The side rail holds its reading width; the
+   screen takes the rest of the room. */
+.workbench .con-stage {
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+  align-items: start;
+}
+@media (max-width: 60rem) {
+  .workbench .con-stage { grid-template-columns: minmax(0, 1fr); }
+}

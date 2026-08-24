@@ -4,7 +4,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
-import { Shell } from "@/app/components/SiteFrame";
+import { WorkbenchBar } from "@/app/components/SiteFrame";
 import "./console.css";
 
 /**
@@ -214,21 +214,34 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
   const B = localize(lang, "/6502/builders");
   const M = localize(lang, "/6502/manage");
   return (
-    <Shell lang={lang}
-      die="RUN"
-      title="Die Runner"
-      data-chip-api={CHIP_API}
-      data-builders-base={BUILDERS}
-      /* game.js writes the loaded cartridge's blurb into `header .sub`. The
-         selector is its contract, so the element is in the header even though
-         the masthead already carries a crumb. */
-      navExtra={<span className="sub quiet" />}
-    >
+    /* A workbench, like the rest of the instrument suite: the console owns
+       the viewport. game.js's contract is honoured twice here: the data
+       attributes ride the root it queries for, and `header .sub` exists
+       because the bar is wrapped in a real <header> carrying the .sub the
+       script writes the cartridge blurb into. */
+    <div className="workbench" data-workbench data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
+      <header>
+        <WorkbenchBar
+          lang={lang}
+          title="Die Runner"
+          trail={[
+            { href: "/", label: "tinymachines.ai" },
+            { href: "/6502", label: "6502" },
+          ]}
+        />
+        <span className="sub quiet wb-sub" />
+      </header>
 
-      <main className="prose">
+      {/* .prose rides the text blocks, not the main: its reading measure was
+          silently capping the stage at a paragraph's width, which is the
+          opposite of what a workbench is for. */}
+      <main className="wb-main">
+        <div className="wb-page prose">
         <p>{S.intro(B, M)}</p>
 
-        <div className="con-stage">
+        </div>
+
+        <div className="con-stage wb-stage">
           {/* The screen. Panel, because it is chip memory. */}
           <div className="panel">
             <div className="panel-bar">
@@ -332,9 +345,11 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
           </div>
         </div>
 
-        <h2>{S.whySlow}</h2>
-        <p>{S.slow}</p>
-        <p>{S.cart(CHIP_API, B, M)}</p>
+        <div className="wb-page prose">
+          <h2>{S.whySlow}</h2>
+          <p>{S.slow}</p>
+          <p>{S.cart(CHIP_API, B, M)}</p>
+        </div>
       </main>
 
       {/* type="module" and afterInteractive: game.js is an ES module that reads
@@ -343,6 +358,6 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
           A plain <script> tag here would be hoisted by Next and lose both. */}
       <Script src="/6502/games/game.js" type="module" strategy="afterInteractive" />
 
-    </Shell>
+    </div>
   );
 }
