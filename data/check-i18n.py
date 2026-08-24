@@ -28,14 +28,10 @@ def corpus() -> str:
     parts = []
     for f in ("data/projects.json", "data/pieces.json"):
         parts.append((ROOT / f).read_text())
-    # Strings the chrome BUILDS rather than writes: lib/nav.ts labels each
-    # project's landing as "<name> overview". Synthesized here from the same
-    # manifest the template reads, so a renamed project retires its entry
-    # loudly instead of the scan never having seen it at all.
-    manifest = json.loads((ROOT / "data" / "projects.json").read_text())
-    for proj in manifest["projects"]:
-        if proj.get("landing") and proj["key"] != "roof":
-            parts.append(f"{proj['name']} overview")
+    # The landing item's label is the literal "Overview" now (the group
+    # heading already names the project), which the tsx scan sees on its own;
+    # the synthesizer that built "<name> overview" strings retired with the
+    # template.
     for md in (ROOT / "docs").rglob("*.md*"):
         if "docs/ja/" in str(md):
             continue

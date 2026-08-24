@@ -27,7 +27,10 @@ import { arrivedSurfaces, projects, read, nav as siteNav } from "./projects";
  */
 function firstSentence(text: string): string {
   const m = text.match(/^[\s\S]*?[.!?](?=\s|$)/);
-  return (m ? m[0] : text).trim();
+  // The trailing full stop comes off: a hint is a fragment under a label,
+  // and half the hints (theirs, hand-written for menus) never had one, so
+  // the mix read as sloppiness rather than punctuation.
+  return (m ? m[0] : text).trim().replace(/\.$/, "");
 }
 
 export interface MenuItem {
@@ -115,7 +118,10 @@ export function menuGroups(): MenuGroup[] {
       title: p.name,
       when: null,
       items: [
-        { href: p.landing, label: `${p.name} overview`, hint: "what this project is, and where each surface lives" },
+        // "Overview", not "<name> overview": the item sits under a group
+        // heading that already says whose overview it is, and a label that
+        // repeats its own heading reads as noise, not navigation.
+        { href: p.landing, label: "Overview", hint: "what this project is, and where each surface lives" },
         ...here.map((s) => ({
           href: s.lands_at,
           // The same expression labels() uses. This file's whole claim is that
@@ -141,7 +147,11 @@ export function menuGroups(): MenuGroup[] {
     groups.push({
       title: "Documentation",
       when: "/docs",
-      items: docs.map((p) => ({ href: p.route, label: p.title, hint: p.description })),
+      items: docs.map((p) => ({
+        href: p.route,
+        label: p.title,
+        hint: p.description?.replace(/\.$/, ""),
+      })),
     });
   }
 

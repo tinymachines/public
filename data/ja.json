@@ -5,8 +5,6 @@
   "Home": "ホーム",
   "the front door": "正面玄関",
   "Menu": "メニュー",
-  "6502 overview": "6502 の概要",
-  "hotbits overview": "hotbits の概要",
   "what this project is, and where each surface lives": "このプロジェクトが何であり、各ページがどこにあるか",
   "The explorer": "エクスプローラ",
   "The 6502 API": "6502 API",
@@ -97,5 +95,14 @@
   "A 6502, half a clock phase at a time. The R&D surface, and it stays R&D.": "6502 を、クロック半相ずつ。R&D のページであり、R&D のままでいる。",
   "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone. The gateway publishes its own schema at /v1/openapi.json, and the reference here reads both documents on that host.": "TRNG の前に立つ、鍵とバイト予算。/v1/bytes は bearer トークンが要り、/v1/seeds は鍵なしで、プールを飲み干せない。開放されていた /random/* は 410 で応え、理由を述べる: プールは毎分数十バイトしか満ちず、誰からでも届いた。ゲートウェイは自分のスキーマを /v1/openapi.json で公開し、ここのリファレンスはそのホストの両方の文書を読む。",
   "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors. Its landing page and its reference are here, generated from the schema it publishes and checked against what it answers.": "装置そのものと、その測定結果: バイトプール、乱数検定、長期・日周系列、インシデントとセンサー。そのランディングページとリファレンスはここにあり、装置が公開するスキーマから生成され、実際の応答と突き合わされる。",
-  "the switch-level engine on its own, MIT, no die data": "スイッチレベルのエンジン単体。MIT、ダイデータ無し"
+  "the switch-level engine on its own, MIT, no die data": "スイッチレベルのエンジン単体。MIT、ダイデータ無し",
+  "Overview": "概要",
+  "Explorer": "エクスプローラ",
+  "6502 API": "6502 API",
+  "Editor": "エディタ",
+  "Registry": "レジストリ",
+  "Halfwave Lab": "Halfwave Lab",
+  "visual6502 Archive": "visual6502 アーカイブ",
+  "hotbits API": "hotbits API",
+  "Geiger TRNG": "ガイガー TRNG"
 }
