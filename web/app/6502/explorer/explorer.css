@@ -16,63 +16,48 @@
    this page nearly every value did.
    ------------------------------------------------------------------------ */
 
+/* PAPER IS DOCUMENTATION, PANEL IS THE MACHINE, and getting that backwards is
+   what made this page read as a slab dropped into the site.
+
+   The explorer arrived with one dark ground under everything: its headline,
+   its prose, its verification notes and its die viewer alike. Remapping those
+   colours onto the house palette made it a slab in the HOUSE dark rather than
+   its own, which is not the same thing as integrating it. STYLE.md section 1
+   is explicit and this page was breaking it in the largest possible way: "a
+   dark box on a tinymachines page means the value inside it came out of the
+   engine. Never use panel for decoration."
+
+   Most of this page is not the engine talking. The hero is a claim about the
+   chip, the closing sections are notes about how it was verified, and those
+   are documentation and belong on paper with everything else on the site. What
+   IS the engine is the stage and the readouts beside it, and those stay dark,
+   because that is what dark means here.
+
+   So the shell takes the paper set and the instrument takes it back below. */
+
 .explorer-shell {
-  /* THE GROUND. Three steps, matching the three it had: the page, a raised
-     card, and the recess inside one. */
-  --space:      var(--color-panel);
-  --surface:    var(--color-panel-raised);
-  --subtle:     color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
-  --line:       var(--color-rule-panel);
+  --space:      var(--color-paper);
+  --surface:    var(--color-paper-sunk);
+  --subtle:     color-mix(in srgb, var(--color-paper-sunk) 85%, var(--color-ink));
+  --line:       var(--color-rule);
 
-  /* TEXT. glass is 13.6:1 on panel and glass-muted 5.4:1, so nothing here is
-     dimmer than AA body. */
-  --foreground: var(--color-glass);
-  --muted:      var(--color-glass-muted);
+  --foreground: var(--color-ink);
+  --muted:      var(--color-ink-muted);
 
-  /* THE ACCENT, and its text. The explorer's accent was a cyan and Ocean Data
-     is the cyan in this palette, so this is the one mapping that needed no
-     decision at all. accent-foreground sits ON the accent, so it takes the
-     panel ground rather than the glass. */
-  --accent:            var(--color-ocean);
-  --accent-foreground: var(--color-panel);
+  /* The -ink forms, because these now sit on paper. tokens.css: each hue ships
+     in two forms because contrast is ground-dependent, and using the wrong one
+     is the single most common way this palette goes illegible. */
+  --accent:            var(--color-ocean-ink);
+  --accent-foreground: var(--color-paper);
+  --gold: var(--color-mustard-ink);
+  --pink: var(--color-burnt-ink);
+  --mint: var(--color-forest-ink);
+  --hot:  var(--color-ocean-ink);
+  --warn: var(--color-orange-ink);
 
-  /* THE CATEGORICAL FOUR, which is exactly what tokens.css says these hues are
-     for: "Assigns identity to a region, a bus, a signal class". gold, pink and
-     mint were three signal classes with three arbitrary hues; they are the
-     house's three now, and hot is the fourth. */
-  --gold: var(--color-mustard);
-  --pink: var(--color-burnt);
-  --mint: var(--color-forest);
-  --hot:  var(--color-ocean);
-
-  /* warn is state rather than identity, and it is the one mapping that is a
-     correction. It was #fb7185, a red, used for a value that needs looking at.
-     Red means ASSERTION FAILED in this palette and nothing else, so a warning
-     drawn in it would make "worth a look" and "an invariant broke" the same
-     colour. ATTENTION is the accent for something that needs a human. */
-  --warn: var(--color-orange);
-
-  /* TYPE is deliberately absent, and that is not an omission.
-     The explorer's names for its two faces are --font-sans and --font-mono,
-     which are the kit's names too. Its :root defined them as Inter and
-     SFMono-Regular, neither of which it serves, so the page rendered in
-     whatever the machine happened to have. With that block gone the same
-     var() resolves to the site's own inherited value instead, and the
-     explorer gets IBM Plex Sans and IBM Plex Mono, self-hosted.
-
-     Writing `--font-sans: var(--font-sans)` here would be a CYCLE: the var()
-     resolves against the element being defined, so the property becomes
-     invalid at computed-value time and every rule using it is dropped. It was
-     written that way first, and the symptom would have been a page in the
-     browser's default face with nothing in the console. */
-
-  /* The rest are geometry rather than palette and are left as they were, in
-     the explorer's own values, because nothing in the kit has an opinion about
-     a panel width or a safe-area inset. They are restated here only because
-     the :root block that held them is gone. */
-  --hard:      5px 5px 0 rgb(0 0 0 / 0.5);
-  --hard-card: 8px 8px 0 rgb(0 0 0 / 0.48);
-  --sec-gap:   clamp(2.5rem, 7vw, 4.5rem);
+  --hard:      3px 3px 0 var(--color-ink);
+  --hard-card: var(--shadow-card);
+  --sec-gap:   calc(var(--u) * 16);
   --panel-w:   20rem;
   --sa-b:      env(safe-area-inset-bottom, 0px);
 
@@ -80,6 +65,37 @@
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* THE INSTRUMENT, and only the instrument. The stage where the die is drawn
+   and the readout panels beside it: everything in here is a value that came
+   off the chip, so everything in here is panel. The base forms of the hues
+   come back with it, because they are read on dark again. */
+.explorer-shell #explorer,
+.explorer-shell .panel {
+  --space:      var(--color-panel);
+  --surface:    var(--color-panel-raised);
+  --subtle:     color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
+  --line:       var(--color-rule-panel);
+
+  --foreground: var(--color-glass);
+  --muted:      var(--color-glass-muted);
+
+  --accent:            var(--color-ocean);
+  --accent-foreground: var(--color-panel);
+  --gold: var(--color-mustard);
+  --pink: var(--color-burnt);
+  --mint: var(--color-forest);
+  --hot:  var(--color-ocean);
+  --warn: var(--color-orange);
+
+  --hard: var(--shadow-panel);
+}
+.explorer-shell #explorer {
+  background: var(--space);
+  color: var(--foreground);
+  border-radius: var(--radius-mod);
+}
+
 
 /* ---------------------------------------------------------------------------
    ONE MEASURE, ONE GUTTER
@@ -123,4 +139,39 @@
    here look like a section break on a docs page. */
 .explorer-shell {
   --sec-gap: calc(var(--u) * 16);
+}
+
+/* ---------------------------------------------------------------------------
+   TWO PLACES THE TWO STYLESHEETS STILL FOUGHT, AND WHO WINS
+
+   Both were found by reading computed values off the deployed page rather than
+   by looking at it, which is the only way either would have been noticed: one
+   was illegible and the other was merely wrong, and neither errored.
+   ------------------------------------------------------------------------ */
+
+/* The primary button was dark on dark. This page paints a button's text with
+   --gold, which was a light amber on its own dark ground and is Mustard
+   Conductor's ink form here, because the hero is on paper now. Ink on Burnt
+   Silicon is two dark colours: measured at rgb(122,98,32) on rgb(142,61,28).
+   The kit already knows what goes on a primary button, so it decides. */
+.explorer-shell.explorer-shell .btn-primary {
+  color: var(--color-paper);
+}
+
+/* The readout panels were wearing the kit's bezel. `.panel` means two
+   different things: in the kit it is the brushed-metal surround an instrument
+   sits in, and here it is a tab panel in the sidebar. The kit's rule is
+   unscoped so it reaches inside this page, and the sidebar came out in
+   metallic grey, measured as the --bezel-brushed gradient.
+
+   Not on the drop list with the buttons, and deliberately: .panel here is
+   structure, and deleting this page's rule for it would take the sidebar
+   apart. So the kit's decoration is undone and this page's layout is left
+   alone. That is the difference between a name two designs share and a
+   component they share. */
+.explorer-shell.explorer-shell .panel {
+  background: var(--space);
+  box-shadow: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-mod);
 }
