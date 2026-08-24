@@ -26,94 +26,92 @@ import { Shell } from "@/app/components/SiteFrame";
 
 export const metadata: Metadata = {
   title: "6502",
-  description: "A transistor-level MOS 6502, and the four surfaces built on it.",
+  description: "A transistor-level MOS 6502, and everything built on it.",
 };
 
 const PROSE = {
   en: {
     surfaces: (n: number, d: string) => (
       <>
-        <b>{n} surfaces</b> read from data/projects.json, probed {d}
+        <b>{n} parts</b>, each address probed {d}
       </>
     ),
     hereCount: (h: number, n: number) => (
       <>
         <b>
-          {h} of {n} surfaces are here.
+          {h} of {n} parts are here.
         </b>{" "}
         Every one of them still answers at its own subdomain as well, because
         nothing has been switched off. This page is the plan and the current
         addresses, not a redirect.
       </>
     ),
-    theSurfaces: "The surfaces",
-    thSurface: "Surface",
+    theSurfaces: "The parts",
+    thSurface: "Part",
     thWhat: "What it is",
     thToday: "Answers today",
     thLands: "Lands at",
     thStatus: "Status",
     proposed: "proposed",
-    settled: (a: number, b: number) => `${a} of ${b} landing paths settled`,
-    redirectMap: "A public path that moves is a redirect map. See PROJECTS.md.",
+    settled: (a: number, b: number) => `${a} of ${b} final addresses settled`,
+    redirectMap: "An address that moves becomes a redirect; published links keep working.",
     whyTitle: "Why this page looks like the rest of the site",
     why1: (
       <>
-        It is the same kit. Projects are siloed by scoping a short list of
-        identity tokens to <code>[data-project]</code>, not by forking
-        anything: same components, same type scale, same spacing. The 6502
-        silo overrides nothing, because the house palette was sampled for this
-        work in the first place.
+        It is one design system. Every project here shares the same
+        components, the same type scale and the same spacing; nothing was
+        forked to make this page. The 6502 look is the house look, because
+        the palette was sampled for this work in the first place.
       </>
     ),
     why2: (
       <>
-        What a silo may not touch is the part that carries meaning. Blue is
-        ACTIVE, orange is ATTENTION, red is ASSERTION FAILED, and the drive
-        ramp is halfphi&rsquo;s <code>Drive</code> enum given colour. A project
-        that could redefine those would not have its own accent; it would have
-        a failed assertion that looks fine.
+        What no project may change is the part that carries meaning. Blue is
+        ACTIVE, orange is ATTENTION, red means an assertion failed, and the
+        drive ramp is the engine&rsquo;s own state scale given colour. A
+        project that could redefine those would not have its own accent; it
+        would have a failed assertion that looks fine.
       </>
     ),
   },
   ja: {
     surfaces: (n: number, d: string) => (
       <>
-        <b>ページ {n} 件</b>を data/projects.json から読み、{d} に検分
+        <b>部品 {n} 点</b>。各アドレスを {d} に検分
       </>
     ),
     hereCount: (h: number, n: number) => (
       <>
         <b>
-          {n} ページ中 {h} ページがここにある。
+          {n} 点中 {h} 点がここにある。
         </b>{" "}
         どれも元のサブドメインでも今なお応答している。何も止めていないから
         だ。このページは計画と現在のアドレスであって、リダイレクトではない。
       </>
     ),
-    theSurfaces: "ページ一覧",
-    thSurface: "ページ",
+    theSurfaces: "部品一覧",
+    thSurface: "部品",
     thWhat: "何であるか",
     thToday: "今日応答する場所",
     thLands: "着地先",
     thStatus: "状態",
     proposed: "提案",
-    settled: (a: number, b: number) => `着地パス ${b} 件中 ${a} 件が確定`,
-    redirectMap: "動く公開パスはリダイレクト表になる。PROJECTS.md を参照。",
+    settled: (a: number, b: number) => `最終アドレス ${b} 件中 ${a} 件が確定`,
+    redirectMap: "動くアドレスはリダイレクトになる。公開済みのリンクは切れない。",
     whyTitle: "なぜこのページはサイトの他と同じ見た目なのか",
     why1: (
       <>
-        同じキットだからだ。プロジェクトの分離は、短い一覧のアイデンティティ
-        トークンを <code>[data-project]</code> にスコープすることで行われる。
-        何かをフォークするのではない: 同じコンポーネント、同じ活字階梯、同じ
-        余白。6502 のサイロが何も上書きしないのは、家のパレットがそもそも
-        この仕事のために採られたものだからだ。
+        一つのデザインシステムだからだ。ここにあるどのプロジェクトも、
+        同じコンポーネント、同じ活字階梯、同じ余白を使う。このページの
+        ために何もフォークされていない。6502 の見た目がそのまま家の見た目
+        なのは、パレットがそもそもこの仕事のために採られたものだからだ。
       </>
     ),
     why2: (
       <>
-        サイロが触れてはならないのは、意味を運ぶ部分だ。青は ACTIVE、橙は
-        ATTENTION、赤は ASSERTION FAILED、そしてドライブの傾斜は halfphi の{" "}
-        <code>Drive</code> 列挙に色を与えたものだ。それらを定義し直せる
+        どのプロジェクトも変えてはならないのは、意味を運ぶ部分だ。青は
+        ACTIVE、橙は ATTENTION、赤は表明の失敗を意味し、ドライブの傾斜は
+        エンジン自身の状態の目盛りに色を与えたものだ。それらを定義し直せる
         プロジェクトは自分のアクセントを持たないだろう。持つのは、正常に
         見える失敗した表明だ。
       </>

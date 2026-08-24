@@ -27,7 +27,7 @@
           "name": "The documentation tree",
           "nav": true,
           "nav_label": "Documentation",
-          "what": "Markdown and MDX under docs/, with the navigation derived from the tree.",
+          "what": "The written documentation, with its navigation built from the documents themselves.",
           "piece": null,
           "serves_today": "https://tinymachines.ai/docs",
           "lands_at": "/docs",
@@ -40,7 +40,7 @@
           "name": "The style guide",
           "nav": true,
           "nav_label": "Style guide",
-          "what": "The guide and the widget zoo, which is the normative set of specimens.",
+          "what": "The guide and the widget zoo: every component, shown working.",
           "piece": null,
           "serves_today": "https://tinymachines.ai/style",
           "lands_at": "/style",
@@ -87,7 +87,7 @@
         {
           "key": "explorer",
           "name": "The explorer",
-          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer. Its modules and its die data are served from the 6502 site's own directory rather than copied: the geometry is CC BY-NC-SA and this repository does not redistribute it.",
+          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer. The die data is CC BY-NC-SA and is served from one place at both addresses, never copied.",
           "piece": "explorer",
           "serves_today": "https://6502.tinymachines.ai",
           "lands_at": "/6502/explorer",
@@ -100,7 +100,7 @@
         {
           "key": "api",
           "name": "The 6502 API",
-          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service, and since 2026-08-24 the service answers under this address too: it names, per request, the door a request came through, so each address's schema tells the truth for that address. The subdomain stays the canonical name until the flip becomes a redirect.",
+          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service, and since 2026-08-24 the service answers under this address too: each address gets a schema that names that address, so what you read is true for where you read it. The subdomain stays the primary name for now.",
           "piece": "chip-api",
           "serves_today": "https://6502.tinymachines.ai/api/",
           "lands_at": "/6502/api",
@@ -126,7 +126,7 @@
         {
           "key": "editor",
           "name": "The editor",
-          "what": "Claim a handle, edit your page, publish a ROM: the registry's writing half, sent with a bearer token. The last games surface to move; it waited on the chip API's preflight admitting Authorization, which was a header rather than a decision.",
+          "what": "Claim a handle, edit your page, publish a ROM: the registry's writing half, signed in with your token.",
           "piece": null,
           "serves_today": "https://games.tinymachines.ai/manage",
           "lands_at": "/6502/manage",
@@ -139,7 +139,7 @@
         {
           "key": "registry",
           "name": "The registry",
-          "what": "Everyone publishing cartridges, and what they published. Read-only here: the reading half of the registry API is open to this origin and the writing half is not.",
+          "what": "Everyone publishing cartridges, and what they published. Read-only here: publishing happens in the editor.",
           "piece": null,
           "serves_today": "https://games.tinymachines.ai/builders",
           "lands_at": "/6502/builders",
@@ -152,7 +152,7 @@
         {
           "key": "lab",
           "name": "The halfwave lab",
-          "what": "A 6502, half a clock phase at a time. The R&D surface, and it stays R&D.",
+          "what": "A 6502, half a clock phase at a time. The research bench, and it stays one.",
           "piece": "halfwave",
           "serves_today": "https://halfwave.tinymachines.ai",
           "lands_at": "/6502/lab",

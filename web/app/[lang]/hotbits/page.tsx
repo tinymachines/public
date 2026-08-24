@@ -44,15 +44,15 @@ const PROSE = {
         why the raw stream is worth measuring at all.
       </>
     ),
-    theSurfaces: "The surfaces",
-    thSurface: "Surface",
+    theSurfaces: "The parts",
+    thSurface: "Part",
     thWhat: "What it is",
     thToday: "Answers today",
     thLands: "Lands at",
     thStatus: "Status",
     proposed: "proposed",
-    probed: (d: string) => `read from data/projects.json, probed ${d}`,
-    redirectMap: "A public path that moves is a redirect map. See PROJECTS.md.",
+    probed: (d: string) => `each address probed ${d}`,
+    redirectMap: "An address that moves becomes a redirect; published links keep working.",
     refTitle: "The reference",
     ref: (href: string) => (
       <>
@@ -68,13 +68,12 @@ const PROSE = {
     designTitle: "This page has no design yet, and that is deliberate",
     design: (
       <>
-        It is the house kit with nothing overridden. The palette, the display
-        face and the mark for this project are the owner&rsquo;s to make, and{" "}
-        <code>style/projects/hotbits.css</code> is waiting with every lever it
-        is allowed to pull listed and empty. What a project may not touch is
-        the part that carries meaning: blue is ACTIVE, orange is ATTENTION and
-        red is ASSERTION FAILED on every project here, and a build check fails
-        if a silo reaches past its own tokens.
+        It is the house design with nothing changed. The palette, the
+        display face and the mark for this project are still the
+        owner&rsquo;s to choose, and the place for them is ready and
+        deliberately empty. What no project may change is the part that
+        carries meaning: blue is ACTIVE, orange is ATTENTION and red means a
+        failed assertion, on every page of this site.
       </>
     ),
   },
@@ -88,15 +87,15 @@ const PROSE = {
         測るに値するのは、そのためだ。
       </>
     ),
-    theSurfaces: "ページ一覧",
-    thSurface: "ページ",
+    theSurfaces: "部品一覧",
+    thSurface: "部品",
     thWhat: "何であるか",
     thToday: "今日応答する場所",
     thLands: "着地先",
     thStatus: "状態",
     proposed: "提案",
-    probed: (d: string) => `data/projects.json から読み、${d} に検分`,
-    redirectMap: "動く公開パスはリダイレクト表になる。PROJECTS.md を参照。",
+    probed: (d: string) => `各アドレスを ${d} に検分`,
+    redirectMap: "動くアドレスはリダイレクトになる。公開済みのリンクは切れない。",
     refTitle: "リファレンス",
     ref: (href: string) => (
       <>
@@ -111,13 +110,11 @@ const PROSE = {
     designTitle: "このページにデザインはまだ無く、それは意図されたもの",
     design: (
       <>
-        何も上書きしていない家のキットだ。このプロジェクトのパレット、
-        ディスプレイ書体、マークはオーナーが作るものであり、
-        <code>style/projects/hotbits.css</code> は引いてよいレバーをすべて
-        列挙して、空のまま待っている。プロジェクトが触れてはならないのは
-        意味を運ぶ部分だ: このサイトのどのプロジェクトでも青は ACTIVE、橙は
-        ATTENTION、赤は ASSERTION FAILED であり、サイロが自分のトークンの
-        外に手を伸ばせばビルドチェックが落ちる。
+        何も変えていない家のデザインだ。このプロジェクトのパレット、
+        ディスプレイ書体、マークは今もオーナーが選ぶものであり、そのための
+        場所は意図して空のまま用意されている。どのプロジェクトも変えては
+        ならないのは意味を運ぶ部分だ: このサイトのどのページでも、青は
+        ACTIVE、橙は ATTENTION、赤は表明の失敗を意味する。
       </>
     ),
   },

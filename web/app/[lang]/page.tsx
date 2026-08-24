@@ -64,20 +64,21 @@ const PROSE = {
     ),
     wiresSwitches: (n: number, m: number) => `${n} wires, ${m} switches`,
     measuredFrom: (d: string) => `measured from the 6502 API on ${d}`,
-    projSurf: (n: number, m: number) => `${n} projects, ${m} surfaces`,
-    fromManifest: "from data/projects.json",
+    projSurf: (n: number, m: number) => `${n} projects, ${m} parts`,
+    fromManifest: "from the site's own project list",
     pieces: (n: number) => `${n} pieces`,
-    fromPieces: "from data/pieces.json",
+    fromPieces: "from the project's own inventory",
     documents: (n: number) => `${n} documents`,
-    fromDocs: "counted from docs/ at build",
+    fromDocs: "counted from the documentation at build",
     specimens: (n: number) => `${n} specimens`,
-    fromZoo: "counted from style/zoo.html at build",
+    fromZoo: "counted from the widget zoo at build",
     theProjects: "The projects",
     projectsProse: (n: number, m: number) => (
       <>
-        {n} projects live under this roof, with {m} surfaces between them. The
-        list and every link below come from the same manifest the navigation
-        and the API read, so a project cannot appear here and be missing there.
+        {n} projects live under this roof, with {m} working parts between
+        them. This list and the site&rsquo;s menu are read from the same
+        record, so a project cannot appear in one and be missing from the
+        other.
       </>
     ),
     overview: "overview",
@@ -103,7 +104,11 @@ const PROSE = {
         NonCommercial and ShareAlike travel with everything derived from the
         visual6502 die data, which is every piece above except halfphi. Coins
         are given away and never sold, which is what keeps that question
-        closed. See NOTICE.md before anything is published or priced.
+        closed. See{" "}
+        <a href="https://github.com/tinymachines/public/blob/main/NOTICE.md">
+          the licence notes
+        </a>{" "}
+        before anything is published or priced.
       </>
     ),
   },
@@ -127,20 +132,20 @@ const PROSE = {
     ),
     wiresSwitches: (n: number, m: number) => `配線 ${n} 本、スイッチ ${m} 個`,
     measuredFrom: (d: string) => `${d} に 6502 API から実測`,
-    projSurf: (n: number, m: number) => `プロジェクト ${n} 件、ページ ${m} 件`,
-    fromManifest: "data/projects.json より",
+    projSurf: (n: number, m: number) => `プロジェクト ${n} 件、部品 ${m} 点`,
+    fromManifest: "サイト自身のプロジェクト一覧より",
     pieces: (n: number) => `ピース ${n} 個`,
-    fromPieces: "data/pieces.json より",
+    fromPieces: "プロジェクト自身の台帳より",
     documents: (n: number) => `文書 ${n} 本`,
-    fromDocs: "ビルド時に docs/ から集計",
+    fromDocs: "ビルド時にドキュメントから集計",
     specimens: (n: number) => `見本 ${n} 点`,
-    fromZoo: "ビルド時に style/zoo.html から集計",
+    fromZoo: "ビルド時にウィジェット動物園から集計",
     theProjects: "プロジェクト",
     projectsProse: (n: number, m: number) => (
       <>
         この屋根の下には {n} 件のプロジェクトがあり、合わせて {m}{" "}
-        のページを持つ。この一覧も以下のリンクもすべて、ナビゲーションと API
-        が読むのと同じマニフェストから来ている。だから、ここに現れてあちらに無い、ということが起こらない。
+        の部品を持つ。この一覧もサイトのメニューも、同じ一つの記録から
+        読まれる。だから、片方に現れてもう片方に無い、ということが起こらない。
       </>
     ),
     overview: "概要",
@@ -165,7 +170,7 @@ const PROSE = {
         visual6502 のダイデータに由来するすべてに NonCommercial と ShareAlike
         が引き継がれる。上のピースのうち halfphi
         を除く全部がそれに当たる。コインは配るだけで、決して売らない。それがこの問いを閉じたままにしている。公開や値付けの前に
-        NOTICE.md を読むこと。
+        <a href="https://github.com/tinymachines/public/blob/main/NOTICE.md">ライセンスの注記</a>を読むこと。
       </>
     ),
   },

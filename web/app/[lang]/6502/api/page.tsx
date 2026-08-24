@@ -63,15 +63,35 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
       <style dangerouslySetInnerHTML={{ __html: style }} />
 
       <main className="prose">
+        {/* The paragraph used to warn that a schema read under this path
+            would reach the wrong service. Since 2026-08-24 that is no longer
+            true: the same process answers at /6502/api and names, per
+            request, the address a request came through. The copy follows the
+            fact. */}
         <p>
-          This is the reference, and the service it describes answers at{" "}
-          <a data-address href={`${api}/`}>
-            6502.tinymachines.ai/api
-          </a>
-          . Nothing here proxies it: that process is started with a root path of{" "}
-          <code>/api</code>, so an interactive client reading its schema under
-          this path would send its requests to this site&rsquo;s own API
-          instead, and get answers from the wrong service rather than an error.
+          {lang === "ja" ? (
+            <>
+              これはリファレンスであり、記述されるサービスは{" "}
+              <a data-address href={`${api}/`}>
+                6502.tinymachines.ai/api
+              </a>{" "}
+              と、このサイトの <code>/6502/api</code> の両方で応答する。
+              どちらも同じ一つのプロセスで、それぞれのアドレスには、その
+              アドレスを名乗るスキーマが返る。だから、どちらの文書を読んだ
+              クライアントも、読んだ場所のサービスに正しくつながる。
+            </>
+          ) : (
+            <>
+              This is the reference, and the service it describes answers at{" "}
+              <a data-address href={`${api}/`}>
+                6502.tinymachines.ai/api
+              </a>{" "}
+              and at <code>/6502/api</code> on this site. Both are the same
+              process, and each address gets a schema that names that address,
+              so a client reading either document sends its requests to the
+              service it read about.
+            </>
+          )}
         </p>
 
         <Coverage api={api} endpoints={endpoints} lang={lang} />
