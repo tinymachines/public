@@ -239,6 +239,41 @@ palette.
 **7. The retired hotbits endpoints being readable from a browser**, on
 `tinymachines/geiger#4`.
 
+## The roadmap, set 2026-08-24
+
+The owner's ordering, recorded so it survives a compaction: content first,
+then copy, then language, then styling. Styling is LAST, deliberately.
+
+**The sweep of the 6502 tree, done at 1.0.35.** Every page the subdomain
+serves is on the apex, and the three generated analysis documents that
+neither site served are docs pages now: the atlas rubric, the circuit idioms,
+and the Snake walk, pulled from `6502/docs/` at build time by
+`web/scripts/pull-chipdocs.mjs` (gitignored output; the walk's schematics are
+die-trace data this public repo must not redistribute). Deliberately not
+brought over: `docs/notes/` (agent handbooks, "read before touching"),
+`SuperMarioBros.html` (a received disassembly, reading material),
+`atlas-elk.zip` (a reviewer's artifact). `findings-answers.md` is written
+analysis that could become a page beside the lab when wanted.
+
+**The DieRacer console, inventoried ahead of the build-out.** Nothing named
+DieRacer exists yet in any tree. What exists to build on: the console and its
+contract (`chr.js`, `console.js`, `game.js`, the cartridge mint), two ROMs
+with source (`dierunner.s` 13.7 KB and 521-byte ROM; `snake.rom` 351 bytes
+with its listing), one shipped tile sheet (`tiles.chr`, 256 bytes) plus three
+reference photographs, one published cartridge (`dierunner.cart.gz`), the
+registry to publish through, and the walk series ("part one of a series on
+writing a game for a chip you can see inside"), which reads as the runway.
+
+**Then copy cleanup, then a Japanese version.** The Japanese version needs
+the shipped text abstracted out of the components first, and a language
+switcher. Not started; the abstraction design (where strings live, what the
+docs tree does, whether the manifest's `what` sentences get a second
+language) is the part to settle before any page is translated.
+
+**Then styling, last.** The owner's style guide material is already arriving
+(`docs/styles/`, gitignored until they publish it deliberately);
+`style/projects/hotbits.css` still overrides nothing by design.
+
 ### One open issue that is no longer blocking anything
 
 `tinymachines/6502#10` asks for CORS on the explorer's static assets so it
