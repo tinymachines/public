@@ -43,6 +43,15 @@ import { Halfphi } from "@/app/components/Halfphi";
  */
 const PROSE = {
   en: {
+    heroTitle: (
+      <>
+        A chip you can
+        <br />
+        see inside
+      </>
+    ),
+    ctaExplorer: "Open the explorer",
+    ctaDocs: "Read the docs",
     hero: (nodes: number, transistors: number) => (
       <>
         There is no instruction decoder here, no addressing-mode table and no
@@ -99,6 +108,15 @@ const PROSE = {
     ),
   },
   ja: {
+    heroTitle: (
+      <>
+        中まで見える
+        <br />
+        チップ
+      </>
+    ),
+    ctaExplorer: "エクスプローラを開く",
+    ctaDocs: "ドキュメントを読む",
     hero: (nodes: number, transistors: number) => (
       <>
         ここには命令デコーダも、アドレッシングモード表も、サイクル数の一覧も無い。
@@ -180,8 +198,23 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
   return (
     <Shell lang={lang} die="6502" title="tinymachines">
 
-      <section className="prose">
-        <p>{S.hero(die.nodes, die.transistors)}</p>
+      {/* The binder's H1 layout, with the masthead still the document's h1:
+          this is display type on the page, not a second heading, so it is a
+          styled paragraph. The lede is the same measured sentence the page
+          always opened with; only the clothes changed. */}
+      <section className="hero">
+        <p className="hero-title" aria-hidden="true">
+          {S.heroTitle}
+        </p>
+        <p className="lede">{S.hero(die.nodes, die.transistors)}</p>
+        <div className="hero-ctas">
+          <Link className="btn btn-primary" href={localize(lang, "/6502/explorer")}>
+            {S.ctaExplorer}
+          </Link>
+          <Link className="btn btn-ghost" href={localize(lang, "/docs")}>
+            {S.ctaDocs}
+          </Link>
+        </div>
       </section>
 
       <div className="chips">

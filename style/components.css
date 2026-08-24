@@ -1690,3 +1690,84 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    start of its own line anchors a 24rem sheet somewhere past the left edge.
    Keeping it in the corner is also where a reader looks for it. */
 .app-head-row > .menu-wrap { flex: 0 0 auto; }
+
+/* The language switcher joined the row after this section was written, and a
+   phone showed why the row needs a rule about crowding: at 390px the wordmark
+   ran underneath the switcher. The title yields (it may truncate; the die
+   tile beside it still names the page family), the controls never do, because
+   a control that is half off-screen is a control that does not exist. */
+.app-head-row > .lang-switch { flex: 0 0 auto; }
+@media (max-width: 30rem) {
+  .app-head-row > .masthead { overflow: hidden; }
+  .app-head-row .masthead :is(h1, .mh-title) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+
+/* ==========================================================================
+   THE HERO
+   The binder's H1 layout (IMG_5323, COMP_LAYOUT_H1) and the zoo's own header,
+   promoted from zoo-local CSS into the kit: display caps, tight and heavy,
+   over a serif lede and a CTA row. --text-hero sat in the tokens unused from
+   the day they landed; this is the component it was cut for. The clamp is the
+   zoo's: 8vw between the floor and the token, so the one place it renders
+   small is a phone, not a narrow window of desktop widths where it is merely
+   too big. On paper the CTAs are .btn, never .push: STYLE.md's rule is that
+   chrome lives only at the paper/panel boundary, and a chrome button on a
+   paper page is decoration.
+   ========================================================================== */
+
+.hero { padding: calc(var(--u) * 8) 0 calc(var(--u) * 6); }
+.hero h1,
+.hero .hero-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.6rem, 8vw, var(--text-hero));
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  margin: calc(var(--u) * 2) 0 calc(var(--u) * 4);
+  text-wrap: balance;
+}
+.hero .lede {
+  max-width: 60ch;
+  font-family: var(--font-serif);
+  font-size: var(--text-prose);
+  line-height: 1.6;
+  margin: 0 0 calc(var(--u) * 5);
+}
+.hero .hero-ctas { display: flex; gap: calc(var(--u) * 3); flex-wrap: wrap; }
+
+/* ==========================================================================
+   MODULE MOTION
+   Binder section 7.3: rigid modules require rigid motion; clean slide, fast
+   snap; excess zoom and fade are named as the incorrect pattern. The menu
+   panel is a module, so it arrives as one: a short slide on the detent
+   timing, no fade, no scale. 150ms and the hard-stop ease are the binder's
+   own numbers, already in the tokens.
+   ========================================================================== */
+
+@keyframes module-snap {
+  from { transform: translateY(calc(var(--u) * -2)); }
+  to   { transform: translateY(0); }
+}
+.menu-panel { animation: module-snap var(--t-detent) var(--ease-detent); }
+
+/* ==========================================================================
+   REDUCED MOTION
+   The kit had transitions and, as of the block above, an animation, and not
+   one respected the reader's setting. State is legible with zero animation
+   by design (tokens.css says so about the strobe), so honouring the setting
+   costs nothing but this block.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

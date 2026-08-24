@@ -295,6 +295,22 @@ details.markup pre {
     <p>Page identity and navigation. The docs nav is the one with a rule attached to it: it is derived from the directory tree and never from a list, because a nav missing one link still looks exactly like a nav.</p>
 
     <article class="spec">
+      <div class="spec-head"><h3>The hero</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">The binder's H1 layout: display caps, heavy and tight, over a serif lede and a CTA row. This page's own header is the same grammar; the kit class is what the front page wears. <code>--text-hero</code> existed unused from the day the tokens landed, and this is the component it was cut for. The CTAs are <code>.btn</code>, never <code>.push</code>: chrome stays at the paper/panel boundary.</p>
+      <div class="spec-stage">
+        <div class="hero" style="padding:1rem 0">
+          <p class="hero-title" aria-hidden="true">A chip you can<br>see inside</p>
+          <p class="lede">There are 1725 wires and 3510 switches on a die photographed out of a physical chip, and the behaviour falls out of simulating them.</p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="#">Open the explorer</a>
+            <a class="btn btn-ghost" href="#">Read the docs</a>
+          </div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
       <div class="spec-head"><h3>Masthead</h3><span class="badge shipped">shipped</span></div>
       <p class="spec-why">The page identity block. The tile is a die pad (ink ground, mustard legend) and it carries the card shadow so it reads as a component sitting on the paper rather than a shape printed on it.</p>
       <div class="spec-stage">
