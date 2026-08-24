@@ -70,6 +70,16 @@ export function measuredOn(): string {
   return read().measured_on;
 }
 
+/**
+ * The surfaces of a project that have actually arrived on this site: landed
+ * somewhere settled, and started. The menu and the front page both need this
+ * exact filter, and two inline copies of it is how one of them ends up
+ * listing a surface the other refuses to.
+ */
+export function arrivedSurfaces(p: Project): Surface[] {
+  return p.surfaces.filter((s) => s.status !== "not started" && s.lands_at_settled);
+}
+
 export function project(key: string): Project {
   const found = read().projects.find((p) => p.key === key);
   if (!found) {

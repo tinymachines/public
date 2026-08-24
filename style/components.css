@@ -1192,7 +1192,11 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 }
 .piece-grid .rail p { margin: 0 0 calc(var(--u) * 3); font-size: var(--text-fine); line-height: 1.55; }
 .piece-grid .rail h3 { display: flex; align-items: center; gap: calc(var(--u) * 2); flex-wrap: wrap; }
-.piece-links { display: flex; gap: calc(var(--u) * 2); margin: calc(var(--u) * 3) 0 0; }
+/* flex-wrap because the project cards put every surface of a project in this
+   row: seven tags for the 6502 card, which is wider than any card at any
+   width this grid produces. The piece cards have at most two and never
+   wrapped anyway. */
+.piece-links { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin: calc(var(--u) * 3) 0 0; }
 .piece-note { font-size: var(--text-micro); margin-top: calc(var(--u) * 2); }
 
 /* halfphi on the front page: the mark beside its sentence. .rail is the card;

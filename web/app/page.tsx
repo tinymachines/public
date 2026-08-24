@@ -2,6 +2,7 @@ import Link from "next/link";
 import { allPages } from "@/lib/docs";
 import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
+import { arrivedSurfaces, projects } from "@/lib/projects";
 import { whereToRead } from "@/lib/nav";
 import { specimenCount } from "@/lib/zoo";
 import { Shell } from "./components/SiteFrame";
@@ -11,10 +12,13 @@ import { Halfphi } from "./components/Halfphi";
 /**
  * The front page. START-HERE.md step 4.
  *
- * 6502 work front and centre, which here means the six pieces rather than a
- * pitch about them. The brief's own framing is that six things exist and run
- * and do not know about each other, so the front page is the first place they
- * appear together.
+ * 6502 work front and centre, which here means the chip opens the page and
+ * its six pieces close it. Between them sits the projects section, decided
+ * 2026-08-24: the roof holds more than one project now, and the front page is
+ * where a visitor learns that. The projects come from data/projects.json and
+ * the pieces from data/pieces.json, and the two lists are different facts: a
+ * project is a thing with surfaces on this site, a piece is a part of the
+ * 6502 work whether or not it has an address.
  *
  * Every figure on this page is counted at build time from the thing it
  * describes: the document count from the docs tree, the specimen count from
@@ -34,6 +38,11 @@ export default function Home() {
   const six = pieces();
   const die = chip();
   const hosted = six.filter((p) => p.public_url);
+
+  // The projects under the roof, from the same manifest the navigation and
+  // the API read. The roof itself is not a project a visitor chooses between.
+  const under = projects().filter((p) => p.key !== "roof" && p.landing);
+  const surfacesHere = under.reduce((n, p) => n + arrivedSurfaces(p).length, 0);
 
   // START-HERE.md step 6. Read from the list rather than hardcoded, so a key
   // rename is a build failure here instead of a section that quietly vanishes.
@@ -67,6 +76,12 @@ export default function Home() {
           measured from the 6502 API on {die.measured_on}
         </span>
         <span className="measured">
+          <b>
+            {under.length} projects, {surfacesHere} surfaces
+          </b>{" "}
+          from data/projects.json
+        </span>
+        <span className="measured">
           <b>{six.length} pieces</b> from data/pieces.json
         </span>
         <span className="measured">
@@ -77,11 +92,53 @@ export default function Home() {
         </span>
       </div>
 
+      <h2 className="eyebrow">The projects</h2>
+
+      <p className="prose">
+        {under.length} projects live under this roof, with {surfacesHere}{" "}
+        surfaces between them. The list and every link below come from the same
+        manifest the navigation and the API read, so a project cannot appear
+        here and be missing there.
+      </p>
+
+      <div className="piece-grid">
+        {under.map((p) => {
+          // The landing is a surface of its own for some projects; listing it
+          // as the overview AND as a surface would be the same door twice.
+          const doors = arrivedSurfaces(p).filter((s) => s.lands_at !== p.landing);
+          return (
+            <article key={p.key} className="rail">
+              <h3>{p.name}</h3>
+              <p>{p.what}</p>
+              <p className="piece-links">
+                <Link className="tag live" href={p.landing as string}>
+                  overview
+                </Link>
+                {doors.map((s) =>
+                  // Anything this site does not prerender gets a plain anchor,
+                  // for the reason the menu gives: the client router cannot
+                  // navigate to a route the build never made.
+                  s.prerendered === false ? (
+                    <a key={s.key} className="tag" href={s.lands_at}>
+                      {s.nav_label ?? s.name}
+                    </a>
+                  ) : (
+                    <Link key={s.key} className="tag" href={s.lands_at}>
+                      {s.nav_label ?? s.name}
+                    </Link>
+                  ),
+                )}
+              </p>
+            </article>
+          );
+        })}
+      </div>
+
       <h2 className="eyebrow">Start here if you build things</h2>
 
       <Halfphi piece={halfphi} />
 
-      <h2 className="eyebrow">The six pieces</h2>
+      <h2 className="eyebrow">The 6502 work, piece by piece</h2>
 
       <p className="prose">
         Each one exists and runs. {hosted.length} of the {six.length} answer on

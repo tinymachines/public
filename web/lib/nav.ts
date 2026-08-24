@@ -1,6 +1,6 @@
 import { allPages } from "./docs";
 import { explorerMenu } from "./explorer-menu";
-import { projects, read, nav as siteNav } from "./projects";
+import { arrivedSurfaces, projects, read, nav as siteNav } from "./projects";
 
 /**
  * The whole navigation model, derived at build time.
@@ -109,7 +109,7 @@ export function menuGroups(): MenuGroup[] {
   // same on every page; what varies by section is appended AFTER it, below.
   for (const p of projects()) {
     if (p.key === "roof" || !p.landing) continue;
-    const here = p.surfaces.filter((s) => s.status !== "not started" && s.lands_at_settled);
+    const here = arrivedSurfaces(p);
     if (!here.length) continue;
     groups.push({
       title: p.name,
