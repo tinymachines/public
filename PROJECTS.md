@@ -187,16 +187,13 @@ seventy-five bytes a minute, and six minutes of watching `/stats` on
 [the bits](docs/hotbits/the-bits.md); the rate belongs to the tube, not to
 either sentence.
 
-**2. The front page is a 6502 front page on a two-project site.** It opens with
-the die, lists "the six pieces" from `data/pieces.json`, and never mentions
-hotbits except through the manifest-derived navigation. `data/pieces.json` is
-6502-only by construction, which is the part to decide before writing anything:
-either hotbits' instrument becomes a piece in that file, or the front page
-grows a projects section above the pieces and the pieces stay what they are.
-
-The second is probably right, because a piece and a project are different
-things and this file already says so. But it is the owner's call about what the
-front door leads with, so it is written down here rather than done.
+**2. Done, 1.0.29: the front page grew a projects section above the pieces.**
+The owner picked the second option, 2026-08-24: the pieces stay what they are
+and `data/pieces.json` stays 6502-only, because a piece and a project are
+different facts. The section derives from `data/projects.json`, the same
+manifest the navigation and the API read, links every arrived surface of both
+projects, and the measured chips row states the project and surface counts
+beside the piece count so the two files are visibly two files.
 
 **3. The entropy gateway is documented as absent.** `/v1/bytes` and `/v1/seeds`
 answer today and are **not in the published schema**, so `/hotbits/api` can
