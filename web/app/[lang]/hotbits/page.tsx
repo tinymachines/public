@@ -94,7 +94,7 @@ const PROSE = {
     thLands: "着地先",
     thStatus: "状態",
     proposed: "提案",
-    probed: (d: string) => `各アドレスを ${d} に検分`,
+    probed: (d: string) => `各アドレスの応答を ${d} に確認`,
     redirectMap: "動くアドレスはリダイレクトになる。公開済みのリンクは切れない。",
     refTitle: "リファレンス",
     ref: (href: string) => (

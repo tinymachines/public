@@ -77,7 +77,7 @@ const PROSE = {
   ja: {
     surfaces: (n: number, d: string) => (
       <>
-        <b>部品 {n} 点</b>。各アドレスを {d} に検分
+        <b>部品 {n} 点</b>。各アドレスの応答を {d} に確認
       </>
     ),
     hereCount: (h: number, n: number) => (
