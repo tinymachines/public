@@ -49,8 +49,41 @@ const nextConfig: NextConfig = {
   // breadcrumbs are derived from the path, and the second spelling puts a
   // crumb called "b" in the trail pointing at a collection page that would
   // exist only to give that crumb somewhere to go.
+  // English lives at the unprefixed paths it has always lived at, and
+  // Japanese at /ja/... . Internally both are one route tree under
+  // app/[lang]. afterFiles rather than middleware, and that choice is a
+  // scar: a middleware rewrite reconstructs an absolute URL from request
+  // context, and behind nginx that context named https://localhost:6511,
+  // which Next then tried to PROXY over TLS to its own plain-HTTP port.
+  // Every request 500d and the site was down until the revert. afterFiles
+  // rewrites are internal by construction: real files and real pages
+  // (/ja/*, /icon.svg, everything in public/) are served first, and only a
+  // path that matched nothing is retried under /en. Nothing here builds a
+  // URL at runtime, so there is nothing for a proxy header to poison.
+  // afterFiles runs AFTER real files and BEFORE dynamic routes, and since
+  // the whole tree is a dynamic route now, an unconditional catch-all here
+  // swallowed /ja itself and rewrote it to /en/ja, which is nothing. So the
+  // pattern excepts ja: a Japanese path falls through to the route tree
+  // untouched, and everything else is retried as English.
+  async rewrites() {
+    return {
+      afterFiles: [
+        { source: "/", destination: "/en" },
+        { source: "/:path((?!ja(?:/|$)).*)", destination: "/en/:path" },
+      ],
+    };
+  },
+
   async redirects() {
     return [
+      // The internal prefix must not become a second public address for the
+      // same pages: /en/docs is /docs wearing plumbing. Sent home rather than
+      // served, and temporarily (307), because the internal spelling is an
+      // implementation detail that should stay revisable. The rewrite above
+      // still lands on /en internally: redirects run only on the request as
+      // it arrived, never on what a rewrite produced.
+      { source: "/en", destination: "/", permanent: false },
+      { source: "/en/:path*", destination: "/:path*", permanent: false },
       { source: "/6502/b", destination: "/6502/builders", permanent: true },
       { source: "/6502/b/:handle", destination: "/6502/builders/:handle", permanent: true },
       // The third spelling the registry hands out: /b/<handle>/<slug> is a

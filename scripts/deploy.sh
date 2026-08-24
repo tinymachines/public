@@ -232,6 +232,35 @@ if [ -n "$CHECK_ONLY" ]; then
   exit 0
 fi
 
+# The build is asked production-shaped questions on a scratch port BEFORE any
+# unit is touched. This stage is a scar: a build compiled, prerendered 100
+# pages, passed every check above and still 500d every request in production,
+# because a middleware rewrite only broke behind nginx's forwarded headers.
+# The build gating the restart was this script's founding rule, and that
+# outage showed "the build succeeded" and "the build answers" are different
+# claims. 6520 is recorded free in CLAUDE.md; setsid so the whole process
+# group can be killed without pkill -f, which kills the shell that runs it.
+say "4c. The build answers, before anything is restarted"
+PRE_LOG=$(mktemp)
+(cd web && exec setsid bun next start -H 127.0.0.1 -p 6520 >"$PRE_LOG" 2>&1) &
+PRE_PID=$!
+stop_preflight() { kill -- -"$PRE_PID" 2>/dev/null || true; }
+up=
+for _ in $(seq 1 40); do
+  if curl -s -o /dev/null -m 2 http://127.0.0.1:6520/robots.txt; then up=1; break; fi
+  sleep 0.5
+done
+[ -n "$up" ] || { tail -5 "$PRE_LOG"; stop_preflight; fail "the fresh build never answered on the scratch port"; }
+for p in / /docs /6502/primer /ja; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 \
+    -H 'X-Forwarded-Proto: https' -H 'X-Forwarded-For: 203.0.113.9' -H 'Host: tinymachines.ai' \
+    "http://127.0.0.1:6520$p" || echo 000)
+  printf '  %-16s %s\n' "$p" "$code"
+  [ "$code" = "200" ] || { tail -5 "$PRE_LOG"; stop_preflight; fail "$p answered $code on the fresh build; NOT restarting, the running site is untouched"; }
+done
+stop_preflight
+rm -f "$PRE_LOG"
+
 # Restarted one at a time rather than together, so a unit that fails to come
 # back is attributable. They are independent: nginx routes /api to one and
 # everything else to the other, so the site is degraded rather than down while
@@ -281,7 +310,7 @@ bad=0
 # our deploy depend on a row in somebody else's database.
 for p in / /docs /docs/6502 /docs/6502/atlas /docs/6502/idioms /docs/6502/walk-snake /docs/hotbits /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
          /6502 /6502/explorer /6502/games /6502/manage /6502/lab /6502/builders /6502/builders/nobody /6502/api \
-         /hotbits /hotbits/api \
+         /hotbits /hotbits/api /ja /ja/docs /ja/6502/explorer \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   printf '  %-28s %s\n' "$p" "$code"
