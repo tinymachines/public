@@ -154,6 +154,41 @@ function localizedLabels(lang: Lang): Record<string, string> {
   return out;
 }
 
+/**
+ * The workbench's one strip of site: the crumb trail home, the page's name,
+ * the flags, and the full menu, so an instrument that owns the viewport does
+ * not cost the reader their navigation. The title is an h1 unless the
+ * instrument's own markup carries one, which is the same rule the masthead
+ * follows and for the same reason: a document has one name.
+ */
+export function WorkbenchBar({
+  lang,
+  title,
+  trail,
+  titleIsHeading = true,
+}: {
+  lang: Lang;
+  title: string;
+  trail: { href: string; label: string }[];
+  titleIsHeading?: boolean;
+}) {
+  return (
+    <div className="wb-bar">
+      <p className="crumb">
+        {trail.map((t, i) => (
+          <span key={t.href}>
+            {i ? " / " : ""}
+            <Link href={localize(lang, t.href)}>{t.label}</Link>
+          </span>
+        ))}
+      </p>
+      {titleIsHeading ? <h1>{title}</h1> : <p className="wb-title">{title}</p>}
+      <LangSwitch lang={lang} />
+      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} />
+    </div>
+  );
+}
+
 export function Shell({
   lang,
   die,

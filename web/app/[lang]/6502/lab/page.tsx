@@ -2,9 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
-import Link from "next/link";
-import { LangSwitch } from "@/app/components/LangSwitch";
-import { localize } from "@/lib/i18n";
+import { WorkbenchBar } from "@/app/components/SiteFrame";
 import "./lab.css";
 
 /**
@@ -57,15 +55,14 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
        check holds; there is no footer, because an instrument ends where its
        last control does. */
     <div className="workbench" data-workbench>
-      <div className="wb-bar">
-        <p className="crumb">
-          <Link href={localize(lang, "/")}>tinymachines.ai</Link>
-          {" / "}
-          <Link href={localize(lang, "/6502")}>6502</Link>
-        </p>
-        <h1>Halfwave Lab</h1>
-        <LangSwitch lang={lang} />
-      </div>
+      <WorkbenchBar
+        lang={lang}
+        title="Halfwave Lab"
+        trail={[
+          { href: "/", label: "tinymachines.ai" },
+          { href: "/6502", label: "6502" },
+        ]}
+      />
       <div className="wb-main">
 
       {/* The lab's own 35 KB of rules, with its :root replaced by lab.css and

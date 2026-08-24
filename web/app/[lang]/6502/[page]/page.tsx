@@ -1,7 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer, explorerPages } from "@/lib/explorer";
-import { Shell } from "@/app/components/SiteFrame";
+import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { ChipModules } from "../explorer/ChipModules";
 import "../explorer/explorer.css";
 
@@ -69,10 +69,24 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
   const { style, body, script, title } = explorer(file);
 
   return (
-    <Shell lang={lang} die="DIE" title={title} titleIsHeading={false}>
-      <style dangerouslySetInnerHTML={{ __html: style }} />
-      <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
-      <ChipModules entry={script} />
-    </Shell>
+    /* A workbench, owner's call 2026-08-24: the instruments were designed
+       full-viewport on their own site and lost it inside the content panel.
+       titleIsHeading is false because each page's own hero carries the h1. */
+    <div className="workbench" data-workbench>
+      <WorkbenchBar
+        lang={lang}
+        title={title}
+        titleIsHeading={false}
+        trail={[
+          { href: "/", label: "tinymachines.ai" },
+          { href: "/6502", label: "6502" },
+        ]}
+      />
+      <div className="wb-main">
+        <style dangerouslySetInnerHTML={{ __html: style }} />
+        <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
+        <ChipModules entry={script} />
+      </div>
+    </div>
   );
 }

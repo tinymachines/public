@@ -1839,13 +1839,25 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   z-index: 25;
   background: var(--color-paper);
 }
-.wb-bar h1 {
+.wb-bar :is(h1, .wb-title) {
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-body);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  /* One line, but a line that YIELDS: the tracer's full name is 459px, and
+     nowrap without shrink scrolled every phone sideways. The harness caught
+     it the same day the bar shipped. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+@media (max-width: 34rem) {
+  /* The menu and flags keep their corner; the title yields to the trail. */
+  .wb-bar { flex-wrap: wrap; }
 }
 .wb-bar .crumb { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .wb-main { flex: 1 0 auto; }

@@ -1,7 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer } from "@/lib/explorer";
-import { Shell } from "@/app/components/SiteFrame";
+import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { ChipModules } from "./ChipModules";
 import { Launch } from "./Launch";
 import "./explorer.css";
@@ -57,9 +57,18 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
 
   return (
     // titleIsHeading is false because the explorer's hero carries the page's
-    // own h1. The masthead's title looks identical either way; what changes is
-    // which element the document says is its heading.
-    <Shell lang={lang} die="DIE" title="The explorer" titleIsHeading={false}>
+    // own h1. A workbench like the rest of the instrument suite.
+    <div className="workbench" data-workbench>
+      <WorkbenchBar
+        lang={lang}
+        title="The explorer"
+        titleIsHeading={false}
+        trail={[
+          { href: "/", label: "tinymachines.ai" },
+          { href: "/6502", label: "6502" },
+        ]}
+      />
+      <div className="wb-main">
       {/* The explorer's own 180 KB of rules, with its :root replaced by
           explorer.css and every selector scoped to .explorer-shell. Inline
           rather than a file because, unlike the lab's, this stylesheet is
@@ -78,6 +87,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       </div>
 
       <ChipModules entry={script} />
-    </Shell>
+      </div>
+    </div>
   );
 }

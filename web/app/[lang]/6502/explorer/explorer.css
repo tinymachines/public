@@ -101,41 +101,13 @@
 }
 
 
-/* ---------------------------------------------------------------------------
-   ONE MEASURE, ONE GUTTER
-
-   This is what made the page read as an iframe rather than as part of the
-   site, and it was structural rather than a matter of colour.
-
-   Measured before the fix: the site's frame is 1120px wide with a 32px
-   gutter, so content begins at x=140. This page then opened its OWN container
-   inside that one, with its own max-width and its own 20px of padding, and
-   began again at x=172. Two boxes, two edges, two measures, one inside the
-   other. Nothing about it looks broken; it just looks like a document that
-   was dropped in.
-
-   The frame owns the measure. The page's container keeps its role as a block
-   in the flow and gives up its width and its padding, so every section on it
-   lines up with the masthead, the crumbs and the footer, because all four are
-   now the same column.
-   ------------------------------------------------------------------------ */
-
-/* The class is doubled on purpose, and it is a cascade fix rather than a
-   flourish. This file is imported by the page, so it lands in a <link> in the
-   head; the ported stylesheet is injected as an inline <style> in the body and
-   therefore comes LATER in document order. At equal specificity the later rule
-   wins, so `.explorer-shell .wrap` written once was silently defeated by the
-   very rule it exists to override, and the measurement said so: the container
-   was still 1248px wide with its own 20px gutter.
-
-   Doubling the class makes this (0,3,0) against their (0,2,0), which is the
-   smallest thing that wins and does not need !important. */
-.explorer-shell.explorer-shell .wrap {
-  max-width: none;
-  width: auto;
-  margin-inline: 0;
-  padding-inline: 0;
-}
+/* THE MEASURE IS THEIRS AGAIN. The block that lived here neutralised the
+   page's own .wrap so its column would line up with the site frame's, and it
+   was right while these pages rendered inside that frame. They are
+   workbenches now: the frame is gone, the viewport is the canvas, and the
+   .wrap these pages were designed with is exactly the layout that should
+   come back. Removed rather than kept-but-disabled, with this note where the
+   reasoning was. */
 
 /* And one vertical rhythm. Their section spacing was in round pixels and
    viewport clamps that owe nothing to the grid everything else on this site
