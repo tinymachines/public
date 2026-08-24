@@ -264,11 +264,33 @@ reference photographs, one published cartridge (`dierunner.cart.gz`), the
 registry to publish through, and the walk series ("part one of a series on
 writing a game for a chip you can see inside"), which reads as the runway.
 
-**Then copy cleanup, then a Japanese version.** The Japanese version needs
-the shipped text abstracted out of the components first, and a language
-switcher. Not started; the abstraction design (where strings live, what the
-docs tree does, whether the manifest's `what` sentences get a second
-language) is the part to settle before any page is translated.
+**Copy cleanup: done at 1.0.37.** A sweep of all rendered text found zero em
+dashes, clean spelling, and four claims the week's own work had outrun; all
+fixed at their single sources.
+
+**The Japanese version: shipped and filling in.** Settled 2026-08-24 (owner's
+calls: site + docs scope, /ja prefix with English unprefixed, agent drafts
+and owner reviews). One route tree under app/[lang]; English rewritten
+internally to /en by config rewrites (never middleware: the middleware
+version reconstructed URLs from proxied request context and took the site
+down for four minutes; deploy stage 4c now boots every build on a scratch
+port and asks it production-shaped questions before any unit restarts). The
+chrome is fully translated through one overlay (data/ja.json, keyed by the
+English string so edits surface as visible fallbacks, counted by
+data/check-i18n.py at deploy stage 2d); docs/ja/ is a shadow tree of BODIES
+whose structure stays derived from the English files. Coverage when this was
+written: 87 overlay entries all live, 5 of 18 docs bodies translated (the
+docs front page and all four hotbits documents); the front page is fully
+bilingual. The backlog is the 13 remaining docs bodies and the per-page
+prose of the landings, console, editor and hotbits pages; the explorer's own
+pages stay English until translated upstream.
+
+**The sweep finished at 1.0.42**: `findings-answers.md` (the halfwave
+review's engine side) was the last written document not on the site, and
+the docs front page now shelves the four pulled analysis documents in both
+languages. What remains in the 6502 tree stays deliberately: `docs/notes/`
+(agent handbooks), `SuperMarioBros.html` (received disassembly), the
+reviewer's ELK zip.
 
 **Then styling, last.** The owner's style guide material is already arriving
 (`docs/styles/`, gitignored until they publish it deliberately);
