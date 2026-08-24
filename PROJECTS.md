@@ -174,7 +174,7 @@ Checked against the running site on 2026-08-23, not from memory.
 | the registry | **here, read-only.** The builder pages. The editor could not follow |
 | the halfwave lab | **here.** Paper page, dark instruments |
 | the visual6502 archive | **here.** Our overview, their preservation below it |
-| the 6502 API | **not moved.** `lands_at` still a proposal |
+| the 6502 API | **the reference is here.** The service still answers at its own address, and this page says why it is not proxied |
 | the cartridge editor | **not moved.** `/manage`, blocked by a missing CORS header |
 | hotbits | **not started.** Two surfaces recorded, nothing built |
 
@@ -193,9 +193,20 @@ Checked against the running site on 2026-08-23, not from memory.
    service scope and the identity binding, were left undone on the grounds
    that they turn into an internal join if games moves under the apex, and a
    credentialed proxy built now is that boundary built twice.
-2. **The 6502 API.** Nothing technical: it is a decision about whether
-   `/6502/api` proxies the same service or the API moves under the apex for
-   real, and the second one changes what `openapi.json` says its own paths are.
+2. **The 6502 API, as a service.** The reference moved and the service did not,
+   and that split is the answer to the question this line used to ask.
+
+   Proxying it under `/6502/api` looked like the obvious move and is wrong in a
+   specific way: that process runs with `--root-path /api`, so the `servers`
+   block in its own `openapi.json` says `/api`. An interactive client reading
+   that document from under a second path would issue its requests against
+   `/api/v1/...` on **this** host, which is the roof's own API. They would not
+   fail. They would answer, from the wrong service, which is worse than either
+   a 404 or a CORS refusal.
+
+   So what is left is the real move: the service running under the apex rather
+   than beside it, at which point `openapi.json` says its own paths and there
+   is nothing to reconcile. That is still a decision rather than work.
 3. **The explorer's prose.** The owner's. Every page is its own words in its
    own order; what changed is the ground under them.
 4. **The archive's deeper pages.** Left in their own design on purpose. See the

@@ -29,10 +29,11 @@ switches, and the behaviour falls out of simulating them.
 
 ## What is running now
 
-Five surfaces are here: [the explorer](/6502/explorer) and its measured
-tables, [the console](/6502/games), [the builder pages](/6502/builders),
-[the lab](/6502/lab), and [the visual6502 archive](/6502/archive/). Each still
-answers at its own subdomain as well, because nothing has been switched off.
+Six surfaces are here: [the explorer](/6502/explorer) and its measured tables,
+[the console](/6502/games), [the builder pages](/6502/builders),
+[the lab](/6502/lab), [the API reference](/6502/api) and
+[the visual6502 archive](/6502/archive/). Each still answers at its own
+subdomain as well, because nothing has been switched off.
 
 The chip data is the exception, and deliberately so. The explorer's die
 geometry, its measured tables and its wasm bundle are served from the 6502
@@ -52,9 +53,15 @@ This tree is being moved out of four repository READMEs that were reachable
 only by cloning. Moved so far: the simulator, verification, the API, the atlas,
 the console contract, cartridges, MCP and the registry.
 
-Not moved yet, and deliberately: the reference tables currently inside the 6502
-service's own `api.html`. The memory map, the tile encoding and the shapes that
-travel are all things the running service already publishes, `GET /v1/console`
-being the contract as data. Copying them here would make a third copy of a fact
-that already exists twice, so they arrive when `/api` does and they arrive
-generated from the Pydantic models that validate the requests, not retyped.
+`api.html` arrived with the rest: it is read out of the 6502 repository at
+build time and rendered at [/6502/api](/6502/api), not retyped, and it checks
+itself against the running service rather than asserting what exists. That
+check found the gap the moment it was written: three routes described in the
+document are merged upstream and are not deployed, and the page names them.
+
+What has not moved is the service. The reference is a document and the API is a
+process, and there is a reason not to proxy the second one under the apex: it
+runs with a root path of `/api`, so a client reading its schema from a second
+path would call this site's own API instead and get answers from the wrong
+service. That is a worse failure than a 404, so the service keeps its address
+until it moves for real.

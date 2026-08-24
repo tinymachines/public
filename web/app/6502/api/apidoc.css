@@ -1,0 +1,145 @@
+/* ---------------------------------------------------------------------------
+   The 6502 API reference, wearing the house palette.
+
+   The explorer's arrangement, fourth time. lib/apidoc.ts strips the one :root
+   block out of the reference's inline stylesheet and scopes every remaining
+   selector to .apidoc-shell; this file supplies the names those rules expect,
+   from style/tokens.css. Not one of the document's own rules is edited.
+
+   No colour is chosen here. Every value is a var() on the kit or a color-mix
+   of two, so style/check-tokens.py fails on a name that does not exist and a
+   palette change in the binder reaches this page.
+
+   PAPER IS DOCUMENTATION. This page is documentation about a machine rather
+   than a machine, so the whole shell is paper and only the code blocks are
+   panel: a `curl` and the JSON that came back are the machine talking, and a
+   dark box is what that means here. The explorer needed the same split and
+   arrived with it backwards. This one is written that way from the start.
+   ------------------------------------------------------------------------ */
+
+.apidoc-shell {
+  --space:      var(--color-paper);
+  --surface:    var(--color-paper-sunk);
+  --subtle:     color-mix(in srgb, var(--color-paper-sunk) 85%, var(--color-ink));
+  --line:       var(--color-rule);
+
+  --foreground: var(--color-ink);
+  --muted:      var(--color-ink-muted);
+
+  /* The -ink forms, because these sit on paper. tokens.css: each hue ships in
+     two forms because contrast is ground-dependent, and using the wrong one is
+     the single most common way this palette goes illegible. */
+  --accent:            var(--color-ocean-ink);
+  --accent-foreground: var(--color-paper);
+  --gold: var(--color-mustard-ink);
+  --mint: var(--color-forest-ink);
+  --warn: var(--color-red-ink);
+  --hot:  var(--color-orange-ink);
+
+  --hard: 3px 3px 0 var(--color-ink);
+
+  background: var(--space);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* THE MACHINE TALKING, and only that.
+
+   Doubled class, and it is not a flourish. This file arrives in the document
+   head as a <link>; the ported stylesheet is an inline <style> in the body. At
+   equal specificity the later one wins, which means every plain `.apidoc-shell
+   pre` here loses to the copy that came with the page. The same trap has now
+   been paid for four times: .wrap, .console, the lab's panels, and this.
+   Doubling the class is how a rule in this file wins on purpose. */
+.apidoc-shell.apidoc-shell pre {
+  background: var(--color-panel);
+  color: var(--color-glass);
+  border: 1px solid var(--color-rule-panel);
+  border-radius: var(--radius-mod);
+}
+.apidoc-shell.apidoc-shell pre code { color: inherit; }
+
+/* Inline code is a name in a sentence, not a transcript. It stays on paper,
+   because a dark chip mid-paragraph would mean "this came off the engine" of
+   a word. */
+.apidoc-shell.apidoc-shell :not(pre) > code {
+  background: var(--color-paper-sunk);
+  color: var(--color-ink);
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+  padding: 0 0.25em;
+}
+
+/* The reference's own measure is 52rem and the page frame already sets one.
+   Two measures nest into a box inside a box, which is what made the explorer
+   read as a slab dropped onto the site: content starting at a different x
+   from every other page. */
+.apidoc-shell.apidoc-shell .wrap { max-width: none; margin: 0; padding: 0; }
+
+/* A measure on the words, not on the box. The reference's own 52rem wrapper is
+   removed above so its content starts at the same x as every other page; put
+   back naively that leaves prose running the full 1120px, which is roughly
+   double what anybody reads comfortably.
+
+   The measure goes on the text elements rather than on their container, so
+   tables and transcripts keep the width they need. Constraining the container
+   instead would have made a wide response table overflow the page, which is
+   the bug this site has already chased once at 390px. */
+.apidoc-shell.apidoc-shell p,
+.apidoc-shell.apidoc-shell li,
+.apidoc-shell.apidoc-shell h1,
+.apidoc-shell.apidoc-shell h2,
+.apidoc-shell.apidoc-shell h3 { max-width: 68ch; }
+
+/* A table wider than the page scrolls inside its own box rather than taking
+   the document sideways. components.css section 13 says the same thing about
+   .ledger and gives the reason: position: relative, so an absolutely
+   positioned descendant cannot escape the scroller and land in the page's
+   scroll width. */
+.apidoc-shell.apidoc-shell table {
+  display: block;
+  overflow-x: auto;
+  position: relative;
+  max-width: 100%;
+}
+
+/* -- coverage: the reference measured against the running service ---------- */
+
+.apicov { margin: calc(var(--u) * 4) 0 calc(var(--u) * 8); }
+.apicov .rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: calc(var(--u) * 1) calc(var(--u) * 4);
+  margin-top: calc(var(--u) * 3);
+}
+.apicov .row {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 2);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  padding: calc(var(--u) * 1) 0;
+  border-bottom: 1px solid var(--color-ink-faint);
+}
+.apicov .row .verb {
+  flex: 0 0 3.5rem;
+  color: var(--color-ink-muted);
+  letter-spacing: var(--tracking-caps);
+}
+.apicov .row .route { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+/* Absent, not broken. The reference is newer than the process answering, and
+   this says which lines describe something that is not there yet. */
+.apicov .row.absent .route { color: var(--color-ink-muted); }
+
+/* A route heading is one unbreakable token.
+   `PUT /v1/registry/b/{handle}/roms/{slug}` has no space in it after the verb,
+   so at 390px the h3 could not wrap and took the whole document sideways: 414
+   of scroll width in a 390 viewport, with nothing visible out there. Found by
+   hiding one element at a time and watching where the number dropped, which is
+   the only reliable way to find an overflow whose element is inside something
+   that does not clip.
+
+   Breaking mid-path is right here. The alternative is a horizontal scrollbar
+   on a heading, and a reader who has to drag a title to see which route it
+   names. */
+.apidoc-shell.apidoc-shell .endpoint h3 { overflow-wrap: anywhere; }

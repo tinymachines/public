@@ -100,12 +100,12 @@
         {
           "key": "api",
           "name": "The 6502 API",
-          "what": "Stateless HTTP over the real chip, with the registry on the same app and an MCP endpoint.",
+          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service; the service itself still answers at its own address, because that process is started with a root path of /api and a client reading its schema under this one would call this site's API instead.",
           "piece": "chip-api",
           "serves_today": "https://6502.tinymachines.ai/api/",
           "lands_at": "/6502/api",
-          "lands_at_settled": false,
-          "status": "not started",
+          "lands_at_settled": true,
+          "status": "reference here, service on the subdomain",
           "nav": false,
           "nav_label": null,
           "prerendered": true

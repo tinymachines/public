@@ -6,7 +6,12 @@ order: 3
 
 # The API
 
-Live at <https://6502.tinymachines.ai/api/>.
+The reference is at [/6502/api](/6502/api), where it checks itself against the
+running service and says which routes it describes do not answer yet. The
+service answers at `6502.tinymachines.ai/api`, and is not proxied under the
+apex: it runs with a root path of `/api`, so an interactive client reading its
+schema from a second path would issue requests against this site's own API and
+get answers from the wrong service rather than an error.
 
 A transistor-level MOS 6502 over HTTP, one half-cycle at a time. Nothing here
 models 6502 behaviour: every request settles the real 3510-switch network and
