@@ -44,6 +44,22 @@ import { RegistryState, useRegistry } from "../../components/RegistryData";
  * events: the schema was fetched from that same origin a moment earlier, so
  * the host answers and it is this response that is unreadable. That is stated
  * as what it is, and no status is invented for it.
+ *
+ * ## Two schemas, because the host is two services
+ *
+ * The origin is a composite: the instrument's FastAPI behind a proxy, and the
+ * entropy gateway that nginx grafts on at /v1/. Each documents its own routes,
+ * which is the only arrangement where neither describes something it does not
+ * serve: the instrument's schema at /openapi.json, the gateway's at
+ * /v1/openapi.json, generated from the same table its router is built from.
+ * This page reads both and says so. A missing gateway schema is rendered as
+ * exactly that rather than folded into an error, because an instrument that
+ * answers while the gateway is down is a state worth showing.
+ *
+ * One distinction the merge makes possible: the gateway's keyed routes refuse
+ * CORS deliberately, so a browser cannot be asked to hold a key. Their
+ * unreadable replies are labeled as the design working; the instrument's
+ * unreadable refusals keep the complaint above, because those are the bug.
  */
 
 interface Op {
@@ -57,6 +73,8 @@ interface Op {
     schema?: { type?: string; default?: unknown };
   }[];
   responses?: Record<string, { description?: string }>;
+  /** Present on the gateway's keyed routes. Its presence IS the fact used. */
+  security?: unknown[];
 }
 
 interface Schema {
@@ -74,6 +92,13 @@ function group(route: string): string {
 
 export function Reference({ api }: { api: string }) {
   const { data, error } = useRegistry<Schema>(`${api}/openapi.json`);
+  // The same host publishes a second schema: the gateway's, at
+  // /v1/openapi.json, generated from the same table its router is built from.
+  // The /v1 routes are a different service that nginx grafts onto this origin,
+  // so documenting them was that service's job, and now it does. Fetched
+  // separately because it can be absent separately: an instrument that answers
+  // while the gateway is down should render as exactly that.
+  const gate = useRegistry<Schema>(`${api}/v1/openapi.json`);
   const [probe, setProbe] = useState<Probe>({});
 
   // Ask each documented route without a path parameter whether it is there.
@@ -90,7 +115,7 @@ export function Reference({ api }: { api: string }) {
     // the whole service on every keystroke of state this component ever has.
     // `data` changes identity only when the schema is refetched, which is
     // exactly how often these should be asked.
-    const routes = Object.entries(data?.paths ?? {})
+    const routes = Object.entries({ ...(data?.paths ?? {}), ...(gate.data?.paths ?? {}) })
       .filter(([r, m]) => !r.includes("{") && "get" in m)
       .map(([r]) => r);
     if (!routes.length) return;
@@ -109,25 +134,38 @@ export function Reference({ api }: { api: string }) {
       live = false;
       stop.abort();
     };
-  }, [api, data]);
+  }, [api, data, gate.data]);
 
   if (!data) return <RegistryState error={error} what="the instrument's schema" />;
 
   const paths = data.paths ?? {};
+  const gatePaths = gate.data?.paths ?? {};
   const ops: { route: string; verb: string; op: Op }[] = [];
-  for (const [route, methods] of Object.entries(paths)) {
+  for (const [route, methods] of Object.entries({ ...paths, ...gatePaths })) {
     for (const [verb, op] of Object.entries(methods)) {
       if (verb === "head") continue; // The same route, said twice.
       ops.push({ route, verb: verb.toUpperCase(), op });
     }
   }
 
+  // The gateway's keyed routes carry no CORS ON PURPOSE: a browser that could
+  // call them would invite somebody to put a key in page JavaScript. Their
+  // schema says which they are (security), so an unreadable reply from one of
+  // those is the design working, not the bug the notice below describes.
+  const keyed = new Set(
+    Object.entries(gatePaths)
+      .filter(([, m]) => m.get?.security?.length)
+      .map(([r]) => r),
+  );
+
   const answered = Object.entries(probe);
   const gone = answered.filter(([, code]) => code === 410).map(([r]) => r);
   // Rejected before a status could be read. The fetch failed while the schema
   // from the same origin succeeded, so the host is up and this particular
   // response is the one a browser is not allowed to see.
-  const opaque = answered.filter(([, code]) => code === 0).map(([r]) => r);
+  const opaque = answered
+    .filter(([r, code]) => code === 0 && !keyed.has(r))
+    .map(([r]) => r);
   const present = answered.filter(([, code]) => code >= 200 && code < 300).length;
   const groups = [...new Set(ops.map((o) => group(o.route)))].sort();
 
@@ -135,8 +173,10 @@ export function Reference({ api }: { api: string }) {
     <>
       <div className="chips">
         <span className="measured">
-          <b>{ops.length} operations</b> read from the instrument&rsquo;s own
-          openapi.json when this page loaded
+          <b>{ops.length} operations</b> read from{" "}
+          {gate.data
+            ? "two schemas on the same host when this page loaded: the instrument's openapi.json and the gateway's /v1/openapi.json"
+            : "the instrument's own openapi.json when this page loaded"}
         </span>
         <span className="measured">
           <b>{groups.length} groups</b> taken from the routes themselves, since
@@ -156,13 +196,24 @@ export function Reference({ api }: { api: string }) {
         ) : null}
       </div>
 
+      {!gate.data ? (
+        <p className="notice">
+          <b>The gateway&rsquo;s schema did not answer.</b> The /v1 routes are a
+          separate service on this host, and it publishes its own document at{" "}
+          <code>/v1/openapi.json</code>. Asked just now, that document was not
+          there, so the keyed routes exist below only as the 410 notices that
+          point at them. This line disappears by itself when the gateway
+          answers.
+        </p>
+      ) : null}
+
       {gone.length ? (
         <p className="notice">
           <b>These are documented below and answer 410.</b> They were open, the
-          pool refills at about seventy-five bytes a minute, and anyone could
-          drain it, so they are behind a key now. The schema has not been told:
-          each still appears as a callable endpoint. Asked just now, not
-          remembered: <code>{gone.join(", ")}</code>.
+          pool refills at a few dozen bytes a minute, and anyone could drain
+          it, so they are behind a key now. The instrument&rsquo;s schema has
+          not been told: each still appears as a callable endpoint. Asked just
+          now, not remembered: <code>{gone.join(", ")}</code>.
         </p>
       ) : null}
 
@@ -197,7 +248,14 @@ export function Reference({ api }: { api: string }) {
                     {code === 401 || code === 403 ? (
                       <span className="tag">needs a key</span>
                     ) : null}
-                    {code === 0 ? <span className="tag warn">no CORS on its reply</span> : null}
+                    {code === 0 && keyed.has(route) ? (
+                      // Unreadable from here BY DESIGN: the keyed tier carries
+                      // no CORS so nobody is tempted to put a key in a page.
+                      <span className="tag">keyed; not for browsers</span>
+                    ) : null}
+                    {code === 0 && !keyed.has(route) ? (
+                      <span className="tag warn">no CORS on its reply</span>
+                    ) : null}
                   </h3>
                   {op.summary ? <p className="ref-sum">{op.summary}</p> : null}
                   {op.description ? <p className="ref-desc">{op.description.trim()}</p> : null}
