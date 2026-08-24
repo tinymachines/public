@@ -57,12 +57,10 @@ const PROSE = {
     pubTitle: "Publishing happens in the editor",
     pub: (m: string) => (
       <>
-        Claiming a handle, editing a page and publishing a cartridge all send
-        a bearer token, and for a while a browser on this site could not send
-        one to that service: the preflight refused the{" "}
-        <code>Authorization</code> header, which was a header that was not
-        there rather than a decision. Fixed on the service 2026-08-24, so{" "}
-        <Link href={m}>the editor</Link> is a page here now.
+        Claiming a handle, editing your page and publishing a cartridge all
+        happen in <Link href={m}>the editor</Link>, signed in with your
+        token. What is published is the file; every claim shown beside it is
+        measured here, on the chip, before it is listed.
       </>
     ),
   },
@@ -80,12 +78,10 @@ const PROSE = {
     pubTitle: "公開はエディタで行う",
     pub: (m: string) => (
       <>
-        ハンドルの取得も、ページの編集も、カートリッジの公開も bearer
-        トークンを送る。そしてしばらくの間、このサイトのブラウザはあの
-        サービスにそれを送れなかった: プリフライトが{" "}
-        <code>Authorization</code> ヘッダを拒んでいた。それは決定ではなく、
-        無かったヘッダだ。2026-08-24 にサービス側で修正され、
-        <Link href={m}>エディタ</Link>はいまここのページだ。
+        ハンドルの取得も、ページの編集も、カートリッジの公開も、自分の
+        トークンでサインインして<Link href={m}>エディタ</Link>で行う。
+        公開されるのはファイルであり、その横に表示される主張はどれも、
+        掲載前にここでチップの上で実測されたものだ。
       </>
     ),
   },
