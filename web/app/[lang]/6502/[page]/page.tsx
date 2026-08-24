@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer, explorerPages } from "@/lib/explorer";
 import { Shell } from "@/app/components/SiteFrame";
@@ -56,8 +57,8 @@ export async function generateMetadata({
   return { title: explorer(file).title };
 }
 
-export default async function ExplorerSubPage({ params }: { params: Promise<{ page: string }> }) {
-  const { page } = await params;
+export default async function ExplorerSubPage({ params }: { params: Promise<{ lang: Lang; page: string }> }) {
+  const { lang, page } = await params;
   const file = fileFor(page);
   if (!file) {
     // A build failure rather than a page about nothing. generateStaticParams
@@ -68,7 +69,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ pa
   const { style, body, script, title } = explorer(file);
 
   return (
-    <Shell die="DIE" title={title} titleIsHeading={false}>
+    <Shell lang={lang} die="DIE" title={title} titleIsHeading={false}>
       <style dangerouslySetInnerHTML={{ __html: style }} />
       <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
       <ChipModules entry={script} />

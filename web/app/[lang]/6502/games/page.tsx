@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
@@ -61,9 +62,10 @@ export const metadata: Metadata = {
   description: "A console on a transistor-level MOS 6502. Every frame is run on the real die.",
 };
 
-export default function GamesPage() {
+export default async function GamesPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   return (
-    <Shell
+    <Shell lang={lang}
       die="RUN"
       title="Die Runner"
       data-chip-api={CHIP_API}

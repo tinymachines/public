@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { serviceOrigin } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
@@ -28,11 +29,12 @@ export const metadata: Metadata = {
     "The Geiger TRNG's own schema, rendered and then checked against the running instrument.",
 };
 
-export default function HotbitsApiPage() {
+export default async function HotbitsApiPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const api = serviceOrigin("hotbits", "trng");
 
   return (
-    <Shell die="TRNG" title="The hotbits API">
+    <Shell lang={lang} die="TRNG" title="The hotbits API">
       <main className="prose">
         <p>
           Everything below is read from{" "}

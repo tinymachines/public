@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { delocalize, localize, type Lang } from "@/lib/lang";
 
 /**
  * The breadcrumb trail, derived from the path.
@@ -22,8 +23,13 @@ import { usePathname } from "next/navigation";
  * route exists that nothing describes, and it reads as the segment rather than
  * as a guess.
  */
-export function Crumbs({ labels }: { labels: Record<string, string> }) {
-  const here = usePathname();
+export function Crumbs({ labels, lang }: { labels: Record<string, string>; lang: Lang }) {
+  const raw = usePathname();
+  // The trail is built from the path WITHOUT its language prefix: the labels
+  // are keyed by the unprefixed path, and a crumb reading "ja" would be
+  // plumbing shown to a reader. The links put the prefix back, so the trail
+  // stays inside the language it is in.
+  const { path: here } = delocalize(raw ?? "/");
   if (!here || here === "/") return null;
 
   const parts = here.split("/").filter(Boolean);
@@ -31,7 +37,7 @@ export function Crumbs({ labels }: { labels: Record<string, string> }) {
 
   return (
     <nav className="crumb" aria-label="Breadcrumb">
-      <Link href="/">{labels["/"] ?? "tinymachines"}</Link>
+      <Link href={localize(lang, "/")}>{labels["/"] ?? "tinymachines"}</Link>
       {trail.map((path, i) => {
         const label = labels[path] ?? parts[i];
         const last = i === trail.length - 1;
@@ -41,7 +47,7 @@ export function Crumbs({ labels }: { labels: Record<string, string> }) {
             {last ? (
               <span aria-current="page">{label}</span>
             ) : (
-              <Link href={path}>{label}</Link>
+              <Link href={localize(lang, path)}>{label}</Link>
             )}
           </span>
         );

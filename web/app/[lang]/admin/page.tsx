@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { AdminConsole } from "@/app/components/AdminConsole";
 import { Shell } from "@/app/components/SiteFrame";
@@ -33,9 +34,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminPage() {
+export default async function AdminPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   return (
-    <Shell die="ADM" title="Admin">
+    <Shell lang={lang} die="ADM" title="Admin">
       <AdminConsole />
     </Shell>
   );

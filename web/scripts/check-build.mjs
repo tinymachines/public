@@ -26,6 +26,30 @@ async function htmlFiles(dir) {
 
 const failures = [];
 
+// The Japanese pages must actually be Japanese where the chrome is concerned,
+// and the English ones must not leak the other language's scaffolding. The
+// marker strings are the footer's translated "Documentation" label and the
+// work-in-progress notice: both come from the one overlay, so a page missing
+// them means the lang prop never reached the Shell, which is exactly the
+// quiet failure a default parameter would have hidden.
+function checkLang(file, body) {
+  const rel = path.relative(APP, file).split(path.sep).join("/");
+  const isJa = rel === "ja.html" || rel.startsWith("ja/");
+  if (rel.includes("_global-error") || rel.includes("_not-found")) return;
+  // The zoo deliberately does not use the Shell: it brings its own chrome and
+  // its specimens are the owner's normative set, not site copy. It is the one
+  // page with nothing translatable in it, named here rather than pattern-
+  // matched so a second exemption has to be argued for on its own.
+  if (rel === "ja/style/zoo.html") return;
+  if (isJa) {
+    if (!body.includes("ドキュメント")) {
+      failures.push(`${rel}: a Japanese page without Japanese chrome; the Shell did not get lang="ja".`);
+    }
+  } else if (body.includes("日本語版は準備中")) {
+    failures.push(`${rel}: an English page carrying the Japanese work-in-progress notice.`);
+  }
+}
+
 function check(file, body, label, re, why) {
   const m = body.match(re);
   if (m) failures.push(`${path.relative(APP, file)}: ${label}\n    found: ${JSON.stringify(m[0].slice(0, 90))}\n    ${why}`);
@@ -55,6 +79,8 @@ if (files.length < 5) {
 
 for (const file of files) {
   const body = await readFile(file, "utf8");
+
+  checkLang(file, body);
 
   // 1. Frontmatter must not reach the page. Markdown reads a YAML block as a
   //    setext heading plus a thematic break, so without remark-frontmatter

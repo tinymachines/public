@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
@@ -37,9 +38,10 @@ export const metadata: Metadata = {
     "Claim a handle, edit your page, publish a ROM. The cartridge is run on the chip before it is listed.",
 };
 
-export default function ManagePage() {
+export default async function ManagePage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   return (
-    <Shell die="ROM" title="The editor">
+    <Shell lang={lang} die="ROM" title="The editor">
       <div className="manage-shell" data-chip-api={CHIP_API}>
         <p className="prose">
           Your page in the registry: claim a handle, write your bio, publish a

@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { chipApi } from "@/lib/projects";
@@ -40,9 +41,10 @@ export const metadata: Metadata = {
     "Everyone publishing cartridges for the transistor-level 6502, and what they have published.",
 };
 
-export default function BuildersPage() {
+export default async function BuildersPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   return (
-    <Shell die="REG" title="Builders">
+    <Shell lang={lang} die="REG" title="Builders">
       <main className="prose">
         <p>
           A cartridge is one gzipped file carrying a ROM, its tiles and the

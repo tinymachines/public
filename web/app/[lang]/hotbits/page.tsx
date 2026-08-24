@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { project, measuredOn, serviceOrigin } from "@/lib/projects";
@@ -30,7 +31,8 @@ export const metadata: Metadata = {
     "True random bytes from radioactive decay: a Geiger counter on a Pi, with bits taken from the timing between events.",
 };
 
-export default function HotbitsPage() {
+export default async function HotbitsPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const p = project("hotbits");
   // Read from the manifest rather than written here: three files would have
   // named the same host otherwise, and the manifest is the one that records
@@ -38,7 +40,7 @@ export default function HotbitsPage() {
   const api = serviceOrigin("hotbits", "trng");
 
   return (
-    <Shell die="TRNG" title={p.name}>
+    <Shell lang={lang} die="TRNG" title={p.name}>
       <main className="prose">
         <p>{p.what}</p>
 

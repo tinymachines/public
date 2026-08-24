@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { delocalize } from "@/lib/lang";
 import type { MenuGroup } from "@/lib/nav";
 
 /**
@@ -31,7 +32,7 @@ import type { MenuGroup } from "@/lib/nav";
  * answered; this is a disclosure, and trapping a reader inside a navigation
  * panel they opened by accident is worse than letting them tab past it.
  */
-export function Menu({ groups }: { groups: MenuGroup[] }) {
+export function Menu({ groups, label = "Menu" }: { groups: MenuGroup[]; label?: string }) {
   const here = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -71,7 +72,12 @@ export function Menu({ groups }: { groups: MenuGroup[] }) {
     };
   }, [open]);
 
-  const shown = groups.filter((g) => g.when === null || here === g.when || here.startsWith(g.when + "/"));
+  // The `when` prefixes are unprefixed paths; under /ja the pathname is not.
+  // Scoping compares the stripped path, so a Japanese docs page still gets
+  // the documentation group; aria-current below compares the RAW path,
+  // because the item hrefs arrive already localized.
+  const { path: section } = delocalize(here);
+  const shown = groups.filter((g) => g.when === null || section === g.when || section.startsWith(g.when + "/"));
 
   return (
     <div className="menu-wrap" ref={wrap}>
@@ -88,7 +94,7 @@ export function Menu({ groups }: { groups: MenuGroup[] }) {
           <i />
           <i />
         </span>
-        Menu
+        {label}
       </button>
 
       {/* Rendered only when open. A hidden panel that is still in the tree is

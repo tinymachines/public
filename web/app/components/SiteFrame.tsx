@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { nav } from "@/lib/projects";
-import { labels, menuGroups } from "@/lib/nav";
+import { labels, menuGroups, type MenuGroup } from "@/lib/nav";
+import { localize, t, type Lang } from "@/lib/i18n";
 import { Crumbs } from "./Crumbs";
+import { LangSwitch } from "./LangSwitch";
 import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
 import { AppMetrics } from "./AppMetrics";
@@ -76,18 +78,20 @@ export function Masthead({
  * So it renders nav() too. The two read differently on the page because .crumb
  * sets the voice, not because they are different lists.
  */
-export function SiteFooter() {
+export function SiteFooter({ lang }: { lang: Lang }) {
   const entries = nav();
   return (
     <footer className="crumb site-foot">
-      <Link href="/">tinymachines.ai</Link>
+      <Link href={localize(lang, "/")}>tinymachines.ai</Link>
       {entries.map(({ href, label }) => (
         <span key={href}>
           {" · "}
           {href.startsWith("/api") ? (
-            <a href={`${href}/`}>{label}</a>
+            // The API is uvicorn, not a page of this build, and it has no
+            // Japanese edition: the anchor stays unprefixed in every language.
+            <a href={`${href}/`}>{t(lang, label)}</a>
           ) : (
-            <Link href={href}>{label}</Link>
+            <Link href={localize(lang, href)}>{t(lang, label)}</Link>
           )}
         </span>
       ))}
@@ -123,7 +127,35 @@ export function SiteFooter() {
  * path and its labels from the same place the menu takes them, so a crumb
  * cannot call a page something the menu does not.
  */
+/**
+ * Every menu string translated and every menu href localized, at the one
+ * edge where the tree passes from server to client. The Menu itself never
+ * translates: it receives finished strings, so the dictionary stays out of
+ * the browser bundle. Items that are not pages of this build (prerendered
+ * false: the API, the archive's deep paths) keep unprefixed hrefs, because
+ * there is no Japanese edition of another process.
+ */
+function localizedGroups(lang: Lang): MenuGroup[] {
+  return menuGroups().map((g) => ({
+    ...g,
+    title: t(lang, g.title),
+    items: g.items.map((it) => ({
+      ...it,
+      label: t(lang, it.label),
+      hint: it.hint ? t(lang, it.hint) : it.hint,
+      href: it.prerendered === false ? it.href : localize(lang, it.href),
+    })),
+  }));
+}
+
+function localizedLabels(lang: Lang): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [path, name] of Object.entries(labels())) out[path] = t(lang, name);
+  return out;
+}
+
 export function Shell({
+  lang,
   die,
   title,
   navExtra,
@@ -131,6 +163,13 @@ export function Shell({
   children,
   ...rest
 }: {
+  /**
+   * Required, not defaulted. A page that forgets it fails to type-check,
+   * which is the loud version of the check; a default of "en" would be the
+   * quiet version, a Japanese page wearing English chrome and looking merely
+   * unfinished rather than broken.
+   */
+  lang: Lang;
   die: string;
   title: string;
   /** False where the content carries its own h1. See Masthead. */
@@ -154,21 +193,32 @@ export function Shell({
           <Masthead
             die={die}
             title={title}
-            crumb={<Crumbs labels={labels()} />}
+            crumb={<Crumbs labels={localizedLabels(lang)} lang={lang} />}
             titleIsHeading={titleIsHeading}
             meta={navExtra}
           />
-          <Menu groups={menuGroups()} />
+          <LangSwitch lang={lang} />
+          <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} />
         </div>
       </header>
 
       <main className="app-main">
+        {lang === "ja" ? (
+          // Honest while the translation lands page by page: without this, an
+          // untranslated body under Japanese chrome reads as a bug rather
+          // than as work in progress. Removed when the content is done.
+          <div className="page">
+            <p className="notice" lang="ja">
+              日本語版は準備中です。未訳の本文は英語のまま表示されます。
+            </p>
+          </div>
+        ) : null}
         <div className="page">{children}</div>
       </main>
 
       <footer className="app-foot">
         <div className="band">
-          <SiteFooter />
+          <SiteFooter lang={lang} />
         </div>
       </footer>
     </div>

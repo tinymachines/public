@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { chipApi } from "@/lib/projects";
@@ -44,10 +45,10 @@ export async function generateMetadata(
 }
 
 export default async function BuilderPage({ params }: PageProps<"/[lang]/6502/builders/[handle]">) {
-  const { handle } = await params;
+  const { lang, handle } = await params;
 
   return (
-    <Shell die="REG" title={`@${handle}`}>
+    <Shell lang={lang as Lang} die="REG" title={`@${handle}`}>
       <main className="prose">
         <p className="crumb">
           <Link href="/6502/builders">All builders</Link>

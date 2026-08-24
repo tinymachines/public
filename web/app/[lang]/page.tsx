@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import Link from "next/link";
 import { allPages } from "@/lib/docs";
 import { chip } from "@/lib/chip";
@@ -32,7 +33,8 @@ import { Halfphi } from "@/app/components/Halfphi";
  * Composed entirely from ../../style/components.css. Nothing is drawn here.
  */
 
-export default function Home() {
+export default async function Home({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const docs = allPages();
   const specimens = specimenCount();
   const six = pieces();
@@ -55,7 +57,7 @@ export default function Home() {
   }
 
   return (
-    <Shell die="6502" title="tinymachines">
+    <Shell lang={lang} die="6502" title="tinymachines">
 
       <section className="prose">
         <p>

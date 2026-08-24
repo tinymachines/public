@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { project, measuredOn } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
@@ -27,7 +28,8 @@ export const metadata: Metadata = {
   description: "A transistor-level MOS 6502, and the four surfaces built on it.",
 };
 
-export default function ProjectPage() {
+export default async function ProjectPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const p = project("6502");
   const settled = p.surfaces.filter((s) => s.lands_at_settled).length;
   // Counted, not stated. This page carried the sentence "Nothing has moved
@@ -38,7 +40,7 @@ export default function ProjectPage() {
   const here = p.surfaces.filter((s) => s.status === "here");
 
   return (
-    <Shell die="6502" title={p.name}>
+    <Shell lang={lang} die="6502" title={p.name}>
       <main className="prose">
         <div className="chips">
           <span className="measured">

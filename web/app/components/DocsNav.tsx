@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { delocalize, localize } from "@/lib/lang";
 import type { TreeNode } from "@/lib/docs";
 
 /**
@@ -18,7 +19,7 @@ import type { TreeNode } from "@/lib/docs";
  * exist is decided in the browser.
  */
 export function DocsNav({ nodes, root }: { nodes: TreeNode[]; root: { route: string; title: string } }) {
-  const here = usePathname();
+  const { lang, path: here } = delocalize(usePathname() ?? "/");
 
   function List({ items, depth }: { items: TreeNode[]; depth: number }) {
     return (
@@ -26,7 +27,7 @@ export function DocsNav({ nodes, root }: { nodes: TreeNode[]; root: { route: str
         {items.map((node) => (
           <div key={node.page.route} className={depth > 0 ? "d" : undefined}>
             <Link
-              href={node.page.route}
+              href={localize(lang, node.page.route)}
               aria-current={here === node.page.route ? "page" : undefined}
             >
               {node.page.title}
@@ -41,7 +42,7 @@ export function DocsNav({ nodes, root }: { nodes: TreeNode[]; root: { route: str
   return (
     <nav className="tree" aria-label="Documentation">
       <div className="sect">Documentation</div>
-      <Link href={root.route} aria-current={here === root.route ? "page" : undefined}>
+      <Link href={localize(lang, root.route)} aria-current={here === root.route ? "page" : undefined}>
         {root.title}
       </Link>
       <List items={nodes} depth={1} />

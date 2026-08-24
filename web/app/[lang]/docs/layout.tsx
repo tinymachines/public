@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import { docsTree, rootPage } from "@/lib/docs";
 import { DocsNav } from "@/app/components/DocsNav";
 import { Shell } from "@/app/components/SiteFrame";
@@ -10,14 +11,16 @@ import { Shell } from "@/app/components/SiteFrame";
  * edit here. What changed is that it now renders as the kit's .tree rather
  * than as a bare list, and marks where you are standing.
  */
-export default function DocsLayout({ children }: LayoutProps<"/[lang]/docs">) {
+export default async function DocsLayout({ children, params }: LayoutProps<"/[lang]/docs">) {
+  const { lang } = await params;
   const root = rootPage();
   const tree = docsTree();
 
   return (
     <Shell
+      lang={lang as Lang}
       die="6502"
-      title="Documentation"
+      title={lang === "ja" ? "ドキュメント" : "Documentation"}
       /* Every document carries its own title as an h1. */
       titleIsHeading={false}
     >

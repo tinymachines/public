@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer } from "@/lib/explorer";
 import { Shell } from "@/app/components/SiteFrame";
@@ -50,14 +51,15 @@ export const metadata: Metadata = {
   description: "A transistor-level MOS 6502, drawn from the die and lit by what it is doing.",
 };
 
-export default function ExplorerPage() {
+export default async function ExplorerPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const { style, body, script } = explorer();
 
   return (
     // titleIsHeading is false because the explorer's hero carries the page's
     // own h1. The masthead's title looks identical either way; what changes is
     // which element the document says is its heading.
-    <Shell die="DIE" title="The explorer" titleIsHeading={false}>
+    <Shell lang={lang} die="DIE" title="The explorer" titleIsHeading={false}>
       {/* The explorer's own 180 KB of rules, with its :root replaced by
           explorer.css and every selector scoped to .explorer-shell. Inline
           rather than a file because, unlike the lab's, this stylesheet is

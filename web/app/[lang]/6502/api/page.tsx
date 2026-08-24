@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { apidoc } from "@/lib/apidoc";
 import { chipApi } from "@/lib/projects";
@@ -43,12 +44,13 @@ export const metadata: Metadata = {
     "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference, checked against the running service.",
 };
 
-export default function ApiPage() {
+export default async function ApiPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const { style, body, endpoints } = apidoc();
   const api = chipApi();
 
   return (
-    <Shell
+    <Shell lang={lang}
       die="API"
       title="The 6502 API"
       /* The document carries its own h1, which is its opening claim about the

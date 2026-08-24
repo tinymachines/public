@@ -3,6 +3,7 @@
    this app builds. next/link would ask the client router to navigate to a page
    it does not have and land the reader on the not-found page. The manifest
    records the same fact as `prerendered: false`. */
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { Shell } from "@/app/components/SiteFrame";
 
@@ -30,9 +31,10 @@ export const metadata: Metadata = {
     "visual6502.org, recovered from the Internet Archive: the wiki rebuilt from its wikitext, and the die photography made browsable again.",
 };
 
-export default function ArchivePage() {
+export default async function ArchivePage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   return (
-    <Shell die="ARC" title="The visual6502 archive">
+    <Shell lang={lang} die="ARC" title="The visual6502 archive">
       {/* .prose is what sets the reading measure and the heading scale. Without
           it the copy ran the full 1056px column and the h2s rendered at body
           size, which reads as a page that forgot its own type scale. */}

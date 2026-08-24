@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
@@ -43,11 +44,12 @@ export const metadata: Metadata = {
   description: "A 6502, half a clock phase at a time. Every value read off the running die.",
 };
 
-export default function LabPage() {
+export default async function LabPage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   const { body, data, assets } = lab();
 
   return (
-    <Shell die="PHI" title="Halfwave Lab">
+    <Shell lang={lang} die="PHI" title="Halfwave Lab">
 
       {/* The lab's own 35 KB of rules, with its :root replaced by lab.css and
           every selector scoped to .lab-shell. A LINK rather than an inline

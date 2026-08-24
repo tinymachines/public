@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Guide from "../../../../style/STYLE.md";
@@ -24,14 +25,15 @@ export const metadata: Metadata = {
   description: "Two grounds, a measured palette, and the kit that follows from them.",
 };
 
-export default function StylePage() {
+export default async function StylePage({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params;
   // Counted from zoo.html rather than typed, for the same reason the docs
   // navigation is derived from the tree: a number in prose is written once
   // against what was true that afternoon and nothing checks it afterwards.
   const specimens = specimenCount();
 
   return (
-    <Shell
+    <Shell lang={lang}
         die="STY"
         title="Style guide"
         /* STYLE.md opens with its own h1. */
