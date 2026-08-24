@@ -83,5 +83,7 @@
   "The cartridge mint, the console spec and the registry. Publishing re-runs every cartridge on the chip rather than believing the verify block the file arrived with, because a file is something its author can edit.": "カートリッジ鋳造所、コンソール仕様、レジストリ。公開時には、ファイルに付いてきた verify ブロックを信じる代わりに、すべてのカートリッジをチップ上で走らせ直す。ファイルとは、作者が編集できるものだから。",
   "Not a separate service. It is routes on the 6502 API, so probing it would report that service's health a second time under a different name. See the chip-api piece.": "独立のサービスではない。6502 API 上のルートなので、これを監視すれば同じサービスの健全性を別名でもう一度報告するだけになる。chip-api のピースを参照。",
   "Widget zoo": "ウィジェット動物園",
-  "Die Runner: a console whose frames are run on the real die. The builder pages and the cartridge editor live beside it.": "Die Runner: 毎フレームを実物のダイで実行するコンソール。ビルダーページとカートリッジエディタが隣に住む。"
+  "Die Runner: a console whose frames are run on the real die. The builder pages and the cartridge editor live beside it.": "Die Runner: 毎フレームを実物のダイで実行するコンソール。ビルダーページとカートリッジエディタが隣に住む。",
+  "Engine-side answers to the Lab's findings": "Lab の指摘へのエンジン側の回答",
+  "The engine side of the Halfwave Lab review: what each finding turned out to be, with the tests that hold the answers.": "Halfwave Lab レビューのエンジン側: 各指摘が何であったか、回答を支えるテストとともに。"
 }

@@ -180,6 +180,12 @@ python3 style/check-cascade.py || fail "check-cascade"
 say "2c. Figures"
 python3 data/check-figures.py || fail "check-figures"
 
+# Informational: how much of the site speaks Japanese, and whether any
+# overlay entry translates a sentence nothing ships any more. Strict only on
+# dead entries, because a dead entry is drift already happened.
+say "2d. Language coverage"
+python3 data/check-i18n.py --strict || fail "check-i18n: a dead overlay entry; retranslate or retire it"
+
 # The project silos. This one carries its own self test, because every silo
 # that exists today overrides nothing and the rules would otherwise have
 # nothing to bite on.

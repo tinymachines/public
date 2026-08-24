@@ -28,6 +28,17 @@ switches, and the behaviour falls out of simulating them.
 | [MCP](/docs/6502/mcp) | five tools, each one a whole errand |
 | [The registry](/docs/6502/the-registry) | builders, and why publishing measures rather than believes |
 
+The chip itself has a shelf of analysis, pulled from the 6502 tree at build
+time rather than retyped, so these pages cannot drift from the documents they
+are:
+
+| | |
+|---|---|
+| [The chip atlas: an address for every part](/docs/6502/atlas) | the rubric, and an entry per container, generated from the die data |
+| [How this chip is built](/docs/6502/idioms) | the recurring circuit idioms, counted from the switch network |
+| [Snake, one instruction deep](/docs/6502/walk-snake) | one real instruction through the silicon, five cycles, schematics pulled live |
+| [Engine-side answers to the Lab's findings](/docs/6502/findings-answers) | the halfwave review, answered, with the tests that hold each answer |
+
 And for hotbits:
 
 | | |
@@ -39,11 +50,12 @@ And for hotbits:
 
 ## What is running now
 
-Six surfaces are here: [the explorer](/6502/explorer) and its measured tables,
-[the console](/6502/games), [the builder pages](/6502/builders),
-[the lab](/6502/lab), [the API reference](/6502/api) and
-[the visual6502 archive](/6502/archive/). Each still answers at its own
-subdomain as well, because nothing has been switched off.
+Seven surfaces are here: [the explorer](/6502/explorer) and its measured
+tables, [the console](/6502/games), [the builder pages](/6502/builders),
+[the lab](/6502/lab), [the API reference](/6502/api),
+[the editor](/6502/manage) and [the visual6502 archive](/6502/archive/). Each
+still answers at its own subdomain as well, because nothing has been switched
+off.
 
 The chip data is the exception, and deliberately so. The explorer's die
 geometry, its measured tables and its wasm bundle are served from the 6502
