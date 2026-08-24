@@ -1802,6 +1802,21 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 .lang-switch:hover .flag-off { opacity: 1; filter: none; }
 
 
+/* A markdown table is born without a scroll container: the docs pipeline
+   renders GFM tables as bare <table>, and the walk's half-cycle table was
+   392px wide on a 390px phone, scrolling the whole document sideways. The
+   house rule is that wide content scrolls inside its own box, and a table
+   the author cannot wrap gets the box here. position: relative because a
+   scroll container without it lets an absolutely positioned child escape
+   into the page's scroll width, which is a trap this file already paid for.
+   Found by the triptych harness's overflow metric, not by eye. */
+.docs-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+
 /* ==========================================================================
    THE WORKBENCH
    A frame for the pages that ARE an instrument: the Halfwave Lab first, the
