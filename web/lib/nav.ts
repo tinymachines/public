@@ -1,4 +1,5 @@
 import { allPages } from "./docs";
+import { explorerMenu } from "./explorer-menu";
 import { projects, read, nav as siteNav } from "./projects";
 
 /**
@@ -74,39 +75,45 @@ export function menuGroups(): MenuGroup[] {
     return p ? firstSentence(p.what) : undefined;
   };
 
+  // The landings are their own groups below, shown on every page, so the site
+  // group does not also list them: the same destination twice in one panel is
+  // the reader's job to reconcile, and it was the panel's job not to ask.
+  const landings = new Set(
+    projects()
+      .filter((p) => p.key !== "roof" && p.landing)
+      .map((p) => p.landing as string),
+  );
+
   const groups: MenuGroup[] = [
     {
       title: "The site",
       when: null,
       items: [
         { href: "/", label: "Home", hint: "the front door" },
-        ...siteNav().map((e) => ({ ...e, hint: hintFor(e.href) })),
+        ...siteNav()
+          .filter((e) => !landings.has(e.href))
+          .map((e) => ({ ...e, hint: hintFor(e.href) })),
       ],
     },
   ];
 
-  // The documentation tree, flattened. Its shape is already rendered as a tree
-  // in the docs sidebar; here it is a list, because a menu that reproduces a
-  // hierarchy inside a panel is two navigations for one set of pages.
-  const docs = allPages().filter((p) => p.route !== "/docs");
-  if (docs.length) {
-    groups.push({
-      title: "Documentation",
-      when: "/docs",
-      items: docs.map((p) => ({ href: p.route, label: p.title, hint: p.description })),
-    });
-  }
-
   // Each project's surfaces, but only the ones that have actually arrived.
   // A menu entry pointing at a subdomain would be a menu that takes you off
   // the site while claiming to be the site's own navigation.
+  //
+  // Shown EVERYWHERE, not only inside the project. The menu used to scope
+  // these groups to their own section, which read as clever and tested as
+  // confusing: on the front page the panel showed six links and no way to
+  // learn the 6502 section has seven surfaces, and the same button opened a
+  // different menu on every floor of the building. The core map is now the
+  // same on every page; what varies by section is appended AFTER it, below.
   for (const p of projects()) {
     if (p.key === "roof" || !p.landing) continue;
     const here = p.surfaces.filter((s) => s.status !== "not started" && s.lands_at_settled);
     if (!here.length) continue;
     groups.push({
       title: p.name,
-      when: p.landing,
+      when: null,
       items: [
         { href: p.landing, label: `${p.name} overview`, hint: "what this project is, and where each surface lives" },
         ...here.map((s) => ({
@@ -123,6 +130,26 @@ export function menuGroups(): MenuGroup[] {
       ],
     });
   }
+
+  // The section-local detail, after the map rather than instead of it.
+  //
+  // The documentation tree, flattened. Its shape is already rendered as a tree
+  // in the docs sidebar; here it is a list, because a menu that reproduces a
+  // hierarchy inside a panel is two navigations for one set of pages.
+  const docs = allPages().filter((p) => p.route !== "/docs");
+  if (docs.length) {
+    groups.push({
+      title: "Documentation",
+      when: "/docs",
+      items: docs.map((p) => ({ href: p.route, label: p.title, hint: p.description })),
+    });
+  }
+
+  // The explorer's eighteen pages, in the clusters and words their own menu
+  // gives them, read from their site-menu.js rather than restated. Scoped to
+  // /6502 because eighteen entries belong to the reader who is in that
+  // section; everyone else gets "The explorer" in the 6502 group above.
+  groups.push(...explorerMenu());
 
   return groups;
 }
