@@ -2,6 +2,7 @@ import createMDX from "@next/mdx";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+import { chipApi } from "./lib/projects";
 
 // Absolute path, resolved here in web/ where the dependency actually lives.
 // @next/mdx resolves a named plugin with require.resolve(name, { paths: [
@@ -52,6 +53,18 @@ const nextConfig: NextConfig = {
     return [
       { source: "/6502/b", destination: "/6502/builders", permanent: true },
       { source: "/6502/b/:handle", destination: "/6502/builders/:handle", permanent: true },
+      // The third spelling the registry hands out: /b/<handle>/<slug> is a
+      // published ROM's own address, served by the games origin as the console
+      // with that cartridge loaded. The console's other spelling for the same
+      // thing is ?cart=<url>, and the builders pages here already link play
+      // that way, so this redirect translates the old address into it rather
+      // than teaching a second page to parse paths. The API host comes from
+      // the manifest via chipApi(), same as every page that names it.
+      {
+        source: "/6502/b/:handle/:slug",
+        destination: `/6502/games?cart=${chipApi()}/v1/registry/b/:handle/roms/:slug/cart`,
+        permanent: true,
+      },
     ];
   },
 

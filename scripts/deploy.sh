@@ -327,12 +327,21 @@ done
 # rather than 301: the method is preserved, which matters because these are
 # addresses the registry itself hands out.
 say "6a. The redirect map"
-for p in /6502/b /6502/b/tinymachines; do
+for p in /6502/b /6502/b/tinymachines /6502/b/tinymachines/die-runner; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   to=$(curl -s -o /dev/null -w '%{redirect_url}' -m 20 "$BASE$p" || echo "")
   printf '  %-28s %s -> %s\n' "$p" "$code" "${to:-nowhere}"
-  [ "$code" = "308" ] || fail "$p answered $code; expected a 308 to /6502/builders"
+  [ "$code" = "308" ] || fail "$p answered $code; expected a 308 to /6502/builders or the console"
 done
+
+# The two-segment form must arrive at the console CARRYING the cartridge: a
+# 308 that lands on the bare console would still be a 308, and the check
+# above would pass while every shared ROM link quietly forgot its ROM.
+to=$(curl -s -o /dev/null -w '%{redirect_url}' -m 20 "$BASE/6502/b/tinymachines/die-runner" || echo "")
+case "$to" in
+  *"cart="*"/v1/registry/b/tinymachines/roms/die-runner/cart"*) ;;
+  *) fail "/6502/b/<handle>/<slug> redirected to $to, which names no cartridge" ;;
+esac
 
 # The policy, checked from outside against what the app actually talks to.
 #
