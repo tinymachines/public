@@ -195,12 +195,16 @@ manifest the navigation and the API read, links every arrived surface of both
 projects, and the measured chips row states the project and surface counts
 beside the piece count so the two files are visibly two files.
 
-**3. The entropy gateway is documented as absent.** `/v1/bytes` and `/v1/seeds`
-answer today and are **not in the published schema**, so `/hotbits/api` can
-report that they are missing and cannot describe them. Two ways out, and they
-are not equal: either they arrive in that schema, which is the geiger repo's
-side and the honest fix, or this repository writes them by hand, which is the
-second copy of a fact the rules here exist to prevent. Ask first.
+**3. Done, upstream: the gateway documents itself.** The owner picked the
+honest fix, 2026-08-24, and the discovery on the way corrected the queue: the
+`/v1` routes were never the geiger repo's, they are `tinymachines/entropy`, a
+Rust gateway nginx grafts onto the hotbits origin. It now serves
+`/v1/openapi.json`, generated from the same table its router is built from
+(a route in one and not the other stops its tests, verified red), so the
+schema cannot describe a route that does not answer. `/hotbits/api` reads
+both schemas and labels the keyed tier's deliberate CORS refusals as design
+rather than defect. What remains on that host is `geiger#4`: the instrument's
+own 410s are still unreadable from a browser.
 
 ### Decisions, not work
 

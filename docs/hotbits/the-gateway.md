@@ -43,32 +43,41 @@ costs no one.**
 - **`/random/archive`** also stays open, for the same reason: it replays
   bytes already recorded.
 
-## What is documented where, and the two known gaps
+## Two services, two schemas, on one host
 
-The service's `openapi.json` still describes the instrument's read-only
-surface: stats, health, metrics, the battery history, the time series.
-[/hotbits/api](/hotbits/api) renders that schema and probes every route in it,
-live.
+The origin is a composite, and its documentation now says so. The
+instrument's `openapi.json` describes its read-only surface: stats, health,
+metrics, the battery history, the time series. The gateway publishes its own
+document at `/v1/openapi.json`, describing the five `/v1` routes, and it is
+generated **from the same table its router is built from**: a route added to
+one and not the other stops the gateway's own tests, so the schema cannot
+describe a route that does not answer. Each service documents what it serves
+and neither describes the other's routes, which is the only arrangement where
+nothing is claimed second-hand.
 
-Two gaps are known, and both are the instrument's side to close rather than
-this tree's to paper over:
+[/hotbits/api](/hotbits/api) reads both documents and probes every route in
+them, live. One distinction that took both schemas to make: the gateway's
+keyed routes refuse CORS **deliberately**, so nobody is tempted to put a key
+in page JavaScript, and the reference labels their unreadable replies as the
+design working rather than as a defect.
 
-- **`/v1/bytes` and `/v1/seeds` are not in the published schema.** They
-  answer, and the schema does not mention them, so the reference page reports
-  them as present but undocumented. Writing their request and response shapes
-  into this page by hand would be a second copy of a fact that already has an
-  owner; until the schema describes them, what is stated here is only what
-  calling them shows.
-- **The refusals are unreadable from a browser.** The 410 and 401 replies
-  carry no CORS header, so a page on this site can see that the request
-  failed but not the body explaining why, and the explanation is the useful
-  part. Filed as `tinymachines/geiger#4`; until it lands, the reference page
-  reports those routes as answering in a way no browser is allowed to read,
-  because that is what is true.
+## The one known gap left
+
+**The instrument's refusals are unreadable from a browser.** The 410 replies
+carry no CORS header, so a page on this site can see that the request failed
+but not the body explaining why, and the explanation is the useful part.
+Filed as `tinymachines/geiger#4`; until it lands, the reference page reports
+those routes as answering in a way no browser is allowed to read, because
+that is what is true.
 
 ## What this page cannot check
 
-Key issuance and budget accounting run on the instrument, and their source is
-not in the tree this site builds from. Everything above about the gateway is
-measured by calling it: the status codes, the reply bodies and the schema gap
-are all re-checkable from any terminal, and nothing further is claimed.
+The gateway is its own service standing in front of the instrument, not part
+of this site's build. Its schema is now one of this page's sources, and the
+schema is trustworthy for the reason above: it is built from the gateway's
+own route table, not written about it. What stays out of reach here is the
+part deliberately not on HTTP at all: keys are minted and revoked by a
+command line on the machine that runs the gateway, because an endpoint that
+can create credentials is a permanent attack surface in exchange for saving
+a login. Everything else stated above is measured by calling the service,
+re-checkable from any terminal.
