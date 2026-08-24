@@ -85,6 +85,26 @@ fail() { printf '\033[31mFAILED: %s\033[0m\n' "$1" >&2; exit 1; }
 say "0. The tree"
 DIRTY=$(git -C "$ROOT" status --porcelain)
 BUMPED=
+PENDING_COMMIT=
+
+# Put the version back if this run does not reach its commit. Without it a
+# failed check leaves VERSION and package.json ahead of the tree, so the next
+# run bumps again from the bumped value and the numbering skips.
+restore_version() {
+  [ -n "$PENDING_COMMIT" ] || return 0
+  # Written back to the value this run started from, rather than checked out of
+  # git. A checkout would also discard an edit to either file that somebody
+  # else made and this script never touched.
+  printf '%s\n' "$WAS_VERSION" > "$ROOT/VERSION"
+  python3 -c 'import json,pathlib,sys
+p = pathlib.Path(sys.argv[1]) / "web" / "package.json"
+d = json.loads(p.read_text())
+d["version"] = sys.argv[2]
+p.write_text(json.dumps(d, indent=2) + chr(10))' "$ROOT" "$WAS_VERSION"
+  printf '\n  version put back to %s: this run did not reach its commit\n' \
+    "$WAS_VERSION" >&2
+}
+trap restore_version EXIT
 
 if [ -n "$DIRTY" ] && [ -z "$CHECK_ONLY" ] && [ -z "$ALLOW_DIRTY" ]; then
   if [ -z "$MESSAGE" ]; then
@@ -108,6 +128,7 @@ EOF
     patch) PA=$((PA + 1)) ;;
   esac
   NEXT="$MA.$MI.$PA"
+  WAS_VERSION="$cur"
   printf '%s\n' "$NEXT" > "$ROOT/VERSION"
 
   # package.json carries the same number, and a test holds the two together.
@@ -123,10 +144,21 @@ p.write_text(json.dumps(d, indent=2) + "\n")
 PY
 
   printf '  %s -> %s (%s)\n' "$cur" "$NEXT" "$BUMP"
-  git -C "$ROOT" add -A
-  git -C "$ROOT" commit -q -m "$MESSAGE" || fail "nothing to commit after staging, which should not happen"
   BUMPED=1
-  printf '  committed %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+  # NOT committed here, and that is a repair rather than a preference.
+  #
+  # The commit used to happen at this point, before a single check had run. A
+  # failing test therefore left a committed, version-bumped revision that was
+  # never deployed, and the next run committed the fix under a second commit
+  # with the same message: two identical subjects in the log, one of them
+  # naming a version nothing ever served.
+  #
+  # The version files are written now because the build reads them, a test
+  # holds VERSION and package.json together, and the footer reports what it was
+  # built with. So they are written, the checks run against them, and the
+  # commit happens after the build. Anything that fails in between restores
+  # both files on the way out, below.
+  PENDING_COMMIT=1
 
 elif [ -n "$DIRTY" ]; then
   warn "uncommitted changes: the service will report a commit that is not what is running"
@@ -172,6 +204,16 @@ python3 -m pytest projects -q || fail "pytest projects"
 # heading and DOM-contract assertions live.
 say "4. Build"
 (cd web && bun run build) || fail "build: NOT restarting, the running site is untouched"
+
+# Everything has passed, so the revision is worth recording. See stage 0 for
+# why this is here and not there.
+if [ -n "$PENDING_COMMIT" ]; then
+  say "4b. Commit"
+  git -C "$ROOT" add -A
+  git -C "$ROOT" commit -q -m "$MESSAGE" || fail "nothing to commit after staging, which should not happen"
+  PENDING_COMMIT=
+  printf '  committed %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+fi
 
 if [ -n "$CHECK_ONLY" ]; then
   say "Built and checked. Nothing was restarted."

@@ -62,14 +62,36 @@ export function useRegistry<T>(url: string): {
   return { data, error };
 }
 
-/** Waiting, or a reason. Rendered in the same box either way. */
+/**
+ * Waiting, or a reason. Rendered in the same box either way.
+ *
+ * It says "the service" rather than naming one. This started as the registry's
+ * own and is now used by four pages against three different hosts, and it read
+ * as "the registry answered" on a page about a Geiger counter.
+ *
+ * "Failed to fetch" is what a browser gives a script for a request that never
+ * completed, and it is deliberately the same message whether the host is down,
+ * the response carried no CORS header, or this page's own policy refused to
+ * make the request. A script is not allowed to tell those apart, so this does
+ * not guess between them: it prints what it was told and says that the message
+ * covers all three.
+ */
 export function RegistryState({ error, what }: { error: string | null; what: string }) {
   if (error) {
     return (
       <p className="reg-state fail">
-        <b>{what} could not be read.</b> The registry answered: {error}
+        <b>{what} could not be read.</b> The service answered: {error}
+        {/^(Failed to fetch|Load failed|NetworkError)/.test(error) ? (
+          <>
+            {" "}
+            A browser reports that same message whether the host is unreachable,
+            its reply carried no CORS header, or this page&rsquo;s own content
+            policy declined to make the request, and a script is not permitted
+            to tell the three apart.
+          </>
+        ) : null}
       </p>
     );
   }
-  return <p className="reg-state">Reading {what} from the registry.</p>;
+  return <p className="reg-state">Reading {what}.</p>;
 }
