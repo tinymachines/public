@@ -213,6 +213,18 @@ if [ -n "$PENDING_COMMIT" ]; then
   git -C "$ROOT" commit -q -m "$MESSAGE" || fail "nothing to commit after staging, which should not happen"
   PENDING_COMMIT=
   printf '  committed %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+
+  # The service worker is stamped with the commit it was built from, and the
+  # build ran one line above this, when that commit did not exist yet. So it
+  # carries the PREVIOUS head, and stage 7 catches exactly that.
+  #
+  # A browser installs a new worker only when the file's bytes change, so the
+  # stamp is what makes a deploy replace an installed one. Restamping here is
+  # the whole fix: sw.js is generated and gitignored, so writing it after the
+  # commit leaves the tree clean, and nothing else in the build embeds the
+  # revision.
+  (cd web && bun scripts/build-sw.mjs) || fail "restamping the service worker"
+  printf '  worker restamped at %s\n' "$(git -C "$ROOT" rev-parse --short=12 HEAD)"
 fi
 
 if [ -n "$CHECK_ONLY" ]; then
