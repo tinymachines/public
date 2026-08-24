@@ -1,3 +1,4 @@
+import { localize, t } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import Link from "next/link";
 import { allPages } from "@/lib/docs";
@@ -33,8 +34,128 @@ import { Halfphi } from "@/app/components/Halfphi";
  * Composed entirely from ../../style/components.css. Nothing is drawn here.
  */
 
+/**
+ * The page's own prose, both languages side by side. The data sentences (the
+ * manifest's what, the pieces' what) go through t() and the overlay instead:
+ * they are data, and their translations live beside the other data
+ * translations in data/ja.json. What lives here is only what this page
+ * authors.
+ */
+const PROSE = {
+  en: {
+    hero: (nodes: number, transistors: number) => (
+      <>
+        There is no instruction decoder here, no addressing-mode table and no
+        cycle-count lookup. There are {nodes} wires and {transistors} switches
+        on a die photographed out of a physical chip, and the behaviour falls
+        out of simulating them. A register value is read back off its own
+        storage nodes; a cycle count is something that emerged rather than
+        something that was written down.
+      </>
+    ),
+    wiresSwitches: (n: number, m: number) => `${n} wires, ${m} switches`,
+    measuredFrom: (d: string) => `measured from the 6502 API on ${d}`,
+    projSurf: (n: number, m: number) => `${n} projects, ${m} surfaces`,
+    fromManifest: "from data/projects.json",
+    pieces: (n: number) => `${n} pieces`,
+    fromPieces: "from data/pieces.json",
+    documents: (n: number) => `${n} documents`,
+    fromDocs: "counted from docs/ at build",
+    specimens: (n: number) => `${n} specimens`,
+    fromZoo: "counted from style/zoo.html at build",
+    theProjects: "The projects",
+    projectsProse: (n: number, m: number) => (
+      <>
+        {n} projects live under this roof, with {m} surfaces between them. The
+        list and every link below come from the same manifest the navigation
+        and the API read, so a project cannot appear here and be missing there.
+      </>
+    ),
+    overview: "overview",
+    startHere: "Start here if you build things",
+    pieceByPiece: "The 6502 work, piece by piece",
+    piecesProse: (six: number, hosted: number) => (
+      <>
+        Each one exists and runs. {hosted} of the {six} answer on a public
+        address, and the tag beside those is measured when this page loads
+        rather than asserted here. The other {six - hosted} say why they have
+        no address instead of pretending to be down.
+      </>
+    ),
+    shipsAs: "Ships as",
+    code: "Code",
+    dieData: "Die data",
+    readHere: "read it here",
+    live: "live",
+    source: "source",
+    whereToRead: "Where to read",
+    notice: (
+      <>
+        NonCommercial and ShareAlike travel with everything derived from the
+        visual6502 die data, which is every piece above except halfphi. Coins
+        are given away and never sold, which is what keeps that question
+        closed. See NOTICE.md before anything is published or priced.
+      </>
+    ),
+  },
+  ja: {
+    hero: (nodes: number, transistors: number) => (
+      <>
+        ここには命令デコーダも、アドレッシングモード表も、サイクル数の一覧も無い。
+        あるのは、実物のチップから撮影されたダイ上の {nodes} 本の配線と{" "}
+        {transistors} 個のスイッチで、動作はそれらをシミュレートした結果として現れる。
+        レジスタの値はその記憶ノードから読み戻したもので、サイクル数は書き留められた数字ではなく、生じた数字だ。
+      </>
+    ),
+    wiresSwitches: (n: number, m: number) => `配線 ${n} 本、スイッチ ${m} 個`,
+    measuredFrom: (d: string) => `${d} に 6502 API から実測`,
+    projSurf: (n: number, m: number) => `プロジェクト ${n} 件、ページ ${m} 件`,
+    fromManifest: "data/projects.json より",
+    pieces: (n: number) => `ピース ${n} 個`,
+    fromPieces: "data/pieces.json より",
+    documents: (n: number) => `文書 ${n} 本`,
+    fromDocs: "ビルド時に docs/ から集計",
+    specimens: (n: number) => `見本 ${n} 点`,
+    fromZoo: "ビルド時に style/zoo.html から集計",
+    theProjects: "プロジェクト",
+    projectsProse: (n: number, m: number) => (
+      <>
+        この屋根の下には {n} 件のプロジェクトがあり、合わせて {m}{" "}
+        のページを持つ。この一覧も以下のリンクもすべて、ナビゲーションと API
+        が読むのと同じマニフェストから来ている。だから、ここに現れてあちらに無い、ということが起こらない。
+      </>
+    ),
+    overview: "概要",
+    startHere: "作る人はここから",
+    pieceByPiece: "6502 の仕事を、ピースごとに",
+    piecesProse: (six: number, hosted: number) => (
+      <>
+        どれも実在して動いている。{six} 個のうち {hosted}{" "}
+        個は公開アドレスで応答していて、その横のタグはこのページを開いた時に実測される。ここに書かれた主張ではない。残る{" "}
+        {six - hosted} 個は、落ちているふりをする代わりに、なぜアドレスを持たないかを述べる。
+      </>
+    ),
+    shipsAs: "形態",
+    code: "コード",
+    dieData: "ダイデータ",
+    readHere: "ここで読む",
+    live: "稼働中",
+    source: "ソース",
+    whereToRead: "読む場所",
+    notice: (
+      <>
+        visual6502 のダイデータに由来するすべてに NonCommercial と ShareAlike
+        が引き継がれる。上のピースのうち halfphi
+        を除く全部がそれに当たる。コインは配るだけで、決して売らない。それがこの問いを閉じたままにしている。公開や値付けの前に
+        NOTICE.md を読むこと。
+      </>
+    ),
+  },
+} as const;
+
 export default async function Home({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
+  const S = PROSE[lang];
   const docs = allPages();
   const specimens = specimenCount();
   const six = pieces();
@@ -60,48 +181,31 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
     <Shell lang={lang} die="6502" title="tinymachines">
 
       <section className="prose">
-        <p>
-          There is no instruction decoder here, no addressing-mode table and no
-          cycle-count lookup. There are {die.nodes} wires and{" "}
-          {die.transistors} switches on a die photographed out of a physical
-          chip, and the behaviour falls out of simulating them. A register
-          value is read back off its own storage nodes; a cycle count is
-          something that emerged rather than something that was written down.
-        </p>
+        <p>{S.hero(die.nodes, die.transistors)}</p>
       </section>
 
       <div className="chips">
         <span className="measured">
-          <b>
-            {die.nodes} wires, {die.transistors} switches
-          </b>{" "}
-          measured from the 6502 API on {die.measured_on}
+          <b>{S.wiresSwitches(die.nodes, die.transistors)}</b>{" "}
+          {S.measuredFrom(die.measured_on)}
         </span>
         <span className="measured">
-          <b>
-            {under.length} projects, {surfacesHere} surfaces
-          </b>{" "}
-          from data/projects.json
+          <b>{S.projSurf(under.length, surfacesHere)}</b> {S.fromManifest}
         </span>
         <span className="measured">
-          <b>{six.length} pieces</b> from data/pieces.json
+          <b>{S.pieces(six.length)}</b> {S.fromPieces}
         </span>
         <span className="measured">
-          <b>{docs.length} documents</b> counted from docs/ at build
+          <b>{S.documents(docs.length)}</b> {S.fromDocs}
         </span>
         <span className="measured">
-          <b>{specimens} specimens</b> counted from style/zoo.html at build
+          <b>{S.specimens(specimens)}</b> {S.fromZoo}
         </span>
       </div>
 
-      <h2 className="eyebrow">The projects</h2>
+      <h2 className="eyebrow">{S.theProjects}</h2>
 
-      <p className="prose">
-        {under.length} projects live under this roof, with {surfacesHere}{" "}
-        surfaces between them. The list and every link below come from the same
-        manifest the navigation and the API read, so a project cannot appear
-        here and be missing there.
-      </p>
+      <p className="prose">{S.projectsProse(under.length, surfacesHere)}</p>
 
       <div className="piece-grid">
         {under.map((p) => {
@@ -111,10 +215,10 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
           return (
             <article key={p.key} className="rail">
               <h3>{p.name}</h3>
-              <p>{p.what}</p>
+              <p>{t(lang, p.what)}</p>
               <p className="piece-links">
-                <Link className="tag live" href={p.landing as string}>
-                  overview
+                <Link className="tag live" href={localize(lang, p.landing as string)}>
+                  {S.overview}
                 </Link>
                 {doors.map((s) =>
                   // Anything this site does not prerender gets a plain anchor,
@@ -122,11 +226,11 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
                   // navigate to a route the build never made.
                   s.prerendered === false ? (
                     <a key={s.key} className="tag" href={s.lands_at}>
-                      {s.nav_label ?? s.name}
+                      {t(lang, s.nav_label ?? s.name)}
                     </a>
                   ) : (
-                    <Link key={s.key} className="tag" href={s.lands_at}>
-                      {s.nav_label ?? s.name}
+                    <Link key={s.key} className="tag" href={localize(lang, s.lands_at)}>
+                      {t(lang, s.nav_label ?? s.name)}
                     </Link>
                   ),
                 )}
@@ -136,18 +240,13 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
         })}
       </div>
 
-      <h2 className="eyebrow">Start here if you build things</h2>
+      <h2 className="eyebrow">{S.startHere}</h2>
 
-      <Halfphi piece={halfphi} />
+      <Halfphi piece={{ ...halfphi, what: t(lang, halfphi.what) }} />
 
-      <h2 className="eyebrow">The 6502 work, piece by piece</h2>
+      <h2 className="eyebrow">{S.pieceByPiece}</h2>
 
-      <p className="prose">
-        Each one exists and runs. {hosted.length} of the {six.length} answer on
-        a public address, and the tag beside those is measured when this page
-        loads rather than asserted here. The other {six.length - hosted.length}{" "}
-        say why they have no address instead of pretending to be down.
-      </p>
+      <p className="prose">{S.piecesProse(six.length, hosted.length)}</p>
 
       <div className="piece-grid">
         {six.map((p) => (
@@ -155,18 +254,18 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
             <h3>
               {p.name} <PieceStatus pieceKey={p.key} />
             </h3>
-            <p>{p.what}</p>
+            <p>{t(lang, p.what)}</p>
             <dl className="kv">
               <div>
-                <dt>Ships as</dt>
+                <dt>{S.shipsAs}</dt>
                 <dd>{p.ships_as}</dd>
               </div>
               <div>
-                <dt>Code</dt>
+                <dt>{S.code}</dt>
                 <dd>{p.code_licence}</dd>
               </div>
               <div>
-                <dt>Die data</dt>
+                <dt>{S.dieData}</dt>
                 <dd>{p.data_terms}</dd>
               </div>
             </dl>
@@ -179,37 +278,37 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
                 const { href, onSite } = whereToRead(p.key, p.public_url);
                 if (!href) return null;
                 return onSite ? (
-                  <Link className="tag live" href={href}>
-                    read it here
+                  <Link className="tag live" href={localize(lang, href)}>
+                    {S.readHere}
                   </Link>
                 ) : (
                   <a className="tag" href={href}>
-                    live
+                    {S.live}
                   </a>
                 );
               })()}
               <a className="tag" href={p.source}>
-                source
+                {S.source}
               </a>
             </p>
             {p.not_hosted_because ? (
-              <p className="quiet piece-note">{p.not_hosted_because}</p>
+              <p className="quiet piece-note">{t(lang, p.not_hosted_because)}</p>
             ) : null}
           </article>
         ))}
       </div>
 
-      <h2 className="eyebrow">Where to read</h2>
+      <h2 className="eyebrow">{S.whereToRead}</h2>
 
       <div className="chips">
-        <Link className="tag" href="/docs">
-          Documentation
+        <Link className="tag" href={localize(lang, "/docs")}>
+          {t(lang, "Documentation")}
         </Link>
-        <Link className="tag" href="/style">
-          Style guide
+        <Link className="tag" href={localize(lang, "/style")}>
+          {t(lang, "Style guide")}
         </Link>
-        <Link className="tag" href="/style/zoo">
-          Widget zoo
+        <Link className="tag" href={localize(lang, "/style/zoo")}>
+          {t(lang, "Widget zoo")}
         </Link>
         {/* A plain anchor on purpose: /api is uvicorn behind nginx, not a
             page of this build, so there is nothing for the client router to
@@ -222,12 +321,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
         </a>
       </div>
 
-      <p className="notice">
-        NonCommercial and ShareAlike travel with everything derived from the
-        visual6502 die data, which is every piece above except halfphi. Coins
-        are given away and never sold, which is what keeps that question
-        closed. See NOTICE.md before anything is published or priced.
-      </p>
+      <p className="notice">{S.notice}</p>
 
     </Shell>
   );

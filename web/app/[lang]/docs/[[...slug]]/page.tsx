@@ -1,6 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { allPages, pageForSlug } from "@/lib/docs";
+import { t } from "@/lib/i18n";
 
 /**
  * Every docs URL, and the content behind it.
@@ -20,16 +23,37 @@ export const dynamicParams = false;
 export async function generateMetadata({
   params,
 }: PageProps<"/[lang]/docs/[[...slug]]">): Promise<Metadata> {
-  const { slug = [] } = await params;
+  const { lang, slug = [] } = await params;
   const page = pageForSlug(slug);
   if (!page) return {};
-  return { title: page.title, description: page.description };
+  return {
+    title: lang === "ja" ? t("ja", page.title) : page.title,
+    description: page.description,
+  };
+}
+
+/**
+ * Whether a Japanese translation of this document exists.
+ *
+ * The tree, the ordering and the navigation stay derived from the English
+ * files: docs/ja/ is a shadow of bodies, never a second structure that could
+ * disagree about what pages exist. A document with no Japanese yet serves its
+ * English body under the Japanese chrome, which the shell's notice already
+ * declares; a 404 would punish the reader for our backlog, and machine
+ * translation would put words in the owner's mouth.
+ */
+function hasJa(file: string): boolean {
+  // Shadows are .md only; the one .mdx document needs its interactive parts
+  // rebuilt to be translated, not just its prose, so it stays English until
+  // somebody does that deliberately.
+  if (!file.endsWith(".md")) return false;
+  return fs.existsSync(path.join(process.cwd(), "..", "docs", "ja", file));
 }
 
 export default async function DocsPage({
   params,
 }: PageProps<"/[lang]/docs/[[...slug]]">) {
-  const { slug = [] } = await params;
+  const { lang, slug = [] } = await params;
   const page = pageForSlug(slug);
   if (!page) notFound();
 
@@ -42,8 +66,11 @@ export default async function DocsPage({
   // the day a zip and a folder of photographs arrived in docs/ (the style
   // guide, in flight), the build failed on files no page ever imports. With
   // the extension static, the context is exactly the pages.
-  const { default: Content } = page.file.endsWith(".mdx")
-    ? await import(`../../../../../docs/${page.file.slice(0, -4)}.mdx`)
-    : await import(`../../../../../docs/${page.file.slice(0, -3)}.md`);
+  const useJa = lang === "ja" && hasJa(page.file);
+  const { default: Content } = useJa
+    ? await import(`../../../../../docs/ja/${page.file.slice(0, -3)}.md`)
+    : page.file.endsWith(".mdx")
+      ? await import(`../../../../../docs/${page.file.slice(0, -4)}.mdx`)
+      : await import(`../../../../../docs/${page.file.slice(0, -3)}.md`);
   return <Content />;
 }

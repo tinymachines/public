@@ -143,6 +143,11 @@ function walk(absDir: string, relDir: string): TreeNode[] {
     const rel = relDir ? path.join(relDir, entry.name) : entry.name;
 
     if (entry.isDirectory()) {
+      // docs/ja is the shadow tree: Japanese BODIES for pages whose
+      // structure, ordering and navigation stay derived from the English
+      // files. Walking it would invent a /docs/ja section and demand
+      // frontmatter from files that deliberately carry none.
+      if (relDir === "" && entry.name === "ja") continue;
       // A directory with no markdown anywhere below it is storage, not a
       // section: nothing routes into it, so there is no URL to 404. The
       // owner's style-guide material arrived as docs/styles/ (a zip and a folder
