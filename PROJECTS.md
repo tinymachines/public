@@ -208,8 +208,21 @@ own 410s are still unreadable from a browser.
 
 ### Decisions, not work
 
-**4. The 6502 API as a service under the apex.** The reference moved; the
-process did not, and `--root-path /api` is why. See below.
+**4. Done, 2026-08-24: the 6502 API answers under the apex.** Settled as
+"move it": the service names, per request, the door a request came through
+(X-Forwarded-Prefix, in the 6502 repo, commits 97c4a84 and 53df37c), so
+`tinymachines.ai/6502/api/openapi.json` says `/6502/api` while the
+subdomain's copy still says `/api`, each true where it is read. FastAPI's own
+openapi route could not carry two doors (it accumulates every root path it
+has seen into one servers list), so the service declares those routes itself.
+Two lessons paid for on the way, both in the commits: uvicorn delivers
+`scope["path"]` WITH the root path included, so the override must move path
+and root_path together (the first version 404d every apex request while its
+wrongly-shaped test passed), and a proxied prefix location answers the
+slash-less form with an automatic 301, which took `/6502/api` away from the
+reference page until an exact-match location took it back. The deploy now
+asserts both doors' claims from outside on every ship. The subdomain stays
+canonical until the flip becomes a redirect.
 
 **5. hotbits' identity.** `style/projects/hotbits.css` still overrides nothing.
 Both pages change the day it is filled in and neither is edited.

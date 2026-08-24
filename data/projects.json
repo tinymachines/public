@@ -100,12 +100,12 @@
         {
           "key": "api",
           "name": "The 6502 API",
-          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service; the service itself still answers at its own address, because that process is started with a root path of /api and a client reading its schema under this one would call this site's API instead.",
+          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service, and since 2026-08-24 the service answers under this address too: it names, per request, the door a request came through, so each address's schema tells the truth for that address. The subdomain stays the canonical name until the flip becomes a redirect.",
           "piece": "chip-api",
           "serves_today": "https://6502.tinymachines.ai/api/",
           "lands_at": "/6502/api",
           "lands_at_settled": true,
-          "status": "reference here, service on the subdomain",
+          "status": "here, and still on the subdomain",
           "nav": false,
           "nav_label": null,
           "prerendered": true

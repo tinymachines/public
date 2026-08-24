@@ -303,6 +303,20 @@ for f in ../6502/web/*.html; do
 done
 [ "$bad" -eq 0 ] || fail "$bad explorer page(s) did not return 200"
 
+# The 6502 API's apex door, and the claim that makes it a door rather than a
+# leak: each address's schema must name THAT address. The service accumulates
+# nothing (its openapi route is per-request by design), but the nginx block,
+# the prefix header and the middleware are three parties, and this is the one
+# place all three are checked from the outside. The subdomain is asserted in
+# the same breath because the failure that matters is the quiet one where
+# fixing one door bends the other.
+for pair in "https://tinymachines.ai/6502/api|/6502/api" "https://6502.tinymachines.ai/api|/api"; do
+  base="${pair%%|*}"; want="${pair##*|}"
+  got=$(curl -s -m 20 "$base/openapi.json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["servers"][0]["url"])' 2>/dev/null || echo none)
+  printf '  %-44s servers[0]=%s\n' "$base/openapi.json" "$got"
+  [ "$got" = "$want" ] || fail "$base/openapi.json names $got; the door must name $want"
+done
+
 # A path that is not a page must say 404, not 500. The dynamic route was
 # turning every stray path under /6502/ into a 500, including /6502/sw.js,
 # which every explorer page requests on load because their app.js registers

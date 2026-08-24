@@ -126,6 +126,15 @@ function pageFrom(absFile: string, relFile: string): Page {
   };
 }
 
+/** Whether any page file exists anywhere under this directory. */
+function hasPagesBelow(absDir: string): boolean {
+  for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
+    if (entry.isFile() && isPageFile(entry.name)) return true;
+    if (entry.isDirectory() && hasPagesBelow(path.join(absDir, entry.name))) return true;
+  }
+  return false;
+}
+
 function walk(absDir: string, relDir: string): TreeNode[] {
   const entries = fs.readdirSync(absDir, { withFileTypes: true });
   const nodes: TreeNode[] = [];
@@ -134,14 +143,22 @@ function walk(absDir: string, relDir: string): TreeNode[] {
     const rel = relDir ? path.join(relDir, entry.name) : entry.name;
 
     if (entry.isDirectory()) {
+      // A directory with no markdown anywhere below it is storage, not a
+      // section: nothing routes into it, so there is no URL to 404. The
+      // owner's style-guide material arrived as docs/styles/ (a zip and a folder
+      // of photographs) and the no-index rule below correctly refuses a
+      // SECTION without a front page, which that is not. Skipped, not
+      // tolerated into the tree: its files are also outside the pages'
+      // import context in app/docs, so nothing ships from it either.
+      if (!hasPagesBelow(path.join(absDir, entry.name))) continue;
       const indexFile = PAGE_EXT.map((e) => `index${e}`).find((f) =>
         fs.existsSync(path.join(absDir, entry.name, f)),
       );
       if (!indexFile) {
         throw new Error(
-          `docs/${rel}/: a directory with no index.md. It would be a URL that ` +
-            `404s while its children resolve, which reads as a broken link ` +
-            `rather than a missing page. Add docs/${rel}/index.md.`,
+          `docs/${rel}/: a directory with pages and no index.md. It would be ` +
+            `a URL that 404s while its children resolve, which reads as a ` +
+            `broken link rather than a missing page. Add docs/${rel}/index.md.`,
         );
       }
       const dirIndexRel = path.join(rel, indexFile);

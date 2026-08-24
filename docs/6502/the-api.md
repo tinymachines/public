@@ -8,10 +8,13 @@ order: 3
 
 The reference is at [/6502/api](/6502/api), where it checks itself against the
 running service and says which routes it describes do not answer yet. The
-service answers at `6502.tinymachines.ai/api`, and is not proxied under the
-apex: it runs with a root path of `/api`, so an interactive client reading its
-schema from a second path would issue requests against this site's own API and
-get answers from the wrong service rather than an error.
+service answers at `6502.tinymachines.ai/api` and, since 2026-08-24, under
+this site at `tinymachines.ai/6502/api/` as well: one process with several
+front doors, and its schema names, per request, the door the request came
+through, so a client reading either copy calls the address it was read from.
+For a while it could not be proxied here at all, because one static root path
+made every schema claim `/api`, which under the apex is this site's own API.
+The subdomain stays the canonical address until the flip becomes a redirect.
 
 A transistor-level MOS 6502 over HTTP, one half-cycle at a time. Nothing here
 models 6502 behaviour: every request settles the real 3510-switch network and

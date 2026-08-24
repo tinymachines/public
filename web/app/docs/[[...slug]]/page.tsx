@@ -35,6 +35,15 @@ export default async function DocsPage({
 
   // The file is imported through the MDX loader configured in next.config.ts,
   // so .md and .mdx behave identically and an .mdx page can use components.
-  const { default: Content } = await import(`../../../../docs/${page.file}`);
+  //
+  // Two templates rather than one, so each ends in a static extension. A
+  // dynamic import is a CONTEXT: the bundler includes every file the template
+  // could name, and `docs/${page.file}` could name anything in the tree, so
+  // the day a zip and a folder of photographs arrived in docs/ (the style
+  // guide, in flight), the build failed on files no page ever imports. With
+  // the extension static, the context is exactly the pages.
+  const { default: Content } = page.file.endsWith(".mdx")
+    ? await import(`../../../../docs/${page.file.slice(0, -4)}.mdx`)
+    : await import(`../../../../docs/${page.file.slice(0, -3)}.md`);
   return <Content />;
 }

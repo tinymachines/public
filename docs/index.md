@@ -98,9 +98,13 @@ itself against the running service rather than asserting what exists. That
 check found the gap the moment it was written: three routes described in the
 document are merged upstream and are not deployed, and the page names them.
 
-What has not moved is the service. The reference is a document and the API is a
-process, and there is a reason not to proxy the second one under the apex: it
-runs with a root path of `/api`, so a client reading its schema from a second
-path would call this site's own API instead and get answers from the wrong
-service. That is a worse failure than a 404, so the service keeps its address
-until it moves for real.
+The service moved too, settled 2026-08-24, and the reason it could not move
+earlier is worth keeping: it ran with one static root path of `/api`, so its
+schema said `servers: /api` everywhere, and a client reading that schema under
+the apex would have called this site's own API instead and got answers from
+the wrong service. The service now names, per request, the door a request
+came through, so `tinymachines.ai/6502/api/openapi.json` says `/6502/api` and
+the subdomain's copy still says `/api`, and each is true where it is read.
+One process, several front doors, each door honest; every deploy of this site
+re-checks both claims from outside. The subdomain stays the canonical address
+until the flip becomes a redirect.

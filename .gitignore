@@ -59,3 +59,9 @@ web/public/6502/lab/
 web/app/icon.svg
 web/app/apple-icon.png
 web/app/favicon.ico
+
+# The owner's style-guide material, in flight (a zip and photographs).
+# Ignored so `deploy.sh`'s add -A cannot publish it to a public repository as
+# a side effect of shipping something else. Publishing it is a decision:
+# remove this line and commit deliberately when the guide is ready.
+docs/styles/

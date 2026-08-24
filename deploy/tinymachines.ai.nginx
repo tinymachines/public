@@ -249,6 +249,47 @@ server {
         sub_filter 'class="nav-cta" href="/"' 'class="nav-cta" href="/6502/explorer"';
     }
 
+    # The 6502 API, mounted under the apex. Settled 2026-08-24 (PROJECTS.md
+    # item 4): the service stays one process on 127.0.0.1:6502 and gains this
+    # as a second front door; canonical flips to the apex later, as a redirect.
+    #
+    # X-Forwarded-Prefix is the part that makes the second door honest. The
+    # service used to publish servers: [{"url": "/api"}] everywhere, which at
+    # this path would send a schema-reading client to the roof's own API
+    # below. It now names, per request, the door the request came through;
+    # the subdomains send no prefix and fall back to the unit's --root-path.
+    #
+    # The exact match below is what keeps the reference page: a proxied
+    # prefix location makes nginx answer the slash-less form with an
+    # automatic 301 onto the prefix, which would land /6502/api on the
+    # service's own page instead of this site's reference. Measured, not
+    # deduced: the first install of this block did exactly that. Same
+    # exact-beats-prefix arrangement the archive uses.
+    # The chip-asset regex above cannot shadow either location: its character
+    # class admits no slash, and every path here has one after /6502/.
+    #
+    # This location deliberately declares no add_header (the service sets its
+    # own CORS, and one add_header here would discard all five above).
+    location = /6502/api {
+        proxy_hide_header Cache-Control;
+        proxy_pass http://127.0.0.1:6511;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 120s;
+    }
+
+    location /6502/api/ {
+        proxy_pass http://127.0.0.1:6502/;
+        proxy_set_header Host               $host;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_set_header X-Forwarded-Prefix /6502/api;
+    }
+
     # The API: uvicorn with --root-path /api, so it generates its own URLs
     # under the prefix and openapi.json stays correct behind the proxy.
     #
