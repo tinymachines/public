@@ -29,7 +29,7 @@ import { useEffect, useState } from "react";
  * nothing to look at, and a blank canvas with a clean console is the failure
  * this repository keeps a list of. It says so in the page's own error slot.
  */
-export function ChipModules() {
+export function ChipModules({ entry }: { entry: string }) {
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,15 +40,15 @@ export function ChipModules() {
       if (!res.ok) throw new Error(`asset-manifest.json: ${res.status}`);
       const manifest = (await res.json()) as Record<string, string>;
 
-      const entry = manifest["app.js"];
-      if (!entry) throw new Error("asset-manifest.json names no app.js");
+      const hashed = manifest[entry];
+      if (!hashed) throw new Error(`asset-manifest.json names no ${entry}`);
       if (cancelled) return;
 
       // A variable specifier on purpose: this is a URL served by the origin,
       // not a module in our bundle. TypeScript cannot resolve it and the
       // bundler must not follow it, or it would try to inline somebody else's
       // build output into ours.
-      const url = `/6502/chip/${entry}`;
+      const url = `/6502/chip/${hashed}`;
       await import(/* webpackIgnore: true */ url);
     })().catch((e: unknown) => {
       if (!cancelled) setFailed(e instanceof Error ? e.message : String(e));
@@ -57,7 +57,7 @@ export function ChipModules() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [entry]);
 
   if (!failed) return null;
   return (

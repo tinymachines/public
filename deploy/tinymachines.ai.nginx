@@ -234,10 +234,10 @@ server {
         # still applies. It costs CPU on 8 KB of HTML and buys a nav that works.
         gzip_static off;
         sub_filter_once off;
-        sub_filter 'href="/programs"'  'href="https://6502.tinymachines.ai/programs"';
-        sub_filter 'href="/primer"'    'href="https://6502.tinymachines.ai/primer"';
-        sub_filter 'href="/trace"'     'href="https://6502.tinymachines.ai/trace"';
-        sub_filter 'href="/schematic"' 'href="https://6502.tinymachines.ai/schematic"';
+        sub_filter 'href="/programs"'  'href="/6502/programs"';
+        sub_filter 'href="/primer"'    'href="/6502/primer"';
+        sub_filter 'href="/trace"'     'href="/6502/trace"';
+        sub_filter 'href="/schematic"' 'href="/6502/schematic"';
         sub_filter 'class="nav-cta" href="/"' 'class="nav-cta" href="/6502/explorer"';
     }
 

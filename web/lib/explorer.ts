@@ -38,6 +38,32 @@ const SRC = path.join(process.cwd(), "..", "..", "6502", "web");
 export interface Explorer {
   style: string;
   body: string;
+  /** The one script this page entry-points, e.g. "app.js" or "primer.js". */
+  script: string;
+  title: string;
+}
+
+/**
+ * Every page of the explorer, read off the directory rather than listed.
+ *
+ * Eighteen documents, one script each, and the mapping between them is in the
+ * page's own markup. Reading it means a page added over there is a page here,
+ * and a renamed script is not a silently broken import.
+ *
+ * `index.html` is the explorer itself and is served at /6502/explorer. The
+ * rest keep the slug they already had, so a link that said /primer becomes
+ * /6502/primer and the rewrite below is a prefix rather than a lookup table.
+ *
+ * The `_`-prefixed files are test harnesses. Their own build excludes them by
+ * naming what it copies; this excludes them by name, and says so, because a
+ * harness published as a page is a thing that has happened here before.
+ */
+export function explorerPages(): { slug: string; file: string }[] {
+  return fs
+    .readdirSync(SRC)
+    .filter((f) => f.endsWith(".html") && !f.startsWith("_"))
+    .map((f) => ({ slug: f === "index.html" ? "explorer" : f.replace(/\.html$/, ""), file: f }))
+    .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
 /** The chrome the roof provides and the page should not bring twice. */
@@ -106,8 +132,8 @@ function scope(css: string): string {
   return root.toString();
 }
 
-export function explorer(): Explorer {
-  const html = fs.readFileSync(path.join(SRC, "index.html"), "utf8");
+export function explorer(file = "index.html"): Explorer {
+  const html = fs.readFileSync(path.join(SRC, file), "utf8");
   const css = fs.readFileSync(path.join(SRC, "style.css"), "utf8");
 
   const root = css.match(/:root\s*\{[\s\S]*?\n\}/);
@@ -131,35 +157,66 @@ export function explorer(): Explorer {
       );
     }
   }
-  // Its script tags are dropped too: the page injects them from the runtime
+  // The one script this page entry-points, read from its own markup rather
+  // than guessed from the filename: programs.html loads programs-page.js, and
+  // a rule that assumed otherwise would have failed on exactly one page.
+  const entries = [...body.matchAll(/<script\b[^>]*\ssrc="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((src) => !/site-menu|version-footer/.test(src));
+  if (entries.length !== 1) {
+    throw new Error(
+      `6502/web/${file}: expected exactly one page script, found ${entries.length} ` +
+        `(${entries.join(", ")}). Two would need an order and this reader does not impose one.`,
+    );
+  }
+  const script = entries[0];
+
+  // Its script tags are dropped: the page injects them from the runtime
   // manifest instead, so their hashes are never pinned into our build.
   body = body.replace(/<script\b[\s\S]*?<\/script>/g, "");
 
-  // The boot screen's title is demoted from h1 to p.
-  //
-  // The page carries two: the boot overlay's "Visual 6502" and the hero's. A
-  // document has one name, and a loading screen's title is not it: two h1s
-  // means a screen reader announces two top-level headings with nothing to say
-  // which one is the page. It is styled by `.boot-title`, a class rather than
-  // a tag, so this changes the semantics and nothing about how it looks.
-  //
-  // Left alone in the 6502 repo rather than fixed there: this file does not
-  // reach across, and the page is about to be rewritten anyway.
-  const boot = ['<h1 class="boot-title">', "</h1>"];
-  if (!body.includes(boot[0])) {
-    throw new Error(
-      "6502/web/index.html no longer has an h1.boot-title. If the boot screen changed, " +
-        "check whether the page still has two h1s before removing this.",
-    );
-  }
-  const at = body.indexOf(boot[0]);
-  const end = body.indexOf(boot[1], at);
-  body =
-    body.slice(0, at) +
-    '<p class="boot-title">' +
-    body.slice(at + boot[0].length, end) +
-    "</p>" +
-    body.slice(end + boot[1].length);
+  // Its internal links are absolute and rooted at the 6502 site: /primer,
+  // /programs, /trace. Under this prefix they would resolve here, where they
+  // do not exist. Every one of those pages IS here now, one segment deeper, so
+  // the rewrite is a prefix rather than a lookup: /primer becomes
+  // /6502/primer, and a bare / becomes the explorer itself.
+  const slugs = new Set(explorerPages().map((p) => p.file.replace(/\.html$/, "")));
+  body = body.replace(/href="\/([a-z0-9-]+)"/g, (whole, slug) =>
+    slugs.has(slug) ? `href="/6502/${slug}"` : whole,
+  );
+  body = body.replace(/href="\/"/g, 'href="/6502/explorer"');
 
-  return { style, body };
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
+  const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;
+
+  // A document has one name, so a page carrying two h1s gets the second
+  // demoted. On the explorer that is the boot overlay's "Visual 6502"
+  // competing with the hero's; a loading screen's title is not the page. It is
+  // styled by `.boot-title`, a class rather than a tag, so this changes the
+  // semantics and nothing about how it looks.
+  //
+  // Written as a rule rather than as one page's fix, because eighteen pages
+  // come through here and check-build holds every one of them to a single h1.
+  // A page with two and no boot title throws, so a new case is something I
+  // find out about rather than something that ships.
+  const h1s = (body.match(/<h1[\s>]/g) ?? []).length;
+  if (h1s > 1) {
+    const open = '<h1 class="boot-title">';
+    const at = body.indexOf(open);
+    if (at < 0) {
+      throw new Error(
+        `6502/web/${file} has ${h1s} h1 elements and no h1.boot-title to demote. ` +
+          "A document has one name; decide which of these is it.",
+      );
+    }
+    const end = body.indexOf("</h1>", at);
+    body =
+      body.slice(0, at) +
+      '<p class="boot-title">' +
+      body.slice(at + open.length, end) +
+      "</p>" +
+      body.slice(end + "</h1>".length);
+  }
+
+  return { style, body, script, title };
 }

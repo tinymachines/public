@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { explorer } from "@/lib/explorer";
 import { Shell } from "../../components/SiteFrame";
 import { ChipModules } from "./ChipModules";
+import { Launch } from "./Launch";
 import "./explorer.css";
 
 /**
@@ -50,7 +51,7 @@ export const metadata: Metadata = {
 };
 
 export default function ExplorerPage() {
-  const { style, body } = explorer();
+  const { style, body, script } = explorer();
 
   return (
     // titleIsHeading is false because the explorer's hero carries the page's
@@ -66,7 +67,15 @@ export default function ExplorerPage() {
 
       <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
 
-      <ChipModules />
+      {/* Placed after the page rather than inside it: the body is injected
+          HTML and React does not own anything in there, so a control that
+          belongs to us lives outside it. The kit's toolbar keeps it on the
+          site's grid. */}
+      <div className="toolbar" style={{ marginTop: "1.5rem" }}>
+        <Launch />
+      </div>
+
+      <ChipModules entry={script} />
     </Shell>
   );
 }
