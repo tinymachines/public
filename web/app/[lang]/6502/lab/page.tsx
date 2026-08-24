@@ -2,7 +2,9 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
-import { Shell } from "@/app/components/SiteFrame";
+import Link from "next/link";
+import { LangSwitch } from "@/app/components/LangSwitch";
+import { localize } from "@/lib/i18n";
 import "./lab.css";
 
 /**
@@ -49,7 +51,22 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
   const { body, data, assets } = lab();
 
   return (
-    <Shell lang={lang} die="PHI" title="Halfwave Lab">
+    /* A workbench, not a Shell page: the owner's call is that the lab is REAL
+       full screen, not an instrument inside the content panel. The bar keeps
+       the crumb home and the flags; the h1 lives in the bar so the one-h1
+       check holds; there is no footer, because an instrument ends where its
+       last control does. */
+    <div className="workbench" data-workbench>
+      <div className="wb-bar">
+        <p className="crumb">
+          <Link href={localize(lang, "/")}>tinymachines.ai</Link>
+          {" / "}
+          <Link href={localize(lang, "/6502")}>6502</Link>
+        </p>
+        <h1>Halfwave Lab</h1>
+        <LangSwitch lang={lang} />
+      </div>
+      <div className="wb-main">
 
       {/* The lab's own 35 KB of rules, with its :root replaced by lab.css and
           every selector scoped to .lab-shell. A LINK rather than an inline
@@ -87,6 +104,7 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
           re-sent on every visit. As a file it is fetched once and cached. */}
       <Script id="halfwave-lab" src={assets.js} strategy="afterInteractive" />
 
-    </Shell>
+      </div>
+    </div>
   );
 }

@@ -81,38 +81,22 @@
    The section AROUND a console stays paper. It carries the heading and the
    sentence explaining what the instrument is for, and those are documentation
    about the machine rather than the machine. */
-.explorer-shell .console,
-.explorer-shell .panel {
-  --space:      var(--color-panel);
-  --surface:    var(--color-panel-raised);
-  --subtle:     color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
-  --line:       var(--color-rule-panel);
+/* THE INSTRUMENT BOXES GO PAPER TOO, and this is an owner's call that
+   overrode the first reading of STYLE.md, made 2026-08-24: "why are they all
+   still black?" The first pass kept every .console dark on the instrument
+   doctrine, and the boxes are so large that eighteen pages read as black
+   pages with cream margins. The binder these pages are meant to resemble is
+   PAPER with instrument photographs on it: schematics, waveforms and tables
+   printed on the page, not eighteen dashboards. So the console keeps the
+   paper ground, and dark survives only where a surface paints itself dark:
+   the WebGL die, the canvases, and anything on the kit's .panel-face.
 
-  --foreground: var(--color-glass);
-  --muted:      var(--color-glass-muted);
-
-  --accent:            var(--color-ocean);
-  --accent-foreground: var(--color-panel);
-  --gold: var(--color-mustard);
-  --pink: var(--color-burnt);
-  --mint: var(--color-forest);
-  --hot:  var(--color-ocean);
-  --warn: var(--color-orange);
-
-  --hard: var(--shadow-panel);
-}
-/* Doubled, for the reason the container above is: this file is a <link> in the
-   head and their stylesheet is inline in the body, so at equal specificity
-   theirs wins.
-
-   It cost a measurement to notice. Their rule paints the console with
-   `color-mix(... 92%, transparent)`, which was a subtle darkening over their
-   own dark page and is a WASH over paper: the opcode matrix came out mid-grey
-   with the page showing through it. Computed value said
-   `color(srgb 0.117 0.113 0.101 / 0.92)`, and the alpha is the whole story. */
+   The base-form hues went with the dark ground; the -ink forms hold
+   throughout now, because everything is read on paper. */
 .explorer-shell.explorer-shell .console {
-  background: var(--space);
+  background: var(--surface);
   color: var(--foreground);
+  border: 1px solid var(--line);
   border-radius: var(--radius-mod);
 }
 
@@ -195,3 +179,26 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-mod);
 }
+
+
+/* ---------------------------------------------------------------------------
+   THE BOOT OVERLAY
+   Their loading screen paints itself with literal colours: a radial blue-grey
+   glow and accent text that owe nothing to either palette, which is why it
+   read as "a strange collection of colours" dropped over the page. It is the
+   one part of the page that renders before any value exists, so it is
+   documentation by definition: paper ground, ink text, and the progress in
+   Burnt Silicon. Literal selectors because their markup is fixed; doubled
+   class for the usual head-link-vs-inline-body cascade reason.
+   ------------------------------------------------------------------------ */
+.explorer-shell.explorer-shell #boot {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.explorer-shell.explorer-shell #boot .boot-title,
+.explorer-shell.explorer-shell #boot h2 {
+  color: var(--color-ink);
+}
+.explorer-shell.explorer-shell #boot .hl { color: var(--color-burnt-ink); }
+.explorer-shell.explorer-shell #boot progress,
+.explorer-shell.explorer-shell #boot .bar { accent-color: var(--color-burnt-ink); }

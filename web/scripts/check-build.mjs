@@ -42,6 +42,9 @@ function checkLang(file, body) {
   // matched so a second exemption has to be argued for on its own.
   if (rel === "ja/style/zoo.html") return;
   if (isJa) {
+    // A workbench page has no Shell and no footer by design, so the footer
+    // marker cannot appear on it; its own bar still localizes.
+    if (body.includes("data-workbench")) return;
     if (!body.includes("ドキュメント")) {
       failures.push(`${rel}: a Japanese page without Japanese chrome; the Shell did not get lang="ja".`);
     }
