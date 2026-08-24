@@ -75,9 +75,10 @@ The regex is quoted because **nginx reads `{` as the start of a block**. A
 location regex containing `{2,32}` fails with "unknown directive" naming the
 middle of the pattern.
 
-`/manage` is the editor: paste a token, edit the page, publish a `.cart.gz`.
+[/6502/manage](/6502/manage) is the editor: paste a token, edit the page,
+publish a `.cart.gz`.
 
-## What is under the apex, and what could not follow
+## Both halves are under the apex now
 
 The reading half. [/6502/builders](/6502/builders) is this index and
 `/6502/builders/<handle>` is a page; `/6502/b/<handle>` is the address the
@@ -85,13 +86,15 @@ service itself hands out and redirects there, because those links are not ours
 to break. Both read the same live registry over CORS, which is what the
 `Access-Control-Allow-Origin: *` on that service was for.
 
-The writing half could not follow, and the reason is a header rather than a
-decision. A preflight from `tinymachines.ai` comes back allowing
-`GET, POST, OPTIONS` and accepting `Accept`, `Accept-Language`,
-`Content-Language` and `Content-Type`. **`Authorization` is not among them**,
-so a browser on the apex cannot send a bearer token to that service at all:
-not to claim a handle, not to edit a page, not to publish. The editor stays at
-`games.tinymachines.ai/manage` until it is.
+The writing half followed on 2026-08-24, and what had held it back is worth
+recording because it looked like a decision and was a header. A preflight from
+`tinymachines.ai` used to come back accepting four headers, none of them
+`Authorization`, so a browser on the apex could not send a bearer token to
+that service at all: not to claim a handle, not to edit a page, not to
+publish. The request was never made, and the server log had nothing to show
+for it. `tinymachines/6502#12` records it; the service's CORS policy now
+admits `authorization` and the registry's own verbs (`PATCH`, `PUT`,
+`DELETE`), and [the editor](/6502/manage) runs here against it.
 
 Proxying the writes through the apex's own API would work, since there is no
 browser between two servers and therefore no preflight. It is deliberately not

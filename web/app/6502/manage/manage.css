@@ -1,0 +1,128 @@
+/* The editor, dressed in the kit.
+ *
+ * manage.js was written against manage.html's class names, and this file is
+ * those names mapped onto the house tokens rather than the console's old
+ * palette. Two audiences share it: the markup in page.tsx, and the rows
+ * manage.js writes into #mine at runtime (.card, .muted, .pill, .btn,
+ * .danger, .empty), which is why those classes are styled here even though
+ * page.tsx never writes them.
+ *
+ * Everything is scoped under .manage-shell so none of these generic names
+ * (.card, .row, .note) can leak into the rest of the site or be leaked into.
+ */
+
+.manage-shell { display: grid; gap: calc(var(--u) * 5); margin-top: calc(var(--u) * 5); }
+
+.manage-shell .card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  padding: calc(var(--u) * 5) calc(var(--u) * 5) calc(var(--u) * 4);
+}
+.manage-shell .card > h2 {
+  margin: 0 0 calc(var(--u) * 3);
+  font-size: var(--text-h3, 1.15rem);
+}
+.manage-shell .card .eyebrow { margin: 0 0 calc(var(--u) * 1); }
+
+.manage-shell .row { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); align-items: center; }
+
+.manage-shell .field { margin-bottom: calc(var(--u) * 3); }
+
+.manage-shell .note {
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  line-height: 1.5;
+  margin: calc(var(--u) * 1.5) 0 0;
+}
+
+/* say()'s two mouths. Toggled by the hidden attribute, so no display rules:
+ * only the voice differs. */
+.manage-shell .err { color: var(--color-red-ink, #a03030); font-size: var(--text-fine); margin: calc(var(--u) * 2) 0 0; }
+.manage-shell .ok { color: var(--color-ink); font-size: var(--text-fine); margin: calc(var(--u) * 2) 0 0; }
+
+/* The two buttons the page presses. The kit's .push is a machine control;
+ * these are document actions, so they take the tag's shape instead. */
+.manage-shell .go,
+.manage-shell .filebtn,
+.manage-shell .btn,
+.manage-shell .danger {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
+  cursor: pointer;
+  text-decoration: none;
+}
+.manage-shell .go { border-color: var(--color-ink); font-weight: 600; }
+.manage-shell .go:disabled { color: var(--color-ink-faint); border-color: var(--color-ink-faint); cursor: wait; }
+.manage-shell .go:hover:not(:disabled),
+.manage-shell .filebtn:hover,
+.manage-shell .btn:hover { background: var(--color-paper); border-color: var(--color-ink); }
+.manage-shell .danger { border-color: var(--color-red-ink, #a03030); color: var(--color-red-ink, #a03030); }
+.manage-shell .go:focus-visible,
+.manage-shell .filebtn:focus-visible,
+.manage-shell .btn:focus-visible,
+.manage-shell .danger:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+
+.manage-shell .two { display: grid; gap: calc(var(--u) * 4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 52rem) {
+  .manage-shell .two { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+.manage-shell .artbox { display: flex; flex-direction: column; gap: calc(var(--u) * 2); align-items: flex-start; }
+.manage-shell .artbox > label:first-child {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+/* The canvas is the machine's ground: what appears on it came through the
+ * console's own decoder, so it sits dark like every readout in the kit. */
+.manage-shell .art {
+  background: #0b1120;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  image-rendering: pixelated;
+}
+
+.manage-shell .check { display: flex; gap: calc(var(--u) * 1.5); align-items: center; }
+.manage-shell .check input { accent-color: var(--color-burnt-ink); }
+.manage-shell .check label.inline {
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.manage-shell .muted { color: var(--color-ink-muted); font-size: var(--text-fine); font-weight: 400; }
+.manage-shell .muted a { color: inherit; }
+
+/* What manage.js writes into #mine: one flex row per published ROM. */
+.manage-shell .mine { display: grid; gap: calc(var(--u) * 2.5); }
+.manage-shell .mine .card {
+  display: flex;
+  gap: calc(var(--u) * 2.5);
+  align-items: center;
+  flex-wrap: wrap;
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+}
+.manage-shell .mine b { font-family: var(--font-sans); font-weight: 600; }
+.manage-shell .pill {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-ink-faint);
+  border-radius: 999px;
+  padding: 1px calc(var(--u) * 2);
+  white-space: nowrap;
+}
+.manage-shell .empty { color: var(--color-ink-muted); font-size: var(--text-fine); }

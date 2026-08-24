@@ -124,6 +124,19 @@
           "prerendered": true
         },
         {
+          "key": "editor",
+          "name": "The editor",
+          "what": "Claim a handle, edit your page, publish a ROM: the registry's writing half, sent with a bearer token. The last games surface to move; it waited on the chip API's preflight admitting Authorization, which was a header rather than a decision.",
+          "piece": null,
+          "serves_today": "https://games.tinymachines.ai/manage",
+          "lands_at": "/6502/manage",
+          "lands_at_settled": true,
+          "status": "here",
+          "nav": false,
+          "nav_label": null,
+          "prerendered": true
+        },
+        {
           "key": "registry",
           "name": "The registry",
           "what": "Everyone publishing cartridges, and what they published. Read-only here: the reading half of the registry API is open to this origin and the writing half is not.",

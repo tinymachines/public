@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "../../components/SiteFrame";
 import { Builders } from "./Builders";
@@ -56,16 +57,11 @@ export default function BuildersPage() {
         <h2>Publishing is still on the subdomain</h2>
         <p>
           Claiming a handle, editing a page and publishing a cartridge all send
-          a bearer token, and a browser on this site cannot send one to that
-          service. A preflight from here comes back allowing{" "}
-          <code>GET, POST, OPTIONS</code> and accepting four headers, none of
-          which is <code>Authorization</code>. That is a header that is not
-          there rather than a decision that has not been taken, so the editor
-          stays where it works, at{" "}
-          <a data-address href="https://games.tinymachines.ai/manage">
-            games.tinymachines.ai/manage
-          </a>
-          , until it does.
+          a bearer token, and for a while a browser on this site could not send
+          one to that service: the preflight refused the{" "}
+          <code>Authorization</code> header, which was a header that was not
+          there rather than a decision. Fixed on the service 2026-08-24, so{" "}
+          <Link href="/6502/manage">the editor</Link> is a page here now.
         </p>
       </main>
     </Shell>

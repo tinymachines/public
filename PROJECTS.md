@@ -229,7 +229,13 @@ Both pages change the day it is filled in and neither is edited.
 
 ### Waiting on another service
 
-**6. The cartridge editor**, on `tinymachines/6502#12`.
+**6. Done, 2026-08-24: the editor is at /6502/manage.** `tinymachines/6502#12`
+was fixed at the source (commit 15e5717 there: the CORS policy admits
+`authorization` and the registry's own verbs, verified against the issue's own
+reproduction), and the editor moved the way the console did: `manage.js`,
+`registry.js` and `art.js` byte for byte, one API line changed and saying why,
+a page carrying the DOM contract, and the kit instead of the console's
+palette.
 **7. The retired hotbits endpoints being readable from a browser**, on
 `tinymachines/geiger#4`.
 

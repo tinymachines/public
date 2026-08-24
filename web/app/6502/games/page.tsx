@@ -33,14 +33,13 @@ import "./console.css";
  * are paper. Putting the gates on paper would be a rule broken, not a
  * preference.
  *
- * ## What is still not here
+ * ## The rest of the family
  *
- * `/manage`, the editor. `/builders` and `/b/<handle>` arrived with the
- * listings work in tinymachines/6502#11 and are at ../builders. The editor
- * could not follow them: it sends a bearer token, and a preflight from this
- * origin to that service comes back accepting four headers, none of which is
- * Authorization. The links below point at where things actually are, which is
- * the honest thing for a page to do while a move is half done.
+ * `/builders` and `/b/<handle>` arrived with the listings work in
+ * tinymachines/6502#11 and are at ../builders. The editor arrived last, at
+ * ../manage, once tinymachines/6502#12 taught the service's preflight to
+ * admit the Authorization header; until then a browser on this origin could
+ * not send a bearer token to that service at all.
  */
 
 // Where the chip API answers, read from data/projects.json rather than
@@ -208,12 +207,8 @@ export default function GamesPage() {
           <a data-address href={`${CHIP_API}/`}>POST /v1/cartridge</a>,
           then load it here or link to it with <code>?cart=</code>. Everything
           published so far is on the{" "}
-          <Link href="/6502/builders">builder pages</Link>, and the editor that
-          mints one is still at{" "}
-          <a data-address href="https://games.tinymachines.ai/manage">
-            games.tinymachines.ai/manage
-          </a>
-          .
+          <Link href="/6502/builders">builder pages</Link>, and publishing one
+          happens in <Link href="/6502/manage">the editor</Link>.
         </p>
       </main>
 

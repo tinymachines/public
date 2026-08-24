@@ -50,12 +50,12 @@ geometry, its measured tables and its wasm bundle are served from the 6502
 site's own directory rather than copied here: all of it is CC BY-NC-SA, and
 this repository does not redistribute it. See `NOTICE.md`.
 
-What has not moved is the cartridge editor. The builder pages read the live
-registry from here over CORS, which is what that service's open
-`Access-Control-Allow-Origin` was for, but editing sends a bearer token and the
-preflight from this origin does not admit an `Authorization` header. That is a
-header that is not there rather than a decision that has not been taken. See
-[the registry](/docs/6502/the-registry).
+The cartridge editor arrived last, at [/6502/manage](/6502/manage). For a
+while it could not: editing sends a bearer token, and the preflight from this
+origin refused the `Authorization` header, so the request was never made at
+all. That was a header that was not there rather than a decision, and once the
+service's CORS policy admitted it (`tinymachines/6502#12`, fixed 2026-08-24),
+the page moved like the others. See [the registry](/docs/6502/the-registry).
 
 ## The second project
 
