@@ -2343,3 +2343,58 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 @media (max-width: 34rem) {
   .app-foot .site-foot .quiet { display: none; }
 }
+
+/* ==========================================================================
+   25. THE LESSON. A numbered sequence on the 6502 landing, numbered because
+   it IS one: token, cartridge, publish, walk. Paper, like every list of
+   things to read; the numbers are display type because they are the
+   structure of the page, not decoration.
+   ========================================================================== */
+.lesson {
+  list-style: none;
+  margin: 0 0 calc(var(--u) * 12);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: calc(var(--u) * 4);
+}
+.step {
+  position: relative;
+  padding: calc(var(--u) * 5) calc(var(--u) * 5) calc(var(--u) * 4);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  background: var(--color-paper);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+}
+.step-n {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-h2);
+  line-height: 1;
+  color: var(--color-accent-ink);
+}
+.step h3 { margin: 0; font-family: var(--font-display); font-size: var(--text-lead); font-weight: 700; line-height: 1.15; }
+.step p { margin: 0; font-family: var(--font-serif); font-size: var(--text-body); line-height: 1.55; }
+.step-links { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: auto; padding-top: calc(var(--u) * 2); }
+
+/* An instrument cluster: the explorer's own grouping, as a list of links
+   with the one line each carries. */
+.rail-list { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--u) * 2); }
+.rail-list a { font-family: var(--font-sans); font-weight: 600; color: var(--color-ink); text-decoration: none; border-bottom: 1px solid var(--color-ink-faint); }
+.rail-list a:hover { border-bottom-color: var(--color-accent-ink); color: var(--color-accent-ink); }
+.rail-list span { display: block; font-size: var(--text-fine); color: var(--color-ink-muted); line-height: 1.4; }
+/* Four steps across where there is room, two by two on a tablet, a column
+   on a phone. Deterministic rather than auto-fit, which left the fourth
+   step orphaned on a row of its own at the desktop width. */
+@media (min-width: 40rem) { .lesson { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 64rem) { .lesson { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* The reading list: a title and its one line, not a table, so it wraps on
+   a phone instead of scrolling. */
+.reading-list { list-style: none; margin: 0 0 calc(var(--u) * 12); padding: 0; display: grid; gap: calc(var(--u) * 2.5); max-width: 68ch; }
+.reading-list li { display: grid; gap: calc(var(--u) * 0.5); padding-bottom: calc(var(--u) * 2.5); border-bottom: 1px solid var(--color-paper-sunk); }
+.reading-list a { font-family: var(--font-sans); font-weight: 600; color: var(--color-ink); text-decoration: none; width: fit-content; border-bottom: 1px solid var(--color-ink-faint); }
+.reading-list a:hover { color: var(--color-accent-ink); border-bottom-color: var(--color-accent-ink); }
+.reading-list span { font-family: var(--font-serif); font-size: var(--text-body); color: var(--color-ink-muted); line-height: 1.5; }
