@@ -94,6 +94,7 @@ export function explorerMenu(): MenuGroup[] {
       const anchor = it.hash ? `#${it.hash}` : "";
       items.push({
         href: `/6502/${slug}${anchor}`,
+        hard: true,
         label: it.label,
         hint: it.hint,
       });

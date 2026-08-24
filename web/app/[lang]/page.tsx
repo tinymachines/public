@@ -5,7 +5,7 @@ import { allPages } from "@/lib/docs";
 import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
 import { arrivedSurfaces, projects } from "@/lib/projects";
-import { whereToRead } from "@/lib/nav";
+import { isHardRoute, whereToRead } from "@/lib/nav";
 import { specimenCount } from "@/lib/zoo";
 import { Shell } from "@/app/components/SiteFrame";
 import { PieceStatus } from "@/app/components/PieceStatus";
@@ -211,9 +211,12 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
         <h1 className="hero-title">{S.heroTitle}</h1>
         <p className="lede">{S.hero(die.nodes, die.transistors)}</p>
         <div className="hero-ctas">
-          <Link className="btn btn-primary" href={localize(lang, "/6502/explorer")}>
+          {/* A plain anchor, on purpose: the explorer's module must start
+              from a fresh document (lib/nav.ts, MenuItem.hard). */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a className="btn btn-primary" href={localize(lang, "/6502/explorer")}>
             {S.ctaExplorer}
-          </Link>
+          </a>
           <Link className="btn btn-ghost" href={localize(lang, "/docs")}>
             {S.ctaDocs}
           </Link>
@@ -269,6 +272,12 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
                     <a key={s.key} className="tag" href={s.lands_at}>
                       {t(lang, s.nav_label ?? s.name)}
                     </a>
+                  ) : isHardRoute(s.lands_at) ? (
+                    // A fresh document for the explorer's pages (lib/nav.ts).
+                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                    <a key={s.key} className="tag" href={localize(lang, s.lands_at)}>
+                      {t(lang, s.nav_label ?? s.name)}
+                    </a>
                   ) : (
                     <Link key={s.key} className="tag" href={localize(lang, s.lands_at)}>
                       {t(lang, s.nav_label ?? s.name)}
@@ -319,9 +328,16 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
                 const { href, onSite } = whereToRead(p.key, p.public_url);
                 if (!href) return null;
                 return onSite ? (
-                  <Link className="tag live" href={localize(lang, href)}>
-                    {S.readHere}
-                  </Link>
+                  isHardRoute(href) ? (
+                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                    <a className="tag live" href={localize(lang, href)}>
+                      {S.readHere}
+                    </a>
+                  ) : (
+                    <Link className="tag live" href={localize(lang, href)}>
+                      {S.readHere}
+                    </Link>
+                  )
                 ) : (
                   <a className="tag" href={href}>
                     {S.live}

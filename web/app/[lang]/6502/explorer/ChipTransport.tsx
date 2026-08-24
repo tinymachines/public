@@ -41,6 +41,8 @@ interface Controls {
   subscribe(fn: () => void): () => void;
 }
 
+const KEY = "tm.chip.running";
+
 const L = {
   en: { power: "Power cycle", back: "Back one half-cycle", play: "Run", pause: "Pause", step: "Forward one half-cycle", clock: "Clock", none: "no chip on this page", loading: "finding the chip" },
   ja: { power: "電源を入れ直す", back: "半サイクル戻る", play: "実行", pause: "一時停止", step: "半サイクル進む", clock: "クロック", none: "このページにチップは無い", loading: "チップを探している" },
@@ -66,7 +68,20 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
       const mod = (await import(/* webpackIgnore: true */ `/6502/chip/${hashed}`)) as Controls;
       if (cancelled) return;
       setCtl(mod);
-      unsub = mod.subscribe(() => setTick((n) => n + 1));
+      // The running state crosses pages by being written down, because each
+      // explorer page is a fresh document (see MenuItem.hard) and the store
+      // starts stopped. Their clock already persists the same way, in their
+      // own localStorage key. Applied once the page has a chip to run.
+      let restored = false;
+      unsub = mod.subscribe(() => {
+        setTick((n) => n + 1);
+        if (!restored && mod.hasDriver()) {
+          restored = true;
+          let want = false;
+          try { want = sessionStorage.getItem(KEY) === "1"; } catch { /* private mode */ }
+          if (want && !mod.isRunning()) mod.setRunning(true);
+        }
+      });
     })().catch(() => {
       if (!cancelled) setFailed(true);
     });
@@ -84,7 +99,7 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
 
   return (
     <div className="chip-transport" role="toolbar" aria-label="Chip transport">
-      <button type="button" title={S.power} aria-label={S.power} disabled={!live} onClick={() => ctl?.reset()}>
+      <button type="button" title={S.power} aria-label={S.power} disabled={!live} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
         ⏻
       </button>
       <button type="button" title={S.back} aria-label={S.back} disabled={!live} onClick={() => ctl?.stepBack()}>
@@ -97,7 +112,11 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
         aria-label={running ? S.pause : S.play}
         aria-pressed={running}
         disabled={!live}
-        onClick={() => ctl?.toggleRunning()}
+        onClick={() => {
+          if (!ctl) return;
+          ctl.toggleRunning();
+          try { sessionStorage.setItem(KEY, ctl.isRunning() ? "1" : "0"); } catch { /* private mode */ }
+        }}
       >
         {running ? "❚❚" : "▶"}
       </button>

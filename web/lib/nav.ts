@@ -1,5 +1,6 @@
 import { allPages } from "./docs";
 import { explorerMenu } from "./explorer-menu";
+import { explorerPages } from "./explorer";
 import { arrivedSurfaces, projects, read, nav as siteNav } from "./projects";
 
 /**
@@ -44,6 +45,15 @@ export interface MenuItem {
    * not have and land on the not-found page.
    */
   prerendered?: boolean;
+  /**
+   * True for a page whose module must start from a fresh document. The
+   * explorer's pages were written for full loads: their modules keep loops
+   * and subscriptions at module scope with no teardown, so a client-side
+   * navigation out of one leaves a zombie that breaks the transport store's
+   * announce loop, and a client-side return to one never re-runs its init.
+   * A plain anchor is the honest link until the modules learn a lifecycle.
+   */
+  hard?: boolean;
 }
 
 export interface MenuGroup {
@@ -128,6 +138,7 @@ export function menuGroups(): MenuGroup[] {
   // the first complaint; scoping answers the second. Inside a project the
   // menu opens on that project, which is the recipe card the owner asked
   // for: the thing under your hand, not the whole cookbook.
+  const explorerRoutes = new Set(explorerPages().map((p) => `/6502/${p.slug}`));
   for (const p of projects()) {
     if (p.key === "roof" || !p.landing) continue;
     const here = arrivedSurfaces(p);
@@ -142,6 +153,7 @@ export function menuGroups(): MenuGroup[] {
         { href: p.landing, label: "Overview", hint: "what this project is, and where each surface lives" },
         ...here.map((s) => ({
           href: s.lands_at,
+          hard: explorerRoutes.has(s.lands_at),
           // The same expression labels() uses. This file's whole claim is that
           // a crumb cannot call a page something the menu does not, and the
           // two had drifted the moment a surface was given a shorter name for
@@ -261,4 +273,14 @@ export function whereToRead(pieceKey: string, publicUrl: string | null): { href:
     }
   }
   return { href: publicUrl, onSite: false };
+}
+
+/**
+ * Whether a link to this route must be a full navigation. See MenuItem.hard:
+ * the explorer's pages keep module-scope state with no teardown, so they
+ * must start from a fresh document. One answer, asked by every component
+ * that renders a computed link, so a page cannot forget the rule.
+ */
+export function isHardRoute(href: string): boolean {
+  return explorerPages().some((p) => `/6502/${p.slug}` === href);
 }

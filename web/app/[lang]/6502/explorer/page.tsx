@@ -61,6 +61,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
     // own h1. A workbench like the rest of the instrument suite.
     <div className="workbench has-transport" data-workbench>
       <WorkbenchBar
+        hard
         lang={lang}
         title="The explorer"
         titleIsHeading={false}

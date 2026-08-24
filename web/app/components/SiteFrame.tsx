@@ -156,11 +156,18 @@ export function WorkbenchBar({
   title,
   trail,
   titleIsHeading = true,
+  hard = false,
 }: {
   lang: Lang;
   title: string;
   trail: { href: string; label: string }[];
   titleIsHeading?: boolean;
+  /**
+   * Every way off this page is a full navigation. The explorer's modules keep
+   * state at module scope with no teardown, so leaving one client-side leaves
+   * a loop running against a page that is gone. See MenuItem.hard.
+   */
+  hard?: boolean;
 }) {
   return (
     <div className="wb-bar">
@@ -168,13 +175,18 @@ export function WorkbenchBar({
         {trail.map((t, i) => (
           <span key={t.href}>
             {i ? " / " : ""}
-            <Link href={localize(lang, t.href)}>{t.label}</Link>
+            {hard ? (
+              // eslint-disable-next-line @next/next/no-html-link-for-pages
+              <a href={localize(lang, t.href)}>{t.label}</a>
+            ) : (
+              <Link href={localize(lang, t.href)}>{t.label}</Link>
+            )}
           </span>
         ))}
       </p>
       {titleIsHeading ? <h1>{title}</h1> : <p className="wb-title">{title}</p>}
-      <LangSwitch lang={lang} />
-      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} />
+      <LangSwitch lang={lang} hard={hard} />
+      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} hard={hard} />
     </div>
   );
 }

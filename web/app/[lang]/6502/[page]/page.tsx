@@ -75,6 +75,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
        titleIsHeading is false because each page's own hero carries the h1. */
     <div className="workbench has-transport" data-workbench>
       <WorkbenchBar
+        hard
         lang={lang}
         title={title}
         titleIsHeading={false}

@@ -37,21 +37,26 @@ function FlagJP({ off }: { off?: boolean }) {
   );
 }
 
-export function LangSwitch({ lang }: { lang: Lang }) {
+export function LangSwitch({ lang, hard = false }: { lang: Lang; hard?: boolean }) {
   const here = usePathname() ?? "/";
   const { path } = delocalize(here);
   const other: Lang = lang === "ja" ? "en" : "ja";
-  return (
-    <Link
-      className="lang-switch"
-      href={localize(other, path)}
-      lang={other}
-      rel="alternate"
-      aria-label={other === "ja" ? "日本語版を開く" : "Switch to English"}
-      title={other === "ja" ? "日本語" : "English"}
-    >
+  const props = {
+    className: "lang-switch",
+    href: localize(other, path),
+    lang: other,
+    rel: "alternate",
+    "aria-label": other === "ja" ? "日本語版を開く" : "Switch to English",
+    title: other === "ja" ? "日本語" : "English",
+  };
+  const flags = (
+    <>
       <FlagUS off={lang !== "en"} />
       <FlagJP off={lang !== "ja"} />
-    </Link>
+    </>
   );
+  // A plain anchor on a page whose module must not survive the navigation
+  // (see MenuItem.hard). Same target, same markup, a fresh document.
+  // eslint-disable-next-line @next/next/no-html-link-for-pages
+  return hard ? <a {...props}>{flags}</a> : <Link {...props}>{flags}</Link>;
 }

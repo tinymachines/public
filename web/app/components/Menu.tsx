@@ -32,7 +32,16 @@ import type { MenuGroup } from "@/lib/nav";
  * answered; this is a disclosure, and trapping a reader inside a navigation
  * panel they opened by accident is worse than letting them tab past it.
  */
-export function Menu({ groups, label = "Menu" }: { groups: MenuGroup[]; label?: string }) {
+export function Menu({
+  groups,
+  label = "Menu",
+  hard = false,
+}: {
+  groups: MenuGroup[];
+  label?: string;
+  /** Every link a full navigation: set by a page whose module must not survive the leave. */
+  hard?: boolean;
+}) {
   const here = usePathname() ?? "/";
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -135,7 +144,7 @@ export function Menu({ groups, label = "Menu" }: { groups: MenuGroup[]; label?: 
                 // directory: there is nothing for the client router to
                 // prefetch, and asking it to navigate to a route the build
                 // never made lands the reader on the not-found page.
-                const external = item.prerendered === false;
+                const external = item.prerendered === false || item.hard === true || hard;
                 return external ? (
                   <a key={item.href} href={item.href.startsWith("/api") ? `${item.href}/` : item.href} {...props}>
                     {inner}
