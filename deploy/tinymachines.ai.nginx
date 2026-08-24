@@ -208,7 +208,12 @@ server {
     # Narrow on purpose. Only these extensions, only one optional pkg/
     # segment, so it cannot shadow /6502/games or /6502/lab, which are pages
     # and carry no dot.
-    location ~ "^/6502/(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
+    # And under /ja/6502/ as well: the Japanese edition of every explorer page
+    # is the same document one segment deeper, and their modules resolve
+    # their data against the document, so from /ja/6502/tracer the fetch for
+    # schematic.json asked for /ja/6502/schematic.json and got a 404 that
+    # read as "Could not start". Same files, one more address they answer at.
+    location ~ "^/(?:ja/)?6502/(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
         alias /var/www/6502.tinymachines.ai/current/$chipasset;
     }
 

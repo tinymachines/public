@@ -426,3 +426,52 @@ here rather than an action.
   three states are said out loud: waiting, empty, and could not be read. The
   second and third are different facts and a reader has to be able to tell
   them apart.
+
+## One engine, many views: where it stands, 2026-08-25
+
+The owner's ask: every 6502 page that runs the chip goes full screen in the
+house style, the Lab's play controls become one fixed transport under every
+6502 page, and **one engine runs for all of them: a pause in one screen is a
+pause in all.** Single representation, many views, same breakpoints.
+
+**What is true now (1.0.65).** The explorer's `chip-controls.js` was already
+the single store: running or stopped, the simulated clock in Hz, and the
+page's machine registered as its driver, with every control a view of it.
+`ChipTransport` is one more view, fixed to the floor of all eighteen explorer
+pages, importing the same module URL their pages import so it is the same
+instance and not a lookalike. Play, pause, step, back, power cycle and the
+clock act on whatever machine the page has; the running state is written
+down and restored on the next page, and their clock already persists the
+same way. Measured live: play on the explorer, navigate to the chipmap, the
+chipmap's chip is running; pause there, return, the explorer is paused.
+
+**Why every link into or out of an explorer page is a full navigation.**
+Their page modules were written for full page loads: loops, subscriptions
+and DOM handles live at module scope with no teardown and no re-init. A
+client-side leave left the old page's view subscribed and throwing on
+elements that were gone, which aborted the store's `announce()` before it
+reached the bar (a pause that applied and never painted); a client-side
+return found the module cached and never ran its init (the boot overlay
+stuck). `MenuItem.hard`, `isHardRoute()` and the `hard` prop on the
+workbench bar make those links plain anchors. Each page starts clean, and
+the state crosses by being written down rather than by sharing a document.
+
+**What remains, and it is upstream.** Three things, in order:
+
+1. **A lifecycle for the page modules**: an exported `mount(root)` returning
+   a teardown, so a page can be entered and left client-side. This is the
+   change that lets the hard links go back to being soft.
+2. **One `Machine` shared through the store**, so the chip's own state (the
+   half-cycle, the registers, the program position) crosses views rather
+   than only the transport state. Today each page news its own machine; the
+   store's driver is a per-page object. `chip-controls.js` is the right home
+   for the singleton, and it already owns the driver slot.
+3. **The Lab and the console join the store.** The Halfwave Lab runs its own
+   engine with its own transport (the one the bar is modelled on); Die
+   Runner runs frames over the HTTP API. Both need an adapter that registers
+   as the driver and reads the clock from the store, and then the bar is the
+   one transport on every 6502 page rather than on the explorer's eighteen.
+
+None of these are reachable from this repository without forking the
+modules, which the working agreement says not to do; they are the engine
+sub-project's first work when it arrives here.

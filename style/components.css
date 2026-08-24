@@ -2328,3 +2328,18 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
   .chip-transport { gap: calc(var(--u) * 1.5); padding-inline: calc(var(--u) * 2); }
   .ct-clock span { display: none; }
 }
+
+/* The workbench bar at 390px: the title yields, the controls do not. The
+   Japanese label is four characters and the button was being squeezed into
+   a column one character wide while the title kept its width. */
+.wb-bar .menu-wrap,
+.wb-bar .lang-switch { flex: 0 0 auto; }
+.menu-btn { white-space: nowrap; }
+/* The docs tree sits under a page head now, which already separates it; the
+   old top margin was cut for a masthead that is no longer above it. */
+.docs-shell { margin-top: calc(var(--u) * 2); }
+/* The footer strip on a phone: the name, the version, the commit. The "up N
+   ago" is the part that did not fit and the part a phone reader needs least. */
+@media (max-width: 34rem) {
+  .app-foot .site-foot .quiet { display: none; }
+}
