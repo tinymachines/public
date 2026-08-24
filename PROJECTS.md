@@ -162,9 +162,78 @@ The explorer's `site-menu.js` is the closest to what this repo already does
 with the docs navigation, and it is worth reading before replacing.
 
 
+## Checkpoint: 1.0.22, 2026-08-24
+
+**Every surface in the manifest is here.** Thirteen of thirteen, verified
+against the running site rather than from memory: 32 routes answering, one `h1`
+each, no horizontal overflow at 390px, and no console error this site is the
+cause of.
+
+That changes what "what is left" means, and it is worth being exact about it.
+There are **no more sites to move**. What remains is three pages that do not
+exist yet, two decisions, and two things waiting on somebody else's service.
+The queue below is in that order, because the first group is the only one this
+repository can act on alone.
+
+### The queue
+
+**1. The docs tree is entirely 6502.** Eleven documents, and every one of them
+is about the chip. hotbits has two live surfaces on this site and no
+documentation at all. The front page counts documents out of `docs/` at build
+time, so the imbalance is on the front page as a number.
+
+What a `docs/hotbits/` would carry is already measurable rather than invented:
+how a bit is taken from two inter-arrival times, why the bias cancels by
+symmetry rather than by correction, what the health batteries actually test,
+and why the open endpoints were closed. The last one has a figure: the pool
+refills at about seventy-five bytes a minute.
+
+**2. The front page is a 6502 front page on a two-project site.** It opens with
+the die, lists "the six pieces" from `data/pieces.json`, and never mentions
+hotbits except through the manifest-derived navigation. `data/pieces.json` is
+6502-only by construction, which is the part to decide before writing anything:
+either hotbits' instrument becomes a piece in that file, or the front page
+grows a projects section above the pieces and the pieces stay what they are.
+
+The second is probably right, because a piece and a project are different
+things and this file already says so. But it is the owner's call about what the
+front door leads with, so it is written down here rather than done.
+
+**3. The entropy gateway is documented as absent.** `/v1/bytes` and `/v1/seeds`
+answer today and are **not in the published schema**, so `/hotbits/api` can
+report that they are missing and cannot describe them. Two ways out, and they
+are not equal: either they arrive in that schema, which is the geiger repo's
+side and the honest fix, or this repository writes them by hand, which is the
+second copy of a fact the rules here exist to prevent. Ask first.
+
+### Decisions, not work
+
+**4. The 6502 API as a service under the apex.** The reference moved; the
+process did not, and `--root-path /api` is why. See below.
+
+**5. hotbits' identity.** `style/projects/hotbits.css` still overrides nothing.
+Both pages change the day it is filled in and neither is edited.
+
+### Waiting on another service
+
+**6. The cartridge editor**, on `tinymachines/6502#12`.
+**7. The retired hotbits endpoints being readable from a browser**, on
+`tinymachines/geiger#4`.
+
+### One open issue that is no longer blocking anything
+
+`tinymachines/6502#10` asks for CORS on the explorer's static assets so it
+could move under the apex without this repository redistributing die data. The
+explorer moved, and it did not need that header: nginx serves the same files
+from the same directory on the same box under a second address, so there is no
+cross-origin request to permit and nothing is copied. That issue is moot and
+should be closed, and it is named here rather than closed from this side,
+because an open issue that nobody has read as satisfied is a false claim about
+what is blocked.
+
 ## The move, as it stands
 
-Checked against the running site on 2026-08-23, not from memory.
+Checked against the running site on 2026-08-24, not from memory.
 
 | | |
 |---|---|
