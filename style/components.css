@@ -1449,7 +1449,7 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   z-index: 20;
   background: var(--color-paper);
 }
-.app-head { top: 0; border-bottom: 1px solid var(--color-rule); }
+.app-head { position: sticky; top: 0; border-bottom: 1px solid var(--color-rule); }
 .app-foot { bottom: 0; border-top: 1px solid var(--color-rule); }
 
 /* Grow, so a short page still puts its footer on the floor. flex-basis auto
@@ -1565,44 +1565,73 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 .menu-btn[aria-expanded="true"] .bars i:nth-child(2) { opacity: 0; }
 .menu-btn[aria-expanded="true"] .bars i:last-child { transform: translateY(-4px) rotate(-45deg); }
 
-/* The sheet. Positioned against the masthead, which is the only element that
-   knows where the button is. */
-.menu-wrap { position: relative; }
+/* THE PANEL, which is the 6502 site's layout rather than a dropdown.
+   That one was worked out the hard way over there and the reasoning is worth
+   carrying across rather than rediscovering.
+
+   It is one organised panel at every width, attached under the header with no
+   gap, so the button and the sheet read as one object rather than a control
+   and a thing floating near it. It is not a narrow menu hanging off the
+   button: that was what this had, and a 24rem sheet cannot put a heading and a
+   line of description beside anything.
+
+   The groups sit side by side when there is room. `minmax(12.5rem, 1fr)` is
+   the number from that site and it is measured, not chosen: at 15rem the fifth
+   group wrapped, and a wrapped group reads as a sixth one that lost its
+   heading.
+
+   Each entry carries a line of what it is, which is the part a list of nouns
+   cannot do. Over there the example was that "Blueprint", "Schematic" and
+   "Exploded" are three drawings of the same silicon and the bare list gave a
+   reader no way to choose between them. The same is true here of the explorer,
+   the lab and the console.
+
+   Full width, with the content on the site's own measure inside it, so the
+   panel spans the header it hangs from while its columns line up with
+   everything else on the page. */
 .menu-panel {
   position: absolute;
+  top: 100%;
+  left: 0;
   right: 0;
-  top: calc(100% + var(--u) * 2);
   z-index: 30;
-  min-width: min(24rem, calc(100vw - var(--u) * 8));
-  max-height: min(70vh, calc(100vh - var(--app-head-h, 11rem)));
+  /* The script measures the real room below the header; this is the floor for
+     the moment before it runs. */
+  max-height: 100vh;
+  max-height: calc(100dvh - var(--app-head-h, 11rem));
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--color-paper);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-hair);
+  border-bottom: 2px solid var(--color-rule);
   box-shadow: var(--shadow-card);
-  padding: calc(var(--u) * 3);
 }
 
-/* On a narrow screen the sheet stops hanging off the button and spans the
-   viewport instead. Anchored to the window rather than to the control, because
-   at 390px a 24rem panel is wider than the space to either side of anything.
-   The top is the measured band, so it opens just under the chrome however tall
-   that has become. */
+.menu-sheet {
+  max-width: calc(var(--u) * 280);
+  margin: 0 auto;
+  padding: calc(var(--u) * 4) calc(var(--u) * 8) calc(var(--u) * 6);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: calc(var(--u) * 1) calc(var(--u) * 6);
+  align-items: start;
+}
 @media (max-width: 40rem) {
-  .menu-panel {
-    position: fixed;
-    left: calc(var(--u) * 3);
-    right: calc(var(--u) * 3);
-    top: calc(var(--app-head-h, 11rem) + var(--u) * 2);
-    min-width: 0;
-    max-height: calc(100dvh - var(--app-head-h, 11rem) - var(--u) * 6);
-  }
+  .menu-sheet { padding-inline: calc(var(--u) * 5); }
 }
 
-.menu-group + .menu-group { margin-top: calc(var(--u) * 4); }
+/* Open, the button gives up its detent and joins the panel: a control that is
+   still floating above a sheet it is attached to is the seam this is here to
+   remove. */
+.menu-btn[aria-expanded="true"] {
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}
+
+.menu-group { min-width: 0; padding-bottom: calc(var(--u) * 2); }
 .menu-group > h2 {
-  margin: 0 0 calc(var(--u) * 2);
+  margin: calc(var(--u) * 1.5) 0 calc(var(--u) * 1.5);
+  padding-bottom: calc(var(--u) * 1.5);
+  border-bottom: 1px solid var(--color-ink-faint);
   font-family: var(--font-mono);
   font-size: var(--text-micro);
   letter-spacing: var(--tracking-caps);

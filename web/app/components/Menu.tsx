@@ -95,6 +95,10 @@ export function Menu({ groups }: { groups: MenuGroup[] }) {
           one a screen reader can still reach and a Tab can still land in. */}
       {open ? (
         <div className="menu-panel" id={panelId}>
+          {/* The panel spans the header; the sheet inside it keeps the site's
+              measure, so the columns line up with the masthead above and the
+              content below. */}
+          <div className="menu-sheet">
           {shown.map((group) => (
             <nav className="menu-group" key={group.title} aria-label={group.title}>
               <h2>{group.title}</h2>
@@ -128,6 +132,7 @@ export function Menu({ groups }: { groups: MenuGroup[] }) {
               })}
             </nav>
           ))}
+          </div>
         </div>
       ) : null}
     </div>

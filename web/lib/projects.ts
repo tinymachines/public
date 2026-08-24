@@ -58,7 +58,7 @@ interface Manifest {
 
 const FILE = path.join(process.cwd(), "..", "data", "projects.json");
 
-function read(): Manifest {
+export function read(): Manifest {
   return JSON.parse(fs.readFileSync(FILE, "utf8")) as Manifest;
 }
 

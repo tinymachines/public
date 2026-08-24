@@ -1,5 +1,5 @@
 import { allPages } from "./docs";
-import { projects, nav as siteNav } from "./projects";
+import { projects, read, nav as siteNav } from "./projects";
 
 /**
  * The whole navigation model, derived at build time.
@@ -15,6 +15,19 @@ import { projects, nav as siteNav } from "./projects";
  * page that exists appears; a page that is deleted vanishes; neither takes an
  * edit here. If you find yourself adding a literal route below, stop.
  */
+
+/**
+ * The first sentence, which is as much as a menu line can carry.
+ *
+ * The manifest's `what` is written for a page that has room; a hint under a
+ * label has one or two lines. Taking the first sentence rather than truncating
+ * means the line always ends where the author ended it, instead of in the
+ * middle of a clause with an ellipsis.
+ */
+function firstSentence(text: string): string {
+  const m = text.match(/^[\s\S]*?[.!?](?=\s|$)/);
+  return (m ? m[0] : text).trim();
+}
 
 export interface MenuItem {
   href: string;
@@ -43,11 +56,32 @@ export interface MenuGroup {
 
 /** Every group, in the order they should appear. */
 export function menuGroups(): MenuGroup[] {
+  // Every entry carries a line of what it is, which is the part a list of
+  // nouns cannot do. On the 6502 site the example was that "Blueprint",
+  // "Schematic" and "Exploded" are three drawings of the same silicon and the
+  // bare list gave a reader no way to choose between them.
+  //
+  // The lines come from the manifest's own `what`, first sentence, rather than
+  // being written here: a menu that described a surface differently from the
+  // page describing itself would be a second description to keep in step.
+  const roof = read().projects.find((p) => p.key === "roof");
+  const hintFor = (href: string): string | undefined => {
+    const s = roof?.surfaces.find((x) => x.lands_at === href);
+    if (s) return firstSentence(s.what);
+    // A project's own entry in the site group takes the project's description,
+    // which is the same sentence its landing page opens with.
+    const p = read().projects.find((x) => x.landing === href && x.key !== "roof");
+    return p ? firstSentence(p.what) : undefined;
+  };
+
   const groups: MenuGroup[] = [
     {
       title: "The site",
       when: null,
-      items: [{ href: "/", label: "Home", hint: "the front door" }, ...siteNav()],
+      items: [
+        { href: "/", label: "Home", hint: "the front door" },
+        ...siteNav().map((e) => ({ ...e, hint: hintFor(e.href) })),
+      ],
     },
   ];
 
@@ -78,7 +112,7 @@ export function menuGroups(): MenuGroup[] {
         ...here.map((s) => ({
           href: s.lands_at,
           label: s.name,
-          hint: s.what.split(/(?<=\.)\s/)[0],
+          hint: firstSentence(s.what),
           prerendered: s.prerendered,
         })),
       ],
