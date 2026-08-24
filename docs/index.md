@@ -47,6 +47,27 @@ preflight from this origin does not admit an `Authorization` header. That is a
 header that is not there rather than a decision that has not been taken. See
 [the registry](/docs/6502/the-registry).
 
+## The second project
+
+[hotbits](/hotbits) is here too, which makes this a roof rather than a 6502
+site with a roof on it. It is true random bytes from radioactive decay: a
+Geiger counter on a Pi, with each bit taken from comparing one gap between
+decay events with the next, so the bias cancels by symmetry rather than by
+correction.
+
+Two pages, and both of them ask rather than state. The landing page reads the
+byte pool from the running instrument when you load it, because a pool that
+refills at about seventy-five bytes a minute is a number that is wrong within
+the hour. [The reference](/hotbits/api) is generated from the instrument's own
+`openapi.json` in your browser and then calls what it describes, which is how
+it can report that four documented endpoints answer in a way no browser is
+allowed to read.
+
+It has no design yet, deliberately. `style/projects/hotbits.css` lists every
+lever a project may pull, commented out and empty, and the palette is the
+owner's to make. The day it is filled in both pages change and neither is
+edited.
+
 ## What is not here yet
 
 This tree is being moved out of four repository READMEs that were reachable

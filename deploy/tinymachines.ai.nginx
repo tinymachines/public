@@ -159,7 +159,7 @@ server {
     # page, it is loosened for the worker too, silently. This is the one place
     # where naming a directive costs nothing and not naming it couples two
     # decisions that have no reason to be coupled.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai https://hotbits.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;

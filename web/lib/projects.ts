@@ -164,3 +164,16 @@ export function surface(projectKey: string, surfaceKey: string): Surface {
 export function chipApi(): string {
   return surface("6502", "api").serves_today.replace(/\/+$/, "");
 }
+
+/**
+ * The origin a surface answers on, with any path stripped.
+ *
+ * `serves_today` is an address a reader can follow, so it points at something
+ * readable: hotbits' TRNG is recorded as its `openapi.json` because that is
+ * the only document it serves. A client fetching from it wants the origin, and
+ * deriving that here is one copy of the fact rather than a constant in every
+ * page that talks to the same host.
+ */
+export function serviceOrigin(projectKey: string, surfaceKey: string): string {
+  return new URL(surface(projectKey, surfaceKey).serves_today).origin;
+}

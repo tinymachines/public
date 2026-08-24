@@ -227,6 +227,7 @@ bad=0
 # our deploy depend on a row in somebody else's database.
 for p in / /docs /docs/6502 /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
          /6502 /6502/explorer /6502/games /6502/lab /6502/builders /6502/builders/nobody /6502/api \
+         /hotbits /hotbits/api \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   printf '  %-28s %s\n' "$p" "$code"
@@ -253,6 +254,70 @@ for p in /6502/b /6502/b/tinymachines; do
   printf '  %-28s %s -> %s\n' "$p" "$code" "${to:-nowhere}"
   [ "$code" = "308" ] || fail "$p answered $code; expected a 308 to /6502/builders"
 done
+
+# The policy, checked from outside against what the app actually talks to.
+#
+# Every page here that reads live data fetches it from another origin, and the
+# apex CSP names which ones are allowed. Those two lists are in different files
+# and nothing held them together: the hotbits pages shipped fetching an origin
+# connect-src did not admit, and the failure is the quiet kind, a page that
+# renders its own "could not be read" and looks like the far service is down.
+#
+# A warning rather than a failure, and deliberately. This script does not touch
+# nginx: a reload there is process-wide across every site on the box, so it
+# stays a deliberate act with `nginx -t` in front of it. Failing the deploy for
+# something the deploy is not allowed to fix would only mean nothing ships.
+say "6c. The policy"
+if ! python3 - "$BASE" <<'POLICY'
+import json, pathlib, subprocess, sys, urllib.parse
+
+base = sys.argv[1]
+head = subprocess.run(["curl", "-sD-", "-o", "/dev/null", "-m", "20", base + "/"],
+                      capture_output=True, text=True).stdout
+csp = ""
+for line in head.splitlines():
+    if line.lower().startswith("content-security-policy:"):
+        csp = line.split(":", 1)[1]
+
+allowed = set()
+for part in csp.split(";"):
+    part = part.strip()
+    if part.startswith("connect-src"):
+        allowed = set(part.split()[1:])
+
+want = set()
+for proj in json.loads(pathlib.Path("data/projects.json").read_text())["projects"]:
+    for s in proj["surfaces"]:
+        u = urllib.parse.urlparse(s["serves_today"])
+        if u.scheme and u.netloc and u.netloc != "tinymachines.ai":
+            want.add(f"{u.scheme}://{u.netloc}")
+
+# Both of these mean the check is broken rather than the policy being wrong,
+# and a check that can pass on nothing is not a check. They exit 2, which the
+# caller treats as a failure, because they are this repository's to fix.
+if not want:
+    print("  no off-origin surface in data/projects.json; this would pass on nothing")
+    sys.exit(2)
+if not allowed:
+    print("  the live response carries no connect-src; this would pass on nothing")
+    sys.exit(2)
+
+missing = sorted(o for o in want if o not in allowed)
+for o in sorted(want):
+    print(f"  {'ok  ' if o in allowed else 'MISS'} {o}")
+if missing:
+    print()
+    print("  connect-src does not admit: " + ", ".join(missing))
+    print("  A page fetching one of those renders its own refusal, which reads")
+    print("  as the far service being down. Fix it by hand, deliberately:")
+    print("    sudo install -m 644 -o root -g root \\")
+    print("      deploy/tinymachines.ai.nginx \\")
+    print("      /etc/nginx/sites-available/tinymachines.ai.apex.nginx")
+    print("    sudo nginx -t && sudo systemctl reload nginx")
+POLICY
+then
+  fail "the policy check could not run; see above"
+fi
 
 say "6b. The gate"
 for p in /api/v1/admin/whoami /api/v1/admin/keys /api/v1/admin/users; do

@@ -176,7 +176,7 @@ Checked against the running site on 2026-08-23, not from memory.
 | the visual6502 archive | **here.** Our overview, their preservation below it |
 | the 6502 API | **the reference is here.** The service still answers at its own address, and this page says why it is not proxied |
 | the cartridge editor | **not moved.** `/manage`, blocked by a missing CORS header |
-| hotbits | **not started.** Two surfaces recorded, nothing built |
+| hotbits | **here, undesigned.** A landing page with the live pool, and a reference generated from the instrument's schema and checked against it |
 
 ### What is left, and what each one waits on
 
@@ -212,7 +212,35 @@ Checked against the running site on 2026-08-23, not from memory.
 4. **The archive's deeper pages.** Left in their own design on purpose. See the
    overview page for why: a preservation that has been restyled is no longer
    quite a preservation.
-5. **hotbits.** After 6502 settles, per the owner.
+5. **hotbits' identity.** The two pages are structure and nothing else:
+   `style/projects/hotbits.css` still overrides nothing, because the palette,
+   the display face and the mark are the owner's exactly as the house palette
+   was. The day that file is filled in, both pages change and neither is
+   edited. That is the silo working rather than a page left unfinished.
+
+   What is not here is the entropy gateway as a service. `/v1/bytes` and
+   `/v1/seeds` are not in the published schema at all, so the reference can
+   report their absence and cannot describe them.
+
+### Two services, two CORS bugs, both found by asking
+
+The pattern is worth naming because it turned up twice in one day on two
+unrelated services, and neither was visible from inside its own repository.
+
+**The 6502 API sends no `Authorization` in `access-control-allow-headers`**, so
+the registry can be read from the apex and not written to. `tinymachines/6502#12`.
+
+**The Geiger TRNG sends `Access-Control-Allow-Origin` on a 200 and not on a 410
+or a 401.** So a browser can read every success and none of the refusals, which
+is backwards: the 410 body is the one that names the key-gated route replacing
+it. From a page that endpoint does not say "gone, go here"; it says nothing,
+and the failure is indistinguishable from the host being down.
+`tinymachines/geiger#4`.
+
+Both were found by a page that asks rather than asserts, and in both cases the
+page now reports the gap instead of rendering something that looks fine. That
+is the rule from the 6502 work applied to somebody else's service: **the thing
+that publishes must not be the thing that claims.**
 
 ### Merged is not deployed, and the pages were written for both
 

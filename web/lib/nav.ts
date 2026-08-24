@@ -111,7 +111,12 @@ export function menuGroups(): MenuGroup[] {
         { href: p.landing, label: `${p.name} overview`, hint: "what this project is, and where each surface lives" },
         ...here.map((s) => ({
           href: s.lands_at,
-          label: s.name,
+          // The same expression labels() uses. This file's whole claim is that
+          // a crumb cannot call a page something the menu does not, and the
+          // two had drifted the moment a surface was given a shorter name for
+          // a path: the crumb read "The hotbits API" and the menu still said
+          // "The entropy gateway" for the same link.
+          label: s.nav_label ?? s.name,
           hint: firstSentence(s.what),
           prerendered: s.prerendered,
         })),
@@ -142,13 +147,19 @@ export function labels(): Record<string, string> {
   for (const p of allPages()) out[p.route] = p.title;
 
   for (const p of projects()) {
-    if (p.landing && p.key !== "roof") out[p.landing] = p.name;
     for (const s of p.surfaces) {
       // The roof's `site` surface IS the root, and its name describes the
       // surface rather than naming the place. The root is the site.
       if (s.lands_at === "/") continue;
       if (s.lands_at_settled) out[s.lands_at] = s.nav_label ?? s.name;
     }
+    // A project's own name wins for its own landing path, and it is written
+    // AFTER the surfaces for that reason. hotbits is the case: its instrument
+    // lands at /hotbits, which is also the project's page, so the crumb read
+    // "tinymachines.ai / The Geiger TRNG" for a page headed "hotbits". A
+    // surface describes a thing that arrived; a landing page names the project
+    // it arrived under, and at the same path the second is the answer.
+    if (p.landing && p.key !== "roof") out[p.landing] = p.name;
   }
 
   const roof = projects().find((p) => p.key === "roof");

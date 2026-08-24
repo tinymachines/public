@@ -1,0 +1,61 @@
+/* ---------------------------------------------------------------------------
+   hotbits: the two pages, composed from the kit.
+
+   No colour is chosen here and no type is invented. Every value is a var() on
+   style/tokens.css, which is what makes style/check-tokens.py able to fail on
+   a name that does not exist, and what lets the project's own palette reach
+   these pages the day style/projects/hotbits.css is filled in. That file is
+   the owner's and is deliberately empty. See PROJECTS.md.
+   ------------------------------------------------------------------------ */
+
+.ref-group { margin: calc(var(--u) * 10) 0 0; }
+
+.ref-op {
+  border-top: 1px solid var(--color-ink-faint);
+  padding: calc(var(--u) * 4) 0;
+}
+.ref-op h3 {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 2);
+  margin: 0 0 calc(var(--u) * 2);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  font-weight: 600;
+}
+/* A route is one unbreakable token and there is no space in it after the verb.
+   The 6502 reference took a 390px page sideways for exactly that reason, so
+   this one says so up front rather than being found later. */
+.ref-op h3 .route { overflow-wrap: anywhere; min-width: 0; }
+
+.ref-op .verb {
+  flex: 0 0 auto;
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  padding: 0 calc(var(--u) * 1.5);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-hair);
+  color: var(--color-ink-muted);
+}
+/* Reading and writing are different acts and the kit already has a colour for
+   each: ocean carries data, burnt is the one that changes something. These are
+   categorical, which tokens.css says is what those hues are for. */
+.ref-op .verb.v-get  { color: var(--color-ocean-ink); }
+.ref-op .verb.v-post,
+.ref-op .verb.v-put,
+.ref-op .verb.v-patch,
+.ref-op .verb.v-delete { color: var(--color-burnt-ink); }
+
+.ref-op .ref-sum { margin: 0; font-weight: 600; max-width: 68ch; }
+/* The description arrives as markdown from another origin and is rendered as
+   text, never as markup: see Reference.tsx. Its own line breaks are the only
+   structure it has here, so they are kept. */
+.ref-op .ref-desc {
+  margin: calc(var(--u) * 2) 0 0;
+  white-space: pre-wrap;
+  max-width: 68ch;
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+}
+.ref-op .ref-params { margin-top: calc(var(--u) * 3); max-width: 34rem; }
