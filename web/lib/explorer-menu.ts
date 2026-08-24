@@ -66,11 +66,22 @@ export function explorerMenu(): MenuGroup[] {
   for (const g of theirs) {
     const items = [];
     for (const it of g.items) {
-      // Their external entries (the API, the halfwave lab, halfphi, the
-      // archive) are pages of this site's own 6502 group already, or a GitHub
-      // link the front page carries. Repeating them here would put the same
-      // destination in two groups of one panel.
-      if (it.off || it.href) continue;
+      // Their external entries fall in two kinds, and only one is skipped.
+      // Entries that stay on the tinymachines estate (their api/, the
+      // halfwave subdomain, archive/) are pages of this site's own 6502
+      // group already, and repeating them would put the same destination in
+      // two groups of one panel. An entry that LEAVES the estate (halfphi on
+      // GitHub) has no other home in this menu, so it keeps its place as the
+      // plain external link it is; the menu audit found it was the one entry
+      // of their twenty-six with no apex equivalent.
+      if (it.off || it.href) {
+        const href = it.href ?? "";
+        const external =
+          href.startsWith("https://") && !/https:\/\/[a-z0-9-]+\.tinymachines\.ai/.test(href);
+        if (!external) continue;
+        items.push({ href, label: it.label, hint: it.hint, prerendered: false });
+        continue;
+      }
       const slug = it.page === "" ? "explorer" : it.page;
       if (!slug) continue;
       if (!real.has(slug)) {
