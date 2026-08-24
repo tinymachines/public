@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Lang } from "@/lib/lang";
 import { RegistryState, useRegistry } from "@/app/components/RegistryData";
 
 /**
@@ -90,7 +91,128 @@ function group(route: string): string {
   return seg || "/";
 }
 
-export function Reference({ api }: { api: string }) {
+const L = {
+  en: {
+    schemaWhat: "the instrument's schema",
+    ops: (n: number) => <><b>{n} operations</b> read from </>,
+    twoSchemas:
+      "two schemas on the same host when this page loaded: the instrument's openapi.json and the gateway's /v1/openapi.json",
+    oneSchema: "the instrument's own openapi.json when this page loaded",
+    groups: (n: number) => (
+      <>
+        <b>{n} groups</b> taken from the routes themselves, since the schema
+        carries no tags
+      </>
+    ),
+    asked: (p: number, n: number) => (
+      <>
+        <b>
+          {p} of {n}
+        </b>{" "}
+        documented routes asked just now and answering
+      </>
+    ),
+    retired: (n: number) => `${n} retired`,
+    unreadable: (n: number) => `${n} unreadable from a browser`,
+    noGate: (
+      <>
+        <b>The gateway&rsquo;s schema did not answer.</b> The /v1 routes are a
+        separate service on this host, and it publishes its own document at{" "}
+        <code>/v1/openapi.json</code>. Asked just now, that document was not
+        there, so the keyed routes exist below only as the 410 notices that
+        point at them. This line disappears by itself when the gateway
+        answers.
+      </>
+    ),
+    goneNote: (list: string) => (
+      <>
+        <b>These are documented below and answer 410.</b> They were open, the
+        pool refills at a few dozen bytes a minute, and anyone could drain
+        it, so they are behind a key now. The instrument&rsquo;s schema has
+        not been told: each still appears as a callable endpoint. Asked just
+        now, not remembered: <code>{list}</code>.
+      </>
+    ),
+    opaqueNote: (list: string) => (
+      <>
+        <b>
+          These are documented below and this page cannot read what they say.
+        </b>{" "}
+        The schema came from the same host a moment ago, so the instrument is
+        answering; these particular responses carry no{" "}
+        <code>Access-Control-Allow-Origin</code>, and a browser therefore
+        refuses to show a script what came back. This service sends that
+        header on a success and not on a refusal, which is the wrong way
+        round: a refusal is the answer that has somewhere to send you, and
+        from a page it is indistinguishable from the host being down.{" "}
+        <code>{list}</code>.
+      </>
+    ),
+    tagRetired: "retired",
+    tagKey: "needs a key",
+    tagKeyed: "keyed; not for browsers",
+    tagNoCors: "no CORS on its reply",
+  },
+  ja: {
+    schemaWhat: "装置のスキーマ",
+    ops: (n: number) => <><b>{n} 個の操作</b>の読み取り元: </>,
+    twoSchemas:
+      "このページ読み込み時の、同一ホスト上の二つのスキーマ (装置の openapi.json とゲートウェイの /v1/openapi.json)",
+    oneSchema: "このページ読み込み時の、装置自身の openapi.json",
+    groups: (n: number) => (
+      <>
+        <b>{n} グループ</b>。スキーマにタグが無いので、ルート自身から分類
+      </>
+    ),
+    asked: (p: number, n: number) => (
+      <>
+        <b>
+          {n} 件中 {p} 件
+        </b>{" "}
+        の文書化済みルートが、たった今の問い合わせに応答
+      </>
+    ),
+    retired: (n: number) => `引退 ${n} 件`,
+    unreadable: (n: number) => `ブラウザから読めないもの ${n} 件`,
+    noGate: (
+      <>
+        <b>ゲートウェイのスキーマが応答しなかった。</b> /v1 のルートはこの
+        ホスト上の別サービスで、自分の文書を <code>/v1/openapi.json</code>{" "}
+        で公開している。たった今尋ねたところ、その文書は無かった。だから
+        鍵付きルートは、下ではそれを指す 410 の告知としてだけ存在する。
+        ゲートウェイが応答すれば、この行はひとりでに消える。
+      </>
+    ),
+    goneNote: (list: string) => (
+      <>
+        <b>以下は下に文書化されていて、410 で応答する。</b>{" "}
+        かつては開いていて、プールは毎分数十バイトしか満ちず、誰でも飲み干せた。
+        だからいまは鍵の向こうにいる。装置のスキーマはまだそれを知らされて
+        おらず、どれも呼び出せるエンドポイントとして載ったままだ。記憶では
+        なく、たった今尋ねた結果: <code>{list}</code>。
+      </>
+    ),
+    opaqueNote: (list: string) => (
+      <>
+        <b>以下は下に文書化されていて、このページはその言い分を読めない。</b>{" "}
+        スキーマは同じホストからつい先ほど届いたので、装置は応答している。
+        だがこれらの応答は <code>Access-Control-Allow-Origin</code>{" "}
+        を運ばず、ブラウザは返ってきたものをスクリプトに見せることを拒む。
+        このサービスはそのヘッダを成功には付け、拒絶には付けない。それは
+        逆さまだ: 行き先を教えてくれるのは拒絶のほうの答えであり、ページから
+        見ると、それはホストが落ちているのと見分けが付かない。{" "}
+        <code>{list}</code>。
+      </>
+    ),
+    tagRetired: "引退",
+    tagKey: "鍵が必要",
+    tagKeyed: "鍵付き。ブラウザ用ではない",
+    tagNoCors: "応答に CORS が無い",
+  },
+} as const;
+
+export function Reference({ api, lang = "en" }: { api: string; lang?: Lang }) {
+  const T = L[lang];
   const { data, error } = useRegistry<Schema>(`${api}/openapi.json`);
   // The same host publishes a second schema: the gateway's, at
   // /v1/openapi.json, generated from the same table its router is built from.
@@ -136,7 +258,7 @@ export function Reference({ api }: { api: string }) {
     };
   }, [api, data, gate.data]);
 
-  if (!data) return <RegistryState error={error} what="the instrument's schema" />;
+  if (!data) return <RegistryState error={error} what={T.schemaWhat} lang={lang} />;
 
   const paths = data.paths ?? {};
   const gatePaths = gate.data?.paths ?? {};
@@ -173,63 +295,25 @@ export function Reference({ api }: { api: string }) {
     <>
       <div className="chips">
         <span className="measured">
-          <b>{ops.length} operations</b> read from{" "}
-          {gate.data
-            ? "two schemas on the same host when this page loaded: the instrument's openapi.json and the gateway's /v1/openapi.json"
-            : "the instrument's own openapi.json when this page loaded"}
+          {T.ops(ops.length)}
+          {gate.data ? T.twoSchemas : T.oneSchema}
         </span>
-        <span className="measured">
-          <b>{groups.length} groups</b> taken from the routes themselves, since
-          the schema carries no tags
-        </span>
+        <span className="measured">{T.groups(groups.length)}</span>
         {answered.length ? (
-          <span className="measured">
-            <b>
-              {present} of {answered.length}
-            </b>{" "}
-            documented routes asked just now and answering
-          </span>
+          <span className="measured">{T.asked(present, answered.length)}</span>
         ) : null}
-        {gone.length ? <span className="tag warn">{gone.length} retired</span> : null}
+        {gone.length ? <span className="tag warn">{T.retired(gone.length)}</span> : null}
         {opaque.length ? (
-          <span className="tag warn">{opaque.length} unreadable from a browser</span>
+          <span className="tag warn">{T.unreadable(opaque.length)}</span>
         ) : null}
       </div>
 
-      {!gate.data ? (
-        <p className="notice">
-          <b>The gateway&rsquo;s schema did not answer.</b> The /v1 routes are a
-          separate service on this host, and it publishes its own document at{" "}
-          <code>/v1/openapi.json</code>. Asked just now, that document was not
-          there, so the keyed routes exist below only as the 410 notices that
-          point at them. This line disappears by itself when the gateway
-          answers.
-        </p>
-      ) : null}
+      {!gate.data ? <p className="notice">{T.noGate}</p> : null}
 
-      {gone.length ? (
-        <p className="notice">
-          <b>These are documented below and answer 410.</b> They were open, the
-          pool refills at a few dozen bytes a minute, and anyone could drain
-          it, so they are behind a key now. The instrument&rsquo;s schema has
-          not been told: each still appears as a callable endpoint. Asked just
-          now, not remembered: <code>{gone.join(", ")}</code>.
-        </p>
-      ) : null}
+      {gone.length ? <p className="notice">{T.goneNote(gone.join(", "))}</p> : null}
 
       {opaque.length ? (
-        <p className="notice">
-          <b>These are documented below and this page cannot read what they
-          say.</b>{" "}
-          The schema came from the same host a moment ago, so the instrument is
-          answering; these particular responses carry no{" "}
-          <code>Access-Control-Allow-Origin</code>, and a browser therefore
-          refuses to show a script what came back. This service sends that
-          header on a success and not on a refusal, which is the wrong way
-          round: a refusal is the answer that has somewhere to send you, and
-          from a page it is indistinguishable from the host being down.{" "}
-          <code>{opaque.join(", ")}</code>.
-        </p>
+        <p className="notice">{T.opaqueNote(opaque.join(", "))}</p>
       ) : null}
 
       {groups.map((g) => (
@@ -244,17 +328,17 @@ export function Reference({ api }: { api: string }) {
                   <h3>
                     <span className={`verb v-${verb.toLowerCase()}`}>{verb}</span>
                     <span className="route">{route}</span>
-                    {code === 410 ? <span className="tag warn">retired</span> : null}
+                    {code === 410 ? <span className="tag warn">{T.tagRetired}</span> : null}
                     {code === 401 || code === 403 ? (
-                      <span className="tag">needs a key</span>
+                      <span className="tag">{T.tagKey}</span>
                     ) : null}
                     {code === 0 && keyed.has(route) ? (
                       // Unreadable from here BY DESIGN: the keyed tier carries
                       // no CORS so nobody is tempted to put a key in a page.
-                      <span className="tag">keyed; not for browsers</span>
+                      <span className="tag">{T.tagKeyed}</span>
                     ) : null}
                     {code === 0 && !keyed.has(route) ? (
-                      <span className="tag warn">no CORS on its reply</span>
+                      <span className="tag warn">{T.tagNoCors}</span>
                     ) : null}
                   </h3>
                   {op.summary ? <p className="ref-sum">{op.summary}</p> : null}

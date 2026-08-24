@@ -2,6 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import "./console.css";
@@ -62,8 +63,156 @@ export const metadata: Metadata = {
   description: "A console on a transistor-level MOS 6502. Every frame is run on the real die.",
 };
 
+/**
+ * The page's markup in both voices; the machine's own voice stays as game.js
+ * writes it. The readout keys, the boot errors and the cartridge names come
+ * from the module that is byte for byte upstream's, so they are its contract,
+ * not this page's copy.
+ */
+const PROSE = {
+  en: {
+    intro: (b: string, m: string) => (
+      <>
+        A console whose frames are run on a transistor-level MOS 6502. The
+        screen is a page of the chip&rsquo;s own memory and nothing draws it
+        but this page. The <Link href={b}>builder pages</Link> and{" "}
+        <Link href={m}>the editor</Link> are here too.
+      </>
+    ),
+    screen: "screen",
+    theChip: "the chip",
+    measured: "measured",
+    note: (
+      <>
+        The screen is a page of the chip&rsquo;s own memory. Nothing draws it
+        but this page.
+      </>
+    ),
+    loadCart: "load a .cart.gz",
+    powerOn: "power on",
+    pause: "pause",
+    controller: "Controller",
+    padNote: (
+      <>
+        Arrow keys or WASD. One byte, written into the chip&rsquo;s memory
+        between two steps.
+      </>
+    ),
+    gatesReal: "the gates are real",
+    sampled: "sampled",
+    gatesNote: (
+      <>
+        Every gate is a switch that exists on this die, and it conducts
+        exactly when its own control line is high{" "}
+        <b>on the chip running this game</b>. Nothing simulates a clock
+        phase. The letter is the channel that is open right now.
+      </>
+    ),
+    lg4: "poly gate: solid, fatal",
+    lg7: "a channel that is not conducting",
+    lg6: "one that is",
+    lg15: "bond pad: the way through",
+    lg2: "charge packet, worth one",
+    lg14: "capacitor, worth five",
+    lg10: "power rail, poly bus, diff well: scenery",
+    whySlow: "Why it is slow, and what that measures",
+    slow: (
+      <>
+        A frame costs <b id="k-cost">600</b> half-cycles, about 0.3&nbsp;ms of
+        chip time. Everything else is the round trip: the whole machine
+        travels to the engine and back on every frame, because the server
+        keeps no sessions. The chip is not the bottleneck by three orders of
+        magnitude, and the frame rate above is the round trip being measured
+        rather than the die.
+      </>
+    ),
+    cart: (api: string, b: string, m: string) => (
+      <>
+        A cartridge is one gzipped file carrying the ROM, its tiles and the
+        contract it was written to. Mint one with{" "}
+        <a data-address href={`${api}/`}>
+          POST /v1/cartridge
+        </a>
+        , then load it here or link to it with <code>?cart=</code>. Everything
+        published so far is on the <Link href={b}>builder pages</Link>, and
+        publishing one happens in <Link href={m}>the editor</Link>.
+      </>
+    ),
+  },
+  ja: {
+    intro: (b: string, m: string) => (
+      <>
+        トランジスタレベルの MOS 6502 で毎フレームを実行するコンソール。
+        画面はチップ自身のメモリの 1 ページで、それを描くのはこのページだけ。
+        <Link href={b}>ビルダーページ</Link>と<Link href={m}>エディタ</Link>
+        もここにある。
+      </>
+    ),
+    screen: "画面",
+    theChip: "チップ",
+    measured: "実測",
+    note: (
+      <>
+        画面はチップ自身のメモリの 1 ページ。それを描くのはこのページだけだ。
+      </>
+    ),
+    loadCart: ".cart.gz を読み込む",
+    powerOn: "電源を入れる",
+    pause: "一時停止",
+    controller: "コントローラ",
+    padNote: (
+      <>
+        矢印キーか WASD。1 バイトが、二つのステップの間にチップのメモリへ
+        書き込まれる。
+      </>
+    ),
+    gatesReal: "ゲートは実物",
+    sampled: "サンプル済み",
+    gatesNote: (
+      <>
+        どのゲートもこのダイに実在するスイッチで、
+        <b>このゲームを走らせている当のチップの上で</b>自分の制御線が high
+        の時、正確にその時にだけ導通する。何もクロック位相をシミュレート
+        しない。文字は、いま開いているチャネルだ。
+      </>
+    ),
+    lg4: "ポリのゲート: 塞がっていて、致死",
+    lg7: "導通していないチャネル",
+    lg6: "導通しているチャネル",
+    lg15: "ボンドパッド: 通り道",
+    lg2: "電荷パケット、1 点",
+    lg14: "コンデンサ、5 点",
+    lg10: "電源レール、ポリのバス、拡散ウェル: 背景",
+    whySlow: "なぜ遅いのか、そしてそれは何の測定か",
+    slow: (
+      <>
+        1 フレームは <b id="k-cost">600</b> 半サイクル、チップ時間で
+        0.3&nbsp;ms ほど。残りはすべて往復だ: サーバがセッションを持たない
+        ので、マシン全体が毎フレーム、エンジンまで行って帰ってくる。チップは
+        三桁の差でボトルネックではなく、上のフレームレートはダイではなく
+        往復の測定値だ。
+      </>
+    ),
+    cart: (api: string, b: string, m: string) => (
+      <>
+        カートリッジは、ROM とタイルと、それが書かれた規約を運ぶ一つの gzip
+        ファイルだ。
+        <a data-address href={`${api}/`}>
+          POST /v1/cartridge
+        </a>{" "}
+        で鋳造し、ここで読み込むか <code>?cart=</code> でリンクする。これまで
+        に公開されたものは<Link href={b}>ビルダーページ</Link>にあり、公開は
+        <Link href={m}>エディタ</Link>で行う。
+      </>
+    ),
+  },
+} as const;
+
 export default async function GamesPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
+  const S = PROSE[lang];
+  const B = localize(lang, "/6502/builders");
+  const M = localize(lang, "/6502/manage");
   return (
     <Shell lang={lang}
       die="RUN"
@@ -77,18 +226,13 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
     >
 
       <main className="prose">
-        <p>
-          A console whose frames are run on a transistor-level MOS 6502. The
-          screen is a page of the chip&rsquo;s own memory and nothing draws it
-          but this page. The <Link href="/6502/builders">builder pages</Link>{" "}
-          and <Link href="/6502/manage">the editor</Link> are here too.
-        </p>
+        <p>{S.intro(B, M)}</p>
 
         <div className="con-stage">
           {/* The screen. Panel, because it is chip memory. */}
           <div className="panel">
             <div className="panel-bar">
-              <span>screen</span>
+              <span>{S.screen}</span>
               <span>$0400, 16 x 16</span>
             </div>
             {/* `screen` is a hook, not a style: game.js measures $('.screen')
@@ -105,8 +249,8 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
             {/* Panel: every figure here came off the engine. */}
             <div className="panel">
               <div className="panel-bar">
-                <span>the chip</span>
-                <span>measured</span>
+                <span>{S.theChip}</span>
+                <span>{S.measured}</span>
               </div>
               <div className="panel-face">
                 <div className="con-kv">
@@ -119,8 +263,7 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
                   <span>requests</span><b id="k-req">0</b>
                 </div>
                 <p className="con-note" id="note">
-                  The screen is a page of the chip&rsquo;s own memory. Nothing
-                  draws it but this page.
+                  {S.note}
                 </p>
                 <div className="con-bar">
                   <select className="input data" id="cart" aria-label="Cartridge">
@@ -130,16 +273,16 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
                 </div>
                 <div className="con-bar">
                   <label className="btn btn-ghost" htmlFor="cart-file">
-                    load a .cart.gz
+                    {S.loadCart}
                   </label>
                   <input id="cart-file" type="file" accept=".gz,application/gzip" hidden />
                 </div>
                 <div className="con-bar">
                   <button className="btn btn-primary" id="b-power" type="button">
-                    power on
+                    {S.powerOn}
                   </button>
                   <button className="btn btn-ghost" id="b-pause" type="button" disabled>
-                    pause
+                    {S.pause}
                   </button>
                 </div>
                 <p className="con-err" id="err" hidden />
@@ -148,7 +291,7 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
 
             {/* Paper: a control surface, not a readout. */}
             <aside className="rail">
-              <h3>Controller</h3>
+              <h3>{S.controller}</h3>
               <div className="pad">
                 <button className="btn btn-ghost u" data-dir="up" type="button" aria-label="Up">&uarr;</button>
                 <button className="btn btn-ghost l" data-dir="left" type="button" aria-label="Left">&larr;</button>
@@ -156,23 +299,19 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
                 <button className="btn btn-ghost r" data-dir="right" type="button" aria-label="Right">&rarr;</button>
               </div>
               <p className="quiet" style={{ fontSize: "0.75rem", marginTop: "0.75rem" }}>
-                Arrow keys or WASD. One byte, written into the chip&rsquo;s
-                memory between two steps.
+                {S.padNote}
               </p>
             </aside>
 
             {/* Panel: eight switches, sampled on the die that is running. */}
             <div className="panel">
               <div className="panel-bar">
-                <span>the gates are real</span>
-                <span>sampled</span>
+                <span>{S.gatesReal}</span>
+                <span>{S.sampled}</span>
               </div>
               <div className="panel-face">
                 <p className="con-note" style={{ marginTop: 0 }}>
-                  Every gate is a switch that exists on this die, and it
-                  conducts exactly when its own control line is high{" "}
-                  <b>on the chip running this game</b>. Nothing simulates a
-                  clock phase. The letter is the channel that is open right now.
+                  {S.gatesNote}
                 </p>
                 <div className="gates" id="gates" />
                 {/* Painted by game.js from the tiles the screen actually draws
@@ -180,37 +319,22 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
                     screen does not. The `t<N>` class is read by
                     className.slice(1) and must be the only class on the <i>. */}
                 <div className="legend">
-                  <span><i className="t4" />poly gate: solid, fatal</span>
-                  <span><i className="t7" />a channel that is not conducting</span>
-                  <span><i className="t6" />one that is</span>
-                  <span><i className="t15" />bond pad: the way through</span>
-                  <span><i className="t2" />charge packet, worth one</span>
-                  <span><i className="t14" />capacitor, worth five</span>
-                  <span><i className="t10" />power rail, poly bus, diff well: scenery</span>
+                  <span><i className="t4" />{S.lg4}</span>
+                  <span><i className="t7" />{S.lg7}</span>
+                  <span><i className="t6" />{S.lg6}</span>
+                  <span><i className="t15" />{S.lg15}</span>
+                  <span><i className="t2" />{S.lg2}</span>
+                  <span><i className="t14" />{S.lg14}</span>
+                  <span><i className="t10" />{S.lg10}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <h2>Why it is slow, and what that measures</h2>
-        <p>
-          A frame costs <b id="k-cost">600</b> half-cycles, about 0.3&nbsp;ms of
-          chip time. Everything else is the round trip: the whole machine
-          travels to the engine and back on every frame, because the server
-          keeps no sessions. The chip is not the bottleneck by three orders of
-          magnitude, and the frame rate above is the round trip being measured
-          rather than the die.
-        </p>
-        <p>
-          A cartridge is one gzipped file carrying the ROM, its tiles and the
-          contract it was written to. Mint one with{" "}
-          <a data-address href={`${CHIP_API}/`}>POST /v1/cartridge</a>,
-          then load it here or link to it with <code>?cart=</code>. Everything
-          published so far is on the{" "}
-          <Link href="/6502/builders">builder pages</Link>, and publishing one
-          happens in <Link href="/6502/manage">the editor</Link>.
-        </p>
+        <h2>{S.whySlow}</h2>
+        <p>{S.slow}</p>
+        <p>{S.cart(CHIP_API, B, M)}</p>
       </main>
 
       {/* type="module" and afterInteractive: game.js is an ES module that reads

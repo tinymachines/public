@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { localize, t } from "@/lib/i18n";
 import { project, measuredOn } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 
@@ -28,8 +29,101 @@ export const metadata: Metadata = {
   description: "A transistor-level MOS 6502, and the four surfaces built on it.",
 };
 
+const PROSE = {
+  en: {
+    surfaces: (n: number, d: string) => (
+      <>
+        <b>{n} surfaces</b> read from data/projects.json, probed {d}
+      </>
+    ),
+    hereCount: (h: number, n: number) => (
+      <>
+        <b>
+          {h} of {n} surfaces are here.
+        </b>{" "}
+        Every one of them still answers at its own subdomain as well, because
+        nothing has been switched off. This page is the plan and the current
+        addresses, not a redirect.
+      </>
+    ),
+    theSurfaces: "The surfaces",
+    thSurface: "Surface",
+    thWhat: "What it is",
+    thToday: "Answers today",
+    thLands: "Lands at",
+    thStatus: "Status",
+    proposed: "proposed",
+    settled: (a: number, b: number) => `${a} of ${b} landing paths settled`,
+    redirectMap: "A public path that moves is a redirect map. See PROJECTS.md.",
+    whyTitle: "Why this page looks like the rest of the site",
+    why1: (
+      <>
+        It is the same kit. Projects are siloed by scoping a short list of
+        identity tokens to <code>[data-project]</code>, not by forking
+        anything: same components, same type scale, same spacing. The 6502
+        silo overrides nothing, because the house palette was sampled for this
+        work in the first place.
+      </>
+    ),
+    why2: (
+      <>
+        What a silo may not touch is the part that carries meaning. Blue is
+        ACTIVE, orange is ATTENTION, red is ASSERTION FAILED, and the drive
+        ramp is halfphi&rsquo;s <code>Drive</code> enum given colour. A project
+        that could redefine those would not have its own accent; it would have
+        a failed assertion that looks fine.
+      </>
+    ),
+  },
+  ja: {
+    surfaces: (n: number, d: string) => (
+      <>
+        <b>ページ {n} 件</b>を data/projects.json から読み、{d} に検分
+      </>
+    ),
+    hereCount: (h: number, n: number) => (
+      <>
+        <b>
+          {n} ページ中 {h} ページがここにある。
+        </b>{" "}
+        どれも元のサブドメインでも今なお応答している。何も止めていないから
+        だ。このページは計画と現在のアドレスであって、リダイレクトではない。
+      </>
+    ),
+    theSurfaces: "ページ一覧",
+    thSurface: "ページ",
+    thWhat: "何であるか",
+    thToday: "今日応答する場所",
+    thLands: "着地先",
+    thStatus: "状態",
+    proposed: "提案",
+    settled: (a: number, b: number) => `着地パス ${b} 件中 ${a} 件が確定`,
+    redirectMap: "動く公開パスはリダイレクト表になる。PROJECTS.md を参照。",
+    whyTitle: "なぜこのページはサイトの他と同じ見た目なのか",
+    why1: (
+      <>
+        同じキットだからだ。プロジェクトの分離は、短い一覧のアイデンティティ
+        トークンを <code>[data-project]</code> にスコープすることで行われる。
+        何かをフォークするのではない: 同じコンポーネント、同じ活字階梯、同じ
+        余白。6502 のサイロが何も上書きしないのは、家のパレットがそもそも
+        この仕事のために採られたものだからだ。
+      </>
+    ),
+    why2: (
+      <>
+        サイロが触れてはならないのは、意味を運ぶ部分だ。青は ACTIVE、橙は
+        ATTENTION、赤は ASSERTION FAILED、そしてドライブの傾斜は halfphi の{" "}
+        <code>Drive</code> 列挙に色を与えたものだ。それらを定義し直せる
+        プロジェクトは自分のアクセントを持たないだろう。持つのは、正常に
+        見える失敗した表明だ。
+      </>
+    ),
+  },
+} as const;
+
 export default async function ProjectPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
+  const S = PROSE[lang];
   const p = project("6502");
   const settled = p.surfaces.filter((s) => s.lands_at_settled).length;
   // Counted, not stated. This page carried the sentence "Nothing has moved
@@ -43,41 +137,32 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
     <Shell lang={lang} die="6502" title={p.name}>
       <main className="prose">
         <div className="chips">
-          <span className="measured">
-            <b>{p.surfaces.length} surfaces</b> read from data/projects.json, probed {measuredOn()}
-          </span>
-          <span className={p.status === "serving" ? "tag live" : "tag warn"}>{p.status}</span>
+          <span className="measured">{S.surfaces(p.surfaces.length, measuredOn())}</span>
+          <span className={p.status === "serving" ? "tag live" : "tag warn"}>{t(lang, p.status)}</span>
         </div>
 
-        <p>{p.what}</p>
+        <p>{t(lang, p.what)}</p>
 
-        <p className="notice">
-          <b>
-            {here.length} of {p.surfaces.length} surfaces are here.
-          </b>{" "}
-          Every one of them still answers at its own subdomain as well, because
-          nothing has been switched off. This page is the plan and the current
-          addresses, not a redirect.
-        </p>
+        <p className="notice">{S.hereCount(here.length, p.surfaces.length)}</p>
 
-        <h2>The surfaces</h2>
+        <h2>{S.theSurfaces}</h2>
         <div className="ledger">
           <div className="scroller" tabIndex={0} role="region" aria-label="6502 surfaces">
             <table>
               <thead>
                 <tr>
-                  <th>Surface</th>
-                  <th>What it is</th>
-                  <th>Answers today</th>
-                  <th>Lands at</th>
-                  <th>Status</th>
+                  <th>{S.thSurface}</th>
+                  <th>{S.thWhat}</th>
+                  <th>{S.thToday}</th>
+                  <th>{S.thLands}</th>
+                  <th>{S.thStatus}</th>
                 </tr>
               </thead>
               <tbody>
                 {p.surfaces.map((s) => (
                   <tr key={s.key}>
-                    <td className="name">{s.name}</td>
-                    <td style={{ whiteSpace: "normal", minWidth: "18rem" }}>{s.what}</td>
+                    <td className="name">{t(lang, s.nav_label ?? s.name)}</td>
+                    <td style={{ whiteSpace: "normal", minWidth: "18rem" }}>{t(lang, s.what)}</td>
                     <td>
                       {/* data-address marks a link that IS the address rather
                           than a way to read the thing. This column's whole job
@@ -92,11 +177,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
                     <td>
                       {s.lands_at}{" "}
                       {s.lands_at_settled ? null : (
-                        <span className="tag warn">proposed</span>
+                        <span className="tag warn">{S.proposed}</span>
                       )}
                     </td>
                     <td>
-                      <span className={s.status === "here" ? "tag live" : "tag"}>{s.status}</span>
+                      <span className={s.status === "here" ? "tag live" : "tag"}>{t(lang, s.status)}</span>
                     </td>
                   </tr>
                 ))}
@@ -104,28 +189,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
             </table>
           </div>
           <div className="tbl-foot">
-            <span>
-              {settled} of {p.surfaces.length} landing paths settled
-            </span>
-            <span>A public path that moves is a redirect map. See PROJECTS.md.</span>
+            <span>{S.settled(settled, p.surfaces.length)}</span>
+            <span>{S.redirectMap}</span>
           </div>
         </div>
 
-        <h2>Why this page looks like the rest of the site</h2>
-        <p>
-          It is the same kit. Projects are siloed by scoping a short list of
-          identity tokens to <code>[data-project]</code>, not by forking
-          anything: same components, same type scale, same spacing. The 6502
-          silo overrides nothing, because the house palette was sampled for this
-          work in the first place.
-        </p>
-        <p>
-          What a silo may not touch is the part that carries meaning. Blue is
-          ACTIVE, orange is ATTENTION, red is ASSERTION FAILED, and the drive
-          ramp is halfphi&rsquo;s <code>Drive</code> enum given colour. A project
-          that could redefine those would not have its own accent; it would have
-          a failed assertion that looks fine.
-        </p>
+        <h2>{S.whyTitle}</h2>
+        <p>{S.why1}</p>
+        <p>{S.why2}</p>
       </main>
     </Shell>
   );

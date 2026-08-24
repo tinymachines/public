@@ -1,5 +1,6 @@
 "use client";
 
+import type { Lang } from "@/lib/lang";
 import { RegistryState, useRegistry } from "@/app/components/RegistryData";
 
 /**
@@ -43,12 +44,56 @@ function grouped(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function Pool({ api }: { api: string }) {
+const L = {
+  en: {
+    what: "the byte pool",
+    inPool: "in the pool, unread, measured when this page loaded",
+    emitted: "emitted since the stream was opened",
+    maxReq: "the most one request may take",
+    healthy: "healthy",
+    notHealthy: "not healthy",
+    loggerUp: "logger running",
+    loggerDown: "logger stopped",
+    testsUp: "health tests passing",
+    testsDown: "health tests failing",
+    thePool: "the pool",
+    readLive: "read live",
+    unread: "unread bytes",
+    consumed: "already handed out",
+    lowWater: "low water mark",
+    lifetime: "bits emitted, lifetime",
+    bytes: "bytes",
+    bits: "bits",
+  },
+  ja: {
+    what: "バイトプール",
+    inPool: "プール内の未読バイト。このページの読み込み時に実測",
+    emitted: "ストリーム開始からの出力ビット",
+    maxReq: "1 リクエストが取れる最大",
+    healthy: "健全",
+    notHealthy: "不健全",
+    loggerUp: "ロガー稼働中",
+    loggerDown: "ロガー停止",
+    testsUp: "健全性テスト合格",
+    testsDown: "健全性テスト不合格",
+    thePool: "プール",
+    readLive: "ライブ読み取り",
+    unread: "未読バイト",
+    consumed: "払い出し済み",
+    lowWater: "低水位標",
+    lifetime: "累計出力ビット",
+    bytes: "バイト",
+    bits: "ビット",
+  },
+} as const;
+
+export function Pool({ api, lang = "en" }: { api: string; lang?: Lang }) {
+  const T = L[lang];
   const stats = useRegistry<Stats>(`${api}/stats`);
   const health = useRegistry<Health>(`${api}/health`);
 
   if (!stats.data) {
-    return <RegistryState error={stats.error} what="the byte pool" />;
+    return <RegistryState error={stats.error} what={T.what} lang={lang} />;
   }
   const s = stats.data;
   const h = health.data;
@@ -57,27 +102,33 @@ export function Pool({ api }: { api: string }) {
     <>
       <div className="chips">
         <span className="measured">
-          <b>{grouped(s.fresh_bytes)} bytes</b> in the pool, unread, measured
-          when this page loaded
+          <b>
+            {grouped(s.fresh_bytes)} {T.bytes}
+          </b>{" "}
+          {T.inPool}
         </span>
         <span className="measured">
-          <b>{grouped(s.l1_total_bits_emitted)} bits</b> emitted since the
-          stream was opened
+          <b>
+            {grouped(s.l1_total_bits_emitted)} {T.bits}
+          </b>{" "}
+          {T.emitted}
         </span>
         <span className="measured">
-          <b>{grouped(s.max_bytes_per_request)} bytes</b> the most one request
-          may take
+          <b>
+            {grouped(s.max_bytes_per_request)} {T.bytes}
+          </b>{" "}
+          {T.maxReq}
         </span>
         {h ? (
           <span className={h.healthy ? "tag live" : "tag warn"}>
-            {h.healthy ? "healthy" : "not healthy"}
+            {h.healthy ? T.healthy : T.notHealthy}
           </span>
         ) : null}
         <span className={s.logger_service_active ? "tag live" : "tag fail"}>
-          {s.logger_service_active ? "logger running" : "logger stopped"}
+          {s.logger_service_active ? T.loggerUp : T.loggerDown}
         </span>
         <span className={s.l1_health_ok ? "tag live" : "tag fail"}>
-          {s.l1_health_ok ? "health tests passing" : "health tests failing"}
+          {s.l1_health_ok ? T.testsUp : T.testsDown}
         </span>
       </div>
 
@@ -85,26 +136,26 @@ export function Pool({ api }: { api: string }) {
           section 1: a dark box means the value inside it was measured. */}
       <div className="panel">
         <div className="panel-bar">
-          <span>the pool</span>
-          <span>read live</span>
+          <span>{T.thePool}</span>
+          <span>{T.readLive}</span>
         </div>
         <div className="panel-face">
           <table className="readout">
             <tbody>
               <tr>
-                <th>unread bytes</th>
+                <th>{T.unread}</th>
                 <td className="num">{grouped(s.fresh_bytes)}</td>
               </tr>
               <tr>
-                <th>already handed out</th>
+                <th>{T.consumed}</th>
                 <td className="num">{grouped(s.consumed_bytes)}</td>
               </tr>
               <tr>
-                <th>low water mark</th>
+                <th>{T.lowWater}</th>
                 <td className="num">{grouped(s.low_water_bytes)}</td>
               </tr>
               <tr>
-                <th>bits emitted, lifetime</th>
+                <th>{T.lifetime}</th>
                 <td className="num">{grouped(s.l1_total_bits_emitted)}</td>
               </tr>
             </tbody>

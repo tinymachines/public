@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Lang } from "@/lib/lang";
 
 /**
  * Asking the 6502 service for something, and saying so when it does not
@@ -76,22 +77,42 @@ export function useRegistry<T>(url: string): {
  * not guess between them: it prints what it was told and says that the message
  * covers all three.
  */
-export function RegistryState({ error, what }: { error: string | null; what: string }) {
+export function RegistryState({
+  error,
+  what,
+  lang = "en",
+}: {
+  error: string | null;
+  what: string;
+  lang?: Lang;
+}) {
+  const ja = lang === "ja";
   if (error) {
     return (
       <p className="reg-state fail">
-        <b>{what} could not be read.</b> The service answered: {error}
+        <b>{ja ? `${what}を読めなかった。` : `${what} could not be read.`}</b>{" "}
+        {ja ? "サービスの答え" : "The service answered"}: {error}
         {/^(Failed to fetch|Load failed|NetworkError)/.test(error) ? (
-          <>
-            {" "}
-            A browser reports that same message whether the host is unreachable,
-            its reply carried no CORS header, or this page&rsquo;s own content
-            policy declined to make the request, and a script is not permitted
-            to tell the three apart.
-          </>
+          ja ? (
+            <>
+              {" "}
+              ブラウザは、ホストに届かない場合も、応答に CORS
+              ヘッダが無かった場合も、このページ自身のポリシーが要求を拒んだ
+              場合も、同じこの文言をスクリプトに報告する。三つを見分けることは
+              スクリプトには許されていない。
+            </>
+          ) : (
+            <>
+              {" "}
+              A browser reports that same message whether the host is unreachable,
+              its reply carried no CORS header, or this page&rsquo;s own content
+              policy declined to make the request, and a script is not permitted
+              to tell the three apart.
+            </>
+          )
         ) : null}
       </p>
     );
   }
-  return <p className="reg-state">Reading {what}.</p>;
+  return <p className="reg-state">{ja ? `${what}を読んでいる。` : `Reading ${what}.`}</p>;
 }

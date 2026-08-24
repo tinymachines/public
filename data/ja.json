@@ -85,5 +85,16 @@
   "Widget zoo": "ウィジェット動物園",
   "Die Runner: a console whose frames are run on the real die. The builder pages and the cartridge editor live beside it.": "Die Runner: 毎フレームを実物のダイで実行するコンソール。ビルダーページとカートリッジエディタが隣に住む。",
   "Engine-side answers to the Lab's findings": "Lab の指摘へのエンジン側の回答",
-  "The engine side of the Halfwave Lab review: what each finding turned out to be, with the tests that hold the answers.": "Halfwave Lab レビューのエンジン側: 各指摘が何であったか、回答を支えるテストとともに。"
+  "The engine side of the Halfwave Lab review: what each finding turned out to be, with the tests that hold the answers.": "Halfwave Lab レビューのエンジン側: 各指摘が何であったか、回答を支えるテストとともに。",
+  "serving": "稼働中",
+  "moving": "移動中",
+  "here": "ここ",
+  "here, and still on the subdomain": "ここ。サブドメインでも継続",
+  "documented here, not moved": "文書化はここ、移動はまだ",
+  "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service, and since 2026-08-24 the service answers under this address too: it names, per request, the door a request came through, so each address's schema tells the truth for that address. The subdomain stays the canonical name until the flip becomes a redirect.": "トランジスタレベルの MOS 6502 を HTTP で、半サイクルずつ。リファレンスはここにあり、稼働中のサービスと自分を突き合わせる。2026-08-24 からはサービス自身もこのアドレスで応答する: リクエストごとに、入ってきた扉を名乗るので、どのアドレスのスキーマもそのアドレスにとって真実を言う。正準の名前は、切り替えがリダイレクトになるまでサブドメインのまま。",
+  "Claim a handle, edit your page, publish a ROM: the registry's writing half, sent with a bearer token. The last games surface to move; it waited on the chip API's preflight admitting Authorization, which was a header rather than a decision.": "ハンドルを取得し、ページを編集し、ROM を公開する: レジストリの書き込み側、bearer トークンで。games の中で最後に移ったページで、チップ API のプリフライトが Authorization を許すのを待っていた。それは決定ではなく、無かったヘッダだった。",
+  "Everyone publishing cartridges, and what they published. Read-only here: the reading half of the registry API is open to this origin and the writing half is not.": "カートリッジを公開している全員と、その作品。ここでは読み取り専用: レジストリ API の読む側はこのオリジンに開いていて、書く側は開いていない。",
+  "A 6502, half a clock phase at a time. The R&D surface, and it stays R&D.": "6502 を、クロック半相ずつ。R&D のページであり、R&D のままでいる。",
+  "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone. The gateway publishes its own schema at /v1/openapi.json, and the reference here reads both documents on that host.": "TRNG の前に立つ、鍵とバイト予算。/v1/bytes は bearer トークンが要り、/v1/seeds は鍵なしで、プールを飲み干せない。開放されていた /random/* は 410 で応え、理由を述べる: プールは毎分数十バイトしか満ちず、誰からでも届いた。ゲートウェイは自分のスキーマを /v1/openapi.json で公開し、ここのリファレンスはそのホストの両方の文書を読む。",
+  "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors. Its landing page and its reference are here, generated from the schema it publishes and checked against what it answers.": "装置そのものと、その測定結果: バイトプール、乱数検定、長期・日周系列、インシデントとセンサー。そのランディングページとリファレンスはここにあり、装置が公開するスキーマから生成され、実際の応答と突き合わされる。"
 }
