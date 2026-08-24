@@ -2033,3 +2033,48 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   .ledger,
   .docs-body p:has(> img:only-child) { break-inside: avoid; }
 }
+
+/* ==========================================================================
+   JAPANESE TYPOGRAPHY, 2026-08-25. The kit's faces carry no kana, so every
+   Japanese glyph was falling through to whatever the browser had, behind
+   metrics tuned for English. These rules make the fallback a decision.
+
+   The stacks restate the Latin families before the Japanese ones, and that
+   duplication is deliberate and unavoidable: CSS cannot append to a custom
+   property, and the Latin faces must stay first so numerals and inline code
+   keep the same forms on both languages of every page. If a family changes
+   in tokens.css, change it here too; check-tokens cannot catch that, so
+   this comment is the tripwire.
+   ========================================================================== */
+html[lang="ja"] {
+  --font-display: "Archivo", "IBM Plex Sans Condensed", "Hiragino Sans",
+                  "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP",
+                  "Noto Sans JP", "Helvetica Neue", system-ui, sans-serif;
+  --font-sans:    "IBM Plex Sans", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+                  "Yu Gothic", "Noto Sans CJK JP", "Noto Sans JP",
+                  system-ui, -apple-system, sans-serif;
+  --font-serif:   "IBM Plex Serif", Georgia, "Hiragino Mincho ProN",
+                  "Yu Mincho", "Noto Serif CJK JP", "Noto Serif JP", serif;
+  --font-mono:    "IBM Plex Mono", "Berkeley Mono", ui-monospace,
+                  "SFMono-Regular", "Noto Sans Mono CJK JP", monospace;
+}
+
+/* Kana is a full-height square: the hero's 0.9 leading clipped a handakuten
+   against the line above, and its negative tracking pressed the squares
+   together. Zero and a little air, for Japanese only. */
+html[lang="ja"] .hero :is(h1, .hero-title) {
+  letter-spacing: 0;
+  line-height: 1.12;
+  font-feature-settings: "palt";
+}
+html[lang="ja"] .prose :is(h1, h2, h3) { letter-spacing: 0; }
+
+/* Japanese wants looser leading than English at the same size: the squares
+   have no ascender rhythm to separate the lines. 1.62 was measured right
+   for the Latin serif; 1.85 is the Japanese equivalent. */
+html[lang="ja"] .prose { line-height: 1.85; }
+html[lang="ja"] .hero .lede { line-height: 1.8; }
+
+/* Japanese has no italic. A slanted kana is a synthetic distortion, not an
+   emphasis convention, so em keeps its meaning and drops the slant. */
+html[lang="ja"] em { font-style: normal; }
