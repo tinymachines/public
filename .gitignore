@@ -65,3 +65,12 @@ web/app/favicon.ico
 # a side effect of shipping something else. Publishing it is a decision:
 # remove this line and commit deliberately when the guide is ready.
 docs/styles/
+
+# Pulled from the 6502 tree at build time by web/scripts/pull-chipdocs.mjs:
+# generated documents, and schematics that are CC BY-NC-SA die-trace data
+# this public repository must not redistribute. The site serves them from
+# build output; git never carries them.
+docs/6502/atlas.md
+docs/6502/idioms.md
+docs/6502/walk-snake.md
+web/public/6502/chipdocs/
