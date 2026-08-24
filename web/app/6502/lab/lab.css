@@ -69,7 +69,50 @@
   --glow: var(--phi1);
 }
 
+/* PAPER PAGE, DARK INSTRUMENTS, the same split the explorer got.
+
+   The lab is panel blocks all the way down and every one of them is the
+   machine talking, so those stay dark. What was wrong is that the PAGE was
+   dark too, which made it a slab against a paper site for the same reason the
+   explorer was one.
+
+   What sits directly on the shell is the title line, the transport bar and the
+   tab strip: chrome around the instruments rather than instruments. Those are
+   on paper now and the panels float on it, which is what the explorer looks
+   like and therefore what the site looks like.
+   ------------------------------------------------------------------------ */
 .lab-shell {
+  --ground:   var(--color-paper);
+  --panel:    var(--color-paper-sunk);
+  --panel2:   var(--color-paper-sunk);
+  --sunk:     var(--color-paper-sunk);
+  --rule:     var(--color-rule);
+  --bright:   var(--color-ink);
+  --text:     var(--color-ink);
+  --mid:      var(--color-ink-muted);
+  --dim:      var(--color-ink-muted);
+  --addr:     var(--color-ocean-ink);
+  --data:     var(--color-burnt-ink);
+  --alu:      var(--color-mustard-ink);
+  --teal:     var(--color-ocean-ink);
+  --reg:      var(--color-ink-muted);
+  --axis:     var(--color-ink-muted);
+  --power:    var(--color-orange-ink);
+  --cursor:   var(--color-mustard-ink);
+  --t2:       var(--color-forest-ink);
+  --t3:       var(--color-mustard-ink);
+
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* THE INSTRUMENTS. Every .panel in here holds values read off a storage node
+   on the die, so every one of them is panel, with the base forms of the hues
+   because they are read on dark. Doubled for the cascade, like the explorer:
+   this file is a link in the head and the lab's stylesheet is inline in the
+   body, so at equal specificity theirs wins. */
+.lab-shell.lab-shell .panel {
   /* THE GROUND AND ITS LADDER.
      panel is the instrument face; raised and sunk are the two directions off
      it. Everything between is mixed, and the percentages preserve the
