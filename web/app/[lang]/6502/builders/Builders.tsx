@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChrArt } from "@/app/components/ChrArt";
 import { RegistryState, useRegistry } from "@/app/components/RegistryData";
+import { localize, type Lang } from "@/lib/lang";
 import { day, type Index, type Rom } from "@/lib/registry";
 
 /**
@@ -18,7 +19,82 @@ import { day, type Index, type Rom } from "@/lib/registry";
  * page that is wrong between deploys with nothing to say so.
  */
 
-export function CartCard({ rom, api }: { rom: Rom; api: string }) {
+const L = {
+  en: {
+    by: (h: string) => `by ${h}`,
+    rom: "ROM",
+    tiles: "Tiles",
+    hcFrame: "Half-cycles a frame",
+    notMeasured: "not measured",
+    published: "Published",
+    play: "play it",
+    builders: (n: number) => (
+      <>
+        <b>
+          {n} {n === 1 ? "builder" : "builders"}
+        </b>{" "}
+        counted by the registry when this page loaded
+      </>
+    ),
+    carts: (n: number) => (
+      <>
+        <b>
+          {n} {n === 1 ? "cartridge" : "cartridges"}
+        </b>{" "}
+        published, each one re-run on the die before it was listed
+      </>
+    ),
+    limits: (r: number, kb: number) => (
+      <>
+        <b>{r} cartridges a builder</b> and {kb} KB each, read from the
+        registry&rsquo;s own limits rather than from anything written here
+      </>
+    ),
+    recent: "Recently published",
+    nothing: "Nothing has been published yet.",
+    buildersTitle: "Builders",
+    nobody: "Nobody has claimed a handle yet.",
+    cartCount: (n: number) => `${n} ${n === 1 ? "cartridge" : "cartridges"}`,
+    theirPage: "their page",
+    what: "the builders",
+  },
+  ja: {
+    by: (h: string) => `作: ${h}`,
+    rom: "ROM",
+    tiles: "タイル",
+    hcFrame: "1 フレームの半サイクル",
+    notMeasured: "未計測",
+    published: "公開日",
+    play: "遊ぶ",
+    builders: (n: number) => (
+      <>
+        <b>ビルダー {n} 人</b> このページ読み込み時にレジストリが数えた値
+      </>
+    ),
+    carts: (n: number) => (
+      <>
+        <b>カートリッジ {n} 本</b> が公開済み。どれも掲載前にダイ上で
+        走らせ直された
+      </>
+    ),
+    limits: (r: number, kb: number) => (
+      <>
+        <b>1 ビルダーあたり {r} 本</b>、各 {kb} KB。ここに書かれた値ではなく
+        レジストリ自身の上限から読み取り
+      </>
+    ),
+    recent: "新着",
+    nothing: "まだ何も公開されていない。",
+    buildersTitle: "ビルダー",
+    nobody: "まだ誰もハンドルを取得していない。",
+    cartCount: (n: number) => `カートリッジ ${n} 本`,
+    theirPage: "そのページへ",
+    what: "ビルダー一覧",
+  },
+} as const;
+
+export function CartCard({ rom, api, lang = "en" }: { rom: Rom; api: string; lang?: Lang }) {
+  const T = L[lang];
   return (
     <article className="rail reg-card">
       {rom.cover ? (
@@ -28,26 +104,26 @@ export function CartCard({ rom, api }: { rom: Rom; api: string }) {
       ) : null}
       <div>
         <h3>{rom.title}</h3>
-        <Link className="handle" href={`/6502/b/${rom.handle}`}>
-          by {rom.handle}
+        <Link className="handle" href={localize(lang, `/6502/builders/${rom.handle}`)}>
+          {T.by(rom.handle)}
         </Link>
       </div>
       <p>{rom.blurb}</p>
       <dl className="kv">
         <div>
-          <dt>ROM</dt>
+          <dt>{T.rom}</dt>
           <dd>{rom.rom_size} B</dd>
         </div>
         <div>
-          <dt>Tiles</dt>
+          <dt>{T.tiles}</dt>
           <dd>{rom.tiles}</dd>
         </div>
         <div>
-          <dt>Half-cycles a frame</dt>
-          <dd>{rom.frame_cost ?? "not measured"}</dd>
+          <dt>{T.hcFrame}</dt>
+          <dd>{rom.frame_cost ?? T.notMeasured}</dd>
         </div>
         <div>
-          <dt>Published</dt>
+          <dt>{T.published}</dt>
           <dd>{day(rom.created)}</dd>
         </div>
       </dl>
@@ -56,8 +132,11 @@ export function CartCard({ rom, api }: { rom: Rom; api: string }) {
             and it names the subdomain, which was right when the console was
             there and is a link off this site now that it is here. The console
             takes ?cart=<url> and always has. */}
-        <Link className="tag live" href={`/6502/games?cart=${encodeURIComponent(api + rom.cart_url)}`}>
-          play it
+        <Link
+          className="tag live"
+          href={`${localize(lang, "/6502/games")}?cart=${encodeURIComponent(api + rom.cart_url)}`}
+        >
+          {T.play}
         </Link>
         <a className="tag" data-address href={`${api}${rom.cart_url}`}>
           .cart.gz
@@ -67,45 +146,32 @@ export function CartCard({ rom, api }: { rom: Rom; api: string }) {
   );
 }
 
-export function Builders({ api }: { api: string }) {
+export function Builders({ api, lang = "en" }: { api: string; lang?: Lang }) {
+  const T = L[lang];
   const { data, error } = useRegistry<Index>(`${api}/v1/registry`);
 
-  if (!data) return <RegistryState error={error} what="the builders" />;
+  if (!data) return <RegistryState error={error} what={T.what} lang={lang} />;
 
   return (
     <>
       <div className="chips">
-        <span className="measured">
-          <b>
-            {data.count} {data.count === 1 ? "builder" : "builders"}
-          </b>{" "}
-          counted by the registry when this page loaded
-        </span>
-        <span className="measured">
-          <b>
-            {data.roms} {data.roms === 1 ? "cartridge" : "cartridges"}
-          </b>{" "}
-          published, each one re-run on the die before it was listed
-        </span>
-        <span className="measured">
-          <b>{data.limits.roms} cartridges a builder</b> and{" "}
-          {data.limits.cart_bytes / 1024} KB each, read from the registry&rsquo;s
-          own limits rather than from anything written here
-        </span>
+        <span className="measured">{T.builders(data.count)}</span>
+        <span className="measured">{T.carts(data.roms)}</span>
+        <span className="measured">{T.limits(data.limits.roms, data.limits.cart_bytes / 1024)}</span>
       </div>
 
-      <h2>Recently published</h2>
+      <h2>{T.recent}</h2>
       {data.latest.length ? (
         <div className="reg-grid">
           {data.latest.map((r) => (
-            <CartCard key={`${r.handle}/${r.slug}`} rom={r} api={api} />
+            <CartCard key={`${r.handle}/${r.slug}`} rom={r} api={api} lang={lang} />
           ))}
         </div>
       ) : (
-        <p className="reg-state">Nothing has been published yet.</p>
+        <p className="reg-state">{T.nothing}</p>
       )}
 
-      <h2>Builders</h2>
+      <h2>{T.buildersTitle}</h2>
       {data.builders.length ? (
         <div className="reg-grid">
           {data.builders.map((b) => (
@@ -116,25 +182,23 @@ export function Builders({ api }: { api: string }) {
                 ) : null}
                 <div>
                   <h3>{b.name}</h3>
-                  <Link className="handle" href={`/6502/b/${b.handle}`}>
+                  <Link className="handle" href={localize(lang, `/6502/builders/${b.handle}`)}>
                     @{b.handle}
                   </Link>
                 </div>
               </div>
               <p>{b.bio}</p>
               <p className="chips">
-                <span className="tag">
-                  {b.roms} {b.roms === 1 ? "cartridge" : "cartridges"}
-                </span>
-                <Link className="tag live" href={`/6502/b/${b.handle}`}>
-                  their page
+                <span className="tag">{T.cartCount(b.roms)}</span>
+                <Link className="tag live" href={localize(lang, `/6502/builders/${b.handle}`)}>
+                  {T.theirPage}
                 </Link>
               </p>
             </article>
           ))}
         </div>
       ) : (
-        <p className="reg-state">Nobody has claimed a handle yet.</p>
+        <p className="reg-state">{T.nobody}</p>
       )}
     </>
   );

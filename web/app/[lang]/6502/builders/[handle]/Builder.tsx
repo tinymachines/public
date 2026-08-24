@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChrArt } from "@/app/components/ChrArt";
 import { RegistryState, useRegistry } from "@/app/components/RegistryData";
+import { localize, type Lang } from "@/lib/lang";
 import { day, type Builder as Doc, type Rom } from "@/lib/registry";
 
 /**
@@ -16,44 +17,111 @@ import { day, type Builder as Doc, type Rom } from "@/lib/registry";
  * reader's half of it. The evidence is on the page.
  */
 
+const L = {
+  en: {
+    barLeft: "measured at publish",
+    barRight: "on the die",
+    booted: "booted",
+    yes: "yes",
+    no: "no",
+    frames: "frames finished",
+    of: "of",
+    hc: "half-cycles a frame",
+    screen: "screen changed",
+    tilesUsed: "tiles used",
+    cart: "cartridge",
+    published: (n: number, d: string) => (
+      <>
+        <b>
+          {n} {n === 1 ? "cartridge" : "cartridges"}
+        </b>{" "}
+        published, joined {d}
+      </>
+    ),
+    whatPublished: "What they have published",
+    romLine: (slug: string, size: number, tiles: number) => (
+      <>
+        {slug} &middot; {size} B of ROM, {tiles} tiles
+      </>
+    ),
+    play: "play it",
+    nothingYet: (h: string) => (
+      <>
+        <b>@{h}</b> has a page and has published nothing yet.
+      </>
+    ),
+  },
+  ja: {
+    barLeft: "公開時に実測",
+    barRight: "ダイ上で",
+    booted: "ブート",
+    yes: "はい",
+    no: "いいえ",
+    frames: "完了フレーム",
+    of: "/",
+    hc: "1 フレームの半サイクル",
+    screen: "画面の変化",
+    tilesUsed: "使用タイル",
+    cart: "カートリッジ",
+    published: (n: number, d: string) => (
+      <>
+        <b>カートリッジ {n} 本</b>を公開、参加 {d}
+      </>
+    ),
+    whatPublished: "公開したもの",
+    romLine: (slug: string, size: number, tiles: number) => (
+      <>
+        {slug} &middot; ROM {size} B、タイル {tiles} 枚
+      </>
+    ),
+    play: "遊ぶ",
+    nothingYet: (h: string) => (
+      <>
+        <b>@{h}</b> にはページがあり、まだ何も公開していない。
+      </>
+    ),
+  },
+} as const;
+
 /** The publish-time run, shown rather than summarised. */
-function Measured({ rom }: { rom: Rom }) {
+function Measured({ rom, lang }: { rom: Rom; lang: Lang }) {
+  const T = L[lang];
   const m = rom.measured;
   return (
     <div className="panel">
       <div className="panel-bar">
-        <span>measured at publish</span>
-        <span>on the die</span>
+        <span>{T.barLeft}</span>
+        <span>{T.barRight}</span>
       </div>
       <div className="panel-face">
         <table className="readout">
           <tbody>
             <tr>
-              <th>booted</th>
-              <td className="num">{m.booted ? "yes" : "no"}</td>
+              <th>{T.booted}</th>
+              <td className="num">{m.booted ? T.yes : T.no}</td>
             </tr>
             <tr>
-              <th>frames finished</th>
+              <th>{T.frames}</th>
               <td className="num">
-                {m.frames_completed} of {m.frames_requested}
+                {m.frames_completed} {T.of} {m.frames_requested}
               </td>
             </tr>
             <tr>
-              <th>half-cycles a frame</th>
+              <th>{T.hc}</th>
               <td className="num">{m.half_cycles.join(", ")}</td>
             </tr>
             <tr>
-              <th>screen changed</th>
-              <td className="num">{m.screen_changed ? "yes" : "no"}</td>
+              <th>{T.screen}</th>
+              <td className="num">{m.screen_changed ? T.yes : T.no}</td>
             </tr>
             <tr>
-              <th>tiles used</th>
+              <th>{T.tilesUsed}</th>
               <td className="num">
-                {m.tiles_used.length} of {rom.tiles}
+                {m.tiles_used.length} {T.of} {rom.tiles}
               </td>
             </tr>
             <tr>
-              <th>cartridge</th>
+              <th>{T.cart}</th>
               <td className="num">{rom.bytes} B</td>
             </tr>
             <tr>
@@ -75,12 +143,21 @@ function Measured({ rom }: { rom: Rom }) {
   );
 }
 
-export function Builder({ handle, api }: { handle: string; api: string }) {
+export function Builder({
+  handle,
+  api,
+  lang = "en",
+}: {
+  handle: string;
+  api: string;
+  lang?: Lang;
+}) {
+  const T = L[lang];
   const { data, error } = useRegistry<Doc>(
     `${api}/v1/registry/b/${encodeURIComponent(handle)}`,
   );
 
-  if (!data) return <RegistryState error={error} what={`@${handle}`} />;
+  if (!data) return <RegistryState error={error} what={`@${handle}`} lang={lang} />;
 
   return (
     <>
@@ -93,13 +170,7 @@ export function Builder({ handle, api }: { handle: string; api: string }) {
           <p className="handle">@{data.handle}</p>
           <p>{data.bio}</p>
           <p className="chips">
-            <span className="measured">
-              <b>
-                {data.roms.length}{" "}
-                {data.roms.length === 1 ? "cartridge" : "cartridges"}
-              </b>{" "}
-              published, joined {day(data.created)}
-            </span>
+            <span className="measured">{T.published(data.roms.length, day(data.created))}</span>
             {data.links.map((l) => (
               <a key={l.url} className="tag" data-address href={l.url} rel="nofollow ugc noopener">
                 {l.label}
@@ -109,7 +180,7 @@ export function Builder({ handle, api }: { handle: string; api: string }) {
         </div>
       </div>
 
-      <h2>What they have published</h2>
+      <h2>{T.whatPublished}</h2>
       {data.roms.length ? (
         <div className="reg-grid">
           {data.roms.map((rom) => (
@@ -121,18 +192,16 @@ export function Builder({ handle, api }: { handle: string; api: string }) {
               ) : null}
               <div>
                 <h3>{rom.title}</h3>
-                <span className="handle">
-                  {rom.slug} &middot; {rom.rom_size} B of ROM, {rom.tiles} tiles
-                </span>
+                <span className="handle">{T.romLine(rom.slug, rom.rom_size, rom.tiles)}</span>
               </div>
               <p>{rom.blurb}</p>
-              <Measured rom={rom} />
+              <Measured rom={rom} lang={lang} />
               <p className="chips">
                 <Link
                   className="tag live"
-                  href={`/6502/games?cart=${encodeURIComponent(api + rom.cart_url)}`}
+                  href={`${localize(lang, "/6502/games")}?cart=${encodeURIComponent(api + rom.cart_url)}`}
                 >
-                  play it
+                  {T.play}
                 </Link>
                 <a className="tag" data-address href={`${api}${rom.cart_url}`}>
                   .cart.gz
@@ -142,9 +211,7 @@ export function Builder({ handle, api }: { handle: string; api: string }) {
           ))}
         </div>
       ) : (
-        <p className="reg-state">
-          <b>@{data.handle}</b> has a page and has published nothing yet.
-        </p>
+        <p className="reg-state">{T.nothingYet(data.handle)}</p>
       )}
     </>
   );

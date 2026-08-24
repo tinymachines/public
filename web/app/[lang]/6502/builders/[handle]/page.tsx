@@ -1,6 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { Builder } from "./Builder";
@@ -51,9 +52,11 @@ export default async function BuilderPage({ params }: PageProps<"/[lang]/6502/bu
     <Shell lang={lang as Lang} die="REG" title={`@${handle}`}>
       <main className="prose">
         <p className="crumb">
-          <Link href="/6502/builders">All builders</Link>
+          <Link href={localize(lang as Lang, "/6502/builders")}>
+            {lang === "ja" ? "ビルダー一覧" : "All builders"}
+          </Link>
         </p>
-        <Builder handle={handle.toLowerCase()} api={chipApi()} />
+        <Builder handle={handle.toLowerCase()} api={chipApi()} lang={lang as Lang} />
       </main>
     </Shell>
   );

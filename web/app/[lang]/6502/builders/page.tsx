@@ -1,6 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { Builders } from "./Builders";
@@ -41,30 +42,67 @@ export const metadata: Metadata = {
     "Everyone publishing cartridges for the transistor-level 6502, and what they have published.",
 };
 
+const PROSE = {
+  en: {
+    title: "Builders",
+    intro: (
+      <>
+        A cartridge is one gzipped file carrying a ROM, its tiles and the
+        contract it was written to. Publishing one does not upload a claim
+        about it: the registry runs it on the die, and what you see under
+        each cartridge below is what the chip did, not what its author typed.
+        A ROM that never finishes a frame is not listed.
+      </>
+    ),
+    pubTitle: "Publishing happens in the editor",
+    pub: (m: string) => (
+      <>
+        Claiming a handle, editing a page and publishing a cartridge all send
+        a bearer token, and for a while a browser on this site could not send
+        one to that service: the preflight refused the{" "}
+        <code>Authorization</code> header, which was a header that was not
+        there rather than a decision. Fixed on the service 2026-08-24, so{" "}
+        <Link href={m}>the editor</Link> is a page here now.
+      </>
+    ),
+  },
+  ja: {
+    title: "ビルダー",
+    intro: (
+      <>
+        カートリッジは、ROM とタイルと、それが書かれた規約を運ぶ一つの gzip
+        ファイルだ。公開しても、それについての主張はアップロードされない:
+        レジストリがダイの上で走らせ、下の各カートリッジに見える数字は、作者
+        が打ち込んだものではなくチップがしたことだ。フレームを一度も完了
+        しない ROM は掲載されない。
+      </>
+    ),
+    pubTitle: "公開はエディタで行う",
+    pub: (m: string) => (
+      <>
+        ハンドルの取得も、ページの編集も、カートリッジの公開も bearer
+        トークンを送る。そしてしばらくの間、このサイトのブラウザはあの
+        サービスにそれを送れなかった: プリフライトが{" "}
+        <code>Authorization</code> ヘッダを拒んでいた。それは決定ではなく、
+        無かったヘッダだ。2026-08-24 にサービス側で修正され、
+        <Link href={m}>エディタ</Link>はいまここのページだ。
+      </>
+    ),
+  },
+} as const;
+
 export default async function BuildersPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
+  const S = PROSE[lang];
   return (
-    <Shell lang={lang} die="REG" title="Builders">
+    <Shell lang={lang} die="REG" title={S.title}>
       <main className="prose">
-        <p>
-          A cartridge is one gzipped file carrying a ROM, its tiles and the
-          contract it was written to. Publishing one does not upload a claim
-          about it: the registry runs it on the die, and what you see under
-          each cartridge below is what the chip did, not what its author typed.
-          A ROM that never finishes a frame is not listed.
-        </p>
+        <p>{S.intro}</p>
 
-        <Builders api={chipApi()} />
+        <Builders api={chipApi()} lang={lang} />
 
-        <h2>Publishing is still on the subdomain</h2>
-        <p>
-          Claiming a handle, editing a page and publishing a cartridge all send
-          a bearer token, and for a while a browser on this site could not send
-          one to that service: the preflight refused the{" "}
-          <code>Authorization</code> header, which was a header that was not
-          there rather than a decision. Fixed on the service 2026-08-24, so{" "}
-          <Link href="/6502/manage">the editor</Link> is a page here now.
-        </p>
+        <h2>{S.pubTitle}</h2>
+        <p>{S.pub(localize(lang, "/6502/manage"))}</p>
       </main>
     </Shell>
   );
