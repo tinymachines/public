@@ -279,7 +279,7 @@ bad=0
 # 200 whether or not anybody has that handle, because the registry is read in
 # the browser and the frame is this site's own. A real handle here would make
 # our deploy depend on a row in somebody else's database.
-for p in / /docs /docs/6502 /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
+for p in / /docs /docs/6502 /docs/hotbits /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
          /6502 /6502/explorer /6502/games /6502/lab /6502/builders /6502/builders/nobody /6502/api \
          /hotbits /hotbits/api \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
