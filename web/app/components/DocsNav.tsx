@@ -18,7 +18,15 @@ import type { TreeNode } from "@/lib/docs";
  * still derived on the server and passed in, so nothing about which pages
  * exist is decided in the browser.
  */
-export function DocsNav({ nodes, root }: { nodes: TreeNode[]; root: { route: string; title: string } }) {
+export function DocsNav({
+  nodes,
+  root,
+  label = "Documentation",
+}: {
+  nodes: TreeNode[];
+  root: { route: string; title: string };
+  label?: string;
+}) {
   const { lang, path: here } = delocalize(usePathname() ?? "/");
 
   function List({ items, depth }: { items: TreeNode[]; depth: number }) {
@@ -41,7 +49,7 @@ export function DocsNav({ nodes, root }: { nodes: TreeNode[]; root: { route: str
 
   return (
     <nav className="tree" aria-label="Documentation">
-      <div className="sect">Documentation</div>
+      <div className="sect">{label}</div>
       <Link href={localize(lang, root.route)} aria-current={here === root.route ? "page" : undefined}>
         {root.title}
       </Link>

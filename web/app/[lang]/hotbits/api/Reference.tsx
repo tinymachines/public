@@ -161,7 +161,7 @@ const L = {
     oneSchema: "このページ読み込み時の、装置自身の openapi.json",
     groups: (n: number) => (
       <>
-        <b>{n} グループ</b>。スキーマにタグが無いので、ルート自身から分類
+        <b>{n} グループ。</b>スキーマにタグが無いので、ルート自身から分類
       </>
     ),
     asked: (p: number, n: number) => (

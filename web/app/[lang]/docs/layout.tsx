@@ -1,5 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import { docsTree, rootPage } from "@/lib/docs";
+import type { TreeNode } from "@/lib/docs";
+import { t } from "@/lib/i18n";
 import { DocsNav } from "@/app/components/DocsNav";
 import { Shell } from "@/app/components/SiteFrame";
 
@@ -13,8 +15,17 @@ import { Shell } from "@/app/components/SiteFrame";
  */
 export default async function DocsLayout({ children, params }: LayoutProps<"/[lang]/docs">) {
   const { lang } = await params;
-  const root = rootPage();
-  const tree = docsTree();
+  // Localized HERE, on the server, because the nav is a client component and
+  // t() reads the overlay off disk. The crumbs already spoke Japanese while
+  // the sidebar did not, which was two names for one page on one screen.
+  const loc = (n: TreeNode): TreeNode => ({
+    ...n,
+    page: { ...n.page, title: t(lang as Lang, n.page.title) },
+    children: n.children.map(loc),
+  });
+  const bare = rootPage();
+  const root = { ...bare, title: t(lang as Lang, bare.title) };
+  const tree = docsTree().map(loc);
 
   return (
     <Shell
@@ -26,7 +37,7 @@ export default async function DocsLayout({ children, params }: LayoutProps<"/[la
     >
       <div className="docs-shell">
         <div className="docs-nav">
-          <DocsNav nodes={tree} root={root} />
+          <DocsNav nodes={tree} root={root} label={t(lang as Lang, "Documentation")} />
         </div>
         <main className="docs-body prose">{children}</main>
       </div>

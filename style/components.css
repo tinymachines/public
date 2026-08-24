@@ -2078,3 +2078,8 @@ html[lang="ja"] .hero .lede { line-height: 1.8; }
 /* Japanese has no italic. A slanted kana is a synthetic distortion, not an
    emphasis convention, so em keeps its meaning and drops the slant. */
 html[lang="ja"] em { font-style: normal; }
+
+/* A Japanese crumb was wrapping inside a word (シミュレ / ータ). Names in a
+   trail are short, so forbidding intra-word breaks costs nothing: the trail
+   still wraps between its own links and at spaces. */
+html[lang="ja"] .crumb { word-break: keep-all; }
