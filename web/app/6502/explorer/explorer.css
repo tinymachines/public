@@ -66,11 +66,22 @@
   font-family: var(--font-sans);
 }
 
-/* THE INSTRUMENT, and only the instrument. The stage where the die is drawn
-   and the readout panels beside it: everything in here is a value that came
-   off the chip, so everything in here is panel. The base forms of the hues
-   come back with it, because they are read on dark again. */
-.explorer-shell #explorer,
+/* THE INSTRUMENT, and only the instrument.
+   `.console` is what every one of the eighteen pages calls the box its live
+   surface sits in: the die stage on the explorer, the signal walker on the
+   schematic, the waveforms on timing, the PLA on decode. Found by looking at
+   all of them rather than by fixing the one I had open, which is why this is
+   one rule instead of eighteen.
+
+   Everything inside it is a value that came off the chip, so everything inside
+   it is panel, and the base forms of the hues come back with it because they
+   are read on dark again. `.panel` joins it for the explorer's own sidebars,
+   which sit outside the console box.
+
+   The section AROUND a console stays paper. It carries the heading and the
+   sentence explaining what the instrument is for, and those are documentation
+   about the machine rather than the machine. */
+.explorer-shell .console,
 .explorer-shell .panel {
   --space:      var(--color-panel);
   --surface:    var(--color-panel-raised);
@@ -90,7 +101,16 @@
 
   --hard: var(--shadow-panel);
 }
-.explorer-shell #explorer {
+/* Doubled, for the reason the container above is: this file is a <link> in the
+   head and their stylesheet is inline in the body, so at equal specificity
+   theirs wins.
+
+   It cost a measurement to notice. Their rule paints the console with
+   `color-mix(... 92%, transparent)`, which was a subtle darkening over their
+   own dark page and is a WASH over paper: the opcode matrix came out mid-grey
+   with the page showing through it. Computed value said
+   `color(srgb 0.117 0.113 0.101 / 0.92)`, and the alpha is the whole story. */
+.explorer-shell.explorer-shell .console {
   background: var(--space);
   color: var(--foreground);
   border-radius: var(--radius-mod);
