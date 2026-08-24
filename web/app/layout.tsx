@@ -17,7 +17,8 @@ import { token } from "@/lib/tokens";
 
 export const metadata: Metadata = {
   title: "tinymachines",
-  description: "A transistor-level MOS 6502, and the things built on it.",
+  description:
+    "A transistor-level MOS 6502 and the things built on it, and true random bytes from radioactive decay. Everything measured, nothing asserted.",
 };
 
 /**

@@ -113,7 +113,7 @@
         {
           "key": "games",
           "name": "Die Runner",
-          "what": "Die Runner: a console whose frames are run on the real die. The cartridge editor is still on the subdomain, because a browser here cannot send it a bearer token.",
+          "what": "Die Runner: a console whose frames are run on the real die. The builder pages and the cartridge editor live beside it.",
           "piece": "console",
           "serves_today": "https://games.tinymachines.ai",
           "lands_at": "/6502/games",
@@ -188,7 +188,7 @@
         {
           "key": "gateway",
           "name": "The entropy gateway",
-          "what": "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at about seventy-five bytes a minute and was reachable by anyone. Neither /v1 route is in the published schema, which is what the reference here reports.",
+          "what": "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone. The gateway publishes its own schema at /v1/openapi.json, and the reference here reads both documents on that host.",
           "nav": false,
           "nav_label": "The hotbits API",
           "piece": null,

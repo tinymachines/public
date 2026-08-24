@@ -79,8 +79,7 @@ export default function GamesPage() {
           A console whose frames are run on a transistor-level MOS 6502. The
           screen is a page of the chip&rsquo;s own memory and nothing draws it
           but this page. The <Link href="/6502/builders">builder pages</Link>{" "}
-          are here too; the cartridge editor is not, because a browser on this
-          site cannot send that service a bearer token yet.
+          and <Link href="/6502/manage">the editor</Link> are here too.
         </p>
 
         <div className="con-stage">
