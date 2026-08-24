@@ -240,10 +240,6 @@ export default async function ArchivePage({ params }: { params: Promise<{ lang: 
             </tbody>
           </table>
         </div>
-        <div className="tbl-foot">
-          <span>{S.footLeft}</span>
-          <span>{S.footRight}</span>
-        </div>
       </div>
 
       <h2>{S.whereTitle}</h2>

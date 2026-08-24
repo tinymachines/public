@@ -162,17 +162,10 @@ export default async function HotbitsPage({ params }: { params: Promise<{ lang: 
               </tbody>
             </table>
           </div>
-          <div className="tbl-foot">
-            <span>{S.probed(measuredOn())}</span>
-            <span>{S.redirectMap}</span>
-          </div>
         </div>
 
         <h2>{S.refTitle}</h2>
         <p>{S.ref(localize(lang, "/hotbits/api"))}</p>
-
-        <h2>{S.designTitle}</h2>
-        <p>{S.design}</p>
       </main>
     </Shell>
   );

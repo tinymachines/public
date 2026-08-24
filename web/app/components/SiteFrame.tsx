@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { nav } from "@/lib/projects";
 import { labels, menuGroups, type MenuGroup } from "@/lib/nav";
 import { localize, t, type Lang } from "@/lib/i18n";
 import { Crumbs } from "./Crumbs";
@@ -79,22 +78,13 @@ export function Masthead({
  * sets the voice, not because they are different lists.
  */
 export function SiteFooter({ lang }: { lang: Lang }) {
-  const entries = nav();
+  // No navigation down here any more (owner's call, 2026-08-25): the menu is
+  // the one place the site's map lives, and a second copy in the footer was
+  // both a repeat and a temptation to drift. What remains is the name and
+  // what is running, which is the only fact a footer has to offer.
   return (
     <footer className="crumb site-foot">
       <Link href={localize(lang, "/")}>tinymachines.ai</Link>
-      {entries.map(({ href, label }) => (
-        <span key={href}>
-          {" · "}
-          {href.startsWith("/api") ? (
-            // The API is uvicorn, not a page of this build, and it has no
-            // Japanese edition: the anchor stays unprefixed in every language.
-            <a href={`${href}/`}>{t(lang, label)}</a>
-          ) : (
-            <Link href={localize(lang, href)}>{t(lang, label)}</Link>
-          )}
-        </span>
-      ))}
       {/* What is running, asked of the running process rather than baked in.
           Renders nothing at all when the API cannot answer. */}
       <VersionFooter />
@@ -195,6 +185,7 @@ export function Shell({
   title,
   navExtra,
   titleIsHeading,
+  pageHead = true,
   children,
   ...rest
 }: {
@@ -209,6 +200,13 @@ export function Shell({
   title: string;
   /** False where the content carries its own h1. See Masthead. */
   titleIsHeading?: boolean;
+  /**
+   * False where the page opens with its own display heading and a page head
+   * would only repeat the wordmark above it. The front page: its hero is its
+   * h1, and "tinymachines" twice in 80px of paper was the first thing the
+   * slim bar exposed.
+   */
+  pageHead?: boolean;
   /** An extra node beside the nav, inside <header>. One page needs it: the
       Die Runner console's game.js writes into `header .sub`, and that
       selector is its contract rather than a choice. */
@@ -220,18 +218,19 @@ export function Shell({
       {/* Publishes the bands' heights so anchors can clear the masthead.
           Renders nothing; the CSS has a fallback for every value it sets. */}
       <AppMetrics />
+      {/* The bar is ONE row and never wraps: the die tile and the wordmark on
+          the left, the flags and the menu on the right. The page's title used
+          to live up here too, and at 390px three things fought for one line
+          and the title lost every time. The title now opens the page, where a
+          title belongs, and the bar carries only what is the same on every
+          page. The die tile takes the project's accent, so which section you
+          are in is a colour before it is a word. */}
       <header className="app-head">
-        {/* The menu sits beside the masthead rather than inside it: it is a
-            control, and the masthead is a heading. Aligned to the top so it
-            stays put whether the title is one line or two. */}
-        <div className="band app-head-row">
-          <Masthead
-            die={die}
-            title={title}
-            crumb={<Crumbs labels={localizedLabels(lang)} lang={lang} />}
-            titleIsHeading={titleIsHeading}
-            meta={navExtra}
-          />
+        <div className="band topbar">
+          <Link href={localize(lang, "/")} className="wordmark" aria-label="tinymachines.ai">
+            <span className="die">{die}</span>
+            <b>tinymachines</b>
+          </Link>
           <LangSwitch lang={lang} />
           <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} />
         </div>
@@ -246,7 +245,24 @@ export function Shell({
           untranslated document, which is the copy of the fact that cannot
           drift from it. */}
       <main className="app-main">
-        <div className="page">{children}</div>
+        <div className="page">
+          {/* The page head: the trail, the name, and whatever a page hangs
+              beside its name. This is the masthead's content, moved into the
+              page from the bar. The h1 rule is unchanged: the content owns
+              the heading where it carries one, and a build check counts. */}
+          {pageHead ? (
+            <div className="page-head">
+              <Crumbs labels={localizedLabels(lang)} lang={lang} />
+              {/* No label where the content owns the heading: the trail's last
+                  segment already names the page, and "DOCUMENTATION" twice in
+                  two lines was what the label amounted to. `title` still
+                  feeds the crumb labels and the document title. */}
+              {titleIsHeading === false ? null : <h1>{title}</h1>}
+              {navExtra ? <div className="mh-meta">{navExtra}</div> : null}
+            </div>
+          ) : null}
+          {children}
+        </div>
       </main>
 
       <footer className="app-foot">

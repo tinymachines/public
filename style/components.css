@@ -144,7 +144,7 @@ h2.display { font-size: var(--text-h2); }
   font-weight: 500;
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  color: var(--color-burnt-ink);
+  color: var(--color-accent-ink);
   margin: 0 0 calc(var(--u) * 3);
 }
 .eyebrow::after {
@@ -182,7 +182,7 @@ h2.display { font-size: var(--text-h2); }
               background var(--t-snap) var(--ease-detent);
 }
 .btn-primary {
-  background: var(--color-burnt-ink);
+  background: var(--color-accent-ink);
   color: var(--color-paper);
   box-shadow: 3px 3px 0 var(--color-ink);
 }
@@ -854,7 +854,7 @@ h2.display { font-size: var(--text-h2); }
 .tree a[aria-current="page"] {
   color: var(--color-ink);
   font-weight: 600;
-  border-left-color: var(--color-burnt-ink);
+  border-left-color: var(--color-accent-ink);
   background: var(--color-paper-sunk);
 }
 .tree .d { padding-left: calc(var(--u) * 4); }
@@ -1162,14 +1162,14 @@ h2.display { font-size: var(--text-h2); }
 /* A tag used as a link is still a tag, but it has to say so on hover. */
 a.tag {
   text-decoration: none;
-  color: var(--color-burnt-ink);
-  border-color: var(--color-burnt-ink);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent-ink);
   transition: color var(--t-snap) var(--ease-snap),
     border-color var(--t-snap) var(--ease-snap),
     background var(--t-snap) var(--ease-snap);
 }
-a.tag:hover { color: var(--color-paper); background: var(--color-burnt-ink); }
-a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-burnt-ink); }
+a.tag:hover { color: var(--color-paper); background: var(--color-accent-ink); }
+a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-accent-ink); }
 
 /* A colour swatch inside an inline code chip. Used by the docs renderer when
    a code span is a hex value, so the style guide's palette shows the colours
@@ -1331,7 +1331,7 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   border-color: var(--color-ink);
 }
 .input:disabled { color: var(--color-ink-faint); cursor: not-allowed; }
-.input[type="checkbox"] { width: auto; accent-color: var(--color-burnt-ink); }
+.input[type="checkbox"] { width: auto; accent-color: var(--color-accent-ink); }
 
 .field .hint { font-size: var(--text-fine); color: var(--color-ink-muted); }
 .field.bad .input { border-color: var(--color-red-ink); }
@@ -1674,7 +1674,7 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 .menu-item:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: -2px; }
 .menu-item[aria-current="page"] {
   background: var(--color-paper-sunk);
-  border-left-color: var(--color-burnt-ink);
+  border-left-color: var(--color-accent-ink);
 }
 
 /* The crumb trail is navigation now rather than a label, so its parts look
@@ -2086,3 +2086,189 @@ html[lang="ja"] em { font-style: normal; }
    BEFORE it stays legal until strict says otherwise, which is how
    "アーカイブ" still split after its first character. */
 html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
+
+/* ==========================================================================
+   23. THE SLIM FRAME, 2026-08-25. Owner's iteration: the bar was fighting
+   its own title at 390px, the menu read as a page, the footer scrolled away.
+
+   Written as overrides after the rules they replace, which is the placement
+   check-cascade.py enforces. The older .masthead and .app-head-row rules
+   stay for the zoo's specimens and are no longer what the shell renders.
+   ========================================================================== */
+
+/* THE BAR: one row, three things, never wraps. */
+.app-head .band.topbar {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3);
+  padding-top: calc(var(--u) * 2);
+  padding-bottom: calc(var(--u) * 2);
+  border-bottom: 1px solid var(--color-rule);
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 2.5);
+  margin-right: auto;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+.wordmark b {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-lead);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+/* The die tile, wearing the section's accent. This is where the colour knob
+   is seen first: the tile is the same ink block on every page and its text
+   is the one thing that changes as you cross into a project. */
+.topbar .die {
+  width: calc(var(--u) * 9);
+  height: calc(var(--u) * 9);
+  display: grid;
+  place-items: center;
+  background: var(--color-ink);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-hair);
+  flex: 0 0 auto;
+}
+.topbar > .lang-switch,
+.topbar > .menu-wrap { flex: 0 0 auto; }
+
+/* THE PAGE HEAD: the trail, the name, the page's own meta. The 2px rule that
+   used to close the masthead closes this, so the page still opens the way it
+   always did; it just no longer competes with the controls for the row. */
+.page-head {
+  padding: calc(var(--u) * 4) 0 calc(var(--u) * 4);
+  margin-bottom: calc(var(--u) * 6);
+  border-bottom: 2px solid var(--color-rule);
+}
+.page-head .crumb { margin-bottom: calc(var(--u) * 2); }
+.page-head :is(h1, .mh-title) {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-wrap: balance;
+}
+.page-head .mh-meta { margin-top: calc(var(--u) * 3); }
+@media (max-width: 34rem) {
+  .page-head :is(h1, .mh-title) { font-size: var(--text-h2); }
+}
+
+/* The bar is short now, so the fallbacks that assumed an 11rem masthead
+   would leave every fragment target floating a page-height too low. */
+.app-shell :is(h1, h2, h3, h4, h5, h6, [id]) {
+  scroll-margin-top: calc(var(--app-head-h, 4rem) + var(--u) * 4);
+}
+
+/* THE MENU IS A CARD, hung from its button. Right-aligned under the control
+   that opened it, the width of a recipe card, and it scrolls inside itself
+   past the viewport. It used to span the header and read as a second page
+   dropping over the first. */
+.menu-wrap { position: relative; }
+.menu-panel {
+  top: calc(100% + var(--u) * 2);
+  left: auto;
+  right: 0;
+  width: min(24rem, calc(100vw - var(--u) * 8));
+  max-height: calc(100dvh - var(--app-head-h, 4rem) - var(--u) * 6);
+  border: 1px solid var(--color-ink);
+  border-top: 2px solid var(--color-ink);
+  border-radius: var(--radius-hair);
+  box-shadow: 4px 4px 0 var(--color-ink-faint), var(--shadow-card);
+}
+.menu-sheet {
+  display: block;
+  max-width: none;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3) calc(var(--u) * 3);
+}
+.menu-group + .menu-group { margin-top: calc(var(--u) * 2); }
+.menu-item { padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5); }
+.menu-scrim { display: none; }
+
+/* On a phone the card floats over a faint wash of paper, centred, still a
+   card: the wash is what stops it reading as a page. */
+@media (max-width: 34rem) {
+  .menu-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+    background: color-mix(in srgb, var(--color-paper) 72%, transparent);
+  }
+  .menu-panel {
+    position: fixed;
+    top: calc(var(--app-head-h, 4rem) + var(--u) * 2);
+    left: calc(var(--u) * 3);
+    right: calc(var(--u) * 3);
+    width: auto;
+    max-height: calc(100dvh - var(--app-head-h, 4rem) - var(--app-foot-h, 3rem) - var(--u) * 6);
+  }
+}
+
+/* THE FOOTER, LOCKED. The earlier note in section 21 argued the other way
+   and it was right about the version it described, which was three lines of
+   links. This one is one line: the name and what is running. That is chrome,
+   and chrome may stay put. The main region pads for it so nothing ends
+   underneath. */
+.app-foot {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 24;
+  border-top: 1px solid var(--color-rule);
+  background: var(--color-paper);
+}
+.app-foot .band {
+  padding-top: calc(var(--u) * 1.5);
+  padding-bottom: calc(var(--u) * 1.5);
+}
+.app-foot .site-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-main { padding-bottom: calc(var(--app-foot-h, 3rem) + var(--u) * 6); }
+
+/* The workbench bar follows the same rule as the top bar: one row on a phone,
+   the trail yields, the title truncates, the controls keep their corner. */
+@media (max-width: 34rem) {
+  .wb-bar { flex-wrap: nowrap; }
+  .wb-bar .crumb { display: none; }
+}
+
+/* Where the content owns the h1, the page head's title is a section label,
+   not a second display heading over the document's own. Docs read
+   "Documentation" at 48px over "Verification" at 48px until this. */
+.page-head .mh-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  line-height: 1.4;
+}
+
+/* The wordmark yields before the controls do. At 390px in Japanese the
+   wider menu label left the flags sitting on the wordmark's last letter:
+   the mark shrinks a step on a phone and, if the row is still short, it is
+   the one thing allowed to truncate. */
+.wordmark { flex: 1 1 auto; }
+.wordmark b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 34rem) {
+  .wordmark b { font-size: var(--text-body); }
+}

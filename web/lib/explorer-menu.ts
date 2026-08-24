@@ -61,6 +61,7 @@ function readTheirMenu(): TheirGroup[] {
 export function explorerMenu(): MenuGroup[] {
   const theirs = readTheirMenu();
   const real = new Set(explorerPages().map((p) => p.slug));
+  const explorerRoutes = explorerPages().map((p) => `/6502/${p.slug}`);
 
   const groups: MenuGroup[] = [];
   for (const g of theirs) {
@@ -97,7 +98,11 @@ export function explorerMenu(): MenuGroup[] {
         hint: it.hint,
       });
     }
-    if (items.length) groups.push({ title: g.title, when: "/6502", items });
+    // Shown on the explorer's own pages and nowhere else. On the 6502
+    // landing, the console or the editor these eight clusters were a
+    // directory of eighteen pages under a recipe card, which is the
+    // pollution the owner named. Inside the explorer they are the map.
+    if (items.length) groups.push({ title: g.title, when: "/6502", only: explorerRoutes, items });
   }
 
   // The checks that make the extraction trustworthy rather than hopeful. The

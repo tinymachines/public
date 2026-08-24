@@ -56,6 +56,9 @@ IDENTITY = {
     "--color-mustard", "--color-mustard-ink",
     "--color-forest", "--color-forest-ink",
     "--color-ocean", "--color-ocean-ink",
+    # The accent knob: the one pair a section turns to get its colour. It is
+    # identity by definition, and it is contrast-checked below like the rest.
+    "--color-accent", "--color-accent-ink",
 
     # The two grounds. Semantically fixed (paper is documentation, panel is the
     # machine talking) but their VALUES are identity, and warming or cooling a
@@ -114,6 +117,8 @@ PAIRS = [
     ("--color-mustard",     "--color-panel", 4.5, "Mustard on panel"),
     ("--color-forest",      "--color-panel", 4.5, "Forest on panel"),
     ("--color-ocean",       "--color-panel", 4.5, "Ocean on panel"),
+    ("--color-accent-ink",  "--color-paper", 4.5, "the accent on paper"),
+    ("--color-accent",      "--color-panel", 4.5, "the accent on panel"),
 ]
 
 DECL = re.compile(r"(--[A-Za-z0-9-]+)\s*:\s*([^;{}]+);")

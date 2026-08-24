@@ -55,6 +55,13 @@ export interface MenuGroup {
    * is what makes each subsection's menu its own without any page passing it.
    */
   when: string | null;
+  /**
+   * An exact list of routes the group belongs to, for a section whose pages
+   * are flat rather than nested. The explorer's eighteen pages live at
+   * /6502/<slug>, beside the landing and the console, so a prefix cannot
+   * pick them out; this can. When present it replaces the prefix test.
+   */
+  only?: string[];
   items: MenuItem[];
 }
 
@@ -100,23 +107,34 @@ export function menuGroups(): MenuGroup[] {
     },
   ];
 
-  // Each project's surfaces, but only the ones that have actually arrived.
-  // A menu entry pointing at a subdomain would be a menu that takes you off
-  // the site while claiming to be the site's own navigation.
-  //
-  // Shown EVERYWHERE, not only inside the project. The menu used to scope
-  // these groups to their own section, which read as clever and tested as
-  // confusing: on the front page the panel showed six links and no way to
-  // learn the 6502 section has seven surfaces, and the same button opened a
-  // different menu on every floor of the building. The core map is now the
-  // same on every page; what varies by section is appended AFTER it, below.
+  // The projects, as a list of doors: one line each, shown everywhere. This
+  // is what the front page's menu is FOR, and it is all the front page needs
+  // to say about a project: its name and what it is. The parts inside a
+  // project are that project's own business, below.
+  const doors = projects().filter((p) => p.key !== "roof" && p.landing && arrivedSurfaces(p).length);
+  if (doors.length) {
+    groups.push({
+      title: "Projects",
+      when: null,
+      items: doors.map((p) => ({ href: p.landing as string, label: p.name, hint: firstSentence(p.what) })),
+    });
+  }
+
+  // Each project's surfaces, but only the ones that have actually arrived,
+  // and only INSIDE that project. This went back and forth: scoped first,
+  // then shown everywhere because the front page could not tell you the 6502
+  // section had seven surfaces, and that turned the front page's menu into
+  // a directory of every sub-page on the site. The doors list above answers
+  // the first complaint; scoping answers the second. Inside a project the
+  // menu opens on that project, which is the recipe card the owner asked
+  // for: the thing under your hand, not the whole cookbook.
   for (const p of projects()) {
     if (p.key === "roof" || !p.landing) continue;
     const here = arrivedSurfaces(p);
     if (!here.length) continue;
     groups.push({
       title: p.name,
-      when: null,
+      when: p.landing,
       items: [
         // "Overview", not "<name> overview": the item sits under a group
         // heading that already says whose overview it is, and a label that

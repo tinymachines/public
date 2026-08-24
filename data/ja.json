@@ -104,5 +104,6 @@
   "Everyone publishing cartridges, and what they published. Read-only here: publishing happens in the editor.": "カートリッジを公開している全員と、その公開物。ここでは読み取り専用: 公開はエディタで行う。",
   "A 6502, half a clock phase at a time. The research bench, and it stays one.": "6502 を、クロック半相ずつ。研究の作業台であり、これからもそうである。",
   "The written documentation, with its navigation built from the documents themselves.": "書かれたドキュメント。ナビゲーションは文書自身から組み立てられる。",
-  "The guide and the widget zoo: every component, shown working.": "ガイドとウィジェット動物園: すべてのコンポーネントを、動く形で見せる。"
+  "The guide and the widget zoo: every component, shown working.": "ガイドとウィジェット動物園: すべてのコンポーネントを、動く形で見せる。",
+  "Projects": "プロジェクト"
 }

@@ -92,6 +92,20 @@
   --color-red-ink:        #B0281B;  /*                · 5.9:1 on paper   */
 
   /* --------------------------------------------------------------------
+     THE ACCENT KNOB
+
+     One pair, and it is the only thing a project section turns to get a
+     colour of its own: eyebrows, primary buttons, tag links, the current
+     item in a tree or a menu, and the die tile in the bar all read it.
+     The house default is Burnt Silicon; style/projects/<key>.css sets it
+     per section, and check-silo.py holds the pair to AA on its grounds.
+     Never used for state: blue, orange and red keep their meanings.
+     -------------------------------------------------------------------- */
+
+  --color-accent:         var(--color-burnt);      /* on panel */
+  --color-accent-ink:     var(--color-burnt-ink);  /* on paper */
+
+  /* --------------------------------------------------------------------
      THE CHROME CORE
 
      Bezel material. Chrome is an *edge*, never a fill and never a

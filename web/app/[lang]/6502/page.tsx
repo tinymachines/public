@@ -33,7 +33,7 @@ const PROSE = {
   en: {
     surfaces: (n: number, d: string) => (
       <>
-        <b>{n} parts</b>, each address probed {d}
+        <b>{n} parts,</b> each address probed {d}
       </>
     ),
     hereCount: (h: number, n: number) => (
@@ -116,13 +116,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
   const { lang } = await params;
   const S = PROSE[lang];
   const p = project("6502");
-  const settled = p.surfaces.filter((s) => s.lands_at_settled).length;
   // Counted, not stated. This page carried the sentence "Nothing has moved
   // yet" for as long as it took five surfaces to move, and the table beside it
   // said "here" on every one of them. A page disagreeing with its own table is
   // the exact failure the rest of this repository is arranged to prevent, and
   // it happened because that sentence was typed.
-  const here = p.surfaces.filter((s) => s.status === "here");
 
   return (
     <Shell lang={lang} die="6502" title={p.name}>
@@ -133,8 +131,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
         </div>
 
         <p>{t(lang, p.what)}</p>
-
-        <p className="notice">{S.hereCount(here.length, p.surfaces.length)}</p>
 
         <h2>{S.theSurfaces}</h2>
         <div className="ledger">
@@ -179,15 +175,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
               </tbody>
             </table>
           </div>
-          <div className="tbl-foot">
-            <span>{S.settled(settled, p.surfaces.length)}</span>
-            <span>{S.redirectMap}</span>
-          </div>
         </div>
-
-        <h2>{S.whyTitle}</h2>
-        <p>{S.why1}</p>
-        <p>{S.why2}</p>
       </main>
     </Shell>
   );

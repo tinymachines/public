@@ -77,7 +77,12 @@ export function Menu({ groups, label = "Menu" }: { groups: MenuGroup[]; label?: 
   // the documentation group; aria-current below compares the RAW path,
   // because the item hrefs arrive already localized.
   const { path: section } = delocalize(here);
-  const shown = groups.filter((g) => g.when === null || section === g.when || section.startsWith(g.when + "/"));
+  const inSection = (g: MenuGroup) =>
+    g.only ? g.only.includes(section) : g.when !== null && (section === g.when || section.startsWith(g.when + "/"));
+  // The section you are standing in comes FIRST, then the site. A reader who
+  // opens the menu inside 6502 wants 6502 under their thumb; the way out is
+  // still there, below, and it is the same on every page.
+  const shown = [...groups.filter(inSection), ...groups.filter((g) => g.when === null && !g.only)];
 
   return (
     <div className="menu-wrap" ref={wrap}>
@@ -100,6 +105,11 @@ export function Menu({ groups, label = "Menu" }: { groups: MenuGroup[]; label?: 
       {/* Rendered only when open. A hidden panel that is still in the tree is
           one a screen reader can still reach and a Tab can still land in. */}
       {open ? (
+        <>
+        {/* The scrim only paints on a phone (the CSS decides): a faint wash of
+            paper over the page so the card reads as a card on top of it rather
+            than as a new page. Closing on tap is the outside-click rule above. */}
+        <div className="menu-scrim" aria-hidden="true" />
         <div className="menu-panel" id={panelId}>
           {/* The panel spans the header; the sheet inside it keeps the site's
               measure, so the columns line up with the masthead above and the
@@ -140,6 +150,7 @@ export function Menu({ groups, label = "Menu" }: { groups: MenuGroup[]; label?: 
           ))}
           </div>
         </div>
+        </>
       ) : null}
     </div>
   );

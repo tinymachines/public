@@ -1,25 +1,18 @@
 /* ---------------------------------------------------------------------------
    6502: the project silo.
 
-   It overrides nothing, and that is the correct content for this file rather
-   than a placeholder.
+   One knob turned, and turned to the house value on purpose: the palette in
+   tokens.css was sampled off the owner's binder FOR this work, so Burnt
+   Silicon IS the 6502's colour and the house default at once. It is written
+   here rather than inherited so the file says what the section's colour is,
+   the same way hotbits.css does, and so changing the house default one day
+   does not silently recolour the 6502.
 
-   The palette in tokens.css was sampled off the owner's binder scans FOR this
-   work: Burnt Silicon, Mustard Conductor, Forest Logic and Ocean Data are the
-   6502's own colours, and the drive-state ramp is halfphi's Drive enum given
-   colour. Restating those values here would be a second copy of the palette,
-   and a second copy of a palette drifts in one of them while both still look
-   like a palette.
-
-   The file exists so the seam is the same shape for every project. Adding
-   hotbits should mean writing hotbits.css, not discovering that 6502 works by
-   a mechanism nothing else uses.
-
-   What may go here, if the 6502 work ever wants its own accent distinct from
-   the house palette, is listed in hotbits.css and enforced by
-   style/check-silo.py.
+   Everything else stays inherited. style/check-silo.py enforces the list of
+   what may go here and holds the accent pair to AA on both grounds.
    ------------------------------------------------------------------------ */
 
 [data-project="6502"] {
-  /* Deliberately empty. See above. */
+  --color-accent:     var(--color-burnt);
+  --color-accent-ink: var(--color-burnt-ink);
 }

@@ -198,16 +198,17 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
   }
 
   return (
-    <Shell lang={lang} die="6502" title="tinymachines">
+    <Shell lang={lang} die="6502" title="tinymachines" pageHead={false}>
 
       {/* The binder's H1 layout, with the masthead still the document's h1:
           this is display type on the page, not a second heading, so it is a
           styled paragraph. The lede is the same measured sentence the page
           always opened with; only the clothes changed. */}
       <section className="hero">
-        <p className="hero-title" aria-hidden="true">
-          {S.heroTitle}
-        </p>
+        {/* The document's h1. It was a styled paragraph while the masthead
+            carried the name; with no page head on the front page, the
+            opening claim is the heading, which is what it always read as. */}
+        <h1 className="hero-title">{S.heroTitle}</h1>
         <p className="lede">{S.hero(die.nodes, die.transistors)}</p>
         <div className="hero-ctas">
           <Link className="btn btn-primary" href={localize(lang, "/6502/explorer")}>
@@ -360,8 +361,6 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
           API
         </a>
       </div>
-
-      <p className="notice">{S.notice}</p>
 
     </Shell>
   );

@@ -132,10 +132,8 @@ const PROSE = {
     published: "Published",
     notice: (
       <>
-        Tokens are handed out by hand for now, and that is a limitation
-        rather than a design. What it does get right: a token is shown once
-        and only its SHA-256 is stored, so a copy of the registry is not a
-        copy of everybody&rsquo;s credentials.
+        Tokens are issued by hand for now. A token is shown once and only its
+        SHA-256 is stored.
       </>
     ),
   },
@@ -210,8 +208,8 @@ const PROSE = {
     published: "公開済み",
     notice: (
       <>
-        トークンはいまのところ手渡しで、それは設計ではなく制約だ。正しくできているのは: トークンは一度だけ表示され、保存されるのは SHA-256
-        だけ。だからレジストリの写しは、全員の資格情報の写しにはならない。
+        トークンは当面、手渡しで発行される。トークンは一度だけ表示され、
+        保存されるのはその SHA-256 だけだ。
       </>
     ),
   },

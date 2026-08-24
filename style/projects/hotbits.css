@@ -20,6 +20,16 @@
 
 [data-project="hotbits"] {
 
+  /* THE ACCENT, and it is the one thing chosen here so far: Forest Logic,
+     the palette's green, for the instrument that counts decays. Chosen from
+     the four categorical hues rather than invented, so it is a knob turned
+     and not a colour picked; the display face and the mark below stay the
+     owner's. Both forms, because the tile in the bar is read on ink and
+     the eyebrows are read on paper. */
+  --color-accent:     var(--color-forest);
+  --color-accent-ink: var(--color-forest-ink);
+
+
   /* THE CATEGORICAL HUES. Four, each in two forms, because contrast is
      ground-dependent: the base reads on panel, the -ink form reads on paper.
      Using the wrong one is the single most common way this palette goes

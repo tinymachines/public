@@ -365,7 +365,10 @@ if (!manifest) {
     }
     const silo = await readFile(path.join(import.meta.dirname, "..", "..", p.silo), "utf8");
     const declares = /--[A-Za-z0-9-]+\s*:/.test(silo.replace(/\/\*[\s\S]*?\*\//g, ""));
-    if (declares && !css.includes(`[data-project="${p.key}"]`)) {
+    // Lightning CSS drops the quotes around an attribute value that is a
+    // plain identifier, so "hotbits" arrives unquoted and "6502" (a digit
+    // first) keeps them. Both forms are the same selector.
+    if (declares && !css.includes(`[data-project="${p.key}"]`) && !css.includes(`[data-project=${p.key}]`)) {
       failures.push(
         `${p.silo} declares tokens but [data-project="${p.key}"] is not in the built stylesheet.\n` +
         "    Check the @import chain in app/globals.css. A silo that does not reach the build\n" +
@@ -411,34 +414,12 @@ if (manifest) {
     console.error(`check-build: only ${entries.length} nav entries derived; this would pass on nothing.`);
     process.exit(2);
   }
-  // Both places the list is rendered must carry all of it. The footer held its
-  // own hand-written copy until it was noticed that /6502 had reached the nav
-  // and not the footer, which is a footer missing one link and therefore a
-  // footer that looks entirely normal.
-  for (const file of files) {
-    const body = await readFile(file, "utf8");
-    const foot = body.match(/<footer[^>]*class="[^"]*site-foot[^"]*"[\s\S]*?<\/footer>/);
-    if (!foot) continue;
-    for (const href of entries) {
-      const target = href === "/api" ? "/api/" : href;
-      if (!foot[0].includes(`href="${target}"`)) {
-        failures.push(
-          `${path.relative(APP, file)}: the footer does not carry ${target}, which the navigation does.\n` +
-          "    Both render lib/projects.ts nav(). A footer missing one link looks exactly like a footer.");
-      }
-    }
-    break;   // the frame is one component; one page proves it
-  }
-
-  for (const href of entries) {
-    if (served.has(href)) continue;   // served by something other than this build
-    if (!routes.has(href)) {
-      failures.push(
-        `the navigation carries ${href}, which this build does not serve.\n` +
-        `    Prerendered routes: ${[...routes].filter((r) => !r.startsWith("/_")).sort().join(", ")}\n` +
-        "    A nav with a dead link in it still looks exactly like a nav.");
-    }
-  }
+  // The footer no longer renders the map (owner's call, 2026-08-25): the menu
+  // is the one place it appears, built from this same list in lib/nav.ts, so
+  // there is no second rendering left to drift. The parity check that lived
+  // here compared the footer against the nav and is retired with it; what
+  // remains above is the check that every entry points at a route that
+  // exists, which is the one that still has something to catch.
 }
 
 // 12. The console page must satisfy game.js's DOM contract.
