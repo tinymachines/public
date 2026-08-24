@@ -160,3 +160,48 @@ impression:
 Three different answers to the same question, which is the thing being fixed.
 The explorer's `site-menu.js` is the closest to what this repo already does
 with the docs navigation, and it is worth reading before replacing.
+
+
+## The move, as it stands
+
+Checked against the running site on 2026-08-23, not from memory.
+
+| | |
+|---|---|
+| the roof | **here.** Front page, docs, style guide, zoo, admin, API |
+| the explorer | **here.** All 18 pages, paper prose with the instrument on panel |
+| Die Runner | **here.** The console. Its registry pages are not |
+| the halfwave lab | **here.** Paper page, dark instruments |
+| the visual6502 archive | **here.** Our overview, their preservation below it |
+| the 6502 API | **not moved.** `lands_at` still a proposal |
+| the registry pages | **not moved.** `/builders`, `/b/<handle>`, `/manage` |
+| hotbits | **not started.** Two surfaces recorded, nothing built |
+
+### What is left, and what each one waits on
+
+1. **The registry pages.** They read live registry data, so moving them is the
+   listings work in `tinymachines/6502#11`, not a restyle. Waiting on that PR.
+2. **The 6502 API.** Nothing technical: it is a decision about whether
+   `/6502/api` proxies the same service or the API moves under the apex for
+   real, and the second one changes what `openapi.json` says its own paths are.
+3. **The explorer's prose.** The owner's. Every page is its own words in its
+   own order; what changed is the ground under them.
+4. **The archive's deeper pages.** Left in their own design on purpose. See the
+   overview page for why: a preservation that has been restyled is no longer
+   quite a preservation.
+5. **hotbits.** After 6502 settles, per the owner.
+
+### Two things that are known and not defects
+
+- **A 404 for `/6502/sw.js` on the explorer pages.** Their `app.js` registers a
+  service worker at a relative path. It is caught, nothing breaks, and fixing
+  it means either copying their modules here to patch them or serving a second
+  worker scoped to `/6502/` that would take those pages away from the site's
+  own. It goes with the rewrite.
+- **The explorer pages have two fewer SVG elements than the originals.** Those
+  are the octocat marks `site-nav.js` injects, and the roof provides its own
+  navigation. This is written down because it looked like a rendering bug for
+  about ten minutes: `block` appeared to draw nothing until the same page on
+  the original was measured the same way and found to draw nothing either.
+  Its diagram needs a block selected. With one, it is 203 KB of SVG and 22
+  ports.

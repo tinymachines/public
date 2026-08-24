@@ -33,6 +33,10 @@ export const metadata: Metadata = {
 export default function ArchivePage() {
   return (
     <Shell die="ARC" title="The visual6502 archive">
+      {/* .prose is what sets the reading measure and the heading scale. Without
+          it the copy ran the full 1056px column and the h2s rendered at body
+          size, which reads as a page that forgot its own type scale. */}
+      <main className="prose">
       <div className="chips">
         <span className="measured">
           <b>174 MB</b> counted on disk, 2026-08-23
@@ -131,6 +135,7 @@ export default function ArchivePage() {
         rewritten as the bytes go out, because the files themselves are not
         ours to edit.
       </p>
+      </main>
     </Shell>
   );
 }
