@@ -2081,5 +2081,8 @@ html[lang="ja"] em { font-style: normal; }
 
 /* A Japanese crumb was wrapping inside a word (シミュレ / ータ). Names in a
    trail are short, so forbidding intra-word breaks costs nothing: the trail
-   still wraps between its own links and at spaces. */
-html[lang="ja"] .crumb { word-break: keep-all; }
+   still wraps between its own links and at spaces. keep-all alone was not
+   enough: the prolonged sound mark is line-break class CJ, and a break
+   BEFORE it stays legal until strict says otherwise, which is how
+   "アーカイブ" still split after its first character. */
+html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
