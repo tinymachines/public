@@ -569,10 +569,42 @@ def test_projects_route_reports_the_manifest(client):
     assert body["surfaces"] >= 5, "not enough surfaces; this check would pass on nothing"
     arrived = [s for p in body["projects"] for s in p["surfaces"] if s["status"] != "not started"]
     assert body["arrived"] == len(arrived)
-    assert 0 < body["arrived"] < body["surfaces"], (
-        "either nothing or everything has arrived, which makes the count meaningless "
-        "as a check"
+    assert body["arrived"] > 0, "nothing has arrived, so this count is checking nothing"
+
+
+def test_arrived_actually_discriminates():
+    """The count must be a filter, not a length.
+
+    This assertion used to be `0 < arrived < surfaces`, on the reasoning that a
+    number equal to the total could have been produced by counting everything.
+    That was true and it was the wrong way to test it: it made the check depend
+    on the move being unfinished, and it went red the day the last surface
+    landed. A passing test that fails on success is not measuring what it says.
+
+    So the discrimination is proved against a manifest built here, the same way
+    style/check-silo.py proves its rules against synthetic silos rather than
+    against whatever happens to be in the tree. Both halves matter: a filter
+    that keeps everything and one that keeps nothing both have to be caught.
+    """
+    from models import Surface
+    from projects import arrived
+
+    def surface(status: str) -> Surface:
+        return Surface(
+            key="k", name="n", what="w", nav=False, nav_label=None, prerendered=True,
+            piece=None, serves_today="https://example.invalid",
+            lands_at="/k", lands_at_settled=False, status=status,
+        )
+
+    mixed = [surface("here"), surface("not started"), surface("reference here")]
+    # The shipped function, not a copy of its rule. A test that restated the
+    # comprehension would have gone on passing while the module changed.
+    counted = arrived(mixed)
+    assert len(counted) == 2, (
+        "the rule that produces `arrived` no longer separates a surface that has "
+        "moved from one that has not"
     )
+    assert all(s.status != "not started" for s in counted)
 
 
 def test_a_surface_carries_both_addresses(client):

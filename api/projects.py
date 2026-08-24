@@ -48,6 +48,17 @@ if len(BY_KEY) != len(PROJECTS):
 
 SURFACES = [s for p in PROJECTS for s in p.surfaces]
 
-# "not started" is the manifest's own words for a surface that has not moved.
+def arrived(surfaces: list) -> list:
+    """The surfaces that have moved, by the manifest's own words for it.
+
+    A function rather than the comprehension it used to be, so a test can hand
+    it a mixed set and prove it separates them. The assertion it replaced was
+    `0 < arrived < total` against the real manifest, which held only while the
+    move was unfinished and went red the day the last surface landed. A test
+    that fails on success is not measuring what it claims to.
+    """
+    return [s for s in surfaces if s.status != "not started"]
+
+
 # Counted rather than tracked, so the number cannot disagree with the list.
-ARRIVED = [s for s in SURFACES if s.status != "not started"]
+ARRIVED = arrived(SURFACES)
