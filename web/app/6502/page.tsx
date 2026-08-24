@@ -30,6 +30,12 @@ export const metadata: Metadata = {
 export default function ProjectPage() {
   const p = project("6502");
   const settled = p.surfaces.filter((s) => s.lands_at_settled).length;
+  // Counted, not stated. This page carried the sentence "Nothing has moved
+  // yet" for as long as it took five surfaces to move, and the table beside it
+  // said "here" on every one of them. A page disagreeing with its own table is
+  // the exact failure the rest of this repository is arranged to prevent, and
+  // it happened because that sentence was typed.
+  const here = p.surfaces.filter((s) => s.status === "here");
 
   return (
     <Shell die="6502" title={p.name}>
@@ -44,9 +50,12 @@ export default function ProjectPage() {
         <p>{p.what}</p>
 
         <p className="notice">
-          <b>Nothing has moved yet.</b> Every surface below is still served from
-          its own subdomain and keeps working exactly as it does today. This
-          page is the plan and the current addresses, not a redirect.
+          <b>
+            {here.length} of {p.surfaces.length} surfaces are here.
+          </b>{" "}
+          Every one of them still answers at its own subdomain as well, because
+          nothing has been switched off. This page is the plan and the current
+          addresses, not a redirect.
         </p>
 
         <h2>The surfaces</h2>

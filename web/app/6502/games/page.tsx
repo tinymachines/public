@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Script from "next/script";
+import { chipApi } from "@/lib/projects";
 import { Shell } from "../../components/SiteFrame";
 import "./console.css";
 
@@ -31,20 +33,29 @@ import "./console.css";
  * are paper. Putting the gates on paper would be a rule broken, not a
  * preference.
  *
- * ## Not moved
+ * ## What is still not here
  *
- * `/builders`, `/b/<handle>` and `/manage` are still on the subdomain. They
- * are the registry's surfaces and they read live data, so moving them is the
- * work tinymachines/6502#9 is about, not a restyle. The links below point at
- * where they actually are, which is the honest thing for a page to do while a
- * move is half done.
+ * `/manage`, the editor. `/builders` and `/b/<handle>` arrived with the
+ * listings work in tinymachines/6502#11 and are at ../builders. The editor
+ * could not follow them: it sends a bearer token, and a preflight from this
+ * origin to that service comes back accepting four headers, none of which is
+ * Authorization. The links below point at where things actually are, which is
+ * the honest thing for a page to do while a move is half done.
  */
 
-const CHIP_API = "https://6502.tinymachines.ai/api";
-// The builder pages have not moved. A cartridge linked in with ?cart=
-// credits its builder, and that link has to point where they actually
-// are rather than at a /b/ this site does not serve.
-const BUILDERS = "https://games.tinymachines.ai";
+// Where the chip API answers, read from data/projects.json rather than
+// written out here. Four surfaces name the same host now that the registry
+// has arrived, and four literals is three too many. See lib/projects.ts.
+const CHIP_API = chipApi();
+
+// The builder pages HAVE moved, and this is the line that says so. game.js
+// builds `<base>/b/<handle>` when a cartridge was linked in with ?cart=, so
+// an empty-ish base of "/6502" resolves to /6502/b/<handle>, which is the
+// path the registry hands out and which redirects to where the page is
+// written. It was the games subdomain until this deploy, and a page that has
+// moved must not link back to where it used to be as though it were still
+// there.
+const BUILDERS = "/6502";
 
 export const metadata: Metadata = {
   title: "Die Runner",
@@ -68,10 +79,9 @@ export default function GamesPage() {
         <p>
           A console whose frames are run on a transistor-level MOS 6502. The
           screen is a page of the chip&rsquo;s own memory and nothing draws it
-          but this page. The{" "}
-          <a href="https://games.tinymachines.ai/builders">builder pages</a> and
-          the cartridge editor have not moved and are still on
-          games.tinymachines.ai.
+          but this page. The <Link href="/6502/builders">builder pages</Link>{" "}
+          are here too; the cartridge editor is not, because a browser on this
+          site cannot send that service a bearer token yet.
         </p>
 
         <div className="con-stage">
@@ -195,10 +205,15 @@ export default function GamesPage() {
         <p>
           A cartridge is one gzipped file carrying the ROM, its tiles and the
           contract it was written to. Mint one with{" "}
-          <a href="https://6502.tinymachines.ai/api/">POST /v1/cartridge</a>,
-          then load it here or link to it with <code>?cart=</code>. The builder
-          pages and the editor are still at{" "}
-          <a href="https://games.tinymachines.ai/builders">games.tinymachines.ai/builders</a>.
+          <a data-address href={`${CHIP_API}/`}>POST /v1/cartridge</a>,
+          then load it here or link to it with <code>?cart=</code>. Everything
+          published so far is on the{" "}
+          <Link href="/6502/builders">builder pages</Link>, and the editor that
+          mints one is still at{" "}
+          <a data-address href="https://games.tinymachines.ai/manage">
+            games.tinymachines.ai/manage
+          </a>
+          .
         </p>
       </main>
 

@@ -31,6 +31,30 @@ const nextConfig: NextConfig = {
   // saying why.
   pageExtensions: ["ts", "tsx", "md", "mdx"],
 
+  // The redirect map, which is what a moved public path becomes.
+  //
+  // The registry hands out `/b/<handle>`: it is in every `play_url` the
+  // service writes and in every link anybody has shared. Those links are not
+  // ours to break, so the path answers here and 308s to where the page is
+  // written.
+  //
+  // Here rather than as a route that renders a redirect. A page component
+  // calling permanentRedirect() is still a page: Next prerendered /6502/b to
+  // an HTML file with no heading in it, and the build's own "exactly one h1"
+  // check failed on a document that exists only to say "go there instead".
+  // A redirect is configuration, not a document.
+  //
+  // Why the page is at /6502/builders/<handle> and not /6502/b/<handle>: the
+  // breadcrumbs are derived from the path, and the second spelling puts a
+  // crumb called "b" in the trail pointing at a collection page that would
+  // exist only to give that crumb somewhere to go.
+  async redirects() {
+    return [
+      { source: "/6502/b", destination: "/6502/builders", permanent: true },
+      { source: "/6502/b/:handle", destination: "/6502/builders/:handle", permanent: true },
+    ];
+  },
+
   // Pin the workspace root to the REPOSITORY, not to web/.
   //
   // Two reasons, and the second one is not optional. Left unset, Turbopack

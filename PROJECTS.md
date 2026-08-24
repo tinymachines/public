@@ -170,17 +170,29 @@ Checked against the running site on 2026-08-23, not from memory.
 |---|---|
 | the roof | **here.** Front page, docs, style guide, zoo, admin, API |
 | the explorer | **here.** All 18 pages, paper prose with the instrument on panel |
-| Die Runner | **here.** The console. Its registry pages are not |
+| Die Runner | **here.** The console, and a cartridge from the registry loads into it |
+| the registry | **here, read-only.** The builder pages. The editor could not follow |
 | the halfwave lab | **here.** Paper page, dark instruments |
 | the visual6502 archive | **here.** Our overview, their preservation below it |
 | the 6502 API | **not moved.** `lands_at` still a proposal |
-| the registry pages | **not moved.** `/builders`, `/b/<handle>`, `/manage` |
+| the cartridge editor | **not moved.** `/manage`, blocked by a missing CORS header |
 | hotbits | **not started.** Two surfaces recorded, nothing built |
 
 ### What is left, and what each one waits on
 
-1. **The registry pages.** They read live registry data, so moving them is the
-   listings work in `tinymachines/6502#11`, not a restyle. Waiting on that PR.
+1. **The cartridge editor.** Claiming a handle, editing a page and publishing a
+   cartridge all send a bearer token, and a browser on this origin cannot send
+   one to that service: the preflight comes back allowing `GET, POST, OPTIONS`
+   and accepting four headers, none of which is `Authorization`. Measured, not
+   assumed, and filed as `tinymachines/6502#12`. It is a header that is not
+   there rather than a decision that has not been taken.
+
+   The apex could proxy the writes through its own API, where there is no
+   browser and therefore no preflight, and that would work today. It is
+   deliberately not done: `tinymachines/6502#9` items 5 and 6, the read-only
+   service scope and the identity binding, were left undone on the grounds
+   that they turn into an internal join if games moves under the apex, and a
+   credentialed proxy built now is that boundary built twice.
 2. **The 6502 API.** Nothing technical: it is a decision about whether
    `/6502/api` proxies the same service or the API moves under the apex for
    real, and the second one changes what `openapi.json` says its own paths are.
@@ -191,7 +203,25 @@ Checked against the running site on 2026-08-23, not from memory.
    quite a preservation.
 5. **hotbits.** After 6502 settles, per the owner.
 
-### Two things that are known and not defects
+### Merged is not deployed, and the pages were written for both
+
+`tinymachines/6502#11` added `GET /v1/registry/roms`, an `art=none` form on
+every listing, `ETag` with `304` on `If-None-Match`, and `HEAD` on every route.
+It is merged. **The service answering at `6502.tinymachines.ai/api` is older
+than that**: it has none of them and still sends `Cache-Control: no-store`.
+Found by asking it rather than by reading the branch.
+
+So the builder pages ask for nothing that is not answering today, and handle
+the `art=none` reply the moment it appears: a listing that hands back a URL
+instead of a CHR block is drawn by fetching the URL, in the same
+`{"w", "h", "chr"}` shape. Nothing here has to change on the day that service
+is restarted, and nothing here is broken until it is.
+
+That restart is not this repository's to do. `6502-api.service` runs out of the
+6502 tree, and `CLAUDE.md` is explicit that their units are a proposal from
+here rather than an action.
+
+### Three things that are known and not defects
 
 - **A 404 for `/6502/sw.js` on the explorer pages.** Their `app.js` registers a
   service worker at a relative path. It is caught, nothing breaks, and fixing
@@ -205,3 +235,10 @@ Checked against the running site on 2026-08-23, not from memory.
   the original was measured the same way and found to draw nothing either.
   Its diagram needs a block selected. With one, it is 203 KB of SVG and 22
   ports.
+- **The builder pages are blank for a moment, then fill in.** They are live
+  data on another origin, fetched after the frame has rendered. Baking them at
+  build time would make a page that is wrong between deploys with nothing to
+  say so, which is worse than a page that is briefly honest about waiting. All
+  three states are said out loud: waiting, empty, and could not be read. The
+  second and third are different facts and a reader has to be able to tell
+  them apart.

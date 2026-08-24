@@ -1,0 +1,136 @@
+/* The registry's two pages: builders, and what they have published.
+   ===========================================================================
+
+   Route-local rather than in the kit, on the same rule Die Runner's
+   console.css follows: .chr is a picture made of 8x8 tiles and .reg-card is a
+   card with one on it, and neither is a design system component. The kit
+   supplies everything they are made of. There is no colour here that is not a
+   token and no type that is not the scale.
+
+   Where the grounds fall, from STYLE.md section 1. A builder's page is
+   documentation about a person, so it is paper. The art is not: a cover is
+   the chip's own four-colour palette drawn out of a cartridge, so it sits on
+   panel, and the frame around it says so. The measured block under each
+   cartridge is panel for the reason every readout on this site is: those
+   numbers came off the die when the registry re-ran the ROM, and a dark box
+   is what this site means by that. */
+
+/* -- the art ------------------------------------------------------------- */
+
+.chr {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--color-panel);
+  /* Somebody placed these pixels. Smoothing them is an opinion about their
+     work, and at four colours it is a wrong one. */
+  image-rendering: pixelated;
+}
+
+/* Not drawn, and saying so. A block whose length does not match its own
+   declared tile count is refused rather than drawn short: see ChrArt.tsx. */
+.chr-refused {
+  display: block;
+  width: 100%;
+  border: 1px dashed var(--color-ink-faint);
+  background: var(--color-paper-sunk);
+}
+
+/* -- the grids ----------------------------------------------------------- */
+
+.reg-grid {
+  display: grid;
+  gap: calc(var(--u) * 4);
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  margin: calc(var(--u) * 4) 0 calc(var(--u) * 8);
+}
+
+.reg-card { display: flex; flex-direction: column; gap: calc(var(--u) * 3); }
+.reg-card h3 { margin: 0; }
+.reg-card p { margin: 0; font-size: var(--text-fine); line-height: 1.55; }
+
+/* The cover, framed. The bezel is the kit's panel edge rather than a border
+   colour picked here. */
+.reg-cover {
+  border: 1px solid var(--color-rule-panel);
+  background: var(--color-panel);
+  padding: calc(var(--u) * 1);
+}
+
+/* -- a builder's line ---------------------------------------------------- */
+
+.reg-who { display: flex; align-items: center; gap: calc(var(--u) * 3); }
+.reg-who .chr,
+.reg-who .chr-refused {
+  width: calc(var(--u) * 12);
+  flex: 0 0 auto;
+  border: 1px solid var(--color-rule-panel);
+}
+/* A name is not a title. The kit uppercases .rail h3 and that is right for
+   DIE RUNNER, which is what somebody called their cartridge; it is wrong for
+   what somebody is called. Cartridge titles keep the kit's treatment and
+   builders' names keep their own capitals. */
+.reg-who h3 { margin: 0; text-transform: none; }
+
+/* The line under a name: a handle, a slug, a size. Mono and quiet, because it
+   is an identifier rather than a title. */
+.handle {
+  display: block;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  color: var(--color-ink-muted);
+}
+a.handle { text-decoration: none; }
+a.handle:hover { color: var(--color-ink); text-decoration: underline; }
+
+/* The big one, at the top of a builder's own page. */
+.reg-face { display: flex; gap: calc(var(--u) * 5); align-items: flex-start; flex-wrap: wrap; }
+.reg-face .chr,
+.reg-face .chr-refused {
+  width: calc(var(--u) * 24);
+  flex: 0 0 auto;
+  border: 1px solid var(--color-rule-panel);
+}
+.reg-face .who { flex: 1 1 18rem; min-width: 0; }
+.reg-face .who p { margin: calc(var(--u) * 2) 0 0; }
+/* The kit's document headings are `.prose > h2`, a child selector, so a
+   heading nested inside a block like this one gets none of it and renders at
+   the body size in the body face. That is the kit being deliberate about which
+   headings are the document's, not an omission to route around: this is the
+   name of the thing the page is about, so it takes the display face here and
+   says so. Not uppercased, for the reason above. */
+.reg-face .who h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* -- the state of things ------------------------------------------------- */
+
+/* Loading, and not answering. Both are states of this page rather than facts
+   about the registry, so they are quiet and they are the same shape. */
+.reg-state {
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-sunk);
+  padding: calc(var(--u) * 4);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+}
+.reg-state.fail { border-left: 3px solid var(--color-red-ink); }
+.reg-state b { color: var(--color-ink); font-weight: 600; }
+
+/* A line the engine wrote, on the panel it was measured on. Glass ink,
+   because ink on a panel is unreadable and that is the whole reason the two
+   grounds carry two inks. */
+.panel-face .reg-note {
+  margin: calc(var(--u) * 3) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  line-height: 1.5;
+  color: var(--color-glass-muted);
+}

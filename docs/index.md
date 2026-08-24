@@ -29,20 +29,22 @@ switches, and the behaviour falls out of simulating them.
 
 ## What is running now
 
-Four surfaces are here: [the explorer](/6502/explorer) and its measured
-tables, [the console](/6502/games), [the lab](/6502/lab), and
-[the visual6502 archive](/6502/archive/). Each still answers at its own
-subdomain as well, because nothing has been switched off.
+Five surfaces are here: [the explorer](/6502/explorer) and its measured
+tables, [the console](/6502/games), [the builder pages](/6502/builders),
+[the lab](/6502/lab), and [the visual6502 archive](/6502/archive/). Each still
+answers at its own subdomain as well, because nothing has been switched off.
 
 The chip data is the exception, and deliberately so. The explorer's die
 geometry, its measured tables and its wasm bundle are served from the 6502
 site's own directory rather than copied here: all of it is CC BY-NC-SA, and
 this repository does not redistribute it. See `NOTICE.md`.
 
-What has not moved is the registry: the
-[builder pages](https://games.tinymachines.ai/builders) and the cartridge
-editor are still on games.tinymachines.ai. Those read live data, and moving
-them waits on the listings the roof asked that service for.
+What has not moved is the cartridge editor. The builder pages read the live
+registry from here over CORS, which is what that service's open
+`Access-Control-Allow-Origin` was for, but editing sends a bearer token and the
+preflight from this origin does not admit an `Authorization` header. That is a
+header that is not there rather than a decision that has not been taken. See
+[the registry](/docs/6502/the-registry).
 
 ## What is not here yet
 

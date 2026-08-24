@@ -128,3 +128,39 @@ export function nav(): NavEntry[] {
   const isApi = (e: NavEntry) => e.href.startsWith("/api");
   return [...roof.filter((e) => !isApi(e)), ...rest, ...roof.filter(isApi)];
 }
+
+/**
+ * One surface, by project and key. A build failure when it is not there,
+ * for the same reason project() is: a page assembled around a surface that
+ * has been renamed should stop the build, not render without the part it was
+ * about.
+ */
+export function surface(projectKey: string, surfaceKey: string): Surface {
+  const p = project(projectKey);
+  const found = p.surfaces.find((s) => s.key === surfaceKey);
+  if (!found) {
+    throw new Error(
+      `data/projects.json: project ${JSON.stringify(projectKey)} has no surface ` +
+        `${JSON.stringify(surfaceKey)}. It has: ${p.surfaces.map((s) => s.key).join(", ")}`,
+    );
+  }
+  return found;
+}
+
+/**
+ * Where the 6502 API answers, with no trailing slash.
+ *
+ * Three pages need this string and it was written out in one of them. That is
+ * the shape this repository keeps finding at the bottom of its bugs, and it
+ * was about to become four: the console, the builders index, a builder's page
+ * and every cartridge link on them all name the same host.
+ *
+ * It comes from the manifest's `serves_today` rather than from a constant,
+ * which means the day the API lands under the apex the pages follow the file
+ * that records the move instead of each being edited. `lands_at` is
+ * deliberately NOT the answer yet: that path is still marked a proposal, and
+ * fetching from a proposed address would be fetching from nothing.
+ */
+export function chipApi(): string {
+  return surface("6502", "api").serves_today.replace(/\/+$/, "");
+}

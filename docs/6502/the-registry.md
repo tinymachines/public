@@ -6,7 +6,8 @@ order: 8
 
 # The registry
 
-<https://games.tinymachines.ai/builders>
+The builder pages are at [/6502/builders](/6502/builders). They still answer
+at `games.tinymachines.ai/builders` too, because nothing has been switched off.
 
 **The only stateful thing here, and the boundary is the point.** The chip is
 untouched: every request still carries the whole machine, and running a
@@ -75,6 +76,29 @@ location regex containing `{2,32}` fails with "unknown directive" naming the
 middle of the pattern.
 
 `/manage` is the editor: paste a token, edit the page, publish a `.cart.gz`.
+
+## What is under the apex, and what could not follow
+
+The reading half. [/6502/builders](/6502/builders) is this index and
+`/6502/builders/<handle>` is a page; `/6502/b/<handle>` is the address the
+service itself hands out and redirects there, because those links are not ours
+to break. Both read the same live registry over CORS, which is what the
+`Access-Control-Allow-Origin: *` on that service was for.
+
+The writing half could not follow, and the reason is a header rather than a
+decision. A preflight from `tinymachines.ai` comes back allowing
+`GET, POST, OPTIONS` and accepting `Accept`, `Accept-Language`,
+`Content-Language` and `Content-Type`. **`Authorization` is not among them**,
+so a browser on the apex cannot send a bearer token to that service at all:
+not to claim a handle, not to edit a page, not to publish. The editor stays at
+`games.tinymachines.ai/manage` until it is.
+
+Proxying the writes through the apex's own API would work, since there is no
+browser between two servers and therefore no preflight. It is deliberately not
+done. The read-only service scope and the identity binding were left out of
+the listings work on the grounds that they turn into an internal join if games
+moves under the apex, and a credentialed proxy built now is the same boundary
+built twice.
 
 ## Dithering was measured, not chosen
 

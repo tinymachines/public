@@ -216,7 +216,17 @@ wait_for tinymachines-api 6510
 say "6. Verify"
 BASE="https://tinymachines.ai"
 bad=0
+# The project's own surfaces are in this list too. They were not, and the
+# stage was checking the roof while five migrated pages went unverified: a
+# route that fails to build is caught by check-build, but a route that builds
+# and then 404s behind nginx is only caught out here.
+#
+# /6502/builders/nobody is deliberate. It is the dynamic route, and it answers
+# 200 whether or not anybody has that handle, because the registry is read in
+# the browser and the frame is this site's own. A real handle here would make
+# our deploy depend on a row in somebody else's database.
 for p in / /docs /docs/6502 /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
+         /6502 /6502/explorer /6502/games /6502/lab /6502/builders /6502/builders/nobody \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   printf '  %-28s %s\n' "$p" "$code"
@@ -232,6 +242,18 @@ done
 #
 # 401 is the pass here. A 200 would mean the gate is open; a 404 would mean the
 # routes did not deploy and this check is passing on nothing, so both fail.
+# The redirect map. A moved public path is not moved until the old one lands
+# somewhere, and next.config.ts is the only place that is written down. 308
+# rather than 301: the method is preserved, which matters because these are
+# addresses the registry itself hands out.
+say "6a. The redirect map"
+for p in /6502/b /6502/b/tinymachines; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
+  to=$(curl -s -o /dev/null -w '%{redirect_url}' -m 20 "$BASE$p" || echo "")
+  printf '  %-28s %s -> %s\n' "$p" "$code" "${to:-nowhere}"
+  [ "$code" = "308" ] || fail "$p answered $code; expected a 308 to /6502/builders"
+done
+
 say "6b. The gate"
 for p in /api/v1/admin/whoami /api/v1/admin/keys /api/v1/admin/users; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
