@@ -177,16 +177,15 @@ repository can act on alone.
 
 ### The queue
 
-**1. The docs tree is entirely 6502.** Eleven documents, and every one of them
-is about the chip. hotbits has two live surfaces on this site and no
-documentation at all. The front page counts documents out of `docs/` at build
-time, so the imbalance is on the front page as a number.
-
-What a `docs/hotbits/` would carry is already measurable rather than invented:
-how a bit is taken from two inter-arrival times, why the bias cancels by
-symmetry rather than by correction, what the health batteries actually test,
-and why the open endpoints were closed. The last one has a figure: the pool
-refills at about seventy-five bytes a minute.
+**1. Done, 1.0.27: `docs/hotbits/` exists.** Four pages: the instrument, the
+bits, the health tests, the gateway. The extraction and the health tests are
+written from the geiger tree's source; the gateway is written from calling the
+deployed service, and each page says which it is doing. One figure got
+corrected on the way: the retirement notice says the pool refills at about
+seventy-five bytes a minute, and six minutes of watching `/stats` on
+2026-08-24 measured about thirty-six. Both are cited with their provenance in
+[the bits](docs/hotbits/the-bits.md); the rate belongs to the tube, not to
+either sentence.
 
 **2. The front page is a 6502 front page on a two-project site.** It opens with
 the die, lists "the six pieces" from `data/pieces.json`, and never mentions
