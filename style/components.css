@@ -1969,15 +1969,22 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    something true rather than decoration. Below 80rem nothing changes and
    the chips render exactly as every other .chips row. */
 @media (min-width: 80rem) {
-  .hero {
+  /* Only a hero that actually carries a chip rail becomes a grid. The bare
+     .hero selector was a regression shipped in 1.0.55: the explorer's own
+     pages also name their lead section .hero, this rule is kit CSS and so
+     reaches inside .explorer-shell, and eighteen instrument pages had their
+     titles shoved into a 22rem rail cut for the home page's chips. Scoping
+     by what the section contains rather than where it is keeps the kit from
+     legislating for markup it has never seen. */
+  .hero:has(> .hero-chips) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
     column-gap: calc(var(--u) * 12);
     align-items: start;
   }
-  .hero .hero-title { grid-column: 1 / -1; }
-  .hero .lede,
-  .hero .hero-ctas { grid-column: 1; }
+  .hero:has(> .hero-chips) .hero-title { grid-column: 1 / -1; }
+  .hero:has(> .hero-chips) .lede,
+  .hero:has(> .hero-chips) .hero-ctas { grid-column: 1; }
   .hero .hero-chips {
     grid-column: 2;
     grid-row: 2 / span 2;
