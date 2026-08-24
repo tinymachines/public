@@ -58,6 +58,16 @@ StateDirectory=tinymachines
 StateDirectoryMode=0700
 UMask=0077
 
+# The public token mint (api/mint.py) mints the chip API's registry tokens by
+# calling the registry's own code against the registry's own file. Both are
+# named here and nowhere else: without them the mint declares itself off and
+# everything else serves, which is what a checkout on any other box gets.
+# The file is the 6502 unit's REGISTRY_DB; the code is the 6502 checkout's
+# service directory. Both services run as this user, which is what makes
+# this a file open rather than a second credential.
+Environment=TM_REGISTRY_DB=/var/lib/6502-registry/registry.db
+Environment=TM_REGISTRY_SERVICE=/home/bisenbek/projects/tinymachines/6502/service
+
 # Modest hardening, added when this service stopped being stateless. Each line
 # is here because it costs nothing that this service does: it reads its own
 # source and .git, writes only to StateDirectory, and makes outbound HTTPS

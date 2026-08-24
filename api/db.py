@@ -119,6 +119,19 @@ MIGRATIONS: list[str] = [
     CREATE UNIQUE INDEX api_keys_sha256 ON api_keys(sha256);
     CREATE INDEX api_keys_user ON api_keys(user_id);
     """,
+    # 2: the public token mint's ledger. Who minted (as a digest of their
+    #    address), when, and the note they left. Never the token: that lives,
+    #    as its own digest, in the registry's database next door. See mint.py.
+    """
+    CREATE TABLE token_mints (
+        id         TEXT PRIMARY KEY,
+        ip_sha256  TEXT NOT NULL,
+        note       TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX token_mints_ip ON token_mints(ip_sha256, created_at);
+    CREATE INDEX token_mints_created ON token_mints(created_at);
+    """,
 ]
 
 

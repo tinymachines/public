@@ -661,3 +661,72 @@ class ProjectsResponse(BaseModel):
         examples=[7],
     )
     projects: list[Project] = Field(description="Every project, the roof itself included.")
+
+
+# ---------------------------------------------------------------------------
+# The public token mint
+# ---------------------------------------------------------------------------
+
+
+class NewToken(BaseModel):
+    """What minting a registry token asks for: nothing, and a note if you like."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    note: str = Field(
+        default="",
+        max_length=120,
+        description="Who or what it is for, in your own words. Optional. It is stored "
+                    "beside the digest of your address so that an admin reviewing the "
+                    "ledger sees a reason and not only a hash.",
+        examples=["ada, snake in 40 lines"],
+    )
+
+
+class MintedToken(BaseModel):
+    """The one public response that carries a secret.
+
+    `token` is a registry token, the kind the editor at /6502/manage sends to
+    the chip API. It is shown here once: the registry stores its SHA-256 and
+    this service stores nothing of it at all, so nothing can show it again.
+    """
+
+    token: str = Field(
+        description="The token, in full, once. Paste it into the editor or send it as "
+                    "`Authorization: Bearer` to the chip API's registry routes.",
+        examples=["tm6502_Qx1nR7vB4tL9pY0sM3jH6cF5dA8gE1u"],
+    )
+    minted_at: datetime = Field(description="When, UTC.")
+    editor: str = Field(
+        description="Where to use it first: claim a handle, then publish.",
+        examples=["https://tinymachines.ai/6502/manage"],
+    )
+    claim: str = Field(
+        description="The chip API route the editor calls with it, for anyone scripting "
+                    "instead of clicking.",
+        examples=["POST https://6502.tinymachines.ai/api/v1/registry/claim"],
+    )
+
+
+class MintAvailability(BaseModel):
+    """Whether the mint is open, and how much of it is left for this caller."""
+
+    enabled: bool = Field(description="False where no registry is configured beside this service; a mint is then a 503 that says so.")
+    per_ip_per_day: int = Field(description="Tokens one address may mint in a rolling day.")
+    per_day: int = Field(description="Tokens the mint hands out in a rolling day, to everyone.")
+    remaining_for_you: int = Field(description="What this address may still mint today.")
+    remaining_today: int = Field(description="What is left of the daily total.")
+
+
+class MintRecord(BaseModel):
+    """One row of the mint ledger: a digest of an address, a note, a time. No token."""
+
+    id: str = Field(description="The ledger row's id.", examples=["m_3f9a1b3c7d2e4f01"])
+    ip_sha256: str = Field(description="SHA-256 of the caller's address. Counts repeat callers; identifies nobody.")
+    note: str = Field(description="What the caller wrote when minting, if anything.")
+    created_at: datetime = Field(description="When the token was minted, UTC.")
+
+
+class MintsResponse(BaseModel):
+    mints: list[MintRecord] = Field(description="Newest first, the last seven days.")
+    count: int = Field(description="How many rows are in `mints`.")

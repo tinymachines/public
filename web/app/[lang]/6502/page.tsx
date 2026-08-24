@@ -21,10 +21,9 @@ import { Shell } from "@/app/components/SiteFrame";
  * menu, the reading is the docs tree, and the parts table at the foot is the
  * manifest. What IS written is the lesson's copy, in both languages.
  *
- * One honest seam: "get a free token" is free and is issued by hand today.
- * The roof API can mint keys, but only behind /v1/admin. A public mint is
- * the piece this page is waiting on, and the copy says so rather than
- * pretending a form exists.
+ * "Mint a free token" is a real verb since 2026-08-25: the roof API's public
+ * mint (POST /api/v1/tokens) hands out the registry's own token, and the
+ * editor carries the button.
  *
  * Nothing here is typed. The rows come from data/projects.json, which is the
  * same file PROJECTS.md points at and api/pieces.py is checked against, so
@@ -136,16 +135,16 @@ const LESSON = {
         way in is to make it run something of yours.
       </>
     ),
-    ctaToken: "Get a free token",
+    ctaToken: "Mint a free token",
     ctaBuild: "Build a cart with your AI tool",
     ctaWalk: "Read the walk",
     steps: [
       {
         n: "1",
-        title: "Get a free token",
-        body: "A token is your handle in the registry and your key to the chip API. It is free, and today it is issued by hand: ask, and one is minted for you. A public mint is coming.",
-        href: "/6502/manage",
-        link: "The editor",
+        title: "Mint a free token",
+        body: "A token is your handle in the registry and your key to the chip API. Mint one in the editor: free, one click, shown once. It is yours to claim a handle with and publish under.",
+        href: "/6502/manage#mint",
+        link: "Mint one in the editor",
       },
       {
         n: "2",
@@ -197,16 +196,16 @@ const LESSON = {
         したものだ。いちばん早い入り方は、自分の書いたものをそこで走らせることだ。
       </>
     ),
-    ctaToken: "無料のトークンを取得",
+    ctaToken: "無料のトークンを鋳造",
     ctaBuild: "AI ツールでカートを作る",
     ctaWalk: "ウォークを読む",
     steps: [
       {
         n: "1",
-        title: "無料のトークンを取得する",
-        body: "トークンはレジストリでのあなたのハンドルであり、チップ API への鍵だ。無料で、今は手渡しで発行している: 申し出れば、あなたのために一つ鋳造される。公開の発行所は準備中だ。",
-        href: "/6502/manage",
-        link: "エディタ",
+        title: "無料のトークンを鋳造する",
+        body: "トークンはレジストリでのあなたのハンドルであり、チップ API への鍵だ。エディタで鋳造する: 無料、ワンクリック、表示は一度きり。それでハンドルを取得し、その名で公開する。",
+        href: "/6502/manage#mint",
+        link: "エディタで鋳造する",
       },
       {
         n: "2",
@@ -280,7 +279,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
       <section className="hero">
         <p className="lede">{T.lede}</p>
         <div className="hero-ctas">
-          <Link className="btn btn-primary" href={localize(lang, "/6502/manage")}>{T.ctaToken}</Link>
+          <Link className="btn btn-primary" href={localize(lang, "/6502/manage#mint")}>{T.ctaToken}</Link>
           <Link className="btn btn-ghost" href={localize(lang, "/docs/6502/mcp")}>{T.ctaBuild}</Link>
           <Link className="btn btn-ghost" href={localize(lang, "/docs/6502/walk-snake")}>{T.ctaWalk}</Link>
         </div>

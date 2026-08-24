@@ -5,6 +5,7 @@ import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
+import { MintToken } from "./MintToken";
 import "./manage.css";
 
 /**
@@ -132,8 +133,8 @@ const PROSE = {
     published: "Published",
     notice: (
       <>
-        Tokens are issued by hand for now. A token is shown once and only its
-        SHA-256 is stored.
+        A token is minted above, free, a couple per address a day. It is shown
+        once and only its SHA-256 is stored.
       </>
     ),
   },
@@ -208,8 +209,8 @@ const PROSE = {
     published: "公開済み",
     notice: (
       <>
-        トークンは当面、手渡しで発行される。トークンは一度だけ表示され、
-        保存されるのはその SHA-256 だけだ。
+        トークンは上で鋳造できる。無料で、アドレスあたり一日に数個まで。
+        表示は一度だけで、保存されるのはその SHA-256 だけだ。
       </>
     ),
   },
@@ -235,6 +236,7 @@ export default async function ManagePage({ params }: { params: Promise<{ lang: L
           </Link>
         </p>
 
+        <MintToken lang={lang} />
         <section className="card">
           <p className="eyebrow">{S.token}</p>
           <h2>{S.whoYouAre}</h2>

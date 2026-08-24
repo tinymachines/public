@@ -44,12 +44,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 import db
 import keys as keys_mod
+import mint as mint_mod
 import users as users_mod
 from models import (
     ApiKey,
     DisabledState,
     KeysResponse,
     MintedKey,
+    MintRecord,
+    MintsResponse,
     NewKey,
     NewUser,
     User,
@@ -498,3 +501,24 @@ def set_user_disabled(
     conn: sqlite3.Connection = Depends(connection),
 ) -> User:
     return _user(_found(users_mod.set_disabled(conn, user_id, body.disabled), "user", user_id))
+
+
+@router.get(
+    "/mints",
+    response_model=MintsResponse,
+    summary="The public mint's ledger",
+    description=(
+        "Who minted a registry token through the public door, as a digest of each "
+        "address, with the note they left and when. Newest first, last seven days. "
+        "No token appears here or anywhere: the registry holds each token's digest, "
+        "this holds the caller's. It exists so an admin can see that one address "
+        "minted forty times, and decide."
+    ),
+    responses={401: {"description": "No key or an unusable one."}, 403: {"description": "A live key without the admin scope."}},
+)
+def list_mints(
+    _: sqlite3.Row = Depends(require_admin),
+    conn: sqlite3.Connection = Depends(connection),
+) -> MintsResponse:
+    rows = mint_mod.ledger(conn)
+    return MintsResponse(mints=[MintRecord(**dict(r)) for r in rows], count=len(rows))

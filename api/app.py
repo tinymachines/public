@@ -22,6 +22,7 @@ prose stops being trustworthy.
 
 from __future__ import annotations
 
+import sqlite3
 import sys
 import time
 from contextlib import asynccontextmanager
@@ -29,17 +30,21 @@ from datetime import datetime, timezone
 
 import fastapi
 import pydantic
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.routing import APIRoute
 
 import admin
+import mint as mint_mod
 import db
 import mcp_server
 import probe as probe_mod
 import projects as projects_mod
 from models import (
+    MintAvailability,
+    MintedToken,
+    NewToken,
     Health,
     Index,
     Meta,
@@ -168,6 +173,73 @@ app.add_middleware(HeadAsGet)
 # The administered surface. It lives in its own module because the line between
 # "anyone may ask" and "a key may ask" should be visible in the file listing.
 app.include_router(admin.router)
+
+
+def _caller_ip(request: Request) -> str:
+    """The address the mint counts against.
+
+    nginx is the only thing that reaches this port and it sets
+    X-Forwarded-For from the connection it accepted, so the first entry is
+    the caller and the header is trusted. Without the header (a test client,
+    a curl on the box) the socket peer is the caller.
+    """
+    xff = request.headers.get("x-forwarded-for", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+@app.get(
+    "/v1/tokens",
+    response_model=MintAvailability,
+    summary="Whether a registry token can be minted here, and how many are left",
+    description=(
+        "The public mint's state for the caller: on or off, the two limits, and what "
+        "remains of each for this address today. Off means no registry is configured "
+        "beside this service, which is true of every deployment but the one that serves "
+        "tinymachines.ai."
+    ),
+    tags=["tokens"],
+)
+def token_availability(request: Request, conn: sqlite3.Connection = Depends(admin.connection)) -> MintAvailability:
+    return MintAvailability(**mint_mod.availability(conn, _caller_ip(request)))
+
+
+@app.post(
+    "/v1/tokens",
+    response_model=MintedToken,
+    status_code=201,
+    summary="Mint a free registry token",
+    description=(
+        "Mints a token for the chip API's registry and returns it **once**. It is the "
+        "same token `service/registry_admin.py mint` would hand out, made by the "
+        "registry's own code against its own database; this route is the public door "
+        "in front of that, and the door has a limit: a few per address per day and a "
+        "few dozen per day in all. Tokens are free and one token is one builder, so the "
+        "limit is about loops, not money.\n\n"
+        "A 429 says when to come back. A 503 says the mint is not enabled on this "
+        "deployment. Nothing about the token is stored here: the registry keeps its "
+        "digest and this service keeps a digest of your address and your note."
+    ),
+    responses={
+        422: {"description": "A note over 120 characters, or a field this route does not take."},
+        429: {"description": "Over the per-address or the daily limit. Retry-After says when."},
+        503: {"description": "No registry is configured beside this service."},
+    },
+    tags=["tokens"],
+)
+def mint_token(body: NewToken, request: Request, conn: sqlite3.Connection = Depends(admin.connection)) -> MintedToken:
+    try:
+        token, when = mint_mod.mint(conn, ip=_caller_ip(request), note=body.note)
+    except mint_mod.Refused as e:
+        headers = {"Retry-After": str(e.retry_after)} if e.retry_after else None
+        raise HTTPException(status_code=e.status, detail=e.detail, headers=headers)
+    return MintedToken(
+        token=token,
+        minted_at=when,
+        editor="https://tinymachines.ai/6502/manage",
+        claim="POST https://6502.tinymachines.ai/api/v1/registry/claim",
+    )
 
 
 def _uptime() -> int:

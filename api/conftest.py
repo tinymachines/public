@@ -52,5 +52,6 @@ def fresh_db():
     with conn:
         conn.execute("DELETE FROM api_keys")
         conn.execute("DELETE FROM users")
+        conn.execute("DELETE FROM token_mints")
     conn.close()
     yield

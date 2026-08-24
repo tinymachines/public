@@ -29,6 +29,8 @@ declares them.
 | `GET /v1/meta` | What commit is running, and what built the document |
 | `GET /v1/pieces` | The six pieces: what, where, how they ship, and their terms |
 | `GET /v1/pieces/{key}` | One piece. An unknown key is a 404 naming the valid ones |
+| `GET /v1/tokens` | Whether the public token mint is on, and what is left of its limits for you |
+| `POST /v1/tokens` | Mint a free registry token, once. Rate-limited per address and per day; 503 where no registry is configured |
 | `GET /v1/projects` | The projects, their surfaces, and how much of the move has happened |
 | `GET /v1/status` | Which pieces are answering, **measured** |
 | `POST /mcp` | The same surface, spoken to a language model |
@@ -42,6 +44,7 @@ Everything above is public. Everything below needs a dev key.
 | `GET /v1/admin/keys` | Every key, revoked ones included, and none of the secrets |
 | `POST /v1/admin/keys` | Mint a key. **The only response in this API that carries one** |
 | `DELETE /v1/admin/keys/{key_id}` | Revoke. The row stays |
+| `GET /v1/admin/mints` | The public mint's ledger: address digests, notes, times. Never a token |
 | `GET /v1/admin/users` | Everybody, newest first |
 | `POST /v1/admin/users` | Create a person |
 | `GET /v1/admin/users/{user_id}` | One person, by id rather than by handle |

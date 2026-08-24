@@ -2398,3 +2398,18 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 .reading-list a { font-family: var(--font-sans); font-weight: 600; color: var(--color-ink); text-decoration: none; width: fit-content; border-bottom: 1px solid var(--color-ink-faint); }
 .reading-list a:hover { color: var(--color-accent-ink); border-bottom-color: var(--color-accent-ink); }
 .reading-list span { font-family: var(--font-serif); font-size: var(--text-body); color: var(--color-ink-muted); line-height: 1.5; }
+
+/* The minted token, shown once: on panel because it came out of the
+   machine, wrapped so it never scrolls a phone, selectable as one run. */
+.mint-token {
+  margin: calc(var(--u) * 2) 0 0;
+  padding: calc(var(--u) * 3);
+  background: var(--color-panel);
+  color: var(--color-glass);
+  border-radius: var(--radius-mod);
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: all;
+}
