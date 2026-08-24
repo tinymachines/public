@@ -871,6 +871,30 @@ halfphi run <span class="s">"LDA #\$42"</span> <span class="k">--halt-on</span> 
       </div>
       <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
     </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>The die figure</h3><span class="badge shipped">shipped</span></div>
+      <p class="spec-why">STYLE.md &sect;9 left the rule for die imagery open; this closes it, decided against the walk-snake page. A pulled schematic is panel content, so the page frames it in the same 3px brushed bezel the kit's <code>.panel</code> wears, at its own width, never bled to the edge: an instrument photographed into the binder. The selector is the shape markdown gives a lone image, so the generated docs get this without knowing any class names. The image here is a stand-in drawn for this zoo; the real figures derive from the die data, which is CC BY-NC-SA and served, never committed.</p>
+      <div class="spec-stage">
+        <div class="docs-body" style="font-family:var(--font-serif)">
+          <p><img src="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20258%20144'%20width='258'%20height='144'%3E%3Crect%20width='258'%20height='144'%20fill='%23131311'/%3E%3Crect%20x='16'%20y='52'%20width='44'%20height='22'%20rx='3'%20fill='none'%20stroke='%235FB8C0'%20stroke-dasharray='3%202'/%3E%3Ctext%20x='38'%20y='67'%20fill='%235FB8C0'%20font-family='monospace'%20font-size='10'%20text-anchor='middle'%3E%23002%3C/text%3E%3Cpath%20d='M84%2063%20L118%2045%20L118%2081%20Z'%20fill='none'%20stroke='%23D2B771'%20stroke-width='1.5'/%3E%3Ccircle%20cx='124'%20cy='63'%20r='5'%20fill='none'%20stroke='%23D2B771'/%3E%3Cpath%20d='M60%2063%20H84%20M129%2063%20H176'%20stroke='%238C8A85'/%3E%3Crect%20x='176'%20y='52'%20width='62'%20height='22'%20rx='4'%20fill='none'%20stroke='%235FB8C0'%20stroke-width='1.5'/%3E%3Ctext%20x='207'%20y='67'%20fill='%235FB8C0'%20font-family='monospace'%20font-size='10'%20text-anchor='middle'%3Estand-in%3C/text%3E%3C/svg%3E" alt="A stand-in schematic fragment on panel"></p>
+          <p><em>What opens a register onto the bus.</em> Pulled from the schematic page, which drew it from the switch network.</p>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
+
+    <article class="spec">
+      <div class="spec-head"><h3>Dense mode</h3><span class="badge draft">draft</span></div>
+      <p class="spec-why">STYLE.md &sect;9, verbatim: the 13px mono workhorse is right for a docs page, and a full-screen instrument wants 12px with 1.35 leading. <code>.dense</code> is that, as a container-scoped override of <code>--text-data</code> and <code>--leading-data</code> rather than a second scale: everything inside that reads those tokens tightens together, and nothing else moves. Draft until a real full-screen surface wears it.</p>
+      <div class="spec-stage">
+        <div style="display:grid;gap:16px">
+          <div class="code" style="padding:12px 16px;white-space:pre">A  $00  0000 0000&#10;X  $02  0000 0010&#10;half-cycle 126, phi1</div>
+          <div class="dense"><div class="code" style="padding:12px 16px;white-space:pre">A  $00  0000 0000&#10;X  $02  0000 0010&#10;half-cycle 126, phi1</div></div>
+        </div>
+      </div>
+      <details class="markup"><summary>Markup</summary><pre><code></code></pre></details>
+    </article>
   </section>
 
   <footer class="zoo-foot">

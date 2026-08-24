@@ -1880,3 +1880,149 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
   .wb-page { padding-inline: calc(var(--u) * 5); }
   .wb-stage { padding-inline: calc(var(--u) * 5); }
 }
+
+
+/* ==========================================================================
+   THE SECOND STYLING PASS, 2026-08-24. Four of these close items STYLE.md
+   section 9 left open; the others were found by measuring the deployed pages
+   at 1440px. Every value is a token or a kit literal that already exists.
+   ========================================================================== */
+
+/* A horizontal rule immediately before a section heading drew two lines: the
+   hr's own, then the border-top every .prose h2 carries. Measured on the
+   walk-snake page: two hairlines 37px apart where the author meant one break.
+   The h2's rule is the structural one, so the hr yields. Browsers without
+   :has() keep the doubled line, which is the state everyone saw until today,
+   not a regression. */
+.prose hr:has(+ h2),
+.prose hr:has(+ h3) { display: none; }
+
+/* The ledger was clipped by the reading measure. .prose is 68ch for the sake
+   of sentences, but a table is not a sentence: the 6502 landing's surface
+   table is 1019px of content inside a 694px column while 1120px of page sit
+   there unused. Above the point where the wide column exists, a ledger takes
+   the width it needs, capped at the page's own content width: 264u is
+   .page's 280u minus its 8u padding each side. */
+@media (min-width: 72rem) {
+  .prose .ledger {
+    width: max-content;
+    min-width: 100%;
+    max-width: calc(var(--u) * 264);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   DIE IMAGERY. STYLE.md section 9 left the rule open with an instinct: panel
+   content, framed by a bezel, never bled to the page edge. Decided here
+   against the real page (the walk-snake figures) rather than in the
+   abstract, and the instinct held. The figures paint their own panel-dark
+   ground, so the page's job is the frame: the same 3px brushed bezel, 6px
+   radius and panel shadow the kit's .panel wears, which is what makes a
+   pulled schematic read as an instrument photographed into the binder
+   rather than a picture that fell onto the paper.
+
+   The selector is the shape markdown gives a lone image, a paragraph that
+   contains nothing else, so the generated docs get the treatment without
+   the generator learning any class names. fit-content is the "never bled"
+   clause. */
+.docs-body p:has(> img:only-child) {
+  width: fit-content;
+  max-width: 100%;
+  margin: calc(var(--u) * 6) 0 calc(var(--u) * 2);
+  padding: 3px;
+  background: var(--bezel-brushed);
+  border-radius: 6px;
+  box-shadow: var(--shadow-panel);
+}
+.docs-body p:has(> img:only-child) > img {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-mod);
+  background: var(--color-panel);
+}
+/* The caption: the italic paragraph the generated docs write directly under
+   each figure. Set as a caption, small and muted, tucked to the frame. */
+.docs-body p:has(> img:only-child) + p:has(> em:first-child) {
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  margin-top: 0;
+  max-width: 58ch;
+}
+
+/* --------------------------------------------------------------------------
+   DENSE MODE. STYLE.md section 9, verbatim: the 13px mono workhorse is right
+   for a docs page; a full-screen instrument wants 12px and 1.35 leading, as
+   a container-scoped token override rather than a second scale. This is that
+   container. Everything inside that reads --text-data or --leading-data
+   tightens together; nothing else changes, which is the point of it being
+   two tokens and not a font-size rule. */
+.dense {
+  --text-data: 0.75rem;
+  --leading-data: 1.35;
+}
+
+/* --------------------------------------------------------------------------
+   THE HERO, above the width where half the viewport was silence. The title
+   already spans the page; the lede held its 60ch and the right half of a
+   1440px screen carried nothing. The measured chips are the material that
+   belongs there: they are the page's own facts, so the rail fills with
+   something true rather than decoration. Below 80rem nothing changes and
+   the chips render exactly as every other .chips row. */
+@media (min-width: 80rem) {
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    column-gap: calc(var(--u) * 12);
+    align-items: start;
+  }
+  .hero .hero-title { grid-column: 1 / -1; }
+  .hero .lede,
+  .hero .hero-ctas { grid-column: 1; }
+  .hero .hero-chips {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    display: grid;
+    align-content: start;
+    gap: calc(var(--u) * 3);
+    padding-top: calc(var(--u) * 1);
+  }
+}
+
+/* ==========================================================================
+   PRINT. STYLE.md section 9: the whole system came off paper and it would be
+   a shame if a docs page printed badly; panels inverted to white-on-white,
+   because browsers drop background colour and the glass text stayed light.
+   The rule for print is the paper form of the same semantics: what was a
+   panel keeps a hairline border saying "this was the machine talking", and
+   its text becomes ink so it survives on white. Screen chrome that navigates
+   rather than informs does not print.
+   ========================================================================== */
+@media print {
+  .menu-btn,
+  .menu-panel,
+  .lang-switch,
+  .hero-ctas,
+  .docs-nav { display: none; }
+
+  .app-head { position: static; }
+  .docs-shell { display: block; }
+
+  /* The panel grounds, in ink. The border is what remains of "dark means
+     the engine said it" when the dark cannot be relied on to print. */
+  .prose pre,
+  .code {
+    background: var(--color-paper-sunk);
+    color: var(--color-ink);
+    border: 1px solid var(--color-rule);
+  }
+  .docs-body p:has(> img:only-child) {
+    background: none;
+    box-shadow: none;
+    border: 1px solid var(--color-rule);
+  }
+
+  h2, h3 { break-after: avoid; }
+  pre, table,
+  .ledger,
+  .docs-body p:has(> img:only-child) { break-inside: avoid; }
+}

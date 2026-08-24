@@ -215,9 +215,13 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
             {S.ctaDocs}
           </Link>
         </div>
-      </section>
 
-      <div className="chips">
+        {/* Inside the hero rather than after it: above 80rem the kit lays
+            these into the hero's right column, which was empty viewport
+            before. The chips are the page's own measured facts, which is
+            what earns them the spot. Below that width they render as the
+            same .chips row they always were. */}
+        <div className="chips hero-chips">
         <span className="measured">
           <b>{S.wiresSwitches(die.nodes, die.transistors)}</b>{" "}
           {S.measuredFrom(die.measured_on)}
@@ -234,7 +238,8 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
         <span className="measured">
           <b>{S.specimens(specimens)}</b> {S.fromZoo}
         </span>
-      </div>
+        </div>
+      </section>
 
       <h2 className="eyebrow">{S.theProjects}</h2>
 
