@@ -214,6 +214,14 @@ server {
 
     # The archive: 174 MB of visual6502.org recovered from the Wayback
     # Machine. Same reasoning, more so. It is somebody else's site.
+    # The overview is ours and is a page on this site; everything below it is
+    # the preservation. An exact-match location, so it wins over the prefix one
+    # underneath and hands that single path back to Next, while
+    # /6502/archive/wiki/... and the rest still come off disk.
+    location = /6502/archive/ {
+        return 301 /6502/archive;
+    }
+
     location /6502/archive/ {
         alias /var/www/6502.tinymachines.ai/archive/;
 

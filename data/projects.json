@@ -139,15 +139,15 @@
         {
           "key": "archive",
           "name": "The visual6502 archive",
-          "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it, including the wiki whose MediaWiki has been answering 500 since some point after 2021. Served from where it already lives; none of it is ours.",
+          "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it: the wiki rebuilt from its wikitext and the die photography made browsable again. The overview is ours; the preserved pages keep their own design, because that is what a preservation is.",
           "nav": false,
           "nav_label": null,
           "piece": null,
           "serves_today": "https://6502.tinymachines.ai/archive/",
-          "lands_at": "/6502/archive/",
+          "lands_at": "/6502/archive",
           "lands_at_settled": true,
-          "status": "here, unstyled",
-          "prerendered": false
+          "status": "here",
+          "prerendered": true
         }
       ],
       "landing": "/6502"
