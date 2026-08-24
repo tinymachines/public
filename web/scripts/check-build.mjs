@@ -33,17 +33,6 @@ function check(file, body, label, re, why) {
 
 const files = await htmlFiles(APP);
 
-// The route tree lives under app/[lang] now, so English prerenders as
-// en.html / en/<route>.html. The content checks below run on EVERY page in
-// every language; the route lookups address pages by their PUBLIC path, which
-// this recovers by stripping the internal prefix middleware.ts never shows.
-function publicRoute(f) {
-  const rel = path.relative(APP, f).split(path.sep).join("/");
-  if (rel === "en.html") return "index.html";
-  if (rel.startsWith("en/")) return rel.slice(3);
-  return rel;
-}
-
 // A check that can pass on nothing is not a check. The docs tree is nine
 // pages plus the front page; if the walk finds almost nothing, something
 // moved and these assertions are running on an empty list.
@@ -225,7 +214,7 @@ if (!robots) {
 } else {
   const disallowed = [...robots.matchAll(/^Disallow:\s*(\S+)/gim)].map((m) => m[1]);
   const routes = files
-    .map((f) => "/" + publicRoute(f).replace(/\.html$/, "").replace(/^index$/, ""))
+    .map((f) => "/" + path.relative(APP, f).replace(/\.html$/, "").replace(/^index$/, ""))
     .map((r) => (r === "/index" ? "/" : r))
     .filter((r) => !r.startsWith("/_"));
   if (routes.length < 5) {
@@ -253,7 +242,7 @@ try { chip = JSON.parse(await readFile(CHIP, "utf8")); } catch { /* reported bel
 if (!chip) {
   failures.push("data/chip.json is missing or unparseable. The front page reads its figures from it.");
 } else {
-  const home = files.find((f) => publicRoute(f) === "index.html");
+  const home = files.find((f) => path.relative(APP, f) === "index.html");
   if (!home) {
     console.error("check-build: no prerendered index.html; the figure check would pass on nothing.");
     process.exit(2);
@@ -264,7 +253,7 @@ if (!chip) {
       failures.push(`the front page does not show data/chip.json's ${field} (${chip[field]}).`);
     }
   }
-  const src = await readFile(path.join(import.meta.dirname, "..", "app", "[lang]", "page.tsx"), "utf8");
+  const src = await readFile(path.join(import.meta.dirname, "..", "app", "page.tsx"), "utf8");
   for (const field of ["nodes", "transistors"]) {
     if (src.includes(String(chip[field]))) {
       failures.push(
@@ -286,7 +275,8 @@ if (!chip) {
 // Next emits a route as <route>.html here, not <route>/index.html. Matched
 // against both so this does not become a check that quietly stops running
 // if that changes: a missing page is reported, never skipped.
-const admin = files.find((f) => ["admin.html", "admin/index.html"].includes(publicRoute(f)));
+const admin = files.find((f) => ["admin.html", path.join("admin", "index.html")]
+  .includes(path.relative(APP, f)));
 if (!admin) {
   failures.push("no prerendered /admin page; the noindex check would pass on nothing.");
 } else {
@@ -324,7 +314,8 @@ if (!manifest) {
     process.exit(2);
   }
   for (const p of siloed) {
-    const page = files.find((f) => [`${p.key}.html`, `${p.key}/index.html`].includes(publicRoute(f)));
+    const page = files.find((f) => [`${p.key}.html`, path.join(p.key, "index.html")]
+      .includes(path.relative(APP, f)));
     if (page) {
       const body = await readFile(page, "utf8");
       if (!body.includes(`data-project="${p.key}"`)) {
@@ -359,7 +350,7 @@ if (!manifest) {
 if (manifest) {
   const routes = new Set(
     files
-      .map((f) => "/" + publicRoute(f).replace(/\.html$/, ""))
+      .map((f) => "/" + path.relative(APP, f).replace(/\.html$/, ""))
       .map((r) => (r === "/index" ? "/" : r.replace(/\/index$/, ""))),
   );
   // Only what this site actually builds. The API is uvicorn and the archive is
@@ -429,7 +420,8 @@ let game = null;
 try { game = await readFile(GAME, "utf8"); } catch { /* the surface may not exist */ }
 if (game) {
   const consolePage = files.find((f) =>
-    ["6502/games.html", "6502/games/index.html"].includes(publicRoute(f)));
+    ["6502/games.html", "6502/games/index.html"].includes(
+      path.relative(APP, f).split(path.sep).join("/")));
   if (!consolePage) {
     failures.push("game.js is present but /6502/games was not prerendered; this check would pass on nothing.");
   } else {
