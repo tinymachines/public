@@ -544,6 +544,40 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## Checkpoint, 2026-08-25 (night), at 1.0.96: one bar, the mobile sweep
+
+**Live and verified.** A phone sweep of every sitemap page (102, both
+languages, 390x844, full page, the overflow read on each) is the new
+harness alongside the triptych; the contact sheet is a Claude artifact. It
+found six pages scrolling sideways (inline code with no break point: a
+42-character identifier, and in Japanese a run of paths joined by an
+ideographic comma the browser will not break before), fixed in 1.0.94 by
+one rule, `overflow-wrap: anywhere` on inline code; and the locked footer
+clipping its version run, fixed in 1.0.95 by letting the run drop to a
+second line (the footer's height is measured live, so the page's padding
+follows).
+
+**1.0.96, the headers, the owner's brief.** One bar on every page
+(`Topbar` in `SiteFrame.tsx`, used by the Shell and the workbench): the die
+tile as section indicator and the wordmark on the left, an instrument's
+name beside the mark (on a phone the word steps aside and the tile alone is
+home); one flag on the right, the OTHER language's, half again larger, then
+the menu, at the same x on every page (the workbench bar had its own
+padding, which was the explorer's "shifted menu"). Full screen moved to the
+right end of the floor strip on every instrument page (the chip transport;
+portalled into the Lab's own player row) and is the WHOLE document, bar
+hidden, page still scrolling, the same button the way out. Removed: the
+bar's fullscreen slot and floating exit, the explorer's "Launch full screen"
+button, the explorer's and chip map's own toolbar buttons (hidden by CSS;
+their scripts bind by id). Section strips read the bar's measured height
+(`--app-head-h`) rather than a constant.
+
+**Open.** The explorer's upstream `F` key still fires its die-only
+fullscreen (upstream proposal). The Lab's strip on a phone wraps to three
+rows with the button alone on the last. Everything from the 1.0.93 list
+still stands: the starter cart decision, proving the GitHub loop live, the
+cart lab, the JA review, the upstream proposals.
+
 ## Checkpoint, 2026-08-25 (evening), at 1.0.93: cart-building mode
 
 The owner's direction: shift into cart building and make it easy at every
