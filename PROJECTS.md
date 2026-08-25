@@ -544,6 +544,31 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## Checkpoint, 2026-08-25, at 1.0.90
+
+The "unreasonable perfection" zone is closed on this side: the Lab-shaped
+floor strip is the one transport on every page that runs the chip
+(explorer, the seventeen pages, the primer, the console); every page
+declares canonical, hreflang, translated title and description, structured
+data, and is in the sitemap; every page unfurls into a card drawn from its
+own words. The full triptych (22 pages, 3 widths, 2 languages) is clean.
+
+What is open, in the order it is worth taking:
+
+1. **Upstream** (the 6502 repo, not from here): `notes/upstream-transport.md`.
+   caps first; then op (sync), scrub (length/seek), power; then module
+   lifecycle and the shared Machine. When caps land, retire the console's
+   button-id bridge (`games/ConsoleDriver.tsx`) and the per-page `caps`
+   props.
+2. **The mint's starter cart**: whether a fresh token publishes
+   `tinymachines/die-runner` by default (`TM_MINT_PUBLISH_STARTER`), and which
+   cart is the starter. A decision, then one env line.
+3. **The cart lab**: the full editor experience beyond /6502/manage.
+4. **Owner review of the Japanese drafts** (the artifact "The Japanese
+   Corpus" holds the rulings so far).
+5. Small: docs-tree gap on the docs landing; the parts table's scroll
+   affordance; the tracer crumb at tablet.
+
 ## Social cards, after 1.0.88
 
 Every page's `og:image` is `/og/<its path>` (`/og/ja/...` for Japanese),
