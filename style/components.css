@@ -2467,7 +2467,7 @@ html.has-fullscreen .workbench .app-head { display: none; }
    own (an unlabelled glyph in their toolbars). Hidden, not removed: their
    scripts bind them by id. The strip's control is the one that works the
    same on every page. */
-.workbench .explorer-shell :is(#btn-fullscreen, #cm-fullscreen) { display: none; }
+.workbench .explorer-shell :is(#btn-fullscreen, #cm-fullscreen, #tc-fullscreen, #sch-fullscreen) { display: none; }
 
 /* ONE TRANSPORT. The explorer's demo pages paint a copy of their transport
    into every example panel (demos.js: "they all drive the one chip"). With
@@ -2475,6 +2475,21 @@ html.has-fullscreen .workbench .app-head { display: none; }
    and the one on the floor is the one the site standardised on (the Lab).
    Hidden, not removed: their script builds and repaints them by reference. */
 .workbench.has-transport .explorer-shell .dm-bar { display: none; }
+/* And the pages' own transports, where the strip honours the same action
+   (measured 2026-08-25: every driver's `step` is a half-step, `reset` a
+   power cycle, `back` a half-step back, and the clock select is a view of
+   the store's one clock). The explorer's instruction step and timeline
+   stay, because the strip's op and seek are not live yet (one-engine.md).
+   The tracer's transport box holds nothing else, so the box goes with its
+   buttons; the blueprint's keeps its readout. */
+.workbench.has-transport .explorer-shell :is(
+  #btn-reset, #btn-back, #btn-run, #btn-half, #btn-cycle, .console-foot .field.speed,
+  #bp-run, #bp-step, #bp-cycle, #bp-reset, #bp-speed,
+  #tc-transport, .tc-transport, #tc-back, #tc-run, #tc-step, #tc-cycle, #tc-reset,
+  #ex-run, #ex-step, #ex-reset,
+  #sch-run, #sch-step, #sch-reset
+) { display: none; }
+.workbench.has-transport .explorer-shell :is(label.field):has(> #bp-speed, > #tc-speed) { display: none; }
 
 /* The control, at the right end of the strip. In the chip transport it is
    a .tbtn like its neighbours; in the Lab's player it is the Lab's .tbtn,

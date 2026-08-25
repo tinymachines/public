@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import postcss from "postcss";
+import { kitBorders } from "./kit-borders";
 
 /**
  * The Halfwave Lab, read out of its own file at build time.
@@ -169,6 +170,7 @@ function scope(css: string): string {
         "match broke and the page is about to render two buttons in one.",
     );
   }
+  kitBorders(root, "lib/lab.ts");
   return root.toString();
 }
 

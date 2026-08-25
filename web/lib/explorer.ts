@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import postcss from "postcss";
+import { kitBorders } from "./kit-borders";
 
 /**
  * The 6502 explorer, read out of the 6502 repository at build time.
@@ -131,6 +132,7 @@ function scope(css: string): string {
         "match broke and the page is about to render two buttons in one.",
     );
   }
+  kitBorders(root, "lib/explorer.ts");
   return root.toString();
 }
 
