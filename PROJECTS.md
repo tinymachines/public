@@ -544,6 +544,29 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## 1.0.99: the tool pages wear the kit's edge; one transport per page
+
+- **`web/lib/kit-borders.ts`**: a pass over the ported stylesheets (explorer
+  and Lab, in their `scope()` functions) that rewrites what a rule says
+  rather than listing what it is called: 2px and 3px borders become 1px,
+  radii above 2px become `var(--radius-hair)`; percentages, outlines and
+  0/1px stay. Measured on the explorer: 99 border weights and 92 radii
+  rewritten; on production every element at 2px or above is gone, and the
+  only 4px corner left is `.console`/`.panel`, the kit's `--radius-mod` set
+  deliberately in explorer.css. Throws if it changes nothing.
+- **The pages' own transports are hidden where the strip honours the same
+  action** (components.css, section 27): the explorer's power/back/run/half/
+  cycle and clock select, the blueprint's four buttons and clock, the
+  tracer's transport box and clock, exploded's and schematic's run/step/
+  reset, plus the two fullscreen glyphs the first list missed (`#tc-`,
+  `#sch-fullscreen`). Every upstream driver's `step` is a half-step and
+  `reset` a power cycle, checked in the 6502 tree before hiding. The
+  explorer's instruction step and timeline stay until the strip's op and
+  seek are live. Halfshot, trace, decode and timing register no driver, so
+  nothing of theirs is touched.
+- Harness: `live.mjs` (strip liveness plus every element with a bold border
+  or a wide radius, per page), `ctl.mjs` (every control with its border).
+
 ## 1.0.97: the full strip, the manage page on a phone, the one-engine note
 
 - **The strip is the same set of controls on every instrument page**, the
