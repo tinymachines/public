@@ -54,7 +54,7 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
   const [failed, setFailed] = useState(false);
   // A tick so the view repaints when the store announces. The store's own
   // subscribe calls back immediately, which paints the first frame.
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,7 +105,19 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
     return () => window.clearInterval(id);
   }, [ctl, running]);
 
+  // A page that never offers a chip gets no bar. Halfshot plays recordings
+  // with controls of its own and registers no driver; a floor bar reading
+  // "no chip on this page" under those controls was a false claim. The grace
+  // is for pages that do register, which takes a wasm boot to get to.
+  const [gaveUp, setGaveUp] = useState(false);
+  useEffect(() => {
+    if (!ctl || ctl.hasDriver()) return;
+    const id = window.setTimeout(() => setGaveUp(!ctl.hasDriver()), 8000);
+    return () => window.clearTimeout(id);
+  }, [ctl, tick]);
+
   if (failed) return null;
+  if (gaveUp && !(ctl?.hasDriver() ?? false)) return null;
   const hc = ctl?.chipHalfCycle() ?? null;
 
   return (
