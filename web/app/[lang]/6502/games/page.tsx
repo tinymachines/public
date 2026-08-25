@@ -5,6 +5,8 @@ import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { ChipTransport } from "../explorer/ChipTransport";
+import { ConsoleDriver } from "./ConsoleDriver";
 import "./console.css";
 
 /**
@@ -212,7 +214,7 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
        attributes ride the root it queries for, and `header .sub` exists
        because the bar is wrapped in a real <header> carrying the .sub the
        script writes the cartridge blurb into. */
-    <div className="workbench" data-workbench data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
+    <div className="workbench has-transport" data-workbench data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
       <header>
         <WorkbenchBar
           lang={lang}
@@ -283,7 +285,11 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
                   </label>
                   <input id="cart-file" type="file" accept=".gz,application/gzip" hidden />
                 </div>
-                <div className="con-bar">
+                {/* The console's own power and pause. Kept in the DOM, because
+                    game.js paints its state into them and ConsoleDriver reads
+                    it back; hidden, because the floor strip is the one
+                    transport, as on every page that runs the chip. */}
+                <div className="con-bar con-own-transport">
                   <button className="btn btn-primary" id="b-power" type="button">
                     {S.powerOn}
                   </button>
@@ -350,6 +356,12 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
           and it has to be at /6502/games/ for those relative fetches to land.
           A plain <script> tag here would be hoisted by Next and lose both. */}
       <Script src="/6502/games/game.js" type="module" strategy="afterInteractive" />
+
+      {/* The console on the one chip store, and the strip that drives it.
+          Whole frames over a round trip: reset and play are all it can
+          honour, so that is all the strip shows. */}
+      <ConsoleDriver />
+      <ChipTransport lang={lang} caps={{ back: false, step: false, cycle: false, rate: false }} />
 
     </div>
   );

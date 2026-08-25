@@ -530,6 +530,20 @@ the docs at request time so it cannot drift). The public mint feeds step one.
 **Notes for later, from the owner:** expand the 6502 hardware; the hotbits
 animation on bradley.io, copied over.
 
+## The console on the store, and the driver proposal (after 1.0.85)
+
+The console (/6502/games) is the last 6502 page to get the floor strip. Its
+game.js is upstream's byte for byte and exports nothing, so
+`games/ConsoleDriver.tsx` bridges through the ids the page already promises
+game.js: it registers `{reset, halfCycle}` with the one store, presses the
+console's own power or pause button when the store's running state differs,
+and reads the console's state back off those buttons through a
+MutationObserver. The strip takes a `caps` map and shows only what the page
+can honour (the console: start and play); the driver saying so itself is the
+first item of `notes/upstream-transport.md`, the written proposal for the
+6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
+Machine), with the Lab's player as the model.
+
 ## Checkpoint, 2026-08-25, at 1.0.84
 
 **Live and verified (triptych, 23 pages, both languages, zero overflow):**

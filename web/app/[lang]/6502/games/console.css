@@ -74,6 +74,7 @@
   color: var(--color-glass-muted);
 }
 .con-note b { color: var(--color-glass); font-weight: 500; }
+.workbench.has-transport .con-own-transport { display: none; }
 .con-bar { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 3); }
 
 /* The eight watched gates. game.js emits .gate.hi and .gate.lo, so those names

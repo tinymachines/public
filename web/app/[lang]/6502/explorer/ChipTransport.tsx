@@ -86,8 +86,24 @@ function Ic({ d }: { d: string }) {
   );
 }
 
-export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
+/**
+ * What the page's chip can honour. A control the driver cannot act on is not
+ * shown: a half-step button on a console that runs whole frames would press
+ * at nothing. Default is everything, which is what the explorer's machine
+ * offers. The driver stating this itself is in the upstream proposal
+ * (notes/upstream-transport.md); until then the page that registers the
+ * driver says.
+ */
+export interface Caps {
+  back?: boolean;
+  step?: boolean;
+  cycle?: boolean;
+  rate?: boolean;
+}
+
+export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: Caps }) {
   const S = L[lang];
+  const can = { back: true, step: true, cycle: true, rate: true, ...caps };
   const [ctl, setCtl] = useState<Controls | null>(null);
   const [failed, setFailed] = useState(false);
   // A tick so the view repaints when the store announces. The store's own
@@ -169,9 +185,11 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
         <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!live} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
           <Ic d={IC.start} /><span className="lb">{S.wStart}</span>
         </button>
+        {can.back && (
         <button type="button" className="tbtn" title={S.back} aria-label={S.back} disabled={!live} onClick={() => ctl?.stepBack()}>
           <Ic d={IC.prev} /><span className="lb">{S.wHalf}</span>
         </button>
+        )}
         <button
           type="button"
           className={"tbtn play" + (running ? " on" : "")}
@@ -187,12 +205,17 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
         >
           <Ic d={running ? IC.pause : IC.play} /><span className="lb">{running ? S.wPause : S.wPlay}</span>
         </button>
+        {can.step && (
         <button type="button" className="tbtn" title={S.step} aria-label={S.step} disabled={!live} onClick={() => ctl?.step()}>
           <Ic d={IC.next} /><span className="lb">{S.wHalf}</span>
         </button>
+        )}
+        {can.cycle && (
         <button type="button" className="tbtn" title={S.cycle} aria-label={S.cycle} disabled={!live} onClick={() => { ctl?.step(); ctl?.step(); }}>
           <Ic d={IC.cycle} /><span className="lb">{S.wCyc}</span>
         </button>
+        )}
+        {can.rate && (
         <label className="ct-rate" title={S.rate}>
           <input
             type="range"
@@ -206,6 +229,7 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
           />
           <span className="tlab">{ctl ? ctl.clockLabel() : clocks[0].label}</span>
         </label>
+        )}
         <span className="ct-pos" aria-live="off">
           {!live ? S.loading : hc === null ? "" : <>h <b>{hc}</b> · cyc <b>{cyc}</b></>}
         </span>
