@@ -91,10 +91,21 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
     };
   }, []);
 
-  if (failed) return null;
-
   const live = ctl?.hasDriver() ?? false;
   const running = ctl?.isRunning() ?? false;
+
+  // The readout while running. A page's chip advances by announcing to ITS
+  // listeners, not to the store, so between store actions nothing here would
+  // repaint and the half-cycle count would stand still while the chip ran.
+  // Found on the primer: pause showed h 27, play showed h 28 a second later.
+  // Four reads a second is enough to see it move and cheap enough to keep.
+  useEffect(() => {
+    if (!ctl || !running) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 250);
+    return () => window.clearInterval(id);
+  }, [ctl, running]);
+
+  if (failed) return null;
   const hc = ctl?.chipHalfCycle() ?? null;
 
   return (
