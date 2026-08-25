@@ -27,11 +27,17 @@ const L = {
     minting: "Minting",
     left: (n: number, per: number) => `${n} of ${per} left for your address today`,
     off: "The mint is not enabled on this deployment.",
-    minted: "Your token. Copy it somewhere safe now; it will not be shown again. It has been placed in the field below and you are signed in.",
+    minted: "Your token. Copy it somewhere safe now; it will not be shown again. You are signed in below, and your page is claimed.",
     limit: "Limit reached for your address today.",
     failed: "The mint did not answer.",
     note: "note (optional)",
     notePh: "who or what it is for",
+    handle: "handle (optional)",
+    handlePh: "a name for your page, or leave it and get your cart code",
+    yourCode: "Your cart code",
+    yourPage: "Your page",
+    play: "Play the starter cart",
+    brief: "The brief for an AI, precharged",
   },
   ja: {
     eyebrow: "トークンがまだ無い",
@@ -41,22 +47,31 @@ const L = {
     minting: "鋳造中",
     left: (n: number, per: number) => `このアドレスで今日あと ${n} / ${per}`,
     off: "このデプロイでは鋳造が有効になっていない。",
-    minted: "あなたのトークン。今すぐ安全な場所に控えること。二度と表示されない。下の欄に入れてサインイン済みだ。",
+    minted: "あなたのトークン。今すぐ安全な場所に控えること。二度と表示されない。下でサインイン済みで、ページは取得済みだ。",
     limit: "このアドレスの今日の上限に達した。",
     failed: "鋳造所が応答しなかった。",
     note: "メモ (任意)",
     notePh: "誰の、何のためか",
+    handle: "ハンドル (任意)",
+    handlePh: "ページの名前。空ならカートコードになる",
+    yourCode: "あなたのカートコード",
+    yourPage: "あなたのページ",
+    play: "スターターのカートで遊ぶ",
+    brief: "AI 向けブリーフ (設定済み)",
   },
 } as const;
 
 interface Avail { enabled: boolean; per_ip_per_day: number; remaining_for_you: number }
+interface Minted { token: string; slug: string; handle: string | null; page: string | null; play: string; brief: string; setup: string }
 
 export function MintToken({ lang = "en" }: { lang?: Lang }) {
   const S = L[lang];
   const [avail, setAvail] = useState<Avail | null>(null);
   const [note, setNote] = useState("");
+  const [handle, setHandle] = useState("");
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [minted, setMinted] = useState<Minted | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,7 +90,7 @@ export function MintToken({ lang = "en" }: { lang?: Lang }) {
       const r = await fetch("/api/v1/tokens", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ note }),
+        body: JSON.stringify(handle.trim() ? { note, handle: handle.trim() } : { note }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -83,6 +98,7 @@ export function MintToken({ lang = "en" }: { lang?: Lang }) {
         return;
       }
       setToken(j.token);
+      setMinted(j);
       // Hand it to the editor: its own field, its own button.
       const field = document.querySelector<HTMLInputElement>("#token");
       const go = document.querySelector<HTMLButtonElement>("#signin");
@@ -109,9 +125,36 @@ export function MintToken({ lang = "en" }: { lang?: Lang }) {
         <>
           <p className="ok">{S.minted}</p>
           <pre className="mint-token"><code>{token}</code></pre>
+          {minted ? (
+            <>
+              <p className="note">
+                <b>{S.yourCode}:</b> <code>{minted.slug}</code>
+                {minted.page ? (
+                  <>
+                    {" · "}
+                    <b>{S.yourPage}:</b> <a href={minted.page}>{minted.page.replace("https://tinymachines.ai", "")}</a>
+                  </>
+                ) : null}
+              </p>
+              <p className="note">{minted.setup}</p>
+              <p className="piece-links">
+                <a className="tag live" href={minted.play}>{S.play}</a>
+                <a className="tag" href={minted.brief}>{S.brief}</a>
+              </p>
+            </>
+          ) : null}
         </>
       ) : (
         <div className="row">
+          <input
+            className="input"
+            aria-label={S.handle}
+            placeholder={S.handlePh}
+            maxLength={32}
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            style={{ flex: "1 1 12rem" }}
+          />
           <input
             className="input"
             aria-label={S.note}

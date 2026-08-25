@@ -18,7 +18,7 @@ export const LESSON = {
       {
         n: "1",
         title: "Mint a free token",
-        body: "A token is your handle in the registry and your key to the chip API. Mint one in the editor: free, one click, shown once. It is yours to claim a handle with and publish under.",
+        body: "A token is your key to the chip API. Mint one in the editor: free, one click, shown once. Minting also claims your page and hands you a cart code, the name your first cartridge publishes under.",
         href: "/6502/manage#mint",
         link: "Mint one in the editor",
       },
@@ -79,7 +79,7 @@ export const LESSON = {
       {
         n: "1",
         title: "無料のトークンを鋳造する",
-        body: "トークンはレジストリでのあなたのハンドルであり、チップ API への鍵だ。エディタで鋳造する: 無料、ワンクリック、表示は一度きり。それでハンドルを取得し、その名で公開する。",
+        body: "トークンはチップ API への鍵だ。エディタで鋳造する: 無料、ワンクリック、表示は一度きり。鋳造はあなたのページも取得し、最初のカートリッジを公開する名前であるカートコードを渡す。",
         href: "/6502/manage#mint",
         link: "エディタで鋳造する",
       },

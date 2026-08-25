@@ -489,7 +489,13 @@ the docs at request time so it cannot drift). The public mint feeds step one.
 
 **Next, in order, and what each needs decided:**
 
-1. **Mint hands out a cart code.** The owner's ask: minting a token also
+1. **Mint hands out a cart code.** LANDED 2026-08-25, as HMAC (the owner's
+   call): `api/mint.py` derives the code from the token with a per-install
+   secret, claims the page (the handle asked for, or the code) over loopback,
+   returns code, handle, page, the console with the starter loaded, and the
+   brief precharged. Publishing the starter under the new page is a switch,
+   `TM_MINT_PUBLISH_STARTER`, off by default so the public feed is not one
+   Die Runner per newcomer. The original ask, for the record: minting a token also
    creates a slug, the slug is the cart code, and a default cart is set up
    under it. Mechanically: the roof mints the token, claims a generated
    handle with it on the chip API, publishes a starter cartridge under

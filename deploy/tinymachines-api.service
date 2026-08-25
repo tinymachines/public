@@ -67,6 +67,11 @@ UMask=0077
 # this a file open rather than a second credential.
 Environment=TM_REGISTRY_DB=/var/lib/6502-registry/registry.db
 Environment=TM_REGISTRY_SERVICE=/home/bisenbek/projects/tinymachines/6502/service
+# Minting also claims a page and points it at the starter cart; those are
+# HTTP to the chip API over loopback (api/chip.py). The cart code's HMAC
+# secret is NOT here: api/mint.py creates it once, 0600, beside the database.
+Environment=TM_CHIP_API=http://127.0.0.1:6502
+Environment=TM_STARTER_CART=tinymachines/die-runner
 
 # Modest hardening, added when this service stopped being stateless. Each line
 # is here because it costs nothing that this service does: it reads its own

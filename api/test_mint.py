@@ -12,12 +12,14 @@ says so, rather than passing against a stub that is not the registry.
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+import chip
 import db
 import keys as keys_mod
 import mint as mint_mod
@@ -40,14 +42,44 @@ def registry(tmp_path, monkeypatch):
     return path
 
 
+class FakeChip:
+    """Records what the mint asked the chip API for, and answers like it."""
+
+    def __init__(self, fail_claim: bool = False):
+        self.claims: list[tuple] = []
+        self.publishes: list[tuple] = []
+        self.fail_claim = fail_claim
+
+    def claim(self, token, handle, name):
+        if self.fail_claim:
+            raise chip.ChipError("POST /v1/registry/claim: HTTP 409: 'ada' is taken")
+        self.claims.append((token, handle, name))
+        return {"handle": handle}
+
+    def starter_blob(self):
+        return b"\x1f\x8b starter"
+
+    def publish(self, token, handle, slug, blob, frames=3):
+        self.publishes.append((token, handle, slug, blob))
+        return {"slug": slug}
+
+
 @pytest.fixture
-def client():
+def fake(monkeypatch):
+    f = FakeChip()
+    monkeypatch.setattr(mint_mod, "client", f)
+    monkeypatch.setenv("TM_MINT_SECRET", "test-secret")
+    return f
+
+
+@pytest.fixture
+def client(fake):
     with TestClient(app) as c:
         yield c
 
 
 def from_ip(ip: str) -> dict:
-    return {"X-Forwarded-For": ip}
+    return {"X-Real-IP": ip}
 
 
 def test_off_where_no_registry_is_configured(client, monkeypatch):
@@ -117,3 +149,62 @@ def test_the_ledger_needs_an_admin_and_shows_digests_not_addresses(client, regis
     assert body["count"] == 1
     assert body["mints"][0]["ip_sha256"] == mint_mod.ip_digest("203.0.113.9")
     assert "203.0.113.9" not in r.text and "tm6502_" not in r.text
+
+
+def test_the_cart_code_is_an_hmac_of_the_token_and_a_valid_name(monkeypatch):
+    monkeypatch.setenv("TM_MINT_SECRET", "test-secret")
+    a = mint_mod.cart_code("tm6502_one")
+    b = mint_mod.cart_code("tm6502_one")
+    c = mint_mod.cart_code("tm6502_two")
+    assert a == b and a != c
+    assert re.fullmatch(r"[a-z2-7]{10}", a), a
+    assert mint_mod.code_matches("tm6502_one", a) and not mint_mod.code_matches("tm6502_two", a)
+    # A different secret is a different code: the pairing is this install's.
+    monkeypatch.setenv("TM_MINT_SECRET", "other")
+    assert mint_mod.cart_code("tm6502_one") != a
+
+
+def test_a_mint_claims_the_page_as_the_code_and_returns_the_places(client, registry, fake):
+    r = client.post("/v1/tokens", json={}, headers=from_ip("203.0.113.20"))
+    assert r.status_code == 201, r.text
+    j = r.json()
+    assert j["slug"] == mint_mod.cart_code(j["token"])
+    assert j["handle"] == j["slug"] and j["page"].endswith("/6502/builders/" + j["slug"])
+    assert fake.claims == [(j["token"], j["slug"], "builder " + j["slug"])]
+    assert fake.publishes == []          # the starter is loaded, not published, by default
+    assert "die-runner" in j["play"] and j["brief"].endswith(f"?slug={j['slug']}&handle={j['slug']}")
+    assert "claimed" in j["setup"]
+
+
+def test_a_mint_can_claim_a_handle_of_your_own(client, registry, fake):
+    r = client.post("/v1/tokens", json={"handle": "Ada"}, headers=from_ip("203.0.113.21"))
+    assert r.status_code == 201
+    j = r.json()
+    assert j["handle"] == "ada" and j["slug"] != "ada"
+    assert fake.claims[0][1:] == ("ada", "ada")
+
+
+def test_a_failed_claim_still_returns_the_token_and_says_so(client, registry, monkeypatch):
+    monkeypatch.setattr(mint_mod, "client", FakeChip(fail_claim=True))
+    r = client.post("/v1/tokens", json={"handle": "ada"}, headers=from_ip("203.0.113.22"))
+    assert r.status_code == 201
+    j = r.json()
+    assert j["token"].startswith("tm6502_") and j["handle"] is None and j["page"] is None
+    assert "could not be claimed" in j["setup"] and "taken" in j["setup"]
+
+
+def test_publishing_the_starter_is_a_switch(client, registry, fake, monkeypatch):
+    monkeypatch.setenv("TM_MINT_PUBLISH_STARTER", "1")
+    r = client.post("/v1/tokens", json={}, headers=from_ip("203.0.113.23"))
+    j = r.json()
+    assert len(fake.publishes) == 1 and fake.publishes[0][1:3] == (j["slug"], j["slug"])
+    assert j["play"].endswith(f"/b/{j['slug']}/roms/{j['slug']}/cart")
+
+
+def test_the_limit_counts_the_real_address_not_a_header_the_client_wrote(client, registry, monkeypatch):
+    monkeypatch.setenv("TM_MINT_PER_IP_DAY", "1")
+    real = {"X-Real-IP": "198.51.100.40"}
+    assert client.post("/v1/tokens", json={}, headers=real).status_code == 201
+    # A client that rewrites X-Forwarded-For is still the same address.
+    r = client.post("/v1/tokens", json={}, headers={**real, "X-Forwarded-For": "1.2.3.4"})
+    assert r.status_code == 429

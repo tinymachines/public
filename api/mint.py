@@ -51,7 +51,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+import chip
 import db
+
+import base64 as _b64
+import hmac as _hmac
 
 DEFAULT_PER_IP_PER_DAY = 2
 DEFAULT_PER_DAY = 60
@@ -218,3 +222,99 @@ def ledger(conn: sqlite3.Connection, limit: int = 200) -> list[sqlite3.Row]:
     return conn.execute(
         "SELECT * FROM token_mints ORDER BY created_at DESC LIMIT ?", (limit,)
     ).fetchall()
+
+
+# ---------------------------------------------------------------------------
+# The cart code: a slug derived from the token
+# ---------------------------------------------------------------------------
+#
+# The owner's rule: the slug is HMAC of the key. The token authorises, the
+# slug identifies, and the pairing is checkable by anyone holding the secret
+# (this service) and by nobody else. Ten lowercase base32 characters, which is
+# fifty bits: enough that two builders do not collide, short enough to say
+# aloud, and a valid handle and ROM name under the registry's rule.
+#
+# The secret is not in the repository and not in the unit file. It is read
+# from TM_MINT_SECRET if set, else from a 0600 file beside the roof's
+# database, created once with 256 bits from the CSPRNG. Losing it would change
+# every future code and none of the existing ones, which is the failure mode
+# a per-install secret should have.
+
+
+def _secret() -> bytes:
+    explicit = os.environ.get("TM_MINT_SECRET")
+    if explicit:
+        return explicit.encode("utf-8")
+    f = db.path().parent / "mint.secret"
+    if f.exists():
+        return f.read_bytes()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    raw = secrets.token_bytes(32)
+    fd = os.open(f, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "wb") as fh:
+        fh.write(raw)
+    return raw
+
+
+CODE_LEN = 10
+
+
+def cart_code(token: str) -> str:
+    mac = _hmac.new(_secret(), token.encode("utf-8"), hashlib.sha256).digest()
+    code = _b64.b32encode(mac).decode("ascii").lower().rstrip("=")
+    return code[:CODE_LEN]
+
+
+def code_matches(token: str, slug: str) -> bool:
+    return _hmac.compare_digest(cart_code(token), (slug or "").strip().lower())
+
+
+# ---------------------------------------------------------------------------
+# The setup: a page for the token, and the starter cart in front of it
+# ---------------------------------------------------------------------------
+
+SITE = "https://tinymachines.ai"
+CHIP_PUBLIC = "https://6502.tinymachines.ai/api"
+
+client: chip.ChipClient = chip.ChipClient()
+
+
+def publish_starter() -> bool:
+    return os.environ.get("TM_MINT_PUBLISH_STARTER", "0") == "1"
+
+
+def setup(token: str, *, handle: str | None = None) -> dict:
+    """Claim a page for a freshly minted token and point it at the starter.
+
+    Never raises. A token whose setup failed is still a valid token, so the
+    dict says what happened in `setup`, and the fields that could not be
+    established are None. The handle is the one asked for, or the cart code.
+    """
+    code = cart_code(token)
+    want = (handle or code).strip().lower()
+    sh, ss = chip.starter()
+    out: dict = {
+        "slug": code,
+        "handle": None,
+        "page": None,
+        "play": f"{SITE}/6502/games?cart={CHIP_PUBLIC}/v1/registry/b/{sh}/roms/{ss}/cart",
+        "brief": f"{SITE}/6502/cart/brief.md?slug={code}&handle={want}",
+        "setup": "",
+    }
+    try:
+        client.claim(token, want, f"builder {want}" if want == code else want)
+        out["handle"] = want
+        out["page"] = f"{SITE}/6502/builders/{want}"
+        out["setup"] = f"Your page is claimed as {want!r}."
+    except chip.ChipError as e:
+        out["brief"] = f"{SITE}/6502/cart/brief.md?slug={code}"
+        out["setup"] = f"The token is yours, but its page could not be claimed: {e}. Claim one in the editor."
+        return out
+    if publish_starter():
+        try:
+            client.publish(token, want, code, client.starter_blob())
+            out["play"] = f"{SITE}/6502/games?cart={CHIP_PUBLIC}/v1/registry/b/{want}/roms/{code}/cart"
+            out["setup"] += f" The starter cart is published under it as {code!r}."
+        except chip.ChipError as e:
+            out["setup"] += f" The starter cart could not be published: {e}."
+    return out

@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Cart", description: "Mint a token, b
 const P = {
   en: {
     quick: "Quickstart",
-    q1: "Mint a free token", q1b: "One click in the editor. Shown once; only its digest is kept.",
+    q1: "Mint a free token", q1b: "One click in the editor. Shown once; your page is claimed and your cart code assigned as it is minted.",
     q2: "Build the cart", q2b: "By hand against the contract, or hand a model the brief: one URL with everything it needs.",
     q3: "Publish", q3b: "The registry runs it on the chip before listing it. What your page shows is what the chip did.",
     brief: "The AI brief", briefLede: "Plain markdown, one read: the walkthrough and the three references it cites. Give a model this URL and one sentence.",
@@ -20,7 +20,7 @@ const P = {
   },
   ja: {
     quick: "クイックスタート",
-    q1: "無料のトークンを鋳造", q1b: "エディタでワンクリック。表示は一度きり、保存されるのはダイジェストだけ。",
+    q1: "無料のトークンを鋳造", q1b: "エディタでワンクリック。表示は一度きり。鋳造と同時にページが取得され、カートコードが割り当てられる。",
     q2: "カートを作る", q2b: "規約に沿って手で。または、必要なすべてを載せた一つの URL、ブリーフをモデルに渡す。",
     q3: "公開する", q3b: "レジストリは掲載前にチップの上で走らせる。あなたのページに出るのは、チップがしたことだ。",
     brief: "AI ブリーフ", briefLede: "プレーンなマークダウン、一回の読み込み: ウォークスルーと、それが引く三つのリファレンス。モデルにこの URL と一文を渡す。",

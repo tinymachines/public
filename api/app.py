@@ -183,9 +183,14 @@ def _caller_ip(request: Request) -> str:
     the caller and the header is trusted. Without the header (a test client,
     a curl on the box) the socket peer is the caller.
     """
-    xff = request.headers.get("x-forwarded-for", "")
-    if xff:
-        return xff.split(",")[0].strip()
+    # X-Real-IP, not X-Forwarded-For. nginx sets X-Real-IP from the connection
+    # it accepted and nothing a client sends can change it; X-Forwarded-For is
+    # built with $proxy_add_x_forwarded_for, which APPENDS to whatever the
+    # client sent, so its first entry is the client's to choose. Trusting it
+    # was a limit anyone could reset with one header.
+    real = request.headers.get("x-real-ip", "").strip()
+    if real:
+        return real
     return request.client.host if request.client else "unknown"
 
 
@@ -217,6 +222,10 @@ def token_availability(request: Request, conn: sqlite3.Connection = Depends(admi
         "in front of that, and the door has a limit: a few per address per day and a "
         "few dozen per day in all. Tokens are free and one token is one builder, so the "
         "limit is about loops, not money.\n\n"
+        "Minting also claims your page (the handle you asked for, or the cart code), "
+        "and returns the cart code: a slug derived from the token by HMAC, the name to "
+        "publish your first cartridge under. The console with the starter cart is one "
+        "link away, and the brief for an AI comes back precharged.\n\n"
         "A 429 says when to come back. A 503 says the mint is not enabled on this "
         "deployment. Nothing about the token is stored here: the registry keeps its "
         "digest and this service keeps a digest of your address and your note."
@@ -234,11 +243,13 @@ def mint_token(body: NewToken, request: Request, conn: sqlite3.Connection = Depe
     except mint_mod.Refused as e:
         headers = {"Retry-After": str(e.retry_after)} if e.retry_after else None
         raise HTTPException(status_code=e.status, detail=e.detail, headers=headers)
+    done = mint_mod.setup(token, handle=body.handle)
     return MintedToken(
         token=token,
         minted_at=when,
         editor="https://tinymachines.ai/6502/manage",
         claim="POST https://6502.tinymachines.ai/api/v1/registry/claim",
+        **done,
     )
 
 

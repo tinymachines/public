@@ -669,10 +669,17 @@ class ProjectsResponse(BaseModel):
 
 
 class NewToken(BaseModel):
-    """What minting a registry token asks for: nothing, and a note if you like."""
+    """What minting a registry token asks for: nothing, and a note or a handle if you like."""
 
     model_config = ConfigDict(extra="forbid")
 
+    handle: Optional[str] = Field(
+        default=None,
+        description="The page to claim for this token, if you want a name of your own. Two to "
+                    "thirty-two lowercase letters, digits and dashes. Left out, the page is "
+                    "claimed as the cart code. One token, one handle: it cannot change later.",
+        examples=["ada"],
+    )
     note: str = Field(
         default="",
         max_length=120,
@@ -706,6 +713,17 @@ class MintedToken(BaseModel):
                     "instead of clicking.",
         examples=["POST https://6502.tinymachines.ai/api/v1/registry/claim"],
     )
+    slug: str = Field(
+        description="Your cart code: a slug derived from the token (an HMAC, so the pairing is "
+                    "verifiable here and by nobody else). It is the name to publish your first "
+                    "cartridge under, and your page's handle unless you asked for one.",
+        examples=["k3f9q2m7xa"],
+    )
+    handle: Optional[str] = Field(description="The page claimed for this token, or null if that step failed; `setup` says why.", examples=["k3f9q2m7xa"])
+    page: Optional[str] = Field(description="Your builder page, once claimed.", examples=["https://tinymachines.ai/6502/builders/k3f9q2m7xa"])
+    play: str = Field(description="The console with the starter cart loaded: the shape to copy.", examples=["https://tinymachines.ai/6502/games?cart=..."])
+    brief: str = Field(description="The one-URL brief for an AI, precharged with your code and handle.", examples=["https://tinymachines.ai/6502/cart/brief.md?slug=k3f9q2m7xa&handle=k3f9q2m7xa"])
+    setup: str = Field(description="What was set up for this token, in a sentence, including anything that could not be.")
 
 
 class MintAvailability(BaseModel):

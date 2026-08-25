@@ -11,8 +11,9 @@ import path from "node:path";
  * not. Nothing here is written twice; the header is the only prose of its
  * own and it names where everything else answers.
  *
- * `?slug=` is accepted and echoed for the next stage, where minting hands out
- * a cart code and this brief is precharged with it. Today it is a label.
+ * `?slug=` and `?handle=` precharge it: minting hands both out, and the
+ * setup block below names the exact publish route and play URL for them,
+ * so a model reading this holds everything but the token.
  *
  * Outside [lang] on purpose: models read English, and the localized tree
  * would give this document a Japanese twin that no model asks for. The
@@ -35,7 +36,10 @@ function body(file: string): string {
 }
 
 export function GET(request: Request): Response {
-  const slug = new URL(request.url).searchParams.get("slug");
+  const q = new URL(request.url).searchParams;
+  const clean = (v: string | null) => (v ?? "").replace(/[^A-Za-z0-9_-]/g, "").toLowerCase().slice(0, 32);
+  const slug = clean(q.get("slug"));
+  const handle = clean(q.get("handle")) || slug;
   const head = [
     "# 6502 as a service: the brief",
     "",
@@ -46,7 +50,18 @@ export function GET(request: Request): Response {
     "- The console contract as data: `GET https://6502.tinymachines.ai/api/v1/console`",
     "- Play a cartridge: `https://tinymachines.ai/6502/games?cart=<url>`",
     "- MCP, for a model with tool use: `https://tinymachines.ai/api/mcp`",
-    slug ? `- Your cart code: \`${slug.replace(/[^A-Za-z0-9_-]/g, "")}\`` : "",
+    ...(slug
+      ? [
+          "",
+          "## Your setup",
+          "",
+          `- Your cart code: \`${slug}\`. Publish your first cartridge under this name.`,
+          `- Your handle: \`${handle}\`. Your page: https://tinymachines.ai/6502/builders/${handle}`,
+          `- Publish: \`PUT https://6502.tinymachines.ai/api/v1/registry/b/${handle}/roms/${slug}\` with \`Authorization: Bearer <your token>\` and \`{"cart": "<base64 of the .cart.gz>", "frames": 3}\``,
+          `- After publishing, play it: https://tinymachines.ai/6502/games?cart=https://6502.tinymachines.ai/api/v1/registry/b/${handle}/roms/${slug}/cart`,
+          "- The token is not in this document and never will be. Whoever holds it publishes.",
+        ]
+      : []),
     "",
     "The walkthrough comes first; the three references it cites follow in full. Read all of it, then start at step 1.",
     "",

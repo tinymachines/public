@@ -32,10 +32,19 @@ It is shown once. Only its SHA-256 is kept, so nothing can show it again; a
 lost token is replaced, not recovered. A few per address a day, so a loop
 cannot drain the registry.
 
-## 2. Claim a handle
+Minting does two more things. It hands you a **cart code**: a short slug
+derived from the token (an HMAC, so the pairing is verifiable here and by
+nobody else), which is the name to publish your first cartridge under. And it
+**claims your page**: the handle you typed in the request, or the cart code
+if you typed none.
 
-The handle is your page, `/6502/builders/<handle>`, and the first half of
-every cart's address. One token, one handle, and it cannot be changed later.
+## 2. Your page
+
+Your page is `/6502/builders/<handle>`, the first half of every cart's
+address, and it exists the moment the token does. One token, one handle, and
+it cannot be changed later, so pass `"handle": "ada"` when you mint if you
+want a name of your own. Scripting the claim yourself is still there for a
+token minted by hand:
 
 ```bash
 curl -s -X POST https://6502.tinymachines.ai/api/v1/registry/claim \
@@ -93,6 +102,8 @@ art.
 
 ## 7. Publish it, and the chip measures it again
 
+Publish under your cart code, or any name you like:
+
 ```bash
 curl -s -X PUT https://6502.tinymachines.ai/api/v1/registry/b/ada/roms/first \
      -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' \
@@ -119,10 +130,10 @@ the normal path: one URL, everything above plus the three references, in
 plain markdown.
 
 ```
-https://tinymachines.ai/6502/cart/brief.md
+https://tinymachines.ai/6502/cart/brief.md?slug=<your cart code>&handle=<your handle>
 ```
 
-Give a model that URL and the sentence: *use my 6502 as a service API to
+Minting returns that URL filled in. Give a model it and the sentence: *use my 6502 as a service API to
 build and run a small game.* Minting its own token counts against its own
 address, and publishing needs the token, so the model cannot publish as you
 unless you hand it yours.
