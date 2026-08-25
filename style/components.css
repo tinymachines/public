@@ -2350,7 +2350,9 @@ html.menu-open, html.menu-open body { overflow: hidden; }
    "run" to somebody who has not read the caption. */
 @media (max-width: 30rem) {
   .chip-transport .tbtn:not(.play):not(.pw):not(.pw + .tbtn) .lb { display: none; }
-  .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 2); }
+  /* Seven keys on the first row at 390px: the Lab's own gap and padding. */
+  .ct-row { gap: calc(var(--u) * 1); }
+  .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 1.5); gap: calc(var(--u) * 1); }
   .chip-transport .tbtn.play { min-width: calc(var(--u) * 14); }
   .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26); }
 }
