@@ -119,3 +119,23 @@ export function explorerMenu(): MenuGroup[] {
   }
   return groups;
 }
+
+/**
+ * The short name the explorer's own menu gives a page, for the workbench bar.
+ *
+ * The bar carried each document's <title> ("Primer: how the 6502 actually
+ * works"), which is the page's claim, not its name, and truncated to
+ * "PRIMER: HOW THE 6…" on a phone. The menu already names every page in a
+ * word or two; the bar reads the same entry, so the two cannot disagree.
+ * Undefined for a page the menu does not list, and the caller keeps the
+ * title it had.
+ */
+export function explorerLabel(slug: string): string | undefined {
+  const href = `/6502/${slug}`;
+  for (const g of explorerMenu()) {
+    for (const it of g.items) {
+      if (it.href.replace(/#.*$/, "") === href) return it.label;
+    }
+  }
+  return undefined;
+}

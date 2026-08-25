@@ -2,6 +2,8 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer, explorerPages } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { explorerLabel } from "@/lib/explorer-menu";
+import { t } from "@/lib/i18n";
 import { ChipModules } from "../explorer/ChipModules";
 import { ChipTransport } from "../explorer/ChipTransport";
 import "../explorer/explorer.css";
@@ -77,7 +79,9 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
       <WorkbenchBar
         hard
         lang={lang}
-        title={title}
+        /* The menu's short name for the page, in the page's language; the
+           long title stays the document's <title>. */
+        title={t(lang, explorerLabel(file.replace(/\.html$/, "")) ?? title)}
         titleIsHeading={false}
         trail={[
           { href: "/", label: "tinymachines.ai" },
