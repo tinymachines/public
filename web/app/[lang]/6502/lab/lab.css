@@ -257,3 +257,57 @@
 .lab-shell {
   --sec-gap: calc(var(--u) * 16);
 }
+
+/* ---------------------------------------------------------------------------
+   THE TOP OF THE PAGE, 2026-08-25. The owner's standard for every console
+   page: the site's bar is the header, and the instrument's own header
+   collapses to what a reader operates. Their <header> carried a brand, a
+   tagline, a link button, a theme toggle and the tab strip; the first two
+   repeat the bar above them, the toggle switches to a palette this site does
+   not have, and only the strip and the link are controls.
+
+   Hidden, not removed: their script binds `#theme` and `#share` by id on
+   load, and a missing element would throw before the lab built itself.
+
+   Doubled class throughout: lib/lab.ts scopes their rules to .lab-shell too,
+   and their stylesheet is a <link> in the body, so at equal specificity
+   theirs would win by coming later. .lab-shell.lab-shell is the site's
+   established answer to that (explorer.css).
+   ------------------------------------------------------------------------ */
+.lab-shell.lab-shell header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  /* Sticky under the site's bar rather than at the top, where the two fought
+     for the same edge. 13u is the bar's height. */
+  top: calc(var(--u) * 13);
+}
+.lab-shell.lab-shell header .brand,
+.lab-shell.lab-shell header .tag,
+.lab-shell.lab-shell #theme { display: none; }
+
+/* The strip: one row, scrolls sideways, and says so with a fade at the edge
+   a phone cannot see past. Their own overflow-x and hidden scrollbar stay. */
+.lab-shell.lab-shell header .tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 calc(var(--u) * 1);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
+  scroll-snap-type: x proximity;
+}
+.lab-shell.lab-shell header .tab { scroll-snap-align: start; padding: calc(var(--u) * 2.5) calc(var(--u) * 2.5); }
+
+/* The link button, kept: the one control the header had. It sits at the end
+   of the strip, the size of a tab. */
+.lab-shell.lab-shell header #share {
+  order: 2;
+  flex: none;
+  align-self: center;
+  margin: 0 calc(var(--u) * 2) 0 calc(var(--u) * 1);
+  width: calc(var(--u) * 7);
+  height: calc(var(--u) * 7);
+}
