@@ -174,3 +174,24 @@
 .explorer-shell.explorer-shell #boot .hl { color: var(--color-burnt-ink); }
 .explorer-shell.explorer-shell #boot progress,
 .explorer-shell.explorer-shell #boot .bar { accent-color: var(--color-burnt-ink); }
+
+/* ---------------------------------------------------------------------------
+   THE SCHEMATIC'S CONTROL ROW, measured against the upstream page 2026-08-25
+   ------------------------------------------------------------------------ */
+/* The signal filter is a search input, and upstream styles only
+   input[type=text], so on its own page it wore the browser's default box.
+   Here the base reset takes that box away and it rendered as bare
+   placeholder text. It gets the kit's field. */
+.explorer-shell.explorer-shell input[type="search"] {
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+  color: var(--color-ink);
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+}
+.explorer-shell.explorer-shell input[type="search"]::placeholder { color: var(--color-ink-faint); }
+/* The two direction buttons ran 24px into the Chip I/O checkbox: the house
+   mono face is wider than theirs, and .sch-dir is a flex row in a grid cell
+   that could not shrink. The cell may shrink and the row may wrap. */
+.explorer-shell.explorer-shell .sch-dir { flex-wrap: wrap; min-width: 0; }
+.explorer-shell.explorer-shell .sch-dir-btn { padding-inline: calc(var(--u) * 2); }
