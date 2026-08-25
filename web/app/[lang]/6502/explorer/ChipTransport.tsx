@@ -154,7 +154,15 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
   // Found on the primer: pause showed h 27, play showed h 28 a second later.
   // Four reads a second is enough to see it move and cheap enough to keep.
   useEffect(() => {
-    if (!ctl || !running) return;
+    if (!ctl) return;
+    if (!running) {
+      // One late read after a stop. The console finishes the frame that was
+      // in flight when it was paused, and the count it lands on is the one
+      // the strip should show: without this it showed the count from the
+      // last tick before the pause, 8,704 half-cycles short on the console.
+      const id = window.setTimeout(() => setTick((n) => n + 1), 600);
+      return () => window.clearTimeout(id);
+    }
     const id = window.setInterval(() => setTick((n) => n + 1), 250);
     return () => window.clearInterval(id);
   }, [ctl, running]);
