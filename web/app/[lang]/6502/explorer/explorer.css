@@ -194,4 +194,4 @@
    mono face is wider than theirs, and .sch-dir is a flex row in a grid cell
    that could not shrink. The cell may shrink and the row may wrap. */
 .explorer-shell.explorer-shell .sch-dir { flex-wrap: wrap; min-width: 0; }
-.explorer-shell.explorer-shell .sch-dir-btn { padding-inline: calc(var(--u) * 2); }
+.explorer-shell.explorer-shell .sch-dir-btn { flex: 0 0 auto; white-space: nowrap; padding-inline: calc(var(--u) * 2); }
