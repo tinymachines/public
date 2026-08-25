@@ -10,9 +10,7 @@ import { TrackLede } from "../Tracks";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/learn", {
-    title: "Learn", description: "The lesson: from a token to a published cart, then one instruction followed into the silicon."
-  });
+  return pageMeta(lang, "/6502/learn")
 }
 
 /** The Learn track: the four-step lesson, then everything written for this project. */

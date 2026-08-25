@@ -37,11 +37,7 @@ const CHIP_API = chipApi();
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/manage", {
-    title: "The editor",
-  description:
-    "Claim a handle, edit your page, publish a ROM. The cartridge is run on the chip before it is listed.",
-  });
+  return pageMeta(lang, "/6502/manage")
 }
 
 /**

@@ -42,10 +42,7 @@ import "./lab.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/lab", {
-    title: "Halfwave Lab",
-  description: "A 6502, half a clock phase at a time. Every value read off the running die.",
-  });
+  return pageMeta(lang, "/6502/lab")
 }
 
 export default async function LabPage({ params }: { params: Promise<{ lang: Lang }> }) {

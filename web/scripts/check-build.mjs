@@ -106,6 +106,8 @@ for (const file of files) {
       failures.push(`${path.relative(APP, file)}: no hreflang=${l}. Use pageMeta() from lib/seo.ts.`);
   if (!internal && !/<meta name="description" content="[^"]{10,}"/.test(body))
     failures.push(`${path.relative(APP, file)}: no description of at least ten characters.`);
+  if (!internal && !/<meta property="og:image" content="https:\/\/[^"]+\/(?:og(?:\/|"|$)|icons\/icon-512\.png)/.test(body))
+    failures.push(`${path.relative(APP, file)}: og:image is neither a card under /og nor the site icon.`);
   if (!internal && !/<meta property="og:title" content="[^"]+"/.test(body))
     failures.push(`${path.relative(APP, file)}: no og:title.`);
 

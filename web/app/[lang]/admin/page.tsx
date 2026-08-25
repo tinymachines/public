@@ -31,11 +31,7 @@ import { Shell } from "@/app/components/SiteFrame";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/admin", {
-    title: "Admin",
-  description: "Dev keys, and the people they belong to.",
-  noindex: true,
-  });
+  return pageMeta(lang, "/admin")
 }
 
 export default async function AdminPage({ params }: { params: Promise<{ lang: Lang }> }) {

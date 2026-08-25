@@ -12,15 +12,7 @@ import { zoo } from "@/lib/zoo";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/style/zoo", {
-    title: "Widget zoo",
-  description:
-    "Every component in the system, rendered on the real page ground with the exact markup that produced it.",
-  // The zoo is a working reference, not a document anybody should arrive at
-  // from a search result. zoo.html carries the same instruction in a meta tag
-  // and this is that instruction, kept.
-  noindex: true,
-  });
+  return pageMeta(lang, "/style/zoo")
 }
 
 export default function ZooPage() {

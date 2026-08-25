@@ -9,9 +9,7 @@ import { TrackLede } from "../Tracks";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/cart", {
-    title: "Cart", description: "Mint a token, build a cartridge by hand or by AI, play it, publish it, and the chip measures it."
-  });
+  return pageMeta(lang, "/6502/cart")
 }
 
 const P = {

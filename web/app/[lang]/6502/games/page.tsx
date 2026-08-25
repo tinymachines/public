@@ -63,10 +63,7 @@ const BUILDERS = "/6502";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/games", {
-    title: "Die Runner",
-  description: "A console on a transistor-level MOS 6502. Every frame is run on the real die.",
-  });
+  return pageMeta(lang, "/6502/games")
 }
 
 /**

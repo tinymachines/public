@@ -10,9 +10,7 @@ import { TrackLede } from "../Tracks";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/tools", {
-    title: "Lab and tools", description: "The instruments: the die lit by what it is doing, the tracer, the schematic, the Halfwave Lab. One chip, many views."
-  });
+  return pageMeta(lang, "/6502/tools")
 }
 
 const P = {

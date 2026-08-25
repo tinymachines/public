@@ -22,10 +22,7 @@ import { Shell } from "@/app/components/SiteFrame";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/style", {
-    title: "Style guide",
-  description: "Two grounds, a measured palette, and the kit that follows from them.",
-  });
+  return pageMeta(lang, "/style")
 }
 
 export default async function StylePage({ params }: { params: Promise<{ lang: Lang }> }) {

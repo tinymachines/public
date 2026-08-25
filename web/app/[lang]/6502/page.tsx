@@ -40,10 +40,7 @@ import { Shell } from "@/app/components/SiteFrame";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502", {
-    title: "6502",
-  description: "A transistor-level MOS 6502, and everything built on it.",
-  });
+  return pageMeta(lang, "/6502")
 }
 
 const PROSE = {

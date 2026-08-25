@@ -185,6 +185,7 @@ python3 data/check-figures.py || fail "check-figures"
 # dead entries, because a dead entry is drift already happened.
 say "2d. Language coverage"
 python3 data/check-i18n.py --strict || fail "check-i18n: a dead overlay entry; retranslate or retire it"
+python3 data/check-og-font.py || fail "check-og-font: a Japanese character the link card cannot draw"
 
 # The project silos. This one carries its own self test, because every silo
 # that exists today overrides nothing and the rules would otherwise have

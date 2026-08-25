@@ -69,7 +69,10 @@ const nextConfig: NextConfig = {
     return {
       afterFiles: [
         { source: "/", destination: "/en" },
-        { source: "/:path((?!ja(?:/|$)).*)", destination: "/en/:path" },
+        // /og is a route of its own (the link cards), not a page in a language:
+        // it carries the language inside its path, so it is kept out of the
+        // prefix the same way /ja is.
+        { source: "/:path((?!(?:ja|og)(?:/|$)).*)", destination: "/en/:path" },
       ],
     };
   },

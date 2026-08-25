@@ -29,11 +29,7 @@ import "./hotbits.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/hotbits", {
-    title: "hotbits",
-  description:
-    "True random bytes from radioactive decay: a Geiger counter on a Pi, with bits taken from the timing between events.",
-  });
+  return pageMeta(lang, "/hotbits")
 }
 
 const PROSE = {

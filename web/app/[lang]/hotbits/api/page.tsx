@@ -26,11 +26,7 @@ import "../hotbits.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/hotbits/api", {
-    title: "The hotbits API",
-  description:
-    "The Geiger TRNG's own schema, rendered and then checked against the running instrument.",
-  });
+  return pageMeta(lang, "/hotbits/api")
 }
 
 const PROSE = {

@@ -41,11 +41,7 @@ import "./apidoc.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/api", {
-    title: "The 6502 API",
-  description:
-    "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference, checked against the running service.",
-  });
+  return pageMeta(lang, "/6502/api")
 }
 
 export default async function ApiPage({ params }: { params: Promise<{ lang: Lang }> }) {

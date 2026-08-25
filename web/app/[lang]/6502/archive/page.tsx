@@ -28,11 +28,7 @@ import { Shell } from "@/app/components/SiteFrame";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/archive", {
-    title: "The visual6502 archive",
-  description:
-    "visual6502.org, recovered from the Internet Archive: the wiki rebuilt from its wikitext, and the die photography made browsable again.",
-  });
+  return pageMeta(lang, "/6502/archive")
 }
 
 const PROSE = {

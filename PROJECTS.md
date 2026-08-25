@@ -544,6 +544,23 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## Social cards, after 1.0.88
+
+Every page's `og:image` is `/og/<its path>` (`/og/ja/...` for Japanese),
+drawn on the server by `web/lib/card.tsx` from the same words the page
+declares (`web/lib/pages.ts` is the one table of fixed pages; the docs tree,
+the explorer's own `<head>` and the registry feed the rest) on the house
+paper with the project's accent band, the die tile and the address. A
+builder's card asks the registry for their name and latest cover and draws
+the CHR picture itself (`chrSvg`). The renderer reads TTF/WOFF, so
+`style/fonts/og/` carries the site's faces in those containers (the Google
+woff2s are variable fonts and had to be instantiated at their weights) and a
+5 MB subset of Noto Sans CJK JP; `data/check-og-font.py` fails the build on
+a Japanese character it cannot draw. `/og` is excluded from the language
+rewrite in `next.config.ts`; without that it became `/en/og/...` and a 404.
+The explorer pages' titles are now in the overlay too, so their Japanese
+pages and cards carry Japanese names.
+
 ## SEO, at 1.0.88
 
 Every page is built from one call, `pageMeta()` in `web/lib/seo.ts`: title

@@ -39,11 +39,7 @@ import "./registry.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/builders", {
-    title: "Builders",
-  description:
-    "Everyone publishing cartridges for the transistor-level 6502, and what they have published.",
-  });
+  return pageMeta(lang, "/6502/builders")
 }
 
 const PROSE = {

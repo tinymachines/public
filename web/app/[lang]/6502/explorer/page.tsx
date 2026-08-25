@@ -51,10 +51,7 @@ import "./explorer.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/explorer", {
-    title: "The explorer",
-  description: "A transistor-level MOS 6502, drawn from the die and lit by what it is doing.",
-  });
+  return pageMeta(lang, "/6502/explorer")
 }
 
 export default async function ExplorerPage({ params }: { params: Promise<{ lang: Lang }> }) {
