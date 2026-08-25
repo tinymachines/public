@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { delocalize } from "@/lib/lang";
+import { delocalize, localize } from "@/lib/lang";
 import type { MenuGroup } from "@/lib/nav";
 
 /**
@@ -36,12 +36,15 @@ export function Menu({
   groups,
   label = "Menu",
   close = "Close",
+  account = { signIn: "Sign in with GitHub", signedIn: "Signed in as", tokens: "your tokens", signOut: "sign out" },
   hard = false,
 }: {
   groups: MenuGroup[];
   label?: string;
   /** What the same button says while the panel is open: it closes it. */
   close?: string;
+  /** The account row's words, translated by the caller. */
+  account?: { signIn: string; signedIn: string; tokens: string; signOut: string };
   /** Every link a full navigation: set by a page whose module must not survive the leave. */
   hard?: boolean;
 }) {
@@ -60,6 +63,31 @@ export function Menu({
   // over the new page for a frame. Comparing against the last path we rendered
   // resolves it before anything is shown, and it catches a Back as well as a
   // click, which an onClick on each link would not.
+  // The account row at the foot of the panel. Asked once per opening, so a
+  // sign-in on another tab shows the next time the menu opens; null until
+  // answered, and absent where GitHub sign-in is not configured.
+  const [who, setWho] = useState<{ enabled: boolean; login: string | null } | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    (async () => {
+      try {
+        const a = await fetch("/api/v1/auth", { cache: "no-store" }).then((r) => (r.ok ? r.json() : { github: false }));
+        if (!a.github) { if (live) setWho({ enabled: false, login: null }); return; }
+        const m = await fetch("/api/v1/me", { cache: "no-store" });
+        const login = m.ok ? ((await m.json()).user?.login ?? null) : null;
+        if (live) setWho({ enabled: true, login });
+      } catch { if (live) setWho({ enabled: false, login: null }); }
+    })();
+    return () => { live = false; };
+  }, [open]);
+
+  async function signOut() {
+    await fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
+    setWho({ enabled: true, login: null });
+    window.location.reload();
+  }
+
   const [lastPath, setLastPath] = useState(here);
   if (lastPath !== here) {
     setLastPath(here);
@@ -95,7 +123,8 @@ export function Menu({
   // Scoping compares the stripped path, so a Japanese docs page still gets
   // the documentation group; aria-current below compares the RAW path,
   // because the item hrefs arrive already localized.
-  const { path: section } = delocalize(here);
+  const { path: section, lang } = delocalize(here);
+  const editor = `${localize(lang, "/6502/manage")}#account`;
   const inSection = (g: MenuGroup) =>
     g.only ? g.only.includes(section) : g.when !== null && (section === g.when || section.startsWith(g.when + "/"));
   // The section you are standing in comes FIRST, then the site. A reader who
@@ -168,6 +197,24 @@ export function Menu({
             </nav>
           ))}
           </div>
+          {who?.enabled ? (
+            <div className="menu-account">
+              {who.login ? (
+                <>
+                  <span>{account.signedIn} <b>@{who.login}</b></span>
+                  {hard ? (
+                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                    <a href={editor}>{account.tokens}</a>
+                  ) : (
+                    <Link href={editor}>{account.tokens}</Link>
+                  )}
+                  <button type="button" className="linkish" onClick={signOut}>{account.signOut}</button>
+                </>
+              ) : (
+                <a className="menu-signin" href={`/api/v1/auth/github?next=${encodeURIComponent(here)}`}>{account.signIn}</a>
+              )}
+            </div>
+          ) : null}
         </div>
         </>
       ) : null}

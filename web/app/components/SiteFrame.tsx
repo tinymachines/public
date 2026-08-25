@@ -141,6 +141,15 @@ function localizedGroups(lang: Lang): MenuGroup[] {
   }));
 }
 
+function accountWords(lang: Lang) {
+  return {
+    signIn: t(lang, "Sign in with GitHub"),
+    signedIn: t(lang, "Signed in as"),
+    tokens: t(lang, "your tokens"),
+    signOut: t(lang, "sign out"),
+  };
+}
+
 function localizedLabels(lang: Lang): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [path, name] of Object.entries(labels())) out[path] = t(lang, name);
@@ -193,7 +202,7 @@ export function WorkbenchBar({
       {titleIsHeading ? <h1>{title}</h1> : <p className="wb-title">{title}</p>}
       <WorkbenchFullscreen lang={lang} />
       <LangSwitch lang={lang} hard={hard} />
-      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} hard={hard} />
+      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} hard={hard} />
     </div>
   );
 }
@@ -251,7 +260,7 @@ export function Shell({
             <b>tinymachines</b>
           </Link>
           <LangSwitch lang={lang} />
-          <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} />
+          <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} />
         </div>
       </header>
 

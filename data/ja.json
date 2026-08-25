@@ -209,5 +209,9 @@
   "Trace": "トレース",
   "Tracer": "トレーサ",
   "What you see": "見えているもの",
-  "Close": "閉じる"
+  "Close": "閉じる",
+  "Sign in with GitHub": "GitHub でサインイン",
+  "Signed in as": "サインイン中:",
+  "your tokens": "あなたのトークン",
+  "sign out": "サインアウト"
 }

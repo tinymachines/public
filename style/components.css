@@ -1646,6 +1646,25 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
 }
 
 .menu-group { min-width: 0; padding-bottom: calc(var(--u) * 2); }
+/* The account row, at the foot of the sheet: on the site's measure, over a
+   hairline, one line. */
+.menu-account {
+  max-width: calc(var(--u) * 280);   /* the sheet's own measure */
+  margin: 0 auto;
+  padding: calc(var(--u) * 3) calc(var(--u) * 8) calc(var(--u) * 4);
+  border-top: 1px solid var(--color-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 3);
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+}
+.menu-account b { color: var(--color-ink); font-weight: 600; }
+.menu-account a, .menu-account .linkish { color: var(--color-accent-ink); background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; }
+.menu-account .menu-signin { font-weight: 600; }
+
 .menu-group > h2 {
   margin: calc(var(--u) * 1.5) 0 calc(var(--u) * 1.5);
   padding-bottom: calc(var(--u) * 1.5);
