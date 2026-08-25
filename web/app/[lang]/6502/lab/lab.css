@@ -325,3 +325,16 @@
   grid-auto-flow: initial;
   grid-auto-columns: initial;
 }
+
+/* Full screen: the strip is the top edge now, and the control sits where the
+   link button does. Their .themebtn already draws the box. */
+.workbench.is-fullscreen .lab-shell.lab-shell header { top: 0; }
+.lab-shell.lab-shell header .wb-fs {
+  order: 3;
+  flex: none;
+  align-self: center;
+  margin: 0 calc(var(--u) * 2) 0 0;
+  width: calc(var(--u) * 7);
+  height: calc(var(--u) * 7);
+}
+.lab-shell.lab-shell header .wb-fs[aria-pressed="true"] { color: var(--color-ink); border-color: var(--color-accent-ink); }

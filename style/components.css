@@ -2438,3 +2438,23 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 /* A track sub-landing opens with its line; give it the room the hero gives
    its lede, so the eyebrow beneath does not sit on it. */
 .page > .lede { max-width: 60ch; font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.6; margin: 0 0 calc(var(--u) * 6); }
+
+/* ==========================================================================
+   27. A WORKBENCH, FULL SCREEN. Native through the Fullscreen API where an
+   element can go fullscreen; fixed to the viewport where it cannot (every
+   iPhone). Either way the class is the same, so one set of rules holds.
+   The site's bar leaves; the instrument keeps its own strip and controls.
+   ========================================================================== */
+.workbench.is-fullscreen,
+.workbench:fullscreen {
+  background: var(--color-paper);
+  overflow: auto;
+}
+.workbench.is-fullscreen:not(:fullscreen) {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.workbench.is-fullscreen .wb-bar { display: none; }
+/* The document behind a fixed workbench must not scroll under a thumb. */
+html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }

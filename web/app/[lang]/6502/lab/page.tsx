@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { LabFullscreen } from "./LabFullscreen";
 import "./lab.css";
 
 /**
@@ -100,6 +101,7 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
           126 KB inlined is 126 KB in the HTML and 126 KB again in the payload,
           re-sent on every visit. As a file it is fetched once and cached. */}
       <Script id="halfwave-lab" src={assets.js} strategy="afterInteractive" />
+      <LabFullscreen lang={lang} />
 
       </div>
     </div>
