@@ -529,3 +529,36 @@ the docs at request time so it cannot drift). The public mint feeds step one.
 
 **Notes for later, from the owner:** expand the 6502 hardware; the hotbits
 animation on bradley.io, copied over.
+
+## Checkpoint, 2026-08-25, at 1.0.84
+
+**Live and verified (triptych, 23 pages, both languages, zero overflow):**
+the slim frame (one-row bar, card menu scoped to the floor you stand on,
+locked one-line footer); the accent knob per project; the Japanese edition
+with its own typography rules; the public token mint with the HMAC cart code
+and the page claimed at mint; the four-track 6502 landing with sub-landings;
+the first-cart walkthrough and the one-URL AI brief; the workbench standard
+set on the Lab and carried to every instrument: the site's bar as the only
+header (short menu names for titles, a fullscreen slot with the way out at
+the corner), the instrument's own header collapsed to its strip, a section
+strip on the reading pages, one floor transport per page that withdraws
+where no chip comes. The porting voice is out of the copy.
+
+**Next zone, the owner's list, in order:**
+
+1. **The Lab's player strip becomes the standard floor transport** on every
+   instrument page: power, start, half-cycle back and forward, play, cycle
+   and opcode steps, the rate as a slider with its label, the position
+   readout. What the store's driver interface supports today: power (reset),
+   half-cycle back/forward, play, and the clock. Cycle-step is two
+   half-steps; opcode-step needs a `sync` reader and a scrubber needs a
+   position and a seek, and both are upstream additions to the driver shape
+   in `chip-controls.js`. The strip should show only the controls the page's
+   driver can honour.
+2. **SEO.** Per-page titles and descriptions that read as sentences,
+   canonical URLs, `hreflang` pairs for en/ja, a sitemap and robots, JSON-LD
+   for the site, the project pages, the documents and the builders' pages.
+3. **Social.** Open Graph and Twitter cards on every page, with a generated
+   image per page (title on paper with the project's accent; a cartridge's
+   own cover on a builder's cart page), so a link pasted into iMessage, X or
+   Slack unfurls as the page and not as a bare URL.

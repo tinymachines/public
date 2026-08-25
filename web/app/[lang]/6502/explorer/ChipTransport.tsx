@@ -44,9 +44,47 @@ interface Controls {
 const KEY = "tm.chip.running";
 
 const L = {
-  en: { power: "Power cycle", back: "Back one half-cycle", play: "Run", pause: "Pause", step: "Forward one half-cycle", clock: "Clock", none: "no chip on this page", loading: "finding the chip" },
-  ja: { power: "電源を入れ直す", back: "半サイクル戻る", play: "実行", pause: "一時停止", step: "半サイクル進む", clock: "クロック", none: "このページにチップは無い", loading: "チップを探している" },
+  en: {
+    start: "Back to the first half-cycle: the state the chip powered on into",
+    back: "Back one half-cycle",
+    play: "Play",
+    pause: "Pause",
+    step: "Forward one half-cycle",
+    cycle: "Next full cycle",
+    rate: "Simulated clock rate. A cycle is two half-cycles, so 1 Hz is two steps a second.",
+    loading: "finding the chip",
+    wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc",
+  },
+  ja: {
+    start: "最初の半サイクルへ: チップが電源投入で入った状態",
+    back: "半サイクル戻る",
+    play: "実行",
+    pause: "一時停止",
+    step: "半サイクル進む",
+    cycle: "次の 1 サイクルへ",
+    rate: "シミュレートするクロック。1 サイクルは半サイクル 2 つなので、1 Hz は毎秒 2 ステップ。",
+    loading: "チップを探している",
+    wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc",
+  },
 } as const;
+
+/* The Lab's icons, the same shapes: a 24-unit outline stroked in the
+   control's own colour, so they hover and disable with the control. */
+const IC = {
+  start: "M6 5v14M18 6l-9 6 9 6z",
+  prev: "M15 6l-6 6 6 6",
+  play: "M8 5l11 7-11 7z",
+  pause: "M8 5v14M16 5v14",
+  next: "M9 6l6 6-6 6",
+  cycle: "M6 6l6 6-6 6M13 6l6 6-6 6",
+};
+function Ic({ d }: { d: string }) {
+  return (
+    <svg className="ic" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
 
 export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
   const S = L[lang];
@@ -120,53 +158,58 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
   if (gaveUp && !(ctl?.hasDriver() ?? false)) return null;
   const hc = ctl?.chipHalfCycle() ?? null;
 
+  const clocks = ctl?.CLOCKS ?? [{ hz: 1, label: "1 Hz" }];
+  const hz = ctl?.clockHz() ?? 1;
+  const rateIndex = Math.max(0, clocks.findIndex((c) => c.hz === hz));
+  const cyc = hc === null ? null : Math.floor(hc / 2);
+
   return (
     <div className="chip-transport" role="toolbar" aria-label="Chip transport">
-      <button type="button" title={S.power} aria-label={S.power} disabled={!live} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
-        ⏻
-      </button>
-      <button type="button" title={S.back} aria-label={S.back} disabled={!live} onClick={() => ctl?.stepBack()}>
-        ◀
-      </button>
-      <button
-        type="button"
-        className={running ? "on" : undefined}
-        title={running ? S.pause : S.play}
-        aria-label={running ? S.pause : S.play}
-        aria-pressed={running}
-        disabled={!live}
-        onClick={() => {
-          if (!ctl) return;
-          ctl.toggleRunning();
-          try { sessionStorage.setItem(KEY, ctl.isRunning() ? "1" : "0"); } catch { /* private mode */ }
-        }}
-      >
-        {running ? "❚❚" : "▶"}
-      </button>
-      <button type="button" title={S.step} aria-label={S.step} disabled={!live} onClick={() => ctl?.step()}>
-        ▶❙
-      </button>
-      <label className="ct-clock">
-        <span>{S.clock}</span>
-        <select
-          value={ctl?.clockHz() ?? 1}
-          disabled={!ctl}
-          onChange={(e) => ctl?.setClock(Number(e.target.value))}
-          aria-label={S.clock}
+      <div className="ct-row">
+        <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!live} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
+          <Ic d={IC.start} /><span className="lb">{S.wStart}</span>
+        </button>
+        <button type="button" className="tbtn" title={S.back} aria-label={S.back} disabled={!live} onClick={() => ctl?.stepBack()}>
+          <Ic d={IC.prev} /><span className="lb">{S.wHalf}</span>
+        </button>
+        <button
+          type="button"
+          className={"tbtn play" + (running ? " on" : "")}
+          title={running ? S.pause : S.play}
+          aria-label={running ? S.pause : S.play}
+          aria-pressed={running}
+          disabled={!live}
+          onClick={() => {
+            if (!ctl) return;
+            ctl.toggleRunning();
+            try { sessionStorage.setItem(KEY, ctl.isRunning() ? "1" : "0"); } catch { /* private mode */ }
+          }}
         >
-          {(ctl?.CLOCKS ?? [{ hz: 1, label: "1 Hz" }]).map((c) => (
-            <option key={c.hz} value={c.hz}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <span className="ct-readout" aria-live="off">
-        {/* While the bar is still deciding, it says it is looking; a page
-            that never offers a chip makes the bar withdraw, so "no chip" is
-            never a claim the reader sees. */}
-        {!live ? S.loading : hc === null ? "" : `h ${hc}`}
-      </span>
+          <Ic d={running ? IC.pause : IC.play} /><span className="lb">{running ? S.wPause : S.wPlay}</span>
+        </button>
+        <button type="button" className="tbtn" title={S.step} aria-label={S.step} disabled={!live} onClick={() => ctl?.step()}>
+          <Ic d={IC.next} /><span className="lb">{S.wHalf}</span>
+        </button>
+        <button type="button" className="tbtn" title={S.cycle} aria-label={S.cycle} disabled={!live} onClick={() => { ctl?.step(); ctl?.step(); }}>
+          <Ic d={IC.cycle} /><span className="lb">{S.wCyc}</span>
+        </button>
+        <label className="ct-rate" title={S.rate}>
+          <input
+            type="range"
+            min={0}
+            max={clocks.length - 1}
+            step={1}
+            value={rateIndex}
+            disabled={!ctl}
+            aria-label={S.rate}
+            onChange={(e) => ctl?.setClock(clocks[Number(e.target.value)].hz)}
+          />
+          <span className="tlab">{ctl ? ctl.clockLabel() : clocks[0].label}</span>
+        </label>
+        <span className="ct-pos" aria-live="off">
+          {!live ? S.loading : hc === null ? "" : <>h <b>{hc}</b> · cyc <b>{cyc}</b></>}
+        </span>
+      </div>
     </div>
   );
 }

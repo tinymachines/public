@@ -2274,74 +2274,63 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 }
 
 /* ==========================================================================
-   24. THE CHIP TRANSPORT. One bar, fixed to the floor of every page that runs
-   the chip, and a view of the explorer's own transport store. Panel ground
-   because every value on it came off the machine (STYLE.md section 1), the
-   Lab's transport shape because that is the one the owner asked for.
+   24. THE CHIP TRANSPORT, in the Lab's shape. The owner's standard for every
+   instrument page: the Lab's player strip. Paper ground with the page
+   showing through, locked to the floor, the controls the Lab has in the
+   order the Lab has them, the rate as a slider with its label, the position
+   on the right. What the Lab has and this does not (power off, opcode step,
+   the scrubber) waits on the driver shape upstream; the strip shows only
+   what the page's chip can honour.
    ========================================================================== */
 .chip-transport {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
+  bottom: 0;
   z-index: 24;
-  display: flex;
-  align-items: center;
-  gap: calc(var(--u) * 2);
-  padding: calc(var(--u) * 2) calc(var(--u) * 4);
-  padding-bottom: calc(var(--u) * 2 + env(safe-area-inset-bottom, 0px));
-  background: var(--color-panel);
-  color: var(--color-glass);
-  border-top: 1px solid var(--color-rule-panel);
+  padding: calc(var(--u) * 2) max(calc(var(--u) * 3.5), env(safe-area-inset-left)) calc(var(--u) * 2 + env(safe-area-inset-bottom, 0px)) max(calc(var(--u) * 3.5), env(safe-area-inset-right));
+  background: color-mix(in srgb, var(--color-paper) 96%, var(--color-ink));
+  border-top: 1px solid var(--color-rule);
+  backdrop-filter: blur(8px);
   font-family: var(--font-mono);
-  font-size: var(--text-data);
+  font-size: var(--text-fine);
+  color: var(--color-ink);
 }
-.chip-transport button {
-  min-width: calc(var(--u) * 10);
-  height: calc(var(--u) * 8);
-  padding: 0 calc(var(--u) * 2);
-  background: var(--color-panel-raised);
-  color: var(--color-glass);
-  border: 1px solid var(--color-rule-panel);
-  border-radius: var(--radius-mod);
+.ct-row { display: flex; gap: calc(var(--u) * 1.5); align-items: center; flex-wrap: wrap; }
+.chip-transport .tbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.25);
+  min-height: calc(var(--u) * 8);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2.25);
+  background: var(--color-paper-sunk);
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
   font: inherit;
+  white-space: nowrap;
   cursor: pointer;
 }
-.chip-transport button:hover:not(:disabled) { border-color: var(--color-glass-muted); }
-.chip-transport button:disabled { opacity: 0.4; cursor: default; }
-.chip-transport button.on { background: var(--color-accent); color: var(--color-panel); border-color: var(--color-accent); }
-.chip-transport button:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
-.ct-clock { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5); color: var(--color-glass-muted); }
-.ct-clock select {
-  background: var(--color-panel-sunk);
-  color: var(--color-glass);
-  border: 1px solid var(--color-rule-panel);
-  border-radius: var(--radius-mod);
-  height: calc(var(--u) * 8);
-  padding: 0 calc(var(--u) * 2);
-  font: inherit;
-}
-.ct-readout { margin-left: auto; color: var(--color-glass-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* The page keeps its floor clear of the bar. */
+.chip-transport .tbtn:hover:not(:disabled) { color: var(--color-ink); border-color: var(--color-accent-ink); }
+.chip-transport .tbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.chip-transport .tbtn:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+.chip-transport .tbtn.play { min-width: calc(var(--u) * 16); color: var(--color-ink); }
+.chip-transport .tbtn.play.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
+.chip-transport .ic { width: 14px; height: 14px; flex: none; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ct-rate { display: flex; align-items: center; gap: calc(var(--u) * 1.5); flex: 0 0 auto; margin-left: calc(var(--u) * 1); }
+.ct-rate input { width: calc(var(--u) * 20); height: calc(var(--u) * 6.5); accent-color: var(--color-accent-ink); }
+.chip-transport .tlab { min-width: 5ch; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ct-pos { margin-left: auto; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ct-pos b { color: var(--color-ink); font-weight: 600; }
+/* The page keeps its floor clear of the strip: two rows on a phone. */
 .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 16); }
-@media (max-width: 34rem) {
-  .chip-transport { gap: calc(var(--u) * 1.5); padding-inline: calc(var(--u) * 2); }
-  .ct-clock span { display: none; }
-}
-
-/* The workbench bar at 390px: the title yields, the controls do not. The
-   Japanese label is four characters and the button was being squeezed into
-   a column one character wide while the title kept its width. */
-.wb-bar .menu-wrap,
-.wb-bar .lang-switch { flex: 0 0 auto; }
-.menu-btn { white-space: nowrap; }
-/* The docs tree sits under a page head now, which already separates it; the
-   old top margin was cut for a masthead that is no longer above it. */
-.docs-shell { margin-top: calc(var(--u) * 2); }
-/* The footer strip on a phone: the name, the version, the commit. The "up N
-   ago" is the part that did not fit and the part a phone reader needs least. */
-@media (max-width: 34rem) {
-  .app-foot .site-foot .quiet { display: none; }
+/* On a phone the steppers keep only their icon, as the Lab's do; start and
+   play keep their words, because no icon says "power cycle" or "run" to
+   somebody who has not read the caption. */
+@media (max-width: 26rem) {
+  .chip-transport .tbtn:not(.play):not(:first-child) .lb { display: none; }
+  .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 2); }
+  .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26); }
 }
 
 /* ==========================================================================
