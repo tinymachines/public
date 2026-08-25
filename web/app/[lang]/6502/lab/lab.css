@@ -311,3 +311,17 @@
   width: calc(var(--u) * 7);
   height: calc(var(--u) * 7);
 }
+
+/* THE INSTRUCTION LANE, and a name two designs share. The kit has a .lane
+   too: the zoo's timing lane, a 20px grid with a 360px minimum. The lab's
+   .lane is the strip of instruction cards above the scope; it sets its own
+   display but never a height, so the kit's 20px reached it and the lane
+   clipped every card it held (measured: lane 20px, card 9px, button 16px).
+   Same species as the explorer's .panel: not a rule to drop, a rule to undo
+   here. */
+.lab-shell.lab-shell .lane {
+  height: auto;
+  min-width: 0;
+  grid-auto-flow: initial;
+  grid-auto-columns: initial;
+}
