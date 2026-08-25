@@ -126,3 +126,15 @@
   white-space: nowrap;
 }
 .manage-shell .empty { color: var(--color-ink-muted); font-size: var(--text-fine); }
+
+/* The account card: who is signed in, and the tokens held, as a small table
+   in the editor's own idiom (.card, .row, .note, .filebtn). */
+.manage-shell .acct-who { display: flex; align-items: center; gap: calc(var(--u) * 2); flex-wrap: wrap; }
+.manage-shell .acct-pic { width: 28px; height: 28px; border-radius: var(--radius-hair); border: 1px solid var(--color-rule); }
+.manage-shell .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--color-accent-ink); text-decoration: underline; cursor: pointer; }
+.manage-shell .acct-tokens { width: 100%; border-collapse: collapse; margin: calc(var(--u) * 2) 0; font-size: 0.875rem; }
+.manage-shell .acct-tokens td { padding: calc(var(--u) * 1.5) calc(var(--u) * 2) calc(var(--u) * 1.5) 0; border-bottom: 1px solid var(--color-rule); vertical-align: middle; }
+.manage-shell .acct-tokens tr.dead td { color: var(--color-ink-muted); }
+.manage-shell .acct-tokens td:last-child { text-align: right; white-space: nowrap; }
+.manage-shell .brief-card { margin-top: calc(var(--u) * 3); }
+.manage-shell .brief-card h3 { margin: 0 0 calc(var(--u) * 1.5); }

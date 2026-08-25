@@ -28,9 +28,17 @@ curl -s -X POST https://tinymachines.ai/api/v1/tokens \
      -H 'content-type: application/json' -d '{"note":"my first cart"}'
 ```
 
-It is shown once. Only its SHA-256 is kept, so nothing can show it again; a
-lost token is replaced, not recovered. A few per address a day, so a loop
-cannot drain the registry.
+It is shown once. Only its SHA-256 is kept, so nothing can show it again. A
+few per address a day, so a loop cannot drain the registry. Signed in with
+GitHub in the editor, tokens belong to your account instead: a lost one is
+re-issued there and your page moves to the new one.
+
+After minting, the editor offers **the brief with your key in it**: one
+markdown file, downloadable as `SKILL.md`, that an AI reads to build a cart
+for your page. Save it as `~/.claude/skills/tm6502-cart/SKILL.md` for Claude
+Code, as `AGENTS.md` for Codex, or paste it into any chat. It carries your
+token, so keep it as you would the token. The same brief without the key is
+at [/6502/cart/brief.md](/6502/cart/brief.md).
 
 Minting does two more things. It hands you a **cart code**: a short slug
 derived from the token (an HMAC, so the pairing is verifiable here and by

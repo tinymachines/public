@@ -173,7 +173,7 @@ def availability(conn: sqlite3.Connection, ip: str) -> dict:
     }
 
 
-def mint(conn: sqlite3.Connection, *, ip: str, note: str = "") -> tuple[str, str]:
+def mint(conn: sqlite3.Connection, *, ip: str, note: str = "", account: str | None = None) -> tuple[str, str]:
     """Mint a registry token for this caller. Returns (token, minted_at).
 
     The order matters: the limits are checked and the ledger row written in
@@ -187,8 +187,12 @@ def mint(conn: sqlite3.Connection, *, ip: str, note: str = "") -> tuple[str, str
         raise Refused(422, f"The note is limited to {NOTE_LIMIT} characters.")
 
     now_iso = db.now()
-    c = counts(conn, ip, now_iso)
-    if c["mine"] >= per_ip_per_day():
+    # An account's mints are counted against the account, not the address it
+    # happens to be on; how many an account may hold is auth.py's rule. The
+    # daily total is everyone's and still applies.
+    who = f"user:{account}" if account else ip
+    c = counts(conn, who, now_iso)
+    if not account and c["mine"] >= per_ip_per_day():
         raise Refused(
             429,
             f"This address has minted {c['mine']} token(s) in the last day, which is the limit. "
@@ -206,7 +210,7 @@ def mint(conn: sqlite3.Connection, *, ip: str, note: str = "") -> tuple[str, str
         conn.execute("DELETE FROM token_mints WHERE created_at < ?", (_keep_from(now_iso),))
         conn.execute(
             "INSERT INTO token_mints (id, ip_sha256, note, created_at) VALUES (?, ?, ?, ?)",
-            ("m_" + secrets.token_hex(8), ip_digest(ip), note, now_iso),
+            ("m_" + secrets.token_hex(8), ip_digest(who), note, now_iso),
         )
 
     reg = _registry()

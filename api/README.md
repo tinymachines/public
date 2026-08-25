@@ -32,11 +32,27 @@ declares them.
 | `GET /v1/tokens` | Whether the public token mint is on, and what is left of its limits for you |
 | `POST /v1/tokens` | Mint a free registry token, once. Rate-limited per address and per day; 503 where no registry is configured |
 | `GET /v1/projects` | The projects, their surfaces, and how much of the move has happened |
+| `GET /v1/auth` | Which ways of signing in this deployment offers (today: GitHub, where configured) |
+| `GET /v1/auth/github` | Start a GitHub sign-in; redirects there and back to `next` |
+| `GET /v1/auth/github/callback` | Where GitHub returns the browser; opens the session cookie |
+| `POST /v1/auth/logout` | Forget the session |
 | `GET /v1/status` | Which pieces are answering, **measured** |
 | `POST /mcp` | The same surface, spoken to a language model |
 | `GET /mcp` | 405 with `Allow: POST`. There is no stream to open |
 
-Everything above is public. Everything below needs a dev key.
+Everything above is public. The next four need a session, which is the
+cookie a GitHub sign-in leaves: an account holds the digests of the registry
+tokens it minted, so it can replace one it lost. `auth.py` says why an account
+exists at all and why GitHub is the first way in.
+
+| | |
+|---|---|
+| `GET /v1/me` | Who is signed in, and the tokens the account holds, by digest |
+| `POST /v1/me/tokens` | Mint a registry token held by this account, counted against the account rather than the address |
+| `POST /v1/me/tokens/{token_id}/reissue` | Revoke a lost token in the registry and move its page to a new one, returned once |
+| `DELETE /v1/me/tokens/{token_id}` | Revoke. The page stays |
+
+Everything below needs a dev key.
 
 | | |
 |---|---|

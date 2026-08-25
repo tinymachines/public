@@ -748,3 +748,48 @@ class MintRecord(BaseModel):
 class MintsResponse(BaseModel):
     mints: list[MintRecord] = Field(description="Newest first, the last seven days.")
     count: int = Field(description="How many rows are in `mints`.")
+
+
+# ---------------------------------------------------------------------------
+# Accounts: sign in, and the tokens an account holds
+# ---------------------------------------------------------------------------
+
+
+class AuthState(BaseModel):
+    """Which ways of signing in this deployment offers."""
+
+    github: bool = Field(description="True where a GitHub OAuth app is configured beside this service. `GET /v1/auth/github` starts it.")
+
+
+class MeUser(BaseModel):
+    id: str = Field(description="The account's id here.", examples=["u_3f9a1b3c7d2e4f01"])
+    handle: str = Field(description="The account's handle on this site: the GitHub login unless that was taken.", examples=["ada"])
+    name: str = Field(description="A first name, from the provider's profile.", examples=["Ada"])
+    pic: Optional[str] = Field(description="An avatar URL, if the provider gave one.")
+    provider: str = Field(description="Where the identity comes from.", examples=["github"])
+    login: str = Field(description="The login at the provider.", examples=["ada"])
+
+
+class MeToken(BaseModel):
+    """One registry token the account holds, by digest. The token itself is never here."""
+
+    id: str = Field(description="The token's id on this account, for re-issue and revoke.", examples=["bt_3f9a1b3c7d2e4f01"])
+    handle: Optional[str] = Field(description="The page it holds, if it claimed one.", examples=["ada"])
+    pub: str = Field(description="The first twelve hex characters of its SHA-256: enough to match it in the registry's own listing, no part of the secret.", examples=["9c1b7d4e2a0f"])
+    note: str = Field(description="What it was minted for.")
+    created_at: datetime = Field(description="When it was minted, UTC.")
+    revoked_at: Optional[datetime] = Field(description="When it stopped working, or null while it works.")
+
+
+class MeLimits(BaseModel):
+    active_max: int = Field(description="How many live tokens one account may hold.")
+    active: int = Field(description="How many it holds now.")
+    remaining: int = Field(description="How many more it may mint.")
+
+
+class Me(BaseModel):
+    """Who is signed in, and what their account holds."""
+
+    user: MeUser = Field(description="The account.")
+    tokens: list[MeToken] = Field(description="Newest first, revoked ones included.")
+    limits: MeLimits = Field(description="How many tokens the account may hold and holds.")

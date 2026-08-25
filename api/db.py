@@ -132,6 +132,42 @@ MIGRATIONS: list[str] = [
     CREATE INDEX token_mints_ip ON token_mints(ip_sha256, created_at);
     CREATE INDEX token_mints_created ON token_mints(created_at);
     """,
+    """
+    -- Sign-in. A login is one identity at one provider, joined to a user row;
+    -- a session is a browser that proved it, by the SHA-256 of the cookie it
+    -- carries. Neither stores anything a leak could replay: the cookie value
+    -- itself is never written down.
+    CREATE TABLE logins (
+        provider    TEXT NOT NULL,
+        provider_id TEXT NOT NULL,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        login       TEXT NOT NULL,
+        avatar      TEXT,
+        created_at  TEXT NOT NULL,
+        last_at     TEXT NOT NULL,
+        PRIMARY KEY (provider, provider_id)
+    );
+    CREATE INDEX logins_user ON logins(user_id);
+    CREATE TABLE sessions (
+        sha256     TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL
+    );
+    CREATE INDEX sessions_user ON sessions(user_id);
+    -- The registry tokens an account holds. The registry keeps the same
+    -- digest, which is what lets an account revoke and replace one it lost.
+    CREATE TABLE builder_tokens (
+        id         TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sha256     TEXT NOT NULL,
+        handle     TEXT,
+        note       TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        revoked_at TEXT
+    );
+    CREATE INDEX builder_tokens_user ON builder_tokens(user_id, revoked_at);
+    """,
 ]
 
 

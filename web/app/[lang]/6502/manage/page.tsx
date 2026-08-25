@@ -7,6 +7,7 @@ import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { MintToken } from "./MintToken";
+import { Account } from "./Account";
 import "./manage.css";
 
 /**
@@ -69,8 +70,8 @@ const PROSE = {
       <>
         Kept in this browser&rsquo;s local storage and sent as a bearer
         header. It is never put in a URL: a URL ends up in history, in a
-        Referer and in somebody&rsquo;s log. There is no password to reset,
-        so a lost token is re-minted rather than recovered.
+        Referer and in somebody&rsquo;s log. There is no password to reset:
+        a lost token is re-issued from your account above, or minted again.
       </>
     ),
     firstTime: "First time",
@@ -153,7 +154,7 @@ const PROSE = {
     forgetIt: "忘れる",
     tokenNote: (
       <>
-        このブラウザのローカルストレージに保存され、bearer ヘッダとして送信される。URL には決して載せない: URL は履歴に、Referer に、誰かのログに残るからだ。リセットするパスワードは無いので、失くしたトークンは復元ではなく再鋳造される。
+        このブラウザのローカルストレージに保存され、bearer ヘッダとして送信される。URL には決して載せない: URL は履歴に、Referer に、誰かのログに残るからだ。リセットするパスワードは無い: 失くしたトークンは上のアカウントから再発行するか、もう一度鋳造する。
       </>
     ),
     firstTime: "初回",
@@ -236,6 +237,7 @@ export default async function ManagePage({ params }: { params: Promise<{ lang: L
           </Link>
         </p>
 
+        <Account lang={lang} />
         <MintToken lang={lang} />
         <section className="card">
           <p className="eyebrow">{S.token}</p>

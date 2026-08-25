@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Lang } from "@/lib/lang";
+import { Brief } from "./Brief";
 
 /**
  * The public mint, as a button on the editor.
@@ -139,8 +140,8 @@ export function MintToken({ lang = "en" }: { lang?: Lang }) {
               <p className="note">{minted.setup}</p>
               <p className="piece-links">
                 <a className="tag live" href={minted.play}>{S.play}</a>
-                <a className="tag" href={minted.brief}>{S.brief}</a>
               </p>
+              <Brief lang={lang} token={token} slug={minted.slug} handle={minted.handle} />
             </>
           ) : null}
         </>
