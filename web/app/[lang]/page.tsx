@@ -74,9 +74,7 @@ const PROSE = {
     projectsProse: (n: number, m: number) => (
       <>
         {n} projects live under this roof, with {m} working parts between
-        them. This list and the site&rsquo;s menu are read from the same
-        record, so a project cannot appear in one and be missing from the
-        other.
+        them.
       </>
     ),
     overview: "overview",
@@ -140,7 +138,7 @@ const PROSE = {
     projectsProse: (n: number, m: number) => (
       <>
         この屋根の下には {n} 件のプロジェクトがあり、合わせて {m}{" "}
-        の部品を持つ。この一覧もサイトのメニューも、同じ一つの記録から読まれる。だから、片方に現れてもう片方に無い、ということが起こらない。
+        の部品を持つ。
       </>
     ),
     overview: "概要",
