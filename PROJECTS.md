@@ -544,6 +544,27 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## 1.0.97: the full strip, the manage page on a phone, the one-engine note
+
+- **The strip is the same set of controls on every instrument page**, the
+  Lab's set: power, start, half-steps, play, cycle, opcode, rate, seek,
+  position, full screen. A control the page cannot honour is disabled with
+  the reason in its title, never hidden (owner: "always show the full strip").
+  Power, opcode step and seek are disabled everywhere until the one engine
+  (`notes/one-engine.md`); the console's half-steps are disabled because it
+  runs whole frames.
+- The seek slider fills its line, so on a phone the rate, position and full
+  screen share the second row; the Lab's own seek gives way the same way
+  (`lab.css`), which is what had put "full" on a third row.
+- `/6502/manage` scrolled sideways on a phone **only when signed in**: the
+  account card is a grid item that grew to its tokens table's minimum width
+  (501px at 390). Column `minmax(0,1fr)`, `min-width: 0` on cards, tokens
+  stacked per row on phones. The sweep never saw it because it was signed
+  out; the harness now un-hides every `[hidden]` section and injects the
+  account card before measuring (`ovf2.mjs`).
+- `notes/one-engine.md`: the finale, one engine in the strip driving every
+  screen, local wasm or the API, with the order of arrivals.
+
 ## Checkpoint, 2026-08-25 (night), at 1.0.96: one bar, the mobile sweep
 
 **Live and verified.** A phone sweep of every sitemap page (102, both

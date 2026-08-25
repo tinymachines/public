@@ -11,9 +11,16 @@
  * (.card, .row, .note) can leak into the rest of the site or be leaked into.
  */
 
-.manage-shell { display: grid; gap: calc(var(--u) * 5); margin-top: calc(var(--u) * 5); }
+.manage-shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 5); margin-top: calc(var(--u) * 5); }
 
 .manage-shell .card {
+  /* A grid item is as wide as its widest child unless told otherwise, and a
+     table or a bare URL told it to be 501px on a 390px phone: the whole page
+     then scrolled sideways, seen only when signed in because that is when
+     the card exists. min-width 0 and the column above are the two halves of
+     the same fix; the wrap rule is for the publish URL in a note. */
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--color-paper);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-hair);
@@ -136,5 +143,13 @@
 .manage-shell .acct-tokens td { padding: calc(var(--u) * 1.5) calc(var(--u) * 2) calc(var(--u) * 1.5) 0; border-bottom: 1px solid var(--color-rule); vertical-align: middle; }
 .manage-shell .acct-tokens tr.dead td { color: var(--color-ink-muted); }
 .manage-shell .acct-tokens td:last-child { text-align: right; white-space: nowrap; }
+/* On a phone a token is a stacked entry, not a four-column row: the row
+   cannot shrink below the two buttons plus the handle plus the digest. */
+@media (max-width: 34rem) {
+  .manage-shell .acct-tokens, .manage-shell .acct-tokens tbody { display: block; }
+  .manage-shell .acct-tokens tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--u) * 1) calc(var(--u) * 3); padding: calc(var(--u) * 1.5) 0; border-bottom: 1px solid var(--color-rule); }
+  .manage-shell .acct-tokens td { display: block; padding: 0; border: 0; }
+  .manage-shell .acct-tokens td:last-child { flex-basis: 100%; text-align: left; }
+}
 .manage-shell .brief-card { margin-top: calc(var(--u) * 3); }
 .manage-shell .brief-card h3 { margin: 0 0 calc(var(--u) * 1.5); }

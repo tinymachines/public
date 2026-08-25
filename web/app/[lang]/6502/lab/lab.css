@@ -328,3 +328,11 @@
 
 /* Full screen: the site's bar has left, so the strip is the top edge. */
 html.has-fullscreen .lab-shell.lab-shell header { top: 0; }
+
+/* The seek slider gives way on a phone. Its own rule holds it at 110px,
+   which with the rate and the counter filled the second line exactly and
+   put full screen alone on a third. Doubled class for the same cascade
+   reason as .wrap above. */
+@media (max-width: 30rem) {
+  .lab-shell.lab-shell #scrub { min-width: calc(var(--u) * 8); flex-basis: calc(var(--u) * 8); }
+}

@@ -2331,19 +2331,27 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .chip-transport .tbtn.play { min-width: calc(var(--u) * 16); color: var(--color-ink); }
 .chip-transport .tbtn.play.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
 .chip-transport .ic { width: 14px; height: 14px; flex: none; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.chip-transport .tbtn.pw { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); font-weight: 600; }
 .ct-rate { display: flex; align-items: center; gap: calc(var(--u) * 1.5); flex: 0 0 auto; margin-left: calc(var(--u) * 1); }
 .ct-rate input { width: calc(var(--u) * 20); height: calc(var(--u) * 6.5); accent-color: var(--color-accent-ink); }
 .chip-transport .tlab { min-width: 5ch; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ct-pos { margin-left: auto; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The seek slider takes what is left of its line, as the Lab's does, so the
+   rate, the position and full screen are one line on a phone (the second)
+   and the whole strip is one line on a desk. A fixed-width seek is what put
+   "full" on a row of its own. */
+.ct-seek { flex: 1 1 calc(var(--u) * 12); min-width: calc(var(--u) * 10); height: calc(var(--u) * 6.5); accent-color: var(--color-accent-ink); }
+.ct-pos { color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 12ch; text-align: right; }
 .ct-pos b { color: var(--color-ink); font-weight: 600; }
+.chip-transport input:disabled { opacity: 0.35; cursor: not-allowed; }
 /* The page keeps its floor clear of the strip: two rows on a phone. */
 .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 16); }
-/* On a phone the steppers keep only their icon, as the Lab's do; start and
-   play keep their words, because no icon says "power cycle" or "run" to
-   somebody who has not read the caption. */
-@media (max-width: 26rem) {
-  .chip-transport .tbtn:not(.play):not(:first-child) .lb { display: none; }
+/* On a phone the steppers keep only their icon, as the Lab's do; power,
+   start and play keep their words, because no icon says "power cycle" or
+   "run" to somebody who has not read the caption. */
+@media (max-width: 30rem) {
+  .chip-transport .tbtn:not(.play):not(.pw):not(.pw + .tbtn) .lb { display: none; }
   .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 2); }
+  .chip-transport .tbtn.play { min-width: calc(var(--u) * 14); }
   .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26); }
 }
 
