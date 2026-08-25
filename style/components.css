@@ -2192,16 +2192,17 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 }
 .menu-group + .menu-group { margin-top: calc(var(--u) * 2); }
 .menu-item { padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5); }
-.menu-scrim { display: none; }
+/* The scrim is the page, as far as the panel is concerned: a click on it
+   closes the menu at every width. It paints nothing above a phone; below,
+   the wash in the block further down. */
+.menu-scrim { position: fixed; inset: 0; z-index: 29; background: transparent; }
+/* The page holds still while the panel is up. The panel scrolls itself. */
+html.menu-open, html.menu-open body { overflow: hidden; }
 
 /* On a phone the card floats over a faint wash of paper, centred, still a
    card: the wash is what stops it reading as a page. */
 @media (max-width: 34rem) {
   .menu-scrim {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 29;
     background: color-mix(in srgb, var(--color-paper) 72%, transparent);
   }
   .menu-panel {

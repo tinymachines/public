@@ -193,7 +193,7 @@ export function WorkbenchBar({
       {titleIsHeading ? <h1>{title}</h1> : <p className="wb-title">{title}</p>}
       <WorkbenchFullscreen lang={lang} />
       <LangSwitch lang={lang} hard={hard} />
-      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} hard={hard} />
+      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} hard={hard} />
     </div>
   );
 }
@@ -251,7 +251,7 @@ export function Shell({
             <b>tinymachines</b>
           </Link>
           <LangSwitch lang={lang} />
-          <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} />
+          <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} />
         </div>
       </header>
 

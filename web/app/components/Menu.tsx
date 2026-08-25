@@ -35,10 +35,13 @@ import type { MenuGroup } from "@/lib/nav";
 export function Menu({
   groups,
   label = "Menu",
+  close = "Close",
   hard = false,
 }: {
   groups: MenuGroup[];
   label?: string;
+  /** What the same button says while the panel is open: it closes it. */
+  close?: string;
   /** Every link a full navigation: set by a page whose module must not survive the leave. */
   hard?: boolean;
 }) {
@@ -71,13 +74,20 @@ export function Menu({
       button.current?.focus();
     };
     const onDown = (e: MouseEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as HTMLElement;
+      // The scrim is inside the wrap and is still "outside": it is the page.
+      if (!wrap.current?.contains(t) || t.classList?.contains("menu-scrim")) setOpen(false);
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onDown);
+    // The page under the panel holds still. Without this a finger that
+    // overshoots the sheet scrolls the page behind it, and the panel, which
+    // is positioned against the header, drifts with it.
+    document.documentElement.classList.add("menu-open");
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onDown);
+      document.documentElement.classList.remove("menu-open");
     };
   }, [open]);
 
@@ -108,7 +118,7 @@ export function Menu({
           <i />
           <i />
         </span>
-        {label}
+        {open ? close : label}
       </button>
 
       {/* Rendered only when open. A hidden panel that is still in the tree is
@@ -118,7 +128,7 @@ export function Menu({
         {/* The scrim only paints on a phone (the CSS decides): a faint wash of
             paper over the page so the card reads as a card on top of it rather
             than as a new page. Closing on tap is the outside-click rule above. */}
-        <div className="menu-scrim" aria-hidden="true" />
+        <div className="menu-scrim" aria-hidden="true" onClick={() => setOpen(false)} />
         <div className="menu-panel" id={panelId}>
           {/* The panel spans the header; the sheet inside it keeps the site's
               measure, so the columns line up with the masthead above and the
