@@ -544,6 +544,17 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## 1.0.101: the schematic, chip map and blocks checked against upstream
+
+All three answer on the roof as they do on `6502.tinymachines.ai`: the
+schematic reads `?signal=&dir=&depth=` to the same caption, the chip map
+derives its containers, the block index and `block?b=` views carry the same
+in-content links (diffed, none missing). Two fixes from the comparison, both
+in explorer.css: the signal filter (a search input upstream never styled,
+whose browser box our reset removed) wears the kit's field; the direction
+buttons, wider in the house mono face, wrap in their cell instead of running
+into the Chip I/O switch. Harness: `cmp.mjs`, `links.mjs`, `sch.mjs`.
+
 ## 1.0.99: the tool pages wear the kit's edge; one transport per page
 
 - **`web/lib/kit-borders.ts`**: a pass over the ported stylesheets (explorer
