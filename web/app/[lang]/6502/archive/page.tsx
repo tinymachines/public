@@ -195,11 +195,6 @@ export default async function ArchivePage({ params }: { params: Promise<{ lang: 
           it the copy ran the full 1056px column and the h2s rendered at body
           size, which reads as a page that forgot its own type scale. */}
       <main className="prose">
-      <div className="chips">
-        <span className="measured">{S.counted}</span>
-        <span className="tag live">{S.served}</span>
-      </div>
-
       <p>{S.intro}</p>
 
       <p className="notice">{S.notOurs}</p>

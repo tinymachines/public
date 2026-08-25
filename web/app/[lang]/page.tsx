@@ -1,12 +1,10 @@
 import { localize, t } from "@/lib/i18n";
 import type { Lang } from "@/lib/lang";
 import Link from "next/link";
-import { allPages } from "@/lib/docs";
 import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
 import { arrivedSurfaces, projects } from "@/lib/projects";
 import { isHardRoute, whereToRead } from "@/lib/nav";
-import { specimenCount } from "@/lib/zoo";
 import { Shell } from "@/app/components/SiteFrame";
 import { PieceStatus } from "@/app/components/PieceStatus";
 import { Halfphi } from "@/app/components/Halfphi";
@@ -176,8 +174,6 @@ const PROSE = {
 export default async function Home({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
   const S = PROSE[lang];
-  const docs = allPages();
-  const specimens = specimenCount();
   const six = pieces();
   const die = chip();
   const hosted = six.filter((p) => p.public_url);
@@ -222,29 +218,6 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
           </Link>
         </div>
 
-        {/* Inside the hero rather than after it: above 80rem the kit lays
-            these into the hero's right column, which was empty viewport
-            before. The chips are the page's own measured facts, which is
-            what earns them the spot. Below that width they render as the
-            same .chips row they always were. */}
-        <div className="chips hero-chips">
-        <span className="measured">
-          <b>{S.wiresSwitches(die.nodes, die.transistors)}</b>{" "}
-          {S.measuredFrom(die.measured_on)}
-        </span>
-        <span className="measured">
-          <b>{S.projSurf(under.length, surfacesHere)}</b> {S.fromManifest}
-        </span>
-        <span className="measured">
-          <b>{S.pieces(six.length)}</b> {S.fromPieces}
-        </span>
-        <span className="measured">
-          <b>{S.documents(docs.length)}</b> {S.fromDocs}
-        </span>
-        <span className="measured">
-          <b>{S.specimens(specimens)}</b> {S.fromZoo}
-        </span>
-        </div>
       </section>
 
       <h2 className="eyebrow">{S.theProjects}</h2>

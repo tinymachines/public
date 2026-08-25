@@ -1,7 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { localize, t } from "@/lib/i18n";
-import { project, measuredOn } from "@/lib/projects";
+import { project } from "@/lib/projects";
 import { LESSON } from "./lesson";
 import { TrackGrid } from "./Tracks";
 import Link from "next/link";
@@ -133,11 +133,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
 
   return (
     <Shell lang={lang} die="6502" title={p.name}>
-      <div className="chips">
-        <span className="measured">{S.surfaces(p.surfaces.length, measuredOn())}</span>
-        <span className={p.status === "serving" ? "tag live" : "tag warn"}>{t(lang, p.status)}</span>
-      </div>
-
       <section className="hero">
         <p className="lede">{T.lede}</p>
         <div className="hero-ctas">

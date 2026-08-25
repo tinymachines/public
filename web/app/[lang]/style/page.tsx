@@ -2,7 +2,6 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Guide from "../../../../style/STYLE.md";
-import { specimenCount } from "@/lib/zoo";
 import { Shell } from "@/app/components/SiteFrame";
 
 /**
@@ -30,7 +29,6 @@ export default async function StylePage({ params }: { params: Promise<{ lang: La
   // Counted from zoo.html rather than typed, for the same reason the docs
   // navigation is derived from the tree: a number in prose is written once
   // against what was true that afternoon and nothing checks it afterwards.
-  const specimens = specimenCount();
 
   return (
     <Shell lang={lang}
@@ -46,11 +44,6 @@ export default async function StylePage({ params }: { params: Promise<{ lang: La
             on a <p> holding a whole sentence, which stretched an inline-flex
             component across the column and made a compact provenance stamp
             look like body copy. */}
-        <div className="chips">
-          <span className="measured">
-            <b>{specimens} specimens</b> counted from style/zoo.html at build
-          </span>
-        </div>
         <p>
           This document is the why; the <Link href="/style/zoo">zoo</Link> is
           the what, and it is the normative one of the pair.
