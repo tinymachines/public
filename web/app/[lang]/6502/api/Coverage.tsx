@@ -40,16 +40,15 @@ interface OpenApi {
    piece on the site. */
 const L = {
   en: {
-    what: "the running service's own schema",
+    what: "the service's schema",
     documented: (n: number) => (
       <>
-        <b>{n} routes</b> named in this document, counted from its own markup
+        <b>{n} routes</b> documented
       </>
     ),
     answering: (n: number) => (
       <>
-        <b>{n} operations</b> in the service answering right now, read from its
-        own openapi.json
+        <b>{n} operations</b> answering now
       </>
     ),
     absentTag: (n: number) => `${n} documented, not answering`,
@@ -57,11 +56,8 @@ const L = {
     undocTag: (n: number) => `${n} answering, not documented`,
     absentNote: (
       <>
-        <b>These are described below and do not answer yet.</b> The reference is
-        read from the 6502 repository at build time and the service is a running
-        process, so the two move on different days. Nothing here is broken: the
-        routes are merged and the process has not been restarted. This block
-        goes empty on its own when it is.
+        <b>These are documented below and do not answer yet.</b> The service
+        has not been restarted since they were added.
       </>
     ),
     absent: "absent",
@@ -73,16 +69,15 @@ const L = {
     ),
   },
   ja: {
-    what: "稼働中のサービス自身のスキーマ",
+    what: "サービスのスキーマ",
     documented: (n: number) => (
       <>
-        この文書に記載の <b>ルート {n} 本。</b>文書自身のマークアップから集計
+        <b>ルート {n} 本</b>を記載
       </>
     ),
     answering: (n: number) => (
       <>
-        いま応答中のサービスにある <b>オペレーション {n} 件。</b>サービス自身の
-        openapi.json から読取
+        <b>オペレーション {n} 件</b>が応答中
       </>
     ),
     absentTag: (n: number) => `記載済みで未応答: ${n} 本`,
@@ -90,9 +85,7 @@ const L = {
     undocTag: (n: number) => `応答中で未記載: ${n} 件`,
     absentNote: (
       <>
-        <b>以下は本文に記載があり、まだ応答しないルート。</b>
-        リファレンスはビルド時に 6502 リポジトリから読み込まれ、サービスは稼働中のプロセスなので、二つは別の日に動く。壊れているものは何もない:
-        ルートはマージ済みで、プロセスがまだ再起動されていないだけだ。再起動されれば、このブロックはひとりでに空になる。
+        <b>以下は本文に記載があり、まだ応答しないルート。</b>追加後にサービスがまだ再起動されていない。
       </>
     ),
     absent: "未応答",

@@ -83,9 +83,7 @@ const PROSE = {
     piecesProse: (six: number, hosted: number) => (
       <>
         Each one exists and runs. {hosted} of the {six} answer on a public
-        address, and the tag beside those is measured when this page loads
-        rather than asserted here. The other {six - hosted} say why they have
-        no address instead of pretending to be down.
+        address; the other {six - hosted} say why they have none.
       </>
     ),
     shipsAs: "Ships as",
@@ -146,9 +144,8 @@ const PROSE = {
     pieceByPiece: "6502 の仕事を、ピースごとに",
     piecesProse: (six: number, hosted: number) => (
       <>
-        どれも実在して動いている。{six} 個のうち {hosted}{" "}
-        個は公開アドレスで応答していて、その横のタグはこのページを開いた時に実測される。ここに書かれた主張ではない。残る{" "}
-        {six - hosted} 個は、落ちているふりをする代わりに、なぜアドレスを持たないかを述べる。
+        どれも実在して動いている。{six} 個のうち {hosted} 個は公開アドレスで応答し、残る{" "}
+        {six - hosted} 個はなぜアドレスを持たないかを述べる。
       </>
     ),
     shipsAs: "形態",

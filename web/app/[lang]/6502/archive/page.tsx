@@ -237,9 +237,6 @@ export default async function ArchivePage({ params }: { params: Promise<{ lang: 
         </div>
       </div>
 
-      <h2>{S.whereTitle}</h2>
-      <p>{S.where1}</p>
-      <p>{S.where2}</p>
       </main>
     </Shell>
   );

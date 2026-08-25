@@ -71,22 +71,19 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
         <p>
           {lang === "ja" ? (
             <>
-              これはリファレンスであり、記述されるサービスは{" "}
+              これはリファレンスだ。記述されるサービスは{" "}
               <a data-address href={`${api}/`}>
                 6502.tinymachines.ai/api
               </a>{" "}
-              と、このサイトの <code>/6502/api</code> の両方で応答する。どちらも同じ一つのプロセスで、それぞれのアドレスには、そのアドレスを名乗るスキーマが返る。だから、どちらの文書を読んだクライアントも、読んだ場所のサービスに正しくつながる。
+              と、このサイトの <code>/6502/api</code> で応答する。
             </>
           ) : (
             <>
-              This is the reference, and the service it describes answers at{" "}
+              This is the reference. The service it describes answers at{" "}
               <a data-address href={`${api}/`}>
                 6502.tinymachines.ai/api
               </a>{" "}
-              and at <code>/6502/api</code> on this site. Both are the same
-              process, and each address gets a schema that names that address,
-              so a client reading either document sends its requests to the
-              service it read about.
+              and at <code>/6502/api</code> on this site.
             </>
           )}
         </p>

@@ -35,35 +35,31 @@ const PROSE = {
       <>
         Everything below is read from{" "}
         <a data-address href={`${api}/openapi.json`}>
-          the instrument&rsquo;s own openapi.json
+          the instrument&rsquo;s schema
         </a>{" "}
-        when this page loads, so it is what the service says about itself
-        rather than what it said at the last deploy. Nothing is retyped and
-        nothing is cached here.
+        when this page loads.
       </>
     ),
     p2: (
       <>
-        It is also asked. A schema says what a service means to offer, which
-        is not the same claim as what it will answer, and here the two differ:
-        each documented route that needs no path parameter is called, and what
-        it actually returned is shown beside it.
+        Each documented route is also called, and what it returned is shown
+        beside it.
       </>
     ),
   },
   ja: {
     p1: (api: string) => (
       <>
-        以下はすべて、このページの読み込み時に{" "}
+        以下はすべて、このページを開いたときに{" "}
         <a data-address href={`${api}/openapi.json`}>
-          装置自身の openapi.json
+          装置のスキーマ
         </a>{" "}
-        から読まれる。だからそれは前回のデプロイ時点の言い分ではなく、サービスがいま自分について言っていることだ。何も打ち直されず、ここでは何もキャッシュされない。
+        から読まれる。
       </>
     ),
     p2: (
       <>
-        そして尋ねもする。スキーマはサービスが提供する*つもり*のものを言うだけで、それは実際に応答するものと同じ主張ではない。ここでは二つが食い違う: パスパラメータの要らない文書化済みルートはすべて呼び出され、実際に返ってきたものがその横に表示される。
+        文書化されたルートはそれぞれ実際に呼び出され、返ってきたものがその横に表示される。
       </>
     ),
   },

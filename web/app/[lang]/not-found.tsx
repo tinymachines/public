@@ -18,9 +18,8 @@ export default function NotFound() {
     <main className="page prose" style={{ paddingTop: "calc(var(--u) * 12)" }}>
       <h1>404</h1>
       <p>
-        There is no page at this address. Nothing was ever here, or the thing
-        that was has moved and this URL was not in the redirect map, which
-        would be worth telling us about.
+        There is no page at this address. If something used to be here, it
+        moved.
       </p>
       <p lang="ja">このアドレスにページはありません。</p>
       <p>

@@ -5,7 +5,7 @@
     {
       "key": "roof",
       "name": "tinymachines.ai",
-      "what": "The front door, the documentation tree, the style guide and the roof's own API. Not a project in the sense the others are: it is the thing they arrive under.",
+      "what": "The front door, the documentation, the style guide and the site's own API.",
       "silo": null,
       "status": "serving",
       "surfaces": [
@@ -14,7 +14,7 @@
           "name": "The main site",
           "nav": false,
           "nav_label": null,
-          "what": "The front page. Reached from the masthead rather than from the nav, because a nav entry for the page you are already on is noise.",
+          "what": "The front page.",
           "piece": null,
           "serves_today": "https://tinymachines.ai",
           "lands_at": "/",
@@ -53,7 +53,7 @@
           "name": "Admin",
           "nav": false,
           "nav_label": null,
-          "what": "Dev keys and the people they belong to. Deliberately not in the navigation: that is not security, the key the API demands is, but it is not a page a reader has any use for.",
+          "what": "Dev keys and the people they belong to.",
           "piece": null,
           "serves_today": "https://tinymachines.ai/admin",
           "lands_at": "/admin",
@@ -87,7 +87,7 @@
         {
           "key": "explorer",
           "name": "The explorer",
-          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer. The die data is CC BY-NC-SA and is served from one place at both addresses, never copied.",
+          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer.",
           "piece": "explorer",
           "serves_today": "https://6502.tinymachines.ai",
           "lands_at": "/6502/explorer",
@@ -100,7 +100,7 @@
         {
           "key": "api",
           "name": "The 6502 API",
-          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference is here and checks itself against the running service, and since 2026-08-24 the service answers under this address too: each address gets a schema that names that address, so what you read is true for where you read it. The subdomain stays the primary name for now.",
+          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference checks itself against the running service.",
           "piece": "chip-api",
           "serves_today": "https://6502.tinymachines.ai/api/",
           "lands_at": "/6502/api",
@@ -139,7 +139,7 @@
         {
           "key": "registry",
           "name": "The registry",
-          "what": "Everyone publishing cartridges, and what they published. Read-only here: publishing happens in the editor.",
+          "what": "Everyone publishing cartridges, and what they published.",
           "piece": null,
           "serves_today": "https://games.tinymachines.ai/builders",
           "lands_at": "/6502/builders",
@@ -165,7 +165,7 @@
         {
           "key": "archive",
           "name": "The visual6502 archive",
-          "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it: the wiki rebuilt from its wikitext and the die photography made browsable again. The overview is ours; the preserved pages keep their own design, because that is what a preservation is.",
+          "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it: the wiki rebuilt from its wikitext and the die photography made browsable again.",
           "nav": false,
           "nav_label": "visual6502 Archive",
           "piece": null,
@@ -181,14 +181,14 @@
     {
       "key": "hotbits",
       "name": "hotbits",
-      "what": "True random bytes from the decay of a radioactive source: a Geiger counter on a Pi, with bits taken from the timing between decay events. The instrument still runs where it always has; what is here is the roof over it.",
+      "what": "True random bytes from the decay of a radioactive source: a Geiger counter on a Pi, with bits taken from the timing between decay events.",
       "silo": "style/projects/hotbits.css",
       "status": "moving",
       "surfaces": [
         {
           "key": "gateway",
           "name": "The entropy gateway",
-          "what": "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone. The gateway publishes its own schema at /v1/openapi.json, and the reference here reads both documents on that host.",
+          "what": "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone.",
           "nav": false,
           "nav_label": "hotbits API",
           "piece": null,
@@ -201,7 +201,7 @@
         {
           "key": "trng",
           "name": "The Geiger TRNG",
-          "what": "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors. Its landing page and its reference are here, generated from the schema it publishes and checked against what it answers.",
+          "what": "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors.",
           "nav": false,
           "nav_label": "Geiger TRNG",
           "piece": null,

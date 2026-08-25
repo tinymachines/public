@@ -56,13 +56,9 @@ const PROSE = {
     refTitle: "The reference",
     ref: (href: string) => (
       <>
-        <Link href={href}>The API reference</Link> is generated from
-        the instrument&rsquo;s own <code>openapi.json</code> in your browser,
-        so it is what the service says about itself right now rather than what
-        it said at the last deploy. It also asks what it describes whether it
-        is still there, which is how it can report which documented
-        endpoints have been retired behind a key, and reads the
-        gateway&rsquo;s own schema beside the instrument&rsquo;s.
+        <Link href={href}>The API reference</Link> is read from the
+        instrument&rsquo;s schema each time the page loads, and every
+        documented route is asked whether it still answers.
       </>
     ),
     designTitle: "This page has no design yet, and that is deliberate",
@@ -95,8 +91,7 @@ const PROSE = {
     refTitle: "リファレンス",
     ref: (href: string) => (
       <>
-        <Link href={href}>API リファレンス</Link>は装置自身の{" "}
-        <code>openapi.json</code> からブラウザ内で生成される。だからそれは、前回のデプロイ時点の言い分ではなく、サービスがいま自分について言っていることだ。記述したものがまだそこに居るかも実際に尋ねるので、文書化されたエンドポイントのどれが鍵の向こうに引退したかを報告できるし、装置のスキーマの横でゲートウェイ自身のスキーマも読む。
+        <Link href={href}>API リファレンス</Link>は、ページを開くたびに装置のスキーマから読まれ、文書化されたルートはどれも、まだ応答するかを尋ねられる。
       </>
     ),
     designTitle: "このページにデザインはまだ無く、それは意図されたもの",

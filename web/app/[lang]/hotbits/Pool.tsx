@@ -47,7 +47,7 @@ function grouped(n: number): string {
 const L = {
   en: {
     what: "the byte pool",
-    inPool: "in the pool, unread, measured when this page loaded",
+    inPool: "unread bytes in the pool",
     emitted: "emitted since the stream was opened",
     maxReq: "the most one request may take",
     healthy: "healthy",
@@ -67,7 +67,7 @@ const L = {
   },
   ja: {
     what: "バイトプール",
-    inPool: "プール内の未読バイト。このページの読み込み時に実測",
+    inPool: "プール内の未読バイト",
     emitted: "ストリーム開始からの出力ビット",
     maxReq: "1 リクエストが取れる最大",
     healthy: "健全",

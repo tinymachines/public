@@ -94,14 +94,12 @@ function group(route: string): string {
 const L = {
   en: {
     schemaWhat: "the instrument's schema",
-    ops: (n: number) => <><b>{n} operations</b> read from </>,
-    twoSchemas:
-      "two schemas on the same host when this page loaded: the instrument's openapi.json and the gateway's /v1/openapi.json",
-    oneSchema: "the instrument's own openapi.json when this page loaded",
+    ops: (n: number) => <><b>{n} operations</b> </>,
+    twoSchemas: "across the instrument and the gateway",
+    oneSchema: "from the instrument",
     groups: (n: number) => (
       <>
-        <b>{n} groups</b> taken from the routes themselves, since the schema
-        carries no tags
+        <b>{n} groups</b>
       </>
     ),
     asked: (p: number, n: number) => (
@@ -109,42 +107,27 @@ const L = {
         <b>
           {p} of {n}
         </b>{" "}
-        documented routes asked just now and answering
+        documented routes answering
       </>
     ),
     retired: (n: number) => `${n} retired`,
     unreadable: (n: number) => `${n} unreadable from a browser`,
     noGate: (
       <>
-        <b>The gateway&rsquo;s schema did not answer.</b> The /v1 routes are a
-        separate service on this host, and it publishes its own document at{" "}
-        <code>/v1/openapi.json</code>. Asked just now, that document was not
-        there, so the keyed routes exist below only as the 410 notices that
-        point at them. This line disappears by itself when the gateway
-        answers.
+        <b>The gateway&rsquo;s schema did not answer</b>, so its keyed routes
+        appear below only as the 410 notices that point at them.
       </>
     ),
     goneNote: (list: string) => (
       <>
-        <b>These are documented below and answer 410.</b> They were open, the
-        pool refills at a few dozen bytes a minute, and anyone could drain
-        it, so they are behind a key now. The instrument&rsquo;s schema has
-        not been told: each still appears as a callable endpoint. Asked just
-        now, not remembered: <code>{list}</code>.
+        <b>These are documented below and answer 410:</b> they now need a key.{" "}
+        <code>{list}</code>.
       </>
     ),
     opaqueNote: (list: string) => (
       <>
-        <b>
-          These are documented below and this page cannot read what they say.
-        </b>{" "}
-        The schema came from the same host a moment ago, so the instrument is
-        answering; these particular responses carry no{" "}
-        <code>Access-Control-Allow-Origin</code>, and a browser therefore
-        refuses to show a script what came back. This service sends that
-        header on a success and not on a refusal, which is the wrong way
-        round: a refusal is the answer that has somewhere to send you, and
-        from a page it is indistinguishable from the host being down.{" "}
+        <b>These are documented below and this page cannot read their answers:</b>{" "}
+        the service does not send <code>Access-Control-Allow-Origin</code> on them.{" "}
         <code>{list}</code>.
       </>
     ),
@@ -155,43 +138,38 @@ const L = {
   },
   ja: {
     schemaWhat: "装置のスキーマ",
-    ops: (n: number) => <><b>{n} 個の操作</b>の読み取り元: </>,
-    twoSchemas:
-      "このページ読み込み時の、同一ホスト上の二つのスキーマ (装置の openapi.json とゲートウェイの /v1/openapi.json)",
-    oneSchema: "このページ読み込み時の、装置自身の openapi.json",
+    ops: (n: number) => <><b>{n} 個の操作</b></>,
+    twoSchemas: "。装置とゲートウェイの両方から",
+    oneSchema: "。装置から",
     groups: (n: number) => (
       <>
-        <b>{n} グループ。</b>スキーマにタグが無いので、ルート自身から分類
+        <b>{n} グループ</b>
       </>
     ),
     asked: (p: number, n: number) => (
       <>
         <b>
           {n} 件中 {p} 件
-        </b>{" "}
-        の文書化済みルートが、たった今の問い合わせに応答
+        </b>
+        の文書化済みルートが応答中
       </>
     ),
     retired: (n: number) => `引退 ${n} 件`,
     unreadable: (n: number) => `ブラウザから読めないもの ${n} 件`,
     noGate: (
       <>
-        <b>ゲートウェイのスキーマが応答しなかった。</b> /v1 のルートはこのホスト上の別サービスで、自分の文書を <code>/v1/openapi.json</code>{" "}
-        で公開している。たった今尋ねたところ、その文書は無かった。だから鍵付きルートは、下ではそれを指す 410 の告知としてだけ存在する。ゲートウェイが応答すれば、この行はひとりでに消える。
+        <b>ゲートウェイのスキーマが応答しなかった。</b>鍵付きルートは、下ではそれを指す 410 の告知としてだけ現れる。
       </>
     ),
     goneNote: (list: string) => (
       <>
-        <b>以下は下に文書化されていて、410 で応答する。</b>{" "}
-        かつては開いていて、プールは毎分数十バイトしか満ちず、誰でも飲み干せた。だからいまは鍵の向こうにいる。装置のスキーマはまだそれを知らされておらず、どれも呼び出せるエンドポイントとして載ったままだ。記憶ではなく、たった今尋ねた結果: <code>{list}</code>。
+        <b>以下は本文に記載があり、410 で応答する:</b> いまは鍵が要る。<code>{list}</code>。
       </>
     ),
     opaqueNote: (list: string) => (
       <>
-        <b>以下は下に文書化されていて、このページはその言い分を読めない。</b>{" "}
-        スキーマは同じホストからつい先ほど届いたので、装置は応答している。だがこれらの応答は <code>Access-Control-Allow-Origin</code>{" "}
-        を運ばず、ブラウザは返ってきたものをスクリプトに見せることを拒む。このサービスはそのヘッダを成功には付け、拒絶には付けない。それは逆さまだ: 行き先を教えてくれるのは拒絶のほうの答えであり、ページから見ると、それはホストが落ちているのと見分けが付かない。{" "}
-        <code>{list}</code>。
+        <b>以下は本文に記載があるが、このページはその応答を読めない:</b> サービスが{" "}
+        <code>Access-Control-Allow-Origin</code> を付けないためだ。<code>{list}</code>。
       </>
     ),
     tagRetired: "引退",

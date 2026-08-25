@@ -32,8 +32,7 @@ const L = {
       <>
         <b>
           {n} {n === 1 ? "builder" : "builders"}
-        </b>{" "}
-        counted by the registry when this page loaded
+        </b>
       </>
     ),
     carts: (n: number) => (
@@ -41,13 +40,12 @@ const L = {
         <b>
           {n} {n === 1 ? "cartridge" : "cartridges"}
         </b>{" "}
-        published, each one re-run on the die before it was listed
+        published
       </>
     ),
     limits: (r: number, kb: number) => (
       <>
-        <b>{r} cartridges a builder</b> and {kb} KB each, read from the
-        registry&rsquo;s own limits rather than from anything written here
+        <b>{r} cartridges a builder</b>, {kb} KB each
       </>
     ),
     recent: "Recently published",
@@ -68,17 +66,17 @@ const L = {
     play: "遊ぶ",
     builders: (n: number) => (
       <>
-        <b>ビルダー {n} 人</b> このページ読み込み時にレジストリが数えた値
+        <b>ビルダー {n} 人</b>
       </>
     ),
     carts: (n: number) => (
       <>
-        <b>カートリッジ {n} 本</b> が公開済み。どれも掲載前にダイ上で走らせ直された
+        <b>カートリッジ {n} 本</b>が公開済み
       </>
     ),
     limits: (r: number, kb: number) => (
       <>
-        <b>1 ビルダーあたり {r} 本、</b>各 {kb} KB。ここに書かれた値ではなくレジストリ自身の上限から読み取り
+        <b>1 ビルダーあたり {r} 本、</b>各 {kb} KB
       </>
     ),
     recent: "新着",
