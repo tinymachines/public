@@ -1038,7 +1038,11 @@ h2.display { font-size: var(--text-h2); }
 }
 
 /* Inline code stays on paper: it is a name being mentioned, not a value that
-   came out of a run. */
+   came out of a run. It may break anywhere, because a name has no spaces in
+   it: a 42-character identifier, or a run of paths joined by an ideographic
+   comma (which the browser will not break before), was one unbreakable line
+   that widened six pages on a 390px phone. Found by the mobile sweep's
+   overflow reading, 2026-08-25. */
 .prose :not(pre) > code {
   font-family: var(--font-mono);
   font-size: 0.88em;
@@ -1046,6 +1050,7 @@ h2.display { font-size: var(--text-h2); }
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-hair);
   padding: 0.1em 0.35em;
+  overflow-wrap: anywhere;
 }
 
 /* A code block is the machine talking, so it is a panel. Section 1. */
