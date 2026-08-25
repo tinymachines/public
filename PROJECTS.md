@@ -544,6 +544,25 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## SEO, at 1.0.88
+
+Every page is built from one call, `pageMeta()` in `web/lib/seo.ts`: title
+and description translated through the overlay (55 entries added to
+`data/ja.json`, the explorer pages' own `<meta description>` read by
+`lib/explorer.ts` beside their title), canonical, `hreflang` en/ja/x-default,
+Open Graph and Twitter fields, `noindex` where a page asked for it (admin,
+the zoo). The origin comes from the manifest's site surface, not a literal.
+`app/sitemap.ts` lists both languages of every static route, docs page and
+explorer page (102 entries), generated from the same sources the pages are;
+`robots.ts` points at it. Structured data: `WebSite` on the home page,
+`TechArticle` on every document (with `inLanguage` telling the truth about an
+untranslated body under /ja), `BreadcrumbList` from the same trail the page
+shows, in both the Shell's Crumbs and the workbench bar. `check-build.mjs`
+now fails a page without canonical, all three hreflang links, a description
+or an og:title. Not done, by design: builder pages are not in the sitemap
+(listing them would put a live service in the build); the social image is
+the square site icon until the social stream draws one per page.
+
 ## Checkpoint, 2026-08-25, at 1.0.84
 
 **Live and verified (triptych, 23 pages, both languages, zero overflow):**
