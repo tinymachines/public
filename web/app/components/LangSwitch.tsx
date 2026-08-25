@@ -5,8 +5,12 @@ import { usePathname } from "next/navigation";
 import { delocalize, localize, type Lang } from "@/lib/lang";
 
 /**
- * The language switcher: both flags, the current one lit, linking THIS page
- * in the other language.
+ * The language switcher: ONE flag, the other language's, linking THIS page
+ * in that language. The flag is the destination, not the state: on an
+ * English page it is Japan's, and pressing it opens the Japanese page.
+ * (Owner's call, 2026-08-25: it used to show both flags with the current
+ * one lit, which read as a status rather than a control, and two small
+ * flags took the room one legible one needs.)
  *
  * A link rather than a toggle with state: the URL is the language, so
  * switching is navigation and nothing needs storing. The flags are inline
@@ -16,9 +20,9 @@ import { delocalize, localize, type Lang } from "@/lib/lang";
  * proportions but simplified: these are controls, not vexillology.
  */
 
-function FlagUS({ off }: { off?: boolean }) {
+function FlagUS() {
   return (
-    <svg viewBox="0 0 22 15" aria-hidden="true" className={off ? "flag-off" : undefined}>
+    <svg viewBox="0 0 22 15" aria-hidden="true">
       <rect width="22" height="15" fill="#F4F2EC" />
       {[1, 3, 5, 7, 9, 11, 13].map((y) => (
         <rect key={y} y={y} width="22" height="1.1" fill="#B0281B" />
@@ -28,9 +32,9 @@ function FlagUS({ off }: { off?: boolean }) {
   );
 }
 
-function FlagJP({ off }: { off?: boolean }) {
+function FlagJP() {
   return (
-    <svg viewBox="0 0 22 15" aria-hidden="true" className={off ? "flag-off" : undefined}>
+    <svg viewBox="0 0 22 15" aria-hidden="true">
       <rect width="22" height="15" fill="#FFFFFF" />
       <circle cx="11" cy="7.5" r="4" fill="#B0281B" />
     </svg>
@@ -49,14 +53,9 @@ export function LangSwitch({ lang, hard = false }: { lang: Lang; hard?: boolean 
     "aria-label": other === "ja" ? "日本語版を開く" : "Switch to English",
     title: other === "ja" ? "日本語" : "English",
   };
-  const flags = (
-    <>
-      <FlagUS off={lang !== "en"} />
-      <FlagJP off={lang !== "ja"} />
-    </>
-  );
+  const flag = other === "ja" ? <FlagJP /> : <FlagUS />;
   // A plain anchor on a page whose module must not survive the navigation
   // (see MenuItem.hard). Same target, same markup, a fresh document.
   // eslint-disable-next-line @next/next/no-html-link-for-pages
-  return hard ? <a {...props}>{flags}</a> : <Link {...props}>{flags}</Link>;
+  return hard ? <a {...props}>{flag}</a> : <Link {...props}>{flag}</Link>;
 }

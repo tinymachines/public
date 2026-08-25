@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Lang } from "@/lib/lang";
+import { FullscreenButton } from "@/app/components/Fullscreen";
 
 /**
  * One transport for every page that runs the chip.
@@ -241,6 +242,9 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
         <span className="ct-pos" aria-live="off">
           {!live ? S.loading : hc === null ? "" : <>h <b>{hc}</b> · cyc <b>{cyc}</b></>}
         </span>
+        {/* Full screen, at the right end of the strip on every instrument
+            page. Fullscreen.tsx says why it lives here and not in the bar. */}
+        <FullscreenButton lang={lang} />
       </div>
     </div>
   );

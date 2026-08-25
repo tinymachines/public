@@ -5,54 +5,65 @@ import { createPortal } from "react-dom";
 import type { Lang } from "@/lib/lang";
 
 /**
- * Full screen for a workbench, from a slot in its bar.
+ * Full screen for an instrument page, from the right end of its floor strip.
  *
- * The bar hides while the workbench is full screen, so the control that
- * entered cannot be the one that leaves: a small floating control appears at
- * the top corner while it holds. Native through the Fullscreen API where an
- * element can go fullscreen; the same class set by hand and the workbench
- * fixed to the viewport where it cannot (every iPhone). Escape leaves either
- * state, and `fullscreenchange` keeps the class honest when the browser
- * leaves native fullscreen on its own.
+ * Full screen means the whole document (owner's call, 2026-08-25: "FULL
+ * SCREEN, not just the content area"). Native through the Fullscreen API on
+ * the document element where the browser has it; where it does not (every
+ * iPhone), the same class is set by hand and the site's bar leaves, which is
+ * as full as that screen gets. Either way `html.has-fullscreen` is the one
+ * fact the CSS keys on. Escape leaves either state, and `fullscreenchange`
+ * keeps the class honest when the browser leaves on its own.
  *
- * One mechanism for every workbench: the Lab, the console, each explorer
- * instrument. The Lab used to carry its own control in its tab strip; this
- * replaced it so the instruments do not each learn a different gesture.
+ * The control that enters is the control that leaves: the strip is fixed to
+ * the floor and stays through full screen, so the button simply changes
+ * state. The floating exit control the bar-slot version needed is gone with
+ * the slot.
+ *
+ * One mechanism for every instrument: the explorer pages and the console put
+ * the button in the chip transport (ChipTransport.tsx); the Lab, whose strip
+ * is its own, gets it portalled in at the same place (LabFullscreen).
  */
 
 const L = {
-  en: { enter: "Full screen", exit: "Leave full screen" },
-  ja: { enter: "全画面", exit: "全画面を終了" },
+  en: { enter: "Full screen", exit: "Leave full screen", word: "full" },
+  ja: { enter: "全画面", exit: "全画面を終了", word: "全画面" },
 } as const;
 
 function Icon({ exit }: { exit?: boolean }) {
   return exit ? (
-    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" />
+    <svg className="ic" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6" />
     </svg>
   ) : (
-    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" />
+    <svg className="ic" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" />
     </svg>
   );
 }
 
-export function WorkbenchFullscreen({ lang = "en" }: { lang?: Lang }) {
+const root = () => document.documentElement;
+const native = () => document.fullscreenElement !== null;
+
+function set(v: boolean) {
+  root().classList.toggle("has-fullscreen", v);
+}
+
+export function FullscreenButton({ lang = "en" }: { lang?: Lang }) {
   const S = L[lang];
   const [on, setOn] = useState(false);
 
-  const bench = () => document.querySelector<HTMLElement>(".workbench");
-  const native = () => document.fullscreenElement !== null && document.fullscreenElement === bench();
-  const set = (v: boolean) => {
-    bench()?.classList.toggle("is-fullscreen", v);
-    document.documentElement.classList.toggle("has-fullscreen", v);
-    setOn(v);
-  };
-
   useEffect(() => {
-    const onChange = () => set(native());
+    const onChange = () => {
+      set(native());
+      setOn(native());
+    };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && bench()?.classList.contains("is-fullscreen") && !native()) set(false);
+      // The by-hand state has no browser to catch Escape for it.
+      if (e.key === "Escape" && root().classList.contains("has-fullscreen") && !native()) {
+        set(false);
+        setOn(false);
+      }
     };
     document.addEventListener("fullscreenchange", onChange);
     document.addEventListener("keydown", onKey);
@@ -61,21 +72,20 @@ export function WorkbenchFullscreen({ lang = "en" }: { lang?: Lang }) {
       document.removeEventListener("keydown", onKey);
       set(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function enter() {
-    const b = bench();
-    if (!b) return;
-    if (b.requestFullscreen) {
+    const r = root();
+    if (r.requestFullscreen) {
       try {
-        await b.requestFullscreen();
+        await r.requestFullscreen();
         return; // fullscreenchange sets the class
       } catch {
-        /* refused: fall through */
+        /* refused: fall through to the by-hand state */
       }
     }
     set(true);
+    setOn(true);
   }
   async function leave() {
     if (native() && document.exitFullscreen) {
@@ -87,28 +97,55 @@ export function WorkbenchFullscreen({ lang = "en" }: { lang?: Lang }) {
       }
     }
     set(false);
+    setOn(false);
   }
 
   return (
-    <>
-      <button type="button" className="wb-fs" title={S.enter} aria-label={S.enter} aria-pressed={on} onClick={() => (on ? leave() : enter())}>
-        <Icon />
-      </button>
-      {/* Portalled into the workbench, outside the bar. Outside the bar
-          because the bar is display:none while full screen and a fixed
-          element inside a hidden ancestor is hidden with it; INSIDE the
-          workbench because in native fullscreen the workbench is the top
-          layer, and nothing outside it can be seen or clicked whatever its
-          z-index. The body was the first try, and the Lab's sticky strip
-          swallowed every click on it. */}
-      {on && bench()
-        ? createPortal(
-            <button type="button" className="wb-fs-exit" title={S.exit} aria-label={S.exit} onClick={leave}>
-              <Icon exit />
-            </button>,
-            bench() as HTMLElement,
-          )
-        : null}
-    </>
+    <button
+      type="button"
+      className={"tbtn fs" + (on ? " on" : "")}
+      title={on ? S.exit : S.enter}
+      aria-label={on ? S.exit : S.enter}
+      aria-pressed={on}
+      onClick={() => (on ? leave() : enter())}
+    >
+      <Icon exit={on} />
+      <span className="lb">{S.word}</span>
+    </button>
   );
+}
+
+/**
+ * The Lab's strip is upstream markup this repository does not edit, so the
+ * button is portalled into the end of its control row once the row exists.
+ * The row is static HTML and there before this runs; the observer is for the
+ * client-side navigation case, where the shell is painted before the body.
+ */
+export function LabFullscreen({ lang = "en" }: { lang?: Lang }) {
+  const [row, setRow] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const find = () => document.querySelector<HTMLElement>(".lab-shell .player .prow");
+    const mo = new MutationObserver(() => {
+      const r = find();
+      if (r) {
+        setRow(r);
+        mo.disconnect();
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    // The already-present case, after the first paint rather than inside the
+    // effect: a synchronous setState here renders twice.
+    const frame = requestAnimationFrame(() => {
+      const r = find();
+      if (r) {
+        setRow(r);
+        mo.disconnect();
+      }
+    });
+    return () => {
+      mo.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+  return row ? createPortal(<FullscreenButton lang={lang} />, row) : null;
 }

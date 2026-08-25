@@ -1820,10 +1820,12 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    label. Drawn inline as SVG so they render identically everywhere; emoji
    flags do not.
    ========================================================================== */
-.lang-switch { display: inline-flex; align-items: center; gap: calc(var(--u) * 1.5); padding: 3px calc(var(--u) * 2); }
-.lang-switch svg { display: block; width: 22px; height: 15px; border: 1px solid var(--color-ink-faint); border-radius: 2px; }
-.lang-switch .flag-off { opacity: 0.35; filter: grayscale(0.6); transition: opacity var(--t-snap) var(--ease-snap), filter var(--t-snap) var(--ease-snap); }
-.lang-switch:hover .flag-off { opacity: 1; filter: none; }
+/* One flag, the other language's: press it and that is where you go. Sized
+   as a control (the menu button's height), not as a badge. */
+.lang-switch { display: inline-flex; align-items: center; padding: 3px calc(var(--u) * 1.5); border-radius: var(--radius-hair); }
+.lang-switch svg { display: block; width: 33px; height: 22.5px; border: 1px solid var(--color-ink-faint); border-radius: 2px; }
+.lang-switch:hover svg { border-color: var(--color-ink); }
+.lang-switch:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
 
 
 /* A markdown table is born without a scroll container: the docs pipeline
@@ -1852,38 +1854,29 @@ a.tag[aria-current="page"] { color: var(--color-ink); border-color: var(--color-
    ========================================================================== */
 
 .workbench { min-height: 100dvh; display: flex; flex-direction: column; background: var(--color-paper); }
-.wb-bar {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--u) * 4);
-  padding: calc(var(--u) * 2) calc(var(--u) * 4);
-  border-bottom: 2px solid var(--color-rule);
-  position: sticky;
-  top: 0;
-  z-index: 25;
-  background: var(--color-paper);
-}
-.wb-bar :is(h1, .wb-title) {
+/* The instrument's name in the bar, beside the mark. One line that YIELDS:
+   the tracer's full name is 459px, and nowrap without shrink scrolled every
+   phone sideways. On a phone the wordmark's word steps aside for it and the
+   tile alone is the way home. */
+.topbar .tb-page {
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-body);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  /* One line, but a line that YIELDS: the tracer's full name is 459px, and
-     nowrap without shrink scrolled every phone sideways. The harness caught
-     it the same day the bar shipped. */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
 }
+.topbar .tb-page::before { content: "/"; margin-right: calc(var(--u) * 3); color: var(--color-ink-faint); font-weight: 400; }
+.topbar:has(.tb-page) .wordmark { flex: 0 0 auto; }
 @media (max-width: 34rem) {
-  /* The menu and flags keep their corner; the title yields to the trail. */
-  .wb-bar { flex-wrap: wrap; }
+  .topbar:has(.tb-page) .wordmark b { display: none; }
+  .topbar .tb-page::before { content: none; }
 }
-.wb-bar .crumb { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .wb-main { flex: 1 0 auto; }
 
 
@@ -2133,7 +2126,6 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
   display: inline-flex;
   align-items: center;
   gap: calc(var(--u) * 2.5);
-  margin-right: auto;
   min-width: 0;
   text-decoration: none;
   color: var(--color-ink);
@@ -2161,7 +2153,7 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
   border-radius: var(--radius-hair);
   flex: 0 0 auto;
 }
-.topbar > .lang-switch,
+.topbar > .lang-switch { flex: 0 0 auto; margin-left: auto; }
 .topbar > .menu-wrap { flex: 0 0 auto; }
 
 /* THE PAGE HEAD: the trail, the name, the page's own meta. The 2px rule that
@@ -2271,13 +2263,6 @@ html.menu-open, html.menu-open body { overflow: hidden; }
    footer's height is measured live, so the main region's padding follows. */
 .app-foot .foot-run { white-space: nowrap; }
 .app-main { padding-bottom: calc(var(--app-foot-h, 3rem) + var(--u) * 6); }
-
-/* The workbench bar follows the same rule as the top bar: one row on a phone,
-   the trail yields, the title truncates, the controls keep their corner. */
-@media (max-width: 34rem) {
-  .wb-bar { flex-wrap: nowrap; }
-  .wb-bar .crumb { display: none; }
-}
 
 /* Where the content owns the h1, the page head's title is a section label,
    not a second display heading over the document's own. Docs read
@@ -2458,24 +2443,21 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .page > .lede { max-width: 60ch; font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.6; margin: 0 0 calc(var(--u) * 6); }
 
 /* ==========================================================================
-   27. A WORKBENCH, FULL SCREEN. Native through the Fullscreen API where an
-   element can go fullscreen; fixed to the viewport where it cannot (every
-   iPhone). Either way the class is the same, so one set of rules holds.
-   The site's bar leaves; the instrument keeps its own strip and controls.
+   27. FULL SCREEN. The whole document, not the content area (owner's call,
+   2026-08-25). Native through the Fullscreen API on the document element
+   where the browser has it; by hand where it does not (every iPhone). Either
+   way `html.has-fullscreen` is the fact, and what it means is: the site's
+   bar leaves, the instrument keeps the screen, and the floor strip stays
+   with the way out on it. The document still scrolls; an instrument page
+   is longer than a screen and full screen is not a reason to lose the rest.
    ========================================================================== */
-.workbench.is-fullscreen,
-.workbench:fullscreen {
-  background: var(--color-paper);
-  overflow: auto;
-}
-.workbench.is-fullscreen:not(:fullscreen) {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-}
-.workbench.is-fullscreen .wb-bar { display: none; }
-/* The document behind a fixed workbench must not scroll under a thumb. */
-html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }
+html.has-fullscreen .workbench .app-head { display: none; }
+
+/* ONE FULL SCREEN CONTROL. The explorer and the chip map each ship their
+   own (an unlabelled glyph in their toolbars). Hidden, not removed: their
+   scripts bind them by id. The strip's control is the one that works the
+   same on every page. */
+.workbench .explorer-shell :is(#btn-fullscreen, #cm-fullscreen) { display: none; }
 
 /* ONE TRANSPORT. The explorer's demo pages paint a copy of their transport
    into every example panel (demos.js: "they all drive the one chip"). With
@@ -2484,41 +2466,15 @@ html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }
    Hidden, not removed: their script builds and repaints them by reference. */
 .workbench.has-transport .explorer-shell .dm-bar { display: none; }
 
-/* The fullscreen slot in the workbench bar, and the way out while it holds. */
-.wb-bar .wb-fs {
-  flex: 0 0 auto;
-  display: inline-grid;
-  place-items: center;
-  width: calc(var(--u) * 8);
-  height: calc(var(--u) * 8);
-  padding: 0;
-  color: var(--color-ink);
-  background: var(--color-paper-sunk);
-  border: 1px solid var(--color-ink);
-  border-radius: var(--radius-hair);
-  box-shadow: 3px 3px 0 var(--color-ink-faint);
-  cursor: pointer;
-}
-.wb-bar .wb-fs:hover { box-shadow: 3px 3px 0 var(--color-ink); }
-.wb-bar .wb-fs:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
-.wb-fs-exit {
-  position: fixed;
-  top: calc(var(--u) * 2);
-  right: calc(var(--u) * 2);
-  z-index: 70;
-  display: inline-grid;
-  place-items: center;
-  width: calc(var(--u) * 8);
-  height: calc(var(--u) * 8);
-  padding: 0;
-  color: var(--color-ink);
-  background: var(--color-paper);
-  border: 1px solid var(--color-ink);
-  border-radius: var(--radius-hair);
-  box-shadow: 3px 3px 0 var(--color-ink-faint);
-  cursor: pointer;
-}
-.wb-fs-exit:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+/* The control, at the right end of the strip. In the chip transport it is
+   a .tbtn like its neighbours; in the Lab's player it is the Lab's .tbtn,
+   with the icon sized the way ours are since the Lab draws its own by
+   data-ic. Lit while it holds. */
+.chip-transport .tbtn.fs { margin-left: calc(var(--u) * 1); }
+.chip-transport .tbtn.fs.on,
+.lab-shell .prow .tbtn.fs.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
+.lab-shell .prow .tbtn.fs { margin-left: auto; }
+.lab-shell .prow .tbtn.fs .ic { width: 14px; height: 14px; flex: none; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ==========================================================================
    28. THE SECTION STRIP. A page's sections under the workbench bar, the
@@ -2527,7 +2483,7 @@ html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }
    ========================================================================== */
 .wb-strip {
   position: sticky;
-  top: calc(var(--u) * 13);
+  top: var(--app-head-h, calc(var(--u) * 13));
   z-index: 24;
   display: flex;
   gap: 1px;
@@ -2558,6 +2514,6 @@ html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }
 .wb-strip a:hover { color: var(--color-ink); }
 .wb-strip a[aria-current] { color: var(--color-ink); border-bottom-color: var(--color-accent-ink); }
 .wb-strip a:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: -2px; }
-.workbench.is-fullscreen .wb-strip { top: 0; padding-right: calc(var(--u) * 11); }
+html.has-fullscreen .wb-strip { top: 0; }
 /* A section reached through the strip lands under it, not beneath it. */
 .workbench .explorer-shell :is(section[id], h2[id]) { scroll-margin-top: calc(var(--u) * 24); }

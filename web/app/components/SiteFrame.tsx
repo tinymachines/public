@@ -8,7 +8,6 @@ import { LangSwitch } from "./LangSwitch";
 import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
 import { AppMetrics } from "./AppMetrics";
-import { WorkbenchFullscreen } from "./Fullscreen";
 
 /**
  * The page frame: masthead, and footer.
@@ -157,11 +156,65 @@ function localizedLabels(lang: Lang): Record<string, string> {
 }
 
 /**
- * The workbench's one strip of site: the crumb trail home, the page's name,
- * the flags, and the full menu, so an instrument that owns the viewport does
- * not cost the reader their navigation. The title is an h1 unless the
- * instrument's own markup carries one, which is the same rule the masthead
- * follows and for the same reason: a document has one name.
+ * THE BAR. One row, the same on every page (owner's call, 2026-08-25: the
+ * headers had become a mish-mash, and the explorer's menu sat a step off the
+ * home page's). Three slots:
+ *
+ *   left    the die tile and the wordmark, the way home. The tile wears the
+ *           section's accent and names it, so which section you are in is a
+ *           colour and a word before anything else. An instrument page adds
+ *           its own name beside the mark.
+ *   right   ONE flag, the other language's, larger: the destination, not
+ *           the state. Then the menu.
+ *
+ * Nothing else. Full screen used to have a slot here and now lives at the
+ * right end of the floor strip (Fullscreen.tsx), because the bar leaves in
+ * full screen and a control should not vanish the moment it is pressed.
+ */
+function Topbar({
+  lang,
+  die,
+  page,
+  pageIsHeading = false,
+  hard = false,
+}: {
+  lang: Lang;
+  die: string;
+  /** The instrument's name, beside the mark. Absent on reading pages, whose
+      name opens the page under the bar. */
+  page?: string;
+  pageIsHeading?: boolean;
+  hard?: boolean;
+}) {
+  const home = localize(lang, "/");
+  const mark = (
+    <>
+      <span className="die">{die}</span>
+      <b>tinymachines</b>
+    </>
+  );
+  return (
+    <div className="band topbar">
+      {hard ? (
+        // eslint-disable-next-line @next/next/no-html-link-for-pages
+        <a href={home} className="wordmark" aria-label="tinymachines.ai">{mark}</a>
+      ) : (
+        <Link href={home} className="wordmark" aria-label="tinymachines.ai">{mark}</Link>
+      )}
+      {page ? (pageIsHeading ? <h1 className="tb-page">{page}</h1> : <p className="tb-page">{page}</p>) : null}
+      <LangSwitch lang={lang} hard={hard} />
+      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} hard={hard} />
+    </div>
+  );
+}
+
+/**
+ * The bar on an instrument page: the same Topbar, with the page's name in
+ * it, since a workbench has no page head under the bar to carry one. The
+ * name is the h1 unless the instrument's own markup carries one, which is
+ * the rule the page head follows and for the same reason: a document has one
+ * name. The trail is no longer drawn (the tile is the way home and the menu
+ * is the map) but a crawler is still told it.
  */
 export function WorkbenchBar({
   lang,
@@ -183,26 +236,12 @@ export function WorkbenchBar({
 }) {
   // The trail the reader sees is the trail a crawler is told about.
   const full = [...trail, { href: "", label: title }];
+  const die = trail.length > 1 ? trail[trail.length - 1].label : "6502";
   return (
-    <div className="wb-bar">
+    <div className="app-head wb-bar">
+      <AppMetrics />
       <JsonLd data={breadcrumbs(full.map((c) => ({ ...c, href: localize(lang, c.href) })), abs)} />
-      <p className="crumb">
-        {trail.map((t, i) => (
-          <span key={t.href}>
-            {i ? " / " : ""}
-            {hard ? (
-              // eslint-disable-next-line @next/next/no-html-link-for-pages
-              <a href={localize(lang, t.href)}>{t.label}</a>
-            ) : (
-              <Link href={localize(lang, t.href)}>{t.label}</Link>
-            )}
-          </span>
-        ))}
-      </p>
-      {titleIsHeading ? <h1>{title}</h1> : <p className="wb-title">{title}</p>}
-      <WorkbenchFullscreen lang={lang} />
-      <LangSwitch lang={lang} hard={hard} />
-      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} hard={hard} />
+      <Topbar lang={lang} die={die} page={title} pageIsHeading={titleIsHeading} hard={hard} />
     </div>
   );
 }
@@ -246,22 +285,12 @@ export function Shell({
       {/* Publishes the bands' heights so anchors can clear the masthead.
           Renders nothing; the CSS has a fallback for every value it sets. */}
       <AppMetrics />
-      {/* The bar is ONE row and never wraps: the die tile and the wordmark on
-          the left, the flags and the menu on the right. The page's title used
-          to live up here too, and at 390px three things fought for one line
-          and the title lost every time. The title now opens the page, where a
-          title belongs, and the bar carries only what is the same on every
-          page. The die tile takes the project's accent, so which section you
-          are in is a colour before it is a word. */}
+      {/* The bar is ONE row and never wraps; Topbar says what is in it. The
+          page's title used to live up here too, and at 390px three things
+          fought for one line and the title lost every time. On a reading
+          page the title opens the page, where a title belongs. */}
       <header className="app-head">
-        <div className="band topbar">
-          <Link href={localize(lang, "/")} className="wordmark" aria-label="tinymachines.ai">
-            <span className="die">{die}</span>
-            <b>tinymachines</b>
-          </Link>
-          <LangSwitch lang={lang} />
-          <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} />
-        </div>
+        <Topbar lang={lang} die={die} />
       </header>
 
       {/* No site-wide "translation in progress" banner here any more. It was

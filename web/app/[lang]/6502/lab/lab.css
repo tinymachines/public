@@ -282,7 +282,7 @@
   padding: 0;
   /* Sticky under the site's bar rather than at the top, where the two fought
      for the same edge. 13u is the bar's height. */
-  top: calc(var(--u) * 13);
+  top: var(--app-head-h, calc(var(--u) * 13));
 }
 .lab-shell.lab-shell header .brand,
 .lab-shell.lab-shell header .tag,
@@ -326,6 +326,5 @@
   grid-auto-columns: initial;
 }
 
-/* Full screen: the strip is the top edge now, and the floating exit control
-   sits at the corner, so the strip leaves it room. */
-.workbench.is-fullscreen .lab-shell.lab-shell header { top: 0; padding-right: calc(var(--u) * 11); }
+/* Full screen: the site's bar has left, so the strip is the top edge. */
+html.has-fullscreen .lab-shell.lab-shell header { top: 0; }

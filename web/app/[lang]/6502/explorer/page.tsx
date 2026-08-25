@@ -6,7 +6,6 @@ import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
 import { ChipModules } from "./ChipModules";
 import { ChipTransport } from "./ChipTransport";
-import { Launch } from "./Launch";
 import "./explorer.css";
 
 /**
@@ -82,14 +81,6 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       <style dangerouslySetInnerHTML={{ __html: style }} />
 
       <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
-
-      {/* Placed after the page rather than inside it: the body is injected
-          HTML and React does not own anything in there, so a control that
-          belongs to us lives outside it. The kit's toolbar keeps it on the
-          site's grid. */}
-      <div className="toolbar" style={{ marginTop: "1.5rem" }}>
-        <Launch />
-      </div>
 
       <ChipModules entry={script} />
       <ChipTransport lang={lang} />

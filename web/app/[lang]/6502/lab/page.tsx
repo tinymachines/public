@@ -4,6 +4,7 @@ import { pageMeta } from "@/lib/seo";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { LabFullscreen } from "@/app/components/Fullscreen";
 import "./lab.css";
 
 /**
@@ -79,6 +80,10 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
           rules style `body`, which no longer reaches anything now that it is a
           div inside this site. */}
       <div className="lab-shell" data-chip-api={CHIP_API} dangerouslySetInnerHTML={{ __html: body }} />
+      {/* Full screen at the right end of the Lab's own player strip, where
+          every other instrument page has it. Portalled in, since the strip
+          is the Lab's markup and stays byte for byte its own. */}
+      <LabFullscreen lang={lang} />
 
       {/* The canned demo trace. A data island the lab looks up by id, so it is
           rendered as the element it is and never executed. It went through
