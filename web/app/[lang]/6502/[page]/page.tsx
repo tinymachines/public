@@ -2,6 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer, explorerPages } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { SectionStrip } from "@/app/components/SectionStrip";
 import { explorerLabel } from "@/lib/explorer-menu";
 import { t } from "@/lib/i18n";
 import { ChipModules } from "../explorer/ChipModules";
@@ -88,6 +89,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
           { href: "/6502", label: "6502" },
         ]}
       />
+      <SectionStrip />
       <div className="wb-main">
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />

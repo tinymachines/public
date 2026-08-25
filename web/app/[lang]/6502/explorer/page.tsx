@@ -2,6 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { explorer } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { SectionStrip } from "@/app/components/SectionStrip";
 import { ChipModules } from "./ChipModules";
 import { ChipTransport } from "./ChipTransport";
 import { Launch } from "./Launch";
@@ -70,6 +71,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
           { href: "/6502", label: "6502" },
         ]}
       />
+      <SectionStrip />
       <div className="wb-main">
       {/* The explorer's own 180 KB of rules, with its :root replaced by
           explorer.css and every selector scoped to .explorer-shell. Inline
