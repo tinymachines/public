@@ -138,9 +138,9 @@ const L = {
   },
   ja: {
     schemaWhat: "装置のスキーマ",
-    ops: (n: number) => <><b>{n} 個の操作</b></>,
-    twoSchemas: "。装置とゲートウェイの両方から",
-    oneSchema: "。装置から",
+    ops: (n: number) => <><b>{n} 個の操作。</b></>,
+    twoSchemas: "装置とゲートウェイの両方から",
+    oneSchema: "装置から",
     groups: (n: number) => (
       <>
         <b>{n} グループ</b>

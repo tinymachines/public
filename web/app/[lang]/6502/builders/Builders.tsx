@@ -45,7 +45,7 @@ const L = {
     ),
     limits: (r: number, kb: number) => (
       <>
-        <b>{r} cartridges a builder</b>, {kb} KB each
+        <b>{r} cartridges a builder,</b> {kb} KB each
       </>
     ),
     recent: "Recently published",
