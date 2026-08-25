@@ -68,6 +68,9 @@ map $uri $tmapex_cache {
     # keys on $uri, which does not include the query.
     "~^/_next/image"                                           "public, max-age=31536000, immutable";
     "~*\.(css|js|woff2?|png|jpg|svg|ico)$"                     "public, max-age=3600";
+    # The link cards. Rendered on demand from the page's own words, which
+    # change with a deploy, so an hour, like any other image here.
+    "~^/og(/|$)"                                                "public, max-age=3600";
     default                                                    "no-cache";
 }
 
