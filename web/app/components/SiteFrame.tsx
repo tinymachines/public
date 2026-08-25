@@ -6,6 +6,7 @@ import { LangSwitch } from "./LangSwitch";
 import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
 import { AppMetrics } from "./AppMetrics";
+import { WorkbenchFullscreen } from "./Fullscreen";
 
 /**
  * The page frame: masthead, and footer.
@@ -185,6 +186,7 @@ export function WorkbenchBar({
         ))}
       </p>
       {titleIsHeading ? <h1>{title}</h1> : <p className="wb-title">{title}</p>}
+      <WorkbenchFullscreen lang={lang} />
       <LangSwitch lang={lang} hard={hard} />
       <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} hard={hard} />
     </div>

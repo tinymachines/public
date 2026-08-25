@@ -2465,3 +2465,39 @@ html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }
    and the one on the floor is the one the site standardised on (the Lab).
    Hidden, not removed: their script builds and repaints them by reference. */
 .workbench.has-transport .explorer-shell .dm-bar { display: none; }
+
+/* The fullscreen slot in the workbench bar, and the way out while it holds. */
+.wb-bar .wb-fs {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: calc(var(--u) * 8);
+  height: calc(var(--u) * 8);
+  padding: 0;
+  color: var(--color-ink);
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-hair);
+  box-shadow: 3px 3px 0 var(--color-ink-faint);
+  cursor: pointer;
+}
+.wb-bar .wb-fs:hover { box-shadow: 3px 3px 0 var(--color-ink); }
+.wb-bar .wb-fs:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+.wb-fs-exit {
+  position: fixed;
+  top: calc(var(--u) * 2);
+  right: calc(var(--u) * 2);
+  z-index: 70;
+  display: inline-grid;
+  place-items: center;
+  width: calc(var(--u) * 8);
+  height: calc(var(--u) * 8);
+  padding: 0;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-hair);
+  box-shadow: 3px 3px 0 var(--color-ink-faint);
+  cursor: pointer;
+}
+.wb-fs-exit:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
