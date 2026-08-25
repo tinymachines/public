@@ -475,3 +475,45 @@ the state crosses by being written down rather than by sharing a document.
 None of these are reachable from this repository without forking the
 modules, which the working agreement says not to do; they are the engine
 sub-project's first work when it arrives here.
+
+## The 6502 as four tracks, and what the cart lab needs, 2026-08-25
+
+The owner's shape, now on the landing: **Learn, Cart, Lab and tools,
+Archive**, each a sub-landing at `/6502/<track>` and named once in
+`web/lib/tracks.ts`, which the landing, the menu and the crumbs all read.
+
+**Landed this round.** The walkthrough (`docs/6502/build-your-first-cart`,
+both languages) and the one-URL brief (`/6502/cart/brief.md`: the walkthrough
+plus the console contract, cartridges, the registry and MCP, assembled from
+the docs at request time so it cannot drift). The public mint feeds step one.
+
+**Next, in order, and what each needs decided:**
+
+1. **Mint hands out a cart code.** The owner's ask: minting a token also
+   creates a slug, the slug is the cart code, and a default cart is set up
+   under it. Mechanically: the roof mints the token, claims a generated
+   handle with it on the chip API, publishes a starter cartridge under
+   `<handle>/<slug>`, and returns token, handle and slug together; the brief
+   at `/6502/cart/brief.md?slug=<slug>` is precharged with them. Open: the
+   phrase "a slug that decrypts with their key". If it means the slug is
+   derived from the token so the pair can be verified, that is an HMAC and
+   costs nothing. If it means the token can be recovered from the slug, that
+   is a secret in a URL and should not be built; the slug should identify,
+   the token should authorise, and only the token should be secret.
+2. **The starter cartridge.** Which ROM is the default cart, and where it
+   lives (the games repo mints Die Runner on deploy; cartridge zero is Snake).
+   All the test programs packaged as one cartridge, as the owner asked, is a
+   games-repo change.
+3. **The cart lab.** Editor, tester, prober, exploration tool, on one page,
+   against the currently loaded cart. Depends on 4.
+4. **One engine, many views.** `chip-controls.js` is already the store; the
+   transport is its view; every link into or out of an explorer page is a
+   full navigation until the modules get a lifecycle. The remaining steps
+   are upstream and unchanged from the note above: a `mount()`/teardown per
+   page module, one `Machine` shared through the store, and the Lab and the
+   console registering as drivers. Then "every screen with a play button is
+   subservient to the loaded cart" is one store and one machine, and the
+   browser is the console.
+
+**Notes for later, from the owner:** expand the 6502 hardware; the hotbits
+animation on bradley.io, copied over.

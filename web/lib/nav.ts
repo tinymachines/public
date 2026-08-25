@@ -1,6 +1,7 @@
 import { allPages } from "./docs";
 import { explorerMenu } from "./explorer-menu";
 import { explorerPages } from "./explorer";
+import { TRACKS } from "./tracks";
 import { arrivedSurfaces, projects, read, nav as siteNav } from "./projects";
 
 /**
@@ -151,6 +152,11 @@ export function menuGroups(): MenuGroup[] {
         // heading that already says whose overview it is, and a label that
         // repeats its own heading reads as noise, not navigation.
         { href: p.landing, label: "Overview", hint: "what this project is, and where each surface lives" },
+        // The four tracks, for the 6502 only: the owner's shape for the
+        // project, each a sub-landing. Named in lib/tracks.ts, once.
+        ...(p.key === "6502"
+          ? TRACKS.filter((tr) => tr.path !== "/6502/archive").map((tr) => ({ href: tr.path, label: tr.name.en, hint: firstSentence(tr.what.en) }))
+          : []),
         ...here.map((s) => ({
           href: s.lands_at,
           hard: explorerRoutes.has(s.lands_at),
@@ -236,6 +242,9 @@ export function labels(): Record<string, string> {
   // is not in the manifest and is named from the one other place its name
   // exists: the page's own metadata title.
   out["/style/zoo"] = "Widget zoo";
+
+  // The tracks' sub-landings, from the one place they are named.
+  for (const tr of TRACKS) if (!(tr.path in out)) out[tr.path] = tr.name.en;
 
   return out;
 }

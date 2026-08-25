@@ -2413,3 +2413,28 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
   word-break: break-all;
   user-select: all;
 }
+
+/* ==========================================================================
+   26. THE TRACKS. Four doors on the 6502 landing, each with a floor behind
+   it. A track is a section, not a card: a name that is a link, a line, the
+   headline links, and the way in.
+   ========================================================================== */
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: calc(var(--u) * 6) calc(var(--u) * 8);
+  margin: 0 0 calc(var(--u) * 14);
+  padding-top: calc(var(--u) * 4);
+  border-top: 1px solid var(--color-rule);
+}
+.track h2 { margin: 0 0 calc(var(--u) * 2); font-family: var(--font-display); font-size: var(--text-h2); font-weight: 800; letter-spacing: -0.01em; line-height: 1; }
+.track h2 a { color: var(--color-ink); text-decoration: none; }
+.track h2 a:hover { color: var(--color-accent-ink); }
+.track > p { font-family: var(--font-serif); font-size: var(--text-body); line-height: 1.55; max-width: 44ch; margin: 0 0 calc(var(--u) * 3); }
+.track .piece-links { margin-bottom: calc(var(--u) * 2); }
+.track-more { font-family: var(--font-mono); font-size: var(--text-fine); letter-spacing: var(--tracking-caps); text-transform: uppercase; }
+.track-more a { color: var(--color-accent-ink); text-decoration: none; }
+@media (min-width: 64rem) { .lesson.lesson-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* A track sub-landing opens with its line; give it the room the hero gives
+   its lede, so the eyebrow beneath does not sit on it. */
+.page > .lede { max-width: 60ch; font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.6; margin: 0 0 calc(var(--u) * 6); }
