@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { explorer } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
@@ -48,10 +49,13 @@ import "./explorer.css";
  * rewritten afterwards, so nothing here has been reworded or reordered.
  */
 
-export const metadata: Metadata = {
-  title: "The explorer",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/explorer", {
+    title: "The explorer",
   description: "A transistor-level MOS 6502, drawn from the die and lit by what it is doing.",
-};
+  });
+}
 
 export default async function ExplorerPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;

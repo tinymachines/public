@@ -37,6 +37,10 @@ def corpus() -> str:
             continue
         parts.append(md.read_text(errors="replace"))
     parts.append((ROOT.parent / "6502" / "web" / "site-menu.js").read_text(errors="replace"))
+    # The explorer pages' own titles and descriptions ship through
+    # lib/explorer.ts, so their <head> is part of what the overlay may name.
+    for h in (ROOT.parent / "6502" / "web").glob("*.html"):
+        parts.append(h.read_text(errors="replace"))
     for tsx in (ROOT / "web").rglob("*.tsx"):
         parts.append(tsx.read_text(errors="replace"))
     for ts in (ROOT / "web" / "lib").glob("*.ts"):

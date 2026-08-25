@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize, t } from "@/lib/i18n";
 import { project, measuredOn, serviceOrigin } from "@/lib/projects";
@@ -26,11 +27,14 @@ import "./hotbits.css";
  * reason every figure on this site is.
  */
 
-export const metadata: Metadata = {
-  title: "hotbits",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/hotbits", {
+    title: "hotbits",
   description:
     "True random bytes from radioactive decay: a Geiger counter on a Pi, with bits taken from the timing between events.",
-};
+  });
+}
 
 const PROSE = {
   en: {

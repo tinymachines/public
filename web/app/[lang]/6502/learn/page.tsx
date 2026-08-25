@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize, t } from "@/lib/i18n";
 import { allPages } from "@/lib/docs";
@@ -7,7 +8,12 @@ import { Shell } from "@/app/components/SiteFrame";
 import { LESSON } from "../lesson";
 import { TrackLede } from "../Tracks";
 
-export const metadata: Metadata = { title: "Learn", description: "The lesson: from a token to a published cart, then one instruction followed into the silicon." };
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/learn", {
+    title: "Learn", description: "The lesson: from a token to a published cart, then one instruction followed into the silicon."
+  });
+}
 
 /** The Learn track: the four-step lesson, then everything written for this project. */
 export default async function LearnPage({ params }: { params: Promise<{ lang: Lang }> }) {

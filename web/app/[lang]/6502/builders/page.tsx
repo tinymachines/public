@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
@@ -36,11 +37,14 @@ import "./registry.css";
  * So this page reads, and says where publishing is. See PROJECTS.md.
  */
 
-export const metadata: Metadata = {
-  title: "Builders",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/builders", {
+    title: "Builders",
   description:
     "Everyone publishing cartridges for the transistor-level 6502, and what they have published.",
-};
+  });
+}
 
 const PROSE = {
   en: {

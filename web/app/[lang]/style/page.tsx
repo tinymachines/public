@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import Guide from "../../../../style/STYLE.md";
 import { Shell } from "@/app/components/SiteFrame";
@@ -19,10 +20,13 @@ import { Shell } from "@/app/components/SiteFrame";
  * that wants it.
  */
 
-export const metadata: Metadata = {
-  title: "Style guide",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/style", {
+    title: "Style guide",
   description: "Two grounds, a measured palette, and the kit that follows from them.",
-};
+  });
+}
 
 export default async function StylePage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;

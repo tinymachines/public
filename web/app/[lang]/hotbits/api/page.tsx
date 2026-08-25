@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { serviceOrigin } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { Reference } from "./Reference";
@@ -23,11 +24,14 @@ import "../hotbits.css";
  * while the schema still lists them.
  */
 
-export const metadata: Metadata = {
-  title: "The hotbits API",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/hotbits/api", {
+    title: "The hotbits API",
   description:
     "The Geiger TRNG's own schema, rendered and then checked against the running instrument.",
-};
+  });
+}
 
 const PROSE = {
   en: {

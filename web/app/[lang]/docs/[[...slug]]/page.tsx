@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { allPages, pageForSlug } from "@/lib/docs";
 import { t } from "@/lib/i18n";
+import { abs, pageMeta } from "@/lib/seo";
+import { localize } from "@/lib/lang";
+import { JsonLd } from "@/app/components/JsonLd";
 
 /**
  * Every docs URL, and the content behind it.
@@ -26,10 +29,11 @@ export async function generateMetadata({
   const { lang, slug = [] } = await params;
   const page = pageForSlug(slug);
   if (!page) return {};
-  return {
-    title: lang === "ja" ? t("ja", page.title) : page.title,
-    description: page.description,
-  };
+  return pageMeta(lang, slug.length ? `/docs/${slug.join("/")}` : "/docs", {
+    title: page.title,
+    description: page.description ?? "",
+    type: "article",
+  });
 }
 
 /**
@@ -76,8 +80,23 @@ export default async function DocsPage({
     : page.file.endsWith(".mdx")
       ? await import(`../../../../../docs/${page.file.slice(0, -4)}.mdx`)
       : await import(`../../../../../docs/${page.file.slice(0, -3)}.md`);
+  const docPath = slug.length ? `/docs/${slug.join("/")}` : "/docs";
   return (
     <>
+      {/* The article as a crawler reads it. inLanguage is the language of the
+          BODY, so an untranslated document under /ja says "en", which is
+          the truth the notice below also tells the reader. */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "TechArticle",
+          headline: t(lang as "en" | "ja", page.title),
+          description: page.description ? t(lang as "en" | "ja", page.description) : undefined,
+          inLanguage: useJa ? "ja" : "en",
+          url: abs(localize(lang as "en" | "ja", docPath)),
+          isPartOf: { "@type": "WebSite", name: "tinymachines", url: abs("/") },
+        }}
+      />
       {lang === "ja" && !useJa ? (
         <p className="notice" lang="ja">
           この文書はまだ翻訳されていません。本文は英語のまま表示されています。

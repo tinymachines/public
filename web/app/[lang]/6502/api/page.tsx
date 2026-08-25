@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { apidoc } from "@/lib/apidoc";
 import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
@@ -38,11 +39,14 @@ import "./apidoc.css";
  * page says which, rather than leaving a reader to copy a curl that 404s.
  */
 
-export const metadata: Metadata = {
-  title: "The 6502 API",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/api", {
+    title: "The 6502 API",
   description:
     "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference, checked against the running service.",
-};
+  });
+}
 
 export default async function ApiPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { labels, menuGroups, type MenuGroup } from "@/lib/nav";
 import { localize, t, type Lang } from "@/lib/i18n";
 import { Crumbs } from "./Crumbs";
+import { JsonLd, breadcrumbs } from "./JsonLd";
+import { abs, ORIGIN } from "@/lib/seo";
 import { LangSwitch } from "./LangSwitch";
 import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
@@ -170,8 +172,11 @@ export function WorkbenchBar({
    */
   hard?: boolean;
 }) {
+  // The trail the reader sees is the trail a crawler is told about.
+  const full = [...trail, { href: "", label: title }];
   return (
     <div className="wb-bar">
+      <JsonLd data={breadcrumbs(full.map((c) => ({ ...c, href: localize(lang, c.href) })), abs)} />
       <p className="crumb">
         {trail.map((t, i) => (
           <span key={t.href}>
@@ -266,7 +271,7 @@ export function Shell({
               the heading where it carries one, and a build check counts. */}
           {pageHead ? (
             <div className="page-head">
-              <Crumbs labels={localizedLabels(lang)} lang={lang} />
+              <Crumbs labels={localizedLabels(lang)} lang={lang} origin={ORIGIN} />
               {/* No label where the content owns the heading: the trail's last
                   segment already names the page, and "DOCUMENTATION" twice in
                   two lines was what the label amounted to. `title` still

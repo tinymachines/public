@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { explorer, explorerPages } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
@@ -51,14 +52,15 @@ function fileFor(slug: string): string | undefined {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ page: string }>;
+  params: Promise<{ lang: string; page: string }>;
 }): Promise<Metadata> {
-  const { page } = await params;
+  const { lang, page } = await params;
   const file = fileFor(page);
   if (!file) return {};
   // Their own <title>, minus the site name it already carried. The page said
   // what it is once; saying it differently here would be a second name.
-  return { title: explorer(file).title };
+  const x = explorer(file);
+  return pageMeta(lang, `/6502/${page}`, { title: x.title, description: x.description });
 }
 
 export default async function ExplorerSubPage({ params }: { params: Promise<{ lang: Lang; page: string }> }) {

@@ -5,6 +5,7 @@
    records the same fact as `prerendered: false`. */
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { Shell } from "@/app/components/SiteFrame";
 
 /**
@@ -25,11 +26,14 @@ import { Shell } from "@/app/components/SiteFrame";
  * own copy, and where the two differ the page says so instead of picking one.
  */
 
-export const metadata: Metadata = {
-  title: "The visual6502 archive",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/archive", {
+    title: "The visual6502 archive",
   description:
     "visual6502.org, recovered from the Internet Archive: the wiki rebuilt from its wikitext, and the die photography made browsable again.",
-};
+  });
+}
 
 const PROSE = {
   en: {

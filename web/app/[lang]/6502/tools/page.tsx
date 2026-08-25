@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize, t } from "@/lib/i18n";
 import { explorerMenu } from "@/lib/explorer-menu";
@@ -7,7 +8,12 @@ import { arrivedSurfaces, project } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { TrackLede } from "../Tracks";
 
-export const metadata: Metadata = { title: "Lab and tools", description: "The instruments: the die lit by what it is doing, the tracer, the schematic, the Halfwave Lab. One chip, many views." };
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/tools", {
+    title: "Lab and tools", description: "The instruments: the die lit by what it is doing, the tracer, the schematic, the Halfwave Lab. One chip, many views."
+  });
+}
 
 const P = {
   en: { instruments: "The instruments", lede: "Every view is the same chip, lit by what it is doing. Grouped the way the explorer groups them; every one opens with the transport on the floor.", lab: "The Halfwave Lab" },

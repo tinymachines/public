@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import Script from "next/script";
 import { localize } from "@/lib/i18n";
@@ -60,10 +61,13 @@ const CHIP_API = chipApi();
 // there.
 const BUILDERS = "/6502";
 
-export const metadata: Metadata = {
-  title: "Die Runner",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/games", {
+    title: "Die Runner",
   description: "A console on a transistor-level MOS 6502. Every frame is run on the real die.",
-};
+  });
+}
 
 /**
  * The page's markup in both voices; the machine's own voice stays as game.js

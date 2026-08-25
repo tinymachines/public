@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { localize, t } from "@/lib/i18n";
 import { project } from "@/lib/projects";
 import { LESSON } from "./lesson";
@@ -37,10 +38,13 @@ import { Shell } from "@/app/components/SiteFrame";
  * were settled would make it read as decided the next time somebody looks.
  */
 
-export const metadata: Metadata = {
-  title: "6502",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502", {
+    title: "6502",
   description: "A transistor-level MOS 6502, and everything built on it.",
-};
+  });
+}
 
 const PROSE = {
   en: {

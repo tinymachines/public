@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
@@ -34,14 +35,23 @@ import "../registry.css";
 export async function generateMetadata(
   { params }: PageProps<"/[lang]/6502/builders/[handle]">,
 ): Promise<Metadata> {
-  const { handle } = await params;
+  const { lang, handle } = await params;
+  // The registry is not asked here. A title is chrome and the page is about
+  // to fetch the real name anyway; a fetch in generateMetadata would put
+  // another service in the critical path of rendering this one, which is the
+  // arrangement the whole page is written to avoid. The handle is a name, not
+  // copy: it rides the translated sentence as is.
+  const m = pageMeta(lang, `/6502/builders/${handle}`, {
+    title: "@HANDLE",
+    description: "Cartridges published by @HANDLE for the transistor-level 6502.",
+  });
+  const fill = (x: unknown) => (typeof x === "string" ? x.replace(/@HANDLE/g, `@${handle}`) : x);
   return {
-    // The registry is not asked here. A title is chrome and the page is about
-    // to fetch the real name anyway; a fetch in generateMetadata would put
-    // another service in the critical path of rendering this one, which is the
-    // arrangement the whole page is written to avoid.
-    title: `@${handle}`,
-    description: `Cartridges published by @${handle} for the transistor-level 6502.`,
+    ...m,
+    title: fill(m.title) as string,
+    description: fill(m.description) as string,
+    openGraph: { ...m.openGraph, title: fill(m.openGraph?.title) as string, description: fill(m.openGraph?.description) as string },
+    twitter: { ...m.twitter, title: fill(m.twitter?.title) as string, description: fill(m.twitter?.description) as string },
   };
 }
 

@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
@@ -39,10 +40,13 @@ import "./lab.css";
  * file adds a masthead and a footer around them.
  */
 
-export const metadata: Metadata = {
-  title: "Halfwave Lab",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/6502/lab", {
+    title: "Halfwave Lab",
   description: "A 6502, half a clock phase at a time. Every value read off the running die.",
-};
+  });
+}
 
 export default async function LabPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;

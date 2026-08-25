@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "../globals.css";
 import { ServiceWorker } from "@/app/components/ServiceWorker";
 import { token } from "@/lib/tokens";
+import { t } from "@/lib/i18n";
+import { isLang, LANGS } from "@/lib/lang";
+import { ORIGIN, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 // No next/font. The four families are self-hosted from ../../style/fonts.css,
 // which globals.css imports.
 //
@@ -26,11 +29,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   return {
-    title: "tinymachines",
-    description:
-      lang === "ja"
-        ? "トランジスタレベルの MOS 6502 とその上に築かれたもの、そして放射性崩壊による真の乱数バイト。すべて実測、断言はしない。"
-        : "A transistor-level MOS 6502 and the things built on it, and true random bytes from radioactive decay. Everything measured, nothing asserted.",
+    metadataBase: new URL(ORIGIN),
+    // Every page names itself once; the site name follows. The home page
+    // sets an absolute title so it does not read "tinymachines · tinymachines".
+    title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+    description: t(isLang(lang) ? lang : "en", SITE_DESCRIPTION),
   };
 }
 
@@ -59,8 +62,6 @@ export const viewport: Viewport = {
  * turned it off: an unknown segment is a 404, not a 500 or a page about
  * nothing.
  */
-export const LANGS = ["en", "ja"] as const;
-
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
 }

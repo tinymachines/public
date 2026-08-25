@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/seo";
 import { AdminConsole } from "@/app/components/AdminConsole";
 import { Shell } from "@/app/components/SiteFrame";
 
@@ -28,11 +29,14 @@ import { Shell } from "@/app/components/SiteFrame";
  * page a reader has any use for.
  */
 
-export const metadata: Metadata = {
-  title: "Admin",
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return pageMeta(lang, "/admin", {
+    title: "Admin",
   description: "Dev keys, and the people they belong to.",
-  robots: { index: false, follow: false },
-};
+  noindex: true,
+  });
+}
 
 export default async function AdminPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;

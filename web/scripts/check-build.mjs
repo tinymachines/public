@@ -93,6 +93,22 @@ for (const file of files) {
     /<h[1-6][^>]*>\s*title:[\s\S]{0,200}?<\/h[1-6]>/i,
     "remark-frontmatter is missing from next.config.ts remarkPlugins.");
 
+  // 1b. Every page says where it is and that its twin exists. A page without
+  //     a canonical is a page a crawler may index under /en/..., which is an
+  //     address no reader ever sees; a page without both hreflang pairs sends
+  //     a Japanese search to the English edition. lib/seo.ts writes all of
+  //     these from one call, so a miss here means a page skipped pageMeta.
+  const internal = path.basename(file).startsWith("_");   // _not-found, _global-error
+  if (!internal && !/<link rel="canonical" href="https:\/\/[^"]+"/.test(body))
+    failures.push(`${path.relative(APP, file)}: no canonical link. Use pageMeta() from lib/seo.ts.`);
+  for (const l of internal ? [] : ["en", "ja", "x-default"])
+    if (!new RegExp(`<link rel="alternate" hrefLang="${l}" href="https:\\/\\/[^"]+"`).test(body))
+      failures.push(`${path.relative(APP, file)}: no hreflang=${l}. Use pageMeta() from lib/seo.ts.`);
+  if (!internal && !/<meta name="description" content="[^"]{10,}"/.test(body))
+    failures.push(`${path.relative(APP, file)}: no description of at least ten characters.`);
+  if (!internal && !/<meta property="og:title" content="[^"]+"/.test(body))
+    failures.push(`${path.relative(APP, file)}: no og:title.`);
+
   // 2. House style: no em dashes in anything shipped.
   check(file, body, "em dash in shipped output", /\u2014/,
     "Use a colon, a comma, brackets or a real word. See CLAUDE.md.");
@@ -186,7 +202,10 @@ let publicFiles = [];
 try { publicFiles = await underPublic(PUBLIC); } catch { /* no public/ */ }
 
 for (const file of [...files, ...cssFiles, ...publicFiles]) {
-  const body = await readFile(file, "utf8");
+  // A canonical or hreflang link names an address; it loads nothing. They
+  // are the only absolute self-references a page carries, and they are
+  // written by lib/seo.ts from the manifest, so the host is our own.
+  const body = (await readFile(file, "utf8")).replace(/<link rel="(?:canonical|alternate)"[^>]*>/g, "");
   for (const re of [LOADS, CSS_URL]) {
     for (const m of body.matchAll(re)) {
       failures.push(`${path.basename(file)}: loads a resource from an external host: ${m[1]}\n    Nothing shipped may reach the network. Vendor it into the repo instead.`);

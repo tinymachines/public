@@ -41,6 +41,8 @@ export interface Explorer {
   /** The one script this page entry-points, e.g. "app.js" or "primer.js". */
   script: string;
   title: string;
+  /** Their own <meta name="description">, or empty. */
+  description: string;
 }
 
 /**
@@ -188,6 +190,8 @@ export function explorer(file = "index.html"): Explorer {
 
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;
+  const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/);
+  const description = descMatch ? descMatch[1] : "";
 
   // A document has one name, so a page carrying two h1s gets the second
   // demoted. On the explorer that is the boot overlay's "Visual 6502"
@@ -218,5 +222,5 @@ export function explorer(file = "index.html"): Explorer {
       body.slice(end + "</h1>".length);
   }
 
-  return { style, body, script, title };
+  return { style, body, script, title, description };
 }

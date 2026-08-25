@@ -6,6 +6,16 @@ import { pieces } from "@/lib/pieces";
 import { arrivedSurfaces, projects } from "@/lib/projects";
 import { isHardRoute, whereToRead } from "@/lib/nav";
 import { Shell } from "@/app/components/SiteFrame";
+import type { Metadata } from "next";
+import { abs, pageMeta, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+import { JsonLd } from "@/app/components/JsonLd";
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params;
+  // The home page IS the site: an absolute title, so the tab reads
+  // "tinymachines" and not "tinymachines · tinymachines".
+  return { ...pageMeta(lang, "/", { title: "tinymachines", description: SITE_DESCRIPTION }), title: { absolute: "tinymachines" } };
+}
 import { PieceStatus } from "@/app/components/PieceStatus";
 import { Halfphi } from "@/app/components/Halfphi";
 
@@ -190,6 +200,16 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
 
   return (
     <Shell lang={lang} die="6502" title="tinymachines" pageHead={false}>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: SITE_NAME,
+          url: abs("/"),
+          description: t(lang, SITE_DESCRIPTION),
+          inLanguage: lang,
+        }}
+      />
 
       {/* The binder's H1 layout, with the masthead still the document's h1:
           this is display type on the page, not a second heading, so it is a
