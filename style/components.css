@@ -2261,11 +2261,15 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: calc(var(--u) * 4);
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 1) calc(var(--u) * 4);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
+/* The name and the run are the two items. On a phone the pair does not fit
+   one line (it was clipped mid-word behind overflow: hidden, seen in the
+   mobile sweep of 2026-08-25), so the run drops whole to a second line. The
+   footer's height is measured live, so the main region's padding follows. */
+.app-foot .foot-run { white-space: nowrap; }
 .app-main { padding-bottom: calc(var(--app-foot-h, 3rem) + var(--u) * 6); }
 
 /* The workbench bar follows the same rule as the top bar: one row on a phone,

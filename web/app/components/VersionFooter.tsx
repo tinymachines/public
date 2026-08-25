@@ -72,10 +72,12 @@ export function VersionFooter() {
 
   const short = meta.commit.slice(0, 7);
   return (
-    <>
+    // One span, so the run is one flex item: it sits at the right on a wide
+    // screen and drops whole to a second line on a phone, where it used to be
+    // clipped mid-word behind the footer's overflow.
+    <span className="foot-run">
       {/* Both, because they answer different questions. The version is what a
           person says out loud; the commit is what a bug report needs. */}
-      {" · "}
       <span>v{meta.version}</span>
       {" · "}
       <a
@@ -85,6 +87,6 @@ export function VersionFooter() {
         {short}
       </a>{" "}
       <span className="quiet">up {since(meta.started_at)}</span>
-    </>
+    </span>
   );
 }
