@@ -445,6 +445,12 @@ down and restored on the next page, and their clock already persists the
 same way. Measured live: play on the explorer, navigate to the chipmap, the
 chipmap's chip is running; pause there, return, the explorer is paused.
 
+**One transport per page, 2026-08-25.** The demo pages (primer, programs,
+halfshot) build one chip and paint a copy of their transport into every
+example panel; with the floor transport present those copies are hidden and
+the floor is the only control. Nothing of theirs changes: the floor bar and
+the panels are views of the same store and the same chip.
+
 **Why every link into or out of an explorer page is a full navigation.**
 Their page modules were written for full page loads: loops, subscriptions
 and DOM handles live at module scope with no teardown and no re-init. A

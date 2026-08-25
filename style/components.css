@@ -2458,3 +2458,10 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 .workbench.is-fullscreen .wb-bar { display: none; }
 /* The document behind a fixed workbench must not scroll under a thumb. */
 html.has-fullscreen, html.has-fullscreen body { overflow: hidden; }
+
+/* ONE TRANSPORT. The explorer's demo pages paint a copy of their transport
+   into every example panel (demos.js: "they all drive the one chip"). With
+   the floor transport present those copies are the same control five times,
+   and the one on the floor is the one the site standardised on (the Lab).
+   Hidden, not removed: their script builds and repaints them by reference. */
+.workbench.has-transport .explorer-shell .dm-bar { display: none; }
