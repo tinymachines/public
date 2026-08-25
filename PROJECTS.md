@@ -544,6 +544,47 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## Checkpoint, 2026-08-25 (evening), at 1.0.93: cart-building mode
+
+The owner's direction: shift into cart building and make it easy at every
+level. Done since 1.0.90:
+
+- **Sign in with GitHub** on the roof API (`api/auth.py`, migration 3:
+  `logins`, `sessions`, `builder_tokens`). Sessions are HttpOnly SameSite=Lax
+  cookies stored by digest; the OAuth app lives in
+  `$STATE/github.secret` (JSON, 0600, owned by the unit's user: it was
+  written as root once and read as "not configured" until chowned). Routes:
+  `/v1/auth`, `/v1/auth/github(+/callback)`, `/v1/auth/logout`, `/v1/me`,
+  `/v1/me/tokens` (mint held by the account, 3 live max, counted per
+  account), `/v1/me/tokens/{id}/reissue` (revokes in the registry and moves
+  the page to a fresh token: two direct UPDATEs on the registry's `tokens`
+  table, the one place the roof touches its schema; a `transfer()` upstream
+  would replace it), `DELETE /v1/me/tokens/{id}`. 103 API tests.
+- **The editor** (`/6502/manage`): `Account.tsx` above the public mint
+  (sign in, token table, mint/re-issue/revoke, every token handed to the
+  editor's own `#token`/`#signin`), and `Brief.tsx`: the brief with the key
+  in it, composed in the browser (`lib/brief-token.ts` `withToken`), copy or
+  download as `SKILL.md`. The server never serves a token.
+- **The brief** is one text (`web/lib/brief.ts`) served as
+  `/6502/cart/brief.md` and, with skill frontmatter, `/6502/cart/skill.md`
+  (name `tm6502-cart`); it gained a "How to work" section (prove the chain
+  before writing a game). The walkthrough (EN/JA) describes the account and
+  the skill.
+- **Menu**: page scroll locked while open, scrim closes it at every width,
+  button reads Close/閉じる while open, and an account row at the foot
+  (Sign in with GitHub, or who you are + your tokens + sign out).
+
+Open, in order:
+
+1. **The starter cart decision** (`TM_MINT_PUBLISH_STARTER`): which cart,
+   and whether a fresh token publishes it by default. The owner is
+   generating a batch of carts to frame this; the skill should teach one
+   cart layout (`cart.s`, `tiles.chr`, `cart.json`, a measure script).
+2. **Prove the GitHub loop on production** end to end (owner signs in;
+   mint, re-issue, brief with key, publish under the new token).
+3. The cart lab; owner review of Japanese drafts; upstream
+   (`notes/upstream-transport.md`, plus a registry `transfer()`).
+
 ## Checkpoint, 2026-08-25, at 1.0.90
 
 The "unreasonable perfection" zone is closed on this side: the Lab-shaped
