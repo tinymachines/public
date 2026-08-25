@@ -162,7 +162,10 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
         </select>
       </label>
       <span className="ct-readout" aria-live="off">
-        {!ctl ? S.loading : !live ? S.none : hc === null ? "" : `h ${hc}`}
+        {/* While the bar is still deciding, it says it is looking; a page
+            that never offers a chip makes the bar withdraw, so "no chip" is
+            never a claim the reader sees. */}
+        {!live ? S.loading : hc === null ? "" : `h ${hc}`}
       </span>
     </div>
   );
