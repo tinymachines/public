@@ -193,7 +193,7 @@ was a failure anyone could see, which is the point.
 | where | what runs | when |
 |---|---|---|
 | `tinymachines/halfphi` on GitHub | CI: `cargo test` on stable and the 1.75 MSRV with `HALFPHI_REQUIRE_CHIPS=1`, fmt, clippy `-D warnings`, `cargo doc`. Three runs, all green, latest 2026-08-23 | every push |
-| `tinymachines/6502` | `cargo test --workspace` (91 tests: netlist, functional, golden differential against the reference JavaScript engine, state, timing, interrupts), `pytest service/` (174). **No CI, and `deploy/deploy.sh` runs none of them**: it builds, exports, checks halfphi parity, and publishes | by hand |
+| `tinymachines/6502` | `cargo test --workspace` (91 tests: netlist, functional, golden differential against the reference JavaScript engine, state, timing, interrupts), `pytest service/` (176). No CI; since `462cc59` **`deploy/deploy.sh` runs both before it builds** and writes the counts into the release's `build-info.json` | every release |
 | this repository | nothing, until `scripts/board-engine.py` | |
 
 So the mirror's CI proves the published halfphi builds and loads three chips,
@@ -256,10 +256,16 @@ and not an action.
    shape. `board-engine.py` compares the stated commit and the running
    service's commit to the boarded one; `--board` refuses a binary that
    says it is from another commit.
-2. **The 6502 deploy runs no tests.** Proposal: `deploy/deploy.sh` runs
-   `cargo test --workspace` with both require flags before the exporters, and
-   writes the counts into `build-info.json` beside the commit. The roof's
-   record would then be a second witness rather than the only one.
+2. **Done, 2026-08-26 (`6502@0a41ba6`, `462cc59`): the 6502 deploy tests
+   before it builds.** `deploy/deploy.sh` builds halfwave, runs
+   `cargo test --workspace` with the chips required and the golden oracle
+   required where it exists (logged where it does not), runs
+   `pytest service/`, refuses to publish on a failure or on zero passes, and
+   `tools/build-info.py` writes the counts as `tests` beside the commit. The
+   first run refused correctly: 56 service tests failed under systemd's PATH
+   (`/usr/bin/node` v12 reaching the assembler) and passed by hand; node is
+   now resolved before the tests. A release with no `tests` key was made by
+   hand. The roof's record is a second witness now.
 3. **halfphi releases are commits.** When the 6502 project starts releasing
    halfphi, a release is a tag on both repositories at the same shared-file
    digest, and a `CHANGELOG.md` entry. `board-engine.py` records the digest

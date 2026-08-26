@@ -915,3 +915,18 @@ binary's stated commit and the running service's commit join the release
 commit and the tree. A rebuild without a restart, which nothing could see
 before, is a named fault now. Still open: tests in the 6502 deploy, tags on
 halfphi releases, a recorded base for the copied console modules.
+
+## The 6502 deploy tests before it builds, 2026-08-26
+
+Proposal 2, done upstream at `6502@0a41ba6` and `462cc59`: `deploy.sh`
+builds halfwave, runs `cargo test --workspace` (chips required, golden
+required where the oracle exists and logged where not) and `pytest service/`,
+refuses to publish on a failure or a zero, and `build-info.py` writes the
+counts as `tests` beside the commit. Release `v0.246` carries
+`cargo 91 passed, service 176 passed`.
+
+The first run refused, correctly: 56 service tests failed under the unit and
+passed by hand, because systemd's PATH reaches `/usr/bin/node` v12 and the
+assembler reads `NODE`. The trap CLAUDE.md lists under "anything a deploy
+shells out to" bit a third time, and the gate caught it before anything was
+published. Node is resolved ahead of the tests now.

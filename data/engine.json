@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T13:40:23+00:00",
+  "boarded_at": "2026-08-26T14:29:58+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "0ca70c24ae1d61cae593b85f5ce774160def58da",
+    "commit": "462cc599ffcffc379050c5948890994d031a201d",
     "branch": "main",
-    "subject": "halfwave names itself: --version and META carry the workspace version and the commit, stamped by build.rs",
-    "committed": "2026-08-26T09:37:54-04:00",
+    "subject": "The deploy resolves node before the tests, and the service's assembler gets it",
+    "committed": "2026-08-26T10:26:47-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -18,16 +18,16 @@
     }
   },
   "halfwave": {
-    "sha256": "81e811973624a4fb3f634f3163e65da63e7e03df910544dfd2e68168ab651547",
+    "sha256": "5a8506553c46d0dcbabd5604bc5a7d11f4f8acb4dc168b34ad1c44210a689c21",
     "bytes": 532984,
-    "modified": "2026-08-26T13:38:02+00:00",
-    "stated": "0ca70c24ae1d61cae593b85f5ce774160def58da",
-    "running": "0ca70c24ae1d61cae593b85f5ce774160def58da"
+    "modified": "2026-08-26T14:26:52+00:00",
+    "stated": "462cc599ffcffc379050c5948890994d031a201d",
+    "running": "462cc599ffcffc379050c5948890994d031a201d"
   },
   "release": {
-    "version": "v0.244",
-    "commit": "0ca70c24ae1d61cae593b85f5ce774160def58da",
-    "built": "2026-08-26T13:39:45+00:00"
+    "version": "v0.246",
+    "commit": "462cc599ffcffc379050c5948890994d031a201d",
+    "built": "2026-08-26T14:29:11+00:00"
   },
   "tests": [
     {
@@ -39,7 +39,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 3.7,
+      "seconds": 0.1,
       "ok": true
     },
     {
@@ -51,7 +51,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 13.5,
+      "seconds": 7.3,
       "ok": true
     }
   ]
