@@ -159,10 +159,14 @@ it embeds no die data. Five files are shared verbatim
 project's `deploy.sh` refuses to publish on a difference. On 2026-08-26 the
 two are identical, at `6502@15e5717` and `halfphi@424ce03`.
 
-Both say `version = "0.1.0"`. The standalone repository has **no tags** and
-the crate is **not on crates.io** (`crates.io/api/v1/crates/halfphi` answers
-"does not exist"). So today a version of halfphi is a commit, not a number,
-and the digest of the five shared files is what tells two builds apart.
+Both say `version = "0.1.1"` since 2026-08-26, when the first tagged release
+was cut: `tools/release-halfphi.sh X.Y.Z` in the 6502 repository bumps both
+`Cargo.toml`s, dates the changelog, commits on each side and tags each side
+(`halfphi-vX.Y.Z` on 6502, `vX.Y.Z` on halfphi) with the digest of the five
+shared files in the tag message, after the mirror's own CI gates and this
+workspace's halfphi test pass on the bytes being tagged. The crate is **not
+on crates.io**, by decision. A commit past the tag is recorded by
+`board-engine.py` as untagged, not given the tag's name.
 
 ### How the engine reaches a page
 
@@ -266,11 +270,14 @@ and not an action.
    (`/usr/bin/node` v12 reaching the assembler) and passed by hand; node is
    now resolved before the tests. A release with no `tests` key was made by
    hand. The roof's record is a second witness now.
-3. **halfphi releases are commits.** When the 6502 project starts releasing
-   halfphi, a release is a tag on both repositories at the same shared-file
-   digest, and a `CHANGELOG.md` entry. `board-engine.py` records the digest
-   already, so a tag adds a name to a thing it can already tell apart.
-   Publishing to crates.io is a separate decision; nothing here needs it.
+3. **Done, 2026-08-26: halfphi 0.1.1 is the first tagged release**
+   (`halfphi@92536c2 v0.1.1`, `6502@1df1e68 halfphi-v0.1.1`, digest
+   `1792a246…`), cut by `tools/release-halfphi.sh`. It refuses a dirty
+   tree on either side, a shared-file difference, an empty `[Unreleased]`
+   or a failing gate; `build-info.py` excludes `halfphi-*` from the site's
+   own version. `v0.1.0` was tagged after the fact at the commit that made
+   it, which the changelog had linked to all along. `board-engine.py`
+   records the tag beside the digest. crates.io stays a separate decision.
 4. **The console's copied modules have no recorded base.** Proposal, either
    half: record the upstream commit and the two patches in
    `web/public/6502/games/NOTICE.md`, or read the modules out of

@@ -930,3 +930,20 @@ passed by hand, because systemd's PATH reaches `/usr/bin/node` v12 and the
 assembler reads `NODE`. The trap CLAUDE.md lists under "anything a deploy
 shells out to" bit a third time, and the gate caught it before anything was
 published. Node is resolved ahead of the tests now.
+
+## halfphi 0.1.1, the first tagged release, 2026-08-26
+
+Proposal 3, done upstream. `6502/tools/release-halfphi.sh X.Y.Z` is the
+release: both `Cargo.toml`s bumped, the changelog's `[Unreleased]` dated,
+a commit and an annotated tag on each repository (`v0.1.1` on halfphi,
+`halfphi-v0.1.1` on 6502) carrying the shared-file digest, pushed. Gates
+first, on the bytes being tagged: parity, fmt, clippy, the three chips
+required, doc, and this workspace's halfphi test. Two refusals on the way
+were both right: a dirty tree (the tool's own uncommitted file) and a
+`tee | grep -q` race under pipefail; a third stop, halfphi's ignored
+`Cargo.lock` refusing `git add`, became `add -u`. `v0.1.0` was tagged after
+the fact at `700331e`, the commit the changelog already linked to.
+
+`board-engine.py` records the tag beside the digest and shows it in the
+stage 2e line. The site's version stamp excludes `halfphi-*` tags. Not done,
+by decision: crates.io. Still open: proposal 4, the copied console modules.

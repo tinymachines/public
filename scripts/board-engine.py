@@ -196,11 +196,19 @@ def measure(tree: Path) -> dict:
     for rel in SHARED:
         digest.update(rel.encode() + b"\0" + (halfphi / rel).read_bytes() + b"\0")
 
+    # The release tag, where the checkout is at one: tools/release-halfphi.sh
+    # over there tags both repositories at one shared-file digest. A commit
+    # past the tag is recorded as such rather than given the tag's name.
+    tag = git(tree, "describe", "--tags", "--exact-match", "--match", "halfphi-v*")
     standalone = None
     sib = Path(os.environ.get("HALFPHI") or (ROOT.parent / "halfphi"))
     if (sib / "src" / "engine.rs").is_file():
         same = all((sib / rel).read_bytes() == (halfphi / rel).read_bytes() for rel in SHARED)
-        standalone = {"commit": head_of(sib), "shared_files_identical": same}
+        standalone = {
+            "commit": head_of(sib),
+            "tag": git(sib, "describe", "--tags", "--exact-match", "--match", "v*"),
+            "shared_files_identical": same,
+        }
 
     hw = halfwave_bin(tree)
     binary = None
@@ -231,6 +239,7 @@ def measure(tree: Path) -> dict:
         },
         "halfphi": {
             "version": version.group(1) if version else None,
+            "tag": tag,
             "shared_files_sha256": digest.hexdigest(),
             "standalone": standalone,
         },
@@ -347,7 +356,7 @@ def check(tree: Path) -> int:
         print("  release: not measurable on this box (no aliased release directory); skipped")
 
     line = (
-        f"6502 {(have or 'unknown')[:12]} halfphi {now['halfphi']['version']} {now['halfphi']['shared_files_sha256'][:12]}"
+        f"6502 {(have or 'unknown')[:12]} halfphi {now['halfphi']['version']} {now['halfphi']['tag'] or 'untagged'} {now['halfphi']['shared_files_sha256'][:12]}"
         f" halfwave {(now['halfwave'] or {}).get('sha256', 'absent')[:12]} says {str((now['halfwave'] or {}).get('stated'))[:12]} runs {str((now['halfwave'] or {}).get('running'))[:12]}"
         f" release {(now['release'] or {}).get('version', 'unmeasured')}"
         f" boarded {rec['boarded_at']} ({sum(t['passed'] for t in rec['tests'])} tests)"

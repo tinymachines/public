@@ -1,33 +1,35 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T14:29:58+00:00",
+  "boarded_at": "2026-08-26T14:49:12+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "462cc599ffcffc379050c5948890994d031a201d",
+    "commit": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d",
     "branch": "main",
-    "subject": "The deploy resolves node before the tests, and the service's assembler gets it",
-    "committed": "2026-08-26T10:26:47-04:00",
+    "subject": "halfphi 0.1.1",
+    "committed": "2026-08-26T10:43:28-04:00",
     "dirty": false
   },
   "halfphi": {
-    "version": "0.1.0",
+    "version": "0.1.1",
+    "tag": "halfphi-v0.1.1",
     "shared_files_sha256": "1792a2467e8b4062ca7f5d47a44fd3db67811bd355a2bd4792b38fd18a920f9c",
     "standalone": {
-      "commit": "424ce03ba06db86774deb139c572f9155c4f31e8",
+      "commit": "92536c2bd1f60f33d1212813ea6a39d21820cc4a",
+      "tag": "v0.1.1",
       "shared_files_identical": true
     }
   },
   "halfwave": {
-    "sha256": "5a8506553c46d0dcbabd5604bc5a7d11f4f8acb4dc168b34ad1c44210a689c21",
+    "sha256": "170c760e147548907846bb759bf36909fb87696efef6482b6f2cda07637a9402",
     "bytes": 532984,
-    "modified": "2026-08-26T14:26:52+00:00",
-    "stated": "462cc599ffcffc379050c5948890994d031a201d",
-    "running": "462cc599ffcffc379050c5948890994d031a201d"
+    "modified": "2026-08-26T14:44:34+00:00",
+    "stated": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d",
+    "running": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d"
   },
   "release": {
-    "version": "v0.246",
-    "commit": "462cc599ffcffc379050c5948890994d031a201d",
-    "built": "2026-08-26T14:29:11+00:00"
+    "version": "v0.250",
+    "commit": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d",
+    "built": "2026-08-26T14:48:23+00:00"
   },
   "tests": [
     {
@@ -39,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.1,
+      "seconds": 6.2,
       "ok": true
     },
     {
@@ -51,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 7.3,
+      "seconds": 10.6,
       "ok": true
     }
   ]
