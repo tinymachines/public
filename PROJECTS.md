@@ -861,3 +861,41 @@ upstream proposals (`notes/upstream-transport.md`: driver shape, `sw.js`
 path, changed-since panel, the explorer's `F` key, and now the controller
 `buttons` map so A/B come alive); cartridge theming once a cartridge can
 carry a theme (`notes/console-shell/ISSUES.md` #8).
+
+## The module map and the engine gate, 2026-08-26
+
+`notes/modules.md`: every module in `web/`, `api/`, `style/`, `data/` and
+`projects/`, what depends on what (read off the imports), the complete
+third-party list, and a table of every edge out of this repository with the
+check that holds it. Written because the 6502 project is going to manage and
+release halfphi, and the roof had no way to say which engine it was serving.
+
+What the survey found, measured on the box:
+
+- halfphi is two copies (`6502/crates/halfphi`, developed; `tinymachines/halfphi`,
+  published), identical today, both `0.1.0`, no tags, not on crates.io. A
+  version is a commit; the digest of the five shared files tells builds apart.
+- Nothing between a 6502 commit and its release runs its tests: the mirror's
+  CI tests the mirror, and `6502/deploy/deploy.sh` runs no `cargo test`.
+- The served release `v0.235` was built from `ed8030f`; the checkout the roof
+  builds its explorer pages from was at `15e5717`; the halfwave binary's
+  mtime predates the release commit. Nothing had said so.
+- The console's copied modules (`web/public/6502/games/`) match no upstream
+  commit, because two are patched on top of an unrecorded base.
+
+The gate: `scripts/board-engine.py --board` runs `cargo test -p halfphi`
+(`HALFPHI_REQUIRE_CHIPS=1`) and `cargo test -p v6502-sim`
+(`V6502_REQUIRE_GOLDEN=1`) in the 6502 checkout, refuses a dirty tree, and
+writes `data/engine.json` only when everything passed: 39 tests in 9 s on
+the first run. `--check` is `deploy.sh` stage 2e and refuses when the served
+release, the halfwave digest or the tree is not the boarded one; it skips,
+saying so, where there is no 6502 checkout. The skip guard was proved by
+hiding the golden oracle and watching the board refuse.
+
+**The check fails today on the release lag above**, which is right: the roof
+does not deploy until the 6502 project releases `15e5717` (its own deploy;
+not done from here) or `ed8030f` is boarded deliberately. Four proposals
+upstream are in the note: `halfwave --version` stamped with the commit, tests
+in the 6502 deploy with counts in `build-info.json`, tags on halfphi releases,
+and a recorded base for the copied console modules (or reading them at build
+time like the explorer).

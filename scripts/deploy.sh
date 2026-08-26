@@ -196,6 +196,14 @@ python3 data/check-og-font.py || fail "check-og-font: a Japanese character the l
 say "2d. Silos"
 python3 style/check-silo.py || fail "check-silo"
 
+# The engine. The roof compiles no Rust; it serves the 6502 project's release
+# through an alias, proxies its API, and builds pages from its working tree.
+# data/engine.json names the commit whose suites were run HERE and passed
+# (scripts/board-engine.py --board), and this refuses to deploy against any
+# other release, binary or tree. It skips on a box with no 6502 checkout.
+say "2e. The engine"
+python3 scripts/board-engine.py --check || fail "board-engine: not the boarded engine; python3 scripts/board-engine.py --board tests and records the current one"
+
 say "3. API tests"
 (cd api && python3 -m pytest . -q) || fail "pytest"
 

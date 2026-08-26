@@ -239,6 +239,14 @@ directions: it would either claim MIT over NC-SA work, or put NC-SA on
 halfphi and destroy the one clean piece. Each sub-project carries its own, and
 `NOTICE.md` stays the map.
 
+**The engine is boarded, not assumed.** `notes/modules.md` maps every module
+and every edge out of this repository. The engine edge has a gate:
+`scripts/board-engine.py --board` runs halfphi's and v6502-sim's suites in the
+6502 checkout and records the commit, digests and counts in
+`data/engine.json`; `deploy.sh` stage 2e refuses to deploy against any other
+release, binary or tree. Releasing the 6502 project is that project's deploy;
+boarding what it released is this one's.
+
 **When the first piece with die data arrives, add the check that fails if it
 reaches halfphi's tree.** The rule this repo already runs on: a boundary that
 is only a convention is one nobody notices crossing.

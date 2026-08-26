@@ -1,0 +1,56 @@
+{
+  "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
+  "boarded_at": "2026-08-26T13:13:36+00:00",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "chip_tree": {
+    "commit": "15e571725e8ab37e00ec14a36bda071d734a7ee0",
+    "branch": "main",
+    "subject": "CORS admits the registry's writing half (#12)",
+    "committed": "2026-08-24T10:30:14-04:00",
+    "dirty": false
+  },
+  "halfphi": {
+    "version": "0.1.0",
+    "shared_files_sha256": "1792a2467e8b4062ca7f5d47a44fd3db67811bd355a2bd4792b38fd18a920f9c",
+    "standalone": {
+      "commit": "424ce03ba06db86774deb139c572f9155c4f31e8",
+      "shared_files_identical": true
+    }
+  },
+  "halfwave": {
+    "sha256": "356c12d589fa3d6fefdebdf426039aa156536fe3d539d8d8f323e590abb5a1ad",
+    "bytes": 528472,
+    "modified": "2026-08-26T13:13:19+00:00"
+  },
+  "release": {
+    "version": "v0.243",
+    "commit": "15e571725e8ab37e00ec14a36bda071d734a7ee0",
+    "built": "2026-08-26T13:11:25+00:00"
+  },
+  "tests": [
+    {
+      "name": "halfphi: the 6502, the 6800 and the Z80",
+      "command": "cargo test -q -p halfphi",
+      "env": {
+        "HALFPHI_REQUIRE_CHIPS": "1"
+      },
+      "passed": 3,
+      "failed": 0,
+      "skipped": [],
+      "seconds": 3.3,
+      "ok": true
+    },
+    {
+      "name": "v6502-sim: functional, state, timing, interrupts, decode, rewind, golden",
+      "command": "cargo test -q -p v6502-sim",
+      "env": {
+        "V6502_REQUIRE_GOLDEN": "1"
+      },
+      "passed": 36,
+      "failed": 0,
+      "skipped": [],
+      "seconds": 9.7,
+      "ok": true
+    }
+  ]
+}

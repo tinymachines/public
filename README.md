@@ -10,6 +10,7 @@ eventually the rest of the shop.
 |---|---|
 | [`START-HERE.md`](START-HERE.md) | the brief, the proposed shape, and the order of work |
 | [`notes/inventory.md`](notes/inventory.md) | what already exists and where, surveyed rather than recalled |
+| [`notes/modules.md`](notes/modules.md) | every module and dependency, the edges out of this repo, and the rule that only a tested engine is boarded |
 | [`CLAUDE.md`](CLAUDE.md) | how to work in here, and the traps already paid for |
 | [`NOTICE.md`](NOTICE.md) | licensing. Read before anything ships |
 
