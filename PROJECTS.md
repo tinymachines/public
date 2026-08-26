@@ -967,3 +967,34 @@ console's tests at deploy before. The first draft's registry.js anchor
 matched inside `export const` and put the patch comment between the two
 keywords: legal JavaScript, found by diffing the generated files against the
 old copies, and the reason the test now checks the API statement itself.
+
+## Checkpoint, 2026-08-26, at 1.0.108: the engine is boarded, the map is closed
+
+One day, five deploys (1.0.104 to 1.0.108), and the 6502 repository went
+from `15e5717` to `1df1e68` with five commits of its own.
+
+**What is true now.**
+
+- `notes/modules.md` is the map: every module, every dependency, every edge
+  out of this repository and the check that holds it.
+- The engine is boarded, not assumed. `scripts/board-engine.py --board` runs
+  the 6502 checkout's suites here and records `data/engine.json`; `deploy.sh`
+  stage 2e refuses any release, binary, running service or tree that is not
+  the boarded one. Four measurements, all agreeing.
+- Upstream, all four proposals done: halfwave stamps its commit and `/v1/meta`
+  reports it; the 6502 deploy tests before it builds and the release carries
+  the counts (`cargo 91, service 176`); halfphi is released by one command,
+  tagged on both repositories at one digest, 0.1.1 first; the console's
+  modules are read from `../6502/games` at build time with three exact-match
+  patches, and the copies (two NC-SA ROMs among them) left git.
+- `bun test lib` runs at deploy (stage 1b). e2e 336 passed at 1.0.108.
+
+**The routine after a 6502 release.** The release rebuilds halfwave and says
+so; restart `6502-api` by hand, then `python3 scripts/board-engine.py
+--board`, then deploy the roof. A failing stage 2e is a lag, not a bug.
+
+**Open, in the order agreed before today.** The starter cart decision
+(`TM_MINT_PUBLISH_STARTER`), proving the GitHub loop live, one engine step 1
+(`notes/one-engine.md`), the transport proposals in
+`notes/upstream-transport.md`, cartridge theming (console ISSUES #8), and
+crates.io for halfphi, which stays a decision rather than a default.
