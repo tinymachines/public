@@ -44,6 +44,18 @@ EXTERNAL = {
     # runs and correct if it never does.
     "--app-head-h",
     "--app-foot-h",
+
+    # Measured by the console shell (web/app/[lang]/6502/games/shell/Shell.tsx)
+    # the same way: the floor strip's height, so the shell's stage can stop
+    # above it. Falls back in every var() that reads it.
+    "--strip-h",
+
+    # Set inline by the shell per cartridge: the accent a loaded cartridge
+    # gives the shell, and the label colour of one cart on the shelf. Each
+    # is a var() of a real token (--color-accent, --color-ocean, ...), so
+    # the palette is still the only source; the name is the indirection.
+    "--shell-accent",
+    "--cart",
 }
 
 DEFINE = re.compile(r"^\s*(--[A-Za-z0-9-]+)\s*:", re.MULTILINE)

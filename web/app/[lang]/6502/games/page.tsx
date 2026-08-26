@@ -8,7 +8,9 @@ import { chipApi } from "@/lib/projects";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { ChipTransport } from "../explorer/ChipTransport";
 import { ConsoleDriver } from "./ConsoleDriver";
+import { Shell } from "./shell/Shell";
 import "./console.css";
+import "./shell/shell.css";
 
 /**
  * Die Runner, moved from games.tinymachines.ai and dressed in the kit.
@@ -26,6 +28,18 @@ import "./console.css";
  * So this file is markup. It carries the DOM contract game.js was written
  * against, which is sixteen ids, `[data-dir]`, `.legend i` and `header .sub`,
  * and it wears the kit instead of the console's old palette.
+ *
+ * ## The shell
+ *
+ * Since the console-shell pack (notes/console-shell/) the console is a
+ * machine drawn around that contract: shell/Shell.tsx solves a layout for
+ * the viewport and docks the kit's parts around the glass, and this page's
+ * job is to put the contract's elements where the shell expects them. The
+ * readouts, gates and legend are the shell's status page; the four elements
+ * game.js binds handlers to at load (`#cart`, `#cart-file`, `#b-power`,
+ * `#b-pause`) sit OUTSIDE the shell in a hidden block, because a React tree
+ * that remounts them would drop those handlers on the floor and nothing
+ * would say so.
  *
  * ## Where the two grounds fall, which is not a style choice here
  *
@@ -61,6 +75,16 @@ const CHIP_API = chipApi();
 // there.
 const BUILDERS = "/6502";
 
+/**
+ * The built-in cartridges, in the order game.js's own table has them: the
+ * option's value is the index it reads. The shelf draws these and the
+ * hidden select carries them, from one list.
+ */
+const CARTS = [
+  { value: "0", name: "Die Runner" },
+  { value: "1", name: "Silicon Snake" },
+];
+
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   return pageMeta(lang, "/6502/games")
@@ -82,7 +106,6 @@ const PROSE = {
         <Link href={m}>the editor</Link> are here too.
       </>
     ),
-    screen: "screen",
     theChip: "the chip",
     measured: "measured",
     note: (
@@ -91,16 +114,8 @@ const PROSE = {
         but this page.
       </>
     ),
-    loadCart: "load a .cart.gz",
     powerOn: "power on",
     pause: "pause",
-    controller: "Controller",
-    padNote: (
-      <>
-        Arrow keys or WASD. One byte, written into the chip&rsquo;s memory
-        between two steps.
-      </>
-    ),
     gatesReal: "the gates are real",
     sampled: "sampled",
     gatesNote: (
@@ -150,7 +165,6 @@ const PROSE = {
         もここにある。
       </>
     ),
-    screen: "画面",
     theChip: "チップ",
     measured: "実測",
     note: (
@@ -158,15 +172,8 @@ const PROSE = {
         画面はチップ自身のメモリの 1 ページ。それを描くのはこのページだけだ。
       </>
     ),
-    loadCart: ".cart.gz を読み込む",
     powerOn: "電源を入れる",
     pause: "一時停止",
-    controller: "コントローラ",
-    padNote: (
-      <>
-        矢印キーか WASD。1 バイトが、二つのステップの間にチップのメモリへ書き込まれる。
-      </>
-    ),
     gatesReal: "ゲートは実物",
     sampled: "サンプル済み",
     gatesNote: (
@@ -228,124 +235,57 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
         <span className="sub quiet wb-sub" />
       </header>
 
-      {/* .prose rides the text blocks, not the main: its reading measure was
-          silently capping the stage at a paragraph's width, which is the
-          opposite of what a workbench is for. */}
-      <main className="wb-main">
-        <div className="wb-page prose">
-        <p>{S.intro(B, M)}</p>
-
+      <main className="wb-main shell-main">
+        <div className="shell-stage">
+          <Shell lang={lang} carts={CARTS}>
+            {/* The status page: every figure here came off the engine, and
+                the ids are game.js's. */}
+            <h3>{S.theChip} · {S.measured}</h3>
+            <div className="con-kv">
+              <span>cartridge</span><b id="k-cart">--</b>
+              <span>score</span><b id="k-score">0</b>
+              <span>half-cycle</span><b id="k-hc">0</b>
+              <span>per frame</span><b id="k-fc">--</b>
+              <span>frames</span><b id="k-frames">0</b>
+              <span>frames / s</span><b id="k-fps">--</b>
+              <span>requests</span><b id="k-req">0</b>
+            </div>
+            <p className="con-note" id="note">{S.note}</p>
+            <p className="con-err" id="err" hidden />
+            <h3>{S.gatesReal} · {S.sampled}</h3>
+            <p className="con-note">{S.gatesNote}</p>
+            <div className="gates" id="gates" />
+            {/* Painted by game.js from the tiles the screen actually draws
+                from, as data: URLs, so a key cannot show something the
+                screen does not. The `t<N>` class is read by
+                className.slice(1) and must be the only class on the <i>. */}
+            <div className="legend">
+              <span><i className="t4" />{S.lg4}</span>
+              <span><i className="t7" />{S.lg7}</span>
+              <span><i className="t6" />{S.lg6}</span>
+              <span><i className="t15" />{S.lg15}</span>
+              <span><i className="t2" />{S.lg2}</span>
+              <span><i className="t14" />{S.lg14}</span>
+              <span><i className="t10" />{S.lg10}</span>
+            </div>
+          </Shell>
         </div>
 
-        <div className="con-stage wb-stage">
-          {/* The screen. Panel, because it is chip memory. */}
-          <div className="panel">
-            <div className="panel-bar">
-              <span>{S.screen}</span>
-              <span>$0400, 16 x 16</span>
-            </div>
-            {/* `screen` is a hook, not a style: game.js measures $('.screen')
-                to size the canvas to its container. It styles nothing here,
-                and renaming it away is exactly what broke the first deploy of
-                this page: the console reported "could not boot: Cannot read
-                properties of null" and it read as a broken cartridge. */}
-            <div className="panel-face con-screen screen">
-              <canvas id="screen" width={256} height={256} />
-            </div>
-          </div>
-
-          <div className="con-side">
-            {/* Panel: every figure here came off the engine. */}
-            <div className="panel">
-              <div className="panel-bar">
-                <span>{S.theChip}</span>
-                <span>{S.measured}</span>
-              </div>
-              <div className="panel-face">
-                <div className="con-kv">
-                  <span>cartridge</span><b id="k-cart">--</b>
-                  <span>score</span><b id="k-score">0</b>
-                  <span>half-cycle</span><b id="k-hc">0</b>
-                  <span>per frame</span><b id="k-fc">--</b>
-                  <span>frames</span><b id="k-frames">0</b>
-                  <span>frames / s</span><b id="k-fps">--</b>
-                  <span>requests</span><b id="k-req">0</b>
-                </div>
-                <p className="con-note" id="note">
-                  {S.note}
-                </p>
-                <div className="con-bar">
-                  <select className="input data" id="cart" aria-label="Cartridge">
-                    <option value="0">Die Runner</option>
-                    <option value="1">Silicon Snake</option>
-                  </select>
-                </div>
-                <div className="con-bar">
-                  <label className="btn btn-ghost" htmlFor="cart-file">
-                    {S.loadCart}
-                  </label>
-                  <input id="cart-file" type="file" accept=".gz,application/gzip" hidden />
-                </div>
-                {/* The console's own power and pause. Kept in the DOM, because
-                    game.js paints its state into them and ConsoleDriver reads
-                    it back; hidden, because the floor strip is the one
-                    transport, as on every page that runs the chip. */}
-                <div className="con-bar con-own-transport">
-                  <button className="btn btn-primary" id="b-power" type="button">
-                    {S.powerOn}
-                  </button>
-                  <button className="btn btn-ghost" id="b-pause" type="button" disabled>
-                    {S.pause}
-                  </button>
-                </div>
-                <p className="con-err" id="err" hidden />
-              </div>
-            </div>
-
-            {/* Paper: a control surface, not a readout. */}
-            <aside className="rail">
-              <h3>{S.controller}</h3>
-              <div className="pad">
-                <button className="btn btn-ghost u" data-dir="up" type="button" aria-label="Up">&uarr;</button>
-                <button className="btn btn-ghost l" data-dir="left" type="button" aria-label="Left">&larr;</button>
-                <button className="btn btn-ghost d" data-dir="down" type="button" aria-label="Down">&darr;</button>
-                <button className="btn btn-ghost r" data-dir="right" type="button" aria-label="Right">&rarr;</button>
-              </div>
-              <p className="quiet" style={{ fontSize: "0.75rem", marginTop: "0.75rem" }}>
-                {S.padNote}
-              </p>
-            </aside>
-
-            {/* Panel: eight switches, sampled on the die that is running. */}
-            <div className="panel">
-              <div className="panel-bar">
-                <span>{S.gatesReal}</span>
-                <span>{S.sampled}</span>
-              </div>
-              <div className="panel-face">
-                <p className="con-note" style={{ marginTop: 0 }}>
-                  {S.gatesNote}
-                </p>
-                <div className="gates" id="gates" />
-                {/* Painted by game.js from the tiles the screen actually draws
-                    from, as data: URLs, so a key cannot show something the
-                    screen does not. The `t<N>` class is read by
-                    className.slice(1) and must be the only class on the <i>. */}
-                <div className="legend">
-                  <span><i className="t4" />{S.lg4}</span>
-                  <span><i className="t7" />{S.lg7}</span>
-                  <span><i className="t6" />{S.lg6}</span>
-                  <span><i className="t15" />{S.lg15}</span>
-                  <span><i className="t2" />{S.lg2}</span>
-                  <span><i className="t14" />{S.lg14}</span>
-                  <span><i className="t10" />{S.lg10}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* The console's own controls, which game.js binds at load and paints
+            its state into. Hidden: the shell's rocker, pills and shelf press
+            them, and the floor strip drives them through ConsoleDriver. They
+            live outside the shell so nothing ever remounts them. */}
+        <div className="con-own-transport" hidden>
+          <select className="input data" id="cart" aria-label="Cartridge">
+            {CARTS.map((c) => <option key={c.value} value={c.value}>{c.name}</option>)}
+          </select>
+          <input id="cart-file" type="file" accept=".gz,application/gzip" hidden />
+          <button className="btn btn-primary" id="b-power" type="button">{S.powerOn}</button>
+          <button className="btn btn-ghost" id="b-pause" type="button" disabled>{S.pause}</button>
         </div>
 
         <div className="wb-page prose">
+          <p>{S.intro(B, M)}</p>
           <h2>{S.whySlow}</h2>
           <p>{S.slow}</p>
           <p>{S.cart(CHIP_API, B, M)}</p>

@@ -78,3 +78,10 @@ docs/6502/idioms.md
 docs/6502/walk-snake.md
 web/public/6502/chipdocs/
 docs/6502/findings-answers.md
+
+# The console-shell handoff pack: its sources/ carry third-party IP and are mood only.
+docs/nes-arcade-handoff-v0.1
+docs/nes-arcade-handoff-*.zip
+
+# Generated sheets (scripts/shell-sheets.ts)
+web/out/

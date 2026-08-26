@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "rule": "Never trust hex values transcribed from rendered images. BP-2's printed palette is CANDIDATE ONLY. Final values are sampled from swatch pixels of an approved render, or derived programmatically, with WCAG contrast computed and recorded per pair.",
+    "grounds": {
+      "paper": "blueprint drafting sheets: stroke-first, dark blue field, cyan lines",
+      "panel": "the live shell: flat fills, two-tone facet shading, NES-inspired accents"
+    }
+  },
+  "roles": {
+    "paper.field": { "candidate": null, "note": "deep drafting blue; sample from approved sheet" },
+    "paper.grid": { "candidate": null, "note": "field +1 step lighter, 0.5u lines" },
+    "paper.line": { "candidate": null, "note": "cyan primary stroke" },
+    "paper.line.dim": { "candidate": null, "note": "dimension/dash stroke, lower chroma" },
+    "paper.accent": { "candidate": null, "note": "amber for screen/key callouts" },
+    "panel.shell.light": { "candidate": "#CFCFFF?", "note": "unverified BP-2 candidate" },
+    "panel.shell.dark": { "candidate": "#2E3355?", "note": "unverified BP-2 candidate" },
+    "panel.face.light": { "candidate": null, "note": "facet lit tone: derive from shell +1 step" },
+    "panel.face.dark": { "candidate": null, "note": "facet shade tone: derive from shell -1 step" },
+    "panel.accent.a": { "candidate": "#FF6B6B?", "note": "A-button family, unverified" },
+    "panel.accent.b": { "candidate": "#4B4F7A?", "note": "B-button family, unverified" },
+    "panel.accent.coin": { "candidate": "#FFD166?", "note": "coin/marquee gold, unverified" },
+    "panel.led.amber": { "candidate": null, "note": "boot state" },
+    "panel.led.red": { "candidate": null, "note": "live state" },
+    "panel.screen.bezel": { "candidate": "#1A1D2E?", "note": "unverified" }
+  },
+  "typography": {
+    "display": "pixel/bitmap-style face OR pure polygon lettering for marquee; 7-seg counters are ALWAYS segment polygons, never font glyphs",
+    "annotation.paper": "monospace, 11px floor at final render sizes"
+  },
+  "process": [
+    "1. Agent produces one swatch sheet render (panel roles as filled squares, labeled).",
+    "2. Sample center pixels programmatically (no eyedropper-by-eye).",
+    "3. Compute WCAG contrast for every text-on-fill pair; record in tokens output.",
+    "4. Emit tokens.css (Tailwind 4 @theme) + tokens.static.css, mirroring the tinymachines pipeline."
+  ]
+}

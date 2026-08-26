@@ -120,3 +120,20 @@ in all" is true today but "the same half-cycle in all" is not yet.
   that masthead for its own, so the panel never fills there. Proposal: read
   the changed set from the archive endpoint the markers were derived from,
   so any host that keeps the section can fill it.
+
+## The controller byte, proposed by the console shell (2026-08-26)
+
+The shell at `/6502/games` docks A and B beside the d-pad, disabled, with
+"this cartridge reads four directions and no buttons" as the reason
+(`notes/console-shell/ISSUES.md` #2). The contract writes one byte and
+`game.js` maps only up, down, left, right into it.
+
+Proposal, in `tinymachines/6502`: a cartridge's contract gains an optional
+`buttons` map beside `dirs` (`{ a: 0x10, b: 0x20 }` or whatever the ROM
+reads), `game.js` binds `[data-btn]` elements and two keys (`x`, `z` or
+`k`, `j`) the way it binds `[data-dir]` and the arrows, and ORs the button
+bits into `state.input` for the frame. A cartridge that declares no
+`buttons` leaves the shell's A and B disabled exactly as today, so nothing
+published changes. The shell needs no change beyond reading the declared
+map, which it can do from the loaded cartridge through the same DOM
+contract.

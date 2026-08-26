@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { readConsole, watchConsole } from "./consoleState";
 
 /**
  * The console, registered as a driver of the one chip store.
@@ -47,21 +48,11 @@ interface Store {
 
 const $ = (id: string) => document.getElementById(id);
 
-function readConsole() {
-  const power = $("b-power") as HTMLButtonElement | null;
-  const pause = $("b-pause") as HTMLButtonElement | null;
-  if (!power || !pause) return null;
-  const booting = power.disabled || /boot/i.test(power.textContent ?? "");
-  const powered = !pause.disabled;
-  const running = powered && /^pause$/i.test((pause.textContent ?? "").trim());
-  return { power, pause, booting, powered, running };
-}
-
 export function ConsoleDriver() {
   useEffect(() => {
     let cancelled = false;
     let unsub: (() => void) | null = null;
-    let observer: MutationObserver | null = null;
+    let unwatch: (() => void) | null = null;
     (async () => {
       const res = await fetch("/6502/chip/asset-manifest.json", { cache: "no-cache" });
       if (!res.ok) return;
@@ -88,14 +79,7 @@ export function ConsoleDriver() {
         if (!c || c.booting) return;
         if (c.running !== store.isRunning()) store.setRunning(c.running);
       };
-      const power = $("b-power");
-      const pause = $("b-pause");
-      if (power && pause) {
-        observer = new MutationObserver(tell);
-        const opts = { attributes: true, attributeFilter: ["disabled"], childList: true, characterData: true, subtree: true };
-        observer.observe(power, opts);
-        observer.observe(pause, opts);
-      }
+      unwatch = watchConsole(tell);
 
       // store -> console
       unsub = store.subscribe(() => {
@@ -110,7 +94,7 @@ export function ConsoleDriver() {
     return () => {
       cancelled = true;
       if (unsub) unsub();
-      if (observer) observer.disconnect();
+      if (unwatch) unwatch();
     };
   }, []);
   return null;

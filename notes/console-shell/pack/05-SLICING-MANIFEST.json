@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "name": "nes-style-arcade-shell",
+    "version": "0.1.0",
+    "units_per_px_8k": 0.0333333,
+    "px_per_unit_8k": 30,
+    "module_grid_units": 8,
+    "master_width_px": 7680,
+    "angle_whitelist_deg": [0, 45, 90],
+    "circle_whitelist": ["stick ball", "coin", "led", "dpad pivot"],
+    "stroke_roles_units": { "hairline": 1, "seam": 2, "bezel": 4 },
+    "grounds": ["paper", "panel"]
+  },
+  "layers": [
+    { "id": "scr-mask",      "z": 100, "origin": "center", "notes": "chamfered octagon; c=S/9" },
+    { "id": "scr-game",      "z": 90,  "origin": "center", "notes": "256x240 native, integer scale, 224x224 guaranteed" },
+    { "id": "fx-scanlines",  "z": 110, "origin": "center", "optional": true },
+    { "id": "fx-crt",        "z": 111, "origin": "center", "optional": true },
+    { "id": "fx-flicker",    "z": 112, "origin": "center", "optional": true, "frames": 4 },
+    { "id": "zone-deck",     "z": 20,  "origin": "center", "container": true },
+    { "id": "zone-wing-l",   "z": 20,  "origin": "center", "container": true },
+    { "id": "zone-wing-r",   "z": 20,  "origin": "center", "container": true },
+    { "id": "zone-header",   "z": 20,  "origin": "center", "container": true },
+    { "id": "flr-facets",    "z": 10,  "origin": "center", "notes": "facets(W,H,seed), deterministic" },
+    { "id": "ctl-dpad",      "z": 40,  "origin": "center", "size_u": [24, 24], "states": ["idle", "pressed-x8"] },
+    { "id": "ctl-stick",     "z": 40,  "origin": "center", "size_u": [28, 28], "states": ["centered", "deflected-x8"], "modes": ["snap8", "slide"] },
+    { "id": "ctl-ab",        "z": 40,  "origin": "center", "button_u": 17, "states": ["idle", "pressed", "turbo"] },
+    { "id": "ctl-pills",     "z": 40,  "origin": "center", "pill_u": [52, 14], "states": ["idle", "pressed", "held"] },
+    { "id": "sys-power",     "z": 40,  "origin": "center", "rocker_u": [56, 22], "led_states": ["off", "amber", "red"] },
+    { "id": "sys-coin",      "z": 40,  "origin": "center", "slot_u": [10, 44], "counter": "7seg-polygons" },
+    { "id": "sys-shelf",     "z": 30,  "origin": "center", "cart_u": [44, 38], "roster": "01-DIRECTION.md#7" },
+    { "id": "sys-speaker",   "z": 30,  "origin": "center", "droppable": true },
+    { "id": "nav-swiperail", "z": 50,  "origin": "center", "dots": "3-5" },
+    { "id": "nav-quick",     "z": 50,  "origin": "center", "chips": ["menu", "pause", "sound", "snapshot"] },
+    { "id": "hud-chips",     "z": 95,  "origin": "center", "rail": "title-safe", "corners": false },
+    { "id": "fx-wear",       "z": 120, "origin": "center", "optional": true, "default": false }
+  ],
+  "export_ladder": [
+    { "name": "8k-master", "width": 7680, "px_per_unit": 30 },
+    { "name": "4k",        "width": 3840, "px_per_unit": 15 },
+    { "name": "1080p",     "width": 1920, "px_per_unit": 7.5 },
+    { "name": "720p",      "width": 1280, "drop_strokes": ["hairline"] },
+    { "name": "pal",       "width": 720,  "height": 576, "drop_strokes": ["hairline"] },
+    { "name": "ntsc",      "width": 720,  "height": 480, "drop_strokes": ["hairline"] },
+    { "name": "native",    "width": 256,  "height": 240, "fills_only": true }
+  ],
+  "test_matrix_ratios": ["4:3", "16:9", "9:16", "3:4", "1:1", "21:9", "9:19.5"]
+}

@@ -1,0 +1,266 @@
+/* ---------------------------------------------------------------------------
+   The console shell. Panel ground throughout: the whole thing is the machine.
+
+   Every colour is a token by role. The plastic is the panel's own three
+   steps (sunk, panel, raised) read as shade, face and lit, so the bevel is
+   two flat tones from the palette rather than a gradient, which is both the
+   pack's rule and the kit's. The accents are the Earth Conductor hues in
+   their panel form; the LED speaks the Logic Accents, and never red.
+
+   Geometry comes from lib/shell/solve.ts as inline px on the docks and the
+   glass; nothing here sizes a part. What this file owns is the fills, the
+   states (data-* on .shell) and the toys (scanlines, CRT, wipe).
+   ------------------------------------------------------------------------ */
+
+.shell {
+  --shell-face:  var(--color-panel);
+  --shell-lit:   var(--color-panel-raised);
+  --shell-shade: var(--color-panel-sunk);
+  --shell-edge:  var(--color-rule-panel);
+  --shell-a:     var(--color-accent);
+  --shell-b:     var(--color-ocean);
+  --shell-coin:  var(--color-mustard);
+  --shell-led-boot: var(--color-orange);
+  --shell-led-live: var(--color-blue);
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--shell-face);
+  color: var(--color-glass);
+  font-family: var(--font-mono);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* The stage: the viewport less the bar and the floor strip. AppMetrics
+   publishes the bar; Shell.tsx publishes the strip. Both fall back. */
+.shell-stage {
+  height: calc(100dvh - var(--app-head-h, 3.5rem) - var(--strip-h, 4rem));
+  min-height: 20rem;
+}
+html.has-fullscreen .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); }
+.workbench.has-transport .shell-main { padding-bottom: 0; }
+
+.shell-bg { position: absolute; inset: 0; display: block; }
+.facet.bezel.lit,  .facet.fill.lit   { fill: var(--shell-lit); }
+.facet.bezel.shade, .facet.fill.shade { fill: var(--shell-shade); }
+.facet.fill { fill-opacity: 0.85; }
+.mask-edge { fill: var(--shell-shade); stroke: var(--shell-edge); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+
+/* Docks: a part and its hit regions. */
+.dock { position: absolute; }
+.dock .part { display: block; position: absolute; inset: 0; overflow: visible; }
+.dock.ghost .part { opacity: 0.45; }
+.dock .hit {
+  position: absolute;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-hair);
+  touch-action: none;
+}
+.dock .hit:disabled { cursor: not-allowed; }
+/* The words on a control: house mono, a size the frame does not scale. */
+.dock .hit { display: grid; place-items: center; font: 600 var(--text-micro) var(--font-mono); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass); }
+.dock .hit .lb { pointer-events: none; text-shadow: 0 1px 0 var(--color-panel-sunk); }
+.dock .hit .lb.key { font-size: var(--text-body); color: var(--color-panel); text-shadow: none; }
+.dock .hit .lb.glyph { font-size: var(--text-body); letter-spacing: 0; }
+.dock .hit:disabled .lb { opacity: 0.75; }
+.dock[data-id="ab"] .hit { align-items: center; }
+.dock[data-id="power"] .hit[data-act="reset"] .lb { color: var(--color-panel); }
+.cart-btn .cart-name { position: absolute; left: 8%; right: 8%; top: 12%; height: 50%; display: grid; place-items: center; font: 600 var(--text-micro) var(--font-mono); color: var(--color-panel); text-align: center; line-height: 1.1; overflow: hidden; pointer-events: none; }
+.dock .hit:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 1px; }
+
+/* Parts: fills by role. */
+.part .face    { fill: var(--shell-lit); stroke: var(--shell-edge); stroke-width: 0.5; }
+.part .plate, .part .rocker, .part .chiclet, .part .tray, .part .key { stroke: var(--shell-edge); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+.part .face { vector-effect: non-scaling-stroke; }
+.part .shade   { fill: var(--shell-shade); }
+.part .well    { fill: var(--shell-shade); }
+.part .tray    { fill: var(--shell-shade); }
+.part .pill    { fill: var(--shell-lit); stroke: var(--shell-edge); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+.part .arrow   { fill: var(--color-glass-muted); }
+.part .pivot   { fill: var(--shell-shade); stroke: var(--shell-edge); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+.part .key-a   { fill: var(--shell-a); }
+.part .key-b   { fill: var(--shell-b); }
+.part .key + .well { fill-opacity: 0.35; }
+.part .rocker.lit   { fill: var(--shell-lit); }
+.part .rocker.shade { fill: var(--shell-shade); }
+.part .chiclet { fill: var(--color-glass-muted); }
+.part .plate   { fill: var(--shell-lit); }
+.part .slot    { fill: var(--shell-shade); }
+.part .coin    { fill: var(--shell-coin); opacity: 0; }
+.part .chip    { fill: var(--shell-lit); stroke: var(--shell-edge); stroke-width: 0.5; }
+.part .dot     { fill: var(--shell-edge); }
+.part .dot.on  { fill: var(--shell-accent, var(--shell-a)); }
+.part .chev    { stroke: var(--color-glass-muted); stroke-width: 1; }
+.part .seg     { fill: var(--shell-shade); }
+.part .seg.on  { fill: var(--shell-coin); }
+.part .legend  { fill: var(--color-glass); font-family: var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; }
+.part .key + .well + .legend { fill: var(--color-panel); }
+.dock[data-id="ab"] .legend { fill: var(--color-panel); font-weight: 600; }
+.dock[data-id="ab"] .part { opacity: 0.55; }
+.part .led { fill: var(--shell-shade); stroke: var(--shell-edge); stroke-width: 0.5; }
+.shell[data-led="boot"] .part .led { fill: var(--shell-led-boot); stroke: none; }
+.shell[data-led="live"] .part .led { fill: var(--shell-led-live); stroke: none; }
+.shell[data-led="boot"] .part .led { animation: shell-blink var(--t-strobe) steps(2) 4; }
+@keyframes shell-blink { to { opacity: 0.3; } }
+
+/* Presses shade the polygon under the finger: the state is the button's. */
+.dock:has(.hit[data-dir="up"]:active) .arrow[data-arm="up"],
+.dock:has(.hit[data-dir="down"]:active) .arrow[data-arm="down"],
+.dock:has(.hit[data-dir="left"]:active) .arrow[data-arm="left"],
+.dock:has(.hit[data-dir="right"]:active) .arrow[data-arm="right"] { fill: var(--shell-accent, var(--shell-a)); }
+.dock:has(.hit[data-act="select"]:active) [data-pill="select"] .pill,
+.dock:has(.hit[data-act="start"]:active) [data-pill="start"] .pill { fill: var(--shell-shade); }
+.dock:has(.hit[data-act="reset"]:active) .chiclet { fill: var(--color-glass); }
+.dock:has(.hit[data-act="power"]:active) .rocker.lit { fill: var(--shell-shade); }
+.dock:has(.hit[data-act="power"]:active) .rocker.shade { fill: var(--shell-lit); }
+
+/* The coin: a tap drops it down the slot, then the counter ticks. */
+.shell[data-drop] .part .coin { opacity: 1; animation: shell-drop 300ms var(--ease-travel) forwards; }
+@keyframes shell-drop { to { transform: translateY(70%); opacity: 0; } }
+.shell[data-nudge] .part .slot,
+.shell[data-phase="over"] .part .slot { animation: shell-pulse var(--t-glow) ease-in-out infinite; }
+@keyframes shell-pulse { 50% { fill: var(--shell-coin); } }
+
+/* The marquee: the cartridge's name, on a sunk strip. */
+.marquee {
+  position: absolute; inset: 0;
+  background: var(--shell-shade);
+  border-radius: var(--radius-hair);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--text-fine);
+  line-height: 1;
+  display: flex; align-items: center;
+  color: var(--shell-coin);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+.marquee span { padding-inline: calc(var(--u) * 2); animation: shell-marquee 12s linear infinite; }
+@keyframes shell-marquee { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+.shell[data-phase="live"] .marquee span { animation-play-state: paused; transform: none; }
+
+/* The shelf: carts spine-out on a rail. */
+.shelf-row { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 2%; }
+.shelf-row.stack { flex-direction: column; align-items: center; justify-content: flex-start; gap: 4%; }
+.shelf-rail { position: absolute; left: 0; right: 0; bottom: 0; height: 12%; background: var(--shell-shade); border-top: 1px solid var(--shell-edge); }
+.shelf-row.stack .shelf-rail { top: 0; bottom: 0; left: auto; right: 0; width: 12%; height: auto; border-top: 0; border-left: 1px solid var(--shell-edge); }
+.cart-btn {
+  overflow: hidden;
+  appearance: none; background: transparent; border: 0; padding: 0; margin: 0;
+  position: relative; z-index: 1; cursor: pointer; color: inherit;
+  display: grid; justify-items: center; gap: calc(var(--u) * 1);
+  border-radius: var(--radius-hair);
+}
+.cart-btn .part { display: block; width: 100%; height: 100%; position: static; }
+.cart-btn:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+.part .cart-shell { fill: var(--shell-lit); stroke: var(--shell-edge); stroke-width: 0.5; }
+.part .cart-label { fill: var(--cart, var(--shell-a)); }
+.part .cart-notch { fill: var(--shell-shade); }
+.cart-btn.on .part .cart-shell { stroke: var(--color-glass); }
+.cart-slot { display: block; width: 100%; height: 100%; border: 1px dashed var(--shell-edge); border-radius: var(--radius-hair); }
+.cart-load:hover .cart-slot { border-color: var(--color-glass-muted); }
+.cart-cap { font-size: var(--text-micro); color: var(--color-glass-muted); }
+
+/* The glass. */
+.glass {
+  position: absolute;
+  background: var(--shell-shade);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: grab;
+}
+.glass:active { cursor: grabbing; }
+.shell:not([data-solved]) .glass { position: relative; width: 100%; min-height: 18rem; }
+.shell:not([data-solved]) .dock { visibility: hidden; }
+.glass .screen { position: relative; display: grid; place-items: center; z-index: 1; }
+.glass canvas { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+.shell[data-phase="paused"] .glass canvas, .shell[data-off] .glass canvas { filter: brightness(0.5); }
+.shell[data-off] .glass canvas { filter: brightness(0.15); }
+.glass[data-cramped] .screen::after {
+  content: "small"; position: absolute; inset: auto 0 0; text-align: center;
+  font-size: var(--text-micro); color: var(--color-glass-muted);
+}
+
+.hud {
+  position: absolute; z-index: 3; left: 10%; right: 10%; top: 12%;
+  margin: 0; text-align: center; pointer-events: none;
+  font-size: var(--text-data); font-weight: 600; letter-spacing: var(--tracking-caps); text-transform: uppercase;
+  color: var(--shell-coin);
+  text-shadow: 0 1px 0 var(--color-panel-sunk), 0 -1px 0 var(--color-panel-sunk), 1px 0 0 var(--color-panel-sunk), -1px 0 0 var(--color-panel-sunk);
+}
+.hud:empty { display: none; }
+.shell[data-phase="over"] .hud { animation: shell-attract var(--t-glow) steps(2) infinite; }
+@keyframes shell-attract { 50% { opacity: 0.25; } }
+.shell:not([data-page="play"]) .hud { display: none; }
+
+/* The toys. Scanlines are 1px lines, intensity in opacity steps; the CRT is
+   a stepped corner vignette; the wipe is four stepped bands. No blur. */
+.fx { position: absolute; inset: 0; z-index: 2; pointer-events: none; display: none; }
+.shell[data-page="play"] .fx { display: block; }
+.fx-scan { background: repeating-linear-gradient(to bottom, transparent 0 2px, var(--color-panel-sunk) 2px 3px); opacity: 0; }
+.shell[data-scan="1"] .fx-scan { opacity: 0.18; }
+.shell[data-scan="2"] .fx-scan { opacity: 0.36; }
+.shell[data-scan="3"] .fx-scan { opacity: 0.55; }
+.fx-crt { opacity: 0; background:
+  linear-gradient(to right, var(--color-panel-sunk) 0 2%, transparent 2% 6%, transparent 94% 98%, var(--color-panel-sunk) 98%),
+  linear-gradient(to bottom, var(--color-panel-sunk) 0 2%, transparent 2% 6%, transparent 94% 98%, var(--color-panel-sunk) 98%);
+}
+.shell[data-crt] .fx-crt { opacity: 0.6; }
+.shell[data-tv="PAL"] .glass canvas { filter: saturate(0.85) contrast(1.05); }
+.fx-wipe { background: repeating-linear-gradient(to bottom, var(--color-panel-sunk) 0 25%, transparent 25% 50%); opacity: 0; }
+.shell[data-wipe] .fx-wipe { display: block; opacity: 1; animation: shell-wipe 360ms steps(4, end) forwards; }
+@keyframes shell-wipe { to { transform: translateY(-50%); opacity: 0; } }
+.shell[data-wear] .glass::after {
+  content: ""; position: absolute; z-index: 2; pointer-events: none;
+  left: 6%; top: 4%; width: 30%; height: 2px; background: var(--color-glass-muted); opacity: 0.35;
+}
+
+/* The pages, swiped across the glass. Play is transparent: the canvas is the page. */
+.pages { position: absolute; inset: 0; z-index: 4; display: flex; width: 100%; transition: transform var(--t-slide) var(--ease-detent); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .pages { transition: none; } .marquee span { animation: none; } }
+.pane { flex: 0 0 100%; height: 100%; overflow: auto; box-sizing: border-box; padding: calc(var(--u) * 4) calc(var(--u) * 6); background: var(--color-panel); pointer-events: auto; }
+.pane-play { background: transparent; pointer-events: none; }
+.shell[data-page="play"] .pages { pointer-events: none; }
+.pane-title { margin: 0 0 calc(var(--u) * 3); font: 600 var(--text-fine) var(--font-mono); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); }
+.shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: calc(var(--u) * 3); }
+.shelf-grid .cart-btn { width: 100%; }
+.shelf-grid .cart-btn .part { aspect-ratio: 48 / 40; height: auto; }
+.shelf-grid .cart-name { display: none; } /* the caption under the cart says it */
+.shelf-grid .cart-load { display: grid; }
+.shelf-grid .cart-load .cart-slot { min-height: calc(var(--u) * 12); }
+
+.toys { display: grid; gap: calc(var(--u) * 3); font-size: var(--text-fine); }
+.toys label { display: grid; grid-template-columns: 7rem 1fr; align-items: center; gap: calc(var(--u) * 2); }
+.toys label > span:first-child { color: var(--color-glass-muted); text-transform: uppercase; letter-spacing: var(--tracking-caps); font-size: var(--text-micro); }
+.toys label small { grid-column: 1 / -1; color: var(--color-glass-muted); font-size: var(--text-micro); line-height: 1.5; }
+.toys label.no { opacity: 0.7; }
+.toys input[type="range"] { width: 100%; accent-color: var(--shell-coin); }
+.toys input[type="checkbox"] { accent-color: var(--shell-coin); width: 1rem; height: 1rem; justify-self: start; }
+.toys .seg { display: inline-flex; gap: 1px; }
+.toys .seg button { appearance: none; border: 1px solid var(--shell-edge); background: var(--shell-lit); color: var(--color-glass-muted); font: inherit; padding: calc(var(--u) * 1) calc(var(--u) * 3); cursor: pointer; border-radius: var(--radius-hair); }
+.toys .seg button.on { background: var(--shell-coin); color: var(--color-panel); border-color: var(--shell-coin); }
+
+/* The status page: the readouts under game.js's ids, on panel where they belong. */
+.pane-status .con-kv { margin-top: calc(var(--u) * 2); }
+.pane-status .con-note { margin-top: calc(var(--u) * 2); }
+.pane-status .gates { margin-top: calc(var(--u) * 3); }
+.pane-status .legend { margin-top: calc(var(--u) * 3); }
+.pane-status h3 { margin: calc(var(--u) * 4) 0 0; font: 600 var(--text-fine) var(--font-mono); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); }
+
+/* The footer every sheet carries: the parameters that produced this shell. */
+.params {
+  position: absolute; z-index: 5; right: calc(var(--u) * 2); bottom: calc(var(--u) * 1);
+  margin: 0; font-size: 9px; color: var(--color-glass-muted); opacity: 0.6; pointer-events: none;
+  max-width: 60%; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

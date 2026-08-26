@@ -801,3 +801,49 @@ where no chip comes. The porting voice is out of the copy.
    image per page (title on paper with the project's accent; a cartridge's
    own cover on a builder's cart page), so a link pasted into iMessage, X or
    Slack unfurls as the page and not as a bare URL.
+
+## The console, 2026-08-26: one shell for every ratio
+
+The owner's handoff pack (`notes/console-shell/pack/`, from five candidate
+blueprints and the prior geometry sheets) asked for THE console: a
+chamfered-octagon screen sized to the short side, flex zones taking what the
+ratio leaves over, controls docked by priority, deterministic 45-degree
+facets absorbing the rest, the machine as part of the game, four pages
+swiped on the glass. It is live at `/6502/games`, both languages.
+
+What it is, in this repo's terms:
+
+- **A solver, pure and tested.** `web/lib/shell/solve.ts` takes a viewport
+  and a seed and gives the whole shell in units: mask, integer scale, zones,
+  docks, facets, and a params footer. `bun test lib/shell` runs the pack's
+  M1 to M3 gates over its ratio matrix and hashes two runs against each
+  other. Nothing on the page is placed by hand.
+- **A parts kit that is not a font.** Every control is polygons on the half
+  module at 0, 45 or 90 degrees; the credits counter is seven segment
+  polygons per digit; the words on a control are the text of the button
+  laid over it, so nothing scales with the frame that should not.
+- **The same DOM contract.** game.js is still byte for byte upstream's. The
+  shell docks the four `[data-dir]` buttons, presses `#b-power` and
+  `#b-pause` for the rocker and the pills, drives `#cart` from the shelf,
+  and reads its phase off what game.js paints (`consoleState.ts`, shared
+  with the floor strip's driver so the two cannot disagree about a pause).
+- **The machine.** Coins are given by the acceptor and spent to continue
+  after game over (NOTICE.md's rule, unchanged). The LED is off, ATTENTION
+  orange while booting, ACTIVE blue while live; never red, because red is a
+  failed assertion on every page of this site. Hold the rocker to switch
+  off. Turning the phone re-solves in place with the credit kept.
+- **The pack's two wrong assumptions, filed rather than fudged**
+  (`notes/console-shell/ISSUES.md`, twelve entries): the native screen is
+  128 x 128, one page of chip memory, so the crop camera has nothing to
+  crop; and the controller byte carries four directions, so A and B are
+  docked, drawn and disabled with the reason, which is the floor strip's
+  rule applied to a console.
+
+Refused, with the reason on the settings page: rewind (the engine keeps no
+snapshots), achievements (nothing mints them), a palette loader (a
+cartridge carries tiles; the colours are the die's layers). Not built: the
+pack's M5 raster ladder, since the shell is served live from the solver at
+every size and the sheets are SVG (`bun scripts/shell-sheets.ts`).
+
+The rule for the next arrival: `web/e2e/shell.spec.ts` is the console's
+gate, and a change to the shell lands with its assertion.

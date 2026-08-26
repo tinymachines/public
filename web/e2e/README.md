@@ -17,6 +17,7 @@ e2e` runs it against a preview (the chip pages only boot on production, so
 | `parity` | ported pages carry upstream's in-content links, the same query state, the same block cards |
 | `footer` | the footer states the API's version and is never clipped |
 | `api` | openapi.json is generated, the brief carries no token, strangers get 401 |
+| `shell` | the console shell on /6502/games: octagon mask, integer scale, 88px touch floor, coin and LED, pages, rotation without reload, no Nintendo mark |
 
 The page list is fetched from `/sitemap.xml` in `global-setup.ts`; nothing
 is listed by hand. Each spec asserts a count before it asserts a property, so
