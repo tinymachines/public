@@ -152,6 +152,31 @@ test("the LED and the machine: off before power, boot then live after the rocker
   await expect(page.locator(".hud")).toHaveText(/pause/i);
 });
 
+test("hold power switches the machine off through the store; a tap brings it back running", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await page.locator('.hit[data-act="power"]').click();
+  await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
+  test.skip((await page.locator(".shell").getAttribute("data-phase")) === "stopped", "the chip API did not answer from this origin");
+  // Hold: 600 ms is the rocker's hold.
+  const b = (await page.locator('.hit[data-act="power"]').boundingBox())!;
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(900);
+  await page.mouse.up();
+  await expect(page.locator(".shell")).toHaveAttribute("data-led", "off");
+  await expect(page.locator(".hud")).toHaveText(/power on/i);
+  // The strip agrees: its power key is no longer solid, and the store is off.
+  await expect(page.locator(".chip-transport .tbtn.pw")).not.toHaveClass(/\bon\b/);
+  expect(await page.evaluate(() => sessionStorage.getItem("v6502.power"))).toBe("0");
+  // A tap: on, and running again.
+  await page.locator('.hit[data-act="power"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-led", "live", { timeout: 10000 });
+  await expect(page.locator(".shell")).toHaveAttribute("data-phase", "live");
+  await expect(page.locator(".chip-transport .tbtn.pw")).toHaveClass(/\bon\b/);
+});
+
 test("no Nintendo mark, no trademark sign, anywhere on the console", async ({ page }) => {
   await open(page, GAMES);
   const html = await page.content();

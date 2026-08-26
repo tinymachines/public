@@ -5,6 +5,7 @@ import type { Lang } from "@/lib/lang";
 import { clipPolygon, points } from "@/lib/shell/geom";
 import { solve, type Dock, type Solved } from "@/lib/shell/solve";
 import { readConsole, watchConsole, type Phase } from "../consoleState";
+import { useChipStore, useChipState } from "../chipStore";
 import { AB, Cart, Coin, Counter, Dpad, Pills, Power, Quick, Rail, Speaker } from "./Kit";
 
 /**
@@ -19,8 +20,11 @@ import { AB, Cart, Coin, Counter, Dpad, Pills, Power, Quick, Rail, Speaker } fro
  *                   its DOM contract has them; the solver picks the box's
  *                   width so game.js's own fit() chooses the same integer k
  *   the d-pad       four `[data-dir]` buttons game.js already listens to
- *   power / reset   `#b-power` (boot or reboot) and `#b-pause`, pressed for
- *                   the finger by the rocker, which is the same click
+ *   power / reset   the site's chip store (chipStore.ts): power boots or
+ *                   pauses through `setPower`/`toggleRunning`, reset is the
+ *                   store's `reset`, and the console's driver (ConsoleDriver)
+ *                   turns those into game.js's own clicks. Until the store
+ *                   arrives the keys press `#b-power`/`#b-pause` directly
  *   select / start  select cycles `#cart`; start spends a credit to continue
  *                   after game over, and pauses while live
  *   the coin        given, never sold (NOTICE.md): a tap drops one in
@@ -146,8 +150,19 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
   const [drop, setDrop] = useState(false);
   const [nudge, setNudge] = useState(false);
   const [wipe, setWipe] = useState(false);
-  const [off, setOff] = useState(false);
   const [fx, setFx] = useSession<Fx>("tm6502.fx", FX0);
+  // Off is the store's fact (owner's call, 2026-08-26: all control through
+  // the strip). Before the store arrives the shell keeps its own flag, and
+  // hands it over the moment it does.
+  const store = useChipStore();
+  const chip = useChipState(store);
+  const [localOff, setLocalOff] = useState(false);
+  // Off, as distinct from never booted: the store is off while the console
+  // holds a paused machine. A console that has not booted is "off" in the
+  // HUD's words already, and start spends a credit to boot it.
+  const off = store
+    ? chip.live && !chip.powered && !chip.booting && (phase === "live" || phase === "paused")
+    : localOff;
 
   // The frame: whatever the stage is, measured, and the strip's height
   // published so the stage can stop above it.
@@ -197,32 +212,60 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
   // game.js sizes its canvas on window resize only; a re-solve is one too.
   useEffect(() => { if (measured) window.dispatchEvent(new Event("resize")); }, [measured, solved.boxPx]);
 
-  // Actions, every one of them a click on a control game.js owns.
-  const boot = useCallback(() => { const c = readConsole(); if (c && !c.booting) c.power.click(); }, []);
-  const togglePause = useCallback(() => { const c = readConsole(); if (c && c.powered) c.pause.click(); }, []);
+  // Actions, every one on the store where it has arrived: power on boots (the
+  // driver's power), reset reboots (the driver's reset), pause and resume are
+  // the store's running. The clicks are the fallback for a page whose strip
+  // never loaded a store, and are what the driver makes of the store anyway.
+  const boot = useCallback(() => {
+    if (store?.hasDriver()) {
+      if (!store.isPowered()) void store.setPower(true);
+      else store.reset();
+      return;
+    }
+    const c = readConsole(); if (c && !c.booting) c.power.click();
+  }, [store]);
+  const togglePause = useCallback(() => {
+    if (store?.hasDriver()) { if (store.isPowered()) store.toggleRunning(); return; }
+    const c = readConsole(); if (c && c.powered) c.pause.click();
+  }, [store]);
+  const switchOff = useCallback(() => {
+    if (store?.hasDriver()) { void store.setPower(false); return; }
+    if (phase === "live") togglePause();
+    setLocalOff(true);
+  }, [store, phase, togglePause]);
+  const switchOn = useCallback(async () => {
+    if (store?.hasDriver()) {
+      await store.setPower(true);
+      // Off held a paused machine; on is it running again.
+      if (store.isPowered() && !store.isRunning()) store.setRunning(true);
+      return;
+    }
+    setLocalOff(false);
+    if (phase === "paused") togglePause();
+  }, [store, phase, togglePause]);
   const insertCoin = () => {
     if (drop) return;
     setDrop(true);
     setTimeout(() => { setDrop(false); setCredits((n) => Math.min(99, n + 1)); }, 300);
   };
   const start = () => {
-    if (phase === "live" || phase === "paused") { if (off) setOff(false); togglePause(); return; }
+    if (off) { void switchOn(); return; }
+    if (phase === "live" || phase === "paused") { togglePause(); return; }
     if (phase === "boot") return;
-    if (credits > 0) { setCredits((n) => n - 1); setOff(false); boot(); }
+    if (credits > 0) { setCredits((n) => n - 1); boot(); }
     else { setNudge(true); setTimeout(() => setNudge(false), 700); }
   };
   const holdT = useRef<number | null>(null);
   const powerDown = () => {
     holdT.current = window.setTimeout(() => {
       holdT.current = null;
-      if (phase === "live") togglePause();
-      setOff(true);
+      if (phase === "live" || phase === "paused") switchOff();
     }, 600);
   };
   const powerUp = () => {
     if (holdT.current === null) return; // the hold fired: that was the action
     clearTimeout(holdT.current); holdT.current = null;
-    if (off) { setOff(false); if (phase === "paused") togglePause(); return; }
+    if (off) { void switchOn(); return; }
     if (phase === "live" || phase === "paused") togglePause();
     else if (phase !== "boot") boot();
   };
