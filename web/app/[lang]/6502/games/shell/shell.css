@@ -42,6 +42,10 @@
   min-height: 20rem;
 }
 html.has-fullscreen .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); }
+/* The console page has no bar at all: the stage is the viewport above the
+   strip, in and out of full screen alike. */
+.console-full .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); }
+.console-full .con-head { height: 0; overflow: hidden; }
 .workbench.has-transport .shell-main { padding-bottom: 0; }
 
 .shell-bg { position: absolute; inset: 0; display: block; }

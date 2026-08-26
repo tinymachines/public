@@ -9,7 +9,8 @@ import { open, DESK } from "./lib";
  */
 test.describe.configure({ mode: "serial" });
 const has = (page: import("@playwright/test").Page) => page.evaluate(() => document.documentElement.classList.contains("has-fullscreen"));
-for (const p of ["/6502/explorer", "/6502/games", "/6502/primer", "/6502/lab"]) {
+// The console has no bar to hide (console-full); its own test is in shell.spec.
+for (const p of ["/6502/explorer", "/6502/primer", "/6502/lab"]) {
   test(`full screen on ${p}`, async ({ page }) => {
     await page.setViewportSize(DESK);
     await open(page, p, 8000);

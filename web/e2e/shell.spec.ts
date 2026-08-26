@@ -177,6 +177,28 @@ test("hold power switches the machine off through the store; a tap brings it bac
   await expect(page.locator(".chip-transport .tbtn.pw")).toHaveClass(/\bon\b/);
 });
 
+test("the console is the whole viewport: no bar, the stage meets the strip", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await solved(page);
+  const r = await page.evaluate(() => {
+    const stage = document.querySelector(".shell-stage")!.getBoundingClientRect();
+    const strip = document.querySelector(".chip-transport")!.getBoundingClientRect();
+    return {
+      bars: document.querySelectorAll(".app-head, .topbar, .wb-bar").length,
+      h1: document.querySelectorAll("h1").length,
+      top: Math.round(stage.top),
+      gap: Math.round(strip.top - stage.bottom),
+      sub: !!document.querySelector("header .sub"),
+    };
+  });
+  expect(r.bars, "no bar").toBe(0);
+  expect(r.h1, "one h1, for the document").toBe(1);
+  expect(r.top, "the stage starts at the top").toBeLessThanOrEqual(1);
+  expect(Math.abs(r.gap), "the stage meets the strip").toBeLessThanOrEqual(2);
+  expect(r.sub, "game.js's header .sub is still there").toBe(true);
+});
+
 test("no Nintendo mark, no trademark sign, anywhere on the console", async ({ page }) => {
   await open(page, GAMES);
   const html = await page.content();

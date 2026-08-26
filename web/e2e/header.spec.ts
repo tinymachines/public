@@ -6,7 +6,8 @@ import { pages, open, PHONE, DESK } from "./lib";
  * name beside the mark on every page but the two homes, one flag, and the
  * menu at the same x on every page at a given width.
  */
-const sample = pages();
+// The console page carries no bar (console-full, owner's call 2026-08-26).
+const sample = pages().filter((p) => !/\/6502\/games$/.test(p));
 for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
   test.describe(`the bar, ${name}`, () => {
     test.use({ viewport: vp });

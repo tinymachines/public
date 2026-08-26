@@ -5,7 +5,6 @@ import Link from "next/link";
 import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
-import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { ConsoleDriver } from "./ConsoleDriver";
 import { Shell } from "./shell/Shell";
 import "./console.css";
@@ -222,17 +221,16 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
        attributes ride the root it queries for, and `header .sub` exists
        because the bar is wrapped in a real <header> carrying the .sub the
        script writes the cartridge blurb into. */
-    <div className="workbench has-transport" data-workbench data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
-      <header>
-        <WorkbenchBar
-          lang={lang}
-          title="Die Runner"
-          trail={[
-            { href: "/", label: "tinymachines.ai" },
-            { href: "/6502", label: "6502" },
-          ]}
-        />
-        <span className="sub quiet wb-sub" />
+    /* console-full (owner's call, 2026-08-26): no bar. The console and the
+       floor strip are the whole viewport; the page's name is an h1 for the
+       document and screen readers, not a band. game.js's contract still
+       wants `header .sub` for the cartridge blurb, so the header stays as
+       an element with nothing to show. The way out is the strip's own home
+       (the browser's back, or the links on the console's status page). */
+    <div className="workbench has-transport console-full" data-workbench data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
+      <header className="con-head">
+        <h1 className="sr-only">Die Runner</h1>
+        <span className="sub quiet wb-sub" hidden />
       </header>
 
       <main className="wb-main shell-main">
