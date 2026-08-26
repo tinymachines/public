@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T19:15:16+00:00",
+  "boarded_at": "2026-08-26T19:19:46+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "4f8bebb00ec014596379be6086fb702e6fbfc7f0",
+    "commit": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b",
     "branch": "main",
-    "subject": "Trace and halfshot register with the store (trace's private running and fixed rate go; both seek over their rows); the Lab registers through a host handover (window.tmChipStore / tm:chip-store), paces off the store's clock and marks its player driven; the header transport lists trace",
-    "committed": "2026-08-26T15:10:50-04:00",
+    "subject": "The Lab tells the store when a boot that finished after the store attached lands; STORE hoisted above paintPower",
+    "committed": "2026-08-26T15:17:30-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "f166b9027c80dc379bfc1c9f81e11ad158efc5358ab8236645550f713233d001",
+    "sha256": "0c1a842968435f8d5a571c97dc6b551f4de245ad350ba56bbd7f32921bfedf62",
     "bytes": 532984,
-    "modified": "2026-08-26T19:12:05+00:00",
-    "stated": "4f8bebb00ec014596379be6086fb702e6fbfc7f0",
-    "running": "4f8bebb00ec014596379be6086fb702e6fbfc7f0"
+    "modified": "2026-08-26T19:17:37+00:00",
+    "stated": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b",
+    "running": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b"
   },
   "release": {
-    "version": "v0.252",
-    "commit": "4f8bebb00ec014596379be6086fb702e6fbfc7f0",
-    "built": "2026-08-26T19:14:36+00:00"
+    "version": "v0.253",
+    "commit": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b",
+    "built": "2026-08-26T19:19:23+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.2,
+      "seconds": 0.1,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 7.7,
+      "seconds": 7.5,
       "ok": true
     }
   ]
