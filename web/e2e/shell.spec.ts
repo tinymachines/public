@@ -166,7 +166,7 @@ test("hold power switches the machine off through the store; a tap brings it bac
   await page.waitForTimeout(900);
   await page.mouse.up();
   await expect(page.locator(".shell")).toHaveAttribute("data-led", "off");
-  await expect(page.locator(".hud")).toHaveText(/power on/i);
+  await expect(page.locator(".hud")).toHaveText(/^(off|オフ)$/);
   // The strip agrees: its power key is no longer solid, and the store is off.
   await expect(page.locator(".chip-transport .tbtn.pw")).not.toHaveClass(/\bon\b/);
   expect(await page.evaluate(() => sessionStorage.getItem("v6502.power"))).toBe("0");

@@ -1057,3 +1057,18 @@ strip's view unsubscribed itself (an effect dep on the state it set); the
 Lab attached mid-boot and never reported the boot landing; the console's
 mirror pauses on every announce rather than on the store's running edge.
 Suite at 1.0.113: 347 passed.
+
+## The console's keys act on the store, 2026-08-26
+
+1.0.114. The shell's power rocker, reset and start went through game.js's
+own buttons (`#b-power`, `#b-pause`) and kept an `off` flag of their own, so
+the console had three surfaces for pause and one of them the strip could not
+see. Now `games/chipStore.ts` takes the store from the strip's handover (the
+same `window.tmChipStore` / `tm:chip-store` the Lab uses), and every key is a
+call on it: a tap on power is `toggleRunning`, a hold is `setPower(false)`,
+reset is `reset`, start spends its credit into `setPower(true)`. Off is the
+store's fact (`isPowered()` false over a paused machine), so the LED, the
+HUD and the strip's power key cannot disagree. The clicks remain only as the
+fallback for a page whose strip never loaded a store, and they are what the
+console's driver makes of the store's calls anyway. `shell.spec` holds the
+hold-to-off round trip against the strip and `sessionStorage`.

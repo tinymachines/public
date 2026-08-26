@@ -77,7 +77,8 @@ Three rules, each already paid for elsewhere in the tree:
    `tm:chip-store`), its player hidden while driven; halfshot and trace
    register drivers over their recordings. Every page with a chip is on the
    one store. What remains of the finale is step 3, the API engine and the
-   local/API switch, and the console's shell keys acting on the store.
+   local/API switch (the console's shell keys act on the store since
+   1.0.114).
 
 Every step leaves the disabled controls exactly as they are until the step
 that makes them true.
