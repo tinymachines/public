@@ -122,14 +122,21 @@ export function ConsoleDriver() {
       };
       unwatch = watchConsole(tell);
 
-      // store -> console
+      // store -> console, on the EDGE of the store's running state. Every
+      // announce used to be compared against the console, and setPower's
+      // own announce (the console had just booted itself, tell() had not
+      // yet reported it running) read as "the store says stopped": one
+      // pause click, and a rocker boot ended paused.
+      let lastWant = store.isRunning();
       unsub = store.subscribe(() => {
+        const want = store.isRunning();
+        if (want === lastWant) return;
+        lastWant = want;
         const c = readConsole();
         if (!c || c.booting) return;
         // Only a powered store drives the console: off is the driver's own
         // power(false), and a store still booting has nothing to say yet.
         if (store.isBooting?.() || (store.isPowered && !store.isPowered())) return;
-        const want = store.isRunning();
         if (want === c.running) return;
         if (want && !c.powered) c.power.click();
         else c.pause.click();
