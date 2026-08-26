@@ -28,7 +28,12 @@ export const TOOL_PAGES = [
 export const STRIP_LIVE = [
   "/6502/explorer", "/6502/primer", "/6502/tracer", "/6502/games", "/6502/blueprint",
   "/6502/chipmap", "/6502/exploded", "/6502/schematic", "/6502/programs",
+  "/6502/trace", "/6502/halfshot", "/6502/lab",
 ];
+/** Strip pages whose driver has no power switch: a recording is not booted. */
+export const NO_SWITCH = ["/6502/trace", "/6502/halfshot"];
+/** Strip pages whose driver has no opcode step (a recording carries no SYNC to stop on). */
+export const NO_OP = ["/6502/trace", "/6502/halfshot"];
 
 /** A page with its scripts settled. The chip pages boot wasm; the number is what they need. */
 export async function open(page: Page, p: string, settle = 2500) {

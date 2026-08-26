@@ -32,7 +32,7 @@ sub-projects, along the licence line. Where each one is right now:
 | `style/` | the design system: `tokens.css` (the owner's `@theme`), `components.css`, the zoo, and five Python checks | build time and deploy gates |
 | `data/` | the facts that are typed once: `pieces.json`, `projects.json`, `chip.json`, `ja.json`, `engine.json`; plus the scripts that check prose against them | read by `web/lib` and `api/` at build and start |
 | `docs/` | the documentation tree, markdown; `web/lib/docs.ts` walks it | prerendered at `/docs` |
-| `projects/6502/` | the two upstream things carried here by file: the Halfwave Lab's HTML, and the Wayback drip (`drip.py`) | lab at build time; drip by hand or a timer |
+| `projects/6502/` | the Wayback drip (`drip.py`). The Lab's HTML was here as a copy until 2026-08-26; it is read from the 6502 checkout now | drip by hand or a timer |
 | `deploy/` | the nginx server block and two systemd units, source of truth for the copies under `/etc` | installed by hand |
 | `scripts/` | `deploy.sh`, the one command between a change and it being live; `board-engine.py`, the engine gate | by hand |
 | `notes/` | the survey, the plans, the console pack's issues, this file | read by people |
@@ -50,7 +50,7 @@ app/[lang]/page.tsx ───────────── lib/chip, lib/pieces
 app/[lang]/docs/** ────────────── lib/docs, lib/i18n
 app/[lang]/6502/page, learn, cart, tools ── lib/projects, lib/i18n, lib/tracks, lib/docs, lib/explorer-menu
 app/[lang]/6502/explorer, [page] ─ lib/explorer, lib/explorer-menu ── ../../6502/web/*.html, style.css   (BUILD-TIME READ)
-app/[lang]/6502/lab ───────────── lib/lab ── projects/6502/lab/halfwave-lab.html
+app/[lang]/6502/lab ───────────── lib/lab ── ../6502/docs/halfwave-lab/halfwave-lab.html
 app/[lang]/6502/api ───────────── lib/apidoc ── ../../6502/service/api.html                              (BUILD-TIME READ)
 app/[lang]/6502/games ─────────── shell/Shell, shell/Kit ── lib/shell/{solve,geom}; ConsoleDriver ── consoleState
                                   public/6502/games/*.js ── lib/console-modules ── ../../6502/games       (BUILD-TIME READ, three lines patched)
@@ -142,7 +142,7 @@ can close.
 | the chip documents | `pull-chipdocs.mjs` reads `../6502/docs/*.md` | build | throws on an unrecognised shape |
 | the console's modules | `lib/console-modules.ts` reads six modules, two ROMs and the tile sheet from `../6502/games`, patches three lines (the API base in `game.js` and `registry.js`, one link in `game.js`); `scripts/pull-console.mjs` writes them to `web/public/6502/games/` (gitignored) with `upstream.json` naming the commit and every digest | build | a patch that no longer matches exactly once throws; `bun test lib` holds the patches, the byte parity of the rest, and that every module parses; `check-build.mjs` holds the page to `game.js`'s selectors; the tree is held to the boarded commit |
 | the registry | `api/mint.py` imports `registry.py` from `TM_REGISTRY_SERVICE` and opens `TM_REGISTRY_DB` | request | the import is named at the top of `mint.py` so a rename fails loudly; `test_mint.py` |
-| the lab | `projects/6502/lab/halfwave-lab.html`, a copy, byte for byte | build | `lib/lab.ts` throws when a substitution finds nothing |
+| the lab | `../6502/docs/halfwave-lab/halfwave-lab.html`, read at build (`upstream.json` beside the assets) | build | `lib/lab.ts` throws when a substitution finds nothing; `lib/lab.test.ts` |
 | the archive | `projects/6502/archive/drip.py` pulls from the Wayback Machine to `TM_ARCHIVE`, never into the tree | by hand | `.gitignore`, anchored by name |
 | the four public hosts | `probe.py` measures them | request, cached 30 s | reported, never asserted |
 

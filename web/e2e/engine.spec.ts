@@ -109,3 +109,30 @@ test("the console offers power, start and play, and nothing it cannot honour", a
   expect(on!.disabled, "power, start and play; no half-step, cycle, op").toEqual([false, false, true, false, true, true, true]);
   expect(on!.seek.disabled).toBe(true);
 });
+
+test("the Lab is a view of the same store: its player is hidden, the strip drives it", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/6502/lab", 6000);
+  const r = await strip(page);
+  expect(r, "the strip is on the Lab").not.toBeNull();
+  expect(r!.strips).toBe(1);
+  expect(r!.powerOn, "the Lab boots powered").toBe(true);
+  expect(r!.disabled, "every key: the Lab's driver offers the full set").toEqual([false, false, false, false, false, false, false]);
+  expect(r!.seek.disabled).toBe(false);
+  expect(r!.seek.max, "the recording has a length").toBeGreaterThan(10);
+  const hidden = await page.evaluate(() => (document.querySelector(".lab-shell .player") as HTMLElement).offsetWidth);
+  expect(hidden, "the Lab's own player is hidden").toBe(0);
+  // The strip's op steps the Lab's cursor to the next fetch.
+  const before = r!.h!;
+  await page.locator(".chip-transport .tbtn").nth(6).click();
+  await page.waitForTimeout(200);
+  const after = (await strip(page))!.h!;
+  expect(after).toBeGreaterThan(before);
+  const pos = await page.evaluate(() => document.querySelector("#pos b")?.textContent);
+  expect(Number(pos), "the Lab's own readout moved with it").toBe(after);
+  // Power off through the strip is the Lab's off state.
+  await page.click(".chip-transport .tbtn.pw");
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => document.body.classList.contains("off")), "the Lab shows its off note").toBe(true);
+  expect((await strip(page))!.powerOn).toBe(false);
+});

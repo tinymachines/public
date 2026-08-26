@@ -1020,8 +1020,34 @@ wiring test (leave at 51, arrive at 51); on the roof by `e2e/engine.spec.ts`
 moves the count, explorer to tracer at 51, the console's set) and
 `strip.spec` (one strip, every key live on a wasm page).
 
-Not yet on the store: the Lab (its own player), halfshot (no driver),
-trace.js (private running). The console's shell still acts through
-game.js's buttons; the driver declares caps and power now, the shell's keys
-are next. `notes/strip-recon.md` is the survey; `notes/one-engine.md` the
-order.
+The console's shell still acts through game.js's buttons; the driver
+declares caps and power now, the shell's keys are next. `notes/strip-recon.md`
+is the survey; `notes/one-engine.md` the order.
+
+## Every instrument on the store, and the Lab is read, not copied, 2026-08-26
+
+Later the same evening (6502@4f8bebb, roof 1.0.110). Three pages were off the
+store: trace.js kept a private running flag and a fixed three half-cycles a
+second, so the strip could pause every page but that one; halfshot registered
+no driver; the Lab had its own player and its own `POWER`. Now trace and
+halfshot register drivers that seek over their rows (no power switch, since a
+recording is not booted; no opcode step, since the rows carry no SYNC to stop
+on), and the Lab registers through a handover the strip makes
+(`window.tmChipStore`, or a `tm:chip-store` event when the Lab's script ran
+first), paces its play off the store's clock, and marks its player `driven`,
+which lab.css hides. Standalone on halfwave.tinymachines.ai nothing is
+provided and nothing changes. One strip on twelve pages.
+
+Found on the way: the Lab's HTML was a committed copy at `projects/6502/lab/`
+since 2026-08-23, hand-edited for em dashes, with no recorded base, and (as
+it embeds a canned trace of the chip) carrying the die data's licence into
+this public repository. The same three costs the console's modules paid that
+afternoon. It is read from the 6502 checkout at build time now, the em-dash
+pass runs over the whole document (a comma before a conjunction, a colon
+otherwise), `public/6502/lab/upstream.json` records the commit and digest,
+and `lib/lab.test.ts` holds that no dash ships, the API is named, and the
+Lab registers. Upstream this is held by `_chipnav-test` (trace has the
+header transport; the two-load test waits for the boot first); on the roof
+`strip.spec` runs on twelve pages with `NO_SWITCH` and `NO_OP` naming the two
+recordings, and `engine.spec` drives the Lab from the strip (op moves its
+own readout; power off shows its off note).

@@ -72,9 +72,12 @@ Three rules, each already paid for elsewhere in the tree:
    so the explorer's navigations stay hard. A deep link naming a half-cycle
    (`?steps=`) outranks the snapshot.
 3. The API engine: same driver interface, halfwave behind it. The switch.
-4. The Lab, as an upstream proposal: register the Lab's machine with the
-   store, or draw the Lab from the roof's engine. Also still off the store:
-   halfshot (no driver) and trace.js (a private running flag).
+4. **Done (2026-08-26, 6502@4f8bebb).** The Lab registers with the store
+   through a handover from the strip (`window.tmChipStore` /
+   `tm:chip-store`), its player hidden while driven; halfshot and trace
+   register drivers over their recordings. Every page with a chip is on the
+   one store. What remains of the finale is step 3, the API engine and the
+   local/API switch, and the console's shell keys acting on the store.
 
 Every step leaves the disabled controls exactly as they are until the step
 that makes them true.

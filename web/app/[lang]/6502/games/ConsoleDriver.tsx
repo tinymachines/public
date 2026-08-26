@@ -44,6 +44,7 @@ interface Store {
   registerDriver(d: unknown): void;
   subscribe(fn: () => void): () => void;
   isPowered?(): boolean;
+  isBooting?(): boolean;
   setPower?(on: boolean): Promise<void>;
 }
 
@@ -105,12 +106,19 @@ export function ConsoleDriver() {
       // (game.js has no off), so a powered console with the store off is
       // the off state itself, not a boot to report.
       let wasPowered = readConsole()?.powered ?? false;
-      const tell = () => {
+      const tell = async () => {
         const c = readConsole();
         if (!c || c.booting) return;
-        if (c.powered && !wasPowered && store.isPowered && !store.isPowered()) void store.setPower?.(true);
+        // Power first, and awaited: the store refuses to run a chip it has
+        // not seen powered, so running is told only once power has landed.
+        if (c.powered && !wasPowered && store.isPowered && !store.isPowered()) {
+          wasPowered = true;
+          await store.setPower?.(true);
+        }
         wasPowered = c.powered;
-        if (c.running !== store.isRunning()) store.setRunning(c.running);
+        const now = readConsole();
+        if (!now || now.booting) return;
+        if (now.running !== store.isRunning()) store.setRunning(now.running);
       };
       unwatch = watchConsole(tell);
 
@@ -118,6 +126,9 @@ export function ConsoleDriver() {
       unsub = store.subscribe(() => {
         const c = readConsole();
         if (!c || c.booting) return;
+        // Only a powered store drives the console: off is the driver's own
+        // power(false), and a store still booting has nothing to say yet.
+        if (store.isBooting?.() || (store.isPowered && !store.isPowered())) return;
         const want = store.isRunning();
         if (want === c.running) return;
         if (want && !c.powered) c.power.click();

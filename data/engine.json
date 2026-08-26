@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T18:53:07+00:00",
+  "boarded_at": "2026-08-26T19:15:16+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "d50c52ef07de5994172b5beea5cb12efd6c70be9",
+    "commit": "4f8bebb00ec014596379be6086fb702e6fbfc7f0",
     "branch": "main",
-    "subject": "The driver says what it can do, and one chip crosses the pages: chip-machine.js (caps, op, seek, power, snapshot across a navigation), the store's power and seek, eight pages on chipDriver, the header gated on power; held by _chipnav-test 1b and a two-load wiring test",
-    "committed": "2026-08-26T14:46:49-04:00",
+    "subject": "Trace and halfshot register with the store (trace's private running and fixed rate go; both seek over their rows); the Lab registers through a host handover (window.tmChipStore / tm:chip-store), paces off the store's clock and marks its player driven; the header transport lists trace",
+    "committed": "2026-08-26T15:10:50-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "ccc6eeb23f139e0804ac20d87fe7837c0895a5c8630532aa1161b93f1b3299e4",
+    "sha256": "f166b9027c80dc379bfc1c9f81e11ad158efc5358ab8236645550f713233d001",
     "bytes": 532984,
-    "modified": "2026-08-26T18:49:27+00:00",
-    "stated": "d50c52ef07de5994172b5beea5cb12efd6c70be9",
-    "running": null
+    "modified": "2026-08-26T19:12:05+00:00",
+    "stated": "4f8bebb00ec014596379be6086fb702e6fbfc7f0",
+    "running": "4f8bebb00ec014596379be6086fb702e6fbfc7f0"
   },
   "release": {
-    "version": "v0.251",
-    "commit": "d50c52ef07de5994172b5beea5cb12efd6c70be9",
-    "built": "2026-08-26T18:52:32+00:00"
+    "version": "v0.252",
+    "commit": "4f8bebb00ec014596379be6086fb702e6fbfc7f0",
+    "built": "2026-08-26T19:14:36+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 1.0,
+      "seconds": 0.2,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 9.3,
+      "seconds": 7.7,
       "ok": true
     }
   ]

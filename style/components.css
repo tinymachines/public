@@ -2494,15 +2494,10 @@ html.has-fullscreen .workbench .app-head { display: none; }
 ) { display: none; }
 .workbench.has-transport .explorer-shell :is(label.field):has(> #bp-speed, > #tc-speed) { display: none; }
 
-/* The control, at the right end of the strip. In the chip transport it is
-   a .tbtn like its neighbours; in the Lab's player it is the Lab's .tbtn,
-   with the icon sized the way ours are since the Lab draws its own by
-   data-ic. Lit while it holds. */
+/* The control, at the right end of the strip, a .tbtn like its neighbours.
+   Lit while it holds. */
 .chip-transport .tbtn.fs { margin-left: calc(var(--u) * 1); }
-.chip-transport .tbtn.fs.on,
-.lab-shell .prow .tbtn.fs.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
-.lab-shell .prow .tbtn.fs { margin-left: auto; }
-.lab-shell .prow .tbtn.fs .ic { width: 14px; height: 14px; flex: none; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.chip-transport .tbtn.fs.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
 
 /* ==========================================================================
    28. THE SECTION STRIP. A page's sections under the workbench bar, the

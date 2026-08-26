@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import type { Lang } from "@/lib/lang";
 
 /**
@@ -20,9 +19,9 @@ import type { Lang } from "@/lib/lang";
  * state. The floating exit control the bar-slot version needed is gone with
  * the slot.
  *
- * One mechanism for every instrument: the explorer pages and the console put
- * the button in the chip transport (ChipTransport.tsx); the Lab, whose strip
- * is its own, gets it portalled in at the same place (LabFullscreen).
+ * One mechanism for every instrument: the chip transport (ChipTransport.tsx)
+ * carries the button, and since 2026-08-26 the Lab is driven by that strip
+ * too, so the portal into the Lab's own player (LabFullscreen) is gone.
  */
 
 const L = {
@@ -113,39 +112,4 @@ export function FullscreenButton({ lang = "en" }: { lang?: Lang }) {
       <span className="lb">{S.word}</span>
     </button>
   );
-}
-
-/**
- * The Lab's strip is upstream markup this repository does not edit, so the
- * button is portalled into the end of its control row once the row exists.
- * The row is static HTML and there before this runs; the observer is for the
- * client-side navigation case, where the shell is painted before the body.
- */
-export function LabFullscreen({ lang = "en" }: { lang?: Lang }) {
-  const [row, setRow] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    const find = () => document.querySelector<HTMLElement>(".lab-shell .player .prow");
-    const mo = new MutationObserver(() => {
-      const r = find();
-      if (r) {
-        setRow(r);
-        mo.disconnect();
-      }
-    });
-    mo.observe(document.body, { childList: true, subtree: true });
-    // The already-present case, after the first paint rather than inside the
-    // effect: a synchronous setState here renders twice.
-    const frame = requestAnimationFrame(() => {
-      const r = find();
-      if (r) {
-        setRow(r);
-        mo.disconnect();
-      }
-    });
-    return () => {
-      mo.disconnect();
-      cancelAnimationFrame(frame);
-    };
-  }, []);
-  return row ? createPortal(<FullscreenButton lang={lang} />, row) : null;
 }

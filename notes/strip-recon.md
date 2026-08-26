@@ -1,9 +1,10 @@
 # The strip and every page that runs the chip: recon, 2026-08-26
 
-*Status, same evening: pieces 1 and 2 of section 5 are done (upstream
-6502@d50c52e / release v0.251; roof 1.0.109), and the console driver
-declares its capabilities (part of 3). The Lab, halfshot, trace.js and the
-cartridge pack remain.*
+*Status, same evening: pieces 1, 2 and 4 of section 5 are done (upstream
+6502@d50c52e then 4f8bebb; roof 1.0.109 then 1.0.110): every page with a
+chip is on the one store, the Lab included, and the Lab is read from the
+checkout rather than copied. The console driver declares its capabilities
+(part of 3); the shell's own keys and the cartridge pack remain.*
 
 *Survey before the final iteration on the control strip (owner's brief: the
 first button is power, solid when on; one running cartridge for every page;

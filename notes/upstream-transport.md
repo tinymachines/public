@@ -101,10 +101,10 @@ in all" is true today but "the same half-cycle in all" is not yet.
 
 1. `caps` and `driverCaps()`. **Done 2026-08-26 (6502@d50c52e).**
 2. `sync` + `stepOp` (the op button). **Done, same commit.**
-3. `length` + `seek` (the scrubber). **Done for the wasm pages**; halfshot
-   and the Lab do not register yet.
-4. `power`. **Done in the store**; the console's driver on the roof declares
-   it, the Lab does not register yet.
+3. `length` + `seek` (the scrubber). **Done**: the wasm pages, halfshot, trace
+   and the Lab all register (6502@4f8bebb).
+4. `power`. **Done**: the store, the Lab (through the strip's handover), the
+   console's driver on the roof.
 5. Lifecycle (`registerDriver(null)` is honoured; `unmount` is not) and the
    shared Machine (arrived as a snapshot across pages, `chip-machine.js`,
    rather than one instance).

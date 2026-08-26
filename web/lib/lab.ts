@@ -32,7 +32,37 @@ import { kitBorders } from "./kit-borders";
  * in the failing.
  */
 
-const LAB = path.join(process.cwd(), "..", "projects", "6502", "lab", "halfwave-lab.html");
+/**
+ * The Lab, read out of the 6502 checkout beside this one at build time.
+ *
+ * Until 2026-08-26 this was a copy at projects/6502/lab/, committed, with
+ * its em dashes replaced by hand and no recorded base: the same two costs
+ * the console's modules paid (lib/console-modules.ts), and one more, since
+ * the Lab embeds a canned trace of the chip and so carries the die data's
+ * licence into this public repository. The copy is gone; the file is the
+ * 6502 tree's, and `public/6502/lab/upstream.json` records which commit.
+ */
+export const LAB_SRC = path.join(process.cwd(), "..", "..", "6502", "docs", "halfwave-lab");
+const LAB = path.join(LAB_SRC, "halfwave-lab.html");
+
+/**
+ * House style: no em dash in shipped text (CLAUDE.md). The Lab writes them
+ * in prose and in its story beats alike, always spaced, so one pass over the
+ * whole document does: a comma where a conjunction follows (", and the
+ * carry between them"), a colon otherwise ("tied together: one value, two
+ * names"). Only the spaced form; a dash inside an identifier or a regex
+ * would not be spaced. Returns the count, so a Lab that stops having any
+ * tells us the pass can go.
+ */
+export function replaceDashes(text: string): { text: string; count: number } {
+  let count = 0;
+  const out = text.replace(/\s(?:\u2014|&mdash;)\s/g, (m: string, at: number) => {
+    count += 1;
+    const tail = text.slice(at + m.length, at + m.length + 6);
+    return /^(?:and|which|or|but|so|nor|yet)\b/.test(tail) ? ", " : ": ";
+  });
+  return { text: out, count };
+}
 
 /** Where the lab's own API lives now that the page does not sit on it. */
 export const CHIP_API = "https://6502.tinymachines.ai/api";
@@ -175,7 +205,15 @@ function scope(css: string): string {
 }
 
 export function lab(): Lab {
-  const src = fs.readFileSync(LAB, "utf8");
+  if (!fs.existsSync(LAB)) {
+    throw new Error(
+      `lib/lab.ts: no Lab at ${LAB}. The 6502 repository must be checked out beside this one ` +
+        "(notes/inventory.md has the build order); the Lab is read from it, never copied.",
+    );
+  }
+  const dashed = replaceDashes(fs.readFileSync(LAB, "utf8"));
+  if (dashed.count < 1) throw new Error("lib/lab.ts: the em-dash pass found nothing; the Lab changed, remove the pass or check the match.");
+  const src = dashed.text;
 
   const styleMatch = src.match(/<style[^>]*>([\s\S]*?)<\/style>/);
   if (!styleMatch) throw new Error("halfwave-lab.html: no <style> block.");
@@ -230,15 +268,8 @@ export function lab(): Lab {
       : s,
   );
 
-  // House style: no em dash in shipped text (CLAUDE.md). The lab's story
-  // beats are strings in its script ("tied together &mdash; one value, two
-  // names"), so the pass is over the scripts, a colon where the dash was.
-  // Only the spaced form, which is the prose one; a dash inside an
-  // identifier or a regex would not be spaced. Counted, so a lab that stops
-  // having any tells us this can go.
-  let dashes = 0;
-  patched = patched.map((s) => s.replace(/\s(?:—|&mdash;)\s/g, () => { dashes += 1; return ": "; }));
-  if (dashes < 1) throw new Error("lib/lab.ts: the em-dash pass found nothing; the lab's copy changed, remove the pass or check the match.");
+  // The em dashes were replaced over the whole document above, scripts
+  // included (the story beats are strings in the script).
 
   // The service worker registration goes. The lab was a standalone offline
   // app on its own subdomain, with its own manifest and icons and a sw.js

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { open, PHONE, DESK, STRIP_LIVE } from "./lib";
+import { open, PHONE, DESK, STRIP_LIVE, NO_SWITCH, NO_OP } from "./lib";
 
 /**
  * The floor strip: the Lab's set on every instrument page, in order, a
@@ -28,14 +28,14 @@ for (const p of STRIP_LIVE) {
         last: kids[kids.length - 1] === fs,
         fsRight: Math.round(fs.getBoundingClientRect().right),
         rows: new Set(kids.map((k) => Math.round(k.getBoundingClientRect().top + k.getBoundingClientRect().height / 2))).size,
-        hidden: [...document.querySelectorAll("#btn-fullscreen, #cm-fullscreen, #tc-fullscreen, #sch-fullscreen, #btn-run, #bp-run, #tc-run, #ex-run, #sch-run, .dm-bar")].filter((e) => (e as HTMLElement).offsetWidth > 0).map((e) => e.id || e.className),
+        hidden: [...document.querySelectorAll("#btn-fullscreen, #cm-fullscreen, #tc-fullscreen, #sch-fullscreen, #btn-run, #bp-run, #tc-run, #ex-run, #sch-run, #tr-run, #hs-run, .dm-bar, .lab-shell .player")].filter((e) => (e as HTMLElement).offsetWidth > 0).map((e) => e.id || e.className),
       };
     });
     expect(r, "the strip is on the page").not.toBeNull();
     // The primer runs its chip on load, so the key reads "pause" there.
     expect(r!.words.map((w, i) => (i === 3 ? "play|pause" : w))).toEqual(ORDER);
     expect(["play", "pause"]).toContain(r!.words[3]);
-    expect(r!.disabled[0], "power is a real key").toBe(false);
+    expect(r!.disabled[0], "power is a real key").toBe(NO_SWITCH.includes(p));
     if (p.endsWith("/games")) {
       // Off until a cartridge boots, so every other key is grey; engine.spec
       // boots it and reads the set it then offers.
@@ -44,8 +44,8 @@ for (const p of STRIP_LIVE) {
       expect(r!.rate).toBe(true);
     } else {
       expect(r!.play, "play is live: the chip registered").toBe(true);
-      expect(r!.disabled.slice(1), "every key is live on a wasm page, op included").toEqual([false, false, false, false, false, false]);
-      expect(r!.seekDisabled, "seek is live on a wasm page").toBe(false);
+      expect(r!.disabled.slice(1), "every key the driver offers is live").toEqual([false, false, false, false, false, NO_OP.includes(p)]);
+      expect(r!.seekDisabled, "seek is live").toBe(false);
     }
     expect(r!.last, "full screen is the last control").toBe(true);
     expect(DESK.width - r!.fsRight, "full screen at the right edge").toBeLessThanOrEqual(16);
@@ -72,17 +72,4 @@ test.describe("phone", () => {
       expect(PHONE.width - r.fsRight).toBeLessThanOrEqual(16);
     });
   }
-  test("the Lab's strip: full screen last, on the second row", async ({ page }) => {
-    await open(page, "/6502/lab", 4000);
-    const r = await page.evaluate(() => {
-      const row = document.querySelector(".lab-shell .player .prow")!;
-      const mid = (e: Element) => { const b = e.getBoundingClientRect(); return Math.round(b.top + b.height / 2); };
-      const fs = row.querySelector(".tbtn.fs")!, rate = row.querySelector(".rate")!, tl = row.querySelector("#tlab")!;
-      return { last: row.lastElementChild === fs, sameRow: mid(fs) === mid(rate) && mid(fs) === mid(tl), fsRight: Math.round(fs.getBoundingClientRect().right), rows: new Set([...row.children].map(mid)).size };
-    });
-    expect(r.last).toBe(true);
-    expect(r.sameRow, "full sits with the rate and the counter, not on a third row").toBe(true);
-    expect(r.rows).toBe(2);
-    expect(PHONE.width - r.fsRight).toBeLessThanOrEqual(16);
-  });
 });

@@ -4,13 +4,12 @@ import { pageMeta } from "@/lib/seo";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
-import { LabFullscreen } from "@/app/components/Fullscreen";
 import "./lab.css";
 
 /**
  * The Halfwave Lab: a 6502, half a clock phase at a time.
  *
- * Read out of projects/6502/lab/halfwave-lab.html at build time rather than
+ * Read out of the 6502 checkout (docs/halfwave-lab/halfwave-lab.html) at build time rather than
  * reimplemented, which is the zoo's pattern and here for a stronger reason.
  * The lab is 21 KB of markup driven by 150 KB of its own script, and hand
  * transcribing that into JSX is precisely the failure this site has already
@@ -56,7 +55,10 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
        the crumb home and the flags; the h1 lives in the bar so the one-h1
        check holds; there is no footer, because an instrument ends where its
        last control does. */
-    <div className="workbench" data-workbench>
+    /* has-transport: the project's strip is the Lab's player now. The Lab
+       registers with the store (the handover in ChipTransport.tsx) and marks
+       its own player `driven`, which lab.css hides: one set of keys. */
+    <div className="workbench has-transport" data-workbench>
       <WorkbenchBar
         lang={lang}
         title="Halfwave Lab"
@@ -80,10 +82,6 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
           rules style `body`, which no longer reaches anything now that it is a
           div inside this site. */}
       <div className="lab-shell" data-chip-api={CHIP_API} dangerouslySetInnerHTML={{ __html: body }} />
-      {/* Full screen at the right end of the Lab's own player strip, where
-          every other instrument page has it. Portalled in, since the strip
-          is the Lab's markup and stays byte for byte its own. */}
-      <LabFullscreen lang={lang} />
 
       {/* The canned demo trace. A data island the lab looks up by id, so it is
           rendered as the element it is and never executed. It went through

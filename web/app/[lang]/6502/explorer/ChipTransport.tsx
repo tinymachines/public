@@ -151,8 +151,12 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
     return () => cancelAnimationFrame(frame);
   }, [pathname]);
 
+  // Deps are the floor alone. `ctl` is set inside this effect, and listing
+  // it re-ran the effect on that change, whose cleanup UNSUBSCRIBED the
+  // view: the first deploy of the real power key changed the store and
+  // never repainted (probe: powered false, key still solid).
   useEffect(() => {
-    if (!floor || ctl) return;
+    if (!floor) return;
     let cancelled = false;
     let unsub: (() => void) | null = null;
     (async () => {
@@ -164,6 +168,11 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
       const mod = (await import(/* webpackIgnore: true */ `/6502/chip/${hashed}`)) as Controls;
       if (cancelled) return;
       setCtl(mod);
+      // The Lab's script registers with the store through this handover
+      // (it imports no modules of its own): the global for a script that
+      // runs after this, the event for one that ran before.
+      (window as unknown as { tmChipStore?: Controls }).tmChipStore = mod;
+      window.dispatchEvent(new CustomEvent("tm:chip-store", { detail: mod }));
       // The running state crosses pages by being written down, because each
       // explorer page is a fresh document (see MenuItem.hard) and the store
       // starts stopped. Their clock already persists the same way, in their
@@ -186,7 +195,7 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
       cancelled = true;
       if (unsub) unsub();
     };
-  }, [floor, ctl]);
+  }, [floor]);
 
   const live = ctl?.hasDriver() ?? false;
   const running = ctl?.isRunning() ?? false;

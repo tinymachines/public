@@ -336,3 +336,9 @@ html.has-fullscreen .lab-shell.lab-shell header { top: 0; }
 @media (max-width: 30rem) {
   .lab-shell.lab-shell #scrub { min-width: calc(var(--u) * 8); flex-basis: calc(var(--u) * 8); }
 }
+
+/* The Lab's own player, once the Lab has registered with the site's chip
+   store (it adds `driven` itself): the floor strip is the player then, and
+   two rows of the same keys would be two answers to "is it running". If the
+   store never arrives the player stays, so the Lab is never left keyless. */
+.lab-shell .player.driven { display: none; }
