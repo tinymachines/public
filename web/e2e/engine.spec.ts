@@ -128,8 +128,10 @@ test("the Lab is a view of the same store: its player is hidden, the strip drive
   await page.waitForTimeout(200);
   const after = (await strip(page))!.h!;
   expect(after).toBeGreaterThan(before);
-  const pos = await page.evaluate(() => document.querySelector("#pos b")?.textContent);
-  expect(Number(pos), "the Lab's own readout moved with it").toBe(after);
+  // The Lab's own cursor is its scrub slider (its readout prints the row's
+  // half-cycle number, which is one ahead of the index).
+  const pos = await page.evaluate(() => (document.querySelector("#scrub") as HTMLInputElement).value);
+  expect(Number(pos), "the Lab's own cursor moved with it").toBe(after);
   // Power off through the strip is the Lab's off state.
   await page.click(".chip-transport .tbtn.pw");
   await page.waitForTimeout(300);

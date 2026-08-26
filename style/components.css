@@ -2482,7 +2482,9 @@ html.has-fullscreen .workbench .app-head { display: none; }
    (measured 2026-08-25: every driver's `step` is a half-step, `reset` a
    power cycle, `back` a half-step back, and the clock select is a view of
    the store's one clock). The explorer's instruction step and timeline
-   stay, because the strip's op and seek are not live yet (one-engine.md).
+   stayed while the strip's op and seek were not live; trace's and
+   halfshot's transports joined the list when they joined the store
+   (2026-08-26; record and export stay, they are not transport).
    The tracer's transport box holds nothing else, so the box goes with its
    buttons; the blueprint's keeps its readout. */
 .workbench.has-transport .explorer-shell :is(
@@ -2490,7 +2492,9 @@ html.has-fullscreen .workbench .app-head { display: none; }
   #bp-run, #bp-step, #bp-cycle, #bp-reset, #bp-speed,
   #tc-transport, .tc-transport, #tc-back, #tc-run, #tc-step, #tc-cycle, #tc-reset,
   #ex-run, #ex-step, #ex-reset,
-  #sch-run, #sch-step, #sch-reset
+  #sch-run, #sch-step, #sch-reset,
+  #tr-run, #tr-step, #tr-back, #tr-restart,
+  #hs-run, #hs-back, #hs-next, #hs-reset, label:has(> #hs-clock)
 ) { display: none; }
 .workbench.has-transport .explorer-shell :is(label.field):has(> #bp-speed, > #tc-speed) { display: none; }
 
