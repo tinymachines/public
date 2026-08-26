@@ -847,3 +847,17 @@ every size and the sheets are SVG (`bun scripts/shell-sheets.ts`).
 
 The rule for the next arrival: `web/e2e/shell.spec.ts` is the console's
 gate, and a change to the shell lands with its assertion.
+
+## Checkpoint, 2026-08-26, at 1.0.103: the console is live
+
+State: `/6502/games` is the console shell from the handoff pack, both
+languages; `bun test lib/shell` green (13 tests); `bun run e2e` green on
+production, 337 of 337, the ten new gates in `web/e2e/shell.spec.ts`; the
+phone sheet re-shot at 1.0.103, 102 of 102 pages without overflow.
+
+Open, in order: the starter cart decision, framed by the owner's batch;
+prove the GitHub loop live; one engine step 1 (`notes/one-engine.md`); the
+upstream proposals (`notes/upstream-transport.md`: driver shape, `sw.js`
+path, changed-since panel, the explorer's `F` key, and now the controller
+`buttons` map so A/B come alive); cartridge theming once a cartridge can
+carry a theme (`notes/console-shell/ISSUES.md` #8).
