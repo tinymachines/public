@@ -1132,3 +1132,24 @@ On the roof (1.0.118): `lib/registry.ts` carries the kind, the builders'
 listing and a builder's page show "draws nothing", the run length, the
 registers and the peeked bytes in the measured panel, and the contract page
 documents the kind in both languages.
+
+## The console is the whole viewport, 2026-08-26
+
+Owner's call: no bar on the console, just the strip and the console using
+every pixel between. 1.0.119 to 1.0.121. The workbench bar is gone from
+`/6502/games`; the page's name is an `h1` for the document and screen
+readers; game.js's `header .sub` stays as an element with nothing to show.
+The stage is `100dvh` less the strip in and out of full screen alike. Two
+promises every page makes had to be kept another way: a route home and a
+flag for the other language now sit on the console's settings pane, with
+the builders and the editor beside them. `header.spec` and
+`fullscreen.spec` name the console as the one page without a bar;
+`shell.spec` holds that the stage starts at the top and meets the strip.
+
+Found on the way: the shell measured the strip once at mount, and the strip
+now arrives later (the 6502 layout mounts it once the store has loaded), so
+the fallback height stood and left a 15px gap. The shell watches for the
+strip now. And the engine pair read "local" on the console, which runs on
+the API whatever the store says: a driver that runs in one place says where
+(`caps.runsOn`, 6502@90a6da4, v0.256), and the strip lights the engine that
+is actually stepping.
