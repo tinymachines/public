@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { Lang } from "@/lib/lang";
+import Link from "next/link";
+import { localize, type Lang } from "@/lib/lang";
+import { LangSwitch } from "@/app/components/LangSwitch";
 import { clipPolygon, points } from "@/lib/shell/geom";
 import { solve, type Dock, type Solved } from "@/lib/shell/solve";
 import { readConsole, watchConsole, type Phase } from "../consoleState";
@@ -66,6 +68,9 @@ const W = {
     palWhy: "A cartridge carries tiles, not a palette. The four colours are the die's own layers.",
     off: "off",
     wear: "wear",
+    site: "the site",
+    siteWhy: "The console has no bar: this is the way out, and the other language.",
+    home: "6502", builders: "builders", editor: "editor",
   },
   ja: {
     pages: { play: "プレイ", shelf: "棚", status: "状態", settings: "設定" },
@@ -91,6 +96,9 @@ const W = {
     palWhy: "カートリッジが運ぶのはタイルで、パレットではない。四色はダイ自身の層だ。",
     off: "オフ",
     wear: "使用感",
+    site: "サイト",
+    siteWhy: "コンソールにバーはない。ここが出口で、もう一つの言語への道。",
+    home: "6502", builders: "ビルダー", editor: "エディタ",
   },
 } as const;
 
@@ -472,6 +480,18 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
               <label className="no"><span>{S.rewind}</span><input type="range" disabled aria-disabled="true" /><small>{S.rewindWhy}</small></label>
               <label className="no"><span>{S.ach}</span><small>{S.achWhy}</small></label>
               <label className="no"><span>{S.pal}</span><small>{S.palWhy}</small></label>
+              {/* The way out, and the other language: the console page has
+                  no bar (console-full), so the site's two promises, a route
+                  home and a flag on every page, are kept here. */}
+              <label className="site"><span>{S.site}</span>
+                <span className="seg">
+                  <Link href={localize(lang, "/6502")}>{S.home}</Link>
+                  <Link href={localize(lang, "/6502/builders")}>{S.builders}</Link>
+                  <Link href={localize(lang, "/6502/manage")}>{S.editor}</Link>
+                  <LangSwitch lang={lang} />
+                </span>
+                <small>{S.siteWhy}</small>
+              </label>
             </div>
           </section>
         </div>

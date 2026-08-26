@@ -57,7 +57,7 @@ interface Controls {
   reset(): void;
   subscribe(fn: () => void): () => void;
   // Since 6502@chip-machine: absent on an older store.
-  driverCaps?(): Partial<Record<"power" | "back" | "step" | "cycle" | "op" | "rate" | "seek" | "engine", boolean>>;
+  driverCaps?(): Partial<Record<"power" | "back" | "step" | "cycle" | "op" | "rate" | "seek" | "engine", boolean>> & { runsOn?: "local" | "api" };
   isPowered?(): boolean;
   isBooting?(): boolean;
   setPower?(on: boolean): Promise<void>;
@@ -232,7 +232,10 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
     seek: !!ctl?.seek && (has.seek ?? false),
     engine: !!ctl?.setEngine && (has.engine ?? false),
   };
-  const eng = ctl?.engine?.() ?? "local";
+  // The engine shown is the one stepping: the store's choice where the driver
+  // honours the switch, else where the driver says it runs (the console and
+  // the Lab run on the API whatever the store says).
+  const eng = can.engine ? (ctl?.engine?.() ?? "local") : (has.runsOn ?? ctl?.engine?.() ?? "local");
   const latency = ctl?.engineLatency?.() ?? null;
   const engErr = ctl?.engineError?.() ?? null;
   const on = live && powered && !booting;

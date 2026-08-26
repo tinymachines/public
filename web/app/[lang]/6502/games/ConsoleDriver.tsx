@@ -75,7 +75,7 @@ export function ConsoleDriver() {
           poll();
         });
       store.registerDriver({
-        caps: { power: true, back: false, step: false, cycle: false, op: false, rate: false, seek: false },
+        caps: { power: true, back: false, step: false, cycle: false, op: false, rate: false, seek: false, engine: false, runsOn: "api" },
         powered() {
           return readConsole()?.powered ?? false;
         },

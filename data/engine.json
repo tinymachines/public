@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T21:55:43+00:00",
+  "boarded_at": "2026-08-26T23:28:00+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408",
+    "commit": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a",
     "branch": "main",
-    "subject": "The headless kind: a cartridge that draws nothing (console.kind, half_cycles, peek); verifying one boots it, runs it and reads the registers and the named bytes off the silicon, with the pc sampled four times over the last quarter; the registry publishes and lists it as one; the console refuses to boot it with the reason; games/tools/mint-pack.mjs mints the seven explorer programs and the worked example from web/programs.js",
-    "committed": "2026-08-26T17:50:26-04:00",
+    "subject": "A driver that runs in one place says where (caps.runsOn); the Lab runs on the API",
+    "committed": "2026-08-26T19:22:22-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "e309dd7c5b929d0e6193afbf27426445d0872809e8085dba8c8381c1210eaf0f",
+    "sha256": "40a231ed3aa1fa9a2c4a0d00e8b3ff31435072303c3ed96232dd8463ed313517",
     "bytes": 532984,
-    "modified": "2026-08-26T21:52:21+00:00",
-    "stated": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408",
-    "running": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408"
+    "modified": "2026-08-26T23:24:23+00:00",
+    "stated": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a",
+    "running": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a"
   },
   "release": {
-    "version": "v0.255",
-    "commit": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408",
-    "built": "2026-08-26T21:55:05+00:00"
+    "version": "v0.256",
+    "commit": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a",
+    "built": "2026-08-26T23:27:06+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 2.9,
+      "seconds": 23.7,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 8.6,
+      "seconds": 17.1,
       "ok": true
     }
   ]
