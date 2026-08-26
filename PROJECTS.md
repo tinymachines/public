@@ -1100,3 +1100,32 @@ and the latency in `ChipTransport`, `data-chip-api` on the explorer pages,
 `engine.spec` crossing to the API on the explorer and back. Roof 1.0.115 to
 1.0.117: on a phone the pair sits on the second row as icons, before full
 screen, and the seek slider and readout give so the row holds.
+
+## The headless kind, and the pack, 2026-08-26
+
+Owner's call: the contract gains a kind rather than the engine gaining a
+second file format. `console.kind: "headless"` (6502@de82d6b, release
+v0.255, boarded) is a cartridge that draws nothing: no screen page, no tick
+flag, `half_cycles` to run and `peek` bytes to read out. Verifying one boots
+it, runs it, and reads the registers and the named bytes off the silicon;
+the last quarter is sampled four times so "the pc still moves" is a claim
+about the run and not about two instants (a three-byte BRK loop read as
+stopped when it was sampled a whole number of laps apart). The registry
+publishes and lists it as one (`kind` in the brief); the file carries no
+screen fields, so nobody reads a default screen off a cartridge that has
+none; the console refuses to boot one, with the reason. Held by five tests
+in `service/test_cartridge.py` and one in `test_registry.py`.
+
+The pack: `games/tools/mint-pack.mjs` reads `web/programs.js` (the seven
+programs the explorer boots are the source, so a program added there is a
+cartridge here by being added) plus the API page's worked example, and
+mints each through `/v1/cartridge`. Minted against the live API on
+2026-08-26: counter ($0F reaches $47 in 4000 half-cycles), fibonacci (sum
+$68), add (sum $42), multiply ($2A), bits (six ones), copy, fill, and
+two-ways-in. Not yet published: that needs the `tinymachines` handle's
+token, which this repository does not hold, or a handle of the pack's own.
+
+On the roof (1.0.118): `lib/registry.ts` carries the kind, the builders'
+listing and a builder's page show "draws nothing", the run length, the
+registers and the peeked bytes in the measured panel, and the contract page
+documents the kind in both languages.

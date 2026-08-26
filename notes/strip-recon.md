@@ -5,8 +5,8 @@
 chip is on the one store, the Lab included, and the Lab is read from the
 checkout rather than copied. The console driver declares its capabilities
 and the shell's keys act on the store (3, at 1.0.114); the API engine and
-the switch arrived at 1.0.117 (6502@2f9471d, v0.254). The cartridge pack
-remains.*
+the switch arrived at 1.0.117 (6502@2f9471d, v0.254). The cartridge pack is minted (the headless kind, 6502@de82d6b); publishing
+it waits on a token or a handle.*
 
 *Survey before the final iteration on the control strip (owner's brief: the
 first button is power, solid when on; one running cartridge for every page;
