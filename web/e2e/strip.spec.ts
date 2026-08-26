@@ -35,15 +35,17 @@ for (const p of STRIP_LIVE) {
     // The primer runs its chip on load, so the key reads "pause" there.
     expect(r!.words.map((w, i) => (i === 3 ? "play|pause" : w))).toEqual(ORDER);
     expect(["play", "pause"]).toContain(r!.words[3]);
-    expect(r!.play, "play is live: the chip registered").toBe(true);
-    expect(r!.disabled[0], "power is disabled until the one engine").toBe(true);
-    expect(r!.disabled[6], "op is disabled until the one engine").toBe(true);
-    expect(r!.seekDisabled, "seek is disabled until the one engine").toBe(true);
+    expect(r!.disabled[0], "power is a real key").toBe(false);
     if (p.endsWith("/games")) {
-      expect(r!.disabled.slice(1), "the console runs whole frames").toEqual([false, true, false, true, true, true]);
+      // Off until a cartridge boots, so every other key is grey; engine.spec
+      // boots it and reads the set it then offers.
+      expect(r!.disabled.slice(1), "the console is off until it boots").toEqual([true, true, true, true, true, true]);
+      expect(r!.seekDisabled).toBe(true);
       expect(r!.rate).toBe(true);
     } else {
-      expect(r!.disabled.slice(1, 6)).toEqual([false, false, false, false, false]);
+      expect(r!.play, "play is live: the chip registered").toBe(true);
+      expect(r!.disabled.slice(1), "every key is live on a wasm page, op included").toEqual([false, false, false, false, false, false]);
+      expect(r!.seekDisabled, "seek is live on a wasm page").toBe(false);
     }
     expect(r!.last, "full screen is the last control").toBe(true);
     expect(DESK.width - r!.fsRight, "full screen at the right edge").toBeLessThanOrEqual(16);

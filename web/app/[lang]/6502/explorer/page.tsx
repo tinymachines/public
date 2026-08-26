@@ -5,7 +5,6 @@ import { explorer } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
 import { ChipModules } from "./ChipModules";
-import { ChipTransport } from "./ChipTransport";
 import "./explorer.css";
 
 /**
@@ -83,7 +82,6 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
 
       <ChipModules entry={script} />
-      <ChipTransport lang={lang} />
       </div>
     </div>
   );

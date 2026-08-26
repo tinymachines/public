@@ -99,12 +99,15 @@ in all" is true today but "the same half-cycle in all" is not yet.
 
 ## Order
 
-1. `caps` and `driverCaps()` (an afternoon; unblocks the strip hiding rather
-   than guessing, and retires the roof's per-page capability maps).
-2. `sync` + `stepOp` (the op button).
-3. `length` + `seek` (the scrubber; halfshot and the Lab register).
-4. `power` (the Lab's first button; the console registers properly).
-5. Lifecycle, then the shared Machine.
+1. `caps` and `driverCaps()`. **Done 2026-08-26 (6502@d50c52e).**
+2. `sync` + `stepOp` (the op button). **Done, same commit.**
+3. `length` + `seek` (the scrubber). **Done for the wasm pages**; halfshot
+   and the Lab do not register yet.
+4. `power`. **Done in the store**; the console's driver on the roof declares
+   it, the Lab does not register yet.
+5. Lifecycle (`registerDriver(null)` is honoured; `unmount` is not) and the
+   shared Machine (arrived as a snapshot across pages, `chip-machine.js`,
+   rather than one instance).
 
 ## Two more, found by the roof's e2e suite (2026-08-26)
 

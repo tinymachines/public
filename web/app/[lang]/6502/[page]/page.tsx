@@ -7,7 +7,6 @@ import { SectionStrip } from "@/app/components/SectionStrip";
 import { explorerLabel } from "@/lib/explorer-menu";
 import { t } from "@/lib/i18n";
 import { ChipModules } from "../explorer/ChipModules";
-import { ChipTransport } from "../explorer/ChipTransport";
 import "../explorer/explorer.css";
 
 /**
@@ -96,7 +95,6 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={script} />
-      <ChipTransport lang={lang} />
       </div>
     </div>
   );

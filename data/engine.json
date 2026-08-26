@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T14:49:12+00:00",
+  "boarded_at": "2026-08-26T18:53:07+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d",
+    "commit": "d50c52ef07de5994172b5beea5cb12efd6c70be9",
     "branch": "main",
-    "subject": "halfphi 0.1.1",
-    "committed": "2026-08-26T10:43:28-04:00",
+    "subject": "The driver says what it can do, and one chip crosses the pages: chip-machine.js (caps, op, seek, power, snapshot across a navigation), the store's power and seek, eight pages on chipDriver, the header gated on power; held by _chipnav-test 1b and a two-load wiring test",
+    "committed": "2026-08-26T14:46:49-04:00",
     "dirty": false
   },
   "halfphi": {
     "version": "0.1.1",
-    "tag": "halfphi-v0.1.1",
+    "tag": null,
     "shared_files_sha256": "1792a2467e8b4062ca7f5d47a44fd3db67811bd355a2bd4792b38fd18a920f9c",
     "standalone": {
       "commit": "92536c2bd1f60f33d1212813ea6a39d21820cc4a",
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "170c760e147548907846bb759bf36909fb87696efef6482b6f2cda07637a9402",
+    "sha256": "ccc6eeb23f139e0804ac20d87fe7837c0895a5c8630532aa1161b93f1b3299e4",
     "bytes": 532984,
-    "modified": "2026-08-26T14:44:34+00:00",
-    "stated": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d",
-    "running": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d"
+    "modified": "2026-08-26T18:49:27+00:00",
+    "stated": "d50c52ef07de5994172b5beea5cb12efd6c70be9",
+    "running": null
   },
   "release": {
-    "version": "v0.250",
-    "commit": "1df1e684c9a667e2980e4097b97fd1b9bf2b2a4d",
-    "built": "2026-08-26T14:48:23+00:00"
+    "version": "v0.251",
+    "commit": "d50c52ef07de5994172b5beea5cb12efd6c70be9",
+    "built": "2026-08-26T18:52:32+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 6.2,
+      "seconds": 1.0,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 10.6,
+      "seconds": 9.3,
       "ok": true
     }
   ]

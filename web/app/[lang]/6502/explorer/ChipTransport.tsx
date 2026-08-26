@@ -1,33 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { Lang } from "@/lib/lang";
 import { FullscreenButton } from "@/app/components/Fullscreen";
 
 /**
  * One transport for every page that runs the chip.
  *
- * The explorer's `chip-controls.js` is already the single store: running or
- * not, the simulated clock in Hz, and whichever page's machine is currently
+ * The explorer's `chip-controls.js` is the single store: powered or not,
+ * running or not, the simulated clock in Hz, and whichever page's machine is
  * registered as the driver. Every control on their pages is a view of it, and
  * this bar is one more, so pressing pause here pauses the chip the page is
- * showing, and because the site navigates client-side the module instance
- * survives a page change: the rate and the running state you set on the
- * explorer are the rate and state the tracer opens with.
+ * showing. The bar imports the SAME URL their modules import, resolved from
+ * their asset manifest at runtime exactly as ChipModules does, which is what
+ * makes it the same instance rather than a second store with the same shape.
  *
- * The bar imports the SAME URL their modules import, resolved from their
- * asset manifest at runtime exactly as ChipModules does, which is what makes
- * it the same instance rather than a second store with the same shape.
+ * ## One strip, mounted once
  *
- * The strip is the same set of controls on every page (owner's call,
- * 2026-08-25): the Lab's set, power, start, half-steps, play, cycle, opcode,
- * rate, seek and position, with full screen at the right end. A control the
- * page's chip cannot honour is DISABLED, not hidden: a strip that loses a
- * button per page reads as a different strip on each. So the console, which
- * runs whole frames, shows the half-step buttons greyed; and power, opcode
- * step and seek are greyed everywhere until the one engine that can honour
- * them arrives (notes/one-engine.md). A page without a chip (the primer's
- * text, the programs list) registers no driver and the whole strip is grey.
+ * The 6502 layout mounts this once for every route under /6502, and it
+ * renders only on a page that has declared a chip floor
+ * (`.workbench.has-transport`). Pages no longer mount it themselves, so a
+ * page cannot carry a second one and cannot hand it a capability map: what
+ * the strip offers is what the registered driver says it can do
+ * (`driverCaps()`), and a control the driver cannot honour is DISABLED, not
+ * hidden. A strip that loses a button per page reads as a different strip
+ * on each.
+ *
+ * ## Power first, solid when on
+ *
+ * The first key is power, the Lab's arrangement. Solid while a machine is
+ * powered; off, every other key is grey and the store refuses to run or
+ * step. The switch is written down by the store (`v6502.power`) so the next
+ * page opens in the same state, and the machine itself crosses pages the
+ * same way (`chip-machine.js` upstream): the half-cycle you left the
+ * explorer at is the one the tracer opens on. Opcode step and seek are real
+ * on any page whose driver offers them; the wasm pages all do.
+ *
+ * A store from before those additions (a served release that lags) has none
+ * of the new functions. Each is feature-detected and its key stays disabled,
+ * which is the strip this was until 2026-08-26 and still an honest one.
  */
 
 interface Controls {
@@ -44,6 +56,15 @@ interface Controls {
   stepBack(): void;
   reset(): void;
   subscribe(fn: () => void): () => void;
+  // Since 6502@chip-machine: absent on an older store.
+  driverCaps?(): Partial<Record<"power" | "back" | "step" | "cycle" | "op" | "rate" | "seek", boolean>>;
+  isPowered?(): boolean;
+  isBooting?(): boolean;
+  setPower?(on: boolean): Promise<void>;
+  stepOp?(): void;
+  seek?(h: number): void;
+  chipEarliest?(): number | null;
+  chipLength?(): number | null;
 }
 
 const KEY = "tm.chip.running";
@@ -58,9 +79,14 @@ const L = {
     cycle: "Next full cycle",
     rate: "Simulated clock rate. A cycle is two half-cycles, so 1 Hz is two steps a second.",
     loading: "finding the chip",
-    power: "Power. The chip on this page is always powered; a power switch needs the one engine (not yet).",
-    op: "Next opcode fetch. Needs the one engine (not yet).",
-    seek: "Position in the run. Seeking needs the one engine (not yet).",
+    powerOn: "Power off. The chip stops; what it holds stays on the page.",
+    powerOff: "Power on. Boots the chip again from its program.",
+    booting: "Booting a new machine.",
+    powerNone: "Power. This page's chip has no switch.",
+    op: "Next opcode fetch",
+    opNone: "Next opcode fetch. This page's chip cannot step by opcode.",
+    seek: "Position in the run. Drag to seek within what the chip can rewind.",
+    seekNone: "Position in the run. This page's chip cannot seek.",
     wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc", wOp: "op",
   },
   ja: {
@@ -72,9 +98,14 @@ const L = {
     cycle: "次の 1 サイクルへ",
     rate: "シミュレートするクロック。1 サイクルは半サイクル 2 つなので、1 Hz は毎秒 2 ステップ。",
     loading: "チップを探している",
-    power: "電源。このページのチップは常に通電。電源スイッチには単一エンジンが要る (まだ)。",
-    op: "次のオペコード取得へ。単一エンジンが要る (まだ)。",
-    seek: "実行中の位置。シークには単一エンジンが要る (まだ)。",
+    powerOn: "電源を切る。チップは止まり、保持している状態はページに残る。",
+    powerOff: "電源を入れる。プログラムからチップを起動し直す。",
+    booting: "新しいマシンを起動中。",
+    powerNone: "電源。このページのチップにスイッチはない。",
+    op: "次のオペコード取得へ",
+    opNone: "次のオペコード取得へ。このページのチップはオペコード単位で進めない。",
+    seek: "実行中の位置。ドラッグで、巻き戻せる範囲の中をシーク。",
+    seekNone: "実行中の位置。このページのチップはシークできない。",
     wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc", wOp: "op",
   },
 } as const;
@@ -99,32 +130,29 @@ function Ic({ d }: { d: string }) {
   );
 }
 
-/**
- * What the page's chip can honour. A control the driver cannot act on is
- * shown disabled: a half-step button on a console that runs whole frames
- * would press at nothing, and says so in its title. Default is everything
- * the explorer's store offers. The driver stating this itself is in the
- * upstream proposal (notes/upstream-transport.md); until then the page that
- * registers the driver says. Power, opcode step and seek are not in the
- * store at all, so no page can grant them yet.
- */
-export interface Caps {
-  back?: boolean;
-  step?: boolean;
-  cycle?: boolean;
-  rate?: boolean;
-}
+/** Whether the current document has declared a chip floor. */
+const hasFloor = () => !!document.querySelector(".workbench.has-transport");
 
-export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: Caps }) {
+export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
   const S = L[lang];
-  const can = { back: true, step: true, cycle: true, rate: true, ...caps };
+  const pathname = usePathname();
+  const [floor, setFloor] = useState(false);
   const [ctl, setCtl] = useState<Controls | null>(null);
   const [failed, setFailed] = useState(false);
   // A tick so the view repaints when the store announces. The store's own
   // subscribe calls back immediately, which paints the first frame.
   const [tick, setTick] = useState(0);
 
+  // The floor is the page's to declare. Read after the route has painted,
+  // and again on every client navigation: the games page has one, the
+  // manage page beside it does not, and the strip is mounted above both.
   useEffect(() => {
+    const frame = requestAnimationFrame(() => setFloor(hasFloor()));
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!floor || ctl) return;
     let cancelled = false;
     let unsub: (() => void) | null = null;
     (async () => {
@@ -139,7 +167,8 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
       // The running state crosses pages by being written down, because each
       // explorer page is a fresh document (see MenuItem.hard) and the store
       // starts stopped. Their clock already persists the same way, in their
-      // own localStorage key. Applied once the page has a chip to run.
+      // own localStorage key, and power in the store's own. Applied once the
+      // page has a chip to run.
       let restored = false;
       unsub = mod.subscribe(() => {
         setTick((n) => n + 1);
@@ -157,10 +186,25 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
       cancelled = true;
       if (unsub) unsub();
     };
-  }, []);
+  }, [floor, ctl]);
 
   const live = ctl?.hasDriver() ?? false;
   const running = ctl?.isRunning() ?? false;
+  const powered = ctl?.isPowered ? ctl.isPowered() : live;
+  const booting = ctl?.isBooting?.() ?? false;
+  const has = ctl?.driverCaps?.() ?? {};
+  // An older store says nothing about capabilities; every key it has a
+  // function for is offered, as before, and the new ones stay disabled.
+  const can = {
+    power: !!ctl?.setPower && (has.power ?? true),
+    back: has.back ?? !ctl?.driverCaps,
+    step: has.step ?? !ctl?.driverCaps,
+    cycle: has.cycle ?? !ctl?.driverCaps,
+    rate: has.rate ?? !ctl?.driverCaps,
+    op: !!ctl?.stepOp && (has.op ?? false),
+    seek: !!ctl?.seek && (has.seek ?? false),
+  };
+  const on = live && powered && !booting;
 
   // The readout while running. A page's chip advances by announcing to ITS
   // listeners, not to the store, so between store actions nothing here would
@@ -192,7 +236,7 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
     return () => window.clearTimeout(id);
   }, [ctl, tick]);
 
-  if (failed) return null;
+  if (!floor || failed) return null;
   if (gaveUp && !(ctl?.hasDriver() ?? false)) return null;
   const hc = ctl?.chipHalfCycle() ?? null;
 
@@ -201,16 +245,37 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
   const rateIndex = Math.max(0, clocks.findIndex((c) => c.hz === hz));
   const cyc = hc === null ? null : Math.floor(hc / 2);
 
+  // The seek slider spans what the driver can reach: from the oldest
+  // half-cycle it can rewind to, to the end of a recording or, on a live
+  // machine, to where it is now (the slider's end moves as the chip runs).
+  const earliest = can.seek ? (ctl?.chipEarliest?.() ?? hc ?? 0) : 0;
+  const length = can.seek ? (ctl?.chipLength?.() ?? hc ?? 0) : 0;
+  const seekMax = Math.max(earliest, length);
+
+  const powerTitle = !ctl?.setPower || !live ? S.powerNone : booting ? S.booting : powered ? S.powerOn : S.powerOff;
+
   return (
-    <div className="chip-transport" role="toolbar" aria-label="Chip transport">
+    <div className="chip-transport" role="toolbar" aria-label="Chip transport" data-powered={on ? "1" : "0"}>
       <div className="ct-row">
-        <button type="button" className="tbtn pw" title={S.power} aria-label={S.power} aria-pressed={live} disabled>
+        <button
+          type="button"
+          className={"tbtn pw" + (on ? " on" : "")}
+          title={powerTitle}
+          aria-label={powerTitle}
+          aria-pressed={on}
+          disabled={!live || !can.power || booting}
+          onClick={() => {
+            if (!ctl?.setPower) return;
+            void ctl.setPower(!powered);
+            if (powered) { try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }
+          }}
+        >
           <Ic d={IC.power} /><span className="lb">{S.wPower}</span>
         </button>
-        <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!live} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
+        <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!on} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
           <Ic d={IC.start} /><span className="lb">{S.wStart}</span>
         </button>
-        <button type="button" className="tbtn" title={S.back} aria-label={S.back} disabled={!live || !can.back} onClick={() => ctl?.stepBack()}>
+        <button type="button" className="tbtn" title={S.back} aria-label={S.back} disabled={!on || !can.back} onClick={() => ctl?.stepBack()}>
           <Ic d={IC.prev} /><span className="lb">{S.wHalf}</span>
         </button>
         <button
@@ -219,7 +284,7 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
           title={running ? S.pause : S.play}
           aria-label={running ? S.pause : S.play}
           aria-pressed={running}
-          disabled={!live}
+          disabled={!on}
           onClick={() => {
             if (!ctl) return;
             ctl.toggleRunning();
@@ -228,13 +293,13 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
         >
           <Ic d={running ? IC.pause : IC.play} /><span className="lb">{running ? S.wPause : S.wPlay}</span>
         </button>
-        <button type="button" className="tbtn" title={S.step} aria-label={S.step} disabled={!live || !can.step} onClick={() => ctl?.step()}>
+        <button type="button" className="tbtn" title={S.step} aria-label={S.step} disabled={!on || !can.step} onClick={() => ctl?.step()}>
           <Ic d={IC.next} /><span className="lb">{S.wHalf}</span>
         </button>
-        <button type="button" className="tbtn" title={S.cycle} aria-label={S.cycle} disabled={!live || !can.cycle} onClick={() => { ctl?.step(); ctl?.step(); }}>
+        <button type="button" className="tbtn" title={S.cycle} aria-label={S.cycle} disabled={!on || !can.cycle} onClick={() => { ctl?.step(); ctl?.step(); }}>
           <Ic d={IC.cycle} /><span className="lb">{S.wCyc}</span>
         </button>
-        <button type="button" className="tbtn" title={S.op} aria-label={S.op} disabled>
+        <button type="button" className="tbtn" title={can.op ? S.op : S.opNone} aria-label={can.op ? S.op : S.opNone} disabled={!on || !can.op} onClick={() => ctl?.stepOp?.()}>
           <Ic d={IC.op} /><span className="lb">{S.wOp}</span>
         </button>
         <label className="ct-rate" title={S.rate}>
@@ -250,10 +315,18 @@ export function ChipTransport({ lang = "en", caps = {} }: { lang?: Lang; caps?: 
           />
           <span className="tlab">{ctl ? ctl.clockLabel() : clocks[0].label}</span>
         </label>
-        {/* The seek slider: the Lab's scrub, here until the one engine gives
-            it a run to seek in. Disabled, so it is a real control in the
-            same place rather than a gap where one will go. */}
-        <input type="range" className="ct-seek" min={0} max={0} value={0} readOnly disabled aria-label={S.seek} title={S.seek} />
+        <input
+          type="range"
+          className="ct-seek"
+          min={earliest}
+          max={seekMax}
+          step={1}
+          value={Math.min(Math.max(hc ?? 0, earliest), seekMax)}
+          disabled={!on || !can.seek}
+          aria-label={can.seek ? S.seek : S.seekNone}
+          title={can.seek ? S.seek : S.seekNone}
+          onChange={(e) => { ctl?.seek?.(Number(e.target.value)); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}
+        />
         <span className="ct-pos" aria-live="off">
           {!live ? S.loading : hc === null ? "" : <>h <b>{hc}</b> · cyc <b>{cyc}</b></>}
         </span>

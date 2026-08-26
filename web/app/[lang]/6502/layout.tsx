@@ -1,5 +1,8 @@
+import type { Lang } from "@/lib/lang";
+import { ChipTransport } from "./explorer/ChipTransport";
+
 /**
- * The 6502 project's layout, and the only thing it does is the silo.
+ * The 6502 project's layout: the silo, and the one chip strip.
  *
  * `data-project="6502"` is what activates style/projects/6502.css, which
  * scopes that project's identity tokens. Stamping it here rather than on each
@@ -16,7 +19,19 @@
  *
  * A <div> rather than a fragment, because the attribute needs an element to
  * sit on and it must wrap the content it scopes.
+ *
+ * The chip transport is mounted HERE, once, for every route in the project
+ * (owner's call, 2026-08-26: one strip, one running chip). It renders only
+ * on a page that declares a chip floor (`.workbench.has-transport`) and
+ * withdraws on the rest, so the pages mount nothing and cannot carry a
+ * second one. ChipTransport.tsx has the rest.
  */
-export default function ProjectLayout({ children }: { children: React.ReactNode }) {
-  return <div data-project="6502">{children}</div>;
+export default async function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ lang: string }> }) {
+  const { lang } = (await params) as { lang: Lang };
+  return (
+    <div data-project="6502">
+      {children}
+      <ChipTransport lang={lang} />
+    </div>
+  );
 }

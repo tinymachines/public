@@ -6,8 +6,12 @@ user moving between the explorer, the primer, the console and the Lab is
 moving between views of ONE running chip. And an option to switch the engine
 between local (wasm in the browser) and the API (halfwave, over HTTP).*
 
-Nothing here is built yet. This note is the shape, so the pieces that arrive
-one at a time arrive in the right places.
+This note is the shape, so the pieces that arrive one at a time arrive in
+the right places. *Status, 2026-08-26 evening: steps 1 and 2 have arrived,
+upstream, as `6502/web/chip-machine.js` (6502@d50c52e, release v0.251); the
+strip is mounted once in the 6502 layout and power, opcode step and seek
+are real on every wasm page. `notes/strip-recon.md` is the survey that
+preceded it.*
 
 ## What exists, and where the seam is
 
@@ -57,15 +61,20 @@ Three rules, each already paid for elsewhere in the tree:
 
 ## Order of arrivals
 
-1. Persist the machine across the Next-routed pages first (primer, console,
-   the `[page]` explorer pages that are client-side): a roof-owned module
-   that boots the wasm once and hands the same instance to each page's
-   driver. Seek and power turn on here.
-2. Make the explorer's hard navigations soft, or teach the module to snapshot
-   and restore the machine across them (memory image + half-cycle count).
+1. **Done (2026-08-26, upstream).** The machine crosses pages by snapshot:
+   each page still builds the Machine its renderer is bound to, and
+   `chip-machine.js` `adopt()` restores it from the one the previous page
+   left (`exportMachine()` in sessionStorage, same program only) and arms
+   `pagehide` to leave its own. `chipDriver()` hands the store the full
+   driver (caps, op, seek over the rewind window, power). Seek and power
+   turned on here; the roof-owned wasm boot was not needed for it.
+2. **Done with 1.** A hard navigation is exactly what the snapshot crosses,
+   so the explorer's navigations stay hard. A deep link naming a half-cycle
+   (`?steps=`) outranks the snapshot.
 3. The API engine: same driver interface, halfwave behind it. The switch.
 4. The Lab, as an upstream proposal: register the Lab's machine with the
-   store, or draw the Lab from the roof's engine.
+   store, or draw the Lab from the roof's engine. Also still off the store:
+   halfshot (no driver) and trace.js (a private running flag).
 
 Every step leaves the disabled controls exactly as they are until the step
 that makes them true.

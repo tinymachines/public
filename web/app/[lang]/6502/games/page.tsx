@@ -6,7 +6,6 @@ import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
-import { ChipTransport } from "../explorer/ChipTransport";
 import { ConsoleDriver } from "./ConsoleDriver";
 import { Shell } from "./shell/Shell";
 import "./console.css";
@@ -299,11 +298,11 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
           A plain <script> tag here would be hoisted by Next and lose both. */}
       <Script src="/6502/games/game.js" type="module" strategy="afterInteractive" />
 
-      {/* The console on the one chip store, and the strip that drives it.
-          Whole frames over a round trip: reset and play are all it can
-          honour, so that is all the strip shows. */}
+      {/* The console on the one chip store. The strip that drives it is the
+          project's, mounted once in the 6502 layout; what it offers here is
+          what the driver declares (power, start, play: whole frames over a
+          round trip have no half-step). */}
       <ConsoleDriver />
-      <ChipTransport lang={lang} caps={{ back: false, step: false, cycle: false, rate: false }} />
 
     </div>
   );

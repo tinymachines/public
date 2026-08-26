@@ -998,3 +998,30 @@ so; restart `6502-api` by hand, then `python3 scripts/board-engine.py
 (`notes/one-engine.md`), the transport proposals in
 `notes/upstream-transport.md`, cartridge theming (console ISSUES #8), and
 crates.io for halfphi, which stays a decision rather than a default.
+
+## One strip, and power is real, 2026-08-26
+
+The strip is mounted once, in the 6502 layout, and renders on any page that
+declares a chip floor (`.workbench.has-transport`); the pages mount nothing
+and hand it no capability map. What it offers is what the registered
+driver says (`driverCaps()`), disabled where not offered. Power is the first
+key and solid while a machine is powered: off, the store refuses to run or
+step and the switch is written down (`v6502.power`), so the next page opens
+off. Opcode step (`stepInstruction`) and seek (the Machine's rewind window;
+forward by running) are live on every wasm page. And the machine crosses
+pages: `6502/web/chip-machine.js` restores each page's Machine from the
+snapshot the previous page left, same program only, with a deep link that
+names a half-cycle outranking it.
+
+Upstream: 6502@d50c52e, release v0.251, boarded. Held by `_chipnav-test.html`
+section 1b (a fake Machine: caps, op, seek, power, unregister) and a two-load
+wiring test (leave at 51, arrive at 51); on the roof by `e2e/engine.spec.ts`
+(power off greys the rest, op advances by at most one instruction, seek
+moves the count, explorer to tracer at 51, the console's set) and
+`strip.spec` (one strip, every key live on a wasm page).
+
+Not yet on the store: the Lab (its own player), halfshot (no driver),
+trace.js (private running). The console's shell still acts through
+game.js's buttons; the driver declares caps and power now, the shell's keys
+are next. `notes/strip-recon.md` is the survey; `notes/one-engine.md` the
+order.

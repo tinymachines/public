@@ -2331,7 +2331,10 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .chip-transport .tbtn.play { min-width: calc(var(--u) * 16); color: var(--color-ink); }
 .chip-transport .tbtn.play.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
 .chip-transport .ic { width: 14px; height: 14px; flex: none; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.chip-transport .tbtn.pw { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); font-weight: 600; }
+/* Power: solid only while a machine is powered. Off, it is a key like the
+   others, and every other key is grey behind it. */
+.chip-transport .tbtn.pw { font-weight: 600; }
+.chip-transport .tbtn.pw.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
 .ct-rate { display: flex; align-items: center; gap: calc(var(--u) * 1.5); flex: 0 0 auto; margin-left: calc(var(--u) * 1); }
 .ct-rate input { width: calc(var(--u) * 20); height: calc(var(--u) * 6.5); accent-color: var(--color-accent-ink); }
 .chip-transport .tlab { min-width: 5ch; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
