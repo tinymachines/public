@@ -2367,6 +2367,11 @@ html.menu-open, html.menu-open body { overflow: hidden; }
      title on a phone; the row has no room for the number. */
   .ct-engine { order: 1; }
   .chip-transport .tbtn.fs { order: 2; }
+  /* And the second row gives: the seek slider and the readout shrink so
+     rate, position, the pair and full screen share it on a 390px phone
+     even while the key row reads "pause". */
+  .ct-seek { flex: 1 1 calc(var(--u) * 6); min-width: calc(var(--u) * 6); }
+  .ct-pos { min-width: 0; }
   .ct-engine .tbtn.eng { padding: calc(var(--u) * 1.5) calc(var(--u) * 1); }
   .chip-transport .ct-lat { display: none; }
   /* Seven keys on the first row at 390px: the Lab's own gap and padding. */
