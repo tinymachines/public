@@ -11,10 +11,12 @@ from the 6502 checkout beside this one (notes/modules.md, "The engine edge"):
   - the explorer's pages and the API reference, read out of the checkout's
     working tree at build time
 
-So "the engine this site is running" is three measurements: the commit the
-served release was built from, the digest of the halfwave binary, and the
-commit the working tree is at. This script takes them, and it is the only
-thing that writes data/engine.json.
+So "the engine this site is running" is four measurements: the commit the
+served release was built from, the commit the halfwave binary says it was
+built from (`halfwave --version`, stamped by that crate's build.rs) and the
+one the running service reports at /v1/meta, and the commit the working tree
+is at. This script takes them, and it is the only thing that writes
+data/engine.json.
 
     python3 scripts/board-engine.py --board        test, then record
     python3 scripts/board-engine.py --check        measure, compare, refuse
@@ -50,6 +52,7 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -144,6 +147,28 @@ def halfwave_bin(tree: Path) -> Path | None:
     return p if p.is_file() else None
 
 
+def stated_commit(hw: Path) -> str | None:
+    """What the binary says it was built from: `halfwave 0.1.0 <sha>[-dirty]`.
+    None for a binary older than the stamp, which is then a finding."""
+    try:
+        r = subprocess.run([str(hw), "--version"], capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    m = re.match(r"halfwave \S+ (\S+)", r.stdout.strip())
+    return m.group(1) if m else None
+
+
+def running_commit() -> str | None:
+    """What the chip API's warm engine reports at /v1/meta, over loopback.
+    A binary rebuilt and not restarted is caught here and nowhere else."""
+    base = os.environ.get("TM_CHIP_API", "http://127.0.0.1:6502").rstrip("/")
+    try:
+        with urllib.request.urlopen(base + "/v1/meta", timeout=5) as r:
+            return json.load(r).get("commit")
+    except Exception:
+        return None
+
+
 def served_release() -> Path | None:
     """The release directory nginx aliases at /6502/chip/, read from this
     repository's own nginx file. None where that directory does not exist,
@@ -185,6 +210,8 @@ def measure(tree: Path) -> dict:
             "sha256": sha256(hw),
             "bytes": st.st_size,
             "modified": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(timespec="seconds"),
+            "stated": stated_commit(hw),
+            "running": running_commit(),
         }
 
     release = None
@@ -255,6 +282,8 @@ def board(tree: Path, allow_no_golden: bool) -> int:
         raise Refused(f"the 6502 checkout at {tree} has uncommitted changes; a record must name a commit that is what was tested")
     if m["halfwave"] is None:
         raise Refused("no halfwave binary to record (TM_HALFWAVE_BIN, the 6502 unit's HALFWAVE_BIN, or target/release/halfwave)")
+    if m["halfwave"]["stated"] != ct["commit"]:
+        raise Refused(f"the halfwave binary says it was built from {str(m['halfwave']['stated'])[:12]}, not this commit; rebuild it first (cargo build --release -p v6502-sim --bin halfwave)")
     if not shutil.which("cargo"):
         raise Refused("cargo is not on PATH")
     print(f"board-engine: testing {tree} at {ct['commit'][:12]} ({ct['subject']})")
@@ -298,8 +327,18 @@ def check(tree: Path) -> int:
 
     if now["halfwave"] is None:
         faults.append("no halfwave binary found to compare")
-    elif now["halfwave"]["sha256"] != rec["halfwave"]["sha256"]:
-        faults.append(f"the halfwave binary ({now['halfwave']['sha256'][:12]}, modified {now['halfwave']['modified']}) is not the boarded one ({rec['halfwave']['sha256'][:12]})")
+    else:
+        hw = now["halfwave"]
+        if hw["sha256"] != rec["halfwave"]["sha256"]:
+            faults.append(f"the halfwave binary ({hw['sha256'][:12]}, modified {hw['modified']}) is not the boarded one ({rec['halfwave']['sha256'][:12]})")
+        if hw["stated"] is None:
+            faults.append("the halfwave binary does not say what it was built from (older than the stamp, or would not run)")
+        elif hw["stated"] != want:
+            faults.append(f"the halfwave binary says it was built from {hw['stated'][:12]}; boarded {want[:12]}")
+        if hw["running"] is None:
+            print("  running service: /v1/meta did not answer over loopback; not measured on this box")
+        elif hw["running"] != want:
+            faults.append(f"the running chip API reports engine {hw['running'][:12]}; boarded {want[:12]} (rebuilt without a restart?)")
 
     if now["release"] is not None:
         if now["release"]["commit"] != want:
@@ -309,7 +348,7 @@ def check(tree: Path) -> int:
 
     line = (
         f"6502 {(have or 'unknown')[:12]} halfphi {now['halfphi']['version']} {now['halfphi']['shared_files_sha256'][:12]}"
-        f" halfwave {(now['halfwave'] or {}).get('sha256', 'absent')[:12]}"
+        f" halfwave {(now['halfwave'] or {}).get('sha256', 'absent')[:12]} says {str((now['halfwave'] or {}).get('stated'))[:12]} runs {str((now['halfwave'] or {}).get('running'))[:12]}"
         f" release {(now['release'] or {}).get('version', 'unmeasured')}"
         f" boarded {rec['boarded_at']} ({sum(t['passed'] for t in rec['tests'])} tests)"
     )

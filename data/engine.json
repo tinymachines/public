@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T13:13:36+00:00",
+  "boarded_at": "2026-08-26T13:40:23+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "15e571725e8ab37e00ec14a36bda071d734a7ee0",
+    "commit": "0ca70c24ae1d61cae593b85f5ce774160def58da",
     "branch": "main",
-    "subject": "CORS admits the registry's writing half (#12)",
-    "committed": "2026-08-24T10:30:14-04:00",
+    "subject": "halfwave names itself: --version and META carry the workspace version and the commit, stamped by build.rs",
+    "committed": "2026-08-26T09:37:54-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -18,14 +18,16 @@
     }
   },
   "halfwave": {
-    "sha256": "356c12d589fa3d6fefdebdf426039aa156536fe3d539d8d8f323e590abb5a1ad",
-    "bytes": 528472,
-    "modified": "2026-08-26T13:13:19+00:00"
+    "sha256": "81e811973624a4fb3f634f3163e65da63e7e03df910544dfd2e68168ab651547",
+    "bytes": 532984,
+    "modified": "2026-08-26T13:38:02+00:00",
+    "stated": "0ca70c24ae1d61cae593b85f5ce774160def58da",
+    "running": "0ca70c24ae1d61cae593b85f5ce774160def58da"
   },
   "release": {
-    "version": "v0.243",
-    "commit": "15e571725e8ab37e00ec14a36bda071d734a7ee0",
-    "built": "2026-08-26T13:11:25+00:00"
+    "version": "v0.244",
+    "commit": "0ca70c24ae1d61cae593b85f5ce774160def58da",
+    "built": "2026-08-26T13:39:45+00:00"
   },
   "tests": [
     {
@@ -37,7 +39,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 3.3,
+      "seconds": 3.7,
       "ok": true
     },
     {
@@ -49,7 +51,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 9.7,
+      "seconds": 13.5,
       "ok": true
     }
   ]

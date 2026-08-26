@@ -177,10 +177,12 @@ tinymachines.ai (this repo):                                                    
    next build           ──── reads ──► ../6502/web/*.html (the pages those modules were written against)
 ```
 
-Three measurements therefore say which engine this site is running: the
+Four measurements therefore say which engine this site is running: the
 commit the served release was built from (`current/build-info.json`), the
-digest of the halfwave binary the 6502 unit names, and the commit the working
-tree is at. They can disagree with each other, and on the day of the survey
+commit the halfwave binary says it was built from (`halfwave --version`,
+stamped by `crates/v6502-sim/build.rs` since `6502@0ca70c2`) and the one the
+running service reports at `/v1/meta`, and the commit the working tree is
+at. They can disagree with each other, and on the day of the survey
 they did: the release `v0.235` was built from `ed8030f`, the checkout was at
 `15e5717` (three commits on), and the halfwave binary's mtime
 (2026-08-23 22:05 UTC) predates the release commit (23:21 UTC). None of that
@@ -216,7 +218,9 @@ host-specific is in it.
 same three things and refuses when any of them is not the boarded one:
 
 - the served release was built from a different commit
-- the halfwave binary's digest changed (a rebuild, boarded or not)
+- the halfwave binary's digest changed (a rebuild, boarded or not), or it
+  says it was built from another commit, or the running chip API reports
+  another commit (a rebuild without a restart)
 - the 6502 working tree, which the build reads pages from, is elsewhere or dirty
 - halfphi's shared sources differ from the boarded digest, or from the
   standalone copy
@@ -244,12 +248,14 @@ not deploy until the 6502 project releases `15e5717` or the owner boards
 Each of these is a change in `tinymachines/6502`, so each is a proposal here
 and not an action.
 
-1. **halfwave has no `--version`.** The binary's provenance is a digest and
-   an mtime; nothing in it says which commit built it, so a binary older than
-   the release it serves beside can only be caught by the digest changing.
-   Proposal: halfwave prints the workspace version and the commit it was
-   built from (`env!` at build time), and `/v1/meta` on the chip API reports
-   it. The roof's check then compares a stated commit rather than a digest.
+1. **Done, 2026-08-26 (`6502@0ca70c2`): halfwave names itself.**
+   `crates/v6502-sim/build.rs` reads the commit out of `.git` (no `git` on
+   the PATH needed), marks a dirty tree `-dirty`, and `halfwave --version`
+   and the `META` reply carry the workspace version and the commit;
+   `/v1/meta` passes both through and `service/test_service.py` holds the
+   shape. `board-engine.py` compares the stated commit and the running
+   service's commit to the boarded one; `--board` refuses a binary that
+   says it is from another commit.
 2. **The 6502 deploy runs no tests.** Proposal: `deploy/deploy.sh` runs
    `cargo test --workspace` with both require flags before the exporters, and
    writes the counts into `build-info.json` beside the commit. The roof's

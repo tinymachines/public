@@ -899,3 +899,19 @@ upstream are in the note: `halfwave --version` stamped with the commit, tests
 in the 6502 deploy with counts in `build-info.json`, tags on halfphi releases,
 and a recorded base for the copied console modules (or reading them at build
 time like the explorer).
+
+## halfwave names itself, 2026-08-26
+
+Proposal 1 from the module map, done upstream at `6502@0ca70c2` with the
+owner's say-so: `crates/v6502-sim/build.rs` stamps the binary with the
+workspace version and the commit (out of `.git`, `-dirty` when unclean,
+`unknown` outside a checkout); `halfwave --version` prints it, the `META`
+reply carries it, `/v1/meta` passes it through, a service test holds the
+shape. The 6502 site was released at that commit, halfwave rebuilt and the
+API restarted; `/v1/meta` on the live service reports `0.1.0 0ca70c24`.
+
+`scripts/board-engine.py` now takes four measurements instead of three: the
+binary's stated commit and the running service's commit join the release
+commit and the tree. A rebuild without a restart, which nothing could see
+before, is a named fault now. Still open: tests in the 6502 deploy, tags on
+halfphi releases, a recorded base for the copied console modules.
