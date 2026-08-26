@@ -544,6 +544,23 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## Checkpoint, 2026-08-26, at 1.0.102: the suite is green
+
+State: live at 1.0.102; `bun run e2e` passes 327/327 against production in
+about four minutes. Since the 1.0.96 checkpoint: the full strip on every
+instrument page (1.0.97/98), the tool pages on the kit's edge with one
+transport each (1.0.99), the schematic row (1.0.100/101), the e2e suite and
+its first findings (1.0.102). Harness scripts in the scratchpad are now
+superseded by `web/e2e/`; only the contact-sheet builder (`mobile/`) stays
+there, the artifact is current for 1.0.101.
+
+Open, in order: the starter cart (`TM_MINT_PUBLISH_STARTER`, framed by the
+owner's batch of carts); prove the GitHub loop live once the owner signs in;
+the one engine, step 1 (`notes/one-engine.md`); the upstream proposals in
+`notes/upstream-transport.md` (transport driver shape, `sw.js` path, the
+changed-since panel, the explorer's `F` key). Every rule added from here
+gets its spec in the same change.
+
 ## The e2e suite: unreasonable perfection, automated (2026-08-26)
 
 `web/e2e/`, Playwright Test on the system Chrome, `bun run e2e` against
