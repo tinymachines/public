@@ -174,6 +174,13 @@ fi
 say "1. Lint"
 (cd web && bun run lint) || fail "eslint"
 
+# The library tests: the console shell's solver and kit, and the console
+# modules read from the 6502 tree with their three patches (a module that
+# stops matching upstream fails here, before the build ships it). Nothing
+# ran these before 2026-08-26.
+say "1b. Library tests"
+(cd web && bun run test) || fail "bun test lib"
+
 say "2. Tokens"
 python3 style/check-tokens.py || fail "check-tokens"
 

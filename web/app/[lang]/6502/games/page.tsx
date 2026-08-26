@@ -17,10 +17,11 @@ import "./shell/shell.css";
  *
  * ## What moved, and what did not
  *
- * The modules did not change. `game.js`, `console.js` and `chr.js` are in
- * public/6502/games/ byte for byte from `tinymachines/6502`, apart from one
- * line in game.js that reads the chip API off this page instead of assuming
- * it is at this origin. It says why at the line. Rewriting them in React was
+ * The modules did not change. `game.js`, `console.js` and `chr.js` are read
+ * out of the 6502 checkout at build time (lib/console-modules.ts, written to
+ * public/6502/games/ by scripts/pull-console.mjs), byte for byte apart from
+ * two lines in game.js that read the chip API and the builders' base off this
+ * page instead of assuming this origin. Rewriting them in React was
  * the obvious move and it is the wrong one: they are the console, they are
  * tested where they live, and a second implementation of a cartridge format is
  * how two consoles start disagreeing about what a cartridge is.

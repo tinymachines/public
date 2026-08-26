@@ -1,13 +1,14 @@
 {
   "name": "tinymachines-web",
-  "version": "1.0.107",
+  "version": "1.0.108",
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 6511",
-    "build": "python3 ../style/build-icon.py && bun scripts/build-sw.mjs && bun scripts/build-lab.mjs && bun scripts/pull-chipdocs.mjs && next build && bun scripts/check-build.mjs",
+    "build": "python3 ../style/build-icon.py && bun scripts/build-sw.mjs && bun scripts/pull-console.mjs && bun scripts/build-lab.mjs && bun scripts/pull-chipdocs.mjs && next build && bun scripts/check-build.mjs",
     "start": "next start -H 127.0.0.1 -p 6511",
     "lint": "eslint",
     "check": "bun scripts/check-build.mjs",
+    "test": "bun scripts/pull-console.mjs && bun test lib",
     "icons": "python3 ../style/build-icon.py",
     "e2e": "playwright test -c e2e/playwright.config.ts"
   },

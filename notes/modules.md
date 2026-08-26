@@ -20,7 +20,7 @@ sub-projects, along the licence line. Where each one is right now:
 | **halfphi**, the switch-level engine | `tinymachines/6502` at `crates/halfphi` (developed), mirrored to `tinymachines/halfphi` (published). No die data, no dependencies | MIT | never compiled here; served through the 6502 project's build (below) |
 | **the 6502 engine**: `v6502-netlist`, `v6502-sim` (halfwave), `v6502-wasm` | `tinymachines/6502`, over the `extern/visual6502` submodule | MIT code over CC BY-NC-SA data | the release directory nginx aliases at `/6502/chip/`; the halfwave process behind `/6502/api` |
 | **the API**: chip, atlas, cartridge mint, registry, MCP | `tinymachines/6502/service`, uvicorn on 6502 | NC-SA travels | proxied at `/6502/api`; `api/mint.py` imports `registry.py` from that checkout |
-| **games**: the console, the cartridge format, builder pages | `tinymachines/6502/games`; the console's six modules are **copied** into `web/public/6502/games/` here | NC-SA travels | committed copies, two of them patched (see "Edges out") |
+| **games**: the console, the cartridge format, builder pages | `tinymachines/6502/games`; read into `web/public/6502/games/` at build time, three lines patched | NC-SA travels | generated, with `upstream.json` naming the commit (see "Edges out") |
 | **the lab page, the main site** | this repository | per `NOTICE.md`, decided as they land | the whole of `web/` and `api/` |
 
 ## This repository, by directory
@@ -53,7 +53,7 @@ app/[lang]/6502/explorer, [page] ─ lib/explorer, lib/explorer-menu ── ../.
 app/[lang]/6502/lab ───────────── lib/lab ── projects/6502/lab/halfwave-lab.html
 app/[lang]/6502/api ───────────── lib/apidoc ── ../../6502/service/api.html                              (BUILD-TIME READ)
 app/[lang]/6502/games ─────────── shell/Shell, shell/Kit ── lib/shell/{solve,geom}; ConsoleDriver ── consoleState
-                                  public/6502/games/{game,console,art,chr,registry,manage}.js            (COPIED, two patched)
+                                  public/6502/games/*.js ── lib/console-modules ── ../../6502/games       (BUILD-TIME READ, three lines patched)
 app/[lang]/6502/builders, manage ─ lib/registry (types only; data fetched in the browser from the chip API)
 app/[lang]/6502/cart/{brief,skill}.md ── lib/brief ── docs/6502/*.md, lib/brief-token
 app/[lang]/hotbits/** ─────────── lib/projects
@@ -75,7 +75,9 @@ derived), `lib/i18n.ts` + `lib/lang.ts` (the one overlay), and
 a menu, a crumb, a title or a Japanese edition goes through them.
 
 `web/scripts/` runs before `next build`: `build-icon.py` (icons from the
-tokens), `build-sw.mjs` (the worker, stamped with the commit), `build-lab.mjs`
+tokens), `build-sw.mjs` (the worker, stamped with the commit),
+`pull-console.mjs` (the console's modules from `../6502/games`, three lines
+patched, `upstream.json` beside them), `build-lab.mjs`
 (the lab's assets, content-hashed), `pull-chipdocs.mjs` (four generated
 documents from `../6502/docs`, gitignored here because their schematics are
 die-trace data), then `check-build.mjs` after it (output checks on the HTML
@@ -138,7 +140,7 @@ can close.
 | the chip's two figures | `data/chip.json`, re-derived by `data/verify-chip.py` from `/v1/meta` | by hand | `data/check-figures.py` scans the prose for stray digits |
 | the API reference | `lib/apidoc.ts` reads `../6502/service/api.html` | build | throws when the document stops matching its transforms |
 | the chip documents | `pull-chipdocs.mjs` reads `../6502/docs/*.md` | build | throws on an unrecognised shape |
-| the console's modules | six files copied into `web/public/6502/games/`, `game.js` and `registry.js` patched (the API base and one link, both commented in the file) | by hand | `check-build.mjs` holds the page to `game.js`'s selectors. **Nothing records which upstream commit the copies came from**: neither file matches any commit in `../6502`'s history of that path, because the patch is applied on top |
+| the console's modules | `lib/console-modules.ts` reads six modules, two ROMs and the tile sheet from `../6502/games`, patches three lines (the API base in `game.js` and `registry.js`, one link in `game.js`); `scripts/pull-console.mjs` writes them to `web/public/6502/games/` (gitignored) with `upstream.json` naming the commit and every digest | build | a patch that no longer matches exactly once throws; `bun test lib` holds the patches, the byte parity of the rest, and that every module parses; `check-build.mjs` holds the page to `game.js`'s selectors; the tree is held to the boarded commit |
 | the registry | `api/mint.py` imports `registry.py` from `TM_REGISTRY_SERVICE` and opens `TM_REGISTRY_DB` | request | the import is named at the top of `mint.py` so a rename fails loudly; `test_mint.py` |
 | the lab | `projects/6502/lab/halfwave-lab.html`, a copy, byte for byte | build | `lib/lab.ts` throws when a substitution finds nothing |
 | the archive | `projects/6502/archive/drip.py` pulls from the Wayback Machine to `TM_ARCHIVE`, never into the tree | by hand | `.gitignore`, anchored by name |
@@ -278,12 +280,16 @@ and not an action.
    own version. `v0.1.0` was tagged after the fact at the commit that made
    it, which the changelog had linked to all along. `board-engine.py`
    records the tag beside the digest. crates.io stays a separate decision.
-4. **The console's copied modules have no recorded base.** Proposal, either
-   half: record the upstream commit and the two patches in
-   `web/public/6502/games/NOTICE.md`, or read the modules out of
-   `../6502/games` at build time the way the explorer's pages are read, with
-   the two patches applied by `lib/` and held by a test. The second is the
-   house pattern and removes the copies.
+4. **Done, 2026-08-26: the console's modules are read, not copied.**
+   `web/lib/console-modules.ts` reads them from `../6502/games` at build
+   time and applies three exact-match patches that throw when upstream's
+   line changes; `scripts/pull-console.mjs` writes them with `upstream.json`
+   naming the commit and every digest; `bun test lib` (now `deploy.sh`
+   stage 1b) holds the patches, byte parity for the rest, and that each
+   module parses. The copies, and the two CC BY-NC-SA ROMs among them, left
+   git. The first draft's registry.js anchor matched inside `export const`
+   and put the comment between the two keywords; legal, and caught by
+   diffing the output against the old copies before anything shipped.
 
 ### Keeping this current
 

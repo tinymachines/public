@@ -21,9 +21,9 @@ import "./manage.css";
  * and this page is what the fix was for.
  *
  * Same arrangement as the console: `manage.js`, `registry.js` and `art.js`
- * are in public/6502/games/ from tinymachines/6502, byte for byte apart from
- * registry.js's API line, which reads the chip API off this page the way
- * game.js does and says why at the line. This file is markup carrying the
+ * are read out of the 6502 checkout at build time (lib/console-modules.ts),
+ * byte for byte apart from registry.js's API line, which reads the chip API
+ * off this page the way game.js does. This file is markup carrying the
  * DOM contract manage.js was written against: the ids, `#mine`, and the
  * `.err`/`.ok` pairs its `say()` toggles.
  *

@@ -880,8 +880,9 @@ What the survey found, measured on the box:
 - The served release `v0.235` was built from `ed8030f`; the checkout the roof
   builds its explorer pages from was at `15e5717`; the halfwave binary's
   mtime predates the release commit. Nothing had said so.
-- The console's copied modules (`web/public/6502/games/`) match no upstream
-  commit, because two are patched on top of an unrecorded base.
+- The console's copied modules (`web/public/6502/games/`) matched no upstream
+  commit, because two were patched on top of an unrecorded base (read at
+  build time since later that day; the note's proposal 4).
 
 The gate: `scripts/board-engine.py --board` runs `cargo test -p halfphi`
 (`HALFPHI_REQUIRE_CHIPS=1`) and `cargo test -p v6502-sim`
@@ -947,3 +948,22 @@ the fact at `700331e`, the commit the changelog already linked to.
 `board-engine.py` records the tag beside the digest and shows it in the
 stage 2e line. The site's version stamp excludes `halfphi-*` tags. Not done,
 by decision: crates.io. Still open: proposal 4, the copied console modules.
+
+## The console's modules are read, not copied, 2026-08-26
+
+Proposal 4, the last of the module map's four. `web/lib/console-modules.ts`
+reads `game.js`, `console.js`, `chr.js`, `art.js`, `registry.js`,
+`manage.js`, the two ROMs and the tile sheet out of `../6502/games` at build
+time, the way the explorer's pages and the lab are read, and applies the
+three patches (the chip API off the page in `game.js` and `registry.js`, the
+builders' base in `game.js`) as exact matches that throw when upstream's
+line changes. `scripts/pull-console.mjs` writes them to
+`web/public/6502/games/`, now gitignored, with `upstream.json` naming the
+commit and every file's digest: the base the copies never had. The two
+CC BY-NC-SA ROMs are no longer in this public repository.
+
+`bun test lib` is `deploy.sh` stage 1b now; nothing ran the shell's or the
+console's tests at deploy before. The first draft's registry.js anchor
+matched inside `export const` and put the patch comment between the two
+keywords: legal JavaScript, found by diffing the generated files against the
+old copies, and the reason the test now checks the API statement itself.
