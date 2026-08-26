@@ -1122,8 +1122,11 @@ cartridge here by being added) plus the API page's worked example, and
 mints each through `/v1/cartridge`. Minted against the live API on
 2026-08-26: counter ($0F reaches $47 in 4000 half-cycles), fibonacci (sum
 $68), add (sum $42), multiply ($2A), bits (six ones), copy, fill, and
-two-ways-in. Not yet published: that needs the `tinymachines` handle's
-token, which this repository does not hold, or a handle of the pack's own.
+two-ways-in. Published the same evening under a handle of the pack's own,
+`programs` (owner's call: a token minted with `registry_admin.py` on the live
+registry, shown once and not kept; the handle claimed through the API; all
+eight PUT through `mint-pack.mjs --publish`). The registry ran each again
+and lists them as headless: <https://tinymachines.ai/6502/builders/programs>.
 
 On the roof (1.0.118): `lib/registry.ts` carries the kind, the builders'
 listing and a builder's page show "draws nothing", the run length, the
