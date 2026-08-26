@@ -1097,4 +1097,6 @@ Upstream 6502@2f9471d (release v0.254, boarded): `chip-controls.js` (`engine`, `
 `noteEngine`, `halfCyclesFor(now, who)`), `chip-machine.js` (the runner and
 the crossing), `_chipnav-test` 1c against a fake `/v1/step`. Roof: the pair
 and the latency in `ChipTransport`, `data-chip-api` on the explorer pages,
-`engine.spec` crossing to the API on the explorer and back.
+`engine.spec` crossing to the API on the explorer and back. Roof 1.0.115 to
+1.0.117: on a phone the pair sits on the second row as icons, before full
+screen, and the seek slider and readout give so the row holds.
