@@ -169,17 +169,24 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
   useLayoutEffect(() => {
     const el = root.current;
     if (!el) return;
-    const strip = document.querySelector<HTMLElement>(".chip-transport");
+    // The strip is mounted by the 6502 layout and appears once the store has
+    // loaded, which is after this runs: it has to be found when it arrives,
+    // not assumed to be here. Measured once at mount, the fallback height
+    // stood and left a 15px gap between the stage and the strip.
+    let strip: HTMLElement | null = null;
+    const ro = new ResizeObserver(() => measure());
     const measure = () => {
+      const found = document.querySelector<HTMLElement>(".chip-transport");
+      if (found && found !== strip) { strip = found; ro.observe(strip); }
       if (strip) document.documentElement.style.setProperty("--strip-h", `${Math.ceil(strip.offsetHeight)}px`);
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) setSize((s) => (s && s.w === r.width && s.h === r.height ? s : { w: r.width, h: r.height }));
     };
-    measure(); // before the first paint; the observer keeps it true after
-    const ro = new ResizeObserver(measure);
+    measure(); // before the first paint; the observers keep it true after
     ro.observe(el);
-    if (strip) ro.observe(strip);
-    return () => { ro.disconnect(); document.documentElement.style.removeProperty("--strip-h"); };
+    const mo = new MutationObserver(() => { if (!strip && document.querySelector(".chip-transport")) measure(); });
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => { ro.disconnect(); mo.disconnect(); document.documentElement.style.removeProperty("--strip-h"); };
   }, []);
 
   // The machine, read off game.js.
