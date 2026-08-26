@@ -1,6 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
+import { chipApi } from "@/lib/projects";
 import { explorer } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
@@ -59,7 +60,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
   return (
     // titleIsHeading is false because the explorer's hero carries the page's
     // own h1. A workbench like the rest of the instrument suite.
-    <div className="workbench has-transport" data-workbench>
+    <div className="workbench has-transport" data-workbench data-chip-api={chipApi()}>
       <WorkbenchBar
         hard
         lang={lang}

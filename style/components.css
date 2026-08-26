@@ -2335,6 +2335,15 @@ html.menu-open, html.menu-open body { overflow: hidden; }
    others, and every other key is grey behind it. */
 .chip-transport .tbtn.pw { font-weight: 600; }
 .chip-transport .tbtn.pw.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
+/* The engine pair: two keys that read as one control. The chosen one is
+   solid; the latency readout beside the rate is the API's own measure. */
+.ct-engine { display: inline-flex; }
+.ct-engine .tbtn.eng { padding-left: calc(var(--u) * 1.5); padding-right: calc(var(--u) * 1.5); }
+.ct-engine .tbtn.eng:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.ct-engine .tbtn.eng:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+.ct-engine .tbtn.eng.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
+.chip-transport .ct-lat { min-width: 0; }
+.chip-transport .ct-lat.err { color: var(--color-red-ink, var(--color-ink)); }
 .ct-rate { display: flex; align-items: center; gap: calc(var(--u) * 1.5); flex: 0 0 auto; margin-left: calc(var(--u) * 1); }
 .ct-rate input { width: calc(var(--u) * 20); height: calc(var(--u) * 6.5); accent-color: var(--color-accent-ink); }
 .chip-transport .tlab { min-width: 5ch; color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }

@@ -1,6 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
+import { chipApi } from "@/lib/projects";
 import { explorer, explorerPages } from "@/lib/explorer";
 import { WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
@@ -77,7 +78,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
     /* A workbench, owner's call 2026-08-24: the instruments were designed
        full-viewport on their own site and lost it inside the content panel.
        titleIsHeading is false because each page's own hero carries the h1. */
-    <div className="workbench has-transport" data-workbench>
+    <div className="workbench has-transport" data-workbench data-chip-api={chipApi()}>
       <WorkbenchBar
         hard
         lang={lang}

@@ -57,7 +57,7 @@ interface Controls {
   reset(): void;
   subscribe(fn: () => void): () => void;
   // Since 6502@chip-machine: absent on an older store.
-  driverCaps?(): Partial<Record<"power" | "back" | "step" | "cycle" | "op" | "rate" | "seek", boolean>>;
+  driverCaps?(): Partial<Record<"power" | "back" | "step" | "cycle" | "op" | "rate" | "seek" | "engine", boolean>>;
   isPowered?(): boolean;
   isBooting?(): boolean;
   setPower?(on: boolean): Promise<void>;
@@ -65,6 +65,11 @@ interface Controls {
   seek?(h: number): void;
   chipEarliest?(): number | null;
   chipLength?(): number | null;
+  // Since 6502@api-engine.
+  engine?(): "local" | "api";
+  setEngine?(which: "local" | "api"): void;
+  engineLatency?(): number | null;
+  engineError?(): string | null;
 }
 
 const KEY = "tm.chip.running";
@@ -87,7 +92,12 @@ const L = {
     opNone: "Next opcode fetch. This page's chip cannot step by opcode.",
     seek: "Position in the run. Drag to seek within what the chip can rewind.",
     seekNone: "Position in the run. This page's chip cannot seek.",
+    engLocal: "Local engine: the chip steps in this page, in WebAssembly.",
+    engApi: "API engine: halfwave steps the chip over HTTP. The whole machine travels out and back; the page draws the answer.",
+    engNone: "Engine. This page's chip runs where it runs; there is no switch.",
+    engErr: "The API stopped answering",
     wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc", wOp: "op",
+    wLocal: "local", wApi: "api",
   },
   ja: {
     start: "最初の半サイクルへ: チップが電源投入で入った状態",
@@ -106,7 +116,12 @@ const L = {
     opNone: "次のオペコード取得へ。このページのチップはオペコード単位で進めない。",
     seek: "実行中の位置。ドラッグで、巻き戻せる範囲の中をシーク。",
     seekNone: "実行中の位置。このページのチップはシークできない。",
+    engLocal: "ローカルエンジン: チップはこのページの中、WebAssembly で進む。",
+    engApi: "API エンジン: halfwave が HTTP 越しにチップを進める。マシン全体が往復し、ページはその答えを描く。",
+    engNone: "エンジン。このページのチップは走る場所が決まっていて、切り替えはない。",
+    engErr: "API が応答しなくなった",
     wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc", wOp: "op",
+    wLocal: "local", wApi: "api",
   },
 } as const;
 
@@ -212,7 +227,11 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
     rate: has.rate ?? !ctl?.driverCaps,
     op: !!ctl?.stepOp && (has.op ?? false),
     seek: !!ctl?.seek && (has.seek ?? false),
+    engine: !!ctl?.setEngine && (has.engine ?? false),
   };
+  const eng = ctl?.engine?.() ?? "local";
+  const latency = ctl?.engineLatency?.() ?? null;
+  const engErr = ctl?.engineError?.() ?? null;
   const on = live && powered && !booting;
 
   // The readout while running. A page's chip advances by announcing to ITS
@@ -281,6 +300,17 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
         >
           <Ic d={IC.power} /><span className="lb">{S.wPower}</span>
         </button>
+        {/* The engine, beside power (one-engine.md rule 3): local wasm or
+            halfwave over the API. A driver that runs in one place only (the
+            console, the Lab, a recording) has no switch and says so. */}
+        <div className="ct-engine" role="group" aria-label="Engine" title={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}>
+          <button type="button" className={"tbtn eng" + (eng === "local" ? " on" : "")} aria-pressed={eng === "local"} disabled={!live || !can.engine} title={S.engLocal} onClick={() => ctl?.setEngine?.("local")}>
+            <span className="lb">{S.wLocal}</span>
+          </button>
+          <button type="button" className={"tbtn eng" + (eng === "api" ? " on" : "")} aria-pressed={eng === "api"} disabled={!live || !can.engine} title={S.engApi} onClick={() => ctl?.setEngine?.("api")}>
+            <span className="lb">{S.wApi}</span>
+          </button>
+        </div>
         <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!on} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
           <Ic d={IC.start} /><span className="lb">{S.wStart}</span>
         </button>
@@ -323,6 +353,12 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
             onChange={(e) => ctl?.setClock(clocks[Number(e.target.value)].hz)}
           />
           <span className="tlab">{ctl ? ctl.clockLabel() : clocks[0].label}</span>
+          {/* Measured, not assumed: the API path shows its last round trip. */}
+          {eng === "api" ? (
+            <span className={"tlab ct-lat" + (engErr ? " err" : "")} title={engErr ? `${S.engErr}: ${engErr}` : S.engApi} data-latency={latency ?? ""}>
+              {engErr ? "api ✕" : latency === null ? "api" : `api ${latency} ms`}
+            </span>
+          ) : null}
         </label>
         <input
           type="range"

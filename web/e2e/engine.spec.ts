@@ -11,7 +11,7 @@ async function strip(page: Page) {
   return page.evaluate(() => {
     const row = document.querySelector(".chip-transport .ct-row");
     if (!row) return null;
-    const btns = [...row.querySelectorAll("button.tbtn:not(.fs)")] as HTMLButtonElement[];
+    const btns = [...row.querySelectorAll("button.tbtn:not(.fs):not(.eng)")] as HTMLButtonElement[];
     const pos = row.querySelector(".ct-pos b");
     const seek = row.querySelector<HTMLInputElement>(".ct-seek")!;
     return {
@@ -57,7 +57,7 @@ test("the opcode step lands on a fetch, and seek moves the count", async ({ page
   await open(page, "/6502/explorer?steps=51", 9000);
   const at = await strip(page);
   expect(at!.h).toBe(51);
-  const opBtn = page.locator(".chip-transport .tbtn").nth(6);
+  const opBtn = page.locator(".chip-transport .tbtn:not(.eng)").nth(6);
   await expect(opBtn).toBeEnabled();
   await opBtn.click();
   await page.waitForTimeout(200);
@@ -124,7 +124,7 @@ test("the Lab is a view of the same store: its player is hidden, the strip drive
   expect(hidden, "the Lab's own player is hidden").toBe(0);
   // The strip's op steps the Lab's cursor to the next fetch.
   const before = r!.h!;
-  await page.locator(".chip-transport .tbtn").nth(6).click();
+  await page.locator(".chip-transport .tbtn:not(.eng)").nth(6).click();
   await page.waitForTimeout(200);
   const after = (await strip(page))!.h!;
   expect(after).toBeGreaterThan(before);
@@ -137,4 +137,43 @@ test("the Lab is a view of the same store: its player is hidden, the strip drive
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => document.body.classList.contains("off")), "the Lab shows its off note").toBe(true);
   expect((await strip(page))!.powerOn).toBe(false);
+});
+
+test("the engine switch: halfwave steps the chip over the API, the page draws the answer, local resumes from it", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, "/6502/explorer?steps=20", 9000);
+  const eng = page.locator(".chip-transport .ct-engine .tbtn.eng");
+  await expect(eng.nth(0)).toHaveClass(/\bon\b/);
+  await expect(eng.nth(1)).toBeEnabled();
+  await eng.nth(1).click();
+  await expect(eng.nth(1)).toHaveClass(/\bon\b/);
+  // Back and seek are refused: the API keeps no history.
+  const r = await strip(page);
+  expect(r!.disabled[2], "back is grey on the API").toBe(true);
+  expect(r!.seek.disabled, "seek is grey on the API").toBe(true);
+  expect(r!.disabled[4], "step is live").toBe(false);
+  // One half-cycle, across the network, measured.
+  await page.locator(".chip-transport .tbtn:not(.eng)").nth(6).click();
+  await page.waitForTimeout(1500);
+  const lat = page.locator(".chip-transport .ct-lat");
+  await expect(lat).toHaveText(/api \d+ ms/);
+  const after = await strip(page);
+  expect(after!.h, "the count moved by the API's answer").toBeGreaterThan(20);
+  // Run for a second at the default 1 Hz: two half-cycles a second, paced by the runner.
+  await page.locator(".chip-transport .tbtn.play").click();
+  await page.waitForTimeout(2200);
+  await page.locator(".chip-transport .tbtn.play").click();
+  await page.waitForTimeout(600);
+  const ran = await strip(page);
+  expect(ran!.h! - after!.h!, "about two half-cycles a second over the API").toBeGreaterThanOrEqual(2);
+  expect(ran!.h! - after!.h!).toBeLessThanOrEqual(8);
+  // Back to local: the machine continues from the API's last state.
+  await eng.nth(0).click();
+  await expect(eng.nth(0)).toHaveClass(/\bon\b/);
+  await page.locator(".chip-transport .tbtn:not(.eng)").nth(6).click();
+  await page.waitForTimeout(200);
+  const local = await strip(page);
+  expect(local!.h! - ran!.h!, "one local step from where the API left it").toBe(1);
+  expect(local!.disabled[2], "back is live again").toBe(false);
 });

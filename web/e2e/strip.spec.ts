@@ -16,7 +16,7 @@ for (const p of STRIP_LIVE) {
       const row = document.querySelector(".chip-transport .ct-row");
       if (!row) return null;
       const kids = [...row.children] as HTMLElement[];
-      const btns = kids.filter((k) => k.matches("button.tbtn:not(.fs)")) as HTMLButtonElement[];
+      const btns = kids.filter((k) => k.matches("button.tbtn:not(.fs):not(.eng)")) as HTMLButtonElement[];
       const fs = row.querySelector<HTMLElement>(".tbtn.fs")!;
       const rate = row.querySelector<HTMLInputElement>(".ct-rate input")!;
       const seek = row.querySelector<HTMLInputElement>(".ct-seek")!;
@@ -62,7 +62,7 @@ test.describe("phone", () => {
       const r = await page.evaluate(() => {
         const row = document.querySelector(".chip-transport .ct-row")!;
         const mid = (e: Element) => { const b = e.getBoundingClientRect(); return Math.round(b.top + b.height / 2); };
-        const btns = [...row.querySelectorAll("button.tbtn:not(.fs)")];
+        const btns = [...row.querySelectorAll("button.tbtn:not(.fs):not(.eng)")];
         const fs = row.querySelector(".tbtn.fs")!, rate = row.querySelector(".ct-rate")!, pos = row.querySelector(".ct-pos")!;
         return { keyRows: new Set(btns.map(mid)).size, sameRow: mid(fs) === mid(rate) && mid(fs) === mid(pos), fsRight: Math.round(fs.getBoundingClientRect().right), total: new Set([...row.children].map(mid)).size };
       });

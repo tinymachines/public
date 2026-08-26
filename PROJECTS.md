@@ -1072,3 +1072,29 @@ HUD and the strip's power key cannot disagree. The clicks remain only as the
 fallback for a page whose strip never loaded a store, and they are what the
 console's driver makes of the store's calls anyway. `shell.spec` holds the
 hold-to-off round trip against the strip and `sessionStorage`.
+
+## The API engine, and the switch in the strip, 2026-08-26
+
+One-engine step 3. The strip carries an engine pair beside power, local or
+api. Local is the page's own wasm Machine, as ever. API is halfwave: the
+driver exports the Machine whole, `POST /v1/step` steps it (one half-cycle,
+a frame's worth while running, or `until: instruction` for op), and the
+answer is imported back into the same Machine, so every page draws exactly
+as before and nothing about a renderer changed. The same machine JSON
+crosses both ways (`tm6502.mjs` was built on that), which is what makes the
+switch mid-run a transfer: local to api sends where you are; api to local
+continues from the last answer. The store stops the chip on a switch, so a
+half-cycle in flight lands on one engine before the other takes over.
+
+Measured, not assumed: the strip shows the last round trip beside the rate
+("api 41 ms"); an API that stops answering stops the chip and the readout
+says so. What the API cannot offer is refused: it keeps no history, so back
+and seek are grey on it (the driver's caps are a function of the engine).
+The console, the Lab and the two recordings run where they run and have no
+switch. `?engine=api` names it in a link; the choice persists like the clock.
+
+Upstream 6502@2f9471d (release v0.254, boarded): `chip-controls.js` (`engine`, `setEngine`,
+`noteEngine`, `halfCyclesFor(now, who)`), `chip-machine.js` (the runner and
+the crossing), `_chipnav-test` 1c against a fake `/v1/step`. Roof: the pair
+and the latency in `ChipTransport`, `data-chip-api` on the explorer pages,
+`engine.spec` crossing to the API on the explorer and back.

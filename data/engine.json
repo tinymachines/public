@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T19:19:46+00:00",
+  "boarded_at": "2026-08-26T21:03:46+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b",
+    "commit": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4",
     "branch": "main",
-    "subject": "The Lab tells the store when a boot that finished after the store attached lands; STORE hoisted above paintPower",
-    "committed": "2026-08-26T15:17:30-04:00",
+    "subject": "The API engine: the store holds which engine steps (local or api, ?engine=, persisted) and the API's latency; chip-machine.js crosses the Machine whole through /v1/step and back, refuses back and seek on the API, stops the chip when the API stops answering; the page's loop gets nothing in API mode, the runner takes the rate; held by _chipnav-test 1c against a fake /v1/step",
+    "committed": "2026-08-26T16:57:52-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "0c1a842968435f8d5a571c97dc6b551f4de245ad350ba56bbd7f32921bfedf62",
+    "sha256": "d577a889829c105123d937f803e41f795eb98b6760d03f69d0b51b806cc590f7",
     "bytes": 532984,
-    "modified": "2026-08-26T19:17:37+00:00",
-    "stated": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b",
-    "running": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b"
+    "modified": "2026-08-26T20:59:42+00:00",
+    "stated": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4",
+    "running": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4"
   },
   "release": {
-    "version": "v0.253",
-    "commit": "64b093fe7d205847d5c2966cf384b59ad7dc5e0b",
-    "built": "2026-08-26T19:19:23+00:00"
+    "version": "v0.254",
+    "commit": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4",
+    "built": "2026-08-26T21:02:59+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.1,
+      "seconds": 18.8,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 7.5,
+      "seconds": 13.5,
       "ok": true
     }
   ]

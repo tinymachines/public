@@ -71,14 +71,16 @@ Three rules, each already paid for elsewhere in the tree:
 2. **Done with 1.** A hard navigation is exactly what the snapshot crosses,
    so the explorer's navigations stay hard. A deep link naming a half-cycle
    (`?steps=`) outranks the snapshot.
-3. The API engine: same driver interface, halfwave behind it. The switch.
+3. **Done (2026-08-26).** The API engine: the same driver, halfwave behind
+   it, the Machine crossing whole each way; the switch beside power, its
+   latency beside the rate; back and seek refused on the API.
 4. **Done (2026-08-26, 6502@4f8bebb).** The Lab registers with the store
    through a handover from the strip (`window.tmChipStore` /
    `tm:chip-store`), its player hidden while driven; halfshot and trace
    register drivers over their recordings. Every page with a chip is on the
-   one store. What remains of the finale is step 3, the API engine and the
-   local/API switch (the console's shell keys act on the store since
-   1.0.114).
+   one store. The finale's four steps have all arrived; what is left of the shape
+   is the console's and the Lab's chips joining the switch, which needs a
+   local console engine and a local Lab, neither of which exists.
 
 Every step leaves the disabled controls exactly as they are until the step
 that makes them true.
