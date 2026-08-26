@@ -105,3 +105,18 @@ in all" is true today but "the same half-cycle in all" is not yet.
 3. `length` + `seek` (the scrubber; halfshot and the Lab register).
 4. `power` (the Lab's first button; the console registers properly).
 5. Lifecycle, then the shared Machine.
+
+## Two more, found by the roof's e2e suite (2026-08-26)
+
+- **`app.js` registers `sw.js` relative to the page.** On the roof the page
+  is `/6502/explorer`, so that is `/6502/sw.js`, a 404 the `.catch` swallows
+  but the console still reports on every explorer page. A no-op worker at
+  that path would take the `/6502/` scope away from the roof's own worker,
+  so the roof leaves it. Proposal: register only when
+  `location.origin` is the explorer's own, or take the path from the same
+  place the asset manifest comes from.
+- **The "changed since the previous deploy" panel reads its markers from
+  the site masthead's menu** (`data-changed-since="menu"`). The roof drops
+  that masthead for its own, so the panel never fills there. Proposal: read
+  the changed set from the archive endpoint the markers were derived from,
+  so any host that keeps the section can fill it.

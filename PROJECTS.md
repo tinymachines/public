@@ -544,6 +544,23 @@ first item of `notes/upstream-transport.md`, the written proposal for the
 6502 repository (caps, power, sync/op, length/seek, lifecycle, shared
 Machine), with the Lab's player as the model.
 
+## The e2e suite: unreasonable perfection, automated (2026-08-26)
+
+`web/e2e/`, Playwright Test on the system Chrome, `bun run e2e` against
+production or `BASE=` a preview; `./scripts/deploy.sh --e2e` runs it after a
+deploy. Ten specs, one per rule the site was held to by hand this week:
+pages (one h1, lang, one flag the other way, no em dash), mobile (0px
+sideways at 390 on all pages and 360 on the English ones), manage (the
+signed-in card injected), header (one bar, the menu at one x on every page),
+strip (the Lab's set in order, disabled where a page cannot honour it, two
+rows on a phone), fullscreen, kit (no 2px borders or wide radii on the
+ported pages, no page transport beside the strip), parity (upstream links,
+query state and block cards), footer (the API's version, never clipped),
+api (openapi generated, the brief carries no token, strangers get 401).
+The page list is the live sitemap; every spec asserts a count before a
+property. `web/e2e/README.md` is the table. Output in `web/e2e/out/`,
+gitignored.
+
 ## 1.0.101: the schematic, chip map and blocks checked against upstream
 
 All three answer on the roof as they do on `6502.tinymachines.ai`: the

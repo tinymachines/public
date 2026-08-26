@@ -4,6 +4,9 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+web/e2e/out/
+web/test-results/
+web/playwright-report/
 dist/
 build/
 target/

@@ -1,6 +1,6 @@
 {
   "name": "tinymachines-web",
-  "version": "1.0.101",
+  "version": "1.0.102",
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 6511",
@@ -8,7 +8,8 @@
     "start": "next start -H 127.0.0.1 -p 6511",
     "lint": "eslint",
     "check": "bun scripts/check-build.mjs",
-    "icons": "python3 ../style/build-icon.py"
+    "icons": "python3 ../style/build-icon.py",
+    "e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
@@ -23,6 +24,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

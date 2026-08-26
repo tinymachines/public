@@ -20,6 +20,8 @@
 #   ./scripts/deploy.sh --minor|--major     bump that digit instead of patch
 #   ./scripts/deploy.sh --no-push           everything except the push
 #   ./scripts/deploy.sh --dirty             deploy uncommitted work, see below
+#   ./scripts/deploy.sh --e2e               after the deploy, run web/e2e against
+#                                           the live site (10 to 20 minutes)
 #
 # ## What it does with the tree
 #
@@ -63,12 +65,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 
-CHECK_ONLY= ; ALLOW_DIRTY= ; NO_PUSH= ; BUMP=patch ; MESSAGE=
+CHECK_ONLY= ; ALLOW_DIRTY= ; NO_PUSH= ; BUMP=patch ; MESSAGE= ; E2E=
 while [ $# -gt 0 ]; do
   case "$1" in
     --check)   CHECK_ONLY=1 ;;
     --dirty)   ALLOW_DIRTY=1 ;;
     --no-push) NO_PUSH=1 ;;
+    --e2e)     E2E=1 ;;
     --minor)   BUMP=minor ;;
     --major)   BUMP=major ;;
     -m)        shift; MESSAGE="${1:-}"; [ -n "$MESSAGE" ] || { echo "-m needs a message" >&2; exit 2; } ;;
@@ -520,4 +523,12 @@ if [ -n "$BUMPED" ]; then
   say "Deployed $(tr -d '[:space:]' < "$ROOT/VERSION")."
 else
   say "Deployed."
+fi
+
+# The suite, against what was just deployed. After the "Deployed" line on
+# purpose: the deploy stood on its own gates, and this is the site being held
+# to its rules afterwards. A failure here is a finding, not a rollback.
+if [ -n "$E2E" ]; then
+  say "11. The e2e suite, against the live site"
+  (cd "$ROOT/web" && bun run e2e) || fail "e2e: the site is live and a rule is broken; web/e2e/out/report has the detail"
 fi

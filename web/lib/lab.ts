@@ -230,6 +230,16 @@ export function lab(): Lab {
       : s,
   );
 
+  // House style: no em dash in shipped text (CLAUDE.md). The lab's story
+  // beats are strings in its script ("tied together &mdash; one value, two
+  // names"), so the pass is over the scripts, a colon where the dash was.
+  // Only the spaced form, which is the prose one; a dash inside an
+  // identifier or a regex would not be spaced. Counted, so a lab that stops
+  // having any tells us this can go.
+  let dashes = 0;
+  patched = patched.map((s) => s.replace(/\s(?:—|&mdash;)\s/g, () => { dashes += 1; return ": "; }));
+  if (dashes < 1) throw new Error("lib/lab.ts: the em-dash pass found nothing; the lab's copy changed, remove the pass or check the match.");
+
   // The service worker registration goes. The lab was a standalone offline
   // app on its own subdomain, with its own manifest and icons and a sw.js
   // beside it; here it is one route on a site, so `register("sw.js")` resolves

@@ -179,6 +179,17 @@ const L = {
   },
 } as const;
 
+/**
+ * The descriptions are the hotbits service's own docstrings, written in its
+ * repository and pulled here as its OpenAPI says them. House style on this
+ * site has no em dash in shipped text (CLAUDE.md); the one place they are
+ * rendered is the one place to put a colon there. The service's file is not
+ * edited from here.
+ */
+function house(text: string): string {
+  return text.trim().replace(/\s*—\s*/g, ": ");
+}
+
 export function Reference({ api, lang = "en" }: { api: string; lang?: Lang }) {
   const T = L[lang];
   const { data, error } = useRegistry<Schema>(`${api}/openapi.json`);
@@ -310,7 +321,7 @@ export function Reference({ api, lang = "en" }: { api: string; lang?: Lang }) {
                     ) : null}
                   </h3>
                   {op.summary ? <p className="ref-sum">{op.summary}</p> : null}
-                  {op.description ? <p className="ref-desc">{op.description.trim()}</p> : null}
+                  {op.description ? <p className="ref-desc">{house(op.description)}</p> : null}
                   {op.parameters?.length ? (
                     <dl className="kv ref-params">
                       {op.parameters.map((prm) => (
