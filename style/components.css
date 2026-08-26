@@ -2362,6 +2362,13 @@ html.menu-open, html.menu-open body { overflow: hidden; }
    "run" to somebody who has not read the caption. */
 @media (max-width: 30rem) {
   .chip-transport .tbtn:not(.play):not(.pw):not(.pw + .tbtn) .lb { display: none; }
+  /* The engine pair moves to the second row, icons only, before full
+     screen: the seven keys keep their row. The latency stays in the pair's
+     title on a phone; the row has no room for the number. */
+  .ct-engine { order: 1; }
+  .chip-transport .tbtn.fs { order: 2; }
+  .ct-engine .tbtn.eng { padding: calc(var(--u) * 1.5) calc(var(--u) * 1); }
+  .chip-transport .ct-lat { display: none; }
   /* Seven keys on the first row at 390px: the Lab's own gap and padding. */
   .ct-row { gap: calc(var(--u) * 1); }
   .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 1.5); gap: calc(var(--u) * 1); }

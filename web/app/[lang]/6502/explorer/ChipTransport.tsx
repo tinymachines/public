@@ -136,6 +136,9 @@ const IC = {
   cycle: "M6 6l6 6-6 6M13 6l6 6-6 6",
   op: "M6 6l6 6-6 6M17 6v12",
   power: "M12 3v8M6.4 6.4a8 8 0 1 0 11.2 0",
+  // The engines: a chip in the page, and a signal out to the API.
+  local: "M7 7h10v10H7zM9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4",
+  api: "M12 21v-7M8.5 10.5a5 5 0 0 1 7 0M5.5 7.5a9 9 0 0 1 13 0M2.5 4.5a13 13 0 0 1 19 0",
 };
 function Ic({ d }: { d: string }) {
   return (
@@ -304,11 +307,11 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
             halfwave over the API. A driver that runs in one place only (the
             console, the Lab, a recording) has no switch and says so. */}
         <div className="ct-engine" role="group" aria-label="Engine" title={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}>
-          <button type="button" className={"tbtn eng" + (eng === "local" ? " on" : "")} aria-pressed={eng === "local"} disabled={!live || !can.engine} title={S.engLocal} onClick={() => ctl?.setEngine?.("local")}>
-            <span className="lb">{S.wLocal}</span>
+          <button type="button" className={"tbtn eng" + (eng === "local" ? " on" : "")} aria-pressed={eng === "local"} disabled={!live || !can.engine} title={S.engLocal} aria-label={S.engLocal} onClick={() => ctl?.setEngine?.("local")}>
+            <Ic d={IC.local} /><span className="lb">{S.wLocal}</span>
           </button>
-          <button type="button" className={"tbtn eng" + (eng === "api" ? " on" : "")} aria-pressed={eng === "api"} disabled={!live || !can.engine} title={S.engApi} onClick={() => ctl?.setEngine?.("api")}>
-            <span className="lb">{S.wApi}</span>
+          <button type="button" className={"tbtn eng" + (eng === "api" ? " on" : "")} aria-pressed={eng === "api"} disabled={!live || !can.engine} title={S.engApi} aria-label={S.engApi} onClick={() => ctl?.setEngine?.("api")}>
+            <Ic d={IC.api} /><span className="lb">{S.wApi}</span>
           </button>
         </div>
         <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!on} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>

@@ -119,7 +119,8 @@ test("the Lab is a view of the same store: its player is hidden, the strip drive
   expect(r!.powerOn, "the Lab boots powered").toBe(true);
   expect(r!.disabled, "every key: the Lab's driver offers the full set").toEqual([false, false, false, false, false, false, false]);
   expect(r!.seek.disabled).toBe(false);
-  expect(r!.seek.max, "the recording has a length").toBeGreaterThan(10);
+  // The Lab's trace arrives from the API after the page; wait for it.
+  await expect.poll(async () => (await strip(page))!.seek.max, { timeout: 15000 }).toBeGreaterThan(10);
   const hidden = await page.evaluate(() => (document.querySelector(".lab-shell .player") as HTMLElement).offsetWidth);
   expect(hidden, "the Lab's own player is hidden").toBe(0);
   // The strip's op steps the Lab's cursor to the next fetch.
@@ -171,9 +172,9 @@ test("the engine switch: halfwave steps the chip over the API, the page draws th
   // Back to local: the machine continues from the API's last state.
   await eng.nth(0).click();
   await expect(eng.nth(0)).toHaveClass(/\bon\b/);
-  await page.locator(".chip-transport .tbtn:not(.eng)").nth(6).click();
+  await page.locator(".chip-transport .tbtn:not(.eng)").nth(4).click(); // forward one half-cycle
   await page.waitForTimeout(200);
   const local = await strip(page);
-  expect(local!.h! - ran!.h!, "one local step from where the API left it").toBe(1);
+  expect(local!.h! - ran!.h!, "one local half-step from where the API left it").toBe(1);
   expect(local!.disabled[2], "back is live again").toBe(false);
 });
