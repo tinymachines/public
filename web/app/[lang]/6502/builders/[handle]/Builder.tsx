@@ -44,7 +44,17 @@ const L = {
         {slug} &middot; {size} B of ROM, {tiles} tiles
       </>
     ),
+    headlessLine: (slug: string, size: number) => (
+      <>
+        {slug} &middot; {size} B of ROM, draws nothing
+      </>
+    ),
+    ran: "half-cycles run",
+    pcMoved: "pc still moving at the end",
+    registers: "registers after the run",
+    peeked: "bytes read out",
     play: "play it",
+    explore: "run it in the explorer",
     nothingYet: (h: string) => (
       <>
         <b>@{h}</b> has a page and has published nothing yet.
@@ -74,7 +84,17 @@ const L = {
         {slug} &middot; ROM {size} B、タイル {tiles} 枚
       </>
     ),
+    headlessLine: (slug: string, size: number) => (
+      <>
+        {slug} &middot; ROM {size} B、何も描かない
+      </>
+    ),
+    ran: "実行した半サイクル",
+    pcMoved: "終了時に pc はまだ動いている",
+    registers: "実行後のレジスタ",
+    peeked: "読み出したバイト",
     play: "遊ぶ",
+    explore: "エクスプローラで走らせる",
     nothingYet: (h: string) => (
       <>
         <b>@{h}</b> にはページがあり、まだ何も公開していない。
@@ -83,10 +103,70 @@ const L = {
   },
 } as const;
 
+const hex = (v: number, n: number) => "$" + v.toString(16).toUpperCase().padStart(n, "0");
+
 /** The publish-time run, shown rather than summarised. */
 function Measured({ rom, lang }: { rom: Rom; lang: Lang }) {
   const T = L[lang];
   const m = rom.measured;
+  if (m.kind === "headless") {
+    // A run, not frames: how long, whether the pc was still moving at the
+    // end (a loop or a finished program on one side, a JAM on the other),
+    // the registers, and the bytes the cartridge asked to have read.
+    const r = m.registers;
+    return (
+      <div className="panel">
+        <div className="panel-bar">
+          <span>{T.barLeft}</span>
+          <span>{T.barRight}</span>
+        </div>
+        <div className="panel-face">
+          <table className="readout">
+            <tbody>
+              <tr>
+                <th>{T.booted}</th>
+                <td className="num">{m.booted ? T.yes : T.no}</td>
+              </tr>
+              <tr>
+                <th>{T.ran}</th>
+                <td className="num">{m.half_cycles.join(", ")}</td>
+              </tr>
+              <tr>
+                <th>{T.pcMoved}</th>
+                <td className="num">{m.pc_moved ? T.yes : T.no}</td>
+              </tr>
+              {r ? (
+                <tr>
+                  <th>{T.registers}</th>
+                  <td className="num">
+                    PC {hex(r.pc, 4)} A {hex(r.a, 2)} X {hex(r.x, 2)} Y {hex(r.y, 2)} S {hex(r.s, 2)} P {hex(r.p, 2)}
+                    {m.flags ? <> {m.flags}</> : null}
+                  </td>
+                </tr>
+              ) : null}
+              {m.peeked && Object.keys(m.peeked).length ? (
+                <tr>
+                  <th>{T.peeked}</th>
+                  <td className="num">
+                    {Object.entries(m.peeked).map(([k, v]) => `${k} ${hex(v, 2)}`).join(" · ")}
+                  </td>
+                </tr>
+              ) : null}
+              <tr>
+                <th>{T.cart}</th>
+                <td className="num">{rom.bytes} B</td>
+              </tr>
+              <tr>
+                <th>sha256</th>
+                <td className="num">{rom.sha256.slice(0, 16)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {m.notes.length ? <p className="reg-note">{m.notes.join(" ")}</p> : null}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="panel">
       <div className="panel-bar">
@@ -192,7 +272,7 @@ export function Builder({
               ) : null}
               <div>
                 <h3>{rom.title}</h3>
-                <span className="handle">{T.romLine(rom.slug, rom.rom_size, rom.tiles)}</span>
+                <span className="handle">{rom.kind === "headless" ? T.headlessLine(rom.slug, rom.rom_size) : T.romLine(rom.slug, rom.rom_size, rom.tiles)}</span>
               </div>
               <p>{rom.blurb}</p>
               <Measured rom={rom} lang={lang} />

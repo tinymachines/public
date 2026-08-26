@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T21:03:46+00:00",
+  "boarded_at": "2026-08-26T21:55:43+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4",
+    "commit": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408",
     "branch": "main",
-    "subject": "The API engine: the store holds which engine steps (local or api, ?engine=, persisted) and the API's latency; chip-machine.js crosses the Machine whole through /v1/step and back, refuses back and seek on the API, stops the chip when the API stops answering; the page's loop gets nothing in API mode, the runner takes the rate; held by _chipnav-test 1c against a fake /v1/step",
-    "committed": "2026-08-26T16:57:52-04:00",
+    "subject": "The headless kind: a cartridge that draws nothing (console.kind, half_cycles, peek); verifying one boots it, runs it and reads the registers and the named bytes off the silicon, with the pc sampled four times over the last quarter; the registry publishes and lists it as one; the console refuses to boot it with the reason; games/tools/mint-pack.mjs mints the seven explorer programs and the worked example from web/programs.js",
+    "committed": "2026-08-26T17:50:26-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "d577a889829c105123d937f803e41f795eb98b6760d03f69d0b51b806cc590f7",
+    "sha256": "e309dd7c5b929d0e6193afbf27426445d0872809e8085dba8c8381c1210eaf0f",
     "bytes": 532984,
-    "modified": "2026-08-26T20:59:42+00:00",
-    "stated": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4",
-    "running": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4"
+    "modified": "2026-08-26T21:52:21+00:00",
+    "stated": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408",
+    "running": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408"
   },
   "release": {
-    "version": "v0.254",
-    "commit": "2f9471d6b719d58cbbfa1f7cd1d9883c9eecf8d4",
-    "built": "2026-08-26T21:02:59+00:00"
+    "version": "v0.255",
+    "commit": "de82d6b80c76ee00f01e8ca8f89a7f374dc66408",
+    "built": "2026-08-26T21:55:05+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 18.8,
+      "seconds": 2.9,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 13.5,
+      "seconds": 8.6,
       "ok": true
     }
   ]

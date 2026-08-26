@@ -41,6 +41,13 @@ export interface Measured {
   status: number | null;
   score: number | null;
   notes: string[];
+  /** Since the headless kind (2026-08-26): a cartridge that draws nothing. */
+  kind?: "console" | "headless";
+  draws_nothing?: boolean;
+  registers?: Record<"pc" | "a" | "x" | "y" | "s" | "p", number> | null;
+  flags?: string | null;
+  peeked?: Record<string, number> | null;
+  pc_moved?: boolean | null;
 }
 
 export interface Rom {
@@ -54,6 +61,8 @@ export interface Rom {
   sha256: string;
   bytes: number;
   measured: Measured;
+  /** The registry's own word for it; `console` when the service predates the kind. */
+  kind?: "console" | "headless";
   cover: Art | null;
   created: string;
   updated: string;

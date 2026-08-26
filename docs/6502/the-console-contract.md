@@ -78,6 +78,28 @@ art exists and so the spec is executable. Whatever a tool produces has to
 decode to exactly that shape. `encodeCHR` is the inverse, so the art pipeline
 and the console share one definition rather than two that drift.
 
+## A cartridge that draws nothing
+
+`console.kind: "headless"` is a program on the chip with no screen page and
+no tick flag. It exists because the site had programs scattered through it
+(the seven the explorer boots, the worked example on the API page) that were
+never cartridges, so they were never minted, listed or measured. Now they
+are: the same file, the same registry, the same rule that what is shown is
+what the chip did.
+
+What verifying one says is where it got to. The registry boots it, runs it
+for `console.half_cycles`, and reads the registers and the bytes the
+cartridge names in `console.peek` off the silicon. The last quarter of the
+run is sampled four times, so the report can say whether the pc was still
+moving at the end: a loop or a finished program on one side, a JAM on the
+other. Nothing is drawn, and the listing says so ("draws nothing") rather
+than showing a frame cost it does not have.
+
+The layout checks that still mean something still apply: a ROM on the stack
+page or over the vectors is refused. The screen checks do not, and the file
+carries no screen fields, so nobody reads a default screen address off a
+cartridge that has none. The console refuses to boot one, with the reason.
+
 ## The gates are real
 
 Each gate is a **switch that exists on this die**, and it conducts exactly when

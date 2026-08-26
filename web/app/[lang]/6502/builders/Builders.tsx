@@ -24,6 +24,8 @@ const L = {
     by: (h: string) => `by ${h}`,
     rom: "ROM",
     tiles: "Tiles",
+    drawsNothing: "draws nothing",
+    ran: "Half-cycles run",
     hcFrame: "Half-cycles a frame",
     notMeasured: "not measured",
     published: "Published",
@@ -60,6 +62,8 @@ const L = {
     by: (h: string) => `作: ${h}`,
     rom: "ROM",
     tiles: "タイル",
+    drawsNothing: "何も描かない",
+    ran: "実行した半サイクル",
     hcFrame: "1 フレームの半サイクル",
     notMeasured: "未計測",
     published: "公開日",
@@ -110,14 +114,31 @@ export function CartCard({ rom, api, lang = "en" }: { rom: Rom; api: string; lan
           <dt>{T.rom}</dt>
           <dd>{rom.rom_size} B</dd>
         </div>
-        <div>
-          <dt>{T.tiles}</dt>
-          <dd>{rom.tiles}</dd>
-        </div>
-        <div>
-          <dt>{T.hcFrame}</dt>
-          <dd>{rom.frame_cost ?? T.notMeasured}</dd>
-        </div>
+        {rom.kind === "headless" ? (
+          /* A headless cartridge draws nothing: no tiles, no frame. What it
+             has is a run, and the peeked bytes are what it computed. */
+          <>
+            <div>
+              <dt>{T.tiles}</dt>
+              <dd>{T.drawsNothing}</dd>
+            </div>
+            <div>
+              <dt>{T.ran}</dt>
+              <dd>{rom.measured.half_cycles[0]}</dd>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <dt>{T.tiles}</dt>
+              <dd>{rom.tiles}</dd>
+            </div>
+            <div>
+              <dt>{T.hcFrame}</dt>
+              <dd>{rom.frame_cost ?? T.notMeasured}</dd>
+            </div>
+          </>
+        )}
         <div>
           <dt>{T.published}</dt>
           <dd>{day(rom.created)}</dd>
