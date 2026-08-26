@@ -1026,7 +1026,7 @@ is the survey; `notes/one-engine.md` the order.
 
 ## Every instrument on the store, and the Lab is read, not copied, 2026-08-26
 
-Later the same evening (6502@4f8bebb, roof 1.0.110). Three pages were off the
+Later the same evening (6502@4f8bebb then 64b093f, roof 1.0.110 to 1.0.113). Three pages were off the
 store: trace.js kept a private running flag and a fixed three half-cycles a
 second, so the strip could pause every page but that one; halfshot registered
 no driver; the Lab had its own player and its own `POWER`. Now trace and
@@ -1051,3 +1051,9 @@ header transport; the two-load test waits for the boot first); on the roof
 `strip.spec` runs on twelve pages with `NO_SWITCH` and `NO_OP` naming the two
 recordings, and `engine.spec` drives the Lab from the strip (op moves its
 own readout; power off shows its off note).
+
+Three rounds it took to hold, each found by the suite and each a seam: the
+strip's view unsubscribed itself (an effect dep on the state it set); the
+Lab attached mid-boot and never reported the boot landing; the console's
+mirror pauses on every announce rather than on the store's running edge.
+Suite at 1.0.113: 347 passed.

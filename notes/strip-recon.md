@@ -1,7 +1,7 @@
 # The strip and every page that runs the chip: recon, 2026-08-26
 
 *Status, same evening: pieces 1, 2 and 4 of section 5 are done (upstream
-6502@d50c52e then 4f8bebb; roof 1.0.109 then 1.0.110): every page with a
+6502@d50c52e, 4f8bebb, 64b093f; roof 1.0.109 to 1.0.113): every page with a
 chip is on the one store, the Lab included, and the Lab is read from the
 checkout rather than copied. The console driver declares its capabilities
 (part of 3); the shell's own keys and the cartridge pack remain.*
