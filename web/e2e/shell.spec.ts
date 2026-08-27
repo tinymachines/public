@@ -192,7 +192,10 @@ for (const [name, size] of [["desk", DESK], ["phone", PHONE]] as const) {
         gap: Math.round(strip.top - stage.bottom),
         sub: !!document.querySelector("header .sub"),
         overflow: document.documentElement.scrollHeight - innerHeight,
-        below: [...document.querySelectorAll("p, h2, h3")].filter((e) => e.getBoundingClientRect().top >= strip.top && (e as HTMLElement).offsetWidth > 0).length,
+        // The shell clips its own pages (the status page scrolls inside
+        // it), so what counts is what is in the document's flow below the
+        // strip: anything outside the shell whose box starts under it.
+        below: [...document.querySelectorAll("p, h2, h3")].filter((e) => !e.closest(".shell") && e.getBoundingClientRect().top >= strip.top && (e as HTMLElement).offsetWidth > 0).length,
         prose: !!document.querySelector(".pane-status #k-cost"),
       };
     });
