@@ -199,7 +199,11 @@ server {
     #
     # /6502/chip/ carries the modules and the stylesheet, which are ours and
     # MIT, and it is where a page loads them from.
-    location /6502/chip/ {
+    # ^~: a prefix that wins over the regex locations below. Without it the
+    # any-depth chip-asset regex swallowed `chip/pkg/` as path segments and
+    # aliased the wasm without its pkg/, and every tool page 404'd on boot
+    # (2026-08-27, ten minutes of it).
+    location ^~ /6502/chip/ {
         alias /var/www/6502.tinymachines.ai/current/;
         # Their build writes a .gz beside every file and their vhost serves it.
         # Without this the same bytes go out uncompressed from here, which is
@@ -228,7 +232,7 @@ server {
     # the document, and the companion articles live one segment deeper
     # (/6502/tracer/article asks for /6502/tracer/schematic.<hash>.json).
     # The asset name is the last segment either way.
-    location ~ "^/(?:ja/)?6502/(?:[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
+    location ~ "^/(?:ja/)?6502/(?:(?!pkg/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
         alias /var/www/6502.tinymachines.ai/current/$chipasset;
     }
 
