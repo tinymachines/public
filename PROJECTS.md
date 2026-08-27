@@ -1624,3 +1624,18 @@ and raises its cover if it finds none, and the test left inside that
 window by calling `exitFullscreen()` the instant the class flipped. Not a
 site bug (nobody leaves in 120ms); the test waits 300ms after the entry
 settles, 6 of 6 after, 7 of 7 for the spec.
+
+## Checkpoint, 2026-08-28, at 1.0.148
+
+Live: 1.0.148 on 6502 v0.264. Tree clean, pushed.
+
+Since the 1.0.146 checkpoint: the graph is dark (the drawing's tokens
+inside `.dg-stage`), the scoper keeps `body::before` dead (the stipple
+that had been on every element since 1.0.145), `lib/explorer.test.ts`
+(3), `study.spec.ts` grew two assertions and lets a native entry settle
+300ms before leaving. Specs against live: `study` 7/7, `docs` 3/3.
+
+Open, unchanged: the intermittent React #418 on Shell pages; forward
+steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
+inline images on the articles (owner's); SSE only if a tool wants
+progress.
