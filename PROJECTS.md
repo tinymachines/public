@@ -1316,3 +1316,15 @@ against exists:
 - **Open, found on the way:** every Shell page on the live site throws a
   React hydration error (#418, a text node) intermittently, article or
   not; dev mode shows nothing. Not the article's; not chased tonight.
+
+## Same morning: the hand steps are done, and the board is live
+
+The owner granted standing control of nginx and the related units (memory:
+deploy-needs-manual-restarts). The apex nginx file is installed (its own
+access log; chip assets at any depth under /6502/, with `^~` on the chip
+location after the greedy first form 404'd every tool page's wasm for ten
+minutes: a regex location beats a prefix unless the prefix says `^~`, and
+the segment group must refuse `pkg/`). `tinymachines-visitors.timer` is
+enabled; `/visitors` shows 8,464 reads on four logs. `article.spec` passes
+6 of 6 and `engine.spec` 6 of 6 against the live site.
+
