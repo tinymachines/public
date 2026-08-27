@@ -1273,3 +1273,40 @@ which it does not have today.
   is counted as what it is. The apex had no access log of its own until
   this round; `deploy/tinymachines.ai.nginx` now sets one, and both hand
   steps (the nginx install, the timer) are in `HOSTING.local.md`.
+
+## 5f8b5db, 2026-08-27: the companion articles (waiting on the engine gate)
+
+Owner's call: a page with a large amount of text is a page nobody reads;
+the tracer had two blobs under a full-viewport instrument. Shipped as
+1.0.125 in a first form and rewritten the same night (`5f8b5db`, not yet
+deployed: the 6502 checkout moved to `ddc1480` unserved, the fourth gate
+refusal of the day):
+
+- **`/6502/<tool>/article` for all seventeen tools.** `lib/article.ts`
+  lifts the tool page's `section.bp-prose` blocks whole (their widgets,
+  tables and the 36 `[data-fact]` slots the tool script fills with
+  measured numbers come through and stay live; the block page's whole
+  instrument lives in one), splits the tracer's 20,661-character paragraph
+  at sentence ends (a test checks the parts join back to the original),
+  and rewrites links a segment deeper. The rest of the instrument is a
+  live figure above the prose. The tool page links to it under the bench.
+- **Justification through pretext**, in place on the DOM
+  (`components/Justify.tsx`): pretext picks the breaks from its own
+  measurement of each run in its computed font (padding and border of
+  `code` included: the first miss), each line becomes a block with
+  `text-align-last: justify`, elements move whole into the lines so a slot
+  filled later re-sets its paragraph. Measured: 0 lines over their block,
+  0 loose, at 1280 and 390, on the tracer (45 of 48 paragraphs set; the
+  rest are the browser's, a button or a cut element).
+- **pretext is bundled from the submodule at build** (`scripts/build-pretext.mjs`,
+  gitignored output, hand-written `.d.ts` held by a test).
+- **The golden "before"**: `web/e2e/golden/tracer-before-{desk,phone}.jpg`.
+- **Hand step, same nginx install as the access log:** the chip-asset
+  location now allows any depth under `/6502/` (the tracer fetches
+  `schematic.<hash>.json` relative to the document, and from
+  `/6502/tracer/article` that is a segment deeper). Until it is installed
+  the bench in the article says "Could not start: schematic.json: HTTP
+  404" and `article.spec` fails on that page.
+- **Open, found on the way:** every Shell page on the live site throws a
+  React hydration error (#418, a text node) intermittently, article or
+  not; dev mode shows nothing. Not the article's; not chased tonight.

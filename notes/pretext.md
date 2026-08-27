@@ -98,3 +98,14 @@ The probe is a Playwright script (scratchpad `pt-entry.ts` bundled with
 `bun build --format iife` from `extern/pretext/src/layout.ts`, injected
 with `addScriptTag`); `extern/pretext` builds its own `dist/` with
 `bun install && bun run build:package`, and `dist/` is not committed.
+
+## What was built on it, 2026-08-27 (later the same day)
+
+`components/Justify.tsx` and `/6502/<tool>/article` (PROJECTS.md, "the
+companion articles"). Two measurements that the build turned up and the
+first probe above did not: a run's `extraWidth` matters (the kit's `code`
+has 5.2px of padding and a 1px border each side; 14 lines overflowed by up
+to 22px until pretext was told), and a paragraph whose element would have
+to straddle two lines is better left to the browser than cut. With both
+in, 0 of 276 desk lines and 0 of 535 phone lines on the tracer article are
+wider than their block.
