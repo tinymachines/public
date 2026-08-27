@@ -204,3 +204,19 @@ Measured across all seventeen pages: no heading, lede or widget inside
 any fold; exploded 3 folds, schematic 4, halfshot 3, timing 3, decode 3,
 and the rule reaches the rest (talk 3, chipmap 5, designer 3, trace 3).
 The primer still folds nothing: every block has a demo or a slot.
+
+## The riff's second pass, 2026-08-27 (evening)
+
+- The two-tone headline: the explorer's front page writes its h1 with
+  the clause after the comma in `<span class="hl">`; no other page did.
+  `explorer()` gives a hero h1 with a comma and no span the same shape,
+  so the tracer reads "The whole circuit," in ink and "one half-cycle at
+  a time." in the accent (ocean ink on the apex), on the tool page and
+  the article's head alike.
+- ONE "Read on" that travels: one CSS rule,
+  `.bp-prose .read-on:has(details:not([open])) ~ * { display: none }`.
+  Everything after the first closed fold waits; open it and the next
+  fold is the one showing its heading, peek and summary.
+- The long caption under the drawing is hidden: Justify marks a
+  `p.bk-foot` longer than LONG with `jp-long` and explorer.css hides it.
+  The script still writes it every step; the document still has it.

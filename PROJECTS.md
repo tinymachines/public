@@ -1407,3 +1407,12 @@ under its heading and lede (`foldSection`, `web/lib/prose.ts`), never
 around a widget, never shorter than 400 characters. Reaches every tool
 page without a table entry; nothing on any page has a heading inside a
 fold. `notes/pretext.md` has the round.
+
+## Same evening, second pass: two tones, one Read on, no caption
+
+Owner's notes on the golden: the headline had gone all black (the
+tracer's h1 never carried the explorer's accent span; `explorer()` now
+supplies it after the first comma); one "Read on" travels down the page
+(one `:has` rule hides everything after the first closed fold); the
+6,600-character caption under the drawing is hidden (Justify marks a
+`.bk-foot` longer than a paragraph, explorer.css hides it).

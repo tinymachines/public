@@ -109,4 +109,11 @@ describe("the fold after a section's opening", () => {
     expect(r.folded).toBe(1);
     expect(r.html.indexOf('class="lede"')).toBeLessThan(r.html.indexOf("<details"));
 });
+
+  test("the headline is two tones: the clause after the first comma in the accent, as the explorer's own", () => {
+    const x = explorer("tracer.html");
+    expect(x.body).toContain('<h1>The whole circuit, <span class="hl">one half-cycle at a time.</span></h1>');
+    const idx = explorer("index.html");
+    expect((idx.body.match(/class="hl"/g) ?? []).length, "the explorer's own span is left as it is").toBe(1);
+  });
 });

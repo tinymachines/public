@@ -238,6 +238,18 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
     );
   }
 
+  // The two-tone headline. The explorer's own front page writes its h1 in
+  // two tones, the clause after the comma in the accent (`<span
+  // class="hl">`); the other pages' h1s carry no span, and the owner
+  // wants the pair on every page (2026-08-27). So a hero h1 with no span
+  // and a comma gets the same shape: the text after the first comma in
+  // the accent. A title with no comma stays one tone.
+  body = body.replace(/(<section class="hero[^"]*"[\s\S]*?<h1>)([\s\S]*?)(<\/h1>)/, (whole, open: string, inner: string, close: string) => {
+    if (/class="hl"/.test(inner) || !/, /.test(inner)) return whole;
+    const i = inner.indexOf(", ") + 2;
+    return `${open}${inner.slice(0, i)}<span class="hl">${inner.slice(i)}</span>${close}`;
+  });
+
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;
   const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/);

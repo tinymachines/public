@@ -237,6 +237,16 @@
 .explorer-shell.explorer-shell .read-on details > summary:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
 .explorer-shell.explorer-shell .read-on details[open] > summary { margin-bottom: calc(var(--u) * 3); }
 
+/* ONE "Read on" that travels down the page (owner's call, 2026-08-27):
+   everything after a closed fold, in the same section, waits until it is
+   opened; then the next fold is the one showing its peek and summary. */
+.explorer-shell.explorer-shell .bp-prose .read-on:has(details:not([open])) ~ * { display: none; }
+
+/* A caption the tool writes longer than a paragraph (the tracer's, 6,600
+   characters of counts under the drawing) is hidden: nobody reads it
+   there (owner's call, 2026-08-27). Justify.tsx marks it. */
+.explorer-shell.explorer-shell p.bk-foot.jp-long { display: none; }
+
 /* The link from the bench to the article, under the prose: the same box
    the prose sections' .wrap has (78rem centred, 1.25rem inline padding,
    their stylesheet's numbers), so it lines up with the fold's summary. */

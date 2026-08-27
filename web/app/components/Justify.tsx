@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { splitText } from "@/lib/prose";
+import { LONG, splitText } from "@/lib/prose";
 import "./justify.css";
 
 /**
@@ -137,6 +137,13 @@ function setPart(pt: PT, items: Item[], width: number, into: DocumentFragment | 
 function setParagraph(pt: PT, p: HTMLElement, originals: Node[], observe: (el: Element) => void): boolean {
   const items = itemsOf(pt, p, originals);
   if (!items || items.every((i) => !i.text.trim())) return false;
+  // A caption longer than a paragraph is not a caption; it is marked and
+  // explorer.css hides it (owner's call, 2026-08-27, on the tracer's).
+  if (p.classList.contains("bk-foot")) {
+    const n = items.reduce((a, i) => a + i.text.length, 0);
+    p.classList.toggle("jp-long", n > LONG);
+    if (n > LONG) return false;
+  }
   // The content width, which is what a block inside the paragraph gets:
   // clientWidth includes padding, and a padded note (the primer's "See it")
   // set its lines 21px too wide until this subtracted it.
