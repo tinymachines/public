@@ -43,9 +43,17 @@
 }
 html.has-fullscreen .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); }
 /* The console page has no bar at all: the stage is the viewport above the
-   strip, in and out of full screen alike. */
-.console-full .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); }
+   strip, in and out of full screen alike. The page is pinned, not measured:
+   the strip is position: fixed, so a root that is fixed too, ending at the
+   strip's height, meets it in the same coordinate space on every browser.
+   `100dvh` less a measured strip did not: on an iPhone the two disagreed by
+   a line of text, and the page below scrolled into the gap. */
+.console-full { position: fixed; inset: 0 0 var(--strip-h, 4rem) 0; min-height: 0; overflow: hidden; }
+.console-full .shell-main { height: 100%; padding: 0; }
+.console-full .shell-stage { height: 100%; min-height: 0; }
 .console-full .con-head { height: 0; overflow: hidden; }
+html:has(.console-full) { overflow: hidden; }
+html:has(.console-full) body { overflow: hidden; }
 .workbench.has-transport .shell-main { padding-bottom: 0; }
 
 .shell-bg { position: absolute; inset: 0; display: block; }
@@ -260,6 +268,7 @@ html.has-fullscreen .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); 
 .pane-status .con-note { margin-top: calc(var(--u) * 2); }
 .pane-status .gates { margin-top: calc(var(--u) * 3); }
 .pane-status .legend { margin-top: calc(var(--u) * 3); }
+.pane-status .con-note a { color: var(--color-glass); text-decoration: underline; text-underline-offset: 0.15em; }
 .pane-status h3 { margin: calc(var(--u) * 4) 0 0; font: 600 var(--text-fine) var(--font-mono); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); }
 
 /* The footer every sheet carries: the parameters that produced this shell. */

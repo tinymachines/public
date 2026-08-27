@@ -1180,3 +1180,20 @@ arrived; a BRK loop sampled a whole number of laps apart. 349 tests hold
 it. Open, and written down rather than pending: the console and the Lab
 have no local engine, so no switch (`notes/one-engine.md`); re-publishing
 the pack needs the `programs` token, which is not kept anywhere.
+
+## The console page is pinned, not measured
+
+The owner's iPhone (stash IMG_5445, 2026-08-26) showed the seam the suite
+had not: a line of the page's prose between the console and the strip. The
+stage was `100dvh` less a measured strip, and on iOS the two disagree by a
+line; and the prose was under the stage, so the page scrolled into the gap.
+Two fixes. The console root is `position: fixed`, ending at the strip's
+height, so both are laid out in the same coordinate space on every browser
+and nothing is left in flow to scroll. The three paragraphs live on the
+console's status page, where the readouts already are. One more found on
+the way: a strip present but not yet loaded measures 0px, and the stage
+kept it; a height of zero is not a measurement now. `shell.spec` runs the
+whole-viewport test on a phone as well as a desk and asserts the document
+does not scroll and nothing is under the strip. `scripts/fetch-stash.sh`
+pulls a shared zip into `notes/stash/` (gitignored) so a brief can arrive
+as a file.

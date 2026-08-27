@@ -290,6 +290,20 @@ and not an action.
    git. The first draft's registry.js anchor matched inside `export const`
    and put the comment between the two keywords; legal, and caught by
    diffing the output against the old copies before anything shipped.
+5. **Open, found 2026-08-27 by the 6502 session: the prose numbers on
+   `service/api.html` are not held by anything.** `service/test_service.py`
+   asserts a whitelist of that page's figures (max_step, max_traced, nodes,
+   transistors) and the atlas counts (138 containers, 122 multi-container
+   nodes, 6 absorbed) are not in it; the deploy's verifier compares the
+   LIVE api against `web/groups.json`, a staleness check on the process,
+   not the page. Proved by mutation: the old 135/88/3 put back, 182 tests
+   still green. The counts had drifted once already (`6502@73e0e05` fixed
+   the prose). Whether to add them to the whitelist is that project's
+   call; the roof's own rule for shipped numbers (measure, then write)
+   would have caught it, and this is the case for extending it there.
+   Boarding note: that tree is dirty on purpose for a minute during a
+   mutation test, so a board refused on "uncommitted changes" is worth a
+   second try before it is worth a message.
 
 ### Keeping this current
 

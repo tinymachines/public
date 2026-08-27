@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-26T23:28:00+00:00",
+  "boarded_at": "2026-08-27T01:08:01+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a",
+    "commit": "6e9900af9501366c436c7447de3c4b294cfc7795",
     "branch": "main",
-    "subject": "A driver that runs in one place says where (caps.runsOn); the Lab runs on the API",
-    "committed": "2026-08-26T19:22:22-04:00",
+    "subject": "scripts/deploy.sh lab runs its installer as root",
+    "committed": "2026-08-26T20:49:41-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,16 +20,16 @@
     }
   },
   "halfwave": {
-    "sha256": "40a231ed3aa1fa9a2c4a0d00e8b3ff31435072303c3ed96232dd8463ed313517",
+    "sha256": "3a988a8ef6392a7b3a9bf6d974e6e35db47f7c968d8d5e9cb9775c6871e1911f",
     "bytes": 532984,
-    "modified": "2026-08-26T23:24:23+00:00",
-    "stated": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a",
-    "running": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a"
+    "modified": "2026-08-27T01:02:49+00:00",
+    "stated": "6e9900af9501366c436c7447de3c4b294cfc7795",
+    "running": "6e9900af9501366c436c7447de3c4b294cfc7795"
   },
   "release": {
-    "version": "v0.256",
-    "commit": "90a6da4fbe6506f6d3d41b619055e66fec49bc3a",
-    "built": "2026-08-26T23:27:06+00:00"
+    "version": "v0.259",
+    "commit": "6e9900af9501366c436c7447de3c4b294cfc7795",
+    "built": "2026-08-27T01:05:57+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 23.7,
+      "seconds": 58.3,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 17.1,
+      "seconds": 25.0,
       "ok": true
     }
   ]

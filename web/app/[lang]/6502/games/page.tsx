@@ -107,6 +107,7 @@ const PROSE = {
     ),
     theChip: "the chip",
     measured: "measured",
+    about: "this console",
     note: (
       <>
         The screen is a page of the chip&rsquo;s own memory. Nothing draws it
@@ -166,6 +167,7 @@ const PROSE = {
     ),
     theChip: "チップ",
     measured: "実測",
+    about: "このコンソール",
     note: (
       <>
         画面はチップ自身のメモリの 1 ページ。それを描くのはこのページだけだ。
@@ -266,6 +268,16 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
               <span><i className="t14" />{S.lg14}</span>
               <span><i className="t10" />{S.lg10}</span>
             </div>
+            {/* The page's prose lives on the status page too. Under the
+                stage it made the console page scroll, and on a phone the
+                first line showed between the console and the strip
+                (stash IMG_5445, 2026-08-26): a console that is the whole
+                viewport has no floor for prose to sit on. */}
+            <h3>{S.about}</h3>
+            <p className="con-note">{S.intro(B, M)}</p>
+            <h3>{S.whySlow}</h3>
+            <p className="con-note">{S.slow}</p>
+            <p className="con-note">{S.cart(CHIP_API, B, M)}</p>
           </Shell>
         </div>
 
@@ -280,13 +292,6 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
           <input id="cart-file" type="file" accept=".gz,application/gzip" hidden />
           <button className="btn btn-primary" id="b-power" type="button">{S.powerOn}</button>
           <button className="btn btn-ghost" id="b-pause" type="button" disabled>{S.pause}</button>
-        </div>
-
-        <div className="wb-page prose">
-          <p>{S.intro(B, M)}</p>
-          <h2>{S.whySlow}</h2>
-          <p>{S.slow}</p>
-          <p>{S.cart(CHIP_API, B, M)}</p>
         </div>
       </main>
 

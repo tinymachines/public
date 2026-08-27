@@ -177,27 +177,35 @@ test("hold power switches the machine off through the store; a tap brings it bac
   await expect(page.locator(".chip-transport .tbtn.pw")).toHaveClass(/\bon\b/);
 });
 
-test("the console is the whole viewport: no bar, the stage meets the strip", async ({ page }) => {
-  await page.setViewportSize(DESK);
-  await open(page, GAMES);
-  await solved(page);
-  const r = await page.evaluate(() => {
-    const stage = document.querySelector(".shell-stage")!.getBoundingClientRect();
-    const strip = document.querySelector(".chip-transport")!.getBoundingClientRect();
-    return {
-      bars: document.querySelectorAll(".app-head, .topbar, .wb-bar").length,
-      h1: document.querySelectorAll("h1").length,
-      top: Math.round(stage.top),
-      gap: Math.round(strip.top - stage.bottom),
-      sub: !!document.querySelector("header .sub"),
-    };
+for (const [name, size] of [["desk", DESK], ["phone", PHONE]] as const) {
+  test(`the console is the whole viewport on a ${name}: no bar, the stage meets the strip, nothing scrolls`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await open(page, GAMES);
+    await solved(page);
+    const r = await page.evaluate(() => {
+      const stage = document.querySelector(".shell-stage")!.getBoundingClientRect();
+      const strip = document.querySelector(".chip-transport")!.getBoundingClientRect();
+      return {
+        bars: document.querySelectorAll(".app-head, .topbar, .wb-bar").length,
+        h1: document.querySelectorAll("h1").length,
+        top: Math.round(stage.top),
+        gap: Math.round(strip.top - stage.bottom),
+        sub: !!document.querySelector("header .sub"),
+        overflow: document.documentElement.scrollHeight - innerHeight,
+        below: [...document.querySelectorAll("p, h2, h3")].filter((e) => e.getBoundingClientRect().top >= strip.top && (e as HTMLElement).offsetWidth > 0).length,
+        prose: !!document.querySelector(".pane-status #k-cost"),
+      };
+    });
+    expect(r.bars, "no bar").toBe(0);
+    expect(r.h1, "one h1, for the document").toBe(1);
+    expect(r.top, "the stage starts at the top").toBeLessThanOrEqual(1);
+    expect(Math.abs(r.gap), "the stage meets the strip").toBeLessThanOrEqual(2);
+    expect(r.sub, "game.js's header .sub is still there").toBe(true);
+    expect(r.overflow, "the document does not scroll").toBeLessThanOrEqual(0);
+    expect(r.below, "no prose under the strip").toBe(0);
+    expect(r.prose, "the page's prose is on the status page").toBe(true);
   });
-  expect(r.bars, "no bar").toBe(0);
-  expect(r.h1, "one h1, for the document").toBe(1);
-  expect(r.top, "the stage starts at the top").toBeLessThanOrEqual(1);
-  expect(Math.abs(r.gap), "the stage meets the strip").toBeLessThanOrEqual(2);
-  expect(r.sub, "game.js's header .sub is still there").toBe(true);
-});
+}
 
 test("no Nintendo mark, no trademark sign, anywhere on the console", async ({ page }) => {
   await open(page, GAMES);

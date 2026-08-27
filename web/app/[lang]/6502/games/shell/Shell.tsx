@@ -186,7 +186,12 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
     const measure = () => {
       const found = document.querySelector<HTMLElement>(".chip-transport");
       if (found && found !== strip) { strip = found; ro.observe(strip); }
-      if (strip) document.documentElement.style.setProperty("--strip-h", `${Math.ceil(strip.offsetHeight)}px`);
+      // A strip that is on the page but has no height yet (its store is
+      // still loading, or never loads) is not a measurement: the fallback
+      // stands until it has one, else the stage learns 0px and keeps it.
+      const h = strip ? strip.offsetHeight : 0;
+      if (h > 0) document.documentElement.style.setProperty("--strip-h", `${Math.ceil(h)}px`);
+      else document.documentElement.style.removeProperty("--strip-h");
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) setSize((s) => (s && s.w === r.width && s.h === r.height ? s : { w: r.width, h: r.height }));
     };
