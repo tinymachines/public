@@ -29,7 +29,10 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
           h1: document.querySelectorAll("h1").length,
           sideways: document.documentElement.scrollWidth - innerWidth,
           longest: Math.max(...[...document.querySelectorAll(".art-body p")].map((e) => e.textContent!.length)),
-          bench: !!document.querySelector(".art-bench-frame .explorer-shell"),
+          // The instrument is a figure above the prose where the tool has one
+          // left after its prose is lifted (the tracer), or inline panels in
+          // the prose where that is how the tool was written (the primer).
+          live: !!document.querySelector(".art-bench-frame .explorer-shell") || document.querySelectorAll(".art-body [data-demo], .art-body [data-fact]").length > 0,
         };
       });
       expect(r.paragraphs, "there is prose").toBeGreaterThan(5);
@@ -40,7 +43,7 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
       expect(r.h1).toBe(1);
       expect(r.sideways).toBeLessThanOrEqual(0);
       expect(r.longest, "no paragraph is a blob").toBeLessThan(1400);
-      expect(r.bench, "the instrument is in the figure").toBe(true);
+      expect(r.live, "the tool is on the page: a bench figure, or its inline panels").toBe(true);
     });
   }
 }
