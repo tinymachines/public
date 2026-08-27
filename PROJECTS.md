@@ -1671,3 +1671,21 @@ the simulation is path-dependent, 2.5x half-cycles, 2061 of 3000
 half-cycles identical; the 40-claim prose check). Noted here, not
 written up: the engine those numbers describe is not the served one, and
 this site boards what is served.
+
+## Checkpoint, 2026-08-28, at 1.0.149
+
+Live: 1.0.149 on 6502 v0.264 (ddc1480), halfphi 0.1.1 served. Tree
+clean, pushed.
+
+Since the 1.0.148 checkpoint: the engine gate reads the shared-file list
+from the served tree (six from halfphi 0.1.2, five before), compares the
+standalone halfphi at the served version's tag rather than HEAD, and runs
+the suites with rustup's toolchain first on PATH. Re-boarded, 39 tests.
+halfphi 0.1.2 and the branchless engine are released, not deployed, over
+there; `--board` picks them up when they are served.
+
+Open, unchanged: the intermittent React #418 on Shell pages; forward
+steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
+inline images on the articles (owner's); SSE only if a tool wants
+progress; the three engine write-ups once the engine they describe is
+the served one.
