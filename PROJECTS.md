@@ -1207,3 +1207,15 @@ on, commits that touched no Rust. The gate matches commit identity, which
 is what it is for; it did not catch an engine change here because there
 was none. The prose-number hole that mutation test proved is recorded in
 `notes/modules.md` as open.
+
+## Checkpoint, 2026-08-27, at 1.0.122: the console meets the strip on a phone
+
+The strip's evening ended with one seam the suite could not see and a
+phone could: prose between the console and the strip. It is closed by
+construction (a fixed root ending at the strip, nothing left in flow) and
+held by a phone-viewport test that asserts the document does not scroll.
+Engine boarded at `6502@6e9900a` (v0.259). Both trees clean and pushed;
+roof at `ece2dce`. Open, unchanged: local engines for the console and the
+Lab (`notes/one-engine.md`); re-publishing the pack needs the `programs`
+token; upstream's api.html figures are held by no test (`notes/modules.md`
+item 5, that project's call).
