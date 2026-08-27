@@ -127,7 +127,7 @@ with the pages it compared. Not before: an API call is not a bookmark.
 
 ## Traffic statistics, after the forward
 
-**Built 2026-08-27 (1.0.125), ahead of the forward at the owner's ask:**
+**Built 2026-08-27 (deployed at b9ab3ad; the tree was clean so the version stayed 1.0.124), ahead of the forward at the owner's ask:**
 `scripts/visitors-collect.py` (the collector), `deploy/tinymachines-visitors.service`
 and `.timer` (every ten minutes), `GET /api/v1/visitors` (a file read of
 the snapshot, 404 until one exists), and `/visitors` (noindex while it

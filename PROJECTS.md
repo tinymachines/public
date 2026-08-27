@@ -1254,7 +1254,7 @@ statistics** follow the forward, on `bradleyio/scripts/visitors_collector.py`'s
 pattern; the first move is that the apex gets an access log of its own,
 which it does not have today.
 
-## 1.0.125, 2026-08-27: pretext measured, and the visitors board
+## b9ab3ad (still 1.0.124), 2026-08-27: pretext measured, and the visitors board
 
 - **`extern/pretext`** is a submodule (MIT, no die data). `notes/pretext.md`
   has the measurement on the live tracer: heights match the browser 12 of
