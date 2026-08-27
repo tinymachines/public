@@ -1377,3 +1377,10 @@ section behind a native `<details>` reading "Read on" (`foldSection`,
 `web/lib/prose.ts`; the article never folds, and a section carrying a
 widget never folds). The tracer on a phone: 6,502 pixels folded, from
 19,413 as paragraphs and 54,741 as the two blocks.
+
+Then 1.0.133: the article link under the prose shares the prose's wrap
+box, so it lines up with the fold's summary (its rule had lived in
+`article.css`, which the tool page never loaded). And the golden
+reference, owner's call: `web/e2e/golden/tracer-golden-{phone,desk}.jpg`,
+taken from the live site at 1.0.133, 6,846 CSS px tall at 390 against
+the "before" pair's 18,247. `web/e2e/golden/README.md` lists both.
