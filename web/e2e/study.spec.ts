@@ -31,18 +31,17 @@ for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
     const nav = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>("#bk-blocknav .bk-step")].filter((a) => a.offsetHeight > 0).map((a) => a.querySelector(".bk-step-dir")!.textContent));
     expect(nav).toEqual(["Previous", "Next"]);
     await expect(page.locator("#bk-root-link")).toHaveText(/Full screen$/);
-    expect(await page.getAttribute("#bk-root-link", "href")).toMatch(/\/6502\/schematic\?signal=alu0&block=alu&solo=1/);
+    expect(await page.evaluate(() => (document.querySelector("#bk-root-link") as HTMLAnchorElement).href)).toMatch(/\/6502\/schematic\?signal=alu0&block=alu&solo=1/);
   });
 
-  test(`the block's full screen is the study view, under the strip (${name})`, async ({ page }) => {
+  test(`arriving at the study view with no gesture: the cover, under the strip (${name})`, async ({ page }) => {
     await page.setViewportSize(vp);
-    await open(page, "/6502/block?b=alu", 6000);
-    await page.click("#bk-root-link");
-    await page.waitForLoadState("load");
+    // A bookmark, or the block's link on a phone: no user activation, so
+    // the native request is refused and upstream's by-hand cover goes up.
+    await open(page, "/6502/schematic?signal=alu0&block=alu&solo=1", 6000);
     await expect.poll(() => page.evaluate(() => document.querySelector(".console")?.classList.contains("solo")), { timeout: 15000 }).toBe(true);
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
-    // A page load has no gesture, so this is the by-hand cover.
-    expect(await page.evaluate(() => document.querySelector(".console")!.classList.contains("faux"))).toBe(true);
+    expect(await page.evaluate(() => document.querySelector(".console")!.classList.contains("faux")), "the by-hand cover").toBe(true);
     expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight), "no bar").toBe(0);
     expect(await page.evaluate(() => (document.querySelector(".wb-foot") as HTMLElement).offsetHeight), "no footer").toBe(0);
     const strip = (await box(page, ".chip-transport"))!;
@@ -63,12 +62,37 @@ for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);
     expect(await page.evaluate(() => document.querySelector(".console")!.classList.contains("solo"))).toBe(false);
     expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight)).toBeGreaterThan(20);
-    // And enters it: on the schematic, full screen is the study view.
-    await page.click(".tbtn.fs");
-    await expect.poll(() => page.evaluate(() => document.querySelector(".console")!.classList.contains("solo")), { timeout: 5000 }).toBe(true);
+  });
+
+  test(`the block's full screen, and the strip's key on the schematic, are the study view (${name})`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    await open(page, "/6502/block?b=alu", 6000);
+    await page.click("#bk-root-link");
+    await page.waitForLoadState("load");
+    // A click's activation can carry into the next document (Chromium does),
+    // so this may be native fullscreen on the console or the cover: either
+    // way it is the study view and the site is in full screen.
+    const solo = () => page.evaluate(() => document.querySelector(".console")?.classList.contains("solo") ?? false);
+    const nativeOn = () => page.evaluate(() => document.fullscreenElement !== null);
+    await expect.poll(solo, { timeout: 15000 }).toBe(true);
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
-    await page.click(".tbtn.fs");
+    expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight), "no bar").toBe(0);
+    if (await nativeOn()) {
+      // Native shows the console subtree alone: its own keys are the transport there.
+      expect((await box(page, "#solo-run"))!.ow, "the palette's run key stays in native fullscreen").toBeGreaterThan(0);
+      await page.evaluate(() => document.exitFullscreen());
+    } else {
+      await page.click(".tbtn.fs");
+    }
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);
+    await expect.poll(solo, { timeout: 5000 }).toBe(false);
+    // On the schematic, the strip's full screen is the study view.
+    await page.click(".tbtn.fs");
+    await expect.poll(solo, { timeout: 5000 }).toBe(true);
+    await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
+    if (await nativeOn()) await page.evaluate(() => document.exitFullscreen()); else await page.click(".tbtn.fs");
+    await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);
+    await expect.poll(solo, { timeout: 5000 }).toBe(false);
   });
 }
 
