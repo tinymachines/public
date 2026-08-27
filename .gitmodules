@@ -1,0 +1,3 @@
+[submodule "extern/pretext"]
+	path = extern/pretext
+	url = https://github.com/chenglou/pretext.git

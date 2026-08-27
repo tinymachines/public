@@ -13,6 +13,7 @@ down first.
 | `tinymachines/public` (this repo) | intended MIT, once it contains anything |
 | `tinymachines/halfphi` | **MIT**, and it embeds **no die data**. That is the whole reason it can be depended on freely |
 | `tinymachines/6502` | MIT code, but it embeds `netlist.bin`, which is **derived from CC BY-NC-SA 3.0 die data** |
+| `extern/pretext` (submodule here) | **MIT**, chenglou's text layout library; embeds no die data and touches none |
 | the die data itself | `segdefs.js` / `transdefs.js`, **CC BY-NC-SA 3.0**, Greg James / visual6502.org |
 
 `extern/visual6502` is a git submodule in the 6502 repo rather than a copy,

@@ -1,0 +1,100 @@
+# Pretext on the tracer: measured 2026-08-27
+
+`extern/pretext` is chenglou's text layout library (MIT, no die data,
+submodule at `ac49b09`, v0.0.8): `prepare(text, font)` measures the
+segments once with canvas, `layout(prepared, width, lineHeight)` is
+arithmetic after that, and neither touches the DOM. The question was
+whether it has a job on the tracer, the page with the most text on the
+site. The probe ran against the live page at 1280px, Chromium, with the
+CDP performance counters, and injected the built library into the page
+to lay out the page's own texts in the page's own fonts.
+
+## What the page costs today
+
+200 half-cycles through the store, one per animation frame, the page
+repainting its readouts as it does for a reader:
+
+| | |
+|---|---|
+| wall | 3,370 ms (paced by the frames, not the work) |
+| layouts | 426 (about two per half-cycle) |
+| layout time | 337 ms |
+| style recalculation | 755 ms |
+| script | 53 ms |
+| DOM nodes the engine tracks | 25,312 |
+
+So a half-cycle costs the engine about 1.7 ms of layout and 3.8 ms of
+style recalculation, and the script that produced the text is a
+rounding error. The cost is in the twelve readout cards being rewritten
+with `innerHTML` each step (`tracer.js` around lines 2240 to 2550) and in
+the size of the tree those writes invalidate, not in the text itself.
+
+The text itself, for the record, because the page reads as heavy:
+19 paragraphs of prose, 24,724 characters, and one of them is 20,661
+characters long (`web/tracer.html` line 231, "The tinted regions behind
+the graph are the functional blocks..."), which lays out 5,760 px tall
+at the prose column's width. Every other paragraph on the page is under
+700. That paragraph is an editorial fact, not a layout one; no library
+changes it.
+
+## What pretext does with the same text
+
+Twelve of the page's own texts (the five readout boxes, the first seven
+prose paragraphs), each laid out at its box's width and line height, in
+the computed font of its box (IBM Plex Mono for the cards, IBM Plex Sans
+for the prose). DOM measure = set the text on a probe element with the
+same font and width, read `offsetHeight` (a forced layout each time).
+
+| text | chars | width | DOM height | pretext height | DOM per measure | pretext prepare (once) | pretext layout |
+|---|---|---|---|---|---|---|---|
+| tc-block (the instruction) | 1,140 | 291 | 396 | 396 | 0.095 ms | 15.3 ms | 35 µs |
+| tc-picked | 51 | 291 | 36 | 36 | 0.025 ms | 0.7 ms | <5 µs |
+| tc-stats | 108 | 1,208 | 18 | 18 | 0.020 ms | 0.4 ms | <5 µs |
+| the 20,661-char paragraph | 20,661 | 612 | 5,760 | 5,760 | 2.47 ms | 21.2 ms | 105 µs |
+| the other eight paragraphs | 233 to 650 | 612 to 680 | 72 to 192 | same, all eight | 0.045 to 0.105 ms | 0.2 to 2.3 ms | <10 µs |
+
+Every height agrees to the pixel, twelve of twelve, in both families.
+After the one-time `prepare`, a layout pass over all twelve costs 0.165 ms
+against 3.24 ms through the DOM, about 20 times cheaper; `prepare` for
+all twelve costs 44 ms once, most of it the two long texts.
+
+## So: is there a job
+
+Not the one the page's cost suggests. Pretext measures; it does not make
+a 6,163-node instrument section cheaper to restyle, and style
+recalculation is two thirds of what a half-cycle costs. Replacing the
+cards' `innerHTML` with targeted updates would do more than any
+measurement library, and that is `tracer.js`, the 6502 repo's.
+
+Where it does have a job, and these are real:
+
+1. **The cards' heights without a reflow.** A readout card that changes
+   text every half-cycle also changes height, and the page under it
+   shifts. With `prepare` cached per distinct text (the instruction
+   blob is one string, the block cards are a few dozen) and `layout` at
+   35 µs, a card can be given its height before the text lands and the
+   column under it stops moving. That is the "prevent layout shift"
+   case in pretext's own README, and the numbers above say it holds in
+   the house fonts.
+2. **Canvas or SVG text for the drawing's labels.** The tracer's graph
+   is 1,725 nodes as DOM elements; a label drawn with `fillText` needs
+   its lines from somewhere, and pretext's `layoutWithLines` is that
+   somewhere, measured to match the browser.
+3. **A build-time check that the copy fits.** `prepare` needs a canvas,
+   so it runs in a browser (or a headless one), not in `bun test`; but
+   an e2e spec that lays every strip word, every card head and every
+   button label out at the phone width and refuses a wrap is a check
+   this site does by screenshot today. That one is this repo's, and it
+   is the cheapest thing on this list to build.
+
+The 20,661-character paragraph is the one thing on the page that a
+reader would call the text blob, and it is a sentence-level decision
+for the 6502 repo: split it, or fold it behind the block names it
+describes. Nothing here measures its way out of that.
+
+## Reproducing
+
+The probe is a Playwright script (scratchpad `pt-entry.ts` bundled with
+`bun build --format iife` from `extern/pretext/src/layout.ts`, injected
+with `addScriptTag`); `extern/pretext` builds its own `dist/` with
+`bun install && bun run build:package`, and `dist/` is not committed.
