@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { allPages } from "@/lib/docs";
 import { explorerPages } from "@/lib/explorer";
+import { articlePages } from "@/lib/article";
 import { LANGS, localize } from "@/lib/lang";
 import { abs } from "@/lib/seo";
 
@@ -47,6 +48,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...STATIC,
     ...allPages().map((p) => (p.slug.length ? `/docs/${p.slug.join("/")}` : "/docs")),
     ...explorerPages().map((p) => `/6502/${p.slug}`),
+    // The companion articles: a tool's prose as a reading page (lib/article.ts).
+    ...articlePages().map((p) => `/6502/${p.slug}/article`),
   ];
   const seen = new Set<string>();
   const out: MetadataRoute.Sitemap = [];

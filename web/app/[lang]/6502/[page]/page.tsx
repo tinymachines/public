@@ -6,7 +6,9 @@ import { explorer, explorerPages } from "@/lib/explorer";
 import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
 import { explorerLabel } from "@/lib/explorer-menu";
-import { t } from "@/lib/i18n";
+import { localize, t } from "@/lib/i18n";
+import Link from "next/link";
+import { articlePages } from "@/lib/article";
 import { ChipModules } from "../explorer/ChipModules";
 import "../explorer/explorer.css";
 
@@ -96,6 +98,14 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={script} />
+        {/* The companion: the same prose as an article, with the instrument
+            in it (article/page.tsx). Under the instrument, where the prose
+            it replaces begins. */}
+        {articlePages().some((p) => p.slug === page) ? (
+          <p className="wb-article-link">
+            <Link className="tag live" href={localize(lang, `/6502/${page}/article`)}>{lang === "ja" ? "記事として読む" : "Read it as an article"}</Link>
+          </p>
+        ) : null}
         {/* What is running, on every page: see explorer/page.tsx. */}
         <SiteFooter lang={lang} />
       </div>
