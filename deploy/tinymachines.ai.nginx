@@ -224,7 +224,11 @@ server {
     # their data against the document, so from /ja/6502/tracer the fetch for
     # schematic.json asked for /ja/6502/schematic.json and got a 404 that
     # read as "Could not start". Same files, one more address they answer at.
-    location ~ "^/(?:ja/)?6502/(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
+    # Any depth under /6502/: the tool pages fetch their data relative to
+    # the document, and the companion articles live one segment deeper
+    # (/6502/tracer/article asks for /6502/tracer/schematic.<hash>.json).
+    # The asset name is the last segment either way.
+    location ~ "^/(?:ja/)?6502/(?:[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
         alias /var/www/6502.tinymachines.ai/current/$chipasset;
     }
 

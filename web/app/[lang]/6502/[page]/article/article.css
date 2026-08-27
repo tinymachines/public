@@ -5,7 +5,6 @@
 .art { margin: 0 auto; }
 .art-head { max-width: 68ch; margin-bottom: calc(var(--u) * 8); }
 .art-head h1 { margin: calc(var(--u) * 1) 0 calc(var(--u) * 4); }
-.art-head .lede { font-size: var(--text-lead); line-height: 1.5; }
 .art-meta { font-family: var(--font-mono); font-size: var(--text-fine); margin: calc(var(--u) * 3) 0 0; }
 
 /* The bench: a window onto the running instrument, bleeding to the page
@@ -23,7 +22,11 @@
 }
 
 .art-body { max-width: 68ch; }
-.art-body h2 { margin-top: calc(var(--u) * 10); }
+/* The sections keep the tool's own prose rules (.wrap, .sec, .bp-prose:
+   widths, the eyebrow, the lede, the tables), minus the page gutter the
+   tool page needed and this column does not. */
+.art-body .wrap { padding-inline: 0; margin-inline: 0; max-width: none; }
+.art-body .sec { padding-inline: 0; }
 .art-note { margin-top: calc(var(--u) * 8); font-size: var(--text-fine); }
 
 /* JUSTIFIED, by pretext (components/Justified.tsx). Before the lines are

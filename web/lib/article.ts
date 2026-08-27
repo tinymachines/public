@@ -3,28 +3,31 @@ import path from "node:path";
 import { explorerPages } from "./explorer";
 
 /**
- * The article: a tool page's prose, lifted out of the instrument.
+ * The article: a tool page's prose sections, lifted out of the instrument.
  *
- * Every 6502 tool page carries its documentation under the instrument as one
- * or more `section.bp-prose` blocks: an eyebrow, an h2, a lede, paragraphs.
- * On the tool page that prose sits below a full-viewport instrument and, on
- * the tracer, one of its paragraphs is 20,661 characters long; measured
- * 2026-08-27 (notes/pretext.md), nobody reads it there. The companion page
- * (/6502/<tool>/article) sets the same words in a reading column, justified
- * through pretext (components/Justified.tsx), with the instrument as a live
- * figure. This module is the reader: it turns the sections into blocks a
- * page can lay out, and it changes no word.
+ * Every 6502 tool page carries its documentation under the instrument as
+ * `section.bp-prose` blocks. On the tool page that prose sits below a
+ * full-viewport instrument and, on the tracer, one of its paragraphs is
+ * 20,661 characters long; measured 2026-08-27 (notes/pretext.md), nobody
+ * reads it there. The companion page (/6502/<tool>/article) sets the same
+ * sections in a reading column, justified through pretext in place
+ * (components/Justify.tsx), with the rest of the instrument as a live
+ * figure.
  *
- * What it does change, and it is two things, both layout:
+ * The sections are kept as the markup they are, not reduced to text. The
+ * first version of this reader took only the paragraphs and lost what the
+ * sections also carry: across the seventeen tools, 147 divs, 26 buttons,
+ * tables, figures, and 36 `[data-fact]` slots the tool's own script fills
+ * with measured numbers (block's whole instrument lives inside one). Those
+ * are the inline widgets the article is for. So the HTML goes through
+ * whole, and this module changes exactly two things about it:
  *
- * - A paragraph longer than LONG is split at sentence ends into paragraphs
- *   of about TARGET characters. The sentences are the author's; only the
- *   paragraph breaks are new, and lib/article.test.ts checks that the split
- *   text joined back is the original text.
- * - Inline marks are kept as runs (em, mono, link) so the justified setter
- *   can measure each in its own font; a paragraph is a list of runs, not a
- *   string, and links are rewritten to this site's paths as lib/explorer.ts
- *   rewrites them.
+ * - A paragraph longer than LONG whose markup is plain inline (links,
+ *   emphasis, mono spans) is split at sentence ends into paragraphs of
+ *   about TARGET characters. The sentences are the author's; only the
+ *   paragraph breaks are new, and lib/article.test.ts checks that the
+ *   parts' text joined back is the original text.
+ * - Links are rewritten to this site's paths, as lib/explorer.ts does.
  */
 
 const SRC = path.join(process.cwd(), "..", "..", "6502", "web");
@@ -33,41 +36,47 @@ const TARGET = 620;
 
 export type RunKind = "text" | "em" | "mono" | "a" | "b";
 export interface Run { kind: RunKind; text: string; href?: string }
-export type Block =
-  | { kind: "eyebrow"; text: string }
-  | { kind: "h2"; text: string; id: string }
-  | { kind: "lede"; runs: Run[] }
-  | { kind: "p"; runs: Run[] };
 
 export interface Article {
   slug: string;
   title: string;
   description: string;
-  blocks: Block[];
-  /** How many paragraphs the split added, for the page to say so. */
+  /** The prose sections, as HTML, each still `section.wrap.sec.bp-prose`. */
+  html: string;
+  /** How many paragraph breaks the split added. */
   splits: number;
-  /** Characters of prose, for the reader who wants to know what they are in for. */
+  /** Characters of text in the sections. */
   chars: number;
+  /** `[data-fact]` slots carried through, for the page and the test. */
+  slots: number;
 }
 
 function unescape(s: string): string {
   return s
     .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)));
+}
+function escape(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 const slugs = () => new Set(explorerPages().map((p) => p.file.replace(/\.html$/, "")));
 
-function rewriteHref(href: string): string {
-  const s = slugs();
-  const m = href.match(/^\/?([a-z0-9-]+)(\?[^#]*)?(#.*)?$/);
-  if (m && s.has(m[1])) return `/6502/${m[1]}${m[2] ?? ""}${m[3] ?? ""}`;
-  if (href === "/") return "/6502/explorer";
-  return href;
+/** Whether a paragraph's markup is plain inline: the only kind this splits. */
+export function isPlainInline(inner: string): boolean {
+  const tags = [...inner.matchAll(/<(\/?)([a-z0-9]+)([^>]*)>/gi)];
+  return tags.every(([, closing, tag, attrs]) => {
+    const t = tag.toLowerCase();
+    if (closing) return ["em", "i", "b", "strong", "a", "span", "code"].includes(t);
+    if (t === "em" || t === "i" || t === "b" || t === "strong" || t === "a") return !/data-/.test(attrs);
+    if (t === "span") return /\bmono\b/.test(attrs) && !/data-/.test(attrs);
+    if (t === "code") return !/data-/.test(attrs);
+    return false;
+  });
 }
 
-/** Inline HTML to runs. Tags this does not know are dropped and their text kept. */
+/** Inline HTML to runs. Only for plain inline markup (isPlainInline). */
 export function runsOf(inner: string): Run[] {
   const out: Run[] = [];
   const re = /<(\/?)([a-z0-9]+)([^>]*)>/gi;
@@ -93,53 +102,56 @@ export function runsOf(inner: string): Run[] {
     else if (tag === "code" || (tag === "span" && /\bmono\b/.test(m[3]))) kind = "mono";
     else if (tag === "a") {
       const h = m[3].match(/href="([^"]*)"/);
-      kind = "a"; href = h ? rewriteHref(unescape(h[1])) : undefined;
+      kind = "a"; href = h ? unescape(h[1]) : undefined;
     }
   }
   push(inner.slice(last));
-  // Leading and trailing space on the paragraph is the markup's, not the prose's.
   if (out.length) { out[0].text = out[0].text.replace(/^\s+/, ""); out[out.length - 1].text = out[out.length - 1].text.replace(/\s+$/, ""); }
   return out.filter((r) => r.text.length > 0);
 }
 
 export const plain = (runs: Run[]) => runs.map((r) => r.text).join("");
 
+/** Runs back to the markup the tool page uses for them. */
+export function htmlOf(runs: Run[]): string {
+  return runs.map((r) => {
+    const t = escape(r.text);
+    if (r.kind === "em") return `<em>${t}</em>`;
+    if (r.kind === "b") return `<b>${t}</b>`;
+    if (r.kind === "mono") return `<span class="mono">${t}</span>`;
+    if (r.kind === "a") return `<a href="${escape(r.href ?? "")}">${t}</a>`;
+    return t;
+  }).join("");
+}
+
 /**
  * Split a long paragraph at sentence ends into paragraphs near TARGET
- * characters, cutting runs where a sentence ends inside one. The join of the
- * parts' plain text is the original's plain text: nothing is dropped and
- * nothing is added, and the test says so.
+ * characters, cutting runs where a sentence ends inside one. The join of
+ * the parts' plain text is the original's plain text.
  */
-export function splitRuns(runs: Run[], target = TARGET): Run[][] {
+export function splitRuns(runs: Run[], target = TARGET, long = LONG): Run[][] {
   const text = plain(runs);
-  if (text.length <= LONG) return [runs];
-  // Sentence ends: . ! ? followed by a space and a capital, a quote or a
-  // digit; a semicolon followed by a space counts too, since the long
-  // paragraph is written in clauses. Never inside a mono run (a "$" or "."
-  // in a name is not a sentence end).
-  const ends: number[] = [];
+  if (text.length <= long) return [runs];
   const monoRanges: [number, number][] = [];
   let pos = 0;
   for (const r of runs) { if (r.kind === "mono") monoRanges.push([pos, pos + r.text.length]); pos += r.text.length; }
   const inMono = (i: number) => monoRanges.some(([a, b]) => i > a && i < b);
+  const ends: number[] = [];
   const re = /[.!?]["')\]]?\s+(?=[A-Z0-9"'(])/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) { const cut = m.index + m[0].length; if (!inMono(cut)) ends.push(cut); }
   if (!ends.length) return [runs];
-  // Greedy: take sentences until the next end would overshoot the target by
-  // more than it undershoots.
   const cuts: number[] = [];
   let start = 0;
   for (let i = 0; i < ends.length; i++) {
     const here = ends[i] - start;
     const next = i + 1 < ends.length ? ends[i + 1] - start : text.length - start;
     if (here >= target || (next > target && here >= target * 0.6)) {
-      if (text.length - ends[i] < target * 0.4) break; // a short tail joins the last paragraph
+      if (text.length - ends[i] < target * 0.4) break;
       cuts.push(ends[i]); start = ends[i];
     }
   }
   if (!cuts.length) return [runs];
-  // Cut the runs at the character offsets.
   const parts: Run[][] = [];
   let cur: Run[] = [];
   let at = 0;
@@ -163,52 +175,51 @@ export function splitRuns(runs: Run[], target = TARGET): Run[][] {
   return parts.filter((p) => p.length);
 }
 
-function idFor(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
-}
-
 export function article(file: string): Article {
   const html = fs.readFileSync(path.join(SRC, file), "utf8");
-  const blocks: Block[] = [];
+  const s = slugs();
+  const sections: string[] = [];
   let splits = 0;
   let chars = 0;
   const secRe = /<section class="wrap sec bp-prose[^"]*"[^>]*>/g;
   let sm: RegExpExecArray | null;
-  let sections = 0;
   while ((sm = secRe.exec(html))) {
-    sections += 1;
     const end = html.indexOf("</section>", sm.index);
-    const sec = html.slice(sm.index + sm[0].length, end);
-    const blockRe = /<(h2|h3|p)([^>]*)>([\s\S]*?)<\/\1>/g;
-    let bm: RegExpExecArray | null;
-    while ((bm = blockRe.exec(sec))) {
-      const [, tag, attrs, inner] = bm;
-      if (tag === "h2" || tag === "h3") {
-        const text = unescape(inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim());
-        const id = (attrs.match(/id="([^"]+)"/) ?? [])[1] ?? idFor(text);
-        blocks.push({ kind: "h2", text, id });
-        continue;
-      }
-      if (/\beyebrow\b/.test(attrs)) { blocks.push({ kind: "eyebrow", text: unescape(inner.replace(/<[^>]+>/g, "").trim()) }); continue; }
-      const runs = runsOf(inner);
-      if (!runs.length) continue;
-      chars += plain(runs).length;
-      if (/\blede\b/.test(attrs)) { blocks.push({ kind: "lede", runs }); continue; }
-      const parts = splitRuns(runs);
+    let sec = html.slice(sm.index, end + "</section>".length);
+    // Scripts never ride along: the tool's script is booted once, by the
+    // figure, from the runtime manifest.
+    sec = sec.replace(/<script\b[\s\S]*?<\/script>/g, "");
+    // The long plain paragraphs, split.
+    sec = sec.replace(/<p([^>]*)>([\s\S]*?)<\/p>/g, (whole, attrs: string, inner: string) => {
+      const text = unescape(inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
+      chars += text.length;
+      if (text.length <= LONG || !isPlainInline(inner) || /\bid=/.test(attrs)) return whole;
+      const parts = splitRuns(runsOf(inner));
+      if (parts.length === 1) return whole;
       splits += parts.length - 1;
-      for (const p of parts) blocks.push({ kind: "p", runs: p });
-    }
+      return parts.map((p) => `<p${attrs}>${htmlOf(p)}</p>`).join("\n");
+    });
+    // Links to the tool pages, one segment deeper here (lib/explorer.ts).
+    // Both forms the tool pages use: "/block?b=x" and "block?b=x". From the
+    // article, one segment deeper, the relative one would resolve under
+    // /6502/<tool>/, where nothing answers.
+    sec = sec.replace(/href="\/?([a-z0-9-]+)((?:\?[^"#]*)?(?:#[^"]*)?)"/g, (whole, slug: string, tail: string) =>
+      s.has(slug) ? `href="/6502/${slug}${tail}"` : whole);
+    sec = sec.replace(/href="\/"/g, 'href="/6502/explorer"');
+    sections.push(sec);
   }
-  if (!sections) throw new Error(`6502/web/${file}: no section.bp-prose; there is no article to lift`);
+  if (!sections.length) throw new Error(`6502/web/${file}: no section.bp-prose; there is no article to lift`);
+  const out = sections.join("\n");
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/);
   return {
     slug: file.replace(/\.html$/, ""),
     title: titleMatch ? unescape(titleMatch[1].split(/[·|]/)[0].trim()) : file,
     description: descMatch ? unescape(descMatch[1]) : "",
-    blocks,
+    html: out,
     splits,
     chars,
+    slots: (out.match(/data-fact=/g) ?? []).length,
   };
 }
 

@@ -25,12 +25,12 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
           paragraphs: document.querySelectorAll(".jp").length, set: set.length, lines, over, loose,
           h1: document.querySelectorAll("h1").length,
           sideways: document.documentElement.scrollWidth - innerWidth,
-          longest: Math.max(...[...document.querySelectorAll(".art-body .jp")].map((e) => e.textContent!.length)),
+          longest: Math.max(...[...document.querySelectorAll(".art-body p")].map((e) => e.textContent!.length)),
           bench: !!document.querySelector(".art-bench-frame .explorer-shell"),
         };
       });
       expect(r.paragraphs, "there is prose").toBeGreaterThan(5);
-      expect(r.set, "every paragraph was set by pretext").toBe(r.paragraphs);
+      expect(r.set, "most paragraphs were set by pretext (the rest are the browser's: a button, a slot cut by a line)").toBeGreaterThan(r.paragraphs * 0.6);
       expect(r.lines).toBeGreaterThan(20);
       expect(r.over, "no set line is wider than its block").toBe(0);
       expect(r.loose, "no set line is stretched past a third of its width").toBe(0);
@@ -41,6 +41,23 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
     });
   }
 }
+
+test("the primer article's slots are filled by the tool's script, inside set lines", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, "/6502/primer/article", 9000);
+  const r = await page.evaluate(() => {
+    const slots = [...document.querySelectorAll(".art-body [data-fact]")];
+    return {
+      slots: slots.length,
+      unfilled: slots.filter((s) => /^[…\s-]*$/.test(s.textContent ?? "")).length,
+      inLines: slots.filter((s) => s.closest(".jl")).length,
+    };
+  });
+  expect(r.slots, "the primer's measured-figure slots are on the article").toBeGreaterThan(5);
+  expect(r.unfilled, "every slot holds a number from the chip").toBe(0);
+  expect(r.inLines, "slots live inside pretext's lines and kept their identity").toBeGreaterThan(0);
+});
 
 test("the tracer article's bench is the tracer, running", async ({ page }) => {
   test.slow();
