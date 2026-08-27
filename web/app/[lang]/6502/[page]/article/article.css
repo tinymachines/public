@@ -29,17 +29,7 @@
 .art-body .sec { padding-inline: 0; }
 .art-note { margin-top: calc(var(--u) * 8); font-size: var(--text-fine); }
 
-/* JUSTIFIED, by pretext (components/Justified.tsx). Before the lines are
-   set the paragraph is ordinary flowing text and the browser justifies it;
-   once set, each line is a block and text-align-last pads exactly the line
-   pretext chose. The last line is ragged, as in a book. `hyphens: none`
-   because pretext does not hyphenate and the browser must not add breaks
-   pretext did not measure. */
-.jp { text-align: justify; hyphens: none; -webkit-hyphens: none; }
-.jp.jp-set { text-align: start; }
-.jp-set .jl { display: block; white-space: nowrap; text-align: justify; text-align-last: justify; }
-.jp-set .jl.jl-last { text-align-last: start; }
-.jp code { font-size: 0.88em; }
+/* The justified lines' rules are components/justify.css, with Justify.tsx. */
 
 /* The link from the bench to the article, under the instrument. */
 .wb-article-link { margin: calc(var(--u) * 6) 0 0; }

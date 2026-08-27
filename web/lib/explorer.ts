@@ -3,6 +3,7 @@ import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import postcss from "postcss";
 import { kitBorders } from "./kit-borders";
+import { PROSE_SECTION, splitParagraphs } from "./prose";
 
 /**
  * The 6502 explorer, read out of the 6502 repository at build time.
@@ -45,6 +46,8 @@ export interface Explorer {
   title: string;
   /** Their own <meta name="description">, or empty. */
   description: string;
+  /** How many paragraph breaks splitting the long prose paragraphs added. */
+  splits: number;
 }
 
 /**
@@ -191,6 +194,13 @@ export function explorer(file = "index.html"): Explorer {
   );
   body = body.replace(/href="\/"/g, 'href="/6502/explorer"');
 
+  // The prose under the instrument, with its long paragraphs split at
+  // sentence ends (lib/prose.ts; the companion article applies the same
+  // rule to the same sections). Owner's call, 2026-08-27: one paragraph on
+  // the tracer was 23,341 characters, 48,000 pixels of a phone's scroll.
+  let splits = 0;
+  body = body.replace(PROSE_SECTION, (sec) => { const r = splitParagraphs(sec); splits += r.splits; return r.html; });
+
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;
   const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/);
@@ -225,5 +235,5 @@ export function explorer(file = "index.html"): Explorer {
       body.slice(end + "</h1>".length);
   }
 
-  return { style, body, script, title, description };
+  return { style, body, script, title, description, splits };
 }

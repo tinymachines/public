@@ -1359,3 +1359,15 @@ place through pretext; and the engine gate re-based on the served release
 `ddc1480`. Open: `TM_SELF_NETS` in `/etc/tinymachines/visitors.env` (hand);
 the intermittent React #418 on Shell pages (pre-existing); the magazine
 design brief (owner's); forward steps 2 and 3 (`notes/forward.md`).
+
+## Same day: the tracer page's two blocks, as paragraphs
+
+Owner's ask: the tracer page itself, on a phone, was two walls of text,
+the caption under the drawing (6,604 characters the script writes as one
+string) and the 23,341-character paragraph under it. The sentence-end
+split the articles use moved into `web/lib/prose.ts`, one copy, and
+`explorer()` now applies it to every tool page's prose; `Justify` mounts
+on the tool page too, and cuts the script-written caption at sentence
+ends in the browser, re-setting it every time the script rewrites it.
+Measured 0 overflowing lines at phone and desk; `e2e/tool-prose.spec.ts`
+holds it. `notes/pretext.md` has the round.

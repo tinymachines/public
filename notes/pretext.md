@@ -109,3 +109,36 @@ to 22px until pretext was told), and a paragraph whose element would have
 to straddle two lines is better left to the browser than cut. With both
 in, 0 of 276 desk lines and 0 of 535 phone lines on the tracer article are
 wider than their block.
+
+## The tool page itself, 2026-08-27 (afternoon)
+
+The articles set the prose in a reading column; the tool page still
+carried it as it came, and the owner's ask was the tool page: on a phone
+the tracer was 54,741 pixels of full-page screenshot, one 23,341-character
+paragraph and one 6,604-character caption. So the same treatment now
+reaches the tool page, from the same rule:
+
+- `web/lib/prose.ts` holds the sentence-end split that `lib/article.ts`
+  had (`cutsOf`, `splitRuns`, `splitParagraphs`), with no node import, so
+  the browser bundle takes it too. `explorer()` applies `splitParagraphs`
+  to every `section.bp-prose` on every tool page, and returns `splits`.
+- `components/Justify.tsx` mounts on the tool page with a `select` (the
+  prose paragraphs, the hero's lede, `p.bk-foot`; never the readouts),
+  collects paragraphs under a hidden ancestor too (the tool's `#tc-main`
+  is hidden until it boots), takes a paragraph's new children as its
+  originals when the tool's script replaces them, and cuts a text-only
+  paragraph longer than LONG at sentence ends into `.jg` parts before
+  setting. That last is the caption: the tracer writes it as one string
+  by `textContent` every step, and every step it is set again.
+- Its CSS is `components/justify.css`, one copy, imported by the component.
+
+Measured on a local build of this tree with the chip assets routed to the
+live host, phone (390) and desk (1280): 47 of 50 paragraphs set by
+pretext, 600 and 284 lines, 0 overflowing, 0 loose; the longest paragraph
+817 characters; the caption 6,593 characters in 12 parts; no readout
+touched. `web/e2e/tool-prose.spec.ts` holds those as assertions against
+the live site, including a step that rewrites the caption.
+
+Not done: the prose is still 23,000 characters under the instrument, now
+as paragraphs. Folding it, or shortening it, is a design and writing
+call, and the companion article is where the reading version lives.

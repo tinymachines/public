@@ -1,0 +1,14 @@
+/* JUSTIFIED, by pretext (components/Justify.tsx). Before the lines are
+   set the paragraph is ordinary flowing text and the browser justifies it;
+   once set, each line is a block and text-align-last pads exactly the line
+   pretext chose. The last line is ragged, as in a book. `hyphens: none`
+   because pretext does not hyphenate and the browser must not add breaks
+   pretext did not measure. A paragraph the script wrote as one long string
+   is set as parts (.jg), one per run of sentences, spaced as paragraphs. */
+.jp { text-align: justify; hyphens: none; -webkit-hyphens: none; }
+.jp.jp-set { text-align: start; }
+.jp-set .jl { display: block; white-space: nowrap; text-align: justify; text-align-last: justify; }
+.jp-set .jl.jl-last { text-align-last: start; }
+.jp-set .jg { display: block; }
+.jp-set .jg + .jg { margin-top: 0.75em; }
+.jp code { font-size: 0.88em; }

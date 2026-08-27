@@ -10,6 +10,7 @@ import { localize, t } from "@/lib/i18n";
 import Link from "next/link";
 import { articlePages } from "@/lib/article";
 import { ChipModules } from "../explorer/ChipModules";
+import { Justify } from "@/app/components/Justify";
 import "../explorer/explorer.css";
 
 /**
@@ -98,6 +99,10 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={script} />
+        {/* The prose under the instrument, and the caption the script writes
+            under the drawing, set by pretext (components/Justify.tsx): the
+            paragraphs, the lede, the caption; not the readouts. */}
+        <Justify root=".wb-main > .explorer-shell" select=".bp-prose p, .hero p.lede, p.bk-foot" />
         {/* The companion: the same prose as an article, with the instrument
             in it (article/page.tsx). Under the instrument, where the prose
             it replaces begins. */}
