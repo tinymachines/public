@@ -77,6 +77,12 @@ for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
     await expect.poll(solo, { timeout: 15000 }).toBe(true);
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
     expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight), "no bar").toBe(0);
+    // Let the entry settle before leaving. Upstream's toggle (fullscreen.js)
+    // re-checks fullscreenElement 120ms after a native request took, and
+    // raises its cover if it finds none: leaving inside that window reads
+    // as a refusal and the cover comes up over the page just left. No
+    // person leaves in 120ms; this test did, 3 runs in 6 (2026-08-28).
+    await page.waitForTimeout(300);
     if (await nativeOn()) {
       // Native shows the console subtree alone: its own keys are the transport there.
       expect((await box(page, "#solo-run"))!.ow, "the palette's run key stays in native fullscreen").toBeGreaterThan(0);
@@ -90,6 +96,7 @@ for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
     await page.click(".tbtn.fs");
     await expect.poll(solo, { timeout: 5000 }).toBe(true);
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
+    await page.waitForTimeout(300); // the same window
     if (await nativeOn()) await page.evaluate(() => document.exitFullscreen()); else await page.click(".tbtn.fs");
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);
     await expect.poll(solo, { timeout: 5000 }).toBe(false);

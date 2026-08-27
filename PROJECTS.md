@@ -1595,3 +1595,32 @@ steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
 inline images on the articles (owner's). One reading to confirm: the
 graph's stage went dark on "black theme for lab, my bad"; a one-line
 change if paper was meant.
+
+## Same day: the graph is dark, and a stipple that was on every element
+
+The reading confirmed: the graph is dark. The stage already was (1.0.145);
+what was on it was not, because the drawing reads the page's tokens (an
+edge is `--line`, a switch `--accent`, a lit node's ring `--foreground`)
+and those became the paper theme's inks when the pages moved onto paper.
+Measured on live: a gate edge was `#16150f` at 55% over `#080c15`, 1,282
+edges of ink on ink. Inside `.dg-stage` the five tokens the drawing reads
+are the drawing's own dark values again (`explorer.css`), as literals,
+because they are that drawing's and not the site's.
+
+Found while measuring, and older: the scoper's `body(?=[.\[:])`
+lookahead, added at 1.0.145 for `body.no-scroll`, also took `body::before`,
+so upstream's stipple rule became `body .explorer-shell ::before`, a fixed
+dot grid painted by every element's `::before` in the shell. It showed as
+a grid of white dots over the dark stage, and had been over the paper
+too since 1.0.145. `lib/explorer.ts` now keeps a pseudo-element on body
+dead like bare body; `lib/explorer.test.ts` holds the three shapes and
+was watched fail without the fix. `study.spec.ts` asserts the gate edge
+is light and that no element's `::before` paints a radial gradient.
+
+Deployed 1.0.147. Then the click-path study test failed at one worker,
+3 runs in 6, with the cover up after leaving native fullscreen: upstream's
+toggle re-checks `fullscreenElement` 120ms after a native request took
+and raises its cover if it finds none, and the test left inside that
+window by calling `exitFullscreen()` the instant the class flipped. Not a
+site bug (nobody leaves in 120ms); the test waits 300ms after the entry
+settles, 6 of 6 after, 7 of 7 for the spec.
