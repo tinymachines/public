@@ -7,6 +7,7 @@ import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
 import { ConsoleDriver } from "./ConsoleDriver";
 import { Shell } from "./shell/Shell";
+import { SiteFooter } from "@/app/components/SiteFrame";
 import "./console.css";
 import "./shell/shell.css";
 
@@ -278,6 +279,10 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
             <h3>{S.whySlow}</h3>
             <p className="con-note">{S.slow}</p>
             <p className="con-note">{S.cart(CHIP_API, B, M)}</p>
+            {/* What is running. The console has no floor for a footer (the
+                page is the viewport), so the status page carries it, as it
+                carries the prose. */}
+            <SiteFooter lang={lang} />
           </Shell>
         </div>
 

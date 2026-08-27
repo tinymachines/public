@@ -28,6 +28,8 @@ for (const p of STRIP_LIVE) {
         last: kids[kids.length - 1] === fs,
         fsRight: Math.round(fs.getBoundingClientRect().right),
         rows: new Set(kids.map((k) => Math.round(k.getBoundingClientRect().top + k.getBoundingClientRect().height / 2))).size,
+        engines: row.querySelectorAll(".tbtn.eng").length + row.querySelectorAll(".ct-engine").length,
+        engineWord: row.querySelector(".tbtn.eng .lb")?.textContent?.trim(),
         hidden: [...document.querySelectorAll("#btn-fullscreen, #cm-fullscreen, #tc-fullscreen, #sch-fullscreen, #btn-run, #bp-run, #tc-run, #ex-run, #sch-run, #tr-run, #hs-run, .dm-bar, .lab-shell .player")].filter((e) => (e as HTMLElement).offsetWidth > 0).map((e) => e.id || e.className),
       };
     });
@@ -51,6 +53,12 @@ for (const p of STRIP_LIVE) {
     expect(DESK.width - r!.fsRight, "full screen at the right edge").toBeLessThanOrEqual(16);
     expect(r!.rows, "one row on a desk").toBe(1);
     expect(r!.hidden, "no second transport or fullscreen control").toEqual([]);
+    expect(r!.engines, "one engine key, a toggle").toBe(1);
+    expect(r!.engineWord, "the key names the engine that is stepping").toMatch(/^(local|api)$/);
+    // The version on every page (owner's call, 2026-08-27), strip pages
+    // included: the footer is in the flow on a workbench and on the status
+    // page of the console. It reads the running API, so it arrives late.
+    await expect(page.locator(".site-foot .foot-run")).toHaveText(/v\d+\.\d+\.\d+ · [0-9a-f]{7} up /, { timeout: 10000 });
   });
 }
 
@@ -62,11 +70,11 @@ test.describe("phone", () => {
       const r = await page.evaluate(() => {
         const row = document.querySelector(".chip-transport .ct-row")!;
         const mid = (e: Element) => { const b = e.getBoundingClientRect(); return Math.round(b.top + b.height / 2); };
-        const btns = [...row.querySelectorAll("button.tbtn:not(.fs):not(.eng)")];
+        const btns = [...row.querySelectorAll("button.tbtn:not(.fs)")];
         const fs = row.querySelector(".tbtn.fs")!, rate = row.querySelector(".ct-rate")!, pos = row.querySelector(".ct-pos")!;
         return { keyRows: new Set(btns.map(mid)).size, sameRow: mid(fs) === mid(rate) && mid(fs) === mid(pos), fsRight: Math.round(fs.getBoundingClientRect().right), total: new Set([...row.children].map(mid)).size };
       });
-      expect(r.keyRows, "the seven keys on one row").toBe(1);
+      expect(r.keyRows, "the eight keys, the engine among them, on one row").toBe(1);
       expect(r.sameRow, "rate, position and full screen share the second row").toBe(true);
       expect(r.total).toBe(2);
       expect(PHONE.width - r.fsRight).toBeLessThanOrEqual(16);

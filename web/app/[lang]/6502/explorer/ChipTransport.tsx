@@ -92,8 +92,8 @@ const L = {
     opNone: "Next opcode fetch. This page's chip cannot step by opcode.",
     seek: "Position in the run. Drag to seek within what the chip can rewind.",
     seekNone: "Position in the run. This page's chip cannot seek.",
-    engLocal: "Local engine: the chip steps in this page, in WebAssembly.",
-    engApi: "API engine: halfwave steps the chip over HTTP. The whole machine travels out and back; the page draws the answer.",
+    engLocal: "Local engine (the rabbit): the chip steps in this page, in WebAssembly. Press to hand it to the API.",
+    engApi: "API engine (the turtle): halfwave steps the chip over HTTP. The whole machine travels out and back; the page draws the answer. Press to bring it back into the page.",
     engNone: "Engine. This page's chip runs where it runs; there is no switch.",
     engErr: "The API stopped answering",
     wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc", wOp: "op",
@@ -116,8 +116,8 @@ const L = {
     opNone: "次のオペコード取得へ。このページのチップはオペコード単位で進めない。",
     seek: "実行中の位置。ドラッグで、巻き戻せる範囲の中をシーク。",
     seekNone: "実行中の位置。このページのチップはシークできない。",
-    engLocal: "ローカルエンジン: チップはこのページの中、WebAssembly で進む。",
-    engApi: "API エンジン: halfwave が HTTP 越しにチップを進める。マシン全体が往復し、ページはその答えを描く。",
+    engLocal: "ローカルエンジン (うさぎ): チップはこのページの中、WebAssembly で進む。押すと API に渡す。",
+    engApi: "API エンジン (かめ): halfwave が HTTP 越しにチップを進める。マシン全体が往復し、ページはその答えを描く。押すとページの中に戻す。",
     engNone: "エンジン。このページのチップは走る場所が決まっていて、切り替えはない。",
     engErr: "API が応答しなくなった",
     wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wHalf: "½", wCyc: "cyc", wOp: "op",
@@ -136,9 +136,10 @@ const IC = {
   cycle: "M6 6l6 6-6 6M13 6l6 6-6 6",
   op: "M6 6l6 6-6 6M17 6v12",
   power: "M12 3v8M6.4 6.4a8 8 0 1 0 11.2 0",
-  // The engines: a chip in the page, and a signal out to the API.
-  local: "M7 7h10v10H7zM9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4",
-  api: "M12 21v-7M8.5 10.5a5 5 0 0 1 7 0M5.5 7.5a9 9 0 0 1 13 0M2.5 4.5a13 13 0 0 1 19 0",
+  // The engines: the rabbit is the chip in the page, the turtle is the
+  // API, a round trip per step.
+  local: "M12 20a4.5 4.5 0 1 1 0-9a4.5 4.5 0 1 1 0 9zM9.5 11.5C8 9 7.5 5 8.5 4s2.5 3 2.5 7M14.5 11.5C16 9 16.5 5 15.5 4S13 7 13 11M10.5 15.5h.01M13.5 15.5h.01",
+  api: "M5 15a7 4.5 0 0 1 14 0zM19 15h1.5a1.5 1.5 0 0 0 0-3H19M5 15H3M8 15v3M16 15v3M9 10.5c1-2 5-2 6 0",
 };
 function Ic({ d }: { d: string }) {
   return (
@@ -306,17 +307,24 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
         >
           <Ic d={IC.power} /><span className="lb">{S.wPower}</span>
         </button>
-        {/* The engine, beside power (one-engine.md rule 3): local wasm or
-            halfwave over the API. A driver that runs in one place only (the
-            console, the Lab, a recording) has no switch and says so. */}
-        <div className="ct-engine" role="group" aria-label="Engine" title={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}>
-          <button type="button" className={"tbtn eng" + (eng === "local" ? " on" : "")} aria-pressed={eng === "local"} disabled={!live || !can.engine} title={S.engLocal} aria-label={S.engLocal} onClick={() => ctl?.setEngine?.("local")}>
-            <Ic d={IC.local} /><span className="lb">{S.wLocal}</span>
-          </button>
-          <button type="button" className={"tbtn eng" + (eng === "api" ? " on" : "")} aria-pressed={eng === "api"} disabled={!live || !can.engine} title={S.engApi} aria-label={S.engApi} onClick={() => ctl?.setEngine?.("api")}>
-            <Ic d={IC.api} /><span className="lb">{S.wApi}</span>
-          </button>
-        </div>
+        {/* The engine, beside power (one-engine.md rule 3): one key, like
+            power, showing the engine that is stepping. The rabbit, solid, is
+            the chip in this page; the turtle is halfwave over the API.
+            Pressing it swaps. A driver that runs in one place only (the
+            console, the Lab, a recording) has no switch: the key shows where
+            it runs and is grey. */}
+        <button
+          type="button"
+          className={"tbtn eng" + (eng === "local" ? " on" : "")}
+          data-engine={eng}
+          aria-pressed={eng === "local"}
+          disabled={!live || !can.engine}
+          title={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}
+          aria-label={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}
+          onClick={() => ctl?.setEngine?.(eng === "api" ? "local" : "api")}
+        >
+          <Ic d={eng === "api" ? IC.api : IC.local} /><span className="lb">{eng === "api" ? S.wApi : S.wLocal}</span>
+        </button>
         <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!on} onClick={() => { ctl?.reset(); try { sessionStorage.setItem(KEY, "0"); } catch { /* private mode */ } }}>
           <Ic d={IC.start} /><span className="lb">{S.wStart}</span>
         </button>

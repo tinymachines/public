@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
-import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import "./lab.css";
 
 /**
@@ -53,8 +53,8 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
     /* A workbench, not a Shell page: the owner's call is that the lab is REAL
        full screen, not an instrument inside the content panel. The bar keeps
        the crumb home and the flags; the h1 lives in the bar so the one-h1
-       check holds; there is no footer, because an instrument ends where its
-       last control does. */
+       check holds. The footer is the last control (owner's call,
+       2026-08-27: the version on every page, strip pages included). */
     /* has-transport: the project's strip is the Lab's player now. The Lab
        registers with the store (the handover in ChipTransport.tsx) and marks
        its own player `driven`, which lab.css hides: one set of keys. */
@@ -105,6 +105,8 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
           re-sent on every visit. As a file it is fetched once and cached. */}
       <Script id="halfwave-lab" src={assets.js} strategy="afterInteractive" />
 
+      {/* What is running, on every page: see explorer/page.tsx. */}
+      <SiteFooter lang={lang} />
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import { chipApi } from "@/lib/projects";
 import { explorer, explorerPages } from "@/lib/explorer";
-import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
 import { explorerLabel } from "@/lib/explorer-menu";
 import { t } from "@/lib/i18n";
@@ -96,6 +96,8 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
         <style dangerouslySetInnerHTML={{ __html: style }} />
         <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={script} />
+        {/* What is running, on every page: see explorer/page.tsx. */}
+        <SiteFooter lang={lang} />
       </div>
     </div>
   );

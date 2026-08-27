@@ -2335,13 +2335,12 @@ html.menu-open, html.menu-open body { overflow: hidden; }
    others, and every other key is grey behind it. */
 .chip-transport .tbtn.pw { font-weight: 600; }
 .chip-transport .tbtn.pw.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
-/* The engine pair: two keys that read as one control. The chosen one is
-   solid; the latency readout beside the rate is the API's own measure. */
-.ct-engine { display: inline-flex; }
-.ct-engine .tbtn.eng { padding-left: calc(var(--u) * 1.5); padding-right: calc(var(--u) * 1.5); }
-.ct-engine .tbtn.eng:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.ct-engine .tbtn.eng:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
-.ct-engine .tbtn.eng.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
+/* The engine key: one toggle, like power (owner's call, 2026-08-27; it was
+   a pair, and the pair cost the phone's key row a slot). The key shows the
+   engine that is stepping: the rabbit, solid, for the chip in this page,
+   the turtle for halfwave over HTTP. The latency readout beside the rate is
+   the API's own measure. */
+.chip-transport .tbtn.eng.on { background: var(--color-accent-ink); color: var(--color-paper); border-color: var(--color-accent-ink); }
 .chip-transport .ct-lat { min-width: 0; }
 .chip-transport .ct-lat.err { color: var(--color-red-ink, var(--color-ink)); }
 .ct-rate { display: flex; align-items: center; gap: calc(var(--u) * 1.5); flex: 0 0 auto; margin-left: calc(var(--u) * 1); }
@@ -2357,22 +2356,39 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .chip-transport input:disabled { opacity: 0.35; cursor: not-allowed; }
 /* The page keeps its floor clear of the strip: two rows on a phone. */
 .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 16); }
-/* On a phone the steppers keep only their icon, as the Lab's do; power,
-   start and play keep their words, because no icon says "power cycle" or
-   "run" to somebody who has not read the caption. */
+/* The footer on a workbench (the version on every page, owner's call
+   2026-08-27): the same two items the app shell's footer has, name and run,
+   on one line at the end of the flow, above the strip. Not fixed: the strip
+   owns the floor, and two things pinned to one floor is one under the
+   other. On the console it sits on the status page, on panel, so the ink
+   there is glass. */
+.workbench .site-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 1) calc(var(--u) * 4);
+  margin-top: calc(var(--u) * 8);
+  padding: calc(var(--u) * 3) 0 0;
+  white-space: nowrap;
+}
+.pane-status .site-foot { border-top-color: var(--color-rule-panel); color: var(--color-glass-muted); }
+.pane-status .site-foot a { color: var(--color-glass-muted); border-bottom-color: var(--color-rule-panel); }
+.pane-status .site-foot a:hover { color: var(--color-glass); }
+/* On a phone the steppers keep only their icon, as the Lab's do; power and
+   play keep their words, because no icon says "power cycle" or "run" to
+   somebody who has not read the caption. The engine key is an icon here
+   too: eight keys on a 390px row, and the rabbit and the turtle are the
+   caption. */
 @media (max-width: 30rem) {
-  .chip-transport .tbtn:not(.play):not(.pw):not(.pw + .tbtn) .lb { display: none; }
-  /* The engine pair moves to the second row, icons only, before full
-     screen: the seven keys keep their row. The latency stays in the pair's
-     title on a phone; the row has no room for the number. */
-  .ct-engine { order: 1; }
-  .chip-transport .tbtn.fs { order: 2; }
+  .chip-transport .tbtn:not(.play):not(.pw) .lb { display: none; }
+  /* The latency stays in the engine key's title on a phone; the row has
+     no room for the number. */
   /* And the second row gives: the seek slider and the readout shrink so
      rate, position, the pair and full screen share it on a 390px phone
      even while the key row reads "pause". */
   .ct-seek { flex: 1 1 calc(var(--u) * 6); min-width: calc(var(--u) * 6); }
   .ct-pos { min-width: 0; }
-  .ct-engine .tbtn.eng { padding: calc(var(--u) * 1.5) calc(var(--u) * 1); }
   .chip-transport .ct-lat { display: none; }
   /* Seven keys on the first row at 390px: the Lab's own gap and padding. */
   .ct-row { gap: calc(var(--u) * 1); }

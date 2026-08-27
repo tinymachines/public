@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import { chipApi } from "@/lib/projects";
 import { explorer } from "@/lib/explorer";
-import { WorkbenchBar } from "@/app/components/SiteFrame";
+import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
 import { ChipModules } from "./ChipModules";
 import "./explorer.css";
@@ -83,6 +83,10 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
 
       <ChipModules entry={script} />
+      {/* What is running, on every page (owner's call, 2026-08-27): a
+          workbench ends where its last control does, and the footer is the
+          last control. In the flow, above the strip; the strip is fixed. */}
+      <SiteFooter lang={lang} />
       </div>
     </div>
   );

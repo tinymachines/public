@@ -144,11 +144,16 @@ test("the engine switch: halfwave steps the chip over the API, the page draws th
   test.slow();
   await page.setViewportSize(DESK);
   await open(page, "/6502/explorer?steps=20", 9000);
-  const eng = page.locator(".chip-transport .ct-engine .tbtn.eng");
-  await expect(eng.nth(0)).toHaveClass(/\bon\b/);
-  await expect(eng.nth(1)).toBeEnabled();
-  await eng.nth(1).click();
-  await expect(eng.nth(1)).toHaveClass(/\bon\b/);
+  // One key, a toggle: solid and "local" for the chip in the page, plain
+  // and "api" for halfwave. Pressing it swaps.
+  const eng = page.locator(".chip-transport .tbtn.eng");
+  await expect(eng).toHaveCount(1);
+  await expect(eng).toHaveClass(/\bon\b/);
+  await expect(eng.locator(".lb")).toHaveText("local");
+  await expect(eng).toBeEnabled();
+  await eng.click();
+  await expect(eng).not.toHaveClass(/\bon\b/);
+  await expect(eng.locator(".lb")).toHaveText("api");
   // Back and seek are refused: the API keeps no history.
   const r = await strip(page);
   expect(r!.disabled[2], "back is grey on the API").toBe(true);
@@ -170,8 +175,9 @@ test("the engine switch: halfwave steps the chip over the API, the page draws th
   expect(ran!.h! - after!.h!, "about two half-cycles a second over the API").toBeGreaterThanOrEqual(2);
   expect(ran!.h! - after!.h!).toBeLessThanOrEqual(8);
   // Back to local: the machine continues from the API's last state.
-  await eng.nth(0).click();
-  await expect(eng.nth(0)).toHaveClass(/\bon\b/);
+  await eng.click();
+  await expect(eng).toHaveClass(/\bon\b/);
+  await expect(eng.locator(".lb")).toHaveText("local");
   await page.locator(".chip-transport .tbtn:not(.eng)").nth(4).click(); // forward one half-cycle
   await page.waitForTimeout(200);
   const local = await strip(page);

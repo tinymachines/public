@@ -102,6 +102,33 @@
   --t2:       var(--color-forest-ink);
   --t3:       var(--color-mustard-ink);
 
+  /* THE REST OF THE LADDER, ON PAPER. The lab's rules name 32 tokens, and
+     until 2026-08-27 only 19 of them were defined out here; the other 13
+     (the three type families and the cell, lane, hover and hairline steps)
+     were defined inside .panel alone. A var() naming a token that does not
+     exist drops the whole declaration, silently (CLAUDE.md), so every rule
+     outside a panel that set a font or a surface with one of these did
+     nothing: the tab strip was Plex Sans wearing Archivo's tracking, and a
+     button on paper had no face. lib/lab.test.ts now holds the two lists
+     against each other. The steps are the paper ground's own: raised is
+     paper, sunk is paper-sunk, and the hairlines are ink-faint. */
+  --mono:     var(--font-mono);
+  --sans:     var(--font-sans);
+  --disp:     var(--font-display);
+  --code:     var(--color-paper-sunk);
+  --foot:     var(--color-paper-sunk);
+  --lane:     color-mix(in srgb, var(--color-paper) 92%, var(--color-paper-sunk));
+  --cell:     var(--color-paper);
+  --mcell:    var(--color-paper);
+  --cell2:    color-mix(in srgb, var(--color-paper-sunk) 88%, var(--color-ink));
+  --cell3:    var(--color-paper-sunk);
+  --hotfill:  color-mix(in srgb, var(--color-paper-sunk) 90%, var(--color-ink));
+  --hover:    color-mix(in srgb, var(--color-paper) 92%, var(--color-ink));
+  --onbg:     color-mix(in srgb, var(--color-paper-sunk) 92%, var(--color-ink));
+  --cellrule: var(--color-ink-faint);
+  --grid:     var(--color-ink-faint);
+  --faint:    var(--color-ink-faint);
+
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);

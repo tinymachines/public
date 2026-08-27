@@ -36,6 +36,26 @@ describe("the Lab, read from the 6502 tree", () => {
     expect(L.script.includes('classList.add("driven")'), "the player marks itself driven").toBe(true);
   });
 
+  test("every token the Lab's rules name is defined on the shell", () => {
+    // A var() naming a token that does not exist drops its declaration
+    // silently, so a name missing from lab.css is a rule that quietly does
+    // nothing: the tab strip lost its face this way (2026-08-27). The kit's
+    // own names are the kit's to define; everything else the lab's rules
+    // name must be on .lab-shell itself, where a rule outside a panel can
+    // see it, not only inside .panel.
+    const sheet = fs.readFileSync(path.join(process.cwd(), "app", "[lang]", "6502", "lab", "lab.css"), "utf8");
+    const shell = sheet.match(/^\.lab-shell \{\n([\s\S]*?)^\}/m);
+    expect(shell, "the .lab-shell token block").not.toBeNull();
+    const defined = new Set([...shell![1].matchAll(/^\s*(--[a-z0-9-]+)\s*:/gm)].map((m) => m[1]));
+    const root = sheet.match(/^:root \{\n([\s\S]*?)^\}/m);
+    for (const m of root?.[1].matchAll(/^\s*(--[a-z0-9-]+)\s*:/gm) ?? []) defined.add(m[1]);
+    const named = new Set([...L.style.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]));
+    expect(named.size).toBeGreaterThan(20);
+    const kit = (n: string) => /^--(color|font|radius|text|u$|app-)/.test(n);
+    const missing = [...named].filter((n) => !kit(n) && !defined.has(n)).sort();
+    expect(missing, "named by the lab's rules, defined nowhere on paper").toEqual([]);
+  });
+
   test("the assets carry a content hash", () => {
     expect(L.assets.css).toMatch(/lab\.[0-9a-f]{10}\.css$/);
     expect(L.assets.js).toMatch(/lab\.[0-9a-f]{10}\.js$/);
