@@ -207,6 +207,8 @@
    and the chunk flows as it did. Justify sets the peek's lines too, so
    the fade is over set text. */
 .explorer-shell.explorer-shell .read-on { margin: 0 0 calc(var(--u) * 4); }
+/* After a lede, the fold keeps the paragraph gap the lede would have had. */
+.explorer-shell.explorer-shell p + .read-on { margin-top: 1em; }
 .explorer-shell.explorer-shell .read-on .peek {
   max-height: 4.2em;
   overflow: hidden;
