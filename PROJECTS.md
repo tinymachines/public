@@ -1153,3 +1153,30 @@ strip now. And the engine pair read "local" on the console, which runs on
 the API whatever the store says: a driver that runs in one place says where
 (`caps.runsOn`, 6502@90a6da4, v0.256), and the strip lights the engine that
 is actually stepping.
+
+## Checkpoint, 2026-08-26, at 1.0.121: no daylight between the seams
+
+The evening's brief was the strip, and it is done end to end. One strip,
+mounted once in the 6502 layout, power first and solid; one store, upstream,
+with power, opcode step, seek and the engine choice in it, and every page
+with a chip registered on it, the Lab, the two recordings and the console
+included; the machine crossing pages by snapshot; a local/api engine switch
+beside power with its latency beside the rate, and back and seek refused on
+the API because it keeps no history; the console's every key a call on the
+store; the headless cartridge kind in the contract and the eight scattered
+programs minted from `web/programs.js` and published under `programs`; the
+console the whole viewport. Twelve roof deploys (1.0.109 to 1.0.121), six
+6502 releases (v0.251 to v0.256), each boarded.
+
+Two copies were retired on the way, both found because the work went
+through them: the Lab's HTML (a committed copy carrying NC-SA trace data)
+and the console's modules the afternoon before. Both are read from the
+6502 checkout at build time now, with a manifest naming the commit.
+
+What the suite found, each a seam and each fixed: a React effect that
+unsubscribed its own view; the Lab attaching mid-boot; the console mirror
+acting on every announce; a 15px gap from a strip measured before it
+arrived; a BRK loop sampled a whole number of laps apart. 349 tests hold
+it. Open, and written down rather than pending: the console and the Lab
+have no local engine, so no switch (`notes/one-engine.md`); re-publishing
+the pack needs the `programs` token, which is not kept anywhere.
