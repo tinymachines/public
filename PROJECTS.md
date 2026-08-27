@@ -1559,3 +1559,14 @@ Owner's round on /6502/block, /6502/diegraph, /6502/exploded and
 
 `web/e2e/study.spec.ts` holds each of these. They run against live: the
 chip pages boot from `/6502/chip/`, which the local tree does not serve.
+
+Later the same day, at 1.0.146: **the MCP page tells a client how to
+connect.** A "Connecting a client" section on `/docs/6502/mcp` (and its ja
+shadow) with both endpoints, the chip's and the site's, the Claude Code
+lines, the `mcpServers` block, the three protocol revisions both servers
+speak (`2025-06-18`, `2025-03-26`, `2024-11-05`; a newer request is
+answered in the newest of those) and the fact that neither opens an SSE
+stream. Every code block in the docs now carries a Copy control
+(`components/CopyPre.tsx`, through `mdx-components.tsx`): what is copied
+is the block's rendered text, and the control appears only where the
+clipboard exists. `docs.spec.ts` reads the clipboard back.
