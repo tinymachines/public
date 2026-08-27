@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import { explorerPages } from "./explorer";
 import type { MenuGroup } from "./nav";
@@ -22,7 +23,7 @@ import type { MenuGroup } from "./nav";
  * than shipping a menu quietly missing a section.
  */
 
-const SRC = path.join(process.cwd(), "..", "..", "6502", "web", "site-menu.js");
+const SRC = path.join(CHIP_SRC, "web", "site-menu.js");
 
 interface TheirItem {
   label: string;

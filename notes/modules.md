@@ -211,29 +211,43 @@ The roof was serving whatever the release directory held.
 **A version of the engine is boarded when its suites have been run here and
 passed, and the record says so. The roof deploys against nothing else.**
 
-`scripts/board-engine.py --board` runs, in the 6502 checkout, `cargo test -p
+`scripts/board-engine.py --board` reads the commit the served release was
+built from (its `build-info.json`), refuses unless the running chip API
+reports the same commit (published and not restarted is not served), checks
+that commit out into a worktree of the 6502 repository (`../6502-served`,
+detached, its submodule initialised from the sibling's copy, the generated
+golden oracle and die layout linked in), and runs THERE `cargo test -p
 halfphi` with `HALFPHI_REQUIRE_CHIPS=1` and `cargo test -p v6502-sim` with
-`V6502_REQUIRE_GOLDEN=1`, refuses a dirty checkout, and writes
-`data/engine.json` only when every suite passed. The record holds the commit,
-the halfphi crate version and the digest of its five shared files, whether
-the standalone copy is identical and at what commit, the halfwave binary's
-digest, the served release's commit, and each suite's counts and time. Nothing
-host-specific is in it.
+`V6502_REQUIRE_GOLDEN=1`, in a target directory of its own. It writes
+`data/engine.json` only when every suite passed. The record holds the served
+release's version and commit (and that project's own test counts, recorded
+and not believed), the halfphi crate version and the digest of its five
+shared files, whether the standalone copy is identical and at what commit,
+the halfwave binary's stamp for the reader, and each suite's counts and
+time. Nothing host-specific is in it.
+
+The build reads the 6502 project's pages, docs, console and Lab from the
+worktree (`web/lib/chip-src.ts`, `web/scripts/pull-chipdocs.mjs`, the
+deploy's page sweep), so what this site builds from matches what nginx
+serves from the release. The 6502 project's own working tree is never read
+and never needs to be clean. Changed 2026-08-27 (owner's call): the
+checkout-bound gate refused four deploys in one day on commits that were
+documentation and tests, and collided with that project's habit of dirtying
+its tree on purpose for a mutation test.
 
 `scripts/board-engine.py --check` is `deploy.sh` stage 2e. It measures the
-same three things and refuses when any of them is not the boarded one:
+same things and refuses when any of them is not the boarded one:
 
 - the served release was built from a different commit
-- the halfwave binary's digest changed (a rebuild, boarded or not), or it
-  says it was built from another commit, or the running chip API reports
-  another commit (a rebuild without a restart)
-- the 6502 working tree, which the build reads pages from, is elsewhere or dirty
-- halfphi's shared sources differ from the boarded digest, or from the
-  standalone copy
+- the running chip API reports another commit (published and not restarted)
+- the worktree, which the build reads pages from, is at another commit or
+  dirty (`--board` moves it; nothing else should write there)
+- halfphi's shared sources in the worktree differ from the boarded digest,
+  or from the standalone copy
 
-It **skips**, and says so, on a box with no 6502 checkout beside this one, so
-a fresh clone of this repository still builds; `TM_REQUIRE_ENGINE=1` makes
-that a failure.
+It **skips**, and says so, on a box with no 6502 repository beside this one
+or no served release directory, so a fresh clone of this repository still
+builds; `TM_REQUIRE_ENGINE=1` makes that a failure.
 
 Two things about "tested" were checked rather than assumed. Under `cargo test`
 a skipped test's message is captured and it counts as passed, so both suites

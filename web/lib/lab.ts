@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { CHIP_SRC } from "./chip-src";
 import { chipApi } from "./projects";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -43,7 +44,7 @@ import { kitBorders } from "./kit-borders";
  * licence into this public repository. The copy is gone; the file is the
  * 6502 tree's, and `public/6502/lab/upstream.json` records which commit.
  */
-export const LAB_SRC = path.join(process.cwd(), "..", "..", "6502", "docs", "halfwave-lab");
+export const LAB_SRC = path.join(CHIP_SRC, "docs", "halfwave-lab");
 const LAB = path.join(LAB_SRC, "halfwave-lab.html");
 
 /**

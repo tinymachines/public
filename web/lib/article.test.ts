@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
 import path from "node:path";
+import { CHIP_SRC } from "./chip-src";
 import { article, articlePages, htmlOf, isPlainInline, plain, runsOf, splitRuns, type Run } from "./article";
 
-const SRC = path.join(process.cwd(), "..", "..", "6502", "web");
+const SRC = path.join(CHIP_SRC, "web");
 
 describe("the article reader", () => {
   test("every tool page with prose has an article, and the tracer's is the long one", () => {

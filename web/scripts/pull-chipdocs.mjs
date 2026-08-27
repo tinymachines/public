@@ -24,13 +24,17 @@ import path from "node:path";
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const WEB = path.join(HERE, "..");
 const ROOT = path.join(WEB, "..");
-const CHIP = path.join(ROOT, "..", "6502", "docs");
+// The served worktree where it exists, else the checkout: lib/chip-src.ts is
+// the same rule for the app, and the two must agree or half the pages come
+// from one tree and half from another.
+const CHIP_SRC = process.env.TM_CHIP_SRC || (fs.existsSync(path.join(ROOT, "..", "6502-served", "web", "index.html")) ? path.join(ROOT, "..", "6502-served") : path.join(ROOT, "..", "6502"));
+const CHIP = path.join(CHIP_SRC, "docs");
 const OUT_DOCS = path.join(ROOT, "docs", "6502");
 const OUT_ASSETS = path.join(WEB, "public", "6502", "chipdocs");
 
 /** Slug per explorer page, so a link to the live site becomes a local link. */
 const explorerSlugs = fs
-  .readdirSync(path.join(ROOT, "..", "6502", "web"))
+  .readdirSync(path.join(CHIP_SRC, "web"))
   .filter((f) => f.endsWith(".html") && !f.startsWith("_"))
   .map((f) => f.replace(/\.html$/, ""));
 

@@ -348,7 +348,7 @@ done
 # hand-copied one would. The fixed list above checked /6502/explorer and left
 # the rest unverified, which is the exact gap it warns about in its own
 # comment, one paragraph up.
-for f in ../6502/web/*.html; do
+for f in "${TM_CHIP_SRC:-$([ -f ../6502-served/web/index.html ] && echo ../6502-served || echo ../6502)}"/web/*.html; do
   b=$(basename "$f" .html)
   case "$b" in _*|index) continue ;; esac
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE/6502/$b" || echo 000)

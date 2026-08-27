@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import postcss from "postcss";
 import { chipApi, project } from "./projects";
@@ -39,7 +40,7 @@ import { chipApi, project } from "./projects";
  * build that quietly ships something else. This reads a file on disk.
  */
 
-const SRC = path.join(process.cwd(), "..", "..", "6502", "service", "api.html");
+const SRC = path.join(CHIP_SRC, "service", "api.html");
 
 export interface ApiDoc {
   style: string;
@@ -58,7 +59,7 @@ export interface ApiDoc {
  * page here, and a list would be a second copy that drifts.
  */
 function localSlugs(): Set<string> {
-  const dir = path.join(process.cwd(), "..", "..", "6502", "web");
+  const dir = path.join(CHIP_SRC, "web");
   const out = new Set(
     fs
       .readdirSync(dir)

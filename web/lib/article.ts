@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import { explorerPages } from "./explorer";
 
@@ -30,7 +31,7 @@ import { explorerPages } from "./explorer";
  * - Links are rewritten to this site's paths, as lib/explorer.ts does.
  */
 
-const SRC = path.join(process.cwd(), "..", "..", "6502", "web");
+const SRC = path.join(CHIP_SRC, "web");
 const LONG = 1200;
 const TARGET = 620;
 

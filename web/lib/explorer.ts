@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import postcss from "postcss";
 import { kitBorders } from "./kit-borders";
@@ -34,7 +35,7 @@ import { kitBorders } from "./kit-borders";
  * names, which makes the two deploys independent. That is worth a fetch.
  */
 
-const SRC = path.join(process.cwd(), "..", "..", "6502", "web");
+const SRC = path.join(CHIP_SRC, "web");
 
 export interface Explorer {
   style: string;

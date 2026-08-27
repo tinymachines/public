@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 
 /**
@@ -42,7 +43,7 @@ import path from "node:path";
  * the patch text is the proposal, applied.
  */
 
-export const SRC = path.join(process.cwd(), "..", "..", "6502", "games");
+export const SRC = path.join(CHIP_SRC, "games");
 
 /** What the console needs, relative to `SRC`. Nothing else crosses. */
 export const FILES = [
@@ -153,7 +154,13 @@ export function consoleModules(src = SRC): ConsoleFile[] {
  */
 export function upstreamCommit(src = SRC): string | null {
   try {
-    const git = path.join(src, "..", ".git");
+    // `.git` is a directory in a checkout and a pointer file in a worktree
+    // (the served one board-engine.py keeps), where it says `gitdir: <path>`.
+    let git = path.join(src, "..", ".git");
+    if (fs.statSync(git).isFile()) {
+      const text = fs.readFileSync(git, "utf8").trim();
+      if (text.startsWith("gitdir:")) git = path.resolve(path.join(src, ".."), text.slice(7).trim());
+    }
     const head = fs.readFileSync(path.join(git, "HEAD"), "utf8").trim();
     if (!head.startsWith("ref:")) return head;
     const ref = head.slice(4).trim();

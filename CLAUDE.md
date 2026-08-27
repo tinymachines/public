@@ -241,11 +241,17 @@ halfphi and destroy the one clean piece. Each sub-project carries its own, and
 
 **The engine is boarded, not assumed.** `notes/modules.md` maps every module
 and every edge out of this repository. The engine edge has a gate:
-`scripts/board-engine.py --board` runs halfphi's and v6502-sim's suites in the
-6502 checkout and records the commit, digests and counts in
-`data/engine.json`; `deploy.sh` stage 2e refuses to deploy against any other
-release, binary or tree. Releasing the 6502 project is that project's deploy;
-boarding what it released is this one's.
+`scripts/board-engine.py --board` reads the commit the SERVED release was
+built from, checks it out into a worktree of the 6502 repository
+(`../6502-served`), runs halfphi's and v6502-sim's suites there and records
+the commit, digests and counts in `data/engine.json`; `deploy.sh` stage 2e
+refuses to deploy when the served release, the running chip API or that
+worktree is at any other commit. The build reads the 6502 project's pages
+from the worktree (`web/lib/chip-src.ts`), never from its working tree, which
+is that project's to dirty as it likes (owner's call, 2026-08-27, after the
+checkout-bound gate blocked four deploys in a day on docs commits). Releasing
+the 6502 project is that project's deploy; boarding what it released is this
+one's.
 
 **When the first piece with die data arrives, add the check that fails if it
 reaches halfphi's tree.** The rule this repo already runs on: a boundary that

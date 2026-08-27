@@ -1,10 +1,30 @@
 {
-  "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-27T13:28:00+00:00",
+  "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
+  "boarded_at": "2026-08-27T14:07:05+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
-  "chip_tree": {
+  "served": {
+    "version": "v0.264",
     "commit": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884",
-    "branch": "main",
+    "built": "2026-08-27T13:25:55+00:00",
+    "dirty": false,
+    "their_tests": {
+      "ran": "2026-08-27T13:25:01+00:00",
+      "cargo": {
+        "command": "cargo test --workspace",
+        "passed": 91,
+        "failed": 0,
+        "require_chips": true,
+        "require_golden": true
+      },
+      "service": {
+        "command": "pytest service/",
+        "passed": 182
+      }
+    }
+  },
+  "running": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884",
+  "worktree": {
+    "commit": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884",
     "subject": "The schematic page said 150 precharged nodes; there are 142",
     "committed": "2026-08-27T01:06:50-04:00",
     "dirty": false
@@ -23,13 +43,7 @@
     "sha256": "d37312a39a51a5a6fb2a96d595e2a25d4c91d5ddb42573598aabaabcca8fa20c",
     "bytes": 532984,
     "modified": "2026-08-27T13:22:20+00:00",
-    "stated": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884",
-    "running": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884"
-  },
-  "release": {
-    "version": "v0.264",
-    "commit": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884",
-    "built": "2026-08-27T13:25:55+00:00"
+    "stated": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884"
   },
   "tests": [
     {
@@ -41,7 +55,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 51.9,
+      "seconds": 64.1,
       "ok": true
     },
     {
@@ -53,7 +67,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 20.0,
+      "seconds": 15.6,
       "ok": true
     }
   ]
