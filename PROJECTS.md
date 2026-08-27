@@ -1570,3 +1570,28 @@ stream. Every code block in the docs now carries a Copy control
 (`components/CopyPre.tsx`, through `mdx-components.tsx`): what is copied
 is the block's rendered text, and the control appears only where the
 clipboard exists. `docs.spec.ts` reads the clipboard back.
+
+## Checkpoint, 2026-08-28, at 1.0.146
+
+Live: 1.0.146 on 6502 v0.264. Tree clean, pushed.
+
+Landed today, after the 1.0.144 checkpoint: the block's circuit fits its
+stage and its tail is Previous and Next; the block's full screen is the
+schematic's study view, which now works under the apex (`body.`-scoped
+conditions in `lib/explorer.ts`, the strip's key follows the page's cover,
+the strip publishes `--strip-h` and the console stops above it); the
+graph's stage is dark; the exploded zoom group is gone; the MCP page has a
+"Connecting a client" section in both languages and every docs code block
+has a Copy control. Specs: `study.spec.ts` (7), `docs.spec.ts` (3), all
+against live, with `fullscreen`, `footer` and `shell` still green.
+
+MCP position, decided with the owner: Streamable HTTP with JSON replies,
+no SSE stream, no sessions; revisions `2025-06-18`, `2025-03-26`,
+`2024-11-05`, newest answered for a newer request. Revisit SSE only if a
+tool wants progress (the chip's `run` would be the one).
+
+Open, unchanged: the intermittent React #418 on Shell pages; forward
+steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
+inline images on the articles (owner's). One reading to confirm: the
+graph's stage went dark on "black theme for lab, my bad"; a one-line
+change if paper was meant.
