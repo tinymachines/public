@@ -56,8 +56,7 @@ const PROSE = {
           {h} of {n} parts are here.
         </b>{" "}
         Every one of them still answers at its own subdomain as well, because
-        nothing has been switched off. This page is the plan and the current
-        addresses, not a redirect.
+        nothing has been switched off.
       </>
     ),
     theSurfaces: "The parts",
@@ -69,24 +68,6 @@ const PROSE = {
     proposed: "proposed",
     settled: (a: number, b: number) => `${a} of ${b} final addresses settled`,
     redirectMap: "An address that moves becomes a redirect; published links keep working.",
-    whyTitle: "Why this page looks like the rest of the site",
-    why1: (
-      <>
-        It is one design system. Every project here shares the same
-        components, the same type scale and the same spacing; nothing was
-        forked to make this page. The 6502 look is the house look, because
-        the palette was sampled for this work in the first place.
-      </>
-    ),
-    why2: (
-      <>
-        What no project may change is the part that carries meaning. Blue is
-        ACTIVE, orange is ATTENTION, red means an assertion failed, and the
-        drive ramp is the engine&rsquo;s own state scale given colour. A
-        project that could redefine those would not have its own accent; it
-        would have a failed assertion that looks fine.
-      </>
-    ),
   },
   ja: {
     surfaces: (n: number, d: string) => (
@@ -99,7 +80,7 @@ const PROSE = {
         <b>
           {n} 点中 {h} 点がここにある。
         </b>{" "}
-        どれも元のサブドメインでも今なお応答している。何も止めていないからだ。このページは計画と現在のアドレスであって、リダイレクトではない。
+        どれも元のサブドメインでも今なお応答している。何も止めていないからだ。
       </>
     ),
     theSurfaces: "部品一覧",
@@ -111,18 +92,6 @@ const PROSE = {
     proposed: "提案",
     settled: (a: number, b: number) => `最終アドレス ${b} 件中 ${a} 件が確定`,
     redirectMap: "動くアドレスはリダイレクトになる。公開済みのリンクは切れない。",
-    whyTitle: "なぜこのページはサイトの他と同じ見た目なのか",
-    why1: (
-      <>
-        一つのデザインシステムだからだ。ここにあるどのプロジェクトも、同じコンポーネント、同じ活字階梯、同じ余白を使う。このページのために何もフォークされていない。6502 の見た目がそのまま家の見た目なのは、パレットがそもそもこの仕事のために採られたものだからだ。
-      </>
-    ),
-    why2: (
-      <>
-        どのプロジェクトも変えてはならないのは、意味を運ぶ部分だ。青は
-        ACTIVE、橙は ATTENTION、赤は表明の失敗を意味し、ドライブの傾斜はエンジン自身の状態の目盛りに色を与えたものだ。それらを定義し直せるプロジェクトは自分のアクセントを持たないだろう。持つのは、正常に見える失敗した表明だ。
-      </>
-    ),
   },
 } as const;
 

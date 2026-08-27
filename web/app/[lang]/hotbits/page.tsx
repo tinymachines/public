@@ -61,17 +61,6 @@ const PROSE = {
         documented route is asked whether it still answers.
       </>
     ),
-    designTitle: "This page has no design yet, and that is deliberate",
-    design: (
-      <>
-        It is the house design with nothing changed. The palette, the
-        display face and the mark for this project are still the
-        owner&rsquo;s to choose, and the place for them is ready and
-        deliberately empty. What no project may change is the part that
-        carries meaning: blue is ACTIVE, orange is ATTENTION and red means a
-        failed assertion, on every page of this site.
-      </>
-    ),
   },
   ja: {
     how: (
@@ -92,13 +81,6 @@ const PROSE = {
     ref: (href: string) => (
       <>
         <Link href={href}>API リファレンス</Link>は、ページを開くたびに装置のスキーマから読まれ、文書化されたルートはどれも、まだ応答するかを尋ねられる。
-      </>
-    ),
-    designTitle: "このページにデザインはまだ無く、それは意図されたもの",
-    design: (
-      <>
-        何も変えていない家のデザインだ。このプロジェクトのパレット、ディスプレイ書体、マークは今もオーナーが選ぶものであり、そのための場所は意図して空のまま用意されている。どのプロジェクトも変えてはならないのは意味を運ぶ部分だ: このサイトのどのページでも、青は
-        ACTIVE、橙は ATTENTION、赤は表明の失敗を意味する。
       </>
     ),
   },
