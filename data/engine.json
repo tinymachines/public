@@ -1,6 +1,6 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-27T04:17:30+00:00",
+  "boarded_at": "2026-08-27T04:18:55+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
     "commit": "5d4ec29fed17aa450660f7700ac7987fd331ea42",
@@ -24,12 +24,12 @@
     "bytes": 532984,
     "modified": "2026-08-27T04:15:31+00:00",
     "stated": "5d4ec29fed17aa450660f7700ac7987fd331ea42",
-    "running": "162bf71d0212f4b10b8144e176c11670de00844a"
+    "running": "5d4ec29fed17aa450660f7700ac7987fd331ea42"
   },
   "release": {
-    "version": "v0.260",
-    "commit": "162bf71d0212f4b10b8144e176c11670de00844a",
-    "built": "2026-08-27T03:38:59+00:00"
+    "version": "v0.263",
+    "commit": "5d4ec29fed17aa450660f7700ac7987fd331ea42",
+    "built": "2026-08-27T04:18:02+00:00"
   },
   "tests": [
     {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 5.9,
+      "seconds": 3.9,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 8.3,
+      "seconds": 9.9,
       "ok": true
     }
   ]
