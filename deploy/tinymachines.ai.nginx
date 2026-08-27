@@ -231,8 +231,11 @@ server {
     # Any depth under /6502/: the tool pages fetch their data relative to
     # the document, and the companion articles live one segment deeper
     # (/6502/tracer/article asks for /6502/tracer/schematic.<hash>.json).
-    # The asset name is the last segment either way.
-    location ~ "^/(?:ja/)?6502/(?:(?!pkg/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
+    # The asset name is the last segment either way. Two segments are not
+    # paths: pkg/ belongs to the asset name, and api/ is the proxied service
+    # (this regex once swallowed /6502/api/openapi.json, and the deploy's
+    # door check caught it).
+    location ~ "^/(?:ja/)?6502/(?:(?!pkg/|api/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
         alias /var/www/6502.tinymachines.ai/current/$chipasset;
     }
 
