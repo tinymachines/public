@@ -974,6 +974,31 @@ h2.display { font-size: var(--text-h2); }
 
 .docs-body { min-width: 0; }
 
+/* THE CONTENTS BUTTON (owner's call, 2026-08-28). Below 60rem the tree is
+   the first thing on the page and twenty links tall; it waits behind one
+   button in the Read on's shape (explorer.css) until it is asked for. On a
+   desk the button does not exist and the tree is the sidebar. */
+.docs-toc .toc-btn { display: none; }
+@media (max-width: 60rem) {
+  .docs-toc .toc-btn {
+    display: inline-block;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--text-fine);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+    background: none;
+    border: 1px solid var(--color-rule);
+    padding: calc(var(--u) * 1) calc(var(--u) * 3);
+  }
+  .docs-toc .toc-btn::after { content: " \203A"; }
+  .docs-toc.open .toc-btn::after { content: " \2039"; }
+  .docs-toc .toc-btn:hover, .docs-toc .toc-btn:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
+  .docs-toc .toc-list { display: none; }
+  .docs-toc.open .toc-list { display: block; margin-top: calc(var(--u) * 3); }
+}
+
 /* --- flow: rendered markdown ------------------------------------------- */
 
 /* Headings are display, and the scale is the one in tokens.css. The reason

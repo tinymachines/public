@@ -37,7 +37,7 @@ export default async function DocsLayout({ children, params }: LayoutProps<"/[la
     >
       <div className="docs-shell">
         <div className="docs-nav">
-          <DocsNav nodes={tree} root={root} label={t(lang as Lang, "Documentation")} />
+          <DocsNav nodes={tree} root={root} label={t(lang as Lang, "Documentation")} contents={lang === "ja" ? "目次" : "Contents"} />
         </div>
         <main className="docs-body prose">{children}</main>
       </div>

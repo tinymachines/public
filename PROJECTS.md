@@ -1486,3 +1486,18 @@ Specs: `e2e/footer.spec.ts` ("workbench floor": fixed, on the floor
 before any scrolling, strip on the footer, page clears both, version
 arrives; the Lab has no dark panel, ink on paper, no link button);
 `e2e/fullscreen.spec.ts` (the footer leaves with the bar).
+
+## Same day: Contents on the docs, and the article's footer checked
+
+- **The docs index behind a button on a phone.** Below 60rem the tree
+  (twenty links, 633px at 390, before the document's first word) waits
+  behind "Contents ›" in the Read on's shape; pressed, it opens under the
+  button, and a page picked from it arrives with the list closed. On a
+  desk nothing changed: no button, the sidebar. `DocsNav.tsx` holds the
+  state (a `<details>` cannot be open at one width and closed at
+  another); the rules are in `components.css` beside `.docs-nav`.
+  `e2e/docs.spec.ts`.
+- **The article pages' footer** was asked for the Lab's treatment and
+  already has it: the article is a Shell page, and the Shell's `.app-foot`
+  is the locked band on the floor (measured at 390: fixed, 812 to 844,
+  the same line as the Lab's). No change.
