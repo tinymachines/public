@@ -1344,3 +1344,18 @@ Two `.git`-is-a-pointer-file fixes came with it (`head_of`,
 `upstreamCommit`). The apex nginx asset regex learned to refuse `api/` as a
 segment after the deploy's door check caught `/6502/api/openapi.json` being
 served as a chip asset; the check earned its place.
+
+## Checkpoint, 2026-08-27 morning, at 1.0.130
+
+Live and green: 441 of 441 e2e against the site. The morning's rounds, in
+order: step 1 of the subdomain forward (the apex calls its own `/6502/api`);
+the visitors board (collector, timer, `/api/v1/visitors`, `/visitors`), with
+the apex's own access log and the timer installed under the owner's standing
+grant of nginx and unit control; pretext measured on the tracer and then
+built on: `/6502/<tool>/article` for all seventeen tools, prose sections
+whole with their live panels, the long paragraph split, justification set in
+place through pretext; and the engine gate re-based on the served release
+(worktree `../6502-served`, copies not links). Boarded 6502 v0.264 at
+`ddc1480`. Open: `TM_SELF_NETS` in `/etc/tinymachines/visitors.env` (hand);
+the intermittent React #418 on Shell pages (pre-existing); the magazine
+design brief (owner's); forward steps 2 and 3 (`notes/forward.md`).
