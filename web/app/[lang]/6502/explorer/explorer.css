@@ -299,6 +299,21 @@
    like the schematic's stage (the same literal that stage uses upstream):
    the node strokes are rgba(2, 6, 16), drawn for a dark ground. */
 .explorer-shell.explorer-shell .dg-stage { background: #080c15; }
+/* And what is drawn on it. The graph's rules read the page's tokens (an
+   edge is --line, a switch is --accent, a lit node's ring is --foreground,
+   a hovered one --gold), which became the paper theme's inks when the page
+   moved onto paper: measured 2026-08-28, a gate edge was #16150f at 55%
+   over #080c15, ink on ink, and 1,282 edges were invisible. Inside the
+   stage those tokens are the drawing's own dark palette again, the values
+   its stylesheet declares for them (owner's call: the graph is dark). The
+   values are literals because they are that drawing's, not the site's. */
+.explorer-shell.explorer-shell .dg-stage {
+  --line: #3d5573;
+  --accent: #22d3ee;
+  --foreground: #eaf2ff;
+  --muted: #9fb3cc;
+  --gold: #7dd3fc;
+}
 
 /* The exploded view's zoom group (minus, the factor, plus, "Reset view"):
    the stage orbits, scrolls and pinches, which is all of that (owner's

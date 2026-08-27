@@ -125,8 +125,12 @@ function scope(css: string): string {
       // the schematic's study view lifts itself over the sections after it),
       // and was scoped to `.explorer-shell body.no-scroll`, so the hero text
       // painted over the study view on a desk (measured 2026-08-28). Bare
-      // `body` is a target (margins, fonts) and stays dead, as before.
-      const rootish = s.match(/^(:root|html|body(?=[.\[:]))((?:\[[^\]]*\]|[:.#][\w-]+(?:\([^)]*\))?)*)/);
+      // `body` is a target (margins, fonts) and stays dead, as before, and
+      // so is a pseudo-element on it: `body::before` is the page's own
+      // stipple, and a lookahead that took `::` made it
+      // `body .explorer-shell ::before`, a fixed dot grid painted by every
+      // element in the shell (measured 2026-08-28 on the graph's stage).
+      const rootish = s.match(/^(:root|html|body(?=[.\[]|:(?!:)))((?:\[[^\]]*\]|[:.#][\w-]+(?:\([^)]*\))?)*)/);
       if (rootish) {
         const rest = s.slice(rootish[0].length).trim();
         return rest ? `${rootish[0]} ${SCOPE} ${rest}` : `${rootish[0]} ${SCOPE}`;

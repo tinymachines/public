@@ -102,6 +102,23 @@ test("the graph's stage is dark; the exploded view has no zoom group", async ({ 
   const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".dg-stage")!).backgroundColor);
   const m = bg.match(/\d+/g)!.map(Number);
   expect(m[0] + m[1] + m[2], `stage ${bg} is dark`).toBeLessThan(120);
+  // And the drawing on it is drawn for that ground: a gate edge was the
+  // paper theme's ink at 55% over the dark stage, 1,282 invisible edges
+  // (2026-08-28). Lightness read off the edge's stroke, whatever its syntax.
+  await page.waitForSelector(".dg-e-gate", { timeout: 20000 });
+  const edge = await page.evaluate(() => {
+    const s = getComputedStyle(document.querySelector(".dg-e-gate")!).stroke;
+    const n = s.match(/[\d.]+/g)!.map(Number);
+    // rgb(a) gives 0..255, color(srgb ...) gives 0..1: normalise to 0..1.
+    const [r, g, b] = n.slice(0, 3).map((v) => (v > 1 ? v / 255 : v));
+    return { s, l: (r + g + b) / 3 };
+  });
+  expect(edge.l, `gate edge ${edge.s} is light on the dark stage`).toBeGreaterThan(0.25);
+  // The page's own body::before stipple is not painted by every element in
+  // the shell (the scoper's lookahead once took `::`; lib/explorer.test.ts).
+  const stippled = await page.evaluate(() =>
+    [...document.querySelectorAll(".explorer-shell *")].filter((e) => /radial-gradient/.test(getComputedStyle(e, "::before").backgroundImage)).length);
+  expect(stippled, "elements whose ::before paints the stipple").toBe(0);
   await open(page, "/6502/exploded", 4000);
   expect((await box(page, ".ex-zoom"))!.ow).toBe(0);
   expect((await box(page, "#ex-run"))!.ow, "the page's own transport stays hidden").toBe(0);
