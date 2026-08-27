@@ -35,7 +35,8 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
           folds: document.querySelectorAll(".art-body details").length,
           bench: !!document.querySelector(".art-bench-frame"),
           summaries: [...document.querySelectorAll<HTMLElement>(".read-on summary")].filter((s) => s.offsetHeight > 0).length,
-          metaCopy: /characters|paragraph breaks/.test(document.querySelector(".art")!.textContent ?? ""),
+          metaCopy: /\d[\d,]* characters ·|paragraph breaks on this page|Open the tool/.test(document.querySelector(".art")!.textContent ?? ""),
+          back: !!document.querySelector(".art-return a.art-link"),
         };
       });
       expect(r.paragraphs, "there is prose").toBeGreaterThan(5);
@@ -48,11 +49,12 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
       expect(r.longest, "no paragraph is a blob").toBeLessThan(1400);
       expect(r.heroTitle, "the head is the tool's own hero").not.toBe("");
       expect(r.bench, "the interactive lab is not on the article").toBe(false);
-      // The same reading rules as the tool page: folds behind one
-      // travelling "Read on".
-      if (p.includes("tracer")) { expect(r.chunks).toBe(12); expect(r.folds).toBe(12); }
-      expect(r.summaries, "one Read on showing").toBe(p.includes("tracer") ? 1 : r.summaries);
-      expect(r.metaCopy, "no character count, no note about the split").toBe(false);
+      // Just the article: subheads, nothing folded, a Return button, no
+      // copy about itself.
+      if (p.includes("tracer")) expect(r.chunks).toBe(12);
+      expect(r.folds, "nothing folded on the article").toBe(0);
+      expect(r.metaCopy, "no character count, no note about the split, no tool button").toBe(false);
+      expect(r.back, "a Return button at the end").toBe(true);
     });
   }
 }

@@ -7,7 +7,7 @@
 .art-head { max-width: 68ch; margin-bottom: calc(var(--u) * 6); }
 .art-head .hero { padding: 0; }
 .art-head .wrap { padding-inline: 0; margin-inline: 0; max-width: none; }
-.art-meta { margin: 0 0 calc(var(--u) * 8); }
+.art-return { margin: calc(var(--u) * 10) 0 0; }
 
 .art-body { max-width: 68ch; }
 /* The sections keep the tool's own prose rules (.wrap, .sec, .bp-prose:

@@ -92,7 +92,7 @@ test("the prose folds chunk by chunk under its headings, each with a faded peek;
   expect(before.pointer).toContain("\u203a");
   expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(14000);
   const edges = await page.evaluate(() => ({
-    summary: document.querySelector(".read-on > details > summary")!.getBoundingClientRect().left,
+    summary: [...document.querySelectorAll<HTMLElement>(".read-on > details > summary")].find((s) => s.offsetHeight > 0)!.getBoundingClientRect().left,
     link: document.querySelector(".wb-article-link a")!.getBoundingClientRect().left,
   }));
   expect(Math.abs(edges.link - edges.summary), "the article link lines up with the folds' summaries").toBeLessThan(1);

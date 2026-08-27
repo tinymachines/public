@@ -239,3 +239,9 @@ The primer still folds nothing: every block has a demo or a slot.
   reference...") and the coverage block (routes documented, operations
   answering now) are removed; `Coverage.tsx` and its CSS are deleted.
   The deploy's door check still asks `openapi.json` which routes answer.
+
+Then, the owner mid-round: the article is just the article. No tool
+button, no Read on; the hero head, the prose with its subheads, and a
+Return button at the end (`.art-return .art-link`, back to the tool
+page). Inline images are to come. `article(file, readOn)` keeps the
+ability to fold; the page does not ask for it.

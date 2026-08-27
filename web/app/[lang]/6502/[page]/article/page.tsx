@@ -26,9 +26,11 @@ import "./article.css";
  * The tool page stays what it is: the instrument, full width, first, its
  * prose folded chunk by chunk. This is the magazine; that is the bench.
  *
- * The head is the tool's own hero: its eyebrow, its title, its lede. The
- * instrument itself is not on this page (owner's call, later the same
- * day: the interactive lab goes), but the tool's script is booted here
+ * The head is the tool's own hero: its eyebrow, its title, its lede;
+ * then the prose with its subheads, nothing folded, and a Return button
+ * (owner's call, later the same day: just the article, no tool button,
+ * no Read on; inline images are to come). The instrument itself is not
+ * on this page, but the tool's script is booted here
  * as on the tool page, because the widgets the sections carry (slots the
  * script fills with measured numbers, the block page's instrument) are
  * its; so the rest of the tool's body is rendered hidden, and every id
@@ -53,8 +55,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 const L = {
-  en: { open: "Open the tool", readOn: "Read on" },
-  ja: { open: "ツールを開く", readOn: "続きを読む" },
+  en: { back: "Return" },
+  ja: { back: "戻る" },
 } as const;
 
 export default async function ArticlePage({ params }: { params: Promise<{ lang: Lang; page: string }> }) {
@@ -62,7 +64,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
   const file = fileFor(page);
   if (!file) throw new Error(`No tool page for slug ${JSON.stringify(page)}.`);
   const S = L[lang];
-  const a = article(file, S.readOn);
+  const a = article(file);
   const x = explorer(file);
   // The head is the hero as the tool wrote it, h1 and all; the rest of
   // the tool's body (the instrument) is rendered hidden so its script
@@ -78,14 +80,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
       <article className="art" data-chip-api={chipApi()}>
         <style dangerouslySetInnerHTML={{ __html: x.style }} />
         <header className="explorer-shell art-head" dangerouslySetInnerHTML={{ __html: hero }} />
-        <p className="art-meta">
-          <Link className="art-link" href={localize(lang, `/6502/${page}`)}>{S.open}</Link>
-        </p>
         <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={x.script} />
 
         <div className="explorer-shell art-body" dangerouslySetInnerHTML={{ __html: a.html }} />
         <Justify root=".art-body" />
+        {/* Just the article (owner's call, 2026-08-27): the head, the
+            prose with its subheads, and a way back. Inline images are to
+            come. */}
+        <p className="art-return">
+          <Link className="art-link" href={localize(lang, `/6502/${page}`)}>{S.back}</Link>
+        </p>
       </article>
     </Shell>
   );

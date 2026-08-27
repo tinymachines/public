@@ -1425,3 +1425,5 @@ its own colour at the summary's size; the full-screen key moves up to
 the strip's key row on a phone; the API reference's self-description
 and coverage counters are removed as placeholder copy (owner's list).
 `notes/pretext.md` has the round.
+Then, mid-round: the article is just the article (owner): hero head,
+subheads, nothing folded, no tool button, a Return button at the end.
