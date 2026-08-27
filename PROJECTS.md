@@ -1328,3 +1328,19 @@ the segment group must refuse `pkg/`). `tinymachines-visitors.timer` is
 enabled; `/visitors` shows 8,464 reads on four logs. `article.spec` passes
 6 of 6 and `engine.spec` 6 of 6 against the live site.
 
+
+## 1.0.130, 2026-08-27: the gate boards the served release
+
+Owner's call after four refusals in a day on docs commits: `board-engine.py`
+now reads the served release's `build-info.json` commit, refuses unless the
+running chip API reports it, checks it out into a detached worktree
+(`../6502-served`, own cargo target, the generated oracle and layout linked
+from the sibling), runs the suites there, and `--check` holds the served
+release, the running API and the worktree to the record. The build reads
+the 6502 pages from the worktree (`web/lib/chip-src.ts`, the chipdocs pull,
+the deploy's sweep); the 6502 working tree is never read. First board:
+v0.264 at `ddc1480`, 39 tests, 80 s (a cold cargo build; incremental after).
+Two `.git`-is-a-pointer-file fixes came with it (`head_of`,
+`upstreamCommit`). The apex nginx asset regex learned to refuse `api/` as a
+segment after the deploy's door check caught `/6502/api/openapi.json` being
+served as a chip asset; the check earned its place.
