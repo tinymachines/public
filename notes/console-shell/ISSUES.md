@@ -145,3 +145,23 @@ with cyan strokes for the paper ground. STYLE.md section 1: paper is
 with the site's ink, hues from the Earth Conductor `-ink` forms, and keeps
 the BP-3 line language exactly. A drafting-blue sheet would be a third
 ground, which the style guide says not to invent.
+
+## 13. A cartridge change inside a boot finishes booting the wrong ROM
+
+**Measured, 2026-08-28.** `game.js`'s `power()` awaits the ROM fetch and the
+console's power without re-checking `state.gen` after either. A cartridge
+change (`#cart` onchange) in that window bumps the generation and swaps
+`state.cart`, and the boot resumes: the old bytes, the new contract, the
+buttons painted live, the loop already stale. The console reports live and
+draws nothing; a resume then runs Die Runner's ROM as Silicon Snake.
+
+**Resolution applied.** The shell refuses a cartridge change while the
+console is booting (`Shell.tsx` `changeCart`: the shelf, the select pill,
+and the shelf pane all go through it), with the nudge and a title saying
+why. The window is a few hundred ms. `e2e/shell.spec.ts` presses reset and
+select in one task and holds that the chosen cartridge is the one that
+boots.
+
+**Proposal upstream.** Re-check the generation after each await in
+`power()`, the rule `loop()` already keeps. Filed in
+`notes/upstream-transport.md`.

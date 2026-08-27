@@ -1689,3 +1689,57 @@ steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
 inline images on the articles (owner's); SSE only if a tool wants
 progress; the three engine write-ups once the engine they describe is
 the served one.
+
+## Same day: the console's gameplay round (owner's list)
+
+Six asks, 2026-08-28. What each became, and what was measured on the way.
+
+**Fast and slow.** game.js runs frames as fast as the round trip. A fourth
+build-time patch (`web/lib/console-modules.ts`) has its loop read a frame
+period off the page (`[data-frame-ms]` on the shell) and release a frame no
+sooner than that after the last: a period composes with the round trip
+where a rate would promise something the trip may not deliver. The shell's
+slow mode is 250 ms (`SLOW_MS`, four frames a second), fast is 0. The
+switch sits in the power dock beside reset and on the settings page, and
+the choice survives a reload. The build check's DOM contract wanted the
+attribute present, so fast is `0`, not absence. Measured: 7.9 frames/s
+fast on the live round trip, no more than 4.0 slow.
+
+**Fifty credits.** `CREDITS0 = 50` in Shell.tsx; the coin still adds one,
+to 99. Given, never sold (NOTICE.md).
+
+**Edge to edge.** The console page links a manifest of its own
+(`/6502/games/manifest.webmanifest`, `display: fullscreen`, starting at the
+console; `lib/manifest.ts` now writes both documents from one base), and
+carries the Apple metas (`black-translucent`), so a phone that adds THIS
+page to its home screen gets a console that fills the screen under the
+notch. shell.css keeps the parts inside the safe area. The settings page
+says how in the device's own case: installed already, a browser with the
+API (the key presses the strip's own full screen control), or an iPhone
+(Share, Add to Home Screen). A browser tab on an iPhone cannot go further
+than that, and the page says so rather than pretending.
+
+**The cart-switch instability, measured.** Two things, both on the live
+console with a Playwright probe. (1) After any cartridge change the store
+still said powered while the console said "power on to play": the strip's
+power key lit over an empty machine. The driver now reports the console
+dropping its own power (cart change, game over, engine quiet) as the
+store's off, guarded against the boot's own pass through unpowered.
+(2) Reset, then change the cartridge before the boot lands, and game.js's
+`power()` resumed past its awaits into the new cartridge: "Silicon Snake ·
+521B" (Die Runner's bytes), buttons painted live, loop already stale,
+nothing running; the next start ran the wrong ROM under the wrong
+contract. That is upstream's `power()` not re-checking `state.gen` the way
+`loop()` does; filed in `notes/upstream-transport.md` and ISSUES #13. Here
+the shell refuses a change while the console is booting, with the nudge.
+
+**Reset is a push button.** The rocker and its hold are gone; reset boots
+the cartridge or boots it again, from off too (power on, then reset if the
+machine came back paused). Off is the strip's power key alone.
+
+Held by `e2e/shell.spec.ts`: the switch and the fps bound, fifty on the
+counter, the strip agreeing after a change, the refused change (reset and
+select pressed in one task, with the record that the boot was in flight),
+the manifest and the metas, reset from paused and from off. The three
+strip tests cannot run against a local preview (`/6502/chip/` is nginx's
+in production), so they run against the deploy.

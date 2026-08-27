@@ -115,6 +115,18 @@ export function ConsoleDriver() {
           wasPowered = true;
           await store.setPower?.(true);
         }
+        // And the other edge: the console dropping its own power, which is
+        // a cartridge change, a game over, or the engine going quiet (pause
+        // disabled, "power on" back on the button). The store's off is the
+        // driver's power(false), a pause; this is not that, and a store
+        // left saying "powered" over a console with no machine had the
+        // strip's power key lit while the glass said "power on to play"
+        // (measured 2026-08-28). Not while the store is booting: the boot
+        // itself passes through unpowered on the way up.
+        if (!c.powered && wasPowered && store.isPowered?.() && !store.isBooting?.()) {
+          wasPowered = false;
+          await store.setPower?.(false);
+        }
         wasPowered = c.powered;
         const now = readConsole();
         if (!now || now.booting) return;

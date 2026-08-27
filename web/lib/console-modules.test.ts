@@ -5,7 +5,7 @@ import path from "node:path";
 import { consoleModules, FILES, PATCHES, patch, SRC, upstreamCommit } from "./console-modules";
 
 /**
- * The console modules come from the 6502 checkout with three lines patched.
+ * The console modules come from the 6502 checkout with four patches on them.
  * These hold that the patches still find their lines upstream (the build
  * would otherwise ship a console resolving the wrong API), that a module
  * which stops matching is refused rather than shipped, and that everything

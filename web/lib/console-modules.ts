@@ -23,14 +23,17 @@ import path from "node:path";
  * clone builds it. `upstream.json` beside the files records the commit and
  * every file's digest, which is the base the copies never had.
  *
- * ## The three patches, and why they are here rather than upstream
+ * ## The four patches, and why they are here rather than upstream
  *
  * Both modules resolve the chip API as `${location.origin}/api`, which is
  * right where they live (games.tinymachines.ai/api proxies the 6502 service)
  * and wrong under the apex, where that path is the roof's own API: a service
  * that is up and answers 404 to every request, so the console would render,
  * fail to power on, and read as a broken cartridge. And game.js links a
- * cartridge's builder at `/b/<handle>`, which this site does not serve.
+ * cartridge's builder at `/b/<handle>`, which this site does not serve. The
+ * fourth is the console's slow mode: game.js runs frames as fast as the
+ * round trip, and the shell wants a switch, so the loop reads a frame period
+ * off the page the way it reads the API.
  *
  * Each patch is an exact string the upstream line must match, ONCE. A module
  * that stops matching fails the build naming the file and the patch, rather
@@ -92,6 +95,30 @@ export const PATCHES: Patch[] = [
       "    const base = document.querySelector('[data-builders-base]')?.dataset.buildersBase ?? '';\n" +
       "    back.innerHTML = ' &middot; <a href=\"' + base + '/b/' + WANT.from.handle + '\">by '",
     why: "the builder credit links where the builder pages are, read off the page, not at a /b/ this site does not serve",
+  },
+  {
+    file: "game.js",
+    // The loop's fps block, once: the pace lands after the frame is painted
+    // and counted, before the next request leaves.
+    find: "        state.fpsAt = now;\n        state.fpsFrames = 0;\n      }\n",
+    replace:
+      // The two assignments on one line: a patch's replacement must not
+      // carry the upstream text (console-modules.test.ts), and this one
+      // adds after the anchor rather than changing it.
+      "        state.fpsAt = now; state.fpsFrames = 0;\n" +
+      "      }\n" +
+      "      /* Patched by tinymachines/public at build time (lib/console-modules.ts):\n" +
+      "       * a frame period, read off the page ([data-frame-ms]). Unset, frames run\n" +
+      "       * as fast as the round trip, as above; set, a frame is released no\n" +
+      "       * sooner than that many ms after the last, so the period is the longer\n" +
+      "       * of the two. The console's shell offers it as its slow mode. */\n" +
+      "      const period = +(document.querySelector('[data-frame-ms]')?.dataset.frameMs ?? 0);\n" +
+      "      if (period > 0) {\n" +
+      "        const wait = period - (performance.now() - (state.paceAt || 0));\n" +
+      "        if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));\n" +
+      "      }\n" +
+      "      state.paceAt = performance.now();\n",
+    why: "the page may declare a frame period ([data-frame-ms]); the shell's slow mode is that, and nothing else in the module changes",
   },
   {
     file: "registry.js",

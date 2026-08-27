@@ -42,6 +42,11 @@
   min-height: 20rem;
 }
 html.has-fullscreen .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); }
+/* Edge to edge (owner's call, 2026-08-28): installed on a phone, or in a
+   browser's full screen, the page reaches under the notch and the home
+   indicator; the plastic paints there and the parts stay in the safe area.
+   The strip carries its own bottom inset. */
+.console-full { background: var(--color-panel); }
 /* The console page has no bar at all: the stage is the viewport above the
    strip, in and out of full screen alike. The page is pinned, not measured:
    the strip is position: fixed, so a root that is fixed too, ending at the
@@ -49,7 +54,7 @@ html.has-fullscreen .shell-stage { height: calc(100dvh - var(--strip-h, 4rem)); 
    `100dvh` less a measured strip did not: on an iPhone the two disagreed by
    a line of text, and the page below scrolled into the gap. */
 .console-full { position: fixed; inset: 0 0 var(--strip-h, 4rem) 0; min-height: 0; overflow: hidden; }
-.console-full .shell-main { height: 100%; padding: 0; }
+.console-full .shell-main { height: 100%; box-sizing: border-box; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
 .console-full .shell-stage { height: 100%; min-height: 0; }
 .console-full .con-head { height: 0; overflow: hidden; }
 html:has(.console-full) { overflow: hidden; }
@@ -87,12 +92,14 @@ html:has(.console-full) body { overflow: hidden; }
 .dock .hit:disabled .lb { opacity: 0.75; }
 .dock[data-id="ab"] .hit { align-items: center; }
 .dock[data-id="power"] .hit[data-act="reset"] .lb { color: var(--color-panel); }
+.dock[data-id="power"] .hit[data-act="pace"] { justify-content: center; }
+.dock[data-id="power"] .hit[data-act="pace"] .lb { font-size: var(--text-micro); }
 .cart-btn .cart-name { position: absolute; left: 8%; right: 8%; top: 12%; height: 50%; display: grid; place-items: center; font: 600 var(--text-micro) var(--font-mono); color: var(--color-panel); text-align: center; line-height: 1.1; overflow: hidden; pointer-events: none; }
 .dock .hit:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 1px; }
 
 /* Parts: fills by role. */
 .part .face    { fill: var(--shell-lit); stroke: var(--shell-edge); stroke-width: 0.5; }
-.part .plate, .part .rocker, .part .chiclet, .part .tray, .part .key { stroke: var(--shell-edge); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+.part .plate, .part .chiclet, .part .tray, .part .key { stroke: var(--shell-edge); stroke-width: 0.5; vector-effect: non-scaling-stroke; }
 .part .face { vector-effect: non-scaling-stroke; }
 .part .shade   { fill: var(--shell-shade); }
 .part .well    { fill: var(--shell-shade); }
@@ -103,8 +110,9 @@ html:has(.console-full) body { overflow: hidden; }
 .part .key-a   { fill: var(--shell-a); }
 .part .key-b   { fill: var(--shell-b); }
 .part .key + .well { fill-opacity: 0.35; }
-.part .rocker.lit   { fill: var(--shell-lit); }
-.part .rocker.shade { fill: var(--shell-shade); }
+/* The fast/slow switch: both knob positions are drawn, one shows. */
+.part .knob { fill: var(--color-glass-muted); display: none; }
+.shell[data-pace="fast"] .part .knob[data-pos="fast"], .shell[data-pace="slow"] .part .knob[data-pos="slow"] { display: block; }
 .part .chiclet { fill: var(--color-glass-muted); }
 .part .plate   { fill: var(--shell-lit); }
 .part .slot    { fill: var(--shell-shade); }
@@ -133,8 +141,7 @@ html:has(.console-full) body { overflow: hidden; }
 .dock:has(.hit[data-act="select"]:active) [data-pill="select"] .pill,
 .dock:has(.hit[data-act="start"]:active) [data-pill="start"] .pill { fill: var(--shell-shade); }
 .dock:has(.hit[data-act="reset"]:active) .chiclet { fill: var(--color-glass); }
-.dock:has(.hit[data-act="power"]:active) .rocker.lit { fill: var(--shell-shade); }
-.dock:has(.hit[data-act="power"]:active) .rocker.shade { fill: var(--shell-lit); }
+.dock:has(.hit[data-act="pace"]:active) .knob { fill: var(--color-glass); }
 
 /* The coin: a tap drops it down the slot, then the counter ticks. */
 .shell[data-drop] .part .coin { opacity: 1; animation: shell-drop 300ms var(--ease-travel) forwards; }

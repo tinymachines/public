@@ -140,3 +140,30 @@ bits into `state.input` for the frame. A cartridge that declares no
 published changes. The shell needs no change beyond reading the declared
 map, which it can do from the loaded cartridge through the same DOM
 contract.
+
+## Two more from the console's gameplay round (2026-08-28)
+
+**`power()` does not re-check its generation after its awaits.** Measured on
+the live console: press reset, then change the cartridge before the boot
+lands (a few hundred ms). `$('#cart').onchange` bumps `state.gen`, nulls
+`state.con` and swaps `state.cart`; the `power()` still in flight then
+resumes past `await fetch(rom)` and writes `#k-cart` from the NEW cartridge's
+name with the OLD ROM's length ("Silicon Snake · 521B", Die Runner's bytes),
+builds a `Console6502` from the new contract over the old bytes, powers it,
+paints "reset" and "pause" as if live, and calls `loop(gen)`, which exits at
+once because `gen` is stale. The page shows a live console with nothing
+running; the next start runs the wrong ROM under the wrong contract.
+
+Proposal: after each `await` in `power()`, `if (gen !== state.gen) return;`,
+which is the rule `loop()` already keeps and the comment on `state.gen`
+already states. Until then the roof's shell refuses a cartridge change while
+`#b-power` reads "booting..." (`notes/console-shell/ISSUES.md` #13).
+
+**A frame period, read off the page.** The shell wants a fast/slow switch;
+`game.js` runs frames as fast as the round trip. The roof patches the loop at
+build time (`web/lib/console-modules.ts`, the fourth patch) to read
+`[data-frame-ms]` off the page and release a frame no sooner than that after
+the last. Upstream could carry the same eleven lines, and then the patch
+list is three again. The unit is a period in ms, not a rate: a period
+composes with the round trip (the longer of the two wins) where a rate would
+promise something the trip may not deliver.

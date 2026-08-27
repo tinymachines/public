@@ -133,39 +133,56 @@ export function Pills({ w, h, stack }: { w: number; h: number; stack?: boolean }
 }
 
 /**
- * sys-power. A split rocker, a reset chiclet, and the LED, whose state is
- * the shell's `data-led`: off, boot (amber, ATTENTION), live (blue, ACTIVE).
- * Never red: red is an assertion failing, on every page of this site
- * (ISSUES #5).
+ * sys-power. A reset push button (the console's, owner's call 2026-08-28:
+ * a push button like the console's own, not a rocker with a hold), a
+ * fast/slow slide switch, and the LED, whose state is the shell's
+ * `data-led`: off, boot (amber, ATTENTION), live (blue, ACTIVE). Never red:
+ * red is an assertion failing, on every page of this site (ISSUES #5).
+ *
+ * The switch draws both knob positions; shell.css shows the one
+ * `data-pace` on the shell names, so the state is an attribute, not
+ * geometry, as the kit's rule has it.
  */
+/** The switch's knob for a tray of w by h: inset a half module where there is room, half the tray wide, never nothing. */
+function knob(w: number, h: number): { in: number; w: number; h: number } {
+  const inset = h >= 16 && w >= 16 ? 4 : 0;
+  return { in: inset, w: Math.max(4, Math.floor((w - 2 * inset) / 2 / 4) * 4), h: Math.max(4, h - 2 * inset) };
+}
+
 export function Power({ w, h, stack }: { w: number; h: number; stack?: boolean }) {
   const c = 4;
   // The row form needs 56u; narrower than that it stacks, whatever was asked.
   if (stack || w < 56) {
     const rh = Math.max(4, Math.floor((h - 8 - 8) / 2 / 4) * 4);
+    const ty = rh + 8, th = Math.max(8, Math.min(16, h - ty - 12));
+    const k = knob(w, th);
     return (
       <Part w={w} h={h} id="sys-power">
-        <g data-key="power">
-          <polygon className="rocker lit" points={A(chamfered(0, 0, w / 2, rh, c))} />
-          <polygon className="rocker shade" points={A(chamfered(w / 2, 0, w / 2, rh, c))} />
-        </g>
         <g data-key="reset">
-          <polygon className="chiclet" points={A(chamfered(0, rh + 8, w, rh, c))} />
+          <polygon className="chiclet" points={A(chamfered(0, 0, w, rh, c))} />
+        </g>
+        <g data-key="pace">
+          <polygon className="tray" points={A(chamfered(0, ty, w, th, c))} />
+          <polygon className="knob" data-pos="slow" points={A(chamfered(k.in, ty + k.in, k.w, k.h, 0))} />
+          <polygon className="knob" data-pos="fast" points={A(chamfered(w - k.in - k.w, ty + k.in, k.w, k.h, 0))} />
         </g>
         <circle className="led" cx={w / 2} cy={h - 4} r={3} />
       </Part>
     );
   }
-  const rw = Math.floor((w - 8 - 8 - 8) * 0.55 / 8) * 8; // halves stay on the half module
-  const cw = w - rw - 8 - 8 - 8;
+  const rw = Math.floor((w - 8 - 8 - 8) * 0.55 / 8) * 8; // the button, on the module
+  const sw = w - rw - 8 - 8 - 8;                          // the switch takes the rest
+  const sx = rw + 8, th = Math.min(16, h), ty = Math.floor((h - th) / 2 / 4) * 4;
+  const k = knob(sw, th);
   return (
     <Part w={w} h={h} id="sys-power">
-      <g data-key="power">
-        <polygon className="rocker lit" points={A(chamfered(0, 0, rw / 2, h, c))} />
-        <polygon className="rocker shade" points={A(chamfered(rw / 2, 0, rw / 2, h, c))} />
-      </g>
       <g data-key="reset">
-        <polygon className="chiclet" points={A(chamfered(rw + 8, 0, cw, h, c))} />
+        <polygon className="chiclet" points={A(chamfered(0, 0, rw, h, c))} />
+      </g>
+      <g data-key="pace">
+        <polygon className="tray" points={A(chamfered(sx, ty, sw, th, c))} />
+        <polygon className="knob" data-pos="slow" points={A(chamfered(sx + k.in, ty + k.in, k.w, k.h, 0))} />
+        <polygon className="knob" data-pos="fast" points={A(chamfered(sx + sw - k.in - k.w, ty + k.in, k.w, k.h, 0))} />
       </g>
       <circle className="led" cx={w - 4} cy={h / 2} r={3} />
     </Part>

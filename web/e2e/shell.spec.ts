@@ -13,6 +13,11 @@ import { DESK, PHONE, open, overflow } from "./lib";
  *       reload and no lost credit
  *   IP  no Nintendo mark anywhere on the page
  *
+ * And the 2026-08-28 round (owner's list): reset is a push button, the
+ * fast/slow switch paces game.js, fifty credits to begin with, a cartridge
+ * change is honest with the strip and refused mid-boot, and the console
+ * installs edge to edge from its own manifest.
+ *
  * The solver's own tests hold the geometry; this holds that the page is
  * running that solver and that the shell is a console a finger can use.
  */
@@ -101,17 +106,18 @@ test("a coin drops and counts, the credit survives a turn of the phone, and the 
   await open(page, GAMES);
   const before = (await solved(page)).params;
   const credits = () => page.locator('.dock[data-id="coin"] .seg.on').count();
-  const c0 = await credits();
+  // Fifty to begin with: "50" lights 5 + 6 segments.
+  expect(await credits()).toBe(11);
   await page.locator('.hit[data-act="coin"]').click();
-  await expect.poll(credits, { timeout: 3000 }).not.toBe(c0);
-  // "00" lights 6 + 6 segments; "01" lights 6 + 2.
-  expect(await credits()).toBe(8);
+  await expect.poll(credits, { timeout: 3000 }).not.toBe(11);
+  // "51" lights 5 + 2.
+  expect(await credits()).toBe(7);
   const marker = await page.evaluate(() => { (window as unknown as { __k: number }).__k = 1; return 1; });
   await page.setViewportSize({ width: 844, height: 390 });
   await expect.poll(async () => (await solved(page)).params, { timeout: 5000 }).not.toBe(before);
   expect((await solved(page)).params).toContain("landscape");
   expect(await page.evaluate(() => (window as unknown as { __k: number }).__k)).toBe(marker); // same document: no reload
-  expect(await credits()).toBe(8);
+  expect(await credits()).toBe(7);
   expect((await overflow(page)).px).toBe(0);
 });
 
@@ -136,45 +142,136 @@ test("the pages: the rail and a swipe on the glass move between them; play is th
   await expect(page.locator(".pane-shelf .cart-btn").first()).toBeVisible();
 });
 
-test("the LED and the machine: off before power, boot then live after the rocker, paused on a second press", async ({ page }) => {
+/** Reset, and the console live or stopped; skips the rest when the chip API did not answer from this origin. */
+async function bootLive(page: Page) {
+  await page.locator('.hit[data-act="reset"]').click();
+  await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
+  test.skip((await page.locator(".shell").getAttribute("data-phase")) === "stopped", "the chip API did not answer from this origin");
+}
+
+test("the LED and the machine: off before reset, boot then live after it, paused by start, booted again by reset", async ({ page }) => {
   test.slow();
   await page.setViewportSize(DESK);
   await open(page, GAMES);
   const s = await solved(page);
   expect(s.led).toBe("off");
-  await page.locator('.hit[data-act="power"]').click();
-  await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
-  const phase = await page.locator(".shell").getAttribute("data-phase");
-  test.skip(phase === "stopped", "the chip API did not answer from this origin");
+  // A push button, not a rocker: no hold, and nothing on the shell switches off.
+  expect(s.hits.filter((h) => h.what === "power")).toEqual([]);
+  await bootLive(page);
   await expect(page.locator(".shell")).toHaveAttribute("data-led", "live");
-  await page.locator('.hit[data-act="power"]').click();
+  await page.locator('.hit[data-act="start"]').click();
   await expect(page.locator(".shell")).toHaveAttribute("data-phase", "paused");
   await expect(page.locator(".hud")).toHaveText(/pause/i);
+  // Reset while paused: the cartridge boots again and runs; the frame count starts over.
+  await expect.poll(() => page.locator("#k-frames").textContent()).toMatch(/^[1-9]/);
+  await page.locator('.hit[data-act="reset"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-phase", "live", { timeout: 10000 });
+  await expect.poll(() => page.locator("#k-frames").textContent()).toMatch(/^[0-9]$/);
 });
 
-test("hold power switches the machine off through the store; a tap brings it back running", async ({ page }) => {
+test("the strip's power key switches the machine off; reset boots it again, running", async ({ page }) => {
   test.slow();
   await page.setViewportSize(DESK);
   await open(page, GAMES);
-  await page.locator('.hit[data-act="power"]').click();
-  await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
-  test.skip((await page.locator(".shell").getAttribute("data-phase")) === "stopped", "the chip API did not answer from this origin");
-  // Hold: 600 ms is the rocker's hold.
-  const b = (await page.locator('.hit[data-act="power"]').boundingBox())!;
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
-  await page.mouse.down();
-  await page.waitForTimeout(900);
-  await page.mouse.up();
+  await bootLive(page);
+  await page.locator(".chip-transport .tbtn.pw").click();
   await expect(page.locator(".shell")).toHaveAttribute("data-led", "off");
   await expect(page.locator(".hud")).toHaveText(/^(off|オフ)$/);
-  // The strip agrees: its power key is no longer solid, and the store is off.
   await expect(page.locator(".chip-transport .tbtn.pw")).not.toHaveClass(/\bon\b/);
   expect(await page.evaluate(() => sessionStorage.getItem("v6502.power"))).toBe("0");
-  // A tap: on, and running again.
-  await page.locator('.hit[data-act="power"]').click();
+  await page.locator('.hit[data-act="reset"]').click();
   await expect(page.locator(".shell")).toHaveAttribute("data-led", "live", { timeout: 10000 });
   await expect(page.locator(".shell")).toHaveAttribute("data-phase", "live");
   await expect(page.locator(".chip-transport .tbtn.pw")).toHaveClass(/\bon\b/);
+});
+
+test("the fast/slow switch: slow declares the period on the shell and game.js keeps to it; fast is the round trip again", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await expect(page.locator(".shell")).toHaveAttribute("data-pace", "fast");
+  await expect(page.locator(".shell")).toHaveAttribute("data-frame-ms", "0");
+  await page.locator('.hit[data-act="pace"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-pace", "slow");
+  await expect(page.locator(".shell")).toHaveAttribute("data-frame-ms", "250");
+  await expect(page.locator('.hit[data-act="pace"] .lb')).toHaveText(/slow/);
+  await bootLive(page);
+  // game.js's own frames/s readout, refreshed every second: a real number,
+  // and no more than the four a 250 ms period allows.
+  await page.waitForTimeout(3500);
+  const fps = Number(await page.locator("#k-fps").textContent());
+  expect(fps).toBeGreaterThan(0);
+  expect(fps).toBeLessThanOrEqual(4.5);
+  await page.locator('.hit[data-act="pace"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-pace", "fast");
+  await expect(page.locator(".shell")).toHaveAttribute("data-frame-ms", "0");
+  // The settings page offers the same switch, and the choice survives a reload.
+  await page.reload({ waitUntil: "load" });
+  await expect(page.locator(".shell")).toHaveAttribute("data-pace", "fast");
+  await page.locator('.hit[data-act="page-settings"]').click();
+  await page.locator('[data-pace-pick="slow"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-frame-ms", "250");
+});
+
+test("a cartridge change while live: the console drops its power, the strip agrees, and start boots the new one", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await bootLive(page);
+  await expect(page.locator("#k-cart")).toHaveText(/Die Runner/);
+  await expect(page.locator(".chip-transport .tbtn.pw")).toHaveClass(/\bon\b/);
+  await page.locator('.hit[data-act="select"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-phase", "off");
+  await expect(page.locator(".chip-transport .tbtn.pw")).not.toHaveClass(/\bon\b/);
+  await page.locator('.hit[data-act="start"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-phase", "live", { timeout: 10000 });
+  await expect(page.locator("#k-cart")).toHaveText(/Silicon Snake · 351B/);
+});
+
+test("a cartridge change during a boot is refused, so the ROM that boots is the cartridge that was chosen", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  // Reset and select in one task, so the select lands while the boot is in
+  // flight (game.js marks the button "booting..." synchronously); the test
+  // records that it did, so it cannot pass on a boot that had finished.
+  const r = await page.evaluate(() => {
+    document.querySelector<HTMLButtonElement>('.hit[data-act="reset"]')!.click();
+    const booting = /boot/i.test(document.getElementById("b-power")!.textContent ?? "");
+    document.querySelector<HTMLButtonElement>('.hit[data-act="select"]')!.click();
+    return { booting, sel: (document.getElementById("cart") as HTMLSelectElement).selectedIndex };
+  });
+  expect(r.booting).toBe(true);
+  expect(r.sel).toBe(0);
+  await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
+  test.skip((await page.locator(".shell").getAttribute("data-phase")) === "stopped", "the chip API did not answer from this origin");
+  await expect(page.locator("#k-cart")).toHaveText(/Die Runner · 521B/);
+  await expect.poll(() => page.locator("#k-frames").textContent(), { timeout: 5000 }).toMatch(/^[1-9]/);
+  // Landed: now the change is taken.
+  await page.locator('.hit[data-act="select"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-phase", "off");
+  expect(await page.evaluate(() => (document.getElementById("cart") as HTMLSelectElement).selectedIndex)).toBe(1);
+});
+
+test("full screen: the console page links its own manifest, fullscreen from the console, and the settings page says how", async ({ page, request }) => {
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  const href = await page.locator("link[rel=manifest]").getAttribute("href");
+  expect(href).toBe("/6502/games/manifest.webmanifest");
+  const m = await (await request.get(href!)).json();
+  expect(m.display).toBe("fullscreen");
+  expect(m.start_url).toBe("/6502/games");
+  for (const name of ["mobile-web-app-capable", "apple-mobile-web-app-capable"]) {
+    expect(await page.locator(`meta[name="${name}"]`).getAttribute("content"), name).toBe("yes");
+  }
+  expect(await page.locator('meta[name="apple-mobile-web-app-status-bar-style"]').getAttribute("content")).toBe("black-translucent");
+  // The site's own stays standalone: a reader keeps the clock.
+  expect((await (await request.get("/manifest.webmanifest")).json()).display).toBe("standalone");
+  // Chrome has the API: the settings row offers the key and the install note.
+  await page.locator('.hit[data-act="page-settings"]').click();
+  await expect(page.locator(".toys [data-fs]")).toHaveAttribute("data-fs", "native");
+  await expect(page.locator('.toys [data-act="fullscreen"]')).toBeVisible();
+  await expect(page.locator(".toys [data-fs] small")).toHaveText(/home screen/i);
 });
 
 for (const [name, size] of [["desk", DESK], ["phone", PHONE]] as const) {

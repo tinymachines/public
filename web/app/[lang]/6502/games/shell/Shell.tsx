@@ -22,11 +22,16 @@ import { AB, Cart, Coin, Counter, Dpad, Pills, Power, Quick, Rail, Speaker } fro
  *                   its DOM contract has them; the solver picks the box's
  *                   width so game.js's own fit() chooses the same integer k
  *   the d-pad       four `[data-dir]` buttons game.js already listens to
- *   power / reset   the site's chip store (chipStore.ts): power boots or
- *                   pauses through `setPower`/`toggleRunning`, reset is the
- *                   store's `reset`, and the console's driver (ConsoleDriver)
- *                   turns those into game.js's own clicks. Until the store
- *                   arrives the keys press `#b-power`/`#b-pause` directly
+ *   reset           a push button, like the console's own (owner's call,
+ *                   2026-08-28; it was a rocker with a hold): it boots the
+ *                   cartridge, or boots it again, through the site's chip
+ *                   store (chipStore.ts, `setPower`/`reset`), and the
+ *                   console's driver (ConsoleDriver) turns those into
+ *                   game.js's own clicks. Off is the strip's power key, not
+ *                   the shell's. Until the store arrives the key presses
+ *                   `#b-power` directly
+ *   fast / slow     the switch beside it: slow sets `data-frame-ms` on the
+ *                   shell and game.js paces its loop to it (SLOW_MS below)
  *   select / start  select cycles `#cart`; start spends a credit to continue
  *                   after game over, and pauses while live
  *   the coin        given, never sold (NOTICE.md): a tap drops one in
@@ -46,13 +51,22 @@ const PAGES = ["play", "shelf", "status", "settings"] as const;
 const W = {
   en: {
     pages: { play: "play", shelf: "shelf", status: "status", settings: "settings" },
-    select: "select", start: "start", power: "power", reset: "reset",
+    select: "select", start: "start", reset: "reset", fast: "fast", slow: "slow",
     up: "Up", down: "Down", left: "Left", right: "Right",
     a: "A: this cartridge reads four directions and no buttons", b: "B: this cartridge reads four directions and no buttons",
     coin: "Insert a coin. They are given, never sold.",
     credits: "credits",
     selectT: "Next cartridge", startT: "Start: continue with a credit, pause while playing",
-    powerT: "Power: pause and resume; hold to switch off", resetT: "Reset: boot the cartridge again",
+    resetT: "Reset: boot the cartridge, or boot it again",
+    paceT: (ms: number) => `Speed: fast is the round trip, slow is a frame every ${ms} ms`,
+    busy: "Booting: the cartridge can change once it has landed",
+    speed: "speed",
+    speedWhy: (ms: number) => `Fast: every frame leaves as soon as the last is back, so the rate is the round trip. Slow: a frame is released no sooner than ${ms} ms after the last.`,
+    fs: "full screen",
+    fsGo: "Full screen",
+    fsInstalled: "This is the full screen: the console was opened from the home screen.",
+    fsNative: "Full screen takes the whole display; Escape leaves it. For a console of its own, add this page to the home screen: opened from there it runs edge to edge, with no browser around it.",
+    fsNone: "This browser has no full screen for a page. Share, then Add to Home Screen: opened from there the console fills the screen, edge to edge.",
     quick: ["menu", "pause", "sound", "snap"] as string[],
     quickT: ["Settings", "Pause or resume", "No sound: this console has no audio out", "Save the screen as a picture"],
     page: (p: string) => `Go to ${p}`,
@@ -74,13 +88,22 @@ const W = {
   },
   ja: {
     pages: { play: "プレイ", shelf: "棚", status: "状態", settings: "設定" },
-    select: "select", start: "start", power: "power", reset: "reset",
+    select: "select", start: "start", reset: "reset", fast: "fast", slow: "slow",
     up: "上", down: "下", left: "左", right: "右",
     a: "A: このカートリッジは方向 4 つだけを読む", b: "B: このカートリッジは方向 4 つだけを読む",
     coin: "コインを入れる。コインは配られるもので、売られない。",
     credits: "クレジット",
     selectT: "次のカートリッジ", startT: "start: クレジットで続行、プレイ中は一時停止",
-    powerT: "電源: 一時停止と再開。長押しで切る", resetT: "リセット: カートリッジを起動し直す",
+    resetT: "リセット: カートリッジを起動する、または起動し直す",
+    paceT: (ms: number) => `速度: fast は往復そのまま、slow は ${ms} ms に 1 フレーム`,
+    busy: "起動中: カートリッジは起動が終わってから替えられる",
+    speed: "速度",
+    speedWhy: (ms: number) => `fast: 前のフレームが戻り次第、次が出る。レートは往復そのもの。slow: 前のフレームから ${ms} ms 経つまで次を出さない。`,
+    fs: "全画面",
+    fsGo: "全画面",
+    fsInstalled: "これが全画面: このコンソールはホーム画面から開かれている。",
+    fsNative: "全画面はディスプレイ全体を使う。Escape で戻る。コンソール単体として使うなら、このページをホーム画面に追加する: そこから開くとブラウザなしで端から端まで走る。",
+    fsNone: "このブラウザにはページの全画面がない。共有、そして「ホーム画面に追加」: そこから開くとコンソールが画面いっぱい、端から端まで広がる。",
     quick: ["menu", "pause", "sound", "snap"] as string[],
     quickT: ["設定", "一時停止 / 再開", "音は出ない: このコンソールに音声出力はない", "画面を画像として保存"],
     page: (p: string) => `${p}へ`,
@@ -103,6 +126,23 @@ const W = {
 } as const;
 
 const HUES = ["--color-accent", "--color-ocean", "--color-forest", "--color-mustard"];
+
+/**
+ * The slow mode's frame period, in ms. game.js reads it off the shell
+ * (`data-frame-ms`, the fourth build-time patch in lib/console-modules.ts)
+ * and releases a frame no sooner than this after the last; fast is 0, and
+ * the round trip sets the rate as it always did. Always present: the build
+ * check (scripts/check-build.mjs) holds that every selector game.js queries
+ * is on the page. 250 ms is
+ * four frames a second: a snake that moves a cell a frame can be steered.
+ */
+const SLOW_MS = 250;
+
+/**
+ * Credits to begin with (owner's call, 2026-08-28: "give everyone 50").
+ * Given, never sold (NOTICE.md); the coin adds one on top, to 99.
+ */
+const CREDITS0 = 50;
 
 interface Fx { crt: boolean; scan: number; tv: 0 | 1; wear: boolean }
 const FX0: Fx = { crt: false, scan: 1, tv: 0, wear: false };
@@ -154,7 +194,8 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
   const [phase, setPhase] = useState<Phase>("off");
   const [cartIx, setCartIx] = useState(0);
   const [cartName, setCartName] = useState(carts[0]?.name ?? "");
-  const [credits, setCredits] = useSession("tm6502.credits", 0);
+  const [credits, setCredits] = useSession("tm6502.credits", CREDITS0);
+  const [pace, setPace] = useSession<"fast" | "slow">("tm6502.pace", "fast");
   const [drop, setDrop] = useState(false);
   const [nudge, setNudge] = useState(false);
   const [wipe, setWipe] = useState(false);
@@ -222,23 +263,23 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
   // driver's power), reset reboots (the driver's reset), pause and resume are
   // the store's running. The clicks are the fallback for a page whose strip
   // never loaded a store, and are what the driver makes of the store anyway.
-  const boot = useCallback(() => {
+  const boot = useCallback(async () => {
     if (store?.hasDriver()) {
-      if (!store.isPowered()) void store.setPower(true);
-      else store.reset();
+      if (store.isPowered()) { store.reset(); return; }
+      // Off, or never booted. Power on boots a console that has none; a
+      // console that was switched off holds a paused machine, and a reset
+      // means that machine booted again, not resumed.
+      await store.setPower(true);
+      if (readConsole()?.phase === "paused") store.reset();
       return;
     }
+    setLocalOff(false);
     const c = readConsole(); if (c && !c.booting) c.power.click();
   }, [store]);
   const togglePause = useCallback(() => {
     if (store?.hasDriver()) { if (store.isPowered()) store.toggleRunning(); return; }
     const c = readConsole(); if (c && c.powered) c.pause.click();
   }, [store]);
-  const switchOff = useCallback(() => {
-    if (store?.hasDriver()) { void store.setPower(false); return; }
-    if (phase === "live") togglePause();
-    setLocalOff(true);
-  }, [store, phase, togglePause]);
   const switchOn = useCallback(async () => {
     if (store?.hasDriver()) {
       await store.setPower(true);
@@ -258,35 +299,29 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
     if (off) { void switchOn(); return; }
     if (phase === "live" || phase === "paused") { togglePause(); return; }
     if (phase === "boot") return;
-    if (credits > 0) { setCredits((n) => n - 1); boot(); }
+    if (credits > 0) { setCredits((n) => n - 1); void boot(); }
     else { setNudge(true); setTimeout(() => setNudge(false), 700); }
   };
-  const holdT = useRef<number | null>(null);
-  const powerDown = () => {
-    holdT.current = window.setTimeout(() => {
-      holdT.current = null;
-      if (phase === "live" || phase === "paused") switchOff();
-    }, 600);
-  };
-  const powerUp = () => {
-    if (holdT.current === null) return; // the hold fired: that was the action
-    clearTimeout(holdT.current); holdT.current = null;
-    if (off) { void switchOn(); return; }
-    if (phase === "live" || phase === "paused") togglePause();
-    else if (phase !== "boot") boot();
+  const reset = () => { if (phase !== "boot") void boot(); };
+  // A cartridge does not change while one is booting. Measured (2026-08-28,
+  // ISSUES #13): game.js's power() has awaits it does not re-check its
+  // generation after, so a change landing inside one finished booting the
+  // OLD ROM under the NEW cartridge's contract, painted "reset" and "pause"
+  // as if live, with the loop already dead. Refused here until upstream
+  // re-checks; the boot is a few hundred ms and the buttons say so.
+  const changeCart = (i: number) => {
+    const sel = document.getElementById("cart") as HTMLSelectElement | null;
+    if (!sel || sel.selectedIndex === i) return;
+    if (readConsole()?.booting) { setNudge(true); setTimeout(() => setNudge(false), 700); return; }
+    sel.selectedIndex = i;
+    sel.dispatchEvent(new Event("change"));
   };
   const nextCart = () => {
     const sel = document.getElementById("cart") as HTMLSelectElement | null;
     if (!sel || sel.options.length < 2) return;
-    sel.selectedIndex = (sel.selectedIndex + 1) % sel.options.length;
-    sel.dispatchEvent(new Event("change"));
+    changeCart((sel.selectedIndex + 1) % sel.options.length);
   };
-  const pickCart = (i: number) => {
-    const sel = document.getElementById("cart") as HTMLSelectElement | null;
-    if (!sel || sel.selectedIndex === i) return;
-    sel.selectedIndex = i;
-    sel.dispatchEvent(new Event("change"));
-  };
+  const pickCart = changeCart;
   const snapshot = () => {
     const cv = document.getElementById("screen") as HTMLCanvasElement | null;
     if (!cv) return;
@@ -350,10 +385,8 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
       case "power":
         return (<>
           <Power w={w} h={h} stack={stack} />
-          <button type="button" className="hit" style={stack ? { left: 0, top: 0, width: "100%", height: "45%" } : { left: 0, top: 0, width: "52%", height: "100%" }}
-            onPointerDown={powerDown} onPointerUp={powerUp} onPointerCancel={() => { if (holdT.current) { clearTimeout(holdT.current); holdT.current = null; } }}
-            title={S.powerT} data-act="power"><span className="lb">{S.power}</span></button>
-          <button type="button" className="hit" style={stack ? { left: 0, top: "48%", width: "100%", height: "40%" } : { left: "55%", top: 0, width: "36%", height: "100%" }} onClick={boot} disabled={phase === "boot"} title={S.resetT} data-act="reset"><span className="lb">{S.reset}</span></button>
+          <button type="button" className="hit" style={stack ? { left: 0, top: 0, width: "100%", height: "36%" } : { left: 0, top: 0, width: "43%", height: "100%" }} onClick={reset} disabled={phase === "boot"} title={S.resetT} data-act="reset"><span className="lb">{S.reset}</span></button>
+          <button type="button" className="hit" style={stack ? { left: 0, top: "50%", width: "100%", height: "30%" } : { left: "50%", top: 0, width: "36%", height: "100%" }} onClick={() => setPace(pace === "slow" ? "fast" : "slow")} title={S.paceT(SLOW_MS)} aria-pressed={pace === "slow"} data-act="pace"><span className="lb">{pace === "slow" ? S.slow : S.fast}</span></button>
         </>);
       case "coin":
         return (<>
@@ -406,6 +439,8 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
       data-scan={fx.scan}
       data-tv={S.tvs[fx.tv]}
       data-wear={fx.wear || undefined}
+      data-pace={pace}
+      data-frame-ms={pace === "slow" ? SLOW_MS : 0}
       data-solved={measured ? "1" : undefined}
       style={{ ["--shell-accent" as string]: accent }}
     >
@@ -442,7 +477,7 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
             <h2 className="pane-title">{S.pages.shelf}</h2>
             <div className="shelf-grid">
               {carts.map((c, i) => (
-                <button key={c.value} type="button" className={"cart-btn" + (i === cartIx ? " on" : "")} onClick={() => pickCart(i)} aria-pressed={i === cartIx}>
+                <button key={c.value} type="button" className={"cart-btn" + (i === cartIx ? " on" : "")} onClick={() => pickCart(i)} aria-pressed={i === cartIx} title={phase === "boot" ? S.busy : undefined}>
                   <Cart w={48} h={40} accent={`var(${HUES[i % HUES.length]})`} loaded={i === cartIx} />
                   <span className="cart-name">{c.name}</span>
                   <span className="cart-cap">{c.name}{i === cartIx ? ` · ${S.loaded}` : ""}</span>
@@ -468,6 +503,13 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
                 </span>
               </label>
               <label><span>{S.wear}</span><input type="checkbox" checked={fx.wear} onChange={(e) => setFx({ ...fx, wear: e.target.checked })} /></label>
+              <label><span>{S.speed}</span>
+                <span className="seg">
+                  {(["fast", "slow"] as const).map((m) => <button key={m} type="button" className={pace === m ? "on" : ""} aria-pressed={pace === m} onClick={() => setPace(m)} data-pace-pick={m}>{S[m]}</button>)}
+                </span>
+                <small>{S.speedWhy(SLOW_MS)}</small>
+              </label>
+              <FullscreenRow label={S.fs} go={S.fsGo} installed={S.fsInstalled} native={S.fsNative} none={S.fsNone} />
               <label className="no"><span>{S.rewind}</span><input type="range" disabled aria-disabled="true" /><small>{S.rewindWhy}</small></label>
               <label className="no"><span>{S.ach}</span><small>{S.achWhy}</small></label>
               <label className="no"><span>{S.pal}</span><small>{S.palWhy}</small></label>
@@ -509,5 +551,46 @@ function ShelfRow({ w, h, stack, carts, loaded, pick, accent, load }: { w: numbe
       </label>
       <div className="shelf-rail" aria-hidden="true" />
     </div>
+  );
+}
+
+/**
+ * Full screen, from the settings page, in the words the device needs
+ * (owner's ask, 2026-08-28: edge to edge, and instructions where a phone
+ * cannot do it from a page). Three cases, decided in the browser after
+ * hydration so the server's copy commits to none of them:
+ *
+ *   installed   opened from the home screen (display-mode standalone or
+ *               fullscreen, or Safari's navigator.standalone): this IS the
+ *               full screen; the manifest at /6502/games/manifest.webmanifest
+ *               asks for it edge to edge
+ *   native      the Fullscreen API exists (a desk, Android): the key presses
+ *               the strip's own full screen control, one mechanism
+ *               (components/Fullscreen.tsx), and says how to install
+ *   none        no API for a page (every iPhone): the way is Add to Home
+ *               Screen, spelled out
+ */
+function FullscreenRow({ label, go, installed, native, none }: { label: string; go: string; installed: string; native: string; none: string }) {
+  // An external fact read once the page is in a browser; null on the server.
+  const mode = useSyncExternalStore(
+    () => () => {},
+    () => {
+      const standalone = matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches
+        || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      return standalone ? "installed" : typeof document.documentElement.requestFullscreen === "function" ? "native" : "none";
+    },
+    () => null,
+  );
+  const enter = () => {
+    const key = document.querySelector<HTMLButtonElement>(".chip-transport .tbtn.fs");
+    if (key) key.click();
+    else void document.documentElement.requestFullscreen?.();
+  };
+  return (
+    <label className={mode === "none" ? "no" : undefined} data-fs={mode ?? undefined}>
+      <span>{label}</span>
+      {mode === "native" ? <span className="seg"><button type="button" onClick={enter} data-act="fullscreen">{go}</button></span> : <span />}
+      <small>{mode === "installed" ? installed : mode === "native" ? native : mode === "none" ? none : ""}</small>
+    </label>
   );
 }

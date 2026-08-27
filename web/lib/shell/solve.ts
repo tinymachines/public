@@ -97,7 +97,7 @@ export const PART = {
   ab: { w: 40, h: 24 },        // two 16u octagons, staggered
   pills: { w: 104, h: 16 },    // two 48x16 pills, 8 apart
   pillsStack: { w: 48, h: 40 },
-  power: { w: 112, h: 24 },    // rocker 56, reset 32, led 8, gaps
+  power: { w: 112, h: 24 },    // reset 48, fast/slow switch 40, led 8, gaps
   powerStack: { w: 56, h: 56 },
   coin: { w: 64, h: 56 },      // acceptor plate + 2-digit counter
   speaker: { w: 48, h: 24 },

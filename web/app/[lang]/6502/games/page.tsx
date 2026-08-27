@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
+import { CONSOLE_MANIFEST } from "@/lib/manifest";
 import { ConsoleDriver } from "./ConsoleDriver";
 import { Shell } from "./shell/Shell";
 import { SiteFooter } from "@/app/components/SiteFrame";
@@ -87,7 +88,18 @@ const CARTS = [
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/6502/games")
+  return {
+    ...pageMeta(lang, "/6502/games"),
+    // Installed from this page, the console is an app of its own: its
+    // manifest asks for fullscreen (lib/manifest.ts), and on an iPhone,
+    // which reads these metas at Add to Home Screen instead, a standalone
+    // window whose status bar the page paints under (viewport-fit is cover
+    // site-wide; shell.css keeps the parts inside the safe area).
+    manifest: CONSOLE_MANIFEST,
+    appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "6502 console" },
+    // Next writes the standard name; older Safaris read only Apple's.
+    other: { "apple-mobile-web-app-capable": "yes" },
+  };
 }
 
 /**
@@ -287,7 +299,7 @@ export default async function GamesPage({ params }: { params: Promise<{ lang: La
         </div>
 
         {/* The console's own controls, which game.js binds at load and paints
-            its state into. Hidden: the shell's rocker, pills and shelf press
+            its state into. Hidden: the shell's reset key, pills and shelf press
             them, and the floor strip drives them through ConsoleDriver. They
             live outside the shell so nothing ever remounts them. */}
         <div className="con-own-transport" hidden>
