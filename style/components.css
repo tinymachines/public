@@ -2396,7 +2396,10 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   .ct-row { gap: calc(var(--u) * 1); }
   .ct-rate, .ct-seek, .ct-pos { order: 1; }
   .chip-transport .ct-row .tbtn.fs { margin-left: auto; }
-  .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 1.5); gap: calc(var(--u) * 1); }
+  /* 1.25u inline, not 1.5u: with eight keys, full screen and the play key
+     reading "pause", 1.5u was two pixels too wide for 390 and the
+     full-screen key wrapped (measured on the primer, 2026-08-27). */
+  .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 1.25); gap: calc(var(--u) * 1); }
   .chip-transport .tbtn.play { min-width: calc(var(--u) * 14); }
   .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26); }
 }
