@@ -1501,3 +1501,24 @@ arrives; the Lab has no dark panel, ink on paper, no link button);
   already has it: the article is a Shell page, and the Shell's `.app-foot`
   is the locked band on the floor (measured at 390: fixed, 812 to 844,
   the same line as the Lab's). No change.
+
+## Checkpoint, 2026-08-28, at 1.0.144
+
+Live: 1.0.144 on 6502 v0.264 (`ddc1480`); tree clean and pushed. Since
+the 1.0.142 checkpoint:
+
+- The Lab on paper: every panel takes the shell's paper set, the kit's
+  bezel undone under the Lab's `.panel`, the header's link button hidden.
+- The workbench footer is the floor: `SiteFooter floor` (`.wb-foot`),
+  locked under the strip by its measured height, gone in full screen.
+  Lab, tool pages, explorer; the console keeps its status-page footer.
+  The article pages are Shell pages and already had the locked band.
+- The docs index behind "Contents ›" below 60rem (`DocsNav` state,
+  closed again on navigation).
+- Golden: the tracer pair recaptured at 1.0.143 (4,441 CSS px at 390).
+- Specs: `footer.spec.ts` (workbench floor, the Lab on paper),
+  `fullscreen.spec.ts` (the footer leaves), `docs.spec.ts`.
+
+Open, unchanged: the intermittent React #418 on Shell pages; forward
+steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
+inline images on the articles (owner's).
