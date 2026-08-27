@@ -1639,3 +1639,35 @@ Open, unchanged: the intermittent React #418 on Shell pages; forward
 steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
 inline images on the articles (owner's); SSE only if a tool wants
 progress.
+
+## Same day: the engine gate follows the release's file list, and compares at the tag
+
+The 6502 session reported halfphi 0.1.2 released (`halfphi@3514617`,
+`6502@e556a40`, not deployed; served stays 0.1.1 at ddc1480) and that the
+shared-file digest's definition moved with it: six files from 0.1.2
+(`src/slice.rs` joined), five before. `board-engine.py` recomputed the
+digest over a typed list of five and would have gone on disagreeing with
+what the tag names once 0.1.2 was served. It now reads the list from the
+served tree's own `tools/check-halfphi.mjs` (proved on the served tree,
+five; on `halfphi-v0.1.2`'s file out of the 6502 repository's objects,
+six; on a tree without the file, the five as fallback) and records the
+list in `data/engine.json`.
+
+Two more things the same run turned up. `--check` was already red: it
+compared the served crate against the standalone `../halfphi` at HEAD,
+which the release had moved to v0.1.2, so every deploy here would have
+waited on the other project's next deploy (the checkout-bound gate's
+ground, 2026-08-27). It compares at the tag the served version names now
+(`git show v0.1.1:<file>`), and records which. And `--board` ran both
+suites to "0 passed" in under two seconds: this shell's PATH has
+`/usr/bin` before `~/.cargo/bin`, so cargo 1.97 drove the distribution's
+rustc 1.75, which refuses `--check-cfg`. The runner puts rustup's
+toolchain bin first on PATH now. Re-boarded: 39 tests, digest unchanged
+(`1792a2467e8b`), standalone at `v0.1.1` identical.
+
+The peer also offered three pieces for the site (the branchless inner
+loop, 17% more throughput, bit-exact; the bit-sliced prototype and why
+the simulation is path-dependent, 2.5x half-cycles, 2061 of 3000
+half-cycles identical; the 40-claim prose check). Noted here, not
+written up: the engine those numbers describe is not the served one, and
+this site boards what is served.

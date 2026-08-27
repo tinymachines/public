@@ -155,16 +155,19 @@ This is the one the rest of the document is scaffolding for.
 halfphi is developed in `tinymachines/6502` at `crates/halfphi`, beside the
 chip it was extracted from and against the three chips its test loads. It is
 published at `tinymachines/halfphi` on its own, where it can be MIT because
-it embeds no die data. Five files are shared verbatim
-(`src/lib.rs`, `src/source.rs`, `src/netlist.rs`, `src/engine.rs`,
-`tests/chips.rs`); `6502/tools/check-halfphi.mjs` compares them and that
-project's `deploy.sh` refuses to publish on a difference. On 2026-08-26 the
+it embeds no die data. A set of files is shared verbatim, listed in
+`6502/tools/check-halfphi.mjs`, which compares them, and that project's
+`deploy.sh` refuses to publish on a difference. The list belongs to the
+release: five files up to 0.1.1 (`src/lib.rs`, `src/source.rs`,
+`src/netlist.rs`, `src/engine.rs`, `tests/chips.rs`), six from 0.1.2, when
+`src/slice.rs` joined it. `board-engine.py` reads the list from the served
+tree rather than holding a copy. On 2026-08-26 the
 two are identical, at `6502@15e5717` and `halfphi@424ce03`.
 
 Both say `version = "0.1.1"` since 2026-08-26, when the first tagged release
 was cut: `tools/release-halfphi.sh X.Y.Z` in the 6502 repository bumps both
 `Cargo.toml`s, dates the changelog, commits on each side and tags each side
-(`halfphi-vX.Y.Z` on 6502, `vX.Y.Z` on halfphi) with the digest of the five
+(`halfphi-vX.Y.Z` on 6502, `vX.Y.Z` on halfphi) with the digest of the
 shared files in the tag message, after the mirror's own CI gates and this
 workspace's halfphi test pass on the bytes being tagged. The crate is **not
 on crates.io**, by decision. A commit past the tag is recorded by
@@ -221,8 +224,10 @@ halfphi` with `HALFPHI_REQUIRE_CHIPS=1` and `cargo test -p v6502-sim` with
 `V6502_REQUIRE_GOLDEN=1`, in a target directory of its own. It writes
 `data/engine.json` only when every suite passed. The record holds the served
 release's version and commit (and that project's own test counts, recorded
-and not believed), the halfphi crate version and the digest of its five
-shared files, whether the standalone copy is identical and at what commit,
+and not believed), the halfphi crate version, the shared-file list and its
+digest, and whether the standalone repository, at the tag the served version
+names (`v0.1.1` for a served 0.1.1, never its HEAD, which is wherever that
+work has got to), holds the same bytes,
 the halfwave binary's stamp for the reader, and each suite's counts and
 time. Nothing host-specific is in it.
 
@@ -243,7 +248,7 @@ same things and refuses when any of them is not the boarded one:
 - the worktree, which the build reads pages from, is at another commit or
   dirty (`--board` moves it; nothing else should write there)
 - halfphi's shared sources in the worktree differ from the boarded digest,
-  or from the standalone copy
+  or from the standalone repository at the served version's tag
 
 It **skips**, and says so, on a box with no 6502 repository beside this one
 or no served release directory, so a fresh clone of this repository still

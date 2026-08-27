@@ -1,7 +1,7 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-08-27T14:11:02+00:00",
-  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "boarded_at": "2026-08-27T22:10:40+00:00",
+  "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
     "version": "v0.264",
     "commit": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884",
@@ -32,17 +32,25 @@
   "halfphi": {
     "version": "0.1.1",
     "tag": null,
+    "shared_files": [
+      "src/lib.rs",
+      "src/source.rs",
+      "src/netlist.rs",
+      "src/engine.rs",
+      "tests/chips.rs"
+    ],
     "shared_files_sha256": "1792a2467e8b4062ca7f5d47a44fd3db67811bd355a2bd4792b38fd18a920f9c",
     "standalone": {
-      "commit": "92536c2bd1f60f33d1212813ea6a39d21820cc4a",
-      "tag": "v0.1.1",
+      "commit": "3514617e8d5acea7935b7f92fa52357577f2872c",
+      "tag": "v0.1.2",
+      "ref": "v0.1.1",
       "shared_files_identical": true
     }
   },
   "halfwave": {
-    "sha256": "d37312a39a51a5a6fb2a96d595e2a25d4c91d5ddb42573598aabaabcca8fa20c",
-    "bytes": 532984,
-    "modified": "2026-08-27T13:22:20+00:00",
+    "sha256": "c95dd512d05ad5da1d494b9960519e76fa9c5f6cf92bb870ade05011b58ede31",
+    "bytes": 533680,
+    "modified": "2026-08-27T21:23:02+00:00",
     "stated": "ddc1480aa3b9742b37d59bf6a0756fcd89b38884"
   },
   "tests": [
@@ -55,7 +63,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 1.2,
+      "seconds": 0.3,
       "ok": true
     },
     {
@@ -67,7 +75,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 11.4,
+      "seconds": 9.7,
       "ok": true
     }
   ]

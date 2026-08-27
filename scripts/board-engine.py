@@ -69,11 +69,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RECORD = ROOT / "data" / "engine.json"
 
-# The five files halfphi shares with its standalone repository: the same list
-# tools/check-halfphi.mjs holds over there. The digest of these is what
-# "halfphi 0.1.0" means on a given day, since the crate version does not move
-# between releases.
-SHARED = ["src/lib.rs", "src/source.rs", "src/netlist.rs", "src/engine.rs", "tests/chips.rs"]
+# The files halfphi shares with its standalone repository. The digest of these
+# is what "halfphi 0.1.1" means on a given day, since the crate version does
+# not move between releases. The list is the RELEASE's, read from the served
+# tree's own tools/check-halfphi.mjs: it changed at 0.1.2 (src/slice.rs became
+# a shared file; five files before, six from then on), and a list typed here
+# would have gone on hashing five and disagreeing with what the tag names.
+# SHARED_FALLBACK is only for a tree with no such file.
+SHARED_FALLBACK = ["src/lib.rs", "src/source.rs", "src/netlist.rs", "src/engine.rs", "tests/chips.rs"]
+
+
+def shared_files(wt: Path) -> list[str]:
+    mjs = wt / "tools" / "check-halfphi.mjs"
+    if mjs.is_file():
+        m = re.search(r"const SHARED = \[([^\]]*)\]", mjs.read_text())
+        if m:
+            found = re.findall(r"'([^']+)'", m.group(1))
+            if found:
+                return found
+    return SHARED_FALLBACK
 
 # What "tested" means. Each entry is one cargo invocation in the 6502 tree,
 # and the env makes a missing fixture a FAILURE rather than a skip: under
@@ -287,21 +301,37 @@ def measure(repo: Path) -> dict:
     if have_wt:
         cargo = (wt / "crates" / "halfphi" / "Cargo.toml").read_text()
         version = re.search(r'^version\s*=\s*"([^"]+)"', cargo, re.M)
+        shared = shared_files(wt)
         digest = hashlib.sha256()
-        for rel in SHARED:
+        for rel in shared:
             digest.update(rel.encode() + b"\0" + (wt / "crates" / "halfphi" / rel).read_bytes() + b"\0")
+        # The standalone repository, AT THE TAG THE SERVED VERSION NAMES, not
+        # at its HEAD. Its HEAD is wherever the halfphi work has got to; the
+        # day 0.1.2 was tagged there while 0.1.1 was still served, a HEAD
+        # comparison faulted and would have held every deploy of this site
+        # until the other project's next deploy, which is not this gate's
+        # business (the same ground as the checkout-bound gate, 2026-08-27).
         standalone = None
         sib = Path(os.environ.get("HALFPHI") or (ROOT.parent / "halfphi"))
         if (sib / "src" / "engine.rs").is_file():
-            same = all((sib / rel).read_bytes() == (wt / "crates" / "halfphi" / rel).read_bytes() for rel in SHARED)
+            ref = f"v{version.group(1)}" if version else None
+            same = None
+            if ref and git(sib, "rev-parse", "-q", "--verify", f"refs/tags/{ref}"):
+                same = all(
+                    subprocess.run(["git", "-C", str(sib), "show", f"{ref}:{rel}"], capture_output=True).stdout
+                    == (wt / "crates" / "halfphi" / rel).read_bytes()
+                    for rel in shared
+                )
             standalone = {
                 "commit": head_of(sib),
                 "tag": git(sib, "describe", "--tags", "--exact-match", "--match", "v*"),
+                "ref": ref if same is not None else None,
                 "shared_files_identical": same,
             }
         halfphi = {
             "version": version.group(1) if version else None,
             "tag": git(wt, "describe", "--tags", "--exact-match", "--match", "halfphi-v*"),
+            "shared_files": shared,
             "shared_files_sha256": digest.hexdigest(),
             "standalone": standalone,
         }
@@ -336,6 +366,15 @@ def run_suites(tree: Path, allow_no_golden: bool) -> list[dict]:
     # cache is that project's, and the worktree's sources are at another
     # path anyway.
     env.setdefault("CARGO_TARGET_DIR", str(tree.parent / (tree.name + "-target")))
+    # rustup's toolchain first on PATH. `cargo` resolves through ~/.cargo/bin
+    # to the toolchain, but rustc and rustdoc resolve wherever PATH says, and
+    # a shell with /usr/bin ahead of ~/.cargo/bin handed cargo 1.97 the
+    # distribution's rustc 1.75, which refused cargo's --check-cfg. Measured
+    # 2026-08-28: both suites "failed" with 0 tests in under two seconds.
+    if shutil.which("rustup"):
+        tc = subprocess.run(["rustup", "which", "cargo"], capture_output=True, text=True)
+        if tc.returncode == 0 and tc.stdout.strip():
+            env["PATH"] = str(Path(tc.stdout.strip()).parent) + os.pathsep + env.get("PATH", "")
     out = []
     for name, cmd, extra in SUITES:
         if allow_no_golden:
@@ -431,8 +470,8 @@ def check(repo: Path) -> int:
         if now["halfphi"]["shared_files_sha256"] != rec["halfphi"]["shared_files_sha256"]:
             faults.append("halfphi's shared sources in the worktree differ from the boarded digest")
         sa = now["halfphi"]["standalone"]
-        if sa and not sa["shared_files_identical"]:
-            faults.append("the standalone halfphi checkout differs from the served crate (tools/check-halfphi.mjs over there says which files)")
+        if sa and sa["shared_files_identical"] is False:
+            faults.append(f"the standalone halfphi repository at {sa['ref']} differs from the served crate (tools/check-halfphi.mjs over there says which files)")
 
     line = (
         f"served {(now['served'] or {}).get('version', 'unmeasured')} {str((now['served'] or {}).get('commit'))[:12]}"
