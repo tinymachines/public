@@ -106,7 +106,7 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
       <Script id="halfwave-lab" src={assets.js} strategy="afterInteractive" />
 
       {/* What is running, on every page: see explorer/page.tsx. */}
-      <SiteFooter lang={lang} />
+      <SiteFooter lang={lang} floor />
       </div>
     </div>
   );

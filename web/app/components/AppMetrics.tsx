@@ -13,7 +13,7 @@ import { useEffect } from "react";
  * scrolls its target to y=0, which is underneath it: the link works, the URL
  * changes, and the heading you asked for is the one thing hidden. And the
  * lab's transport bar has to sit above the site footer rather than on top of
- * it.
+ * it, and so does the floor strip on a workbench, above the footer there.
  *
  * Measured rather than written down, because the height is not a constant. The
  * masthead carries a title that wraps at a narrow width, the nav wraps with
@@ -29,7 +29,9 @@ import { useEffect } from "react";
 export function AppMetrics() {
   useEffect(() => {
     const head = document.querySelector<HTMLElement>(".app-head");
-    const foot = document.querySelector<HTMLElement>(".app-foot");
+    // The workbench's floor footer (.wb-foot) is a footer band too: the
+    // strip sits on it by this number.
+    const foot = document.querySelector<HTMLElement>(".app-foot, .wb-foot");
     if (!head && !foot) return;
 
     const root = document.documentElement;

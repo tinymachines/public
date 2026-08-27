@@ -114,7 +114,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
           </p>
         ) : null}
         {/* What is running, on every page: see explorer/page.tsx. */}
-        <SiteFooter lang={lang} />
+        <SiteFooter lang={lang} floor />
       </div>
     </div>
   );

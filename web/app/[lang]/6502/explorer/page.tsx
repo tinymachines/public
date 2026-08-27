@@ -86,7 +86,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       {/* What is running, on every page (owner's call, 2026-08-27): a
           workbench ends where its last control does, and the footer is the
           last control. In the flow, above the strip; the strip is fixed. */}
-      <SiteFooter lang={lang} />
+      <SiteFooter lang={lang} floor />
       </div>
     </div>
   );

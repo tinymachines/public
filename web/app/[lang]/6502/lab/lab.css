@@ -69,17 +69,13 @@
   --glow: var(--phi1);
 }
 
-/* PAPER PAGE, DARK INSTRUMENTS, the same split the explorer got.
+/* PAPER PAGE, PAPER PANELS, the same ground the explorer's instruments got.
 
-   The lab is panel blocks all the way down and every one of them is the
-   machine talking, so those stay dark. What was wrong is that the PAGE was
-   dark too, which made it a slab against a paper site for the same reason the
-   explorer was one.
-
-   What sits directly on the shell is the title line, the transport bar and the
-   tab strip: chrome around the instruments rather than instruments. Those are
-   on paper now and the panels float on it, which is what the explorer looks
-   like and therefore what the site looks like.
+   The page went paper first (2026-08-25) with the panels left dark as the
+   machine talking; the panels followed on 2026-08-27 (the rule below the
+   shell block says why). So the one set here is the whole Lab's: the base
+   forms of the hues went with the dark ground, and the -ink forms hold
+   throughout, because everything is read on paper.
    ------------------------------------------------------------------------ */
 .lab-shell {
   --ground:   var(--color-paper);
@@ -134,76 +130,29 @@
   font-family: var(--font-sans);
 }
 
-/* THE INSTRUMENTS. Every .panel in here holds values read off a storage node
-   on the die, so every one of them is panel, with the base forms of the hues
-   because they are read on dark. Doubled for the cascade, like the explorer:
-   this file is a link in the head and the lab's stylesheet is inline in the
-   body, so at equal specificity theirs wins. */
+/* THE PANELS GO PAPER TOO (owner's call, 2026-08-27: "dark themed lab
+   component; does not match theme"). This is the explorer's call of
+   2026-08-24 ("why are they all still black?") arriving at the Lab: the
+   binder these pages resemble is paper with instrument photographs printed
+   on it, and the Lab is twenty-six panels, so on panel it read as a black
+   page with cream margins under a paper site. Until this the block here
+   restated all 38 names inside .panel in the panel ladder; now the shell's
+   paper set above reaches every panel, and dark survives only where a
+   surface paints itself dark: the scope canvas and the map.
+
+   What this rule still has to do is undo the kit. The kit's own .panel is
+   the brushed bezel (a chrome gradient, 3px of it, glass ink), and it is
+   unscoped, so it reaches in here and under the Lab's own rule for the
+   same name; with the panels dark that was invisible, on paper it is glass
+   ink on cream. Same species as the explorer's .panel rule: a name two
+   designs share, not a component they share. Doubled for the cascade. */
 .lab-shell.lab-shell .panel {
-  /* THE GROUND AND ITS LADDER.
-     panel is the instrument face; raised and sunk are the two directions off
-     it. Everything between is mixed, and the percentages preserve the
-     ordering the lab's own values had. */
-  --ground:   var(--color-panel);
-  --panel:    var(--color-panel-raised);
-  --panel2:   color-mix(in srgb, var(--color-panel) 70%, var(--color-panel-raised));
-  --sunk:     var(--color-panel-sunk);
-  --code:     var(--color-panel-sunk);
-  --foot:     color-mix(in srgb, var(--color-panel) 85%, var(--color-panel-sunk));
-  --lane:     color-mix(in srgb, var(--color-panel) 88%, var(--color-panel-sunk));
-  --cell:     color-mix(in srgb, var(--color-panel-raised) 92%, var(--color-glass));
-  --mcell:    color-mix(in srgb, var(--color-panel-raised) 97%, var(--color-panel));
-  --cell2:    color-mix(in srgb, var(--color-panel-raised) 84%, var(--color-glass));
-  --cell3:    color-mix(in srgb, var(--color-panel-raised) 94%, var(--color-panel));
-  --hotfill:  color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
-  --hover:    color-mix(in srgb, var(--color-panel-raised) 95%, var(--color-glass));
-  --onbg:     color-mix(in srgb, var(--color-panel-raised) 89%, var(--color-glass));
-
-  /* HAIRLINES. The kit's rule on panel, and two weaker steps toward it. */
-  --rule:     var(--color-rule-panel);
-  --cellrule: color-mix(in srgb, var(--color-rule-panel) 80%, var(--color-glass));
-  --grid:     color-mix(in srgb, var(--color-rule-panel) 70%, var(--color-panel));
-  --faint:    color-mix(in srgb, var(--color-rule-panel) 60%, var(--color-glass));
-
-  /* TEXT. Two levels in the kit, four in the lab, so the two middles are
-     mixed. glass is AA on panel at 13.6:1 and glass-muted at 5.4:1, so
-     nothing below is dimmer than glass-muted. */
-  --bright:   var(--color-glass);
-  --text:     color-mix(in srgb, var(--color-glass) 88%, var(--color-glass-muted));
-  --mid:      var(--color-glass-muted);
-  --dim:      var(--color-glass-muted);
-  --reg:      color-mix(in srgb, var(--color-glass-muted) 70%, var(--color-glass));
-  --axis:     var(--color-glass-muted);
-
-  /* THE BUSES. This is what the categorical hues are for: tokens.css calls
-     them "Categorical. Assigns identity to a region, a bus, a signal class",
-     and address, data and ALU are three signal classes. The base forms are
-     used, not the -ink forms, because everything here is on panel. */
-  --addr:     var(--color-ocean);      /* Ocean Data, and it was already cyan */
-  --data:     var(--color-burnt);      /* Burnt Silicon */
-  --alu:      var(--color-mustard);    /* Mustard Conductor, and it was amber */
-  --teal:     var(--color-ocean);      /* one more address-side accent */
-
-  /* TRACES AND THE CURSOR. Categorical again, and distinct from the buses. */
-  --cursor:   var(--color-mustard);
-  --t2:       var(--color-forest);
-  --t3:       var(--color-mustard);
-
-  /* POWER, and this one is a correction rather than a mapping.
-     It was #E2574B, a red, for the control that throws the machine away. In
-     this palette red means ASSERTION FAILED and nothing else, so a red power
-     button would make a destructive control and a broken invariant look the
-     same. ATTENTION is the accent for something that needs a human, which is
-     exactly what a power switch is. */
-  --power:    var(--color-orange);
-
-  /* TYPE. The lab and the style guide had already converged on these three
-     families without knowing it, which is why dropping the lab's <head> costs
-     nothing: the kit self-hosts the same Archivo, IBM Plex Sans and IBM Plex
-     Mono that the lab was fetching from Google. */
-  --mono:     var(--font-mono);
-  --sans:     var(--font-sans);
-  --disp:     var(--font-display);
+  background: var(--panel);
+  color: var(--text);
+  padding: 0;
+  box-shadow: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-mod);
 }
 
 /* The lab's own rules set `body` colours, which reach nothing now that it is
@@ -291,7 +240,8 @@
    collapses to what a reader operates. Their <header> carried a brand, a
    tagline, a link button, a theme toggle and the tab strip; the first two
    repeat the bar above them, the toggle switches to a palette this site does
-   not have, and only the strip and the link are controls.
+   not have, the link copies an address the bar and the browser already
+   offer, and only the strip is a control a reader needs.
 
    Hidden, not removed: their script binds `#theme` and `#share` by id on
    load, and a missing element would throw before the lab built itself.
@@ -328,16 +278,11 @@
 }
 .lab-shell.lab-shell header .tab { scroll-snap-align: start; padding: calc(var(--u) * 2.5) calc(var(--u) * 2.5); }
 
-/* The link button, kept: the one control the header had. It sits at the end
-   of the strip, the size of a tab. */
-.lab-shell.lab-shell header #share {
-  order: 2;
-  flex: none;
-  align-self: center;
-  margin: 0 calc(var(--u) * 2) 0 calc(var(--u) * 1);
-  width: calc(var(--u) * 7);
-  height: calc(var(--u) * 7);
-}
+/* The link button goes too (owner's call, 2026-08-27). It copied the
+   Lab's own address with the step in the hash, which the site's bar and the
+   browser already offer. Hidden, not removed, like the toggle: the script
+   binds it by id. */
+.lab-shell.lab-shell header #share { display: none; }
 
 /* THE INSTRUCTION LANE, and a name two designs share. The kit has a .lane
    too: the zoo's timing lane, a 20px grid with a 360px minimum. The lab's

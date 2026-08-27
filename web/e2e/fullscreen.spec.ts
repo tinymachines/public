@@ -19,6 +19,9 @@ for (const p of ["/6502/explorer", "/6502/primer", "/6502/lab"]) {
     await fs.click();
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
     expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight), "the bar is gone").toBe(0);
+    // The floor footer leaves with the bar, and the strip lands on the floor.
+    expect(await page.evaluate(() => (document.querySelector(".wb-foot") as HTMLElement).offsetHeight), "the footer is gone").toBe(0);
+    expect(await page.evaluate(() => Math.round(innerHeight - document.querySelector(".chip-transport")!.getBoundingClientRect().bottom)), "the strip on the floor").toBe(0);
     expect(await fs.getAttribute("aria-pressed")).toBe("true");
     await fs.click();
     await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);

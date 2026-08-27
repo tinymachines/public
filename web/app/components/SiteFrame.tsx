@@ -79,13 +79,22 @@ export function Masthead({
  * So it renders nav() too. The two read differently on the page because .crumb
  * sets the voice, not because they are different lists.
  */
-export function SiteFooter({ lang }: { lang: Lang }) {
+export function SiteFooter({ lang, floor = false }: {
+  lang: Lang;
+  /**
+   * On a workbench: locked to the floor under the strip, the way the app
+   * shell's footer is locked under a reading page (owner's call, 2026-08-27,
+   * on the Lab: "the footer goes below everything, like the homepage"). The
+   * console leaves it off: its footer sits on the status page.
+   */
+  floor?: boolean;
+}) {
   // No navigation down here any more (owner's call, 2026-08-25): the menu is
   // the one place the site's map lives, and a second copy in the footer was
   // both a repeat and a temptation to drift. What remains is the name and
   // what is running, which is the only fact a footer has to offer.
   return (
-    <footer className="crumb site-foot">
+    <footer className={floor ? "crumb site-foot wb-foot" : "crumb site-foot"}>
       <Link href={localize(lang, "/")}>tinymachines.ai</Link>
       {/* What is running, asked of the running process rather than baked in.
           Renders nothing at all when the API cannot answer. */}

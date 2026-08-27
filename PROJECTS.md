@@ -1458,3 +1458,31 @@ release. Both trees clean and pushed. What the day built, in order:
 Open: the intermittent React #418 on Shell pages (pre-existing); forward
 steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`
 with `TM_SELF_NETS` is the owner's to write.
+
+## 2026-08-28: the Lab on paper, the footer on the floor
+
+Owner's three, on `/6502/lab`:
+
+- **The panels go paper.** The explorer's call of 2026-08-24 ("why are
+  they all still black?") arriving at the Lab: its twenty-six panels were
+  the one dark slab left under a paper site. `lab.css` no longer restates
+  the 38 tokens inside `.panel` in the panel ladder; the shell's paper set
+  reaches every panel, and the rule that remains undoes the kit's bezel
+  (brushed chrome, 3px, glass ink) that had been reaching in under the
+  Lab's own `.panel`. Dark survives nowhere on the page now: the scope
+  reads its tokens too. Measured across the tabs at 1280: no text within
+  70 luminance of its ground.
+- **The footer is the floor**, on every workbench that has one in the
+  flow (the Lab, the tool pages, the explorer): `SiteFooter floor` adds
+  `.wb-foot`, locked to the floor the way the app shell's footer is, and
+  the strip sits on it by the footer's measured height (`AppMetrics`
+  publishes `--app-foot-h` for it too). Full screen takes the footer with
+  the bar and the strip lands back on the floor. The console keeps its
+  footer on the status page. Phone: strip 733 to 812, footer 812 to 844.
+- **The header's link button is hidden**, like the theme toggle: the
+  script binds it by id.
+
+Specs: `e2e/footer.spec.ts` ("workbench floor": fixed, on the floor
+before any scrolling, strip on the footer, page clears both, version
+arrives; the Lab has no dark panel, ink on paper, no link button);
+`e2e/fullscreen.spec.ts` (the footer leaves with the bar).

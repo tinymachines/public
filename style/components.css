@@ -2354,14 +2354,13 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .ct-pos { color: var(--color-ink-muted); font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 12ch; text-align: right; }
 .ct-pos b { color: var(--color-ink); font-weight: 600; }
 .chip-transport input:disabled { opacity: 0.35; cursor: not-allowed; }
-/* The page keeps its floor clear of the strip: two rows on a phone. */
-.workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 16); }
+/* The page keeps its floor clear of the strip: two rows on a phone, and
+   the footer band under them where the page has one (.wb-foot). */
+.workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 16 + var(--app-foot-h, 0px)); }
 /* The footer on a workbench (the version on every page, owner's call
    2026-08-27): the same two items the app shell's footer has, name and run,
-   on one line at the end of the flow, above the strip. Not fixed: the strip
-   owns the floor, and two things pinned to one floor is one under the
-   other. On the console it sits on the status page, on panel, so the ink
-   there is glass. */
+   on one line. On the console it sits on the status page, on panel, so the
+   ink there is glass. Everywhere else it is .wb-foot, below. */
 .workbench .site-foot {
   display: flex;
   align-items: baseline;
@@ -2375,6 +2374,34 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .pane-status .site-foot { border-top-color: var(--color-rule-panel); color: var(--color-glass-muted); }
 .pane-status .site-foot a { color: var(--color-glass-muted); border-bottom-color: var(--color-rule-panel); }
 .pane-status .site-foot a:hover { color: var(--color-glass); }
+/* THE FLOOR FOOTER (owner's call, 2026-08-27, on the Lab: "the footer goes
+   below everything, like the homepage"). The app shell locks its footer to
+   the floor; a workbench does the same, and the strip sits on it, so the
+   floor reads as one stack: keys, then the name and the run under them.
+   The strip's bottom is the footer's measured height (AppMetrics publishes
+   --app-foot-h for .wb-foot too), so a wrapped footer on a phone moves the
+   strip up rather than sliding under it. The safe area is the footer's
+   now: it is the band on the very edge. Full screen takes the footer with
+   the bar, and the strip lands back on the floor. */
+.workbench .wb-foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 24;
+  margin: 0;
+  padding: calc(var(--u) * 1.5) max(calc(var(--u) * 3.5), env(safe-area-inset-left)) calc(var(--u) * 1.5 + env(safe-area-inset-bottom, 0px)) max(calc(var(--u) * 3.5), env(safe-area-inset-right));
+  background: var(--color-paper);
+  border-top: 1px solid var(--color-rule);
+}
+/* On :root, not the workbench: the strip is the 6502 layout's, a sibling
+   of the workbench, not a child. */
+:root:has(.wb-foot) .chip-transport {
+  bottom: var(--app-foot-h, 2rem);
+  padding-bottom: calc(var(--u) * 2);
+}
+html.has-fullscreen .workbench .wb-foot { display: none; }
+html.has-fullscreen:has(.wb-foot) .chip-transport { bottom: 0; }
 /* On a phone the steppers keep only their icon, as the Lab's do; power and
    play keep their words, because no icon says "power cycle" or "run" to
    somebody who has not read the caption. The engine key is an icon here
@@ -2401,7 +2428,7 @@ html.menu-open, html.menu-open body { overflow: hidden; }
      full-screen key wrapped (measured on the primer, 2026-08-27). */
   .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 1.25); gap: calc(var(--u) * 1); }
   .chip-transport .tbtn.play { min-width: calc(var(--u) * 14); }
-  .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26); }
+  .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26 + var(--app-foot-h, 0px)); }
 }
 
 /* ==========================================================================
