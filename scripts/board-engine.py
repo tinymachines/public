@@ -232,10 +232,13 @@ def worktree_path() -> Path:
     return Path(os.environ.get("TM_CHIP_SERVED") or (ROOT.parent / "6502-served")).resolve()
 
 
-# Generated, gitignored files the suites need, linked from the repository
+# Generated, gitignored files the suites need, COPIED from the repository
 # beside this one where they exist: the golden oracle (5 MB, derived from the
-# die data, never committed) and the die layout. A link rather than a copy,
-# and only where the worktree lacks the file.
+# die data, never committed) and the die layout. A copy, not a link: the
+# first version linked them, and the 6502 session pointed out that their
+# exporters write those paths, so anything regenerating one in the worktree
+# would have written through the link into that project's current file
+# (2026-08-27). Copied again whenever the sibling's copy changed.
 GENERATED = ["tools/golden-trace/golden.txt", "web/layout.bin"]
 
 
@@ -262,9 +265,13 @@ def sync_worktree(repo: Path, commit: str) -> Path:
         raise Refused(f"the worktree's submodule did not initialise: {r.stderr.strip()[:300]}")
     for rel in GENERATED:
         src, dst = repo / rel, wt / rel
-        if not dst.exists() and src.exists():
+        if not src.is_file():
+            continue
+        if dst.is_symlink():
+            dst.unlink()
+        if not dst.exists() or dst.stat().st_size != src.stat().st_size or dst.stat().st_mtime < src.stat().st_mtime:
             dst.parent.mkdir(parents=True, exist_ok=True)
-            dst.symlink_to(src)
+            shutil.copy2(src, dst)
     return wt
 
 
