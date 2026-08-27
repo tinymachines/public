@@ -1274,13 +1274,19 @@ which it does not have today.
   this round; `deploy/tinymachines.ai.nginx` now sets one, and both hand
   steps (the nginx install, the timer) are in `HOSTING.local.md`.
 
-## 5f8b5db, 2026-08-27: the companion articles (waiting on the engine gate)
+## 1.0.128, 2026-08-27: the companion articles
 
 Owner's call: a page with a large amount of text is a page nobody reads;
 the tracer had two blobs under a full-viewport instrument. Shipped as
-1.0.125 in a first form and rewritten the same night (`5f8b5db`, not yet
-deployed: the 6502 checkout moved to `ddc1480` unserved, the fourth gate
-refusal of the day):
+1.0.125 in a first form, rewritten the same night, deployed as 1.0.126
+through 1.0.128 once the 6502 side served `ddc1480` (the fourth gate
+refusal of the day, cleared by their deploy; boarded as v0.264). Three
+measured fixes on the way to a clean fit: an inline element's chrome is
+measured (drawn width minus pretext's natural width, which catches a
+pseudo-element arrow), the paragraph's width is its content width (a
+padded note set its lines 21px wide), and the hero and the instrument's
+remainder stay in the document hidden so every id the tool's script boots
+against exists:
 
 - **`/6502/<tool>/article` for all seventeen tools.** `lib/article.ts`
   lifts the tool page's `section.bp-prose` blocks whole (their widgets,
