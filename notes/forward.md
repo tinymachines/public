@@ -72,14 +72,27 @@ and proxying the same process (`/6502/api/`) since 1.0.6x.
 
 So the order is:
 
-**Step 1, in this repo: the apex talks to its own origin.** `CHIP_API`
-and `chipApi()` become `/6502/api` (the apex nginx already proxies it to
-the same uvicorn, with `X-Forwarded-Prefix`). `data/projects.json`'s
-`serves_today` for the 6502 API stays the subdomain until step 3, and the
-deploy's connect-src check (stage 6a) is satisfied either way because the
-CSP admits both. `web/e2e/parity.spec.ts` compares the apex's in-content
-links to the subdomain's and skips when the subdomain does not answer; it
-keeps working through step 2 and is retired at step 3.
+**Step 1, in this repo: the apex talks to its own origin.** Done at
+1.0.124 (2026-08-27). `data/projects.json`'s `serves_today` for the 6502
+API is `https://tinymachines.ai/6502/api/`, and `chipApi()` follows the
+file, which is what it was written to do: the explorer, the tool pages,
+the console, the builders, the editor, the OG route and the API reference
+all changed by that one line. The Lab's `CHIP_API`, the brief, and the
+public wrapper module `/engine/tm6502.mjs` now read or name the same
+address. The apex nginx already proxied `/6502/api/` to the same uvicorn
+with `X-Forwarded-Prefix`, so `openapi.json` there says `servers:
+/6502/api`. The service worker's never-cache list gained `/6502/api/`
+(same-origin now, and live state). The deploy's connect-src check (stage
+6a) still has off-origin surfaces to check (the subdomains' pages, the
+archive, hotbits). `web/e2e/parity.spec.ts` compares the apex's
+in-content links to the subdomain's and skips when the subdomain does not
+answer; it keeps working through step 2 and is retired at step 3.
+
+Not changed in step 1, deliberately: the roof API's own reader-facing
+strings (`api/mint.py` `CHIP_PUBLIC`, the MCP prompt, the model examples)
+still name the subdomain. They are addresses handed to other people's
+clients, the subdomain keeps answering them until step 3, and they move
+then.
 
 What step 1 changes for a reader: nothing visible. What it changes for
 the logs: the apex's `/6502/api/` line count rises by what the subdomain's

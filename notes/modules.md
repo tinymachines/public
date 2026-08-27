@@ -290,20 +290,30 @@ and not an action.
    git. The first draft's registry.js anchor matched inside `export const`
    and put the comment between the two keywords; legal, and caught by
    diffing the output against the old copies before anything shipped.
-5. **Open, found 2026-08-27 by the 6502 session: the prose numbers on
-   `service/api.html` are not held by anything.** `service/test_service.py`
-   asserts a whitelist of that page's figures (max_step, max_traced, nodes,
-   transistors) and the atlas counts (138 containers, 122 multi-container
-   nodes, 6 absorbed) are not in it; the deploy's verifier compares the
-   LIVE api against `web/groups.json`, a staleness check on the process,
-   not the page. Proved by mutation: the old 135/88/3 put back, 182 tests
-   still green. The counts had drifted once already (`6502@73e0e05` fixed
-   the prose). Whether to add them to the whitelist is that project's
-   call; the roof's own rule for shipped numbers (measure, then write)
-   would have caught it, and this is the case for extending it there.
+5. **Closed 2026-08-27 at `6502@162bf71`, for the atlas figures.** Found
+   the same day by the 6502 session: the prose numbers on
+   `service/api.html` were held by nothing. `service/test_service.py`
+   asserted a whitelist of that page's figures (max_step, max_traced,
+   nodes, transistors) and the atlas counts were not in it; the deploy's
+   verifier compared the LIVE api against `web/groups.json`, a staleness
+   check on the process, not the page. Proved by mutation: the old
+   135/88/3 put back, 182 tests still green. The fix upstream derives
+   every atlas figure on that page from the running API (`/v1/atlas`)
+   and is mutation-proved six ways; the sweep it enabled found the
+   paragraph still saying 135/88/3 (live the whole time, under the
+   release this repo had boarded) and an MCP row claiming the 132
+   containers cover all 1725 nodes (the netlist's count; the partition
+   covers 1547). Both corrected in the same commit; boarded here as
+   v0.260. **Still open, narrower:** the rest of that page's prose is as
+   checked as its whitelist and no more. The roof's rule for shipped
+   numbers (measure, then write) is the case for extending it there.
    Boarding note: that tree is dirty on purpose for a minute during a
    mutation test, so a board refused on "uncommitted changes" is worth a
-   second try before it is worth a message.
+   second try before it is worth a message; and every commit over there
+   moves HEAD off the boarded record, so a board needs a 6502 deploy
+   behind it (the binary must say HEAD). Twice now, and the peer session
+   suggested boarding against the deployed release rather than the
+   checkout; the owner's call.
 
 ### Keeping this current
 

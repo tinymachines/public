@@ -86,7 +86,7 @@ const IMMUTABLE = /^\\/_next\\/static\\//;
  *               belongs in a cache on somebody's disk.
  *   /sw.js      the worker caching itself is how a bad worker becomes
  *               permanent. */
-const NEVER = [/^\\/api\\//, /^\\/admin(\\/|$)/, /^\\/sw\\.js$/];
+const NEVER = [/^\\/api\\//, /^\\/6502\\/api\\//, /^\\/admin(\\/|$)/, /^\\/sw\\.js$/];
 
 self.addEventListener("install", () => {
   /* No precache list. A precache is a promise that a set of URLs is worth

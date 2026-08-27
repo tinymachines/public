@@ -83,7 +83,7 @@
   "serving": "稼働中",
   "moving": "移動中",
   "here": "ここ",
-  "here, and still on the subdomain": "ここ。サブドメインでも継続",
+  "here; the subdomain still answers too, until the forward (notes/forward.md)": "ここ。転送 (notes/forward.md) までは、サブドメインでも応答する",
   "documented here, not moved": "文書化はここ、移動はまだ",
   "the switch-level engine on its own, MIT, no die data": "スイッチレベルのエンジン単体。MIT、ダイデータ無し",
   "Overview": "概要",

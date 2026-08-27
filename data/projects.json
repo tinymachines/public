@@ -102,10 +102,10 @@
           "name": "The 6502 API",
           "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference checks itself against the running service.",
           "piece": "chip-api",
-          "serves_today": "https://6502.tinymachines.ai/api/",
+          "serves_today": "https://tinymachines.ai/6502/api/",
           "lands_at": "/6502/api",
           "lands_at_settled": true,
-          "status": "here, and still on the subdomain",
+          "status": "here; the subdomain still answers too, until the forward (notes/forward.md)",
           "nav": false,
           "nav_label": "6502 API",
           "prerendered": true

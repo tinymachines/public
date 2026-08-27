@@ -33,7 +33,7 @@
  *   console.log(cpu.halfCycle(), await cpu.registers());
  */
 
-const DEFAULT_API = "https://6502.tinymachines.ai/api";
+const DEFAULT_API = "https://tinymachines.ai/6502/api";
 
 /** A refusal that carries its reason, rather than a thrown string. */
 export class EngineError extends Error {

@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { chipApi } from "./projects";
 import path from "node:path";
 
 /**
@@ -58,9 +59,9 @@ export function briefText(opts: { slug?: string | null; handle?: string | null; 
     "",
     "Everything needed to build, run and publish a cartridge for a transistor-level MOS 6502, in one read.",
     "",
-    "- Chip API (assemble, run, mint cartridges, the registry): `https://6502.tinymachines.ai/api/` (reference at that URL; OpenAPI at `/api/openapi.json`)",
+    `- Chip API (assemble, run, mint cartridges, the registry): \`${chipApi()}/\` (reference at that URL; OpenAPI at \`${chipApi()}/openapi.json\`)`,
     "- Token mint (free, rate-limited): `POST https://tinymachines.ai/api/v1/tokens`; with an account, `POST https://tinymachines.ai/api/v1/me/tokens`",
-    "- The console contract as data: `GET https://6502.tinymachines.ai/api/v1/console`",
+    `- The console contract as data: \`GET ${chipApi()}/v1/console\``,
     "- Play a cartridge: `https://tinymachines.ai/6502/games?cart=<url>`",
     "- MCP, for a model with tool use: `https://tinymachines.ai/api/mcp`",
     ...(slug
@@ -71,8 +72,8 @@ export function briefText(opts: { slug?: string | null; handle?: string | null; 
           `- Your cart code: \`${slug}\`. Publish your first cartridge under this name.`,
           `- Your handle: \`${handle}\`. Your page: https://tinymachines.ai/6502/builders/${handle}`,
           TOKEN_PLACEHOLDER,
-          `- Publish: \`PUT https://6502.tinymachines.ai/api/v1/registry/b/${handle}/roms/${slug}\` with \`Authorization: Bearer <token>\` and \`{"cart": "<base64 of the .cart.gz>", "frames": 3}\``,
-          `- After publishing, play it: https://tinymachines.ai/6502/games?cart=https://6502.tinymachines.ai/api/v1/registry/b/${handle}/roms/${slug}/cart`,
+          `- Publish: \`PUT ${chipApi()}/v1/registry/b/${handle}/roms/${slug}\` with \`Authorization: Bearer <token>\` and \`{"cart": "<base64 of the .cart.gz>", "frames": 3}\``,
+          `- After publishing, play it: https://tinymachines.ai/6502/games?cart=${chipApi()}/v1/registry/b/${handle}/roms/${slug}/cart`,
           "- The token is a secret: whoever holds it publishes to this page. Keep it out of anything shared or committed.",
         ]
       : []),

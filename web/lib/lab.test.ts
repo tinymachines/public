@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
 import path from "node:path";
 import { lab, LAB_SRC, replaceDashes } from "./lab";
+import { chipApi } from "./projects";
 
 /**
  * The Lab is read from the 6502 checkout, not copied. These hold what the
@@ -27,7 +28,8 @@ describe("the Lab, read from the 6502 tree", () => {
 
   test("the chip API is named, not assumed", () => {
     expect(L.script.includes('location.origin + "/api"')).toBe(false);
-    expect(L.script.includes("https://6502.tinymachines.ai/api")).toBe(true);
+    expect(L.script.includes(JSON.stringify(chipApi())), "the manifest's address for the chip API").toBe(true);
+    expect(chipApi().startsWith("https://tinymachines.ai/"), "the apex's own origin (forward.md step 1)").toBe(true);
   });
 
   test("the Lab registers with the site's chip store", () => {

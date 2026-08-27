@@ -71,19 +71,19 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
         <p>
           {lang === "ja" ? (
             <>
-              これはリファレンスだ。記述されるサービスは{" "}
+              これはリファレンスだ。記述されるサービスはこのサイトの{" "}
               <a data-address href={`${api}/`}>
-                6502.tinymachines.ai/api
+                /6502/api
               </a>{" "}
-              と、このサイトの <code>/6502/api</code> で応答する。
+              で応答する (当面は <code>6502.tinymachines.ai/api</code> でも)。
             </>
           ) : (
             <>
               This is the reference. The service it describes answers at{" "}
               <a data-address href={`${api}/`}>
-                6502.tinymachines.ai/api
+                /6502/api
               </a>{" "}
-              and at <code>/6502/api</code> on this site.
+              on this site (and, for now, at <code>6502.tinymachines.ai/api</code>).
             </>
           )}
         </p>

@@ -82,8 +82,8 @@ export function TwoWaysDemo() {
   return (
     <div className="rail">
       <p className="quiet">
-        This runs in your browser, against the chip on{" "}
-        <code>6502.tinymachines.ai</code>, through the module below. Nothing is
+        This runs in your browser, against the chip behind this site&apos;s{" "}
+        <code>/6502/api</code>, through the module below. Nothing is
         precomputed.
       </p>
       <p>

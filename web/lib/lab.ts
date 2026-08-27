@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { chipApi } from "./projects";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import postcss from "postcss";
@@ -64,8 +65,10 @@ export function replaceDashes(text: string): { text: string; count: number } {
   return { text: out, count };
 }
 
-/** Where the lab's own API lives now that the page does not sit on it. */
-export const CHIP_API = "https://6502.tinymachines.ai/api";
+/** Where the lab's own API lives now that the page does not sit on it: the
+    manifest's address for it, which since 2026-08-27 is this site's own
+    /6502/api (notes/forward.md, step 1). One copy of the fact. */
+export const CHIP_API = chipApi();
 
 export interface Lab {
   style: string;
