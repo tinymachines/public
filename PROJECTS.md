@@ -1427,3 +1427,34 @@ and coverage counters are removed as placeholder copy (owner's list).
 `notes/pretext.md` has the round.
 Then, mid-round: the article is just the article (owner): hero head,
 subheads, nothing folded, no tool button, a Return button at the end.
+
+## Checkpoint, 2026-08-27 night, at 1.0.142
+
+Live: 1.0.142 on 6502 v0.264 (`ddc1480`); the gate boards the served
+release. Both trees clean and pushed. What the day built, in order:
+
+- The tracer page's two blocks of text became paragraphs (`lib/prose.ts`,
+  one sentence-split rule for the tool pages, the articles and the
+  browser; `Justify` on the tool pages), then chunks: `data/articles.json`
+  names each chunk's heading and the sentence it starts on (the tracer:
+  12); every other page folds per heading block. One "Read on ›" travels
+  down the page and disappears once opened; a chunk's first lines show
+  faded above it. A caption longer than a paragraph is hidden. The
+  headline is two tones on every hero.
+- The article (`/6502/<tool>/article`) is just the article: the tool's
+  hero head, the prose with its subheads, a Return button. Inline images
+  are the owner's next step there.
+- The strip: the full-screen key on the key row at phone width, keys at
+  1.25u inline padding so eight keys, full screen and "pause" fit 390.
+- Placeholder copy cut: the API reference's intro and coverage counters
+  (`Coverage.tsx` deleted), the article's meta line, the "not a redirect"
+  sentence, two unrendered dictionary sections.
+- The golden reference: `web/e2e/golden/tracer-golden-{phone,desk}.jpg`
+  at 1.0.141, 4,326 CSS px at 390 (18,247 this morning);
+  `golden/README.md` lists the pairs and the trail.
+- Specs for all of it: `e2e/tool-prose.spec.ts`, `e2e/article.spec.ts`,
+  `e2e/strip.spec.ts` (two rows), `lib/prose.test.ts`.
+
+Open: the intermittent React #418 on Shell pages (pre-existing); forward
+steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`
+with `TM_SELF_NETS` is the owner's to write.
