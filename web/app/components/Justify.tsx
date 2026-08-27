@@ -79,7 +79,11 @@ function itemsOf(pt: PT, p: HTMLElement, originals: Node[]): Item[] | null {
 function setParagraph(pt: PT, p: HTMLElement, originals: Node[], observe: (el: Element) => void): boolean {
   const items = itemsOf(pt, p, originals);
   if (!items || items.every((i) => !i.text.trim())) return false;
-  const width = p.clientWidth;
+  // The content width, which is what a block inside the paragraph gets:
+  // clientWidth includes padding, and a padded note (the primer's "See it")
+  // set its lines 21px too wide until this subtracted it.
+  const pc = getComputedStyle(p);
+  const width = p.clientWidth - (parseFloat(pc.paddingLeft) || 0) - (parseFloat(pc.paddingRight) || 0);
   if (width <= 0) return false;
   const prepared = pt.prepareRichInline(items.map((i) => ({ text: i.text, font: i.font, extraWidth: i.extra })));
   const lines: { frags: { item: Item; text: string; gap: boolean; whole: boolean }[] }[] = [];
