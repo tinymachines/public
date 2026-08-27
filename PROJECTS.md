@@ -1197,3 +1197,13 @@ whole-viewport test on a phone as well as a desk and asserts the document
 does not scroll and nothing is under the strip. `scripts/fetch-stash.sh`
 pulls a shared zip into `notes/stash/` (gitignored) so a brief can arrive
 as a file.
+
+Shipped as 1.0.122 on the engine boarded at `6502@6e9900a` (v0.259). The
+board had refused twice first, both correctly by its rule and neither for
+an engine difference: once for a tree the 6502 session had dirtied on
+purpose (a mutation test on its api.html figures, reverted a minute later)
+and once for a halfwave binary stamped `73e0e05` under a HEAD two commits
+on, commits that touched no Rust. The gate matches commit identity, which
+is what it is for; it did not catch an engine change here because there
+was none. The prose-number hole that mutation test proved is recorded in
+`notes/modules.md` as open.
