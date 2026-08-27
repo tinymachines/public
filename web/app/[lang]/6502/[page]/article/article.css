@@ -31,5 +31,3 @@
 
 /* The justified lines' rules are components/justify.css, with Justify.tsx. */
 
-/* The link from the bench to the article, under the instrument. */
-.wb-article-link { margin: calc(var(--u) * 6) 0 0; }

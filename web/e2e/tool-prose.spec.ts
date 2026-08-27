@@ -73,6 +73,11 @@ test("the prose folds after its opening, and opening it sets the rest", async ({
     set: document.querySelectorAll(".jp-set").length,
   }));
   expect(before.folds).toBeGreaterThan(0);
+  const edges = await page.evaluate(() => ({
+    summary: document.querySelector("details.read-on > summary")!.getBoundingClientRect().left,
+    link: document.querySelector(".wb-article-link a")!.getBoundingClientRect().left,
+  }));
+  expect(Math.abs(edges.link - edges.summary), "the article link lines up with the fold's summary").toBeLessThan(1);
   expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(9000);
   await page.evaluate(() => document.querySelectorAll<HTMLDetailsElement>("details.read-on").forEach((d) => { d.open = true; }));
   await page.waitForTimeout(1500);

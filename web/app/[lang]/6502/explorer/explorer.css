@@ -217,3 +217,8 @@
 .explorer-shell.explorer-shell details.read-on > summary:hover,
 .explorer-shell.explorer-shell details.read-on > summary:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
 .explorer-shell.explorer-shell details.read-on[open] > summary { margin-bottom: calc(var(--u) * 4); }
+
+/* The link from the bench to the article, under the prose: the same box
+   the prose sections' .wrap has (78rem centred, 1.25rem inline padding,
+   their stylesheet's numbers), so it lines up with the fold's summary. */
+.wb-article-link { max-width: 78rem; margin: calc(var(--u) * 4) auto 0; padding: 0 1.25rem; }
