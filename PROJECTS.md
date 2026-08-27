@@ -1219,3 +1219,37 @@ roof at `ece2dce`. Open, unchanged: local engines for the console and the
 Lab (`notes/one-engine.md`); re-publishing the pack needs the `programs`
 token; upstream's api.html figures are held by no test (`notes/modules.md`
 item 5, that project's call).
+
+## 1.0.123, 2026-08-27: the version on every page, one engine key, the Lab's paper tokens
+
+Three of the owner's five items shipped in one deploy (`0ca8cf2`, e2e
+349/350, the one miss a network blip on retry); the other two are a
+proposal in `notes/forward.md`.
+
+- **The footer is on every page, strip pages included.** `SiteFooter`
+  sits at the end of `.wb-main` on the explorer, the eighteen tool pages
+  and the Lab, in the flow above the fixed strip; the console, which is
+  the viewport, carries it on the status page beside the prose.
+  `strip.spec` reads `v<version> · <commit> up` on every strip page.
+- **The engine is one key, a toggle like power.** The rabbit, solid, is
+  the chip in the page; the turtle is halfwave over the API; pressing it
+  swaps. A driver with no switch (the console, the Lab, a recording)
+  shows where it runs, grey. The pair had cost the phone's key row a
+  slot; eight keys now sit on one row at 390px.
+- **The Lab was not wearing the house type outside its panels**, and the
+  reason is CLAUDE.md's silent trap: `--disp`, `--mono`, `--sans` and ten
+  ladder steps were defined only inside `.panel`, so every rule on paper
+  naming one dropped (the tab strip was Plex Sans wearing Archivo's
+  tracking). `lab.css` defines the 13 on `.lab-shell`; `lab.test.ts`
+  holds the names the Lab's rules use against the names the shell
+  defines, and goes red without the block.
+
+**Forwarding the subdomains** is `notes/forward.md`: the redirect map for
+all three, and the constraint that orders it. `/api/` cannot be
+redirected (a 301 turns a POST into a GET, and the apex's own pages POST
+to the subdomain 1,200 times per log), so step 1 is in this repo (the
+apex calls `/6502/api`, its own origin), step 2 is the 6502 repo's nginx
+(pages redirect, assets and `/api/` stay), and step 3 waits. **Traffic
+statistics** follow the forward, on `bradleyio/scripts/visitors_collector.py`'s
+pattern; the first move is that the apex gets an access log of its own,
+which it does not have today.
