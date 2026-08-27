@@ -1,0 +1,14 @@
+# Every ten minutes, and once shortly after boot. The snapshot is a count over
+# a thirty-day window, so a run that is late by a few minutes changes nothing
+# a reader could see; AccuracySec lets systemd batch it with other timers.
+[Unit]
+Description=Refresh the tinymachines.ai visitors snapshot
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

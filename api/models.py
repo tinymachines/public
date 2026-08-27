@@ -793,3 +793,87 @@ class Me(BaseModel):
     user: MeUser = Field(description="The account.")
     tokens: list[MeToken] = Field(description="Newest first, revoked ones included.")
     limits: MeLimits = Field(description="How many tokens the account may hold and holds.")
+
+
+class VisitorsSource(BaseModel):
+    """Which log a site's numbers came from, and whether it was there."""
+
+    stem: str = Field(description="The nginx access log file the site writes.", examples=["6502.access.log"])
+    present: bool = Field(description="False when the file does not exist yet, which is a fact about the "
+                                      "deploy, not a zero. The apex's log is added by a line in "
+                                      "deploy/tinymachines.ai.nginx that is installed by hand.")
+    rows: int = Field(description="Log lines inside the window that parsed.")
+    files: int = Field(description="Files read: the current log plus the rotations the window reached.")
+
+
+class VisitorsDay(BaseModel):
+    d: str = Field(description="UTC date, YYYY-MM-DD.", examples=["2026-08-27"])
+    reads: int = Field(description="Documents served to people that day.")
+    bots: int = Field(description="Requests that day from user agents that name themselves as automated.")
+
+
+class VisitorsPath(BaseModel):
+    path: str = Field(description="A document path, query stripped, cut at 120 characters.", examples=["/6502/explorer"])
+    hits: int = Field(description="Reads of it in the window.")
+
+
+class VisitorsReferrer(BaseModel):
+    ref: str = Field(description="An off-site referrer, as the browser sent it, cut at 160 characters.")
+    hits: int = Field(description="Reads that arrived from it.")
+
+
+class VisitorsSite(BaseModel):
+    """One vhost's thirty days, counted the way scripts/visitors-collect.py counts.
+
+    A *read* is a document a person was served: a 2xx or 3xx on a path that is
+    not an asset, not under an /api/, and not a Next prefetch (`?_rsc=`). Bots
+    are recognised by user agent and counted apart; requests from the box's own
+    networks are counted as `self_hits` and reach nothing else.
+    """
+
+    key: str = Field(description="The site's short name.", examples=["apex", "6502", "games", "halfwave"])
+    host: str = Field(description="The vhost.", examples=["tinymachines.ai"])
+    source: VisitorsSource = Field(description="The log this came from, and whether it existed.")
+    reads: int = Field(description="Documents served to people in the window.")
+    bot_hits: int = Field(description="Requests from user agents that name themselves as automated.")
+    self_hits: int = Field(description="Requests from the box's own networks; excluded from everything else.")
+    prefetches: int = Field(description="Next <Link> prefetches, excluded from reads: the browser fetching "
+                                        "pages nobody looked at.")
+    redirects: int = Field(description="3xx answers. After the subdomain forward these are inbound links "
+                                       "somebody followed (notes/forward.md).")
+    errors: int = Field(description="4xx and 5xx answers, excluded from reads.")
+    unique_nets: int = Field(description="Distinct /24 networks (v6: /48) among readers. A count only: the "
+                                         "networks themselves are not kept.")
+    by_lang: dict[str, int] = Field(description="Reads under /ja against the rest.")
+    by_day: list[VisitorsDay] = Field(description="Reads and bot hits per UTC day, days with traffic only.")
+    by_hour_utc: list[int] = Field(description="Reads by UTC hour, 24 entries.")
+    top_paths: list[VisitorsPath] = Field(description="The forty most-read documents.")
+    referrers: list[VisitorsReferrer] = Field(description="The twenty busiest off-site referrers.")
+    statuses: dict[str, int] = Field(description="Every status code seen from non-bot, non-self requests.")
+
+
+class VisitorsTotals(BaseModel):
+    reads: int = Field(description="Reads across every site.")
+    bot_hits: int = Field(description="Bot hits across every site.")
+    unique_nets: int = Field(description="Summed across sites; a network reading two sites counts twice.")
+    sources_present: int = Field(description="How many of the site logs existed when the snapshot was taken.")
+
+
+class Visitors(BaseModel):
+    """The visitors snapshot: what the logs say about the last thirty days.
+
+    Written by scripts/visitors-collect.py on a timer and read here from the
+    unit's StateDirectory, so this endpoint is a file read and never opens a
+    log. `generated` is when it was measured; a reader comparing two calls
+    should compare that, not the clock. 404 until the first snapshot exists:
+    "not measured yet" is the honest answer and zeros would not be.
+    """
+
+    generated: datetime = Field(description="When the snapshot was written, UTC.")
+    window_days: int = Field(description="How many days back the collector read.", examples=[30])
+    took_ms: int = Field(description="How long the collector took to read the logs.")
+    privacy: str = Field(description="The collector's own statement of what it keeps and what it drops.")
+    self_nets: int = Field(description="How many address prefixes were excluded as the box's own.")
+    sites: list[VisitorsSite] = Field(description="One entry per vhost, present or not.")
+    totals: VisitorsTotals = Field(description="The sums a reader wants first.")
+

@@ -15,6 +15,7 @@ fails for reasons that have nothing to do with the code, and then gets ignored.
 from __future__ import annotations
 
 import asyncio
+import os
 import re
 from pathlib import Path
 
@@ -623,3 +624,96 @@ def test_a_surface_carries_both_addresses(client):
                     f"{p['key']}/{s['key']} has arrived but its path is still a proposal, "
                     "which means something links to a route that may move"
                 )
+
+
+# --- /v1/visitors -----------------------------------------------------------
+#
+# The endpoint is a file read of the collector's snapshot, so the test runs the
+# collector itself over a synthetic log: six lines that are one read each of
+# the kinds the collector must tell apart, and the counts the snapshot carries
+# are checked line by line. A snapshot that counted everything as a read would
+# fail here, and so would one that counted nothing.
+
+VISITOR_LINES = [
+    # a person reading a page: counts
+    '203.0.113.5 - - [27/Aug/2026:00:00:01 +0000] "GET /6502/explorer HTTP/2.0" 200 1234 "https://news.example/" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+    # the same person, a second page: counts, same network
+    '203.0.113.9 - - [27/Aug/2026:00:00:02 +0000] "GET /docs HTTP/2.0" 200 1234 "-" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+    # a Next prefetch: not a read
+    '203.0.113.5 - - [27/Aug/2026:00:00:03 +0000] "GET /style?_rsc=abc HTTP/2.0" 200 100 "-" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+    # an asset: not a read
+    '203.0.113.5 - - [27/Aug/2026:00:00:04 +0000] "GET /_next/static/chunks/a.js HTTP/2.0" 200 100 "-" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+    # the API, with and without the slash: not reads
+    '203.0.113.5 - - [27/Aug/2026:00:00:05 +0000] "POST /api/v1/step HTTP/2.0" 200 100 "-" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+    '203.0.113.5 - - [27/Aug/2026:00:00:05 +0000] "GET /api HTTP/2.0" 301 100 "-" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+    # a crawler: a bot hit, not a read
+    '198.51.100.7 - - [27/Aug/2026:00:00:06 +0000] "GET / HTTP/2.0" 200 100 "-" "Mozilla/5.0 (compatible; Googlebot/2.1)"',
+    # the box itself: a self hit, reaches nothing
+    '127.0.0.1 - - [27/Aug/2026:00:00:07 +0000] "GET / HTTP/2.0" 200 100 "-" "curl/8.0"',
+    # a 404: an error, not a read
+    '203.0.113.5 - - [27/Aug/2026:00:00:08 +0000] "GET /wp-login.php HTTP/2.0" 404 100 "-" "Mozilla/5.0 (X11; Linux x86_64) Chrome/128"',
+]
+
+
+def _run_collector(tmp_path: Path, log_lines: list[str]) -> Path:
+    import subprocess
+    import sys as _sys
+    from datetime import datetime, timezone
+
+    # The lines carry a fixed date; the window is thirty days from now, so
+    # they are rewritten to today to stay inside it.
+    today = datetime.now(timezone.utc).strftime("%d/%b/%Y")
+    logs = tmp_path / "nginx"
+    logs.mkdir()
+    (logs / "tinymachines.ai.access.log").write_text(
+        "\n".join(line.replace("27/Aug/2026", today) for line in log_lines) + "\n"
+    )
+    out = tmp_path / "visitors.json"
+    env = {**os.environ, "TM_VISITORS_LOG_DIR": str(logs), "TM_VISITORS_OUT": str(out)}
+    script = Path(__file__).resolve().parent.parent / "scripts" / "visitors-collect.py"
+    r = subprocess.run([_sys.executable, str(script)], env=env, capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, r.stderr
+    return out
+
+
+def test_visitors_404_until_measured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TM_VISITORS_OUT", str(tmp_path / "absent.json"))
+    r = TestClient(app).get("/v1/visitors")
+    assert r.status_code == 404
+    assert "not measured yet" in r.json()["detail"]
+
+
+def test_visitors_counts_reads_and_only_reads(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    out = _run_collector(tmp_path, VISITOR_LINES)
+    monkeypatch.setenv("TM_VISITORS_OUT", str(out))
+    r = TestClient(app).get("/v1/visitors")
+    assert r.status_code == 200, r.text
+    snap = r.json()
+    apex = next(s for s in snap["sites"] if s["key"] == "apex")
+    assert apex["source"]["present"] is True
+    assert apex["source"]["rows"] == len(VISITOR_LINES)
+    assert apex["reads"] == 2, "two pages read by people; nothing else is a read"
+    assert apex["unique_nets"] == 1, "both readers are on one /24"
+    assert apex["prefetches"] == 1
+    assert apex["bot_hits"] == 1
+    assert apex["self_hits"] == 1
+    assert apex["errors"] == 1
+    assert apex["redirects"] == 1
+    assert [p["path"] for p in apex["top_paths"]] == ["/6502/explorer", "/docs"]
+    assert apex["referrers"] == [{"ref": "https://news.example/", "hits": 1}]
+    assert apex["by_lang"] == {"en": 2, "ja": 0}
+    assert sum(apex["by_hour_utc"]) == 2
+    # The other three logs are absent in the fixture and say so, rather than reading as zero traffic.
+    for s in snap["sites"]:
+        if s["key"] != "apex":
+            assert s["source"]["present"] is False and s["reads"] == 0
+    assert snap["totals"]["sources_present"] == 1
+    assert snap["totals"]["reads"] == 2
+    # No address, anywhere in the document.
+    assert "203.0.113" not in r.text and "198.51.100" not in r.text and "127.0.0.1" not in r.text
+
+
+def test_visitors_is_in_the_openapi_document() -> None:
+    doc = TestClient(app).get("/openapi.json").json()
+    assert "/v1/visitors" in doc["paths"]
+    assert "Visitors" in doc["components"]["schemas"]

@@ -1,0 +1,59 @@
+/* /visitors: the board. Paper throughout: these are measurements of the
+   server's log, not values off the chip, so nothing here is panel. Bars are
+   ink on paper-sunk; the one hue is the accent, for the current bar's fill,
+   because a chart with a palette would be claiming categories it does not
+   have. */
+.visitors .vis-state { margin: calc(var(--u) * 6) 0; }
+.visitors .vis-refusal { padding: calc(var(--u) * 3) calc(var(--u) * 4); border: 1px solid var(--color-rule); background: var(--color-paper-sunk); }
+.vis-board { margin: calc(var(--u) * 6) 0; }
+.vis-board h2 { margin-top: calc(var(--u) * 10); }
+
+.vis-totals {
+  display: grid;
+  grid-template-columns: repeat(3, auto) 1fr;
+  gap: calc(var(--u) * 4) calc(var(--u) * 8);
+  align-items: end;
+  padding: calc(var(--u) * 4) calc(var(--u) * 5);
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-sunk);
+  margin-bottom: calc(var(--u) * 4);
+}
+.vis-totals > div { display: flex; flex-direction: column; gap: calc(var(--u) * 0.5); }
+.vis-totals b { font-family: var(--font-display); font-size: var(--text-h2); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.vis-totals span { font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-ink-muted); }
+.vis-totals .vis-when { justify-self: end; text-align: right; }
+@media (max-width: 40rem) {
+  .vis-totals { grid-template-columns: repeat(3, auto); }
+  .vis-totals .vis-when { grid-column: 1 / -1; justify-self: start; text-align: left; }
+}
+
+.vis-sites tr.vis-absent td { color: var(--color-ink-muted); }
+
+/* Bars by day and by hour: one column per unit, the fill is reads. */
+.vis-days {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: calc(var(--u) * 28);
+  padding: 0 0 calc(var(--u) * 5);
+  border-bottom: 1px solid var(--color-rule);
+  position: relative;
+}
+.vis-day { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; position: relative; }
+.vis-day i { display: block; background: var(--color-accent-ink); min-height: 1px; }
+.vis-day span { position: absolute; top: 100%; left: 0; right: 0; text-align: center; font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-ink-muted); padding-top: calc(var(--u) * 1); overflow: hidden; }
+@media (max-width: 40rem) { .vis-days .vis-day:nth-child(even) span { visibility: hidden; } }
+
+/* Horizontal bars: label, track, number. */
+.vis-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--u) * 1.5); }
+.vis-bars li { display: grid; grid-template-columns: minmax(0, 18rem) 1fr 5ch; gap: calc(var(--u) * 3); align-items: center; font-size: var(--text-fine); }
+.vis-bar-lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vis-bar-lbl code { font-size: inherit; }
+.vis-bar-track { display: block; height: calc(var(--u) * 2.5); background: var(--color-paper-sunk); border: 1px solid var(--color-rule); position: relative; }
+.vis-bar-track i { position: absolute; inset: 0 auto 0 0; background: var(--color-accent-ink); }
+.vis-bar-n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--color-ink-muted); }
+@media (max-width: 40rem) {
+  .vis-bars li { grid-template-columns: 1fr 5ch; }
+  .vis-bar-lbl { grid-column: 1 / -1; }
+}
+.vis-privacy { margin-top: calc(var(--u) * 8); }

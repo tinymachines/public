@@ -72,6 +72,12 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The instruments: the die lit by what it is doing, the tracer, the schematic, the Halfwave Lab. One chip, many views.",
   },
+  "/visitors": {
+    title: "Visitors",
+    description:
+      "Who visited, from the server's own logs: reads per site and per day, the pages read, where readers came from. No address is kept.",
+    noindex: true,
+  },
   "/admin": {
     title: "Admin",
     description:

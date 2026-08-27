@@ -127,6 +127,15 @@ with the pages it compared. Not before: an API call is not a bookmark.
 
 ## Traffic statistics, after the forward
 
+**Built 2026-08-27 (1.0.125), ahead of the forward at the owner's ask:**
+`scripts/visitors-collect.py` (the collector), `deploy/tinymachines-visitors.service`
+and `.timer` (every ten minutes), `GET /api/v1/visitors` (a file read of
+the snapshot, 404 until one exists), and `/visitors` (noindex while it
+settles). Two hand steps remain and are in `HOSTING.local.md`: install the
+apex nginx file (it now has its own access log) and enable the timer. The
+rest of this section is the plan as written before it was built, kept
+because it says why each part is the shape it is.
+
 The prior art is `~/projects/bradleyio/scripts/visitors_collector.py`,
 which is the right shape and worth copying rather than re-deriving:
 

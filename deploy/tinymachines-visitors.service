@@ -1,0 +1,39 @@
+# tinymachines-visitors: count the visits, from the logs nginx already writes.
+#
+# A oneshot the timer beside it runs every ten minutes. It reads the access
+# logs (group adm; the user is in it, and SupplementaryGroups says so for the
+# sandboxed process) and writes visitors.json into the same StateDirectory the
+# API serves from, so GET /api/v1/visitors is a file read of the last snapshot
+# and never touches a log itself. scripts/visitors-collect.py says what is
+# counted and what is not, and why no address leaves it.
+#
+# Install (deploy/HOSTING.local.md has the box's copy of these lines):
+#   sudo install -m 644 deploy/tinymachines-visitors.service deploy/tinymachines-visitors.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now tinymachines-visitors.timer
+#
+# The optional EnvironmentFile is where TM_SELF_NETS goes (the box's own
+# address ranges, which are host detail): it is read if present and ignored
+# if not, so the unit installs identically everywhere.
+[Unit]
+Description=tinymachines.ai visitors snapshot from the nginx logs
+After=network.target
+
+[Service]
+Type=oneshot
+User=bisenbek
+SupplementaryGroups=adm
+WorkingDirectory=/home/bisenbek/projects/tinymachines/public
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-/etc/tinymachines/visitors.env
+StateDirectory=tinymachines
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectControlGroups=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+ExecStart=/usr/bin/python3 scripts/visitors-collect.py
+Nice=10

@@ -1253,3 +1253,23 @@ apex calls `/6502/api`, its own origin), step 2 is the 6502 repo's nginx
 statistics** follow the forward, on `bradleyio/scripts/visitors_collector.py`'s
 pattern; the first move is that the apex gets an access log of its own,
 which it does not have today.
+
+## 1.0.125, 2026-08-27: pretext measured, and the visitors board
+
+- **`extern/pretext`** is a submodule (MIT, no die data). `notes/pretext.md`
+  has the measurement on the live tracer: heights match the browser 12 of
+  12 in the house fonts, `layout()` about 20 times cheaper than a DOM
+  measure once prepared. The page's cost is elsewhere: a half-cycle is
+  3.8 ms of style recalculation and 1.7 ms of layout from twelve readout
+  cards rewritten by `innerHTML`, and the text blob a reader sees is one
+  20,661-character paragraph in the tracer's prose (upstream, line 251).
+  Where pretext has a job here (card heights without reflow, canvas
+  labels, a fits-at-390px check) is in the note; none of it is built.
+- **Visitors.** `scripts/visitors-collect.py` reads the four nginx access
+  logs on a timer and writes one snapshot, no address in it, that
+  `/api/v1/visitors` serves and `/visitors` draws. A read is a document
+  served to a person: not an asset, an API call, a prefetch or an error.
+  The test runs the collector over nine synthetic lines and checks each
+  is counted as what it is. The apex had no access log of its own until
+  this round; `deploy/tinymachines.ai.nginx` now sets one, and both hand
+  steps (the nginx install, the timer) are in `HOSTING.local.md`.

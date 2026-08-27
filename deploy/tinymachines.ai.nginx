@@ -103,6 +103,14 @@ server {
     include             /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
+    # Its own access log, in the box's `realip` format (nginx.conf defines
+    # it: the same fields as combined). Without this line the apex logged to
+    # nginx's default access.log with every other unlogged vhost on the box,
+    # and scripts/visitors-collect.py had nothing of this site's to count.
+    # The subdomains have had theirs all along.
+    access_log /var/log/nginx/tinymachines.ai.access.log realip;
+    error_log  /var/log/nginx/tinymachines.ai.error.log;
+
     # connect-src allows the three live subdomains on purpose. They stay where
     # they are for now, so a fetch from here to 6502.tinymachines.ai is
     # cross-origin today; the 6502 API sends Access-Control-Allow-Origin: *

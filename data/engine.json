@@ -1,12 +1,12 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on this commit. deploy.sh --check compares the served release, the halfwave binary and the checkout against it. See notes/modules.md.",
-  "boarded_at": "2026-08-27T03:39:34+00:00",
+  "boarded_at": "2026-08-27T04:17:30+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "chip_tree": {
-    "commit": "162bf71d0212f4b10b8144e176c11670de00844a",
+    "commit": "5d4ec29fed17aa450660f7700ac7987fd331ea42",
     "branch": "main",
-    "subject": "The api page's atlas numbers are checked, and two were wrong",
-    "committed": "2026-08-26T23:27:46-04:00",
+    "subject": "docs/README.md: the same containers, over HTTP and drawn",
+    "committed": "2026-08-27T00:06:19-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -20,10 +20,10 @@
     }
   },
   "halfwave": {
-    "sha256": "41ba8901679d7f9fc4e0312c16e9249badfd31fa37d5c4d8721ca15ffc7c6dda",
+    "sha256": "9b90b95646073dc3e3cd50093de59fa7e312387779773f0b990129b165acfbfd",
     "bytes": 532984,
-    "modified": "2026-08-27T03:29:12+00:00",
-    "stated": "162bf71d0212f4b10b8144e176c11670de00844a",
+    "modified": "2026-08-27T04:15:31+00:00",
+    "stated": "5d4ec29fed17aa450660f7700ac7987fd331ea42",
     "running": "162bf71d0212f4b10b8144e176c11670de00844a"
   },
   "release": {
@@ -41,7 +41,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 1.0,
+      "seconds": 5.9,
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 8.5,
+      "seconds": 8.3,
       "ok": true
     }
   ]

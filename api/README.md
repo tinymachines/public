@@ -32,6 +32,7 @@ declares them.
 | `GET /v1/tokens` | Whether the public token mint is on, and what is left of its limits for you |
 | `POST /v1/tokens` | Mint a free registry token, once. Rate-limited per address and per day; 503 where no registry is configured |
 | `GET /v1/projects` | The projects, their surfaces, and how much of the move has happened |
+| `GET /v1/visitors` | Who visited, from the nginx logs, over the last thirty days: reads per site and per day, pages, referrers, how much was automated. No address in it; 404 until the first snapshot |
 | `GET /v1/auth` | Which ways of signing in this deployment offers (today: GitHub, where configured) |
 | `GET /v1/auth/github` | Start a GitHub sign-in; redirects there and back to `next` |
 | `GET /v1/auth/github/callback` | Where GitHub returns the browser; opens the session cookie |

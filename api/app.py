@@ -30,6 +30,9 @@ from datetime import datetime, timezone
 
 import fastapi
 import pydantic
+import os
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -43,6 +46,7 @@ import mcp_server
 import probe as probe_mod
 import projects as projects_mod
 from models import (
+    Visitors,
     MintAvailability,
     MintedToken,
     NewToken,
@@ -498,6 +502,38 @@ _MCP = mcp_server.make_handler({
     "piece": _mcp_piece,
     "licensing": _mcp_licensing,
 })
+
+
+def _visitors_path() -> Path:
+    """Where the collector writes: the same resolution scripts/visitors-collect.py uses."""
+    explicit = os.environ.get("TM_VISITORS_OUT")
+    if explicit:
+        return Path(explicit)
+    state = os.environ.get("STATE_DIRECTORY")
+    if state:
+        return Path(state.split(":")[0]) / "visitors.json"
+    return Path("visitors.json")
+
+
+@app.get(
+    "/v1/visitors",
+    response_model=Visitors,
+    summary="Who visited, from the logs, over the last thirty days",
+    description=(
+        "The last snapshot scripts/visitors-collect.py wrote from the nginx access "
+        "logs of the apex and the three 6502 subdomains: reads per day and per site, "
+        "the pages read, the off-site referrers, and how much of the traffic was "
+        "automated. No address is in it: visitors are counted as distinct /24 networks "
+        "and never listed. Answers 404 until the first snapshot exists, because "
+        "\"not measured yet\" is a fact and zeros would be a claim."
+    ),
+    responses={404: {"description": "No snapshot has been written yet."}},
+)
+def visitors() -> Visitors:
+    p = _visitors_path()
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="not measured yet: no visitors snapshot has been written")
+    return Visitors.model_validate_json(p.read_text())
 
 
 @app.post("/mcp", include_in_schema=False)
