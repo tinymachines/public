@@ -183,3 +183,42 @@ export function splitParagraphs(html: string): { html: string; splits: number; c
 
 /** The prose sections of a tool page, each still `section.wrap.sec.bp-prose`. */
 export const PROSE_SECTION = /<section class="wrap sec bp-prose[^"]*"[^>]*>[\s\S]*?<\/section>/g;
+
+/**
+ * A prose section folded after its opening: the heading and the first
+ * `keep` paragraphs stay, the rest goes under a native `<details>` whose
+ * summary reads `label`. Owner's call, 2026-08-27: the tool page shows
+ * the instrument and an opening; the companion article is the reading
+ * version. A section whose remainder carries anything but paragraphs and
+ * lists (the block page's instrument lives in its prose) is left whole,
+ * and so is one whose remainder is shorter than LONG: a fold that hides
+ * two sentences is a click for nothing.
+ */
+export function foldSection(sec: string, label: string, keep = 3): { html: string; folded: boolean } {
+  const closeAt = sec.lastIndexOf("</section>");
+  if (closeAt < 0) return { html: sec, folded: false };
+  const body = sec.slice(0, closeAt);
+  // The opening paragraphs, not counting the heading's eyebrow, which is
+  // a <p> too.
+  let n = 0;
+  let at = -1;
+  const re = /<p\b([^>]*)>[\s\S]*?<\/p>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body))) {
+    if (/\beyebrow\b/.test(m[1])) continue;
+    n += 1;
+    if (n === keep) { at = m.index + m[0].length; break; }
+  }
+  if (at < 0) return { html: sec, folded: false };
+  const rest = body.slice(at);
+  // The section's own heading blocks are prose; anything else that is
+  // not a paragraph or a list is a widget, and the section stays whole.
+  const bare = rest.replace(/<div class="sec-head">[\s\S]*?<\/div>/g, "");
+  if (/<(div|table|button|select|svg|figure|input|form|canvas)\b|data-fact=/.test(bare)) return { html: sec, folded: false };
+  const text = unescape(rest.replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
+  if (text.length < LONG) return { html: sec, folded: false };
+  return {
+    html: `${body.slice(0, at)}\n<details class="read-on"><summary>${escape(label)}</summary>${rest}</details>\n${sec.slice(closeAt)}`,
+    folded: true,
+  };
+}

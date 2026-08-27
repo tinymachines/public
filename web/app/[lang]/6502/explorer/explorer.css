@@ -195,3 +195,25 @@
    that could not shrink. The cell may shrink and the row may wrap. */
 .explorer-shell.explorer-shell .sch-dir { flex-wrap: wrap; min-width: 0; }
 .explorer-shell.explorer-shell .sch-dir-btn { flex: 0 0 auto; white-space: nowrap; padding-inline: calc(var(--u) * 2); }
+
+/* The fold after a prose section's opening (lib/prose.ts foldSection):
+   a native details, its summary a short mono line. Open, the rest of the
+   section flows as it did; Justify sets those paragraphs when they get a
+   width (the host grows, and it re-sets everything). */
+.explorer-shell.explorer-shell details.read-on { margin: calc(var(--u) * 4) 0 0; }
+.explorer-shell.explorer-shell details.read-on > summary {
+  cursor: pointer;
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-rule);
+  padding: calc(var(--u) * 1) calc(var(--u) * 3);
+  list-style: none;
+}
+.explorer-shell.explorer-shell details.read-on > summary::-webkit-details-marker { display: none; }
+.explorer-shell.explorer-shell details.read-on > summary:hover,
+.explorer-shell.explorer-shell details.read-on > summary:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
+.explorer-shell.explorer-shell details.read-on[open] > summary { margin-bottom: calc(var(--u) * 4); }

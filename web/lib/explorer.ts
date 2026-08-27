@@ -3,7 +3,7 @@ import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import postcss from "postcss";
 import { kitBorders } from "./kit-borders";
-import { PROSE_SECTION, splitParagraphs } from "./prose";
+import { PROSE_SECTION, foldSection, splitParagraphs } from "./prose";
 
 /**
  * The 6502 explorer, read out of the 6502 repository at build time.
@@ -48,6 +48,8 @@ export interface Explorer {
   description: string;
   /** How many paragraph breaks splitting the long prose paragraphs added. */
   splits: number;
+  /** How many prose sections were folded after their opening. */
+  folds: number;
 }
 
 /**
@@ -140,7 +142,12 @@ function scope(css: string): string {
   return root.toString();
 }
 
-export function explorer(file = "index.html"): Explorer {
+/**
+ * `readOn`: the label of the fold each prose section gets after its
+ * opening paragraphs (lib/prose.ts foldSection). Without it nothing is
+ * folded, which is what the companion article wants: it IS the rest.
+ */
+export function explorer(file = "index.html", readOn?: string): Explorer {
   const html = fs.readFileSync(path.join(SRC, file), "utf8");
   const css = fs.readFileSync(path.join(SRC, "style.css"), "utf8");
 
@@ -199,7 +206,15 @@ export function explorer(file = "index.html"): Explorer {
   // rule to the same sections). Owner's call, 2026-08-27: one paragraph on
   // the tracer was 23,341 characters, 48,000 pixels of a phone's scroll.
   let splits = 0;
-  body = body.replace(PROSE_SECTION, (sec) => { const r = splitParagraphs(sec); splits += r.splits; return r.html; });
+  let folds = 0;
+  body = body.replace(PROSE_SECTION, (sec) => {
+    const r = splitParagraphs(sec);
+    splits += r.splits;
+    if (!readOn) return r.html;
+    const f = foldSection(r.html, readOn);
+    if (f.folded) folds += 1;
+    return f.html;
+  });
 
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;
@@ -235,5 +250,5 @@ export function explorer(file = "index.html"): Explorer {
       body.slice(end + "</h1>".length);
   }
 
-  return { style, body, script, title, description, splits };
+  return { style, body, script, title, description, splits, folds };
 }

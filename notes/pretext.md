@@ -142,3 +142,18 @@ the live site, including a step that rewrites the caption.
 Not done: the prose is still 23,000 characters under the instrument, now
 as paragraphs. Folding it, or shortening it, is a design and writing
 call, and the companion article is where the reading version lives.
+
+## Folded, 2026-08-27 (later)
+
+Owner's call: fold it after the first few paragraphs with a "Read on".
+`foldSection` in `web/lib/prose.ts`: each prose section keeps its heading
+and its first three paragraphs (the eyebrow is a `<p>` and is not
+counted) and the rest goes under a native `<details class="read-on">`;
+`explorer()` folds only when given the label, so the article, which is
+the rest, never does. A section whose remainder carries anything but
+paragraphs, lists and the section's own heading blocks is left whole
+(the block page's instrument lives in its prose), and so is one whose
+remainder is shorter than LONG. Measured on the tracer at 390: 6,502
+pixels folded, 19,457 open; every paragraph behind the fold set and
+fitting when opened. Chrome lays a closed details out
+(content-visibility), so those paragraphs are set at load, not on open.

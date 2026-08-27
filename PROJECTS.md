@@ -1371,3 +1371,9 @@ on the tool page too, and cuts the script-written caption at sentence
 ends in the browser, re-setting it every time the script rewrites it.
 Measured 0 overflowing lines at phone and desk; `e2e/tool-prose.spec.ts`
 holds it. `notes/pretext.md` has the round.
+
+Then, the owner's call: folded after the first three paragraphs of each
+section behind a native `<details>` reading "Read on" (`foldSection`,
+`web/lib/prose.ts`; the article never folds, and a section carrying a
+widget never folds). The tracer on a phone: 6,502 pixels folded, from
+19,413 as paragraphs and 54,741 as the two blocks.

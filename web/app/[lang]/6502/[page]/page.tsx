@@ -75,7 +75,9 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
     throw new Error(`No explorer page for slug ${JSON.stringify(page)}.`);
   }
 
-  const { style, body, script, title } = explorer(file);
+  // The prose under the instrument folds after its opening (lib/prose.ts
+  // foldSection); the companion article is the reading version.
+  const { style, body, script, title } = explorer(file, lang === "ja" ? "続きを読む" : "Read on");
 
   return (
     /* A workbench, owner's call 2026-08-24: the instruments were designed

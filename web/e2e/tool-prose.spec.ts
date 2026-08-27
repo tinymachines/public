@@ -62,3 +62,33 @@ test("the caption follows the script: a step rewrites it and it is set again", a
   expect(r.text!.length).toBeGreaterThan(3000);
   expect(before!.length).toBeGreaterThan(3000);
 });
+
+test("the prose folds after its opening, and opening it sets the rest", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(PHONE);
+  await open(page, "/6502/tracer", 9000);
+  const before = await page.evaluate(() => ({
+    h: document.documentElement.scrollHeight,
+    folds: document.querySelectorAll("details.read-on:not([open])").length,
+    set: document.querySelectorAll(".jp-set").length,
+  }));
+  expect(before.folds).toBeGreaterThan(0);
+  expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(9000);
+  await page.evaluate(() => document.querySelectorAll<HTMLDetailsElement>("details.read-on").forEach((d) => { d.open = true; }));
+  await page.waitForTimeout(1500);
+  const after = await page.evaluate(() => {
+    let over = 0;
+    for (const l of document.querySelectorAll("details.read-on .jp-set .jl:not(.jl-last)")) {
+      const range = document.createRange(); range.selectNodeContents(l);
+      if (range.getBoundingClientRect().width - (l as HTMLElement).clientWidth > 0.5) over++;
+    }
+    return { h: document.documentElement.scrollHeight, set: document.querySelectorAll(".jp-set").length, over };
+  });
+  // Chrome lays out a closed details' content (content-visibility), so
+  // the paragraphs behind the fold are set at load; what matters is that
+  // open, every one of them is set and fits.
+  expect(after.set).toBeGreaterThanOrEqual(before.set);
+  expect(after.set).toBeGreaterThan(30);
+  expect(after.over).toBe(0);
+  expect(after.h).toBeGreaterThan(before.h * 2);
+});
