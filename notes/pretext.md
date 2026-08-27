@@ -168,7 +168,7 @@ section will grow out of.
 
 - `data/articles.json` is the table: per tool, `chunks: [{heading, at}]`,
   `at` being the opening words of the sentence the chunk starts on. The
-  tracer has 23. `web/lib/articles.ts` reads it.
+  tracer has 12 (23 at first; the owner said too many, and neighbours were merged). `web/lib/articles.ts` reads it.
 - `splitParagraphs(html, chunks)` forces a paragraph break at every anchor
   before the length split runs between them, so every chunk starts a
   paragraph; an anchor the page does not carry fails the build in both

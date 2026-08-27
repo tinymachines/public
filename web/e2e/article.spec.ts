@@ -5,7 +5,7 @@ import { open, PHONE, DESK } from "./lib";
  * The companion articles: the tool's prose set by pretext under the
  * tool's own hero, with the chunk headings the table gives it. Two pages
  * stand for the seventeen: the tracer (the long one, 24,000 characters,
- * 23 chunks) and the primer (slots the tool's script fills).
+ * 12 chunks) and the primer (slots the tool's script fills).
  */
 for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
   for (const [name, size] of [["desk", DESK], ["phone", PHONE]] as const) {
@@ -47,7 +47,7 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
       expect(r.heroTitle, "the head is the tool's own hero").not.toBe("");
       expect(r.bench, "the interactive lab is not on the article").toBe(false);
       expect(r.folds, "the article is the rest: nothing folded").toBe(0);
-      if (p.includes("tracer")) expect(r.chunks).toBe(23);
+      if (p.includes("tracer")) expect(r.chunks).toBe(12);
     });
   }
 }

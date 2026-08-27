@@ -39,27 +39,27 @@ describe("long paragraphs, split at sentence ends", () => {
 describe("the chunks, from data/articles.json", () => {
   test("every chunk anchor is on the tracer, starts a paragraph, and gets its heading; the tool page folds each, the article none", () => {
     const x = explorer("tracer.html", "Read on");
-    expect(x.chunks).toBe(23);
-    expect(x.folds).toBe(23);
+    expect(x.chunks).toBe(12);
+    expect(x.folds).toBe(12);
     const heads = x.body.match(/<h3 class="chunk" id="([^"]+)">([^<]+)<\/h3>/g) ?? [];
-    expect(heads.length).toBe(23);
-    expect(new Set(heads).size, "ids are unique").toBe(23);
+    expect(heads.length).toBe(12);
+    expect(new Set(heads).size, "ids are unique").toBe(12);
     // Each heading is followed by its fold: a peek of the chunk's first
     // paragraph, then the details holding it.
     const folds = x.body.match(/<h3 class="chunk"[^>]*>[^<]+<\/h3>\n<div class="read-on"><div class="peek" aria-hidden="true"><p>[\s\S]*?<\/p><\/div><details><summary>Read on<\/summary>[\s\S]*?<\/details><\/div>/g) ?? [];
-    expect(folds.length).toBe(23);
+    expect(folds.length).toBe(12);
     // The chunk boundaries are paragraph breaks at the anchors' sentences.
-    expect(x.body).toContain('<p>The bright outline is the clock generator');
-    expect(x.body).toContain('<p>The sky beads are the ready logic');
+    expect(x.body).toContain('<p>The double-ringed beads are the interrupt logic');
+    expect(x.body).toContain('<p>The amber beads are the store-data pipeline');
     // The section's later heading blocks are not inside a chunk's fold.
     for (const f of folds) expect(f.includes("sec-head")).toBe(false);
     // No paragraph on the page is a blob, still.
     for (const m of x.body.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)) expect(m[1].replace(/<[^>]+>/g, "").length).toBeLessThan(1400);
     // The article: the same headings, nothing folded.
     const a = article("tracer.html");
-    expect(a.chunks).toBe(23);
+    expect(a.chunks).toBe(12);
     expect(a.html.includes("<details")).toBe(false);
-    expect((a.html.match(/<h3 class="chunk"/g) ?? []).length).toBe(23);
+    expect((a.html.match(/<h3 class="chunk"/g) ?? []).length).toBe(12);
     expect(explorer("tracer.html").folds, "without a label nothing folds").toBe(0);
   });
 

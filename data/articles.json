@@ -2,29 +2,54 @@
   "_": "The articles: per tool page, the chunks its prose breaks into. `at` is the opening words of the sentence a chunk starts on, matched against the page's own text (a build that cannot find it fails; nothing is guessed), and a chunk boundary becomes a paragraph break. `heading` is the chunk's heading, a fact, not a promise. Read by web/lib/articles.ts; applied by lib/explorer.ts (the tool page, folded per chunk) and lib/article.ts (the article, headings only).",
   "tracer": {
     "chunks": [
-      { "heading": "Regions are blocks, capsules are buses, clusters are the loose gates", "at": "The tinted regions behind the graph" },
-      { "heading": "Beads along the PLA are the decode terms, by stage", "at": "The beads along the decode PLA" },
-      { "heading": "Halos on the pads are the pins, by direction", "at": "The halos on the pads are the pins" },
-      { "heading": "The timing chain, derived cell by cell", "at": "The long-dashed beads are the timing chain" },
-      { "heading": "The clock generator is sixteen nodes", "at": "The bright outline is the clock generator" },
-      { "heading": "The interrupt logic follows the pins in", "at": "The double-ringed beads are the interrupt logic" },
-      { "heading": "The branch logic splits into three", "at": "The dash-dot beads are the branch logic" },
-      { "heading": "The decimal correction comes out as one piece", "at": "The orange outline is the decimal correction" },
-      { "heading": "The registers, and the lines that move them", "at": "The square-dotted beads are the registers" },
-      { "heading": "The incrementer reads sixteen bits and feeds sixteen", "at": "The red outline is the program counter's incrementer" },
-      { "heading": "The flags, each loaded from one gate", "at": "The ringed beads are the status register" },
-      { "heading": "The address latches are seven nodes a bit", "at": "The blue beads are the address latches" },
-      { "heading": "The ALU, a slice per bit", "at": "The beads in a hue per bit" },
-      { "heading": "Where the chip meets memory", "at": "The teal and orange beads are how the chip meets memory" },
-      { "heading": "The instruction register and its predecode", "at": "The gold beads are the instruction register" },
-      { "heading": "The special bus, and which way each line faces", "at": "The special bus is eight pure bus bits" },
-      { "heading": "The store pipeline, which the die does not name", "at": "The amber beads are the store-data pipeline" },
-      { "heading": "The ready logic: a low RDY never stalls a write", "at": "The sky beads are the ready logic" },
-      { "heading": "The counter's storage, the pipeline latches and SYNC", "at": "The program counter's own storage" },
-      { "heading": "Any container folds to one node", "at": "Any of these can be folded into one node" },
-      { "heading": "What was measured and rejected, and what gets no region", "at": "A convex hull per block was measured first" },
-      { "heading": "A dashed node is precharged", "at": "A node with a dashed outline has no pullup" },
-      { "heading": "The moved list, and the study view", "at": "The list under the code says the same thing in words" }
+      {
+        "heading": "Regions are blocks, capsules are buses, clusters are the loose gates",
+        "at": "The tinted regions behind the graph"
+      },
+      {
+        "heading": "The decode terms, the control lines and the pins",
+        "at": "The beads along the decode PLA"
+      },
+      {
+        "heading": "The timing chain and the clock generator",
+        "at": "The long-dashed beads are the timing chain"
+      },
+      {
+        "heading": "The interrupt logic and the branch logic",
+        "at": "The double-ringed beads are the interrupt logic"
+      },
+      {
+        "heading": "The decimal correction and the registers",
+        "at": "The orange outline is the decimal correction"
+      },
+      {
+        "heading": "The incrementer, the flags and the address latches",
+        "at": "The red outline is the program counter's incrementer"
+      },
+      {
+        "heading": "The ALU, and where the chip meets memory",
+        "at": "The beads in a hue per bit"
+      },
+      {
+        "heading": "The instruction register and the special bus",
+        "at": "The gold beads are the instruction register"
+      },
+      {
+        "heading": "The store pipeline and the ready logic",
+        "at": "The amber beads are the store-data pipeline"
+      },
+      {
+        "heading": "The counter's storage, the pipeline latches and SYNC",
+        "at": "The program counter's own storage"
+      },
+      {
+        "heading": "Any container folds to one node",
+        "at": "Any of these can be folded into one node"
+      },
+      {
+        "heading": "Dashed nodes, the moved list and the study view",
+        "at": "A node with a dashed outline has no pullup"
+      }
     ]
   }
 }

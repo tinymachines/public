@@ -81,11 +81,11 @@ test("the prose folds chunk by chunk under its headings, each with a faded peek;
       set: document.querySelectorAll(".jp-set").length,
     };
   });
-  expect(before.chunks).toBe(23);
-  expect(before.folds).toBe(23);
-  expect(before.closed).toBe(23);
-  expect(before.peekShown, "every closed fold shows its peek").toBe(23);
-  expect(before.peekClipped, "and the peek is cut short, fading").toBeGreaterThan(20);
+  expect(before.chunks).toBe(12);
+  expect(before.folds).toBe(12);
+  expect(before.closed).toBe(12);
+  expect(before.peekShown, "every closed fold shows its peek").toBe(12);
+  expect(before.peekClipped, "and the peek is cut short, fading").toBeGreaterThan(10);
   expect(before.pointer).toContain("\u203a");
   expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(14000);
   const edges = await page.evaluate(() => ({
