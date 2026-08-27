@@ -31,8 +31,10 @@ for (const [name, size] of [["desk", DESK], ["phone", PHONE]] as const) {
         height: document.documentElement.scrollHeight,
       };
     });
-    expect(r.set).toBeGreaterThan(10);
-    expect(r.lines).toBeGreaterThan(40);
+    // Only what is on screen is set: the lede, the opening paragraphs and
+    // the first peek; everything after the first closed fold waits.
+    expect(r.set).toBeGreaterThan(2);
+    expect(r.lines).toBeGreaterThan(10);
     expect(r.over, "no set line is wider than its block").toBe(0);
     expect(r.longest, "no paragraph on the page is a blob").toBeLessThan(1400);
     expect(r.captionChars, "the caption is still the script's, in the document").toBeGreaterThan(3000);
