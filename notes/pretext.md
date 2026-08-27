@@ -31,7 +31,7 @@ the size of the tree those writes invalidate, not in the text itself.
 
 The text itself, for the record, because the page reads as heavy:
 19 paragraphs of prose, 24,724 characters, and one of them is 20,661
-characters long (`web/tracer.html` line 231, "The tinted regions behind
+characters long (`web/tracer.html` line 251, "The tinted regions behind
 the graph are the functional blocks..."), which lays out 5,760 px tall
 at the prose column's width. Every other paragraph on the page is under
 700. That paragraph is an editorial fact, not a layout one; no library
