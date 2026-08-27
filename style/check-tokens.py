@@ -45,9 +45,10 @@ EXTERNAL = {
     "--app-head-h",
     "--app-foot-h",
 
-    # Measured by the console shell (web/app/[lang]/6502/games/shell/Shell.tsx)
-    # the same way: the floor strip's height, so the shell's stage can stop
-    # above it. Falls back in every var() that reads it.
+    # Measured by the strip itself (web/app/[lang]/6502/explorer/
+    # ChipTransport.tsx) the same way: the floor strip's height, so the
+    # console shell's stage and the schematic's study view can stop above
+    # it. Falls back in every var() that reads it.
     "--strip-h",
 
     # Set inline by the shell per cartridge: the accent a loaded cartridge

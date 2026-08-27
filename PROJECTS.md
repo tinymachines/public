@@ -1522,3 +1522,40 @@ the 1.0.142 checkpoint:
 Open, unchanged: the intermittent React #418 on Shell pages; forward
 steps 2 and 3 (`notes/forward.md`); `/etc/tinymachines/visitors.env`;
 inline images on the articles (owner's).
+
+## Same day: four tool pages, and the study view under the strip
+
+Owner's round on /6502/block, /6502/diegraph, /6502/exploded and
+/6502/schematic, measured live before anything was written.
+
+- **The block's circuit fits its stage.** block.js draws the cone at full
+  size and writes width and height on the svg: the ALU walked backward is
+  1,193 by 6,020 CSS px in a stage 348 by 506 on a phone, one part in
+  seventy on screen. The stage has a height now (`min(70vh, 48rem)`) and
+  the svg fills it, so the whole drawing is on screen and centred.
+- **The block's tail is Previous and Next.** The three "drawn other ways"
+  links and "All twelve blocks" are hidden (block.js fills them by id).
+- **The block's "Open in the workbench" is labelled the full screen it is:**
+  it opens the schematic's study view with the block on the bench
+  (`solo=1`). And that view was broken under the apex: upstream's
+  `body.no-scroll #view` was scoped to `.explorer-shell body.no-scroll`
+  and never matched, so on a desk the sections after the console painted
+  over it; the bar, the footer and the strip sat on top of it. `body.` with
+  a class is now scoped as a condition like `:root` and `html`
+  (lib/explorer.ts); the strip's full screen key follows the page's own
+  cover (`body.no-scroll`, or native fullscreen on the console) into
+  `html.has-fullscreen`, and on the schematic pressing it presses the
+  page's `#sch-fullscreen`; the console stops above the strip by the
+  strip's measured height (`--strip-h`, which the strip now publishes itself; the console shell read the same number and measured it too, so its measurement is gone); the
+  palette's run, step, back and clock select go the way every page's
+  transport went, in the by-hand cover only, since native fullscreen shows
+  the console subtree alone and the strip is outside it.
+- **The graph's stage is dark**, the schematic stage's literal: it had been
+  `color-mix(--space 70%, #000)`, a mid grey since --space became paper.
+- **The exploded view's zoom group is gone**; the stage orbits and pinches.
+- **The schematic and the strip:** measured, the strip did drive it (h 0 to
+  1, and the study view's clock). What the owner saw was the study view's
+  own keys under the strip and the strip over the view; both above.
+
+`web/e2e/study.spec.ts` holds each of these. They run against live: the
+chip pages boot from `/6502/chip/`, which the local tree does not serve.

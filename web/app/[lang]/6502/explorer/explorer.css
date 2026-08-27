@@ -269,3 +269,55 @@
   padding: calc(var(--u) * 1) calc(var(--u) * 3);
 }
 .art-link:hover, .art-link:focus-visible { color: var(--color-paper); background: var(--color-forest-ink); }
+
+/* ---------------------------------------------------------------------------
+   FOUR PAGES, MEASURED 2026-08-28 (owner's round: block, the graph,
+   exploded, schematic)
+   ------------------------------------------------------------------------ */
+
+/* The block's circuit is drawn at full size, 1,193 by 6,020 CSS px for the
+   ALU walked backward, into a stage 348 by 506 on a phone: one part in
+   seventy showed, and the stage scrolled to the rest. The drawing is
+   scaled to the stage instead (the svg keeps its viewBox; CSS beats the
+   width and height block.js writes on it), so the whole circuit is on
+   screen and centred, and the stage has a height of its own for the svg to
+   fill: a max-height on an auto-height box gives `height: 100%` nothing to
+   resolve against. */
+.explorer-shell.explorer-shell .bk-stage { height: min(70vh, 48rem); max-height: none; overflow: hidden; }
+.explorer-shell.explorer-shell #bk-svg { width: 100%; height: 100%; display: block; }
+
+/* The block page's tail: three "drawn other ways" links and an "All twelve
+   blocks" button, from the old site. Gone; Previous and Next stay (owner's
+   call, 2026-08-28). Hidden, not removed: block.js fills them by id. */
+.explorer-shell.explorer-shell .bk-seealso,
+.explorer-shell.explorer-shell .bk-step-all,
+.explorer-shell.explorer-shell #elsewhere .sec-head { display: none; }
+
+/* The graph's stage was `color-mix(var(--space) 70%, #000)`, a mid grey
+   once --space became paper: neither the paper the page is on nor the dark
+   the die is drawn on. It is the die, positions and all, so it goes dark
+   like the schematic's stage (the same literal that stage uses upstream):
+   the node strokes are rgba(2, 6, 16), drawn for a dark ground. */
+.explorer-shell.explorer-shell .dg-stage { background: #080c15; }
+
+/* The exploded view's zoom group (minus, the factor, plus, "Reset view"):
+   the stage orbits, scrolls and pinches, which is all of that (owner's
+   call, 2026-08-28). Hidden, not removed: exploded.js binds the ids. */
+.explorer-shell.explorer-shell .ex-zoom { display: none; }
+
+/* THE STUDY VIEW UNDER THE STRIP. The schematic's full screen (its own
+   `.console.faux`, fixed over the viewport, when the request carries no
+   gesture or the pointer is coarse) is the workbench's full screen, and
+   the strip is the one transport: the palette's own run, step and back
+   keys and its clock select are the strip's actions again, so they go the
+   way every page's transport went (components.css, ONE TRANSPORT). The
+   console stops above the strip rather than under it, by the strip's
+   measured height (`--strip-h`, which ChipTransport.tsx publishes); `height: auto`
+   because upstream gives the immersive console 100dvh, which would keep
+   it at the floor whatever its bottom said.
+
+   `.faux` only. Native fullscreen (a fine pointer, when the request has a
+   gesture) shows the console subtree and nothing else, and the strip is
+   outside it: there the palette's keys are the only transport there is. */
+.workbench.has-transport .explorer-shell .console.faux :is(#solo-back, #solo-run, #solo-step, #solo-step + .sp-strip-sep, #solo-clock-select) { display: none; }
+html:has(.workbench.has-transport) .explorer-shell .console.faux { bottom: var(--strip-h, 0px); height: auto; }

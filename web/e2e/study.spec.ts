@@ -1,0 +1,84 @@
+import { test, expect } from "@playwright/test";
+import { open, DESK, PHONE } from "./lib";
+
+/**
+ * The owner's round of 2026-08-28 on four tool pages: the block's circuit
+ * fits its stage and its tail is Previous and Next; the block's full
+ * screen is the schematic's study view with the block on the bench, and
+ * that view under the apex has no bar, no bleed, the strip on the floor
+ * and one transport; the graph's stage is dark; the exploded view has no
+ * zoom group. Serial: fullscreen is per window.
+ */
+test.describe.configure({ mode: "serial" });
+const has = (page: import("@playwright/test").Page) => page.evaluate(() => document.documentElement.classList.contains("has-fullscreen"));
+const box = (page: import("@playwright/test").Page, sel: string) =>
+  page.evaluate((sel) => { const e = document.querySelector(sel) as HTMLElement | null; if (!e) return null; const r = e.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, w: r.width, h: r.height, oh: e.offsetHeight, ow: e.offsetWidth }; }, sel);
+
+for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
+  test(`the block's circuit fits, and the tail is Previous and Next (${name})`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    await open(page, "/6502/block?b=alu", 6000);
+    const stage = (await box(page, ".bk-stage"))!;
+    const svg = (await box(page, "#bk-svg"))!;
+    expect(stage.h, "the stage has a height").toBeGreaterThan(300);
+    // The whole drawing, inside the stage: more than the two thirds asked for.
+    expect(svg.top).toBeGreaterThanOrEqual(stage.top - 1);
+    expect(svg.bottom).toBeLessThanOrEqual(stage.bottom + 1);
+    expect(svg.right).toBeLessThanOrEqual(stage.right + 1);
+    expect(await page.evaluate(() => document.querySelector(".bk-stage")!.scrollHeight - document.querySelector(".bk-stage")!.clientHeight), "nothing to scroll to").toBeLessThanOrEqual(1);
+    expect((await box(page, ".bk-seealso"))!.oh, "the drawn-other-ways links are gone").toBe(0);
+    expect((await box(page, ".bk-step-all"))!.oh, "All twelve blocks is gone").toBe(0);
+    const nav = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>("#bk-blocknav .bk-step")].filter((a) => a.offsetHeight > 0).map((a) => a.querySelector(".bk-step-dir")!.textContent));
+    expect(nav).toEqual(["Previous", "Next"]);
+    await expect(page.locator("#bk-root-link")).toHaveText(/Full screen$/);
+    expect(await page.getAttribute("#bk-root-link", "href")).toMatch(/\/6502\/schematic\?signal=alu0&block=alu&solo=1/);
+  });
+
+  test(`the block's full screen is the study view, under the strip (${name})`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    await open(page, "/6502/block?b=alu", 6000);
+    await page.click("#bk-root-link");
+    await page.waitForLoadState("load");
+    await expect.poll(() => page.evaluate(() => document.querySelector(".console")?.classList.contains("solo")), { timeout: 15000 }).toBe(true);
+    await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
+    // A page load has no gesture, so this is the by-hand cover.
+    expect(await page.evaluate(() => document.querySelector(".console")!.classList.contains("faux"))).toBe(true);
+    expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight), "no bar").toBe(0);
+    expect(await page.evaluate(() => (document.querySelector(".wb-foot") as HTMLElement).offsetHeight), "no footer").toBe(0);
+    const strip = (await box(page, ".chip-transport"))!;
+    const con = (await box(page, ".console"))!;
+    expect(Math.round(strip.bottom), "the strip on the floor").toBe(vp.height);
+    expect(Math.abs(con.bottom - strip.top), "the console stops at the strip").toBeLessThanOrEqual(1);
+    // No bleed: what is under a point in the drawing is the console.
+    expect(await page.evaluate(() => !!document.elementFromPoint(innerWidth - 40, innerHeight * 0.5)?.closest(".console"))).toBe(true);
+    // One transport: the palette's keys and clock select are gone, the strip drives it.
+    for (const id of ["#solo-run", "#solo-step", "#solo-back", "#solo-clock-select"]) expect((await box(page, id))!.ow, `${id} hidden`).toBe(0);
+    const clock = () => page.evaluate(() => document.querySelector("#solo-clock")!.textContent);
+    const before = await clock();
+    await page.click(".chip-transport button[title='Forward one half-cycle']");
+    await expect.poll(clock).not.toBe(before);
+    expect(await page.getAttribute(".tbtn.fs", "aria-pressed"), "the strip's key is lit").toBe("true");
+    // The strip's key leaves the study view.
+    await page.click(".tbtn.fs");
+    await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);
+    expect(await page.evaluate(() => document.querySelector(".console")!.classList.contains("solo"))).toBe(false);
+    expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight)).toBeGreaterThan(20);
+    // And enters it: on the schematic, full screen is the study view.
+    await page.click(".tbtn.fs");
+    await expect.poll(() => page.evaluate(() => document.querySelector(".console")!.classList.contains("solo")), { timeout: 5000 }).toBe(true);
+    await expect.poll(() => has(page), { timeout: 5000 }).toBe(true);
+    await page.click(".tbtn.fs");
+    await expect.poll(() => has(page), { timeout: 5000 }).toBe(false);
+  });
+}
+
+test("the graph's stage is dark; the exploded view has no zoom group", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/6502/diegraph", 4000);
+  const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".dg-stage")!).backgroundColor);
+  const m = bg.match(/\d+/g)!.map(Number);
+  expect(m[0] + m[1] + m[2], `stage ${bg} is dark`).toBeLessThan(120);
+  await open(page, "/6502/exploded", 4000);
+  expect((await box(page, ".ex-zoom"))!.ow).toBe(0);
+  expect((await box(page, "#ex-run"))!.ow, "the page's own transport stays hidden").toBe(0);
+});

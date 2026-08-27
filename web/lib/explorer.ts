@@ -120,8 +120,13 @@ function scope(css: string): string {
       if (!s || s.startsWith(SCOPE)) return s;
       // A selector anchored at the document root is a condition, not a target:
       // prefixing it gives `.explorer-shell :root`, which can never match.
-      // The lab's theme toggle was silently killed that way.
-      const rootish = s.match(/^(:root|html)((?:\[[^\]]*\]|[:.#][\w-]+(?:\([^)]*\))?)*)/);
+      // The lab's theme toggle was silently killed that way. `body` with a
+      // class is the same kind of condition (`body.no-scroll #view` is how
+      // the schematic's study view lifts itself over the sections after it),
+      // and was scoped to `.explorer-shell body.no-scroll`, so the hero text
+      // painted over the study view on a desk (measured 2026-08-28). Bare
+      // `body` is a target (margins, fonts) and stays dead, as before.
+      const rootish = s.match(/^(:root|html|body(?=[.\[:]))((?:\[[^\]]*\]|[:.#][\w-]+(?:\([^)]*\))?)*)/);
       if (rootish) {
         const rest = s.slice(rootish[0].length).trim();
         return rest ? `${rootish[0]} ${SCOPE} ${rest}` : `${rootish[0]} ${SCOPE}`;
@@ -249,6 +254,22 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
     const i = inner.indexOf(", ") + 2;
     return `${open}${inner.slice(0, i)}<span class="hl">${inner.slice(i)}</span>${close}`;
   });
+
+  // The block's "Open in the workbench" is a full screen control (owner's
+  // call, 2026-08-28): it opens the schematic's study view, the workbench's
+  // own full screen, with this block on the bench (block.js paintRoot sets
+  // `solo=1`, the block and its switched-on ports). So it is labelled as
+  // the full screen it is, with the glyph the schematic's own control
+  // uses. The anchor is found by its id and its text is asserted, so a
+  // rewording upstream is a build failure here rather than two labels.
+  if (file === "block.html") {
+    const before = body;
+    body = body.replace(
+      /(<a class="btn" id="bk-root-link" href="schematic")>Open in the workbench<\/a>/,
+      '$1 title="The workbench, full screen, with this block on the bench"><span aria-hidden="true">\u26F6</span> Full screen</a>',
+    );
+    if (body === before) throw new Error("6502/web/block.html: no #bk-root-link reading \"Open in the workbench\"; the full screen relabel found nothing.");
+  }
 
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;

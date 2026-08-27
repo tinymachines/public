@@ -172,34 +172,20 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
     ? chip.live && !chip.powered && !chip.booting && (phase === "live" || phase === "paused")
     : localOff;
 
-  // The frame: whatever the stage is, measured, and the strip's height
-  // published so the stage can stop above it.
+  // The frame: whatever the stage is, measured. The strip's height, which
+  // the stage stops above, is the strip's own to publish (--strip-h,
+  // explorer/ChipTransport.tsx); this used to measure it too.
   useLayoutEffect(() => {
     const el = root.current;
     if (!el) return;
-    // The strip is mounted by the 6502 layout and appears once the store has
-    // loaded, which is after this runs: it has to be found when it arrives,
-    // not assumed to be here. Measured once at mount, the fallback height
-    // stood and left a 15px gap between the stage and the strip.
-    let strip: HTMLElement | null = null;
-    const ro = new ResizeObserver(() => measure());
     const measure = () => {
-      const found = document.querySelector<HTMLElement>(".chip-transport");
-      if (found && found !== strip) { strip = found; ro.observe(strip); }
-      // A strip that is on the page but has no height yet (its store is
-      // still loading, or never loads) is not a measurement: the fallback
-      // stands until it has one, else the stage learns 0px and keeps it.
-      const h = strip ? strip.offsetHeight : 0;
-      if (h > 0) document.documentElement.style.setProperty("--strip-h", `${Math.ceil(h)}px`);
-      else document.documentElement.style.removeProperty("--strip-h");
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) setSize((s) => (s && s.w === r.width && s.h === r.height ? s : { w: r.width, h: r.height }));
     };
-    measure(); // before the first paint; the observers keep it true after
+    measure(); // before the first paint; the observer keeps it true after
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    const mo = new MutationObserver(() => { if (!strip && document.querySelector(".chip-transport")) measure(); });
-    mo.observe(document.body, { childList: true, subtree: true });
-    return () => { ro.disconnect(); mo.disconnect(); document.documentElement.style.removeProperty("--strip-h"); };
+    return () => ro.disconnect();
   }, []);
 
   // The machine, read off game.js.

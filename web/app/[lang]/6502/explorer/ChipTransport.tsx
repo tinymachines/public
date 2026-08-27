@@ -271,6 +271,27 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
     return () => window.clearTimeout(id);
   }, [ctl, tick]);
 
+  // The strip's height, published as --strip-h for what has to stop above
+  // it: the console shell's stage (games/shell/shell.css) and the
+  // schematic's study view (explorer/explorer.css). Measured, because the
+  // strip's rows wrap on a phone. A strip with no height yet (its store
+  // still loading) is not a measurement: the readers' fallbacks stand until
+  // there is one. Cleared when the strip leaves, so no route inherits it.
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>(".chip-transport");
+    const r = document.documentElement;
+    if (!el) { r.style.removeProperty("--strip-h"); return; }
+    const publish = () => {
+      const h = el.offsetHeight;
+      if (h > 0) r.style.setProperty("--strip-h", `${Math.ceil(h)}px`);
+      else r.style.removeProperty("--strip-h");
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => { ro.disconnect(); r.style.removeProperty("--strip-h"); };
+  }, [floor, failed, gaveUp]);
+
   if (!floor || failed) return null;
   if (gaveUp && !(ctl?.hasDriver() ?? false)) return null;
   const hc = ctl?.chipHalfCycle() ?? null;

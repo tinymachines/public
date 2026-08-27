@@ -22,7 +22,25 @@ import type { Lang } from "@/lib/lang";
  * One mechanism for every instrument: the chip transport (ChipTransport.tsx)
  * carries the button, and since 2026-08-26 the Lab is driven by that strip
  * too, so the portal into the Lab's own player (LabFullscreen) is gone.
+ *
+ * ## The study view
+ *
+ * The schematic has a full screen of its own, the study view (its
+ * `#sch-fullscreen`; upstream fullscreen.js): one signal's island on an
+ * empty screen, with a palette. That is the workbench's full screen, and
+ * the owner's ask (2026-08-28) is that "full screen" on that page means
+ * it. So on a page with that control, this key presses it; and whichever
+ * way the page gets there (its own key, or arriving from a block page with
+ * `solo=1`), the site follows: upstream marks `body.no-scroll` while its
+ * by-hand cover is up, or holds the console in native fullscreen, and
+ * either one sets `html.has-fullscreen` here, so the bar and the footer
+ * leave and the strip lands on the floor. Leaving is Escape, which
+ * upstream listens for on the document, the same as the reader's key.
  */
+
+/** The page's own full screen control, where the page has one. */
+const OWN = "#sch-fullscreen";
+const pageCover = () => document.body.classList.contains("no-scroll");
 
 const L = {
   en: { enter: "Full screen", exit: "Leave full screen", word: "full" },
@@ -66,14 +84,30 @@ export function FullscreenButton({ lang = "en" }: { lang?: Lang }) {
     };
     document.addEventListener("fullscreenchange", onChange);
     document.addEventListener("keydown", onKey);
+    // The page's by-hand cover, coming and going.
+    const mo = new MutationObserver(() => {
+      if (native()) return;
+      const v = pageCover();
+      if (v !== root().classList.contains("has-fullscreen")) {
+        set(v);
+        setOn(v);
+      }
+    });
+    mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     return () => {
       document.removeEventListener("fullscreenchange", onChange);
       document.removeEventListener("keydown", onKey);
+      mo.disconnect();
       set(false);
     };
   }, []);
 
   async function enter() {
+    const own = document.querySelector<HTMLButtonElement>(OWN);
+    if (own) {
+      own.click(); // the observer, or fullscreenchange, sets the class
+      return;
+    }
     const r = root();
     if (r.requestFullscreen) {
       try {
@@ -87,6 +121,12 @@ export function FullscreenButton({ lang = "en" }: { lang?: Lang }) {
     setOn(true);
   }
   async function leave() {
+    if (pageCover()) {
+      // Upstream's cover leaves on Escape at the document; the observer
+      // then clears the class here.
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      return;
+    }
     if (native() && document.exitFullscreen) {
       try {
         await document.exitFullscreen();
