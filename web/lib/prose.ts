@@ -256,40 +256,39 @@ export function chunkSection(sec: string, chunks: ChunkSpec[], fold?: string): {
 }
 
 /**
- * Without chunks, a section folded after its opening: the heading and
- * the first `keep` paragraphs stay, the rest goes under one `<details>`
- * whose summary reads `label`, with a faded peek of the next paragraph. A
- * section whose remainder carries a widget is left whole, and so is one
- * whose remainder is shorter than LONG: a fold that hides two sentences
- * is a click for nothing.
+ * Without chunks: a section folded per heading block. A tool page's
+ * section carries one or more `div.sec-head` blocks (an eyebrow and an
+ * h2), each followed by its paragraphs; the heading and its lede stay
+ * visible, and the paragraphs after them go under a `<details>` behind a
+ * faded peek and a summary reading `label`. Owner's call, 2026-08-27,
+ * after the first rule (one fold after three paragraphs) swallowed the
+ * later headings of the exploded, schematic, halfshot, timing and decode
+ * pages. A block whose paragraphs carry a widget is left whole, and so is
+ * one shorter than MIN_FOLD: a fold that hides two sentences is a click
+ * for nothing.
  */
-export function foldSection(sec: string, label: string, keep = 3): { html: string; folded: boolean } {
+const MIN_FOLD = 400;
+export function foldSection(sec: string, label: string): { html: string; folded: number } {
   const closeAt = sec.lastIndexOf("</section>");
-  if (closeAt < 0) return { html: sec, folded: false };
+  if (closeAt < 0) return { html: sec, folded: 0 };
   const body = sec.slice(0, closeAt);
-  // The opening paragraphs, not counting the heading's eyebrow, which is
-  // a <p> too.
-  let n = 0;
-  let at = -1;
-  const re = /<p\b([^>]*)>[\s\S]*?<\/p>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(body))) {
-    if (/\beyebrow\b/.test(m[1])) continue;
-    n += 1;
-    if (n === keep) { at = m.index + m[0].length; break; }
-  }
-  if (at < 0) return { html: sec, folded: false };
-  const rest = body.slice(at);
-  // The section's own heading blocks are prose; anything else that is
-  // not a paragraph or a list is a widget, and the section stays whole.
-  const bare = rest.replace(/<div class="sec-head">[\s\S]*?<\/div>/g, "");
-  if (WIDGET.test(bare)) return { html: sec, folded: false };
-  const text = unescape(rest.replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
-  if (text.length < LONG) return { html: sec, folded: false };
-  const first = rest.match(/<p\b[^>]*>[\s\S]*?<\/p>/)?.[0] ?? "";
-  const peek = first.replace(/\sid="[^"]*"/g, "");
-  return {
-    html: `${body.slice(0, at)}\n<div class="read-on"><div class="peek" aria-hidden="true">${peek}</div><details><summary>${escape(label)}</summary>${rest}</details></div>\n${sec.slice(closeAt)}`,
-    folded: true,
-  };
+  const heads = [...body.matchAll(/<div class="sec-head">[\s\S]*?<\/div>/g)];
+  if (!heads.length) return { html: sec, folded: 0 };
+  let out = body.slice(0, heads[0].index);
+  let folded = 0;
+  heads.forEach((h, i) => {
+    const from = h.index + h[0].length;
+    const to = i + 1 < heads.length ? heads[i + 1].index : body.length;
+    let content = body.slice(from, to);
+    let lede = "";
+    const l = content.match(/^\s*<p class="lede">[\s\S]*?<\/p>/);
+    if (l) { lede = l[0]; content = content.slice(l[0].length); }
+    const text = unescape(content.replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
+    if (WIDGET.test(content) || text.length < MIN_FOLD) { out += h[0] + lede + content; return; }
+    const first = content.match(/<p\b[^>]*>[\s\S]*?<\/p>/)?.[0] ?? "";
+    const peek = first.replace(/\sid="[^"]*"/g, "");
+    out += `${h[0]}${lede}\n<div class="read-on"><div class="peek" aria-hidden="true">${peek}</div><details><summary>${escape(label)}</summary>${content}</details></div>\n`;
+    folded += 1;
+  });
+  return { html: out + sec.slice(closeAt), folded };
 }

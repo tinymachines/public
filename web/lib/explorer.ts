@@ -210,7 +210,7 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
   // the tracer was 23,341 characters, 48,000 pixels of a phone's scroll.
   // With chunks (data/articles.json) every chunk starts a paragraph and
   // gets its heading; folded per chunk when a label is given. Without
-  // chunks, one fold per section after its opening.
+  // chunks, one fold per heading block, under its heading and lede.
   const specs = chunksFor(file.replace(/\.html$/, ""));
   let splits = 0;
   let folds = 0;
@@ -227,7 +227,7 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
     }
     if (!readOn) return r.html;
     const f = foldSection(r.html, readOn);
-    if (f.folded) folds += 1;
+    folds += f.folded;
     return f.html;
   });
   const missing = specs.filter((c) => !found.has(c.at));

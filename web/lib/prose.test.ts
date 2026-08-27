@@ -81,26 +81,32 @@ describe("the chunks, from data/articles.json", () => {
 });
 
 describe("the fold after a section's opening", () => {
-  test("a page without chunks folds per section; the block page's instrument does not", () => {
-    // A page without chunks folds once per section, after three
-    // paragraphs (the eyebrow not counted): the primer.
-    const x = explorer("primer.html", "Read on");
-    expect(x.chunks).toBe(0);
-    for (const sec of x.body.match(/<section class="wrap sec bp-prose[\s\S]*?<\/section>/g) ?? []) {
-      const before = sec.split("<details")[0];
-      if (sec.includes("<details")) expect((before.match(/<p\b(?![^>]*eyebrow)/g) ?? []).length, "three paragraphs before the fold, the eyebrow not counted").toBe(3);
+  test("a page without chunks folds per heading block, its heading and lede outside; a widget block and the block page's instrument never", () => {
+    const pages = ["exploded", "schematic", "halfshot", "timing", "decode", "primer", "trace", "talk", "chipmap", "block", "designer", "pinout", "diegraph", "blueprint", "programs", "blockdiagram"];
+    for (const f of pages) {
+      const x = explorer(f + ".html", "Read on");
+      expect(x.chunks).toBe(0);
+      for (const d of x.body.match(/<details>[\s\S]*?<\/details>/g) ?? []) {
+        expect(d.includes("sec-head"), `${f}: no heading inside a fold`).toBe(false);
+        expect(d.includes('class="lede"'), `${f}: no lede inside a fold`).toBe(false);
+        expect(/<(div|table|button|select|svg|figure|input|form|canvas)\b|data-fact=/.test(d), `${f}: no widget inside a fold`).toBe(false);
+      }
     }
-    const block = explorer("block.html", "Read on");
-    for (const d of block.body.match(/<details>[\s\S]*?<\/details>/g) ?? []) {
-      expect(d.includes('id="bk-svg"'), "the instrument is never folded away").toBe(false);
-    }
+    const ex = explorer("exploded.html", "Read on");
+    expect(ex.folds, "the exploded page: one fold per heading block").toBe(3);
+    expect((ex.body.match(/<div class="sec-head">/g) ?? []).length).toBe(3);
+    expect(explorer("primer.html", "Read on").folds, "the primer's blocks carry the script's slots and demos: nothing folds").toBe(0);
+    expect(explorer("block.html", "Read on").body.includes('id="bk-svg"')).toBe(true);
   });
 
-  test("a short remainder is not folded", () => {
+  test("a heading block shorter than a fold is worth is not folded", () => {
+    const head = '<div class="sec-head"><p class="eyebrow">E</p><h2>H</h2></div>';
     const p = "<p>One sentence here.</p>";
-    const sec = `<section class="wrap sec bp-prose">${p}${p}${p}${p}</section>`;
-    expect(foldSection(sec, "Read on").folded).toBe(false);
-    const long = `<section class="wrap sec bp-prose">${p}${p}${p}<p>${"A sentence. ".repeat(150)}</p></section>`;
-    expect(foldSection(long, "Read on").folded).toBe(true);
-  });
+    const short = `<section class="wrap sec bp-prose">${head}<p class="lede">Lede.</p>${p}${p}</section>`;
+    expect(foldSection(short, "Read on").folded).toBe(0);
+    const long = `<section class="wrap sec bp-prose">${head}<p class="lede">Lede.</p><p>${"A sentence. ".repeat(60)}</p></section>`;
+    const r = foldSection(long, "Read on");
+    expect(r.folded).toBe(1);
+    expect(r.html.indexOf('class="lede"')).toBeLessThan(r.html.indexOf("<details"));
+});
 });

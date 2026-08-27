@@ -109,3 +109,25 @@ test("the prose folds chunk by chunk under its headings, each with a faded peek;
   expect(after.over).toBe(0);
   expect(after.h).toBeGreaterThan(before.h * 1.5);
 });
+
+test("a page without chunks folds per heading block: /6502/exploded shows its three headings, each over a peek and Read on", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(PHONE);
+  await open(page, "/6502/exploded", 9000);
+  const r = await page.evaluate(() => {
+    const heads = [...document.querySelectorAll<HTMLElement>(".bp-prose .sec-head h2")];
+    return {
+      headings: heads.length,
+      visible: heads.filter((h) => h.offsetHeight > 0).length,
+      folds: document.querySelectorAll(".read-on").length,
+      closed: document.querySelectorAll(".read-on details:not([open])").length,
+      peeks: [...document.querySelectorAll<HTMLElement>(".read-on .peek")].filter((p) => p.offsetHeight > 0 && p.scrollHeight > p.clientHeight).length,
+      h: document.documentElement.scrollHeight,
+    };
+  });
+  expect(r.headings).toBe(3);
+  expect(r.visible, "every heading is outside the folds").toBe(3);
+  expect(r.folds).toBe(3);
+  expect(r.closed).toBe(3);
+  expect(r.peeks, "each shows a clipped peek").toBe(3);
+});

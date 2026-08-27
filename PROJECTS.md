@@ -1397,3 +1397,13 @@ anchor not on the page fails the build). `chunkSection` in
 behind a clipped, fading copy of its first paragraph; the article gets
 the headings and the tool's own hero as its head, and no bench.
 `notes/pretext.md` has the round.
+
+## Same evening: the other pages fold per heading block
+
+exploded, schematic, halfshot, timing and decode were to be chunked like
+the tracer; read, they already have three to five `h2` blocks each, so
+the change is the fold rule, not the table: one fold per heading block
+under its heading and lede (`foldSection`, `web/lib/prose.ts`), never
+around a widget, never shorter than 400 characters. Reaches every tool
+page without a table entry; nothing on any page has a heading inside a
+fold. `notes/pretext.md` has the round.

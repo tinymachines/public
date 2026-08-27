@@ -188,3 +188,19 @@ section will grow out of.
 Measured on a local build, phone: tool page 11,468 CSS px (23 folds
 closed), article 17,510. Chrome lays a closed details out, so the folded
 paragraphs are set at load.
+
+## Per-block folds, 2026-08-27 (evening)
+
+Owner's ask: chunk exploded, schematic, halfshot, timing and decode as the
+tracer was. Read, they were not the tracer's shape: each already carries
+three to five `h2` blocks inside its one `<section>` with two to six
+paragraphs each, and what hurt them was the first fold rule (one fold
+after three paragraphs), which swallowed the later headings. So
+`foldSection` is now one fold per heading block: the eyebrow, the `h2`
+and the lede stay visible, the paragraphs under them fold behind the
+peek and "Read on"; a block carrying a widget, or shorter than 400
+characters, stays whole. No table entries: their headings are their own.
+Measured across all seventeen pages: no heading, lede or widget inside
+any fold; exploded 3 folds, schematic 4, halfshot 3, timing 3, decode 3,
+and the rule reaches the rest (talk 3, chipmap 5, designer 3, trace 3).
+The primer still folds nothing: every block has a demo or a slot.
