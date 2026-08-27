@@ -7,7 +7,7 @@
 .art-head { max-width: 68ch; margin-bottom: calc(var(--u) * 6); }
 .art-head .hero { padding: 0; }
 .art-head .wrap { padding-inline: 0; margin-inline: 0; max-width: none; }
-.art-meta { font-family: var(--font-mono); font-size: var(--text-fine); margin: 0 0 calc(var(--u) * 8); }
+.art-meta { margin: 0 0 calc(var(--u) * 8); }
 
 .art-body { max-width: 68ch; }
 /* The sections keep the tool's own prose rules (.wrap, .sec, .bp-prose:
@@ -15,7 +15,6 @@
    tool page needed and this column does not. */
 .art-body .wrap { padding-inline: 0; margin-inline: 0; max-width: none; }
 .art-body .sec { padding-inline: 0; }
-.art-note { margin-top: calc(var(--u) * 8); font-size: var(--text-fine); }
 
 /* The justified lines' rules are components/justify.css, with Justify.tsx. */
 

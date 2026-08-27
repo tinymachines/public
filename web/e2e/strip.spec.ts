@@ -72,10 +72,11 @@ test.describe("phone", () => {
         const mid = (e: Element) => { const b = e.getBoundingClientRect(); return Math.round(b.top + b.height / 2); };
         const btns = [...row.querySelectorAll("button.tbtn:not(.fs)")];
         const fs = row.querySelector(".tbtn.fs")!, rate = row.querySelector(".ct-rate")!, pos = row.querySelector(".ct-pos")!;
-        return { keyRows: new Set(btns.map(mid)).size, sameRow: mid(fs) === mid(rate) && mid(fs) === mid(pos), fsRight: Math.round(fs.getBoundingClientRect().right), total: new Set([...row.children].map(mid)).size };
+        return { keyRows: new Set(btns.map(mid)).size, fsWithKeys: mid(fs) === mid(btns[0]), secondRow: mid(rate) === mid(pos) && mid(rate) > mid(btns[0]), fsRight: Math.round(fs.getBoundingClientRect().right), total: new Set([...row.children].map(mid)).size };
       });
       expect(r.keyRows, "the eight keys, the engine among them, on one row").toBe(1);
-      expect(r.sameRow, "rate, position and full screen share the second row").toBe(true);
+      expect(r.fsWithKeys, "full screen on the key row, at its right end").toBe(true);
+      expect(r.secondRow, "rate and position share the second row").toBe(true);
       expect(r.total).toBe(2);
       expect(PHONE.width - r.fsRight).toBeLessThanOrEqual(16);
     });

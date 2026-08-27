@@ -87,7 +87,7 @@ test("the prose folds chunk by chunk under its headings, each with a faded peek;
     const heads = [...document.querySelectorAll<HTMLElement>("h3.chunk")].filter((h) => h.offsetHeight > 0).length;
     return { showing, heads };
   });
-  expect(walked.showing, "the open first fold and the closed second show; the rest wait").toEqual([0, 1]);
+  expect(walked.showing, "the opened fold's summary is gone; the closed second is the one showing; the rest wait").toEqual([1]);
   expect(walked.heads, "two chunk headings are on the page").toBe(2);
   expect(before.pointer).toContain("\u203a");
   expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(14000);

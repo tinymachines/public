@@ -2390,8 +2390,12 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   .ct-seek { flex: 1 1 calc(var(--u) * 6); min-width: calc(var(--u) * 6); }
   .ct-pos { min-width: 0; }
   .chip-transport .ct-lat { display: none; }
-  /* Seven keys on the first row at 390px: the Lab's own gap and padding. */
+  /* Eight keys and full screen on the first row at 390px (owner's call,
+     2026-08-27: the full-screen key moves up); rate and position take the
+     second. The Lab's own gap and padding. */
   .ct-row { gap: calc(var(--u) * 1); }
+  .ct-rate, .ct-seek, .ct-pos { order: 1; }
+  .chip-transport .ct-row .tbtn.fs { margin-left: auto; }
   .chip-transport .tbtn { padding: calc(var(--u) * 1.5) calc(var(--u) * 1.5); gap: calc(var(--u) * 1); }
   .chip-transport .tbtn.play { min-width: calc(var(--u) * 14); }
   .workbench.has-transport .wb-main { padding-bottom: calc(var(--u) * 26); }

@@ -2,9 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import { apidoc } from "@/lib/apidoc";
-import { chipApi } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
-import { Coverage } from "./Coverage";
 import "./apidoc.css";
 
 /**
@@ -46,8 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export default async function ApiPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
-  const { style, body, endpoints } = apidoc();
-  const api = chipApi();
+  const { style, body } = apidoc();
 
   return (
     <Shell lang={lang}
@@ -62,34 +59,6 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
           and is written out for exactly that reason. */}
       <style dangerouslySetInnerHTML={{ __html: style }} />
 
-      <main className="prose">
-        {/* The paragraph used to warn that a schema read under this path
-            would reach the wrong service. Since 2026-08-24 that is no longer
-            true: the same process answers at /6502/api and names, per
-            request, the address a request came through. The copy follows the
-            fact. */}
-        <p>
-          {lang === "ja" ? (
-            <>
-              これはリファレンスだ。記述されるサービスはこのサイトの{" "}
-              <a data-address href={`${api}/`}>
-                /6502/api
-              </a>{" "}
-              で応答する (当面は <code>6502.tinymachines.ai/api</code> でも)。
-            </>
-          ) : (
-            <>
-              This is the reference. The service it describes answers at{" "}
-              <a data-address href={`${api}/`}>
-                /6502/api
-              </a>{" "}
-              on this site (and, for now, at <code>6502.tinymachines.ai/api</code>).
-            </>
-          )}
-        </p>
-
-        <Coverage api={api} endpoints={endpoints} lang={lang} />
-      </main>
 
       {/* The document itself, its :root replaced by apidoc.css and every
           selector scoped to .apidoc-shell. Not one of its own rules is edited

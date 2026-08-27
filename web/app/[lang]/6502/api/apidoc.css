@@ -103,34 +103,6 @@
   max-width: 100%;
 }
 
-/* -- coverage: the reference measured against the running service ---------- */
-
-.apicov { margin: calc(var(--u) * 4) 0 calc(var(--u) * 8); }
-.apicov .rows {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-  gap: calc(var(--u) * 1) calc(var(--u) * 4);
-  margin-top: calc(var(--u) * 3);
-}
-.apicov .row {
-  display: flex;
-  align-items: baseline;
-  gap: calc(var(--u) * 2);
-  font-family: var(--font-mono);
-  font-size: var(--text-micro);
-  padding: calc(var(--u) * 1) 0;
-  border-bottom: 1px solid var(--color-ink-faint);
-}
-.apicov .row .verb {
-  flex: 0 0 3.5rem;
-  color: var(--color-ink-muted);
-  letter-spacing: var(--tracking-caps);
-}
-.apicov .row .route { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-/* Absent, not broken. The reference is newer than the process answering, and
-   this says which lines describe something that is not there yet. */
-.apicov .row.absent .route { color: var(--color-ink-muted); }
-
 /* A route heading is one unbreakable token.
    `PUT /v1/registry/b/{handle}/roms/{slug}` has no space in it after the verb,
    so at 390px the h3 could not wrap and took the whole document sideways: 414

@@ -29,9 +29,10 @@ import { chipApi, project } from "./projects";
  * would have replaced a good document with a worse one and called it
  * generated.
  *
- * What the JSON IS good for is saying which routes actually answer, and that
- * is done at runtime by the page rather than baked in here. See
- * app/6502/api/Coverage.tsx.
+ * What the JSON IS good for is saying which routes actually answer; the
+ * deploy's door check asks it (scripts/deploy.sh). The page used to show
+ * that count too, and the owner had it removed (2026-08-27: placeholder
+ * copy). `endpoints` is still read here and is what the test holds.
  *
  * ## Why it is not fetched at build time
  *

@@ -220,3 +220,22 @@ The primer still folds nothing: every block has a demo or a slot.
 - The long caption under the drawing is hidden: Justify marks a
   `p.bk-foot` longer than LONG with `jp-long` and explorer.css hides it.
   The script still writes it every step; the document still has it.
+
+## Third pass, 2026-08-27 (night)
+
+- The article folds as the tool page does: `article(file, readOn)`
+  passes the label through `chunkSection` (chunks) or `foldSection`
+  (heading blocks). The article's own copy about itself (a character
+  count, a note about the split) is gone.
+- An opened fold's summary goes (`details[open] > summary { display:
+  none }`): one "Read on" on the page, always the next one; a reload
+  starts over.
+- The article button (`.art-link`, on the tool page and, as "Open the
+  tool", on the article) has the summary's exact shape in forest ink.
+- The strip at phone width: the full-screen key moves up to the key row,
+  at its right end (`order` on rate, seek and position; `margin-left:
+  auto` on the key). `strip.spec` holds the two rows.
+- Placeholder copy: the API reference's intro paragraph ("This is the
+  reference...") and the coverage block (routes documented, operations
+  answering now) are removed; `Coverage.tsx` and its CSS are deleted.
+  The deploy's door check still asks `openapi.json` which routes answer.

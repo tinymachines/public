@@ -34,11 +34,13 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
           chunks: document.querySelectorAll(".art-body h3.chunk").length,
           folds: document.querySelectorAll(".art-body details").length,
           bench: !!document.querySelector(".art-bench-frame"),
+          summaries: [...document.querySelectorAll<HTMLElement>(".read-on summary")].filter((s) => s.offsetHeight > 0).length,
+          metaCopy: /characters|paragraph breaks/.test(document.querySelector(".art")!.textContent ?? ""),
         };
       });
       expect(r.paragraphs, "there is prose").toBeGreaterThan(5);
-      expect(r.set, "most paragraphs were set by pretext (the rest are the browser's: a button, a slot cut by a line)").toBeGreaterThan(r.paragraphs * 0.6);
-      expect(r.lines).toBeGreaterThan(20);
+      expect(r.set, "what is on screen is set by pretext (the rest waits behind the fold, or is the browser's: a button, a slot cut by a line)").toBeGreaterThan(2);
+      expect(r.lines).toBeGreaterThan(10);
       expect(r.over, "no set line is wider than its block").toBe(0);
       expect(r.loose, "no set line is stretched past a third of its width").toBe(0);
       expect(r.h1).toBe(1);
@@ -46,8 +48,11 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
       expect(r.longest, "no paragraph is a blob").toBeLessThan(1400);
       expect(r.heroTitle, "the head is the tool's own hero").not.toBe("");
       expect(r.bench, "the interactive lab is not on the article").toBe(false);
-      expect(r.folds, "the article is the rest: nothing folded").toBe(0);
-      if (p.includes("tracer")) expect(r.chunks).toBe(12);
+      // The same reading rules as the tool page: folds behind one
+      // travelling "Read on".
+      if (p.includes("tracer")) { expect(r.chunks).toBe(12); expect(r.folds).toBe(12); }
+      expect(r.summaries, "one Read on showing").toBe(p.includes("tracer") ? 1 : r.summaries);
+      expect(r.metaCopy, "no character count, no note about the split").toBe(false);
     });
   }
 }

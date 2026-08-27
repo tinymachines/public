@@ -53,28 +53,16 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 const L = {
-  en: {
-    open: "Open the tool",
-    splits: (n: number) => `${n} of the paragraph breaks on this page are the article's, not the author's: one long paragraph was split at sentence ends so it could be read. Every word is the tool page's.`,
-    chars: (n: string) => `${n} characters`,
-  },
-  ja: {
-    open: "ツールを開く",
-    splits: (n: number) => `このページの段落の切れ目のうち ${n} 箇所は記事側のもので、著者のものではない: 長い一段落を読めるよう文末で分けた。言葉はすべてツールページのまま。`,
-    chars: (n: string) => `${n} 文字`,
-  },
+  en: { open: "Open the tool", readOn: "Read on" },
+  ja: { open: "ツールを開く", readOn: "続きを読む" },
 } as const;
-
-// A thousands separator that is the same string on the server and in every
-// browser: toLocaleString was a hydration mismatch waiting to happen.
-const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
 export default async function ArticlePage({ params }: { params: Promise<{ lang: Lang; page: string }> }) {
   const { lang, page } = await params;
   const file = fileFor(page);
   if (!file) throw new Error(`No tool page for slug ${JSON.stringify(page)}.`);
   const S = L[lang];
-  const a = article(file);
+  const a = article(file, S.readOn);
   const x = explorer(file);
   // The head is the hero as the tool wrote it, h1 and all; the rest of
   // the tool's body (the instrument) is rendered hidden so its script
@@ -90,15 +78,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
       <article className="art" data-chip-api={chipApi()}>
         <style dangerouslySetInnerHTML={{ __html: x.style }} />
         <header className="explorer-shell art-head" dangerouslySetInnerHTML={{ __html: hero }} />
-        <p className="art-meta quiet">
-          {S.chars(grouped(a.chars))} · <Link href={localize(lang, `/6502/${page}`)}>{S.open}</Link>
+        <p className="art-meta">
+          <Link className="art-link" href={localize(lang, `/6502/${page}`)}>{S.open}</Link>
         </p>
         <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={x.script} />
 
         <div className="explorer-shell art-body" dangerouslySetInnerHTML={{ __html: a.html }} />
         <Justify root=".art-body" />
-        {a.splits > 0 ? <p className="quiet art-note">{S.splits(a.splits)}</p> : null}
       </article>
     </Shell>
   );

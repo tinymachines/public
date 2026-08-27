@@ -110,7 +110,7 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
             it replaces begins. */}
         {articlePages().some((p) => p.slug === page) ? (
           <p className="wb-article-link">
-            <Link className="tag live" href={localize(lang, `/6502/${page}/article`)}>{lang === "ja" ? "記事として読む" : "Read it as an article"}</Link>
+            <Link className="art-link" href={localize(lang, `/6502/${page}/article`)}>{lang === "ja" ? "記事として読む" : "Read it as an article"}</Link>
           </p>
         ) : null}
         {/* What is running, on every page: see explorer/page.tsx. */}

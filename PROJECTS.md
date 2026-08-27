@@ -1416,3 +1416,12 @@ supplies it after the first comma); one "Read on" travels down the page
 (one `:has` rule hides everything after the first closed fold); the
 6,600-character caption under the drawing is hidden (Justify marks a
 `.bk-foot` longer than a paragraph, explorer.css hides it).
+
+## Same night, third pass: the article folds too, one Read on, the strip, the copy
+
+The article gets the tool page's reading rules (folds, one travelling
+"Read on"); an opened fold's summary disappears; the article button is
+its own colour at the summary's size; the full-screen key moves up to
+the strip's key row on a phone; the API reference's self-description
+and coverage counters are removed as placeholder copy (owner's list).
+`notes/pretext.md` has the round.

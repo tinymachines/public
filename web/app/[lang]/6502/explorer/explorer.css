@@ -235,7 +235,9 @@
 .explorer-shell.explorer-shell .read-on details > summary::-webkit-details-marker { display: none; }
 .explorer-shell.explorer-shell .read-on details > summary:hover,
 .explorer-shell.explorer-shell .read-on details > summary:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
-.explorer-shell.explorer-shell .read-on details[open] > summary { margin-bottom: calc(var(--u) * 3); }
+/* Opened, the summary goes: one "Read on" on the page, the next fold's
+   (owner's call, 2026-08-27). A reload starts over. */
+.explorer-shell.explorer-shell .read-on details[open] > summary { display: none; }
 
 /* ONE "Read on" that travels down the page (owner's call, 2026-08-27):
    everything after a closed fold, in the same section, waits until it is
@@ -251,3 +253,19 @@
    the prose sections' .wrap has (78rem centred, 1.25rem inline padding,
    their stylesheet's numbers), so it lines up with the fold's summary. */
 .wb-article-link { max-width: 78rem; margin: calc(var(--u) * 4) auto 0; padding: 0 1.25rem; }
+
+/* The article button, and its counterpart on the article ("Open the
+   tool"): the summary's exact shape, in a colour of its own so it reads
+   as a different kind of thing from "Read on". */
+.art-link {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-forest-ink);
+  border: 1px solid var(--color-forest-ink);
+  padding: calc(var(--u) * 1) calc(var(--u) * 3);
+}
+.art-link:hover, .art-link:focus-visible { color: var(--color-paper); background: var(--color-forest-ink); }

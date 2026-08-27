@@ -58,7 +58,9 @@ describe("the chunks, from data/articles.json", () => {
     // The article: the same headings, nothing folded.
     const a = article("tracer.html");
     expect(a.chunks).toBe(12);
-    expect(a.html.includes("<details")).toBe(false);
+    expect(a.html.includes("<details"), "without a label the article does not fold").toBe(false);
+    expect((article("tracer.html", "Read on").html.match(/<details>/g) ?? []).length, "with one it folds as the tool page does").toBe(12);
+    expect(article("exploded.html", "Read on").html.match(/<details>/g)?.length, "and per heading block without chunks").toBe(3);
     expect((a.html.match(/<h3 class="chunk"/g) ?? []).length).toBe(12);
     expect(explorer("tracer.html").folds, "without a label nothing folds").toBe(0);
   });

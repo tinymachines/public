@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import { explorerPages } from "./explorer";
-import { PROSE_SECTION, chunkSection, splitParagraphs, unescape } from "./prose";
+import { PROSE_SECTION, chunkSection, foldSection, splitParagraphs, unescape } from "./prose";
 import { chunksFor } from "./articles";
 
 /**
@@ -57,7 +57,7 @@ export interface Article {
 
 const slugs = () => new Set(explorerPages().map((p) => p.file.replace(/\.html$/, "")));
 
-export function article(file: string): Article {
+export function article(file: string, readOn?: string): Article {
   const html = fs.readFileSync(path.join(SRC, file), "utf8");
   const s = slugs();
   const sections: string[] = [];
@@ -74,9 +74,15 @@ export function article(file: string): Article {
     const split = splitParagraphs(sec, specs);
     sec = split.html; splits += split.splits; chars += split.chars;
     for (const a of split.found) found.add(a);
-    // The chunk headings; no fold here, the article is the rest.
-    const c = chunkSection(sec, specs);
-    sec = c.html; chunks += c.chunks;
+    // The chunk headings, and, with a label, the folds: the same reading
+    // rules as the tool page (owner's call, 2026-08-27, later: the same
+    // treatment on the article).
+    if (specs.length) {
+      const c = chunkSection(sec, specs, readOn);
+      sec = c.html; chunks += c.chunks;
+    } else if (readOn) {
+      sec = foldSection(sec, readOn).html;
+    }
     // Links to the tool pages, one segment deeper here (lib/explorer.ts).
     // Both forms the tool pages use: "/block?b=x" and "block?b=x". From the
     // article, one segment deeper, the relative one would resolve under
