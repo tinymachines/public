@@ -83,10 +83,18 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
   // The figure: the tool's body with its prose sections cut out (they are
   // the article now) and without its hero (the page opener, which inside a
   // figure would be a second h1). A heading it still carries is demoted.
-  const body = x.body
+  //
+  // Nothing is DELETED from the document, only moved out of sight: the
+  // tool's script asks for its elements by id at boot, and the primer's
+  // `#pr-main`, the wrapper its sections sat in, was gone with them and
+  // the boot threw before it filled a single slot. So the hero, and the
+  // remainder when there is no instrument left to show, are rendered
+  // hidden, and every id the script expects is there.
+  const demote = (h: string) => h.replace(/<h1\b/g, "<h2 data-was-h1").replace(/<\/h1>/g, "</h2>");
+  const hero = demote((x.body.match(/<section class="hero[^"]*"[\s\S]*?<\/section>/) ?? [""])[0]);
+  const body = demote(x.body
     .replace(/<section class="wrap sec bp-prose[\s\S]*?<\/section>/g, "")
-    .replace(/<section class="hero[^"]*"[\s\S]*?<\/section>/g, "")
-    .replace(/<h1\b/g, "<h2 data-was-h1").replace(/<\/h1>/g, "</h2>");
+    .replace(/<section class="hero[^"]*"[\s\S]*?<\/section>/g, ""));
   const name = t(lang, explorerLabel(page) ?? a.title);
   const benchIsEmpty = body.replace(/<[^>]+>/g, "").trim().length < 40;
 
@@ -101,7 +109,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
         </header>
 
         <style dangerouslySetInnerHTML={{ __html: x.style }} />
-        {benchIsEmpty ? null : (
+        <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: hero }} />
+        {benchIsEmpty ? (
+          <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: body }} />
+        ) : (
           <figure className="art-bench">
             <figcaption><b>{S.bench}</b> · {S.benchNote}</figcaption>
             <div className="art-bench-frame">

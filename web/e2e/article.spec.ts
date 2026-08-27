@@ -16,7 +16,10 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
         let lines = 0, over = 0, loose = 0;
         for (const para of set) for (const l of para.querySelectorAll(".jl:not(.jl-last)")) {
           lines++;
-          const w = [...l.children].reduce((a, c) => a + c.getBoundingClientRect().width, 0);
+          // The line's content width: a Range over everything in it, text
+          // nodes included (the lines hold text directly).
+          const range = document.createRange(); range.selectNodeContents(l);
+          const w = range.getBoundingClientRect().width;
           const d = w - (l as HTMLElement).clientWidth;
           if (d > 0.5) over++;
           if (d < -(l as HTMLElement).clientWidth * 0.3) loose++;
