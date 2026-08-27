@@ -157,3 +157,34 @@ remainder is shorter than LONG. Measured on the tracer at 390: 6,502
 pixels folded, 19,457 open; every paragraph behind the fold set and
 fitting when opened. Chrome lays a closed details out
 (content-visibility), so those paragraphs are set at load, not on open.
+
+## Chunks, 2026-08-27 (afternoon, the riff)
+
+Owner's brief: no interactive lab on the article; keep the two-tone
+header; "Read on" shows faded text from the next paragraph and a pointer;
+both pages get a heading for each chunk of related paragraphs, and the
+folds break there; a table for the text blobs, which the site's Articles
+section will grow out of.
+
+- `data/articles.json` is the table: per tool, `chunks: [{heading, at}]`,
+  `at` being the opening words of the sentence the chunk starts on. The
+  tracer has 23. `web/lib/articles.ts` reads it.
+- `splitParagraphs(html, chunks)` forces a paragraph break at every anchor
+  before the length split runs between them, so every chunk starts a
+  paragraph; an anchor the page does not carry fails the build in both
+  `explorer()` and `article()` (the page changed under the table).
+- `chunkSection` puts an `h3.chunk` (id from the heading) before each
+  chunk; on the tool page each chunk's paragraphs go under a `<details>`
+  behind a `.peek`, a copy of the first paragraph clipped to 4.2em under a
+  mask fade, hidden once the details is open (`:has`). The summary reads
+  "Read on ›" (`\203A` from a pseudo-element; `\2039` when open). A
+  section's later heading blocks end a chunk and are never inside a fold.
+  The article gets the headings and no folds.
+- The article page's head is the tool's own hero (eyebrow, title, lede,
+  statbar); the bench figure is gone; the tool's remainder is rendered
+  hidden so the script still boots and fills the primer's slots.
+- Pages without chunks keep the one-fold-per-section rule, with the peek.
+
+Measured on a local build, phone: tool page 11,468 CSS px (23 folds
+closed), article 17,510. Chrome lays a closed details out, so the folded
+paragraphs are set at load.

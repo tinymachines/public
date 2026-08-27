@@ -1384,3 +1384,16 @@ box, so it lines up with the fold's summary (its rule had lived in
 reference, owner's call: `web/e2e/golden/tracer-golden-{phone,desk}.jpg`,
 taken from the live site at 1.0.133, 6,846 CSS px tall at 390 against
 the "before" pair's 18,247. `web/e2e/golden/README.md` lists both.
+
+## Same day, the riff: chunks, peeks, the table
+
+Owner's brief after the golden: no lab on the article, keep the two-tone
+header, "Read on" with a faded peek and a pointer, a heading for each
+chunk of related paragraphs on both pages with the folds breaking there,
+and a table for the text blobs. `data/articles.json` is the table (the
+tracer: 23 chunks, each `heading` plus the words it starts `at`; an
+anchor not on the page fails the build). `chunkSection` in
+`web/lib/prose.ts` heads each chunk and, on the tool page, folds it
+behind a clipped, fading copy of its first paragraph; the article gets
+the headings and the tool's own hero as its head, and no bench.
+`notes/pretext.md` has the round.

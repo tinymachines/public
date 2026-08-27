@@ -14,25 +14,25 @@ import "../../explorer/explorer.css";
 import "./article.css";
 
 /**
- * The companion page: a tool's prose as an article, with the tool in it.
+ * The companion page: a tool's prose as an article.
  *
  * Owner's call, 2026-08-27: a page with a large amount of text is a page
  * nobody reads, and the tracer had two blobs of it under a full-viewport
  * instrument. So each tool gets a companion at /6502/<tool>/article: its
  * prose sections, the same markup (lib/article.ts changes no word; it
- * splits the one 20,661-character paragraph at sentence ends), set in the
- * reading column and justified in place through pretext
- * (components/Justify.tsx), with the rest of the instrument embedded as a
- * live figure, running, with its own controls. The tool page stays what it
- * is: the instrument, full width, first. This is the magazine; that is the
- * bench.
+ * splits the long paragraphs at sentence ends and at the chunk anchors
+ * data/articles.json names, and heads each chunk), set in the reading
+ * column and justified in place through pretext (components/Justify.tsx).
+ * The tool page stays what it is: the instrument, full width, first, its
+ * prose folded chunk by chunk. This is the magazine; that is the bench.
  *
- * The widgets the sections carry (slots the script fills with measured
- * numbers, tables, the block page's whole instrument) come through as
- * they are and stay live, because the tool's script is booted once here,
- * exactly as the tool page boots it, and finds them in the document where
- * it expects them. The article body wears `.explorer-shell` so the tool's
- * own rules for its prose and widgets reach them.
+ * The head is the tool's own hero: its eyebrow, its title, its lede. The
+ * instrument itself is not on this page (owner's call, later the same
+ * day: the interactive lab goes), but the tool's script is booted here
+ * as on the tool page, because the widgets the sections carry (slots the
+ * script fills with measured numbers, the block page's instrument) are
+ * its; so the rest of the tool's body is rendered hidden, and every id
+ * the script expects at boot is in the document.
  */
 
 export const dynamicParams = false;
@@ -54,15 +54,11 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 const L = {
   en: {
-    bench: "The bench",
-    benchNote: "The instrument, running here as it runs on its own page. Its controls are its own.",
     open: "Open the tool",
     splits: (n: number) => `${n} of the paragraph breaks on this page are the article's, not the author's: one long paragraph was split at sentence ends so it could be read. Every word is the tool page's.`,
     chars: (n: string) => `${n} characters`,
   },
   ja: {
-    bench: "ベンチ",
-    benchNote: "この計器は、自身のページで動くのと同じようにここで動く。操作はそれ自身のもの。",
     open: "ツールを開く",
     splits: (n: number) => `このページの段落の切れ目のうち ${n} 箇所は記事側のもので、著者のものではない: 長い一段落を読めるよう文末で分けた。言葉はすべてツールページのまま。`,
     chars: (n: string) => `${n} 文字`,
@@ -80,46 +76,24 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
   const S = L[lang];
   const a = article(file);
   const x = explorer(file);
-  // The figure: the tool's body with its prose sections cut out (they are
-  // the article now) and without its hero (the page opener, which inside a
-  // figure would be a second h1). A heading it still carries is demoted.
-  //
-  // Nothing is DELETED from the document, only moved out of sight: the
-  // tool's script asks for its elements by id at boot, and the primer's
-  // `#pr-main`, the wrapper its sections sat in, was gone with them and
-  // the boot threw before it filled a single slot. So the hero, and the
-  // remainder when there is no instrument left to show, are rendered
-  // hidden, and every id the script expects is there.
-  const demote = (h: string) => h.replace(/<h1\b/g, "<h2 data-was-h1").replace(/<\/h1>/g, "</h2>");
-  const hero = demote((x.body.match(/<section class="hero[^"]*"[\s\S]*?<\/section>/) ?? [""])[0]);
-  const body = demote(x.body
+  // The head is the hero as the tool wrote it, h1 and all; the rest of
+  // the tool's body (the instrument) is rendered hidden so its script
+  // finds every element it asks for at boot. Nothing is deleted.
+  const hero = (x.body.match(/<section class="hero[^"]*"[\s\S]*?<\/section>/) ?? [""])[0];
+  const body = x.body
     .replace(/<section class="wrap sec bp-prose[\s\S]*?<\/section>/g, "")
-    .replace(/<section class="hero[^"]*"[\s\S]*?<\/section>/g, ""));
+    .replace(/<section class="hero[^"]*"[\s\S]*?<\/section>/g, "");
   const name = t(lang, explorerLabel(page) ?? a.title);
-  const benchIsEmpty = body.replace(/<[^>]+>/g, "").trim().length < 40;
 
   return (
     <Shell lang={lang} die="6502" title={name} titleIsHeading={false}>
       <article className="art" data-chip-api={chipApi()}>
-        <header className="art-head">
-          <h1>{name}</h1>
-          <p className="art-meta quiet">
-            {S.chars(grouped(a.chars))} · <Link href={localize(lang, `/6502/${page}`)}>{S.open}</Link>
-          </p>
-        </header>
-
         <style dangerouslySetInnerHTML={{ __html: x.style }} />
-        <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: hero }} />
-        {benchIsEmpty ? (
-          <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: body }} />
-        ) : (
-          <figure className="art-bench">
-            <figcaption><b>{S.bench}</b> · {S.benchNote}</figcaption>
-            <div className="art-bench-frame">
-              <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
-            </div>
-          </figure>
-        )}
+        <header className="explorer-shell art-head" dangerouslySetInnerHTML={{ __html: hero }} />
+        <p className="art-meta quiet">
+          {S.chars(grouped(a.chars))} · <Link href={localize(lang, `/6502/${page}`)}>{S.open}</Link>
+        </p>
+        <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={x.script} />
 
         <div className="explorer-shell art-body" dangerouslySetInnerHTML={{ __html: a.html }} />

@@ -62,10 +62,11 @@ describe("the article reader", () => {
     const parts = splitRuns(runsOf(src.slice(i + 3, j)));
     expect(parts.length).toBeGreaterThan(10);
     expect(parts.map(plain).join(" ")).toBe(original);
-    // The same parts are what the article carries, in order.
+    // The article carries the same text, in order, across its own breaks
+    // (which the chunk anchors add to; data/articles.json).
     const tracer = article("tracer.html");
-    const rewritten = (h: string) => h.replace(/href="\/?([a-z0-9-]+)/g, 'href="/6502/$1');
-    for (const p of parts) expect(tracer.html.includes(rewritten(htmlOf(p)))).toBe(true);
+    const text = [...tracer.html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map((m) => plain(runsOf(m[1]))).join(" ");
+    expect(text.includes(original)).toBe(true);
     // And the split never lands inside a mono run.
     const long: Run[] = [{ kind: "text", text: "A sentence here. " }, { kind: "mono", text: "x.y" }, { kind: "text", text: " ends. " + "More words follow. ".repeat(80) }];
     for (const part of splitRuns(long, 200, 300)) for (const r of part) if (r.kind === "mono") expect(r.text).toBe("x.y");

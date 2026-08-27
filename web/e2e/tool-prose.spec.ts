@@ -63,37 +63,49 @@ test("the caption follows the script: a step rewrites it and it is set again", a
   expect(before!.length).toBeGreaterThan(3000);
 });
 
-test("the prose folds after its opening, and opening it sets the rest", async ({ page }) => {
+test("the prose folds chunk by chunk under its headings, each with a faded peek; opening one sets the rest", async ({ page }) => {
   test.slow();
   await page.setViewportSize(PHONE);
   await open(page, "/6502/tracer", 9000);
-  const before = await page.evaluate(() => ({
-    h: document.documentElement.scrollHeight,
-    folds: document.querySelectorAll("details.read-on:not([open])").length,
-    set: document.querySelectorAll(".jp-set").length,
-  }));
-  expect(before.folds).toBeGreaterThan(0);
+  const before = await page.evaluate(() => {
+    const folds = [...document.querySelectorAll<HTMLElement>(".read-on")];
+    const peekShown = folds.filter((f) => (f.querySelector(".peek") as HTMLElement).offsetHeight > 0).length;
+    const peekClipped = folds.filter((f) => { const pk = f.querySelector(".peek") as HTMLElement; return pk.scrollHeight > pk.clientHeight; }).length;
+    return {
+      h: document.documentElement.scrollHeight,
+      chunks: document.querySelectorAll("h3.chunk").length,
+      folds: folds.length,
+      closed: document.querySelectorAll(".read-on details:not([open])").length,
+      peekShown, peekClipped,
+      pointer: getComputedStyle(document.querySelector(".read-on summary")!, "::after").content,
+      set: document.querySelectorAll(".jp-set").length,
+    };
+  });
+  expect(before.chunks).toBe(23);
+  expect(before.folds).toBe(23);
+  expect(before.closed).toBe(23);
+  expect(before.peekShown, "every closed fold shows its peek").toBe(23);
+  expect(before.peekClipped, "and the peek is cut short, fading").toBeGreaterThan(20);
+  expect(before.pointer).toContain("\u203a");
+  expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(14000);
   const edges = await page.evaluate(() => ({
-    summary: document.querySelector("details.read-on > summary")!.getBoundingClientRect().left,
+    summary: document.querySelector(".read-on > details > summary")!.getBoundingClientRect().left,
     link: document.querySelector(".wb-article-link a")!.getBoundingClientRect().left,
   }));
-  expect(Math.abs(edges.link - edges.summary), "the article link lines up with the fold's summary").toBeLessThan(1);
-  expect(before.h, "a phone's scroll with the prose folded").toBeLessThan(9000);
-  await page.evaluate(() => document.querySelectorAll<HTMLDetailsElement>("details.read-on").forEach((d) => { d.open = true; }));
+  expect(Math.abs(edges.link - edges.summary), "the article link lines up with the folds' summaries").toBeLessThan(1);
+  await page.evaluate(() => document.querySelectorAll<HTMLDetailsElement>(".read-on details").forEach((d) => { d.open = true; }));
   await page.waitForTimeout(1500);
   const after = await page.evaluate(() => {
     let over = 0;
-    for (const l of document.querySelectorAll("details.read-on .jp-set .jl:not(.jl-last)")) {
+    for (const l of document.querySelectorAll(".read-on details .jp-set .jl:not(.jl-last)")) {
       const range = document.createRange(); range.selectNodeContents(l);
       if (range.getBoundingClientRect().width - (l as HTMLElement).clientWidth > 0.5) over++;
     }
-    return { h: document.documentElement.scrollHeight, set: document.querySelectorAll(".jp-set").length, over };
+    const peeks = [...document.querySelectorAll<HTMLElement>(".read-on .peek")].filter((p) => p.offsetHeight > 0).length;
+    return { h: document.documentElement.scrollHeight, set: document.querySelectorAll(".jp-set").length, over, peeks };
   });
-  // Chrome lays out a closed details' content (content-visibility), so
-  // the paragraphs behind the fold are set at load; what matters is that
-  // open, every one of them is set and fits.
-  expect(after.set).toBeGreaterThanOrEqual(before.set);
+  expect(after.peeks, "open, the peeks go").toBe(0);
   expect(after.set).toBeGreaterThan(30);
   expect(after.over).toBe(0);
-  expect(after.h).toBeGreaterThan(before.h * 2);
+  expect(after.h).toBeGreaterThan(before.h * 1.5);
 });

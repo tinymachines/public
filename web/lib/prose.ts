@@ -127,16 +127,25 @@ export function htmlOf(runs: Run[]): string {
 }
 
 /**
- * Split a long paragraph at sentence ends into paragraphs near TARGET
- * characters, cutting runs where a sentence ends inside one. The join of
- * the parts' plain text is the original's plain text.
+ * Split a paragraph into paragraphs: first at `forced` offsets (chunk
+ * anchors, which are sentence starts), then, where a part is longer than
+ * `long`, at sentence ends into parts near `target` characters, never
+ * inside a mono run. The join of the parts' plain text is the original's
+ * plain text.
  */
-export function splitRuns(runs: Run[], target = TARGET, long = LONG): Run[][] {
+export function splitRuns(runs: Run[], target = TARGET, long = LONG, forced: number[] = []): Run[][] {
   const text = plain(runs);
   const monoRanges: [number, number][] = [];
   let pos = 0;
   for (const r of runs) { if (r.kind === "mono") monoRanges.push([pos, pos + r.text.length]); pos += r.text.length; }
-  const cuts = cutsOf(text, (i) => monoRanges.some(([a, b]) => i > a && i < b), target, long);
+  const keep = (i: number) => monoRanges.some(([a, b]) => i > a && i < b);
+  const bounds = [0, ...forced.filter((f) => f > 0 && f < text.length).sort((x, y) => x - y), text.length];
+  const cuts: number[] = [];
+  for (let i = 0; i + 1 < bounds.length; i++) {
+    if (i > 0) cuts.push(bounds[i]);
+    const seg = text.slice(bounds[i], bounds[i + 1]);
+    for (const c of cutsOf(seg, (k) => keep(bounds[i] + k), target, long)) cuts.push(bounds[i] + c);
+  }
   if (!cuts.length) return [runs];
   const parts: Run[][] = [];
   let cur: Run[] = [];
@@ -161,38 +170,98 @@ export function splitRuns(runs: Run[], target = TARGET, long = LONG): Run[][] {
   return parts.filter((p) => p.length);
 }
 
+/** A chunk of a page's prose: its heading and the words it starts on (data/articles.json). */
+export interface ChunkSpec { heading: string; at: string }
+
 /**
- * The long plain paragraphs of an HTML fragment, split. A paragraph with an
- * id is a paragraph something asks for by name and is left alone. Returns
- * the fragment, how many breaks were added, and how much text it holds.
+ * The long plain paragraphs of an HTML fragment, split; and, where a
+ * chunk's opening words fall inside a paragraph, that paragraph split
+ * there too, so every chunk starts a paragraph. A paragraph with an id is
+ * a paragraph something asks for by name and is left alone. Returns the
+ * fragment, how many breaks were added, how much text it holds, and which
+ * anchors were found.
  */
-export function splitParagraphs(html: string): { html: string; splits: number; chars: number } {
+export function splitParagraphs(html: string, chunks: ChunkSpec[] = []): { html: string; splits: number; chars: number; found: Set<string> } {
   let splits = 0;
   let chars = 0;
+  const found = new Set<string>();
   const out = html.replace(/<p([^>]*)>([\s\S]*?)<\/p>/g, (whole, attrs: string, inner: string) => {
     const text = unescape(inner.replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
     chars += text.length;
-    if (text.length <= LONG || !isPlainInline(inner) || /\bid=/.test(attrs)) return whole;
-    const parts = splitRuns(runsOf(inner));
+    const forced: number[] = [];
+    for (const c of chunks) {
+      const i = text.indexOf(c.at);
+      if (i < 0) continue;
+      found.add(c.at);
+      if (i > 0) forced.push(i);
+    }
+    if ((text.length <= LONG && !forced.length) || !isPlainInline(inner) || /\bid=/.test(attrs)) return whole;
+    const parts = splitRuns(runsOf(inner), TARGET, LONG, forced);
     if (parts.length === 1) return whole;
     splits += parts.length - 1;
     return parts.map((p) => `<p${attrs}>${htmlOf(p)}</p>`).join("\n");
   });
-  return { html: out, splits, chars };
+  return { html: out, splits, chars, found };
 }
 
 /** The prose sections of a tool page, each still `section.wrap.sec.bp-prose`. */
 export const PROSE_SECTION = /<section class="wrap sec bp-prose[^"]*"[^>]*>[\s\S]*?<\/section>/g;
 
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const WIDGET = /<(div|table|button|select|svg|figure|input|form|canvas)\b|data-fact=/;
+
 /**
- * A prose section folded after its opening: the heading and the first
- * `keep` paragraphs stay, the rest goes under a native `<details>` whose
- * summary reads `label`. Owner's call, 2026-08-27: the tool page shows
- * the instrument and an opening; the companion article is the reading
- * version. A section whose remainder carries anything but paragraphs and
- * lists (the block page's instrument lives in its prose) is left whole,
- * and so is one whose remainder is shorter than LONG: a fold that hides
- * two sentences is a click for nothing.
+ * A section's paragraphs as chunks: an `h3` before the paragraph each
+ * chunk starts on, and, when `fold` is given, the chunk's paragraphs
+ * under a native `<details>` behind its heading, with a faded peek of its
+ * first paragraph and a summary reading `fold` (owner's call,
+ * 2026-08-27). The paragraphs before the first chunk are the opening and
+ * stay as they are. The article passes no `fold`: it is the rest.
+ *
+ * The peek is a copy of the first paragraph, marked aria-hidden, shown
+ * only while the details is closed (explorer.css). A chunk whose markup
+ * carries a widget is never folded, headings or not: the block page's
+ * instrument lives in its prose.
+ */
+export function chunkSection(sec: string, chunks: ChunkSpec[], fold?: string): { html: string; chunks: number; folds: number } {
+  const closeAt = sec.lastIndexOf("</section>");
+  if (closeAt < 0 || !chunks.length) return { html: sec, chunks: 0, folds: 0 };
+  const body = sec.slice(0, closeAt);
+  // Where each chunk starts: the paragraph whose text opens with its
+  // words. A section's own heading block (the tracer's one section
+  // carries three) ends the chunk before it and is not a chunk.
+  const starts: { at: number; heading: string | null }[] = [];
+  for (const m of body.matchAll(/<p\b([^>]*)>([\s\S]*?)<\/p>/g)) {
+    const text = unescape(m[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
+    const c = chunks.find((c) => text.startsWith(c.at));
+    if (c) starts.push({ at: m.index, heading: c.heading });
+  }
+  if (!starts.length) return { html: sec, chunks: 0, folds: 0 };
+  for (const m of body.matchAll(/<div class="sec-head">/g)) if (m.index > starts[0].at) starts.push({ at: m.index, heading: null });
+  starts.sort((a, b) => a.at - b.at);
+  let out = body.slice(0, starts[0].at);
+  let folds = 0;
+  starts.forEach((s, i) => {
+    const end = i + 1 < starts.length ? starts[i + 1].at : body.length;
+    const inner = body.slice(s.at, end);
+    if (s.heading === null) { out += inner; return; }
+    const h = `<h3 class="chunk" id="${slug(s.heading)}">${escape(s.heading)}</h3>\n`;
+    if (!fold || WIDGET.test(inner)) { out += h + inner; return; }
+    const first = inner.match(/<p\b[^>]*>[\s\S]*?<\/p>/)?.[0] ?? "";
+    const peek = first.replace(/\sid="[^"]*"/g, "");
+    out += `${h}<div class="read-on"><div class="peek" aria-hidden="true">${peek}</div><details><summary>${escape(fold)}</summary>${inner}</details></div>\n`;
+    folds += 1;
+  });
+  return { html: out + sec.slice(closeAt), chunks: starts.filter((s) => s.heading !== null).length, folds };
+}
+
+/**
+ * Without chunks, a section folded after its opening: the heading and
+ * the first `keep` paragraphs stay, the rest goes under one `<details>`
+ * whose summary reads `label`, with a faded peek of the next paragraph. A
+ * section whose remainder carries a widget is left whole, and so is one
+ * whose remainder is shorter than LONG: a fold that hides two sentences
+ * is a click for nothing.
  */
 export function foldSection(sec: string, label: string, keep = 3): { html: string; folded: boolean } {
   const closeAt = sec.lastIndexOf("</section>");
@@ -214,11 +283,13 @@ export function foldSection(sec: string, label: string, keep = 3): { html: strin
   // The section's own heading blocks are prose; anything else that is
   // not a paragraph or a list is a widget, and the section stays whole.
   const bare = rest.replace(/<div class="sec-head">[\s\S]*?<\/div>/g, "");
-  if (/<(div|table|button|select|svg|figure|input|form|canvas)\b|data-fact=/.test(bare)) return { html: sec, folded: false };
+  if (WIDGET.test(bare)) return { html: sec, folded: false };
   const text = unescape(rest.replace(/<[^>]+>/g, "").replace(/\s+/g, " ")).trim();
   if (text.length < LONG) return { html: sec, folded: false };
+  const first = rest.match(/<p\b[^>]*>[\s\S]*?<\/p>/)?.[0] ?? "";
+  const peek = first.replace(/\sid="[^"]*"/g, "");
   return {
-    html: `${body.slice(0, at)}\n<details class="read-on"><summary>${escape(label)}</summary>${rest}</details>\n${sec.slice(closeAt)}`,
+    html: `${body.slice(0, at)}\n<div class="read-on"><div class="peek" aria-hidden="true">${peek}</div><details><summary>${escape(label)}</summary>${rest}</details></div>\n${sec.slice(closeAt)}`,
     folded: true,
   };
 }

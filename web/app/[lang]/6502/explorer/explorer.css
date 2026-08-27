@@ -196,14 +196,29 @@
 .explorer-shell.explorer-shell .sch-dir { flex-wrap: wrap; min-width: 0; }
 .explorer-shell.explorer-shell .sch-dir-btn { flex: 0 0 auto; white-space: nowrap; padding-inline: calc(var(--u) * 2); }
 
-/* The fold after a prose section's opening (lib/prose.ts foldSection):
-   a native details, its summary a short mono line. Open, the rest of the
-   section flows as it did; Justify sets those paragraphs when they get a
-   width (the host grows, and it re-sets everything). */
-.explorer-shell.explorer-shell details.read-on { margin: calc(var(--u) * 4) 0 0; }
-.explorer-shell.explorer-shell details.read-on > summary {
+/* The chunk headings (lib/prose.ts chunkSection, from data/articles.json):
+   a step below the section's h2, in the tool's own heading face. */
+.explorer-shell.explorer-shell h3.chunk { margin: calc(var(--u) * 8) 0 calc(var(--u) * 3); font-size: 1.15rem; max-width: 68ch; }
+
+/* The fold under a chunk heading (chunkSection), or after a section's
+   opening (foldSection): a native details behind a faded peek of the
+   chunk's first paragraph. Closed, the peek shows its first lines fading
+   out and the summary reads "Read on" with a pointer; open, the peek goes
+   and the chunk flows as it did. Justify sets the peek's lines too, so
+   the fade is over set text. */
+.explorer-shell.explorer-shell .read-on { margin: 0 0 calc(var(--u) * 4); }
+.explorer-shell.explorer-shell .read-on .peek {
+  max-height: 4.2em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 100%);
+}
+.explorer-shell.explorer-shell .read-on .peek > p { margin: 0; }
+.explorer-shell.explorer-shell .read-on:has(details[open]) .peek { display: none; }
+.explorer-shell.explorer-shell .read-on details > summary {
   cursor: pointer;
   display: inline-block;
+  margin-top: calc(var(--u) * 2);
   font-family: var(--font-mono);
   font-size: var(--text-fine);
   letter-spacing: 0.04em;
@@ -213,10 +228,12 @@
   padding: calc(var(--u) * 1) calc(var(--u) * 3);
   list-style: none;
 }
-.explorer-shell.explorer-shell details.read-on > summary::-webkit-details-marker { display: none; }
-.explorer-shell.explorer-shell details.read-on > summary:hover,
-.explorer-shell.explorer-shell details.read-on > summary:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
-.explorer-shell.explorer-shell details.read-on[open] > summary { margin-bottom: calc(var(--u) * 4); }
+.explorer-shell.explorer-shell .read-on details > summary::after { content: " \203A"; }
+.explorer-shell.explorer-shell .read-on details[open] > summary::after { content: " \2039"; }
+.explorer-shell.explorer-shell .read-on details > summary::-webkit-details-marker { display: none; }
+.explorer-shell.explorer-shell .read-on details > summary:hover,
+.explorer-shell.explorer-shell .read-on details > summary:focus-visible { color: var(--color-ink); border-color: var(--color-ink); }
+.explorer-shell.explorer-shell .read-on details[open] > summary { margin-bottom: calc(var(--u) * 3); }
 
 /* The link from the bench to the article, under the prose: the same box
    the prose sections' .wrap has (78rem centred, 1.25rem inline padding,

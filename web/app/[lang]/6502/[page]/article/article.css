@@ -1,25 +1,13 @@
-/* The companion article: a reading column with the instrument in it.
-   Paper, the prose voice (serif, 68ch), and one full-bleed figure. Nothing
-   here names a colour; the bench inside the figure keeps its own rules
-   (explorer.css, scoped to .explorer-shell). */
+/* The companion article: a reading column. Paper, the prose voice
+   (serif, 68ch), the tool's own hero as its head. Nothing here names a
+   colour. */
 .art { margin: 0 auto; }
-.art-head { max-width: 68ch; margin-bottom: calc(var(--u) * 8); }
-.art-head h1 { margin: calc(var(--u) * 1) 0 calc(var(--u) * 4); }
-.art-meta { font-family: var(--font-mono); font-size: var(--text-fine); margin: calc(var(--u) * 3) 0 0; }
-
-/* The bench: a window onto the running instrument, bleeding to the page
-   frame's edges, tall enough to work in and no taller than the viewport.
-   The tool was designed full-viewport and keeps that inside the frame. */
-.art-bench { margin: calc(var(--u) * 8) 0 calc(var(--u) * 10); }
-.art-bench figcaption { font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-ink-muted); margin-bottom: calc(var(--u) * 2); }
-.art-bench figcaption b { color: var(--color-ink); font-weight: 600; }
-.art-bench-frame {
-  position: relative;
-  max-height: 85vh;
-  overflow: auto;
-  border: 1px solid var(--color-rule);
-  background: var(--color-paper);
-}
+/* The head is the tool's hero (eyebrow, title, lede), in the reading
+   column, without the page gutter the hero carried on the tool page. */
+.art-head { max-width: 68ch; margin-bottom: calc(var(--u) * 6); }
+.art-head .hero { padding: 0; }
+.art-head .wrap { padding-inline: 0; margin-inline: 0; max-width: none; }
+.art-meta { font-family: var(--font-mono); font-size: var(--text-fine); margin: 0 0 calc(var(--u) * 8); }
 
 .art-body { max-width: 68ch; }
 /* The sections keep the tool's own prose rules (.wrap, .sec, .bp-prose:

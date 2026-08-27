@@ -2,7 +2,8 @@ import fs from "node:fs";
 import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import { explorerPages } from "./explorer";
-import { PROSE_SECTION, splitParagraphs, unescape } from "./prose";
+import { PROSE_SECTION, chunkSection, splitParagraphs, unescape } from "./prose";
+import { chunksFor } from "./articles";
 
 /**
  * The article: a tool page's prose sections, lifted out of the instrument.
@@ -50,6 +51,8 @@ export interface Article {
   chars: number;
   /** `[data-fact]` slots carried through, for the page and the test. */
   slots: number;
+  /** Chunk headings placed (data/articles.json). */
+  chunks: number;
 }
 
 const slugs = () => new Set(explorerPages().map((p) => p.file.replace(/\.html$/, "")));
@@ -58,15 +61,22 @@ export function article(file: string): Article {
   const html = fs.readFileSync(path.join(SRC, file), "utf8");
   const s = slugs();
   const sections: string[] = [];
+  const specs = chunksFor(file.replace(/\.html$/, ""));
+  const found = new Set<string>();
   let splits = 0;
   let chars = 0;
+  let chunks = 0;
   for (const m of html.matchAll(PROSE_SECTION)) {
     // Scripts never ride along: the tool's script is booted once, by the
     // figure, from the runtime manifest.
     let sec = m[0].replace(/<script\b[\s\S]*?<\/script>/g, "");
     // The long plain paragraphs, split.
-    const split = splitParagraphs(sec);
+    const split = splitParagraphs(sec, specs);
     sec = split.html; splits += split.splits; chars += split.chars;
+    for (const a of split.found) found.add(a);
+    // The chunk headings; no fold here, the article is the rest.
+    const c = chunkSection(sec, specs);
+    sec = c.html; chunks += c.chunks;
     // Links to the tool pages, one segment deeper here (lib/explorer.ts).
     // Both forms the tool pages use: "/block?b=x" and "block?b=x". From the
     // article, one segment deeper, the relative one would resolve under
@@ -77,6 +87,8 @@ export function article(file: string): Article {
     sections.push(sec);
   }
   if (!sections.length) throw new Error(`6502/web/${file}: no section.bp-prose; there is no article to lift`);
+  const missing = specs.filter((c) => !found.has(c.at));
+  if (missing.length) throw new Error(`6502/web/${file}: data/articles.json names chunk(s) not on the page: ${missing.map((c) => JSON.stringify(c.at)).join(", ")}`);
   const out = sections.join("\n");
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/);
@@ -88,6 +100,7 @@ export function article(file: string): Article {
     splits,
     chars,
     slots: (out.match(/data-fact=/g) ?? []).length,
+    chunks,
   };
 }
 

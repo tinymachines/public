@@ -2,9 +2,10 @@ import { test, expect } from "@playwright/test";
 import { open, PHONE, DESK } from "./lib";
 
 /**
- * The companion articles: the tool's prose set by pretext, and the tool
- * alive in the figure. Two pages stand for the seventeen: the tracer (the
- * long one, 24,000 characters and the split paragraph) and the primer.
+ * The companion articles: the tool's prose set by pretext under the
+ * tool's own hero, with the chunk headings the table gives it. Two pages
+ * stand for the seventeen: the tracer (the long one, 24,000 characters,
+ * 23 chunks) and the primer (slots the tool's script fills).
  */
 for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
   for (const [name, size] of [["desk", DESK], ["phone", PHONE]] as const) {
@@ -29,10 +30,10 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
           h1: document.querySelectorAll("h1").length,
           sideways: document.documentElement.scrollWidth - innerWidth,
           longest: Math.max(...[...document.querySelectorAll(".art-body p")].map((e) => e.textContent!.length)),
-          // The instrument is a figure above the prose where the tool has one
-          // left after its prose is lifted (the tracer), or inline panels in
-          // the prose where that is how the tool was written (the primer).
-          live: !!document.querySelector(".art-bench-frame .explorer-shell") || document.querySelectorAll(".art-body [data-demo], .art-body [data-fact]").length > 0,
+          heroTitle: document.querySelector(".art-head .hero h1")?.textContent?.trim() ?? "",
+          chunks: document.querySelectorAll(".art-body h3.chunk").length,
+          folds: document.querySelectorAll(".art-body details").length,
+          bench: !!document.querySelector(".art-bench-frame"),
         };
       });
       expect(r.paragraphs, "there is prose").toBeGreaterThan(5);
@@ -43,7 +44,10 @@ for (const p of ["/6502/tracer/article", "/6502/primer/article"]) {
       expect(r.h1).toBe(1);
       expect(r.sideways).toBeLessThanOrEqual(0);
       expect(r.longest, "no paragraph is a blob").toBeLessThan(1400);
-      expect(r.live, "the tool is on the page: a bench figure, or its inline panels").toBe(true);
+      expect(r.heroTitle, "the head is the tool's own hero").not.toBe("");
+      expect(r.bench, "the interactive lab is not on the article").toBe(false);
+      expect(r.folds, "the article is the rest: nothing folded").toBe(0);
+      if (p.includes("tracer")) expect(r.chunks).toBe(23);
     });
   }
 }
@@ -63,22 +67,4 @@ test("the primer article's slots are filled by the tool's script, inside set lin
   expect(r.slots, "the primer's measured-figure slots are on the article").toBeGreaterThan(5);
   expect(r.unfilled, "every slot holds a number from the chip").toBe(0);
   expect(r.inLines, "slots live inside pretext's lines and kept their identity").toBeGreaterThan(0);
-});
-
-test("the tracer article's bench is the tracer, running", async ({ page }) => {
-  test.slow();
-  await page.setViewportSize(DESK);
-  await open(page, "/6502/tracer/article", 9000);
-  const r = await page.evaluate(() => ({
-    svg: !!document.querySelector(".art-bench-frame #tc-svg"),
-    nodes: document.querySelectorAll(".art-bench-frame #tc-svg circle, .art-bench-frame #tc-svg use").length,
-    run: !!document.querySelector(".art-bench-frame #tc-run"),
-    heroInFigure: !!document.querySelector(".art-bench-frame .hero"),
-    proseInFigure: !!document.querySelector(".art-bench-frame .bp-prose"),
-  }));
-  expect(r.svg, "the drawing").toBe(true);
-  expect(r.nodes, "the die graph was drawn into it").toBeGreaterThan(1000);
-  expect(r.run, "the tool's own controls are its own here").toBe(true);
-  expect(r.heroInFigure).toBe(false);
-  expect(r.proseInFigure, "the prose is the article, not the figure").toBe(false);
 });

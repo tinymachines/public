@@ -3,7 +3,8 @@ import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
 import postcss from "postcss";
 import { kitBorders } from "./kit-borders";
-import { PROSE_SECTION, foldSection, splitParagraphs } from "./prose";
+import { PROSE_SECTION, chunkSection, foldSection, splitParagraphs } from "./prose";
+import { chunksFor } from "./articles";
 
 /**
  * The 6502 explorer, read out of the 6502 repository at build time.
@@ -48,8 +49,10 @@ export interface Explorer {
   description: string;
   /** How many paragraph breaks splitting the long prose paragraphs added. */
   splits: number;
-  /** How many prose sections were folded after their opening. */
+  /** How many folds the prose got: one per chunk, or one per section without chunks. */
   folds: number;
+  /** How many chunk headings the prose got (data/articles.json). */
+  chunks: number;
 }
 
 /**
@@ -205,16 +208,35 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
   // sentence ends (lib/prose.ts; the companion article applies the same
   // rule to the same sections). Owner's call, 2026-08-27: one paragraph on
   // the tracer was 23,341 characters, 48,000 pixels of a phone's scroll.
+  // With chunks (data/articles.json) every chunk starts a paragraph and
+  // gets its heading; folded per chunk when a label is given. Without
+  // chunks, one fold per section after its opening.
+  const specs = chunksFor(file.replace(/\.html$/, ""));
   let splits = 0;
   let folds = 0;
+  let chunks = 0;
+  const found = new Set<string>();
   body = body.replace(PROSE_SECTION, (sec) => {
-    const r = splitParagraphs(sec);
+    const r = splitParagraphs(sec, specs);
     splits += r.splits;
+    for (const a of r.found) found.add(a);
+    if (specs.length) {
+      const c = chunkSection(r.html, specs, readOn);
+      chunks += c.chunks; folds += c.folds;
+      return c.html;
+    }
     if (!readOn) return r.html;
     const f = foldSection(r.html, readOn);
     if (f.folded) folds += 1;
     return f.html;
   });
+  const missing = specs.filter((c) => !found.has(c.at));
+  if (missing.length) {
+    throw new Error(
+      `6502/web/${file}: data/articles.json names ${missing.length} chunk(s) whose opening words are not on the page: ` +
+        missing.map((c) => JSON.stringify(c.at)).join(", ") + ". The page changed under the table; fix the table.",
+    );
+  }
 
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/);
   const title = titleMatch ? titleMatch[1].split(/[·|]/)[0].trim() : file;
@@ -250,5 +272,5 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
       body.slice(end + "</h1>".length);
   }
 
-  return { style, body, script, title, description, splits, folds };
+  return { style, body, script, title, description, splits, folds, chunks };
 }
