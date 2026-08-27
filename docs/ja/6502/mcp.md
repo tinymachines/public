@@ -5,6 +5,35 @@
 ツールは五つ: `console_spec`、`assemble`、`run`、`mint_cartridge`、
 `chip_atlas`。
 
+## クライアントをつなぐ
+
+チップのエンドポイントと、サイトのエンドポイント。後者には、各ピースが何で、いまどれが応答しているかを答える三つのツールがある:
+
+```
+https://6502.tinymachines.ai/api/mcp
+https://tinymachines.ai/api/mcp
+```
+
+Claude Code なら:
+
+```
+claude mcp add --transport http 6502 https://6502.tinymachines.ai/api/mcp
+claude mcp add --transport http tinymachines https://tinymachines.ai/api/mcp
+```
+
+`mcpServers` ブロックを読むクライアント (Claude Desktop、Cursor など) なら:
+
+```json
+{
+  "mcpServers": {
+    "6502": { "type": "http", "url": "https://6502.tinymachines.ai/api/mcp" },
+    "tinymachines": { "type": "http", "url": "https://tinymachines.ai/api/mcp" }
+  }
+}
+```
+
+鍵も、セッションヘッダも、開くべきストリームも無い。どちらのサーバもプロトコルの `2025-06-18`、`2025-03-26`、`2024-11-05` の各改訂を話す。それより新しい改訂を求めるクライアントには、この中で最新のもので応える。これはプロトコルが定める通りの振る舞いだ。どちらのエンドポイントへの `GET` も `Allow: POST` 付きの 405: SSE ストリームは無く、まず `GET` でストリームを開く旧い HTTP+SSE トランスポートは話さない。
+
 ## HTTP ルートが細粒度である一方、ツールは粗い
 
 これは設計であって、見落としではない。

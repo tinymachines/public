@@ -12,6 +12,42 @@ keeps no sessions.
 
 Five tools: `console_spec`, `assemble`, `run`, `mint_cartridge`, `chip_atlas`.
 
+## Connecting a client
+
+The chip's endpoint, and the site's, which has three tools about what the
+pieces are and which of them are up:
+
+```
+https://6502.tinymachines.ai/api/mcp
+https://tinymachines.ai/api/mcp
+```
+
+For Claude Code:
+
+```
+claude mcp add --transport http 6502 https://6502.tinymachines.ai/api/mcp
+claude mcp add --transport http tinymachines https://tinymachines.ai/api/mcp
+```
+
+For a client that reads an `mcpServers` block (Claude Desktop, Cursor and
+the like):
+
+```json
+{
+  "mcpServers": {
+    "6502": { "type": "http", "url": "https://6502.tinymachines.ai/api/mcp" },
+    "tinymachines": { "type": "http", "url": "https://tinymachines.ai/api/mcp" }
+  }
+}
+```
+
+No key, no session header, no stream to open. Both servers speak the
+`2025-06-18`, `2025-03-26` and `2024-11-05` revisions of the protocol; a
+client asking for a newer one is answered in the newest of those, which is
+what the protocol says to do. A `GET` on either endpoint is a 405 with
+`Allow: POST`: there is no SSE stream, and the older HTTP+SSE transport,
+which opens one with a `GET` first, is not spoken.
+
 ## The tools are coarse where the HTTP routes are fine-grained
 
 That is the design, not an oversight.

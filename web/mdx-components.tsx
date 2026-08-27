@@ -1,5 +1,6 @@
 import type { MDXComponents } from "mdx/types";
 import { TwoWaysDemo } from "./app/components/TwoWaysDemo";
+import { CopyPre } from "./app/components/CopyPre";
 
 /**
  * Required at the project root. Without this file MDX pages fail to render,
@@ -11,7 +12,8 @@ import { TwoWaysDemo } from "./app/components/TwoWaysDemo";
  * heading in the widget zoo are the same heading. Do not add per-element
  * classes: that forks the kit.
  *
- * The one override is `code`, and it is not styling. See below.
+ * The overrides are `code`, which is not styling (see below), and `pre`,
+ * which is the same block with a Copy control on it (components/CopyPre.tsx).
  */
 
 // A hex colour, and nothing else. Three, four, six or eight digits, anchored
@@ -54,5 +56,5 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
   // Components a document may use by name. Registered here rather than
   // imported inside each .mdx file, so a document stays markdown with one
   // element in it rather than markdown with an import path in it.
-  return { ...components, code: Code, TwoWaysDemo };
+  return { ...components, code: Code, pre: CopyPre, TwoWaysDemo };
 }

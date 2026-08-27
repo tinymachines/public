@@ -32,3 +32,20 @@ test("the docs tree is the sidebar on a desk", async ({ page }) => {
   expect(await page.locator(".docs-toc .toc-btn").evaluate((e) => (e as HTMLElement).offsetWidth), "no button").toBe(0);
   expect(await page.locator("#docs-toc-list").evaluate((e) => (e as HTMLElement).offsetHeight)).toBeGreaterThan(300);
 });
+
+/** The MCP page's endpoints copy (owner's call, 2026-08-28), and every block has the control. */
+test("a docs code block copies itself", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await open(page, "/docs/6502/mcp", 1500);
+  const pres = page.locator(".prose pre");
+  const btns = page.locator(".copy-pre .copy-btn");
+  expect(await pres.count()).toBeGreaterThanOrEqual(3);
+  expect(await btns.count(), "one control per block").toBe(await pres.count());
+  const first = await pres.first().evaluate((e) => e.textContent);
+  expect(first).toContain("https://6502.tinymachines.ai/api/mcp");
+  expect(first).toContain("https://tinymachines.ai/api/mcp");
+  await btns.first().click();
+  await expect(btns.first()).toHaveText("Copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first);
+});

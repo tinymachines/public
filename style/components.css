@@ -1091,6 +1091,28 @@ h2.display { font-size: var(--text-h2); }
   line-height: var(--leading-data);
 }
 .prose pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+/* The Copy control on a docs code block (components/CopyPre.tsx): the
+   fine mono label the Contents button uses, in the block's top corner, in
+   the glass the block's text is in. The wrapper carries the block's margin
+   so the pre inside it can be the positioning box. */
+.copy-pre { position: relative; }
+.copy-pre .copy-btn {
+  position: absolute;
+  top: calc(var(--u) * 2);
+  right: calc(var(--u) * 2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-glass);
+  background: var(--color-panel);
+  border: 1px solid var(--color-glass);
+  border-radius: var(--radius-mod);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  opacity: 0.7;
+}
+.copy-pre .copy-btn:hover, .copy-pre .copy-btn:focus-visible { opacity: 1; }
 
 /* Tables are documentation, so they stay on paper. A wide one scrolls inside
    its own box rather than widening the page. */
