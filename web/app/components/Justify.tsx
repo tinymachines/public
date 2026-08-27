@@ -40,13 +40,23 @@ interface Item { node: Node; el: Element | null; text: string; font: string; ext
 function fontOf(c: CSSStyleDeclaration): string {
   return `${c.fontStyle === "italic" ? "italic " : ""}${c.fontWeight} ${c.fontSize} ${c.fontFamily}`;
 }
-function extraOf(c: CSSStyleDeclaration): number {
-  return ["paddingLeft", "paddingRight", "borderLeftWidth", "borderRightWidth", "marginLeft", "marginRight"]
-    .reduce((a, k) => a + (parseFloat(c[k as keyof CSSStyleDeclaration] as string) || 0), 0);
+/**
+ * An inline element's chrome: what it draws beyond its text. Measured as
+ * the width it actually occupies in the flowing paragraph (its client
+ * rects, summed, so a wrapped element still counts once) minus pretext's
+ * natural width of its text in its font. Summing padding and border was the
+ * first version and missed the primer's "See it" links, which draw an arrow
+ * after themselves from a pseudo-element; a measured difference catches
+ * whatever the rule is.
+ */
+function chromeOf(pt: PT, el: Element, text: string, font: string): number {
+  const drawn = [...el.getClientRects()].reduce((a, r) => a + r.width, 0);
+  const natural = pt.measureNaturalWidth(pt.prepareWithSegments(text, font));
+  return Math.max(0, drawn - natural);
 }
 
 /** The paragraph's inline children as pretext items, or null when it is not plain inline. */
-function itemsOf(p: HTMLElement, originals: Node[]): Item[] | null {
+function itemsOf(pt: PT, p: HTMLElement, originals: Node[]): Item[] | null {
   const base = fontOf(getComputedStyle(p));
   const items: Item[] = [];
   for (const n of originals) {
@@ -56,8 +66,9 @@ function itemsOf(p: HTMLElement, originals: Node[]): Item[] | null {
       const el = n as Element;
       if (!INLINE.has(el.tagName)) return null;
       if (el.querySelector("*:not(a):not(em):not(i):not(b):not(strong):not(code):not(span)")) return null;
-      const c = getComputedStyle(el);
-      items.push({ node: n, el, text: el.textContent ?? "", font: fontOf(c), extra: extraOf(c) });
+      const font = fontOf(getComputedStyle(el));
+      const text = el.textContent ?? "";
+      items.push({ node: n, el, text, font, extra: chromeOf(pt, el, text, font) });
     } else if (n.nodeType !== Node.COMMENT_NODE) {
       return null;
     }
@@ -66,7 +77,7 @@ function itemsOf(p: HTMLElement, originals: Node[]): Item[] | null {
 }
 
 function setParagraph(pt: PT, p: HTMLElement, originals: Node[], observe: (el: Element) => void): boolean {
-  const items = itemsOf(p, originals);
+  const items = itemsOf(pt, p, originals);
   if (!items || items.every((i) => !i.text.trim())) return false;
   const width = p.clientWidth;
   if (width <= 0) return false;

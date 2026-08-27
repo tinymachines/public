@@ -18,6 +18,7 @@ export function prepare(text: string, font: string, options?: PrepareOptions): P
 export function prepareWithSegments(text: string, font: string, options?: PrepareOptions): PreparedTextWithSegments;
 export function layout(prepared: PreparedText, maxWidth: number, lineHeight: number): LayoutResult;
 export function layoutWithLines(prepared: PreparedTextWithSegments, maxWidth: number, lineHeight: number): LayoutResult & { lines: LayoutLine[] };
+export function measureNaturalWidth(prepared: PreparedTextWithSegments): number;
 export function clearCache(): void;
 
 export type RichInlineItem = { text: string; font: string; letterSpacing?: number; break?: "normal" | "never"; extraWidth?: number };
