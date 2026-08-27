@@ -49,7 +49,9 @@ test("the caption follows the script: a step rewrites it and it is set again", a
   await page.setViewportSize(DESK);
   await open(page, "/6502/tracer", 9000);
   const before = await page.evaluate(() => document.querySelector("#tc-caption")!.textContent);
-  await page.click("#tc-step");
+  // The tool's own button is not visible here (the strip carries the
+  // controls); its handler is, so it is clicked as the script would see it.
+  await page.evaluate(() => (document.querySelector("#tc-step") as HTMLButtonElement).click());
   await page.waitForTimeout(1500);
   const r = await page.evaluate(() => {
     const cap = document.querySelector<HTMLElement>("#tc-caption")!;
