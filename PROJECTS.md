@@ -2070,3 +2070,71 @@ working. Forward step 3 waits on the subdomain logs. No new subdomains
 (2026-08-28): a surface that wants an address gets a path. Unchanged: React
 #418 on Shell pages, `TM_SELF_NETS` in `visitors.env`, article images
 (owner's), the three engine write-ups.
+
+## The menu changes and the page does not
+
+The owner's report: pressing the flag flips the menu and leaves the page in
+English, and maybe a full reload is what it wants. Two different faults have
+that symptom, and they need separating before anything is fixed. One is
+routing: the client router keeps the document it already has, re-renders the
+chrome and leaves stale content under it. The other is coverage: the page has
+no Japanese body, so the chrome is the only thing that CAN change.
+
+Measured, in a real browser, both directions, on an ordinary page and on both
+module pages: the click lands on the twin URL, `<html lang>` follows it, and
+the body that arrives is the body the server serves at that URL. So the router
+is not the fault. What the reader was seeing is the second thing, and the site
+had no number for it.
+
+`data/check-i18n.py --live` is that number now. For every page in the
+published sitemap it fetches the page and its `/ja` twin, takes each `<main>`,
+and counts how much of the Japanese page's own body is Japanese, against the
+Latin letters competing with it. The chrome is deliberately excluded: the
+overlay translates the chrome on every page, so counting whole documents hides
+exactly the thing being looked for.
+
+**25 of 68 pages have a Japanese body.** The 43 that do not are three groups,
+and only one of them is a gap:
+
+- **21 pages are byte for byte the English page**: the eighteen ported
+  explorer documents and the article twins. Those are English documents by
+  decision (`web/lib/lang.ts`: a menu entry calling a page 「入門」 while the
+  page opens in English promises something the click does not deliver).
+- **17 more are English bodies inside our own chrome**: the rest of the
+  explorer set, the Lab, `/6502/api`, `/style`.
+- **5 are docs pages with no Japanese body yet**: atlas, findings-answers,
+  idioms, walk-snake, two-ways-in. These are the honest ones. The docs
+  template already prints 「この文書はまだ翻訳されていません」 over an
+  untranslated body and puts `inLanguage: "en"` in its JSON-LD.
+
+Two defects came out of running it.
+
+**A check that could not see a page.** check-i18n globbed `docs/**/*.md`, and
+`docs/6502/two-ways-in.mdx` is a published page. It was outside the
+denominator and outside the corpus, so it was untranslated without ever being
+counted as untranslated: the check reported 15 of 19 when the truth was 15 of
+20. It reads both extensions now and names each untranslated file rather than
+printing a fraction.
+
+**A note that could never fire.** The first draft of the live scan flagged a
+page whose whole document matched the English one, which is a comparison that
+cannot be true while the chrome translates. It compares the bodies now, and 21
+pages report it.
+
+`web/e2e/lang.spec.ts` keeps the first fault from ever becoming the answer:
+the flag is followed in both directions over six pages, and whatever language
+the server serves at the twin is what the click has to produce. The claim is
+read off the server rather than off a list, so a page translated tomorrow is
+covered tomorrow and a page with no translation is not asserted to have one.
+It is load-bearing: fed the ORIGINAL page's body in place of the arrived one,
+which is the fault it exists to catch, it fails in both directions.
+
+Its own first run failed, and usefully. It waited four minutes for a `<main>`
+on `/6502/lab`, which ships none: the Lab is a full-bleed instrument. Both the
+spec and the scan fall back to the whole document there, and say so, rather
+than reporting a page they could not read.
+
+What is still open is the owner's call, not a bug: 38 pages carry
+`<html lang="ja">` over an English document with nothing on the page saying
+so. The sentence for that already exists in the docs template. Extending it is
+copy on 38 pages and therefore a decision, not a fix.
