@@ -1743,3 +1743,16 @@ select pressed in one task, with the record that the boot was in flight),
 the manifest and the metas, reset from paused and from off. The three
 strip tests cannot run against a local preview (`/6502/chip/` is nginx's
 in production), so they run against the deploy.
+
+## Checkpoint, 2026-08-28, at 1.0.150
+
+Live is 1.0.150 (`baa0e41`) on 6502 v0.270 (`f4b8976`), halfphi 0.1.2
+served and boarded (compared at tag v0.1.2, six shared files identical).
+The console's gameplay round above is deployed and held by 17 shell e2e
+tests against production. Filed upstream, not done here: `power()`
+re-checking its generation, and the frame period carried by game.js
+itself (`notes/upstream-transport.md`, last section); the 6502 session
+has been told. Open, unchanged: React #418 on Shell pages, forward steps 2
+and 3, `visitors.env`, article images (owner's), SSE only if a tool wants
+progress, the three engine write-ups now that the engine they describe may
+be the served one.
