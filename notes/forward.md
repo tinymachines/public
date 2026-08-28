@@ -212,3 +212,15 @@ What is different here, and it is three things:
 Nothing above states a number that was not read from a file or a log
 today, and the page that ships will say where each of its numbers came
 from, which is the rule this repo runs on.
+
+## No new subdomains, decided 2026-08-28
+
+The style guide was asked after by its subdomain name and does not have one.
+Owner's call when it came up: **do not add it.** The direction of travel is
+the one this file describes, surfaces moving under the apex, so a new host
+would be a redirect to `/style` on the day it was created and one more name
+to keep alive afterwards. The guide is at `tinymachines.ai/style`, and the
+zoo beside it at `/style/zoo`.
+
+This holds for the shape rather than for that one name: a surface that wants
+an address gets a path here, not a host.
