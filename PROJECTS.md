@@ -1926,3 +1926,28 @@ so a local Lab needs `v6502-wasm` to emit the same rows; doing it in
 JavaScript would be a second implementation of what `service/app.py` already
 owns. Measured, written up in `notes/one-engine.md` and filed in
 `notes/upstream-transport.md`.
+
+## The flag into the Lab, and a grey key that says why
+
+Two more from the owner on `/6502/lab`, both fixed at 1.0.164.
+
+**"Nested windows when changing to JPN".** The Lab is one ES module that
+builds this page's DOM once and has no teardown, which is why the explorer's
+pages navigate hard; the Lab's bar did not, so the flag was a client-side
+navigation. What arrived was the Japanese markup with nothing built in it and
+the Lab's own player still visible, because that player is hidden only once
+the Lab has marked it driven: two rows of controls and no instrument.
+Re-inserting the script does not help, and the comment in the page claiming
+`afterInteractive` covered this case is corrected: a module already in the
+browser's registry does not run again. `WorkbenchBar hard`, as on every other
+instrument page, and `web/e2e/lab.spec.ts` now walks the flag and holds that
+what arrives is built, driven and showing one set of keys.
+
+**The engine key stays grey, and now it says why.** A disabled control with
+the general sentence on it reads as broken. A page may state its own reason
+(`data-engine-why` on the workbench root, read by the strip like the chip API
+base is), and the Lab's is in both its languages: the Lab records a run, 34
+measurements per half-cycle, and only the engine behind the API produces
+those. The line goes when `v6502-wasm` can emit the rows
+(`notes/upstream-transport.md`); until then the key explains itself instead of
+looking like a fault.
