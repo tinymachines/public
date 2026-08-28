@@ -1809,14 +1809,23 @@ console holds between frames.
 Measured before it was written, and now held by
 `web/e2e/console-engine.spec.ts`: boot and one 8,704 half-cycle frame of
 Die Runner leave the two engines with identical chip state, identical
-memory and the same eight gates. Speed, on this desk: Silicon Snake 40.5 fps
-in the page against 39.9 over the API, Die Runner 2.8 against 3.3; under a
-fourfold CPU throttle, which is roughly a phone, the in-page chip falls to
-1.5 s a frame for Die Runner. So the console writes `api` into the store as
-its default when the floor has never chosen, which is the one decision
-here that is a judgement rather than a measurement, and the key overrules
-it either way. `notes/one-engine.md` has the table and the reasoning; the
-same note's last open piece is now the Lab's chip.
+memory and the same eight gates. Speed, off the console's own readouts on
+this desk: Silicon Snake 34.3 fps in the page against 36.5 over the API,
+Die Runner 2.4 against 2.6; under a fourfold CPU throttle, which is roughly
+a phone, the in-page chip falls to 1.5 s a frame for Die Runner. So the
+console writes `api` into the store as its default when the floor has never
+chosen, which is the one decision here that is a judgement rather than a
+measurement, and the key overrules it either way.
+
+The chip runs on a worker thread, and that was found rather than planned.
+On the page's own thread it worked and looked broken: a frame is a
+synchronous 350 ms run and the loop starts the next on a microtask, so in
+thirteen seconds a `setInterval(250)` fired once, nothing repainted, the LED
+and readouts held their pre-boot values and the d-pad took no presses. The
+worker (`web/public/engine/console-chip.worker.mjs`) costs one structured
+clone of the machine per call, about 5 KB, which is what the round trip was
+posting anyway. `notes/one-engine.md` has the table and the reasoning; that
+note's last open piece is now the Lab's chip.
 
 The frame period patch is gone: the served release carries it upstream, so
 the engine was re-boarded (v0.274 `33752d7`, 39 tests) and the patch list

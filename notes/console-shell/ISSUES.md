@@ -165,3 +165,27 @@ boots.
 **Proposal upstream.** Re-check the generation after each await in
 `power()`, the rule `loop()` already keeps. Filed in
 `notes/upstream-transport.md`.
+
+## 14. The chip in the page ran the game and froze the console
+
+**Measured, 2026-08-28,** on the first build of the console's local engine,
+with the wasm chip on the page's own thread. A frame of Die Runner is one
+synchronous 350 ms run of the engine, and `game.js`'s loop starts the next
+as soon as the last resolves, so between two frames there is a microtask and
+nothing else. The browser never got a turn: a `setInterval(250)` fired once
+in thirteen seconds, the canvas never repainted, the LED and every readout
+held the values they had before the boot, and the d-pad took no presses. The
+game ran to its own game over without drawing a frame, and the shell's phase
+was still `off` when it ended.
+
+Nothing about this shows up over the API, where every frame waits on a real
+round trip and the page breathes in the gap. It is the kind of bug a switch
+between two engines invents.
+
+**Resolution applied.** The chip runs on a worker
+(`web/public/engine/console-chip.worker.mjs`); the page keeps a transport
+and nothing else (`games/localEngine.ts`). One structured clone of the
+machine per call, about 5 KB, which is what the round trip was posting
+anyway. `e2e/console-engine.spec.ts` holds the shape that failed: with the
+chip in the page the frame count rises, the half-cycle count rises, and the
+request count does not move.

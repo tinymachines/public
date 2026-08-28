@@ -115,18 +115,39 @@ than repeated: `web/e2e/console-engine.spec.ts` boots Die Runner and runs one
 `pulldown`, `trans_on` and `half_cycle`, identical memory page for page, and
 the eight watched gates agree. Both after the boot and after the frame.
 
-What it costs, on this desk (Chrome, production, the server one hop away):
+What it costs, read off the shipped console's own readouts over a nine
+second run each (Chrome on this desk, production, the server one hop away,
+so the round trip is as cheap as it will ever be):
 
 | | in the page | over the API |
 |---|---|---|
-| Silicon Snake, 600 half-cycles a frame | 24.7 ms, 40.5 fps | 25.1 ms, 39.9 fps |
-| Die Runner, 8,704 half-cycles a frame | 353 ms, 2.8 fps | 301 ms, 3.3 fps |
+| Silicon Snake, 600 half-cycles a frame | 29 ms, 34.3 fps | 27 ms, 36.5 fps |
+| Die Runner, 8,704 half-cycles a frame | 418 ms, 2.4 fps | 383 ms, 2.6 fps |
 
-The in-page chip runs 24,503 half-cycles a second; halfwave's native build,
-round trip included, 30,400. Under a fourfold CPU throttle, which is roughly
-a mid-range phone, the in-page chip drops to 5,975 a second: 1.5 s a frame
-for Die Runner, against the API's 0.3 s from anywhere. The wasm bundle is
-121 KB (56 KB gzipped) and loads in 19 ms here, 59 ms throttled sixfold.
+Under the two consoles the engines themselves: the wasm chip solves 24,503
+half-cycles a second here, halfwave's native build about 30,400 with the trip
+included. Under a fourfold CPU throttle, which is roughly a mid-range phone,
+the wasm chip drops to 5,975 a second, 1.5 s a frame for Die Runner, against
+the API's 0.3 s from anywhere. The bundle is 121 KB (56 KB gzipped) and
+loads in 19 ms here, 59 ms throttled sixfold.
+
+### The chip runs on a worker, and that was not optional
+
+The first build put the chip on the page's own thread, and it worked
+perfectly while looking broken. A frame is one synchronous 350 ms run of the
+engine and `game.js` starts the next as soon as the last resolves, so
+between two frames there is a microtask and nothing else: measured, a
+`setInterval(250)` fired ONCE in thirteen seconds, the canvas never
+repainted, the shell's LED and readouts held the values they had before the
+boot, and the d-pad took no presses. The game reached its own game over
+without ever drawing a frame.
+
+So the chip is in `web/public/engine/console-chip.worker.mjs` and the page
+side is a transport. The worker costs one structured clone of the machine
+per call, about 5 KB, which is what the round trip was posting anyway, and
+it buys back everything the page does between frames. The table above is
+from the worker build; the difference it made is the difference between a
+console and a slideshow.
 
 **So the console states a default the store does not have.** The store's
 default engine is `local`, which is right for the explorer, where a press is
