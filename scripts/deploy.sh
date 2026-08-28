@@ -507,11 +507,20 @@ printf '  git   %s\n  api   %s\n' "$head" "$running"
 # and nothing above touches them, which is exactly why they are checked: a
 # reload, a port, or a systemd unit that went in sideways shows up here and
 # nowhere else in this script.
+#
+# Since the forward (notes/forward.md step 2, 2026-08-27) each subdomain's /
+# answers 301 to its home under the apex, and its /api/ keeps answering in
+# place: that pair is what "still working" means now, and either half going
+# wrong is the signal.
 say "9. The sites this does not deploy"
 for h in 6502.tinymachines.ai games.tinymachines.ai halfwave.tinymachines.ai; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$h/" || echo 000)
-  printf '  %-28s %s\n' "$h" "$code"
-  [ "$code" = "200" ] || fail "$h answered $code; something in this deploy reached further than it should have"
+  to=$(curl -s -o /dev/null -w '%{redirect_url}' -m 20 "https://$h/" || echo "")
+  api=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$h/api/v1/meta" || echo 000)
+  printf '  %-28s / %s -> %s   /api/v1/meta %s\n' "$h" "$code" "${to:-(none)}" "$api"
+  [ "$code" = "301" ] || fail "$h answered $code for /; the forward expects 301"
+  case "$to" in https://tinymachines.ai/6502/*) ;; *) fail "$h forwards to $to, not under https://tinymachines.ai/6502/";; esac
+  [ "$api" = "200" ] || fail "$h /api/v1/meta answered $api; the API must keep answering on the subdomain"
 done
 
 # Last, deliberately. origin only ever receives a commit that has been
