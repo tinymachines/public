@@ -23,7 +23,7 @@ import path from "node:path";
  * clone builds it. `upstream.json` beside the files records the commit and
  * every file's digest, which is the base the copies never had.
  *
- * ## The four patches, and why they are here rather than upstream
+ * ## The patches, and why they are here rather than upstream
  *
  * Both modules resolve the chip API as `${location.origin}/api`, which is
  * right where they live (games.tinymachines.ai/api proxies the 6502 service)
@@ -39,8 +39,20 @@ import path from "node:path";
  * round trip (games/localEngine.ts). Unset, every call goes over HTTP as it
  * always has, and the retry loop below it is untouched.
  *
- * The slow mode's frame period was the fifth and is upstream now
- * (6502@12d4616): `game.js` reads `[data-frame-ms]` off the page itself.
+ * The fifth and sixth are one fix in two places: **the tile sheet belongs to
+ * the cartridge.** A cartridge loaded from a `?cart=` link or a file replaces
+ * the module's `TILES` with its own CHR and nothing ever put them back, so
+ * picking a built-in cartridge afterwards drew its screen in the loaded
+ * cartridge's sprites. Reported by the owner and reproduced on the live
+ * console, 2026-08-28: arrive on a Die Invaders link, play it, choose Silicon
+ * Snake, and the snake and its food are drawn as invaders and a ship. So
+ * `useCart` keeps the sheet it displaces and the picker puts back the one the
+ * chosen cartridge should draw in.
+ *
+ * One patch has left: the slow mode's frame period is upstream now
+ * (6502@12d4616), where `game.js` reads `[data-frame-ms]` off the page
+ * itself. Every one of these is filed in `notes/upstream-transport.md`, and
+ * the list gets shorter that way rather than by being abandoned.
  *
  * Each patch is an exact string the upstream line must match, ONCE. A module
  * that stops matching fails the build naming the file and the patch, rather
@@ -126,6 +138,51 @@ export const PATCHES: Patch[] = [
     why:
       "the page may run the frame itself (globalThis.tm6502Transport, the in-page wasm chip); " +
       "unset, every call goes over HTTP exactly as upstream",
+  },
+  {
+    file: "game.js",
+    // The loaded cartridge's own CHR, taking over the sheet: the block is
+    // where the displaced sheet has to be remembered, because this is the
+    // only place it is displaced.
+    find:
+      "  if (cart.chr && cart.chr.length >= 32) {\n" +
+      "    const chr = Uint8Array.from(cart.chr.match(/../g), (h) => parseInt(h, 16));\n" +
+      "    const t = decodeCHR(chr);\n" +
+      "    if (t.length) { TILES = t; state.sheet = null; }\n" +
+      "  }",
+    replace:
+      "  if (cart.chr && cart.chr.length >= 32) {\n" +
+      "    const chr = Uint8Array.from(cart.chr.match(/../g), (h) => parseInt(h, 16));\n" +
+      "    const t = decodeCHR(chr);\n" +
+      "    /* Patched by tinymachines/public at build time (lib/console-modules.ts):\n" +
+      "     * the sheet this cartridge displaces is kept, so the picker can put it\n" +
+      "     * back. Without it, choosing a built-in cartridge after a loaded one drew\n" +
+      "     * its screen in the loaded cartridge's sprites: Silicon Snake as a broken\n" +
+      "     * Space Invaders, measured on the live console 2026-08-28. */\n" +
+      "    if (t.length) { state.house = state.house || TILES; TILES = t; state.sheet = null; }\n" +
+      "  }",
+    why: "a loaded cartridge's CHR takes over the sheet, so the sheet it takes over from is kept for the picker",
+  },
+  {
+    file: "game.js",
+    // The picker, at the line that swaps the contract: the tiles are swapped
+    // with it. The anchor's two lines end up apart, which is how this patch
+    // adds without rewriting either of them.
+    find: "  state.cart = CARTS[+$('#cart').value];\n  state.con = null;",
+    replace:
+      "  state.cart = CARTS[+$('#cart').value];\n" +
+      "  /* Patched by tinymachines/public at build time (lib/console-modules.ts):\n" +
+      "   * the tiles belong to the cartridge. The one being chosen draws in its own\n" +
+      "   * CHR where it carries one, and in the sheet a loaded cartridge displaced\n" +
+      "   * (useCart, above) where it does not. The key is redrawn with them: the\n" +
+      "   * page's promise is that a swatch cannot show something the screen does\n" +
+      "   * not. */\n" +
+      "  const own = state.cart.chr && state.cart.chr.length >= 32\n" +
+      "    ? decodeCHR(Uint8Array.from(state.cart.chr.match(/../g), (h) => parseInt(h, 16)))\n" +
+      "    : (state.house || TILES);\n" +
+      "  if (own && own.length) { TILES = own; state.sheet = null; legend(); }\n" +
+      "  state.con = null;",
+    why: "the chosen cartridge draws in its own tiles, or in the house sheet, rather than in the last loaded cartridge's",
   },
   {
     file: "registry.js",
