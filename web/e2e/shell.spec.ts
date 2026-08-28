@@ -313,6 +313,37 @@ test("no Nintendo mark, no trademark sign, anywhere on the console", async ({ pa
   expect(html).not.toMatch(/nintendo|mario|zelda|™|&trade;/i);
 });
 
+test("the flag on the settings page is a real navigation: the Japanese console arrives built", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await page.locator('.hit[data-act="page-settings"]').click();
+  const flag = page.locator(".toys a.lang-switch").first();
+  await expect(flag).toHaveAttribute("href", "/ja/6502/games");
+  await flag.click();
+  await page.waitForURL("**/ja/6502/games", { timeout: 30000 });
+  await page.waitForTimeout(5000);
+
+  // game.js is a module: a client-side arrival renders this markup and never
+  // runs it again, which left a Japanese console with a blank screen, no tile
+  // key and no handlers bound (measured 2026-08-28, the console's half of the
+  // Lab's "nested windows"). What it must be instead is a built console.
+  const built = await page.evaluate(() => {
+    const c = document.getElementById("screen") as HTMLCanvasElement;
+    const d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
+    let painted = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] !== 0) painted++;
+    return {
+      painted,
+      legend: document.querySelectorAll(".legend i[style*='background-image']").length,
+      note: (document.getElementById("note")?.textContent ?? "").trim(),
+    };
+  });
+  expect(built.painted, "the screen is drawn").toBeGreaterThan(0);
+  expect(built.legend, "the tile key is painted from the sheet").toBeGreaterThan(3);
+  expect(built.note, "and the cartridge's own blurb is in the note").not.toBe("");
+});
+
 test("the Japanese edition carries the shell with its own words", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/ja" + GAMES);

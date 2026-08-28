@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import Link from "next/link";
 import { localize, type Lang } from "@/lib/lang";
 import { LangSwitch } from "@/app/components/LangSwitch";
 import { clipPolygon, points } from "@/lib/shell/geom";
@@ -548,11 +547,22 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
                   no bar (console-full), so the site's two promises, a route
                   home and a flag on every page, are kept here. */}
               <label className="site"><span>{S.site}</span>
+                {/* Plain anchors, and the flag hard: every way off this page
+                    is a full navigation, for the reason the explorer's pages
+                    have (MenuItem.hard) and one of its own. game.js is a
+                    module that binds this DOM at load and runs a frame loop
+                    against it; a client-side navigation leaves that loop
+                    posting frames at a canvas that is gone, and a navigation
+                    BACK to a console route arrives with the markup rendered
+                    and game.js not run again, because a module already in the
+                    registry does not re-execute. Measured 2026-08-28: the
+                    flag here landed on a Japanese console with a blank screen,
+                    no tile key and none of its handlers bound. */}
                 <span className="seg">
-                  <Link href={localize(lang, "/6502")}>{S.home}</Link>
-                  <Link href={localize(lang, "/6502/builders")}>{S.builders}</Link>
-                  <Link href={localize(lang, "/6502/manage")}>{S.editor}</Link>
-                  <LangSwitch lang={lang} />
+                  <a href={localize(lang, "/6502")}>{S.home}</a>
+                  <a href={localize(lang, "/6502/builders")}>{S.builders}</a>
+                  <a href={localize(lang, "/6502/manage")}>{S.editor}</a>
+                  <LangSwitch lang={lang} hard />
                 </span>
                 <small>{S.siteWhy}</small>
               </label>

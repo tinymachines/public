@@ -1,7 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import Link from "next/link";
 import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
@@ -103,6 +102,15 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 /**
+ * Why the links in this copy are plain anchors rather than <Link>: every way
+ * off the console is a full navigation. game.js binds this DOM at load and
+ * runs a frame loop against it, so a client-side navigation away leaves that
+ * loop running against a page that is gone, and one back arrives with the
+ * markup rendered and the module not run again (measured 2026-08-28). The
+ * shell's settings page says the same in its own comment.
+ */
+
+/**
  * The page's markup in both voices; the machine's own voice stays as game.js
  * writes it. The readout keys, the boot errors and the cartridge names come
  * from the module that is byte for byte upstream's, so they are its contract,
@@ -114,8 +122,8 @@ const PROSE = {
       <>
         A console whose frames are run on a transistor-level MOS 6502. The
         screen is a page of the chip&rsquo;s own memory and nothing draws it
-        but this page. The <Link href={b}>builder pages</Link> and{" "}
-        <Link href={m}>the editor</Link> are here too.
+        but this page. The <a href={b}>builder pages</a> and{" "}
+        <a href={m}>the editor</a> are here too.
       </>
     ),
     theChip: "the chip",
@@ -168,8 +176,8 @@ const PROSE = {
           POST /v1/cartridge
         </a>
         , then load it here or link to it with <code>?cart=</code>. Everything
-        published so far is on the <Link href={b}>builder pages</Link>, and
-        publishing one happens in <Link href={m}>the editor</Link>.
+        published so far is on the <a href={b}>builder pages</a>, and
+        publishing one happens in <a href={m}>the editor</a>.
       </>
     ),
   },
@@ -177,7 +185,7 @@ const PROSE = {
     intro: (b: string, m: string) => (
       <>
         トランジスタレベルの MOS 6502 で毎フレームを実行するコンソール。画面はチップ自身のメモリの 1 ページで、それを描くのはこのページだけ。
-        <Link href={b}>ビルダーページ</Link>と<Link href={m}>エディタ</Link>
+        <a href={b}>ビルダーページ</a>と<a href={m}>エディタ</a>
         もここにある。
       </>
     ),
@@ -220,8 +228,8 @@ const PROSE = {
         <a data-address href={`${api}/`}>
           POST /v1/cartridge
         </a>{" "}
-        で鋳造し、ここで読み込むか <code>?cart=</code> でリンクする。これまでに公開されたものは<Link href={b}>ビルダーページ</Link>にあり、公開は
-        <Link href={m}>エディタ</Link>で行う。
+        で鋳造し、ここで読み込むか <code>?cart=</code> でリンクする。これまでに公開されたものは<a href={b}>ビルダーページ</a>にあり、公開は
+        <a href={m}>エディタ</a>で行う。
       </>
     ),
   },
