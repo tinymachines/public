@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import type { Lang } from "@/lib/lang";
 import { FullscreenButton } from "@/app/components/Fullscreen";
@@ -161,6 +161,19 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
   // A tick so the view repaints when the store announces. The store's own
   // subscribe calls back immediately, which paints the first frame.
   const [tick, setTick] = useState(0);
+  /**
+   * A page may say why its chip runs where it runs (`data-engine-why` on the
+   * workbench root), and the key then carries that instead of the general
+   * sentence. The Lab is the one that needs it: it records a trace the
+   * in-page chip cannot produce, and a grey key with no reason reads as a
+   * control that is broken (owner, 2026-08-28). Read from the DOM after
+   * mount, like the chip API base: the page states it, this shows it.
+   */
+  const why = useSyncExternalStore(
+    () => () => {},
+    () => document.querySelector("[data-engine-why]")?.getAttribute("data-engine-why") || null,
+    () => null,
+  );
 
   // The floor is the page's to declare. Read after the route has painted,
   // and again on every client navigation: the games page has one, the
@@ -340,8 +353,8 @@ export function ChipTransport({ lang = "en" }: { lang?: Lang }) {
           data-engine={eng}
           aria-pressed={eng === "local"}
           disabled={!live || !can.engine}
-          title={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}
-          aria-label={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : S.engNone}
+          title={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : (why ?? S.engNone)}
+          aria-label={can.engine ? (eng === "api" ? S.engApi : S.engLocal) : (why ?? S.engNone)}
           onClick={() => ctl?.setEngine?.(eng === "api" ? "local" : "api")}
         >
           <Ic d={eng === "api" ? IC.api : IC.local} /><span className="lb">{eng === "api" ? S.wApi : S.wLocal}</span>

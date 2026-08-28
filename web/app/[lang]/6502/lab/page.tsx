@@ -45,6 +45,26 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return pageMeta(lang, "/6502/lab")
 }
 
+/**
+ * Why the strip's engine key is grey here, in the Lab's own words.
+ *
+ * The Lab does not step a machine, it records one: a single `/v1/step` with
+ * `trace: true, format: "rows"` brings back 34 columns per half-cycle, every
+ * panel on the page reads that recording, and the player scrubs inside it.
+ * The wasm build emits no trace, so there is nothing in this page that could
+ * answer that call, and the key says so rather than looking broken (owner,
+ * 2026-08-28). Filed for upstream in notes/upstream-transport.md; when the
+ * crate can emit the rows, this line goes and the key lights up.
+ */
+const WHY = {
+  en: "Engine: the API. The Lab records a run, 34 measurements per half-cycle, "
+    + "and only the engine behind the API produces those. The chip in this page "
+    + "can run a program, not record one.",
+  ja: "エンジン: API。ラボは実行を記録する。半サイクルごとに 34 個の測定値で、"
+    + "それを出せるのは API の向こうのエンジンだけだ。このページの中のチップは"
+    + "プログラムを走らせられるが、記録は取れない。",
+} as const;
+
 export default async function LabPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
   const { body, data, assets } = lab();
@@ -58,8 +78,17 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
     /* has-transport: the project's strip is the Lab's player now. The Lab
        registers with the store (the handover in ChipTransport.tsx) and marks
        its own player `driven`, which lab.css hides: one set of keys. */
-    <div className="workbench has-transport" data-workbench>
+    <div className="workbench has-transport" data-workbench data-engine-why={WHY[lang]}>
       <WorkbenchBar
+        /* hard, like the explorer's pages and for the same reason: the Lab
+           is one module that builds this DOM once and has no teardown.
+           Arriving here through a client-side navigation left the markup
+           rendered and the Lab unbuilt, with its own player still showing
+           because nothing had marked it driven, so the page carried two rows
+           of controls and no instrument (measured 2026-08-28, reported as
+           "nested windows when changing to JPN": the flag was the one link
+           into this page that was still soft). */
+        hard
         lang={lang}
         title="Halfwave Lab"
         trail={[
@@ -95,10 +124,12 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
         />
       ) : null}
 
-      {/* afterInteractive, so the lab is also built on a client-side
-          navigation into this route. An inline tag in the HTML runs on first
-          load and never again, which is the bug where a page works when you
-          reload it and not when you click to it.
+      {/* afterInteractive rather than an inline tag in the HTML, which runs on
+          first load and never again. It does not make a client-side
+          navigation into this route work, and the bar above is `hard` because
+          of it: the Lab is an ES module, so re-inserting the same src on a
+          navigation does not re-execute it, and what arrives is this markup
+          with nothing built in it (measured 2026-08-28).
 
           src rather than inline, for the same reason as the stylesheet above:
           126 KB inlined is 126 KB in the HTML and 126 KB again in the payload,
