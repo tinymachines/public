@@ -57,3 +57,15 @@ describe("the language switch's href, which is the pair of them", () => {
     }
   });
 });
+
+describe("the routes that must start from a fresh document", () => {
+  test("the module pages, in either language, and nothing else", async () => {
+    const { isHardRoute } = await import("./nav");
+    for (const href of ["/6502/lab", "/6502/games", "/ja/6502/lab", "/ja/6502/games", "/6502/explorer", "/ja/6502/tracer"]) {
+      expect(isHardRoute(href), href).toBe(true);
+    }
+    for (const href of ["/6502", "/docs", "/6502/builders", "/6502/manage", "/ja/6502", "/hotbits"]) {
+      expect(isHardRoute(href), href).toBe(false);
+    }
+  });
+});

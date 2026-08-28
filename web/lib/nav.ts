@@ -1,5 +1,6 @@
 import { allPages } from "./docs";
 import { explorerMenu } from "./explorer-menu";
+import { delocalize } from "./lang";
 import { explorerPages } from "./explorer";
 import { TRACKS } from "./tracks";
 import { arrivedSurfaces, projects, read, nav as siteNav } from "./projects";
@@ -139,7 +140,6 @@ export function menuGroups(): MenuGroup[] {
   // the first complaint; scoping answers the second. Inside a project the
   // menu opens on that project, which is the recipe card the owner asked
   // for: the thing under your hand, not the whole cookbook.
-  const explorerRoutes = new Set(explorerPages().map((p) => `/6502/${p.slug}`));
   for (const p of projects()) {
     if (p.key === "roof" || !p.landing) continue;
     const here = arrivedSurfaces(p);
@@ -159,7 +159,10 @@ export function menuGroups(): MenuGroup[] {
           : []),
         ...here.map((s) => ({
           href: s.lands_at,
-          hard: explorerRoutes.has(s.lands_at),
+          // The one answer, not a second set: this had its own copy of the
+          // explorer's routes, and a copy of a rule is a copy that misses
+          // the Lab and the console when they join it.
+          hard: isHardRoute(s.lands_at),
           // The same expression labels() uses. This file's whole claim is that
           // a crumb cannot call a page something the menu does not, and the
           // two had drifted the moment a surface was given a shorter name for
@@ -286,10 +289,25 @@ export function whereToRead(pieceKey: string, publicUrl: string | null): { href:
 
 /**
  * Whether a link to this route must be a full navigation. See MenuItem.hard:
- * the explorer's pages keep module-scope state with no teardown, so they
- * must start from a fresh document. One answer, asked by every component
- * that renders a computed link, so a page cannot forget the rule.
+ * a page built by a module that keeps state at module scope, binds this
+ * document at load and has no teardown must start from a fresh document.
+ * One answer, asked by every component that renders a computed link, so a
+ * page cannot forget the rule.
+ *
+ * Three kinds of page qualify, and the last two were added on 2026-08-28
+ * after the owner reported "nested windows" arriving at the Lab through the
+ * language flag: the explorer's pages, the Halfwave Lab and the console.
+ * What a client-side arrival gets is the markup with nothing built in it,
+ * because a module already in the browser's registry does not run again
+ * however the script tag is re-inserted: the Lab kept its own player beside
+ * the site's strip, and the console arrived with a blank screen and no
+ * handlers bound. Leaving one that way is the other half of the same rule:
+ * game.js's frame loop would go on posting frames at a canvas that is gone.
  */
 export function isHardRoute(href: string): boolean {
-  return explorerPages().some((p) => `/6502/${p.slug}` === href);
+  const { path } = delocalize(href);
+  return MODULE_PAGES.has(path) || explorerPages().some((p) => `/6502/${p.slug}` === path);
 }
+
+/** The two module pages that are not explorer pages. */
+const MODULE_PAGES = new Set(["/6502/lab", "/6502/games"]);
