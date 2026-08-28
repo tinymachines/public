@@ -1878,3 +1878,20 @@ key with it. `notes/console-shell/ISSUES.md` #16, filed upstream in
 `notes/upstream-transport.md`, and `web/e2e/console-cart.spec.ts` walks the
 owner's path against a published cartridge from the registry and compares the
 legend rather than the canvas.
+
+## The tile sheet, closed on both sides
+
+The 6502 project took it upstream the same day (`f0001d3`, not served yet):
+one `selectTiles()` over `state.cart.tileset || HOUSE`, the decoded set on
+the cartridge. `tileset` rather than `tiles`, because `cart.tiles` is already
+the tile-index remap. The patches here stay until a served release carries it
+and the boarding gate refuses their anchors, which is the mechanism working
+as designed.
+
+Their fix covered one case the roof's first two patches did not, so there is
+a third now: `art/tiles.chr` and a linked cartridge are two fetches started
+together, and their responses land two milliseconds apart on the live
+console, so the house sheet arriving second used to take the screen from the
+cartridge. It is load-bearing, checked the way this repo requires: with that
+patch taken back out of the served module and the house sheet held back a
+second and a half, the linked cartridge's legend became the house sheet's.

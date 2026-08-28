@@ -235,3 +235,12 @@ them. Filed upstream in `notes/upstream-transport.md`;
 `e2e/console-cart.spec.ts` walks the owner's path against the registry's own
 published cartridges and compares the legend, which is the sheet itself
 rather than a canvas at whatever frame it had reached.
+
+**Upstream, same day (6502@f0001d3).** The 6502 project reproduced it from
+the source (three places assign `TILES`, none put it back, the picker never
+touched it) and fixed it with one `selectTiles()` over `state.cart.tileset
+|| HOUSE`. `tileset`, not `tiles`: `cart.tiles` is the tile-index remap
+`drawScreen` applies. Their loader case, the house sheet landing after a
+linked cartridge, is patched here too and is measured at two milliseconds
+apart on the live console, which is a coin toss rather than a corner. The
+patches here come out when a served release carries the fix.

@@ -236,10 +236,23 @@ const own = state.cart.chr && state.cart.chr.length >= 32
 if (own && own.length) { TILES = own; state.sheet = null; legend(); }
 ```
 
-Proposal: upstream carries the same two, or the tidier version of the same
-idea, which is to decode a cartridge's tiles onto the cartridge object once
-(`cart.tiles`) and have the picker read `state.cart.tiles || HOUSE`. Either
-way the rule is that the sheet is a property of the cartridge rather than
-of the page. `web/e2e/console-cart.spec.ts` holds it: arrive on a published
-cartridge from the registry, check it draws in its own sheet, choose Silicon
-Snake, and the legend is the house sheet again.
+**Taken upstream the same day, 6502@f0001d3**, in the tidier shape: the
+decoded set lives on the cartridge and one `selectTiles()` points `TILES` at
+`state.cart.tileset || HOUSE` wherever either can change. Note the field name:
+**`tileset`, not `tiles`**, because `cart.tiles` is already the per-cartridge
+tile-index remap `drawScreen` applies, and a decoded array under that name
+would have been read as a remap. Not served yet; the patches here come out
+when a release carrying it is boarded, and the build will say so by refusing
+to find their anchors.
+
+That fix covers a third case, which the roof then patched too (the loader,
+above): **`art/tiles.chr` and a linked cartridge are two fetches started
+together.** Measured on the live console, their responses land two
+milliseconds apart, so which one wins is a coin toss, and the house sheet
+winning drew the linked cartridge in the house tiles. Verified by serving
+`game.js` with that one patch taken back out and holding `tiles.chr` back a
+second and a half: the linked cartridge's legend became the house sheet's.
+With the patch it keeps its own. `web/e2e/console-cart.spec.ts` holds all
+three: arrive on a published cartridge from the registry, check it draws in
+its own sheet, delay the house sheet and check it still does, then choose
+Silicon Snake and see the legend is the house sheet again.
