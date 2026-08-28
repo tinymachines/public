@@ -139,8 +139,14 @@ this repo will hit the same ground.
   goes to production.** `127.0.0.1:6502` is the live API. A local uvicorn
   started there looked local, answered every request from the deployed service,
   and a test passed against production while claiming to test the tree. Run
-  `ss -ltn` before believing a local server is yours. 6503, 6510 and 6520 were
-  free at the time of writing.
+  `ss -ltn` before believing a local server is yours, and check it EVERY time:
+  6520 was recorded free, this repo's deploy used it as its preflight port,
+  and on 2026-08-28 another project on the host took it. `next start` could
+  not bind, and the preflight questioned that service instead: `/` 200,
+  `/docs` 404, and a deploy of a fine build failed claiming the build was
+  broken. The preflight is 6521 now (`TM_PREFLIGHT_PORT` overrides) and
+  refuses when the port is held, naming what holds it. 6503 and 6510 were
+  also free at the time of writing; 6510 is now the roof's API.
 - **A relative `src` resolves against the path, not the site root.** A document
   served at both `/` and `/b/x/y` asked for `/b/x/game.js` at the second depth
   and got a 404. **The page still rendered**, because the markup is static and

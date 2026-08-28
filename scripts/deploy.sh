@@ -263,23 +263,37 @@ fi
 # because a middleware rewrite only broke behind nginx's forwarded headers.
 # The build gating the restart was this script's founding rule, and that
 # outage showed "the build succeeded" and "the build answers" are different
-# claims. 6520 is recorded free in CLAUDE.md; setsid so the whole process
-# group can be killed without pkill -f, which kills the shell that runs it.
+# claims. setsid so the whole process group can be killed without pkill -f,
+# which kills the shell that runs it.
+#
+# The port is checked FIRST, and this is the second scar on this stage. 6520
+# was the scratch port and another project on this host took it (a uvicorn,
+# 2026-08-28). `next start` could not bind, said so only in its own log, and
+# the probes went to that service instead: `/` answered 200 and `/docs`
+# answered 404, so a deploy of a fine build failed with "the fresh build
+# answered 404", which is a lie about this repository. That is CLAUDE.md's
+# oldest trap, arriving from a direction nobody was watching. A held port is
+# now a refusal that names what is holding it.
 say "4c. The build answers, before anything is restarted"
+PRE_PORT=${TM_PREFLIGHT_PORT:-6521}
+if ss -ltn "sport = :$PRE_PORT" 2>/dev/null | grep -q LISTEN; then
+  printf '  %s\n' "$(ss -ltnp "sport = :$PRE_PORT" 2>/dev/null | tail -1)"
+  fail "something is already listening on 127.0.0.1:$PRE_PORT, so the preflight would question it instead of this build. Free it or set TM_PREFLIGHT_PORT."
+fi
 PRE_LOG=$(mktemp)
-(cd web && exec setsid bun next start -H 127.0.0.1 -p 6520 >"$PRE_LOG" 2>&1) &
+(cd web && exec setsid bun next start -H 127.0.0.1 -p "$PRE_PORT" >"$PRE_LOG" 2>&1) &
 PRE_PID=$!
 stop_preflight() { kill -- -"$PRE_PID" 2>/dev/null || true; }
 up=
 for _ in $(seq 1 40); do
-  if curl -s -o /dev/null -m 2 http://127.0.0.1:6520/robots.txt; then up=1; break; fi
+  if curl -s -o /dev/null -m 2 "http://127.0.0.1:$PRE_PORT/robots.txt"; then up=1; break; fi
   sleep 0.5
 done
 [ -n "$up" ] || { tail -5 "$PRE_LOG"; stop_preflight; fail "the fresh build never answered on the scratch port"; }
 for p in / /docs /6502/primer /ja; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 \
     -H 'X-Forwarded-Proto: https' -H 'X-Forwarded-For: 203.0.113.9' -H 'Host: tinymachines.ai' \
-    "http://127.0.0.1:6520$p" || echo 000)
+    "http://127.0.0.1:$PRE_PORT$p" || echo 000)
   printf '  %-16s %s\n' "$p" "$code"
   [ "$code" = "200" ] || { tail -5 "$PRE_LOG"; stop_preflight; fail "$p answered $code on the fresh build; NOT restarting, the running site is untouched"; }
 done

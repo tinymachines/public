@@ -34,7 +34,7 @@ The last row matters for planning: there is **one** Python service, not two.
 `tinymachines.ai` up; the certificate for `www.tinymachines.ai` exists too.
 That is the one piece of infrastructure already in place.
 
-`127.0.0.1:6502` is held by the live API. **6503, 6510 and 6520 are free.**
+`127.0.0.1:6502` is held by the live API, 6510 by the roof's API, 6511 by the site, and **6520 by another project on this host since 2026-08-28**, which is why the deploy's preflight moved to 6521 and now refuses a port it does not own. **6503 and 6521 are free**, and free is a thing to re-check rather than to remember.
 A local uvicorn started on 6502 fails to bind and every request then silently
 goes to production; that mistake has already been made once here, so check
 `ss -ltn` before believing a local server is yours.

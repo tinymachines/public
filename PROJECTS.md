@@ -2014,6 +2014,26 @@ Worth noting what did not fail: the tile-sheet cases, the console's two
 engines and their parity, the hard-route guard over every link into an
 instrument, the flag on 134 pages, and the Lab's three.
 
+## A port that was recorded free, and was not
+
+The checkpoint below took three attempts to deploy, and the reason is worth
+more than the checkpoint. Stage 4c starts the fresh build on a scratch port
+and asks it production-shaped questions before anything is restarted. That
+port was 6520, recorded free in CLAUDE.md and in the inventory, and on
+2026-08-28 another project on this host took it. `next start` could not bind
+and said so only in its own log; the probes went to that service instead,
+which answered `/` with 200 and `/docs` with 404. So a deploy of a build that
+was fine failed saying the build was broken.
+
+This is CLAUDE.md's oldest trap ("a port that is already held fails to bind
+silently") arriving from a direction nobody was watching: not production
+answering for a local server, but a stranger answering for this one. The
+preflight is 6521 now, `TM_PREFLIGHT_PORT` overrides it, and a held port is a
+refusal that names what holds it rather than a probe of somebody else's
+service. Both places that recorded 6520 as free are corrected, and the
+inventory now says what the honest version of that fact is: free is a thing
+to re-check, not to remember.
+
 ## Checkpoint, 2026-08-28, at 1.0.173
 
 Live: 1.0.173, on 6502 v0.274 `33752d7` (halfphi 0.1.2, boarded, 39 tests).
