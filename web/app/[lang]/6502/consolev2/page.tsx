@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function Page({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = (await params) as { lang: Lang };
   return (
-    <div className="cv2" data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
+    <div className="cv2" data-workbench data-chip-api={CHIP_API} data-builders-base={BUILDERS}>
       <header className="cv2-head">
         <h1 className="sr-only">Console v2</h1>
         {/* game.js appends a "by <handle>" link after this when a /b/ path names a cartridge. */}
