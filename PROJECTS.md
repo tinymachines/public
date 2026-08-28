@@ -2264,3 +2264,46 @@ grey until the page drives `Machine.traceRows` (upstream at `f065cd8`,
 boarded, unused here yet). Forward step 3 waits on the subdomain logs. No new
 subdomains. Unchanged: React #418 on Shell pages, `TM_SELF_NETS` in
 `visitors.env`, article images (owner's), the three engine write-ups.
+
+## Console v2, 2026-08-28: the console stripped back for experiments
+
+The owner found the shell at `/6502/games` hard to use and asked for a second
+console beside it, stripped to basics: fullscreen, black, one line around
+the play area, the movement keys, a screen of cartridges and a screen of
+settings. It is at `/6502/consolev2`, noindex and out of the sitemap while
+it is an experiment, deployed at `30dd44d`.
+
+Three things worth keeping from the round.
+
+**game.js did not change, and nothing React does here can unbind it.** The
+page carries the same sixteen ids, `[data-dir]` and `header .sub` that
+`/6502/games` does, as server markup, and the three screens are shown and
+hidden by a `data-screen` attribute the stylesheet reads. Nothing game.js
+bound at load is ever unmounted.
+
+**The shelf lists the registry, not just the two built-ins.** The registry
+had 13 ROMs against the console's 2. Eight are the `programs` builder's
+headless cartridges (Fibonacci, Multiply, and so on: no screen, the
+explorer's), and they stay off the shelf; the five that the chip saw draw a
+screen are on it, with the registry's duplicate of Die Runner dropped by
+name. Picking one fetches its `.cart.gz` and drops it into `#cart-file` as a
+File, so game.js loads it by the path it already has for a cartridge from
+disk. No new entry point into the module.
+
+**A play column sized in `vh` alone overflowed the viewport.** The screen
+box was `min(100%, 70vh)`; at 1280x900 the keys and buttons under it pushed
+the column past the viewport and the box sat over the tabs, swallowing
+their clicks. The e2e spec caught it on the first deploy. It is bounded by
+the height left under it now (`100vh - 24rem`, floored at 12rem).
+
+`web/e2e/consolev2.spec.ts` holds the five rules: black and one line with
+nothing scrolling, the four keys, the shelf with the registry's playable
+cartridges and no headless program, a shelf cartridge booting, and the
+settings screen's engine and speed. 5 of 5 on the deploy.
+
+What the baseline answered, for the record: the 6502 project is
+stand-alone and boarded, not a subproject; every page is served from here
+while the chip API, the registry and the wasm release are the 6502
+project's; the console runs on the v6502 engine in two forms (halfwave over
+HTTP, the wasm build in a worker, the default), and halfphi is boarded and
+tested but nothing on the site drives it directly.
