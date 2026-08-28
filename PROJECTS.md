@@ -2013,3 +2013,40 @@ that half works.
 Worth noting what did not fail: the tile-sheet cases, the console's two
 engines and their parity, the hard-route guard over every link into an
 instrument, the flag on 134 pages, and the Lab's three.
+
+## Checkpoint, 2026-08-28, at 1.0.173
+
+Live: 1.0.173, on 6502 v0.274 `33752d7` (halfphi 0.1.2, boarded, 39 tests).
+Full e2e suite green against production: 452 tests, about 9 minutes.
+
+**What this round added.** The console honours the strip's engine key: `api`
+hands each frame to halfwave, `local` hands it to the wasm chip on a worker
+thread in the tab, and switching mid-game is a hand-off because the machine
+is a value the console holds. The floor's default is the chip in the page
+(owner's call). The two engines are checked against each other rather than
+assumed: boot and one 8,704 half-cycle frame leave identical chip state,
+identical memory and the same eight gates. The Lab's workspace is dark again,
+with the paper set kept as its light theme under the Lab's own toggle.
+
+**Four bugs found and fixed, each with the measurement that found it.** A
+double install instantiated the wasm twice and the console trapped after
+fourteen frames (keep the promise, not the result). A loaded cartridge's tile
+sheet outlived it, so Silicon Snake drew as a broken Space Invaders; three
+build-time patches, taken upstream at 6502@f0001d3 and 02f39af. Every
+statically rendered English page's language flag pointed at `/ja/en/...`,
+because the internal spelling of an English path carries the `/en` the
+rewrite adds. And module pages arrived through the client router as markup
+with nothing built in them: the Lab with two rows of controls, the console
+with a blank screen. One rule now answers that last one everywhere
+(`isHardRoute`, asked through `app/components/SiteLink.tsx`), and a soft
+arrival is only broken the SECOND time, which is why the guard tests the
+mechanism (a marker on the window) rather than the symptom.
+
+**Open.** The Lab's local engine waits on `v6502-wasm` emitting the trace rows
+(`notes/upstream-transport.md`); the console's transport hook and the tile fix
+wait on a served 6502 release, after which three build-time patches come out
+and the boarding gate will refuse their anchors, which is the mechanism
+working. Forward step 3 waits on the subdomain logs. No new subdomains
+(2026-08-28): a surface that wants an address gets a path. Unchanged: React
+#418 on Shell pages, `TM_SELF_NETS` in `visitors.env`, article images
+(owner's), the three engine write-ups.
