@@ -159,6 +159,49 @@ underneath, a first visit records nothing, and the key moves it in either
 direction. What a device actually delivers is on the status page in frames a
 second, which is the honest place for it.
 
+### On the default, measured again after the switch (2026-08-28)
+
+A fresh visit with nothing pressed but reset, production, Chrome on this
+desk, sampling every 100 ms while the game runs:
+
+| | ready | boot | frames a second | requests | worst gap between samples |
+|---|---|---|---|---|---|
+| Die Runner | 227 ms | 85 ms | 2.7 | 0 | 103 ms |
+| Silicon Snake | 202 ms | 40 ms | 38.6 | 0 | 107 ms |
+
+"Ready" is from page load to the chip answering; "worst gap" is how long the
+page's own thread was ever unavailable, and 100 ms is the sampling period, so
+the answer is that it never was. Over the API the same two cartridges measured
+2.6 and 36.5 frames a second, so on a desk the two engines now feel the same
+and one of them makes no requests at all.
+
+**The phone numbers above are from the main-thread build and no longer
+apply.** Chrome's CPU throttling reaches the page's thread and not a worker's,
+so a throttled run now measures the browser rather than the chip: 2.7 frames
+a second at 4x and 2.6 at 6x, which is the unthrottled figure. What a slow
+device actually delivers is not measured here; the status page counts it,
+and the key is one press away.
+
+### The race that shipped for one deploy
+
+Local as the default meant the install ran at mount rather than on a press,
+and the store announces more than once at mount. Two installs started a
+millisecond apart, both greeted the chip before either had set the flag, and
+in the worker both passed `if (chip)` and called the glue's `init()`: two wasm
+instances, the console holding a pointer into the first while every call went
+to the second. It played fourteen frames of Die Runner, perfectly, and then
+trapped (`unreachable`), after which every call failed with wasm-bindgen's
+"recursive use of an object" because the panic had left the borrow held.
+Nothing in the symptom pointed at the cause: the same calls replayed into a
+fresh chip were fine, and so was the API.
+
+Both halves now keep the PROMISE rather than the result (`engine()` in the
+worker, `runHere()` in `localEngine.ts`), which is what the first, page-side
+build did and what the move into a worker dropped. The e2e case that would
+have caught it runs the default engine through a game over and a second
+boot, because fourteen frames is under four seconds and a check that stops
+at the first frame passes straight over it.
+
 What is left of the shape: the Lab's chip, which is its own wasm and its own
 player, and a driver shape that lets a page state its own engine default
 rather than writing the floor's (`notes/upstream-transport.md`).

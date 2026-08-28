@@ -189,3 +189,29 @@ machine per call, about 5 KB, which is what the round trip was posting
 anyway. `e2e/console-engine.spec.ts` holds the shape that failed: with the
 chip in the page the frame count rises, the half-cycle count rises, and the
 request count does not move.
+
+## 15. Two installs at mount, two chips, and a console that stopped at frame 14
+
+**Measured, 2026-08-28,** the day the in-page chip became the default. With
+the switch on a press there was one install; as a default it runs at mount,
+and the store announces more than once there. Two installs started a
+millisecond apart, both greeted the worker before either had set its flag,
+and in the worker both passed the `if (chip)` guard and ran the wasm glue's
+`init()`. That instantiates the module a second time and rebinds the glue to
+it, so the console held a pointer into the first instance while every call
+went into the second.
+
+It played fourteen frames of Die Runner, correctly, then trapped
+(`unreachable`); every call after it failed with wasm-bindgen's "recursive
+use of an object", because the panic had left the borrow held. The console
+said "the engine stopped answering", which was true and useless. The same
+calls replayed into a fresh chip were fine, the API answered them, and a
+worker driven by hand never failed: only the app's own worker did, which is
+what sent the search in the wrong direction for an hour.
+
+**Resolution applied.** Keep the promise, not the result, on both sides
+(`engine()` in the worker, `runHere()` in `games/localEngine.ts`). The
+page-side build had it and the move into a worker dropped it.
+`e2e/console-engine.spec.ts` now runs the default engine through a game over
+and a second boot: fourteen frames is under four seconds, so a check that
+stops at the first frame passes over this.

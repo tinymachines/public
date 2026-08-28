@@ -1830,3 +1830,31 @@ note's last open piece is now the Lab's chip.
 The frame period patch is gone: the served release carries it upstream, so
 the engine was re-boarded (v0.274 `33752d7`, 39 tests) and the patch list
 is four places over three files again, the newest being this transport.
+
+## Local is the default, and what that cost to find
+
+Owner's call, 2026-08-28: make the chip in the page the default and see how
+it feels. The console no longer writes `api` into the store for a floor that
+has never chosen, so the floor has one default (the chip in the page) and the
+key moves it either way.
+
+A fresh visit on this desk: the chip answers 227 ms after load, the cartridge
+boots in 85 ms, Die Runner runs at 2.7 frames a second and Silicon Snake at
+38.6, both with zero requests, and the page's own thread is never unavailable
+for longer than the 100 ms sampling period. Over the API the same two are 2.6
+and 36.5. On a desk the engines now feel the same and one of them talks to
+nobody. The phone figures in the round before this one were measured on the
+main-thread build and no longer apply: Chrome's CPU throttle does not reach a
+worker, so a throttled run measures the browser, not the chip.
+
+Making it the default also shipped a bug for one deploy, and it is the round's
+real lesson. The install now runs at mount instead of on a press, the store
+announces more than once at mount, and two installs raced: both greeted the
+worker before either set its flag, both ran the wasm glue's `init()`, and the
+console ended up holding a pointer into the first wasm instance while every
+call went into the second. Fourteen frames of Die Runner, correct, then a
+trap, then "the engine stopped answering". The fix is to keep the promise
+rather than the result on both sides, which the first page-side build did and
+the move into a worker dropped. `notes/console-shell/ISSUES.md` #15 has the
+hunt; the e2e case now runs the default engine through a game over and a
+second boot, because fourteen frames is under four seconds.
