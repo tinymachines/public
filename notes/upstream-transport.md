@@ -169,9 +169,9 @@ may not deliver.
 
 ## The console's transport, proposed 2026-08-28
 
-`console.js`'s `post()` is the one place the console reaches the outside, and
-the roof now patches it to try a transport the page may put on the window
-before it makes the request:
+`console.js`'s `post()` is the one place the console reaches the outside. The
+roof patched it, for two days, to try a transport the page may put on the
+window before it makes the request:
 
 ```js
 async post(path, body, tries = 3) {

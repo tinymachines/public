@@ -93,14 +93,19 @@ was greyed there. It is real now.
 
 **The seam is one function.** `console.js`'s `post()` is the only place the
 console reaches the outside: `boot` and `step`, the whole machine out and
-back. The build patches it to try `globalThis.tm6502Transport` first
-(`web/lib/console-modules.ts`, the fourth patch), and
+back. It reads `globalThis.tm6502Transport` before it makes the request, and
 `web/app/[lang]/6502/games/localEngine.ts` puts the wasm chip behind it,
 loaded at runtime from the 6502 release nginx already serves at
 `/6502/chip/` (the same bundle every explorer page on this site runs; no die
 data is copied here, NOTICE.md). `ConsoleDriver.tsx` installs it when the
 store's engine is `local` and takes it away when it is `api`, which is the
 only place either happens.
+
+That seam was a build-time patch here for two days and is upstream now
+(6502@f065cd8, boarded as v0.280 on 2026-08-28), read per call rather than
+once at construction, which is what makes the paragraph below true: a
+transport installed or removed mid-game hands the running machine across
+instead of rebooting it.
 
 **Switching mid-run is a hand-off, not a reboot,** because the machine is a
 value `console.js` is holding between frames. The next frame simply leaves

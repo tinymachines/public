@@ -242,5 +242,18 @@ touched it) and fixed it with one `selectTiles()` over `state.cart.tileset
 || HOUSE`. `tileset`, not `tiles`: `cart.tiles` is the tile-index remap
 `drawScreen` applies. Their loader case, the house sheet landing after a
 linked cartridge, is patched here too and is measured at two milliseconds
-apart on the live console, which is a coin toss rather than a corner. The
-patches here come out when a served release carries the fix.
+apart on the live console, which is a coin toss rather than a corner.
+
+**Closed 2026-08-28, boarding v0.280 (6502@f065cd8).** All three patches are
+out of `lib/console-modules.ts`; `e2e/console-cart.spec.ts` walks the owner's
+path against upstream's implementation unchanged and passes. Two of the three
+anchors had stopped matching; the picker's still matched and was removed
+anyway, because `$('#cart').onchange` calls `selectTiles()` on the next line
+and the patch's own terms (`state.house`) are not set by that file any more.
+A patch is justified by what upstream's file does, not by whether its anchor
+still finds a line: keeping it would have been two answers to one question,
+which is the arrangement `console-modules.ts` exists to prevent.
+
+Same release, same reason, one issue up: the transport seam is upstream too
+(`post()` reads `globalThis.tm6502Transport` per call), so the roof is down
+to three patches and all three are addresses.

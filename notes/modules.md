@@ -30,7 +30,7 @@ sub-projects, along the licence line. Where each one is right now:
 | `web/` | the site: Next 16.3.2, React 19.2.8, Tailwind 4, MDX; `bun`. Serves `/`, `/ja`, `/docs`, `/6502/*`, `/hotbits`, `/style`, `/admin` | `127.0.0.1:6511` behind nginx |
 | `api/` | the roof's API: FastAPI, Pydantic, one SQLite file. REST and MCP from one set of models | `127.0.0.1:6510` at `/api` |
 | `style/` | the design system: `tokens.css` (the owner's `@theme`), `components.css`, the zoo, and five Python checks | build time and deploy gates |
-| `data/` | the facts that are typed once: `pieces.json`, `projects.json`, `chip.json`, `ja.json`, `engine.json`; plus the scripts that check prose against them | read by `web/lib` and `api/` at build and start |
+| `data/` | the facts that are typed once: `pieces.json`, `projects.json`, `chip.json`, `ja.json`, `engine.json`; plus the scripts that check prose against them. One of them reaches the network on purpose: `check-i18n.py --live` counts how much of each published page's Japanese twin is Japanese, which the tree cannot answer | read by `web/lib` and `api/` at build and start; `--live` against a served origin |
 | `docs/` | the documentation tree, markdown; `web/lib/docs.ts` walks it | prerendered at `/docs` |
 | `projects/6502/` | the Wayback drip (`drip.py`). The Lab's HTML was here as a copy until 2026-08-26; it is read from the 6502 checkout now | drip by hand or a timer |
 | `deploy/` | the nginx server block and two systemd units, source of truth for the copies under `/etc` | installed by hand |
@@ -49,11 +49,11 @@ app/[lang]/layout.tsx ─────────── lib/tokens, lib/i18n
 app/[lang]/page.tsx ───────────── lib/chip, lib/pieces, lib/projects, lib/nav
 app/[lang]/docs/** ────────────── lib/docs, lib/i18n
 app/[lang]/6502/page, learn, cart, tools ── lib/projects, lib/i18n, lib/tracks, lib/docs, lib/explorer-menu
-app/[lang]/6502/explorer, [page] ─ lib/explorer, lib/explorer-menu ── ../../6502/web/*.html, style.css   (BUILD-TIME READ)
-app/[lang]/6502/lab ───────────── lib/lab ── ../6502/docs/halfwave-lab/halfwave-lab.html
-app/[lang]/6502/api ───────────── lib/apidoc ── ../../6502/service/api.html                              (BUILD-TIME READ)
+app/[lang]/6502/explorer, [page] ─ lib/explorer, lib/explorer-menu ── $CHIP/web/*.html, style.css       (BUILD-TIME READ)
+app/[lang]/6502/lab ───────────── lib/lab ── $CHIP/docs/halfwave-lab/halfwave-lab.html                   (BUILD-TIME READ)
+app/[lang]/6502/api ───────────── lib/apidoc ── $CHIP/service/api.html                                   (BUILD-TIME READ)
 app/[lang]/6502/games ─────────── shell/Shell, shell/Kit ── lib/shell/{solve,geom}; ConsoleDriver ── consoleState
-                                  public/6502/games/*.js ── lib/console-modules ── ../../6502/games       (BUILD-TIME READ, three lines patched)
+                                  public/6502/games/*.js ── lib/console-modules ── $CHIP/games            (BUILD-TIME READ, three lines patched)
 app/[lang]/6502/builders, manage ─ lib/registry (types only; data fetched in the browser from the chip API)
 app/[lang]/6502/cart/{brief,skill}.md ── lib/brief ── docs/6502/*.md, lib/brief-token
 app/[lang]/hotbits/** ─────────── lib/projects
@@ -62,12 +62,20 @@ app/[lang]/admin ──────────────── components/Adm
 app/og/[[...path]] ────────────── lib/card ── lib/registry, public/6502/games/chr.js
 app/sitemap, robots, manifest ─── lib/docs, lib/explorer, lib/seo, lib/tokens
 components/SiteFrame ──────────── lib/nav ── lib/docs, lib/explorer-menu, lib/explorer, lib/tracks, lib/projects
+components/SiteLink ───────────── lib/nav (isHardRoute: a module page is arrived at with a fresh document)
+components/Untranslated ───────── nothing; the one copy of the sentence a Japanese page prints over an English body
 components/Halfphi ────────────── lib/pieces ── data/pieces.json
 components/TwoWaysDemo ────────── public/engine/tm6502.mjs (runtime, in the browser)
 lib/i18n, lib/lang ────────────── data/ja.json
 lib/pieces, lib/projects, lib/chip ── data/{pieces,projects,chip}.json
 lib/tokens ────────────────────── style/tokens.css
 ```
+
+`$CHIP` above is `lib/chip-src.ts`: the served worktree (`../6502-served`,
+kept by `scripts/board-engine.py` at the commit the served release was built
+from) where it exists, else the checkout beside this one. Resolved once per
+process, so a build cannot read half its pages from one tree and half from
+another.
 
 Three modules are the trunk: `lib/nav.ts` (the whole navigation model,
 derived), `lib/i18n.ts` + `lib/lang.ts` (the one overlay), and
@@ -76,7 +84,7 @@ a menu, a crumb, a title or a Japanese edition goes through them.
 
 `web/scripts/` runs before `next build`: `build-icon.py` (icons from the
 tokens), `build-sw.mjs` (the worker, stamped with the commit),
-`pull-console.mjs` (the console's modules from `../6502/games`, three lines
+`pull-console.mjs` (the console's modules from `$CHIP/games`, three lines
 patched, `upstream.json` beside them), `build-lab.mjs`
 (the lab's assets, content-hashed), `pull-chipdocs.mjs` (four generated
 documents from `../6502/docs`, gitignored here because their schematics are
@@ -84,7 +92,7 @@ die-trace data), then `check-build.mjs` after it (output checks on the HTML
 that was generated). `shell-sheets.ts` draws the console's paper sheets and is
 not part of the build.
 
-`web/e2e/` is 11 Playwright specs run against the live site
+`web/e2e/` is 21 Playwright specs, 474 tests, run against the live site
 (`bun run e2e`, or `deploy.sh --e2e`).
 
 ### `api/`: the modules
@@ -140,8 +148,8 @@ can close.
 | the chip's two figures | `data/chip.json`, re-derived by `data/verify-chip.py` from `/v1/meta` | by hand | `data/check-figures.py` scans the prose for stray digits |
 | the API reference | `lib/apidoc.ts` reads `../6502/service/api.html` | build | throws when the document stops matching its transforms |
 | the chip documents | `pull-chipdocs.mjs` reads `../6502/docs/*.md` | build | throws on an unrecognised shape |
-| the console's modules | `lib/console-modules.ts` reads six modules, two ROMs and the tile sheet from `../6502/games`, patches four places (the API base in `game.js` and `registry.js`, one link in `game.js`, the transport seam in `console.js`); `scripts/pull-console.mjs` writes them to `web/public/6502/games/` (gitignored) with `upstream.json` naming the commit and every digest | build | a patch that no longer matches exactly once throws; `bun test lib` holds the patches, the byte parity of the rest, and that every module parses; `check-build.mjs` holds the page to `game.js`'s selectors; the tree is held to the boarded commit |
-| the console's in-page chip | `games/localEngine.ts` reads `/6502/chip/asset-manifest.json` in the browser and imports the wasm bundle it names, behind `console.js`'s patched `post()`; no die data is copied here | request, when the engine key says `local` | `e2e/console-engine.spec.ts` boots a cartridge on both engines and compares the machine byte for byte; a chip that is not served refuses with the reason, on the settings page |
+| the console's modules | `lib/console-modules.ts` reads six modules, two ROMs and the tile sheet from the served worktree's `games/`, patches three places, all of them addresses (the API base in `game.js` and `registry.js`, the builders link in `game.js`); `scripts/pull-console.mjs` writes them to `web/public/6502/games/` (gitignored) with `upstream.json` naming the commit and every digest | build | a patch that no longer matches exactly once throws; `bun test lib` holds the patches, the byte parity of the rest, and that every module parses; `check-build.mjs` holds the page to `game.js`'s selectors; the tree is held to the boarded commit |
+| the console's in-page chip | `games/localEngine.ts` reads `/6502/chip/asset-manifest.json` in the browser and imports the wasm bundle it names, behind upstream `console.js`'s own transport seam (`globalThis.tm6502Transport`, read per call, 6502@f065cd8); no die data is copied here | request, when the engine key says `local` | `e2e/console-engine.spec.ts` boots a cartridge on both engines and compares the machine byte for byte; a chip that is not served refuses with the reason, on the settings page |
 | the registry | `api/mint.py` imports `registry.py` from `TM_REGISTRY_SERVICE` and opens `TM_REGISTRY_DB` | request | the import is named at the top of `mint.py` so a rename fails loudly; `test_mint.py` |
 | the lab | `../6502/docs/halfwave-lab/halfwave-lab.html`, read at build (`upstream.json` beside the assets) | build | `lib/lab.ts` throws when a substitution finds nothing; `lib/lab.test.ts` |
 | the archive | `projects/6502/archive/drip.py` pulls from the Wayback Machine to `TM_ARCHIVE`, never into the tree | by hand | `.gitignore`, anchored by name |
@@ -263,6 +271,14 @@ the registry's, that the thing which publishes must not be the thing which
 claims: the mirror's green CI and the 6502 project's own runs are not read;
 the suites run here, on the checkout about to be served.
 
+The record itself is `data/engine.json` and is not copied here. Two things
+about it are worth a sentence, though. The test count is not a constant: it
+was 39 for a long time and is 42 as of v0.280, because the suites over there
+grew, so a changed count is news rather than an error. And boarding moves
+`../6502-served`, which is what `lib/chip-src.ts` reads, so **board before
+taking out patches whose anchors have gone, and never during a build**
+(learned boarding v0.280, 2026-08-28).
+
 First record, 2026-08-26: 6502 `15e5717`, halfphi 0.1.0
 (`1792a2467e8b`), halfwave `356c12d589fa`, 39 tests passed in 9 s. The check
 then fails on the release lag noted above, which is correct: the roof will
@@ -334,6 +350,21 @@ and not an action.
    behind it (the binary must say HEAD). Twice now, and the peer session
    suggested boarding against the deployed release rather than the
    checkout; the owner's call.
+6. **Done, 2026-08-28 (`6502@f065cd8`), boarded here as v0.280: three of
+   the roof's six patches went upstream.** `console.js`'s `post()` reads
+   `globalThis.tm6502Transport` itself, per call, which is stronger than
+   reading it once: installing or deleting a transport mid-game hands the
+   running machine across rather than rebooting it. The tile sheet is one
+   function rather than the roof's three edits (`cart.tileset` on the
+   cartridge, `HOUSE` held apart, `selectTiles()` wherever either changes).
+   And `Machine.traceRows(halfCycles, watch)` emits the API's own
+   `trace_rows` from the same Rust function both ends call, which retires
+   `service/app.py`'s `_pack_rows` and is what the Lab's grey engine key
+   has been waiting for. The roof is back to three patches, all addresses.
+   **The one to remember:** the picker patch's anchor still MATCHED after
+   boarding and came out anyway, because upstream answers it one line
+   later. Judge a patch by what the file now does, not by whether its
+   anchor still finds a line.
 
 ### Keeping this current
 
