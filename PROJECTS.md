@@ -1971,3 +1971,30 @@ console, so every computed link into a module page is a real navigation
 without each page having to remember. `lib/lang.test.ts` holds the rule in
 both languages, and `web/e2e/lab.spec.ts` and `shell.spec.ts` each walk the
 flag and assert what arrives is built rather than merely rendered.
+
+## The other instrument pages, swept
+
+The owner asked whether the rest of the instruments had the console's bug.
+The seventeen explorer pages and the explorer itself do not: their bars have
+been `hard` since they landed, and all twenty pages (those plus the Lab and
+the console) were walked through their own flags with the same result on both
+sides, driver registered, canvases and readouts identical.
+
+What the sweep did find was two more soft links, and a sharper statement of
+the rule. `web/e2e/hard-routes.spec.ts` now checks the mechanism rather than
+the symptom: it writes a marker on the window, follows every link on the
+ordinary pages that lands on an instrument, and requires the marker to be
+gone, because a document that survived the navigation is the client router
+having kept it. That found the 6502 page's own track headlines, where
+`lib/tracks.ts` carried a third hand-kept copy of the rule: it named the
+explorer and the tracer, so the Lab and the console were reached softly from
+the project's own front page.
+
+The reason a manual check missed them is worth keeping. A soft arrival at a
+module page WORKS the first time, because the module has not run in that
+document yet; it is the second that is dead. Measured: `/6502` to the console
+paints, back, and to the console again arrives with a blank screen and no
+tile key. So "it worked when I clicked it" is not evidence here, and the
+marker test is. The tools directory, the cartridge page and the editor were
+fixed in the same round through one component (`app/components/SiteLink.tsx`),
+which asks `isHardRoute` so that no page has to remember.
