@@ -1777,3 +1777,14 @@ compare a page to itself). The engine was re-boarded on v0.270 `f4b8976`
 `7ebac9a`, the frame period at `12d4616`); the fourth build-time patch
 stays until a tagged release carries `12d4616`, because `pull-console`
 reads game.js from the served worktree, not from the games host.
+
+## Checkpoint, 2026-08-28, at 1.0.152
+
+Live: 1.0.152 on 6502 v0.270 `f4b8976`, halfphi 0.1.2, boarded. The
+forward's step 2 is live on the three subdomain vhosts (pages 301 to the
+apex, `/api/` and the assets kept); `deploy.sh` stage 9 checks that shape;
+`parity.spec` skips on the 301. The 6502 session holds the nginx diff for
+its `deploy/` copies. Open, unchanged: forward step 3 (wait on the logs);
+the fourth game.js patch until a tagged release carries `12d4616`;
+intermittent React #418 on Shell pages; `TM_SELF_NETS` in `visitors.env`;
+article images (owner's); the three engine write-ups.
