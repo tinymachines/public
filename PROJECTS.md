@@ -1998,3 +1998,18 @@ tile key. So "it worked when I clicked it" is not evidence here, and the
 marker test is. The tools directory, the cartridge page and the editor were
 fixed in the same round through one component (`app/components/SiteLink.tsx`),
 which asks `isHardRoute` so that no page has to remember.
+
+## The full suite, and the one thing it caught
+
+452 tests against production, 8.7 minutes: 451 passed and one failed, and the
+failure was the suite doing its job. `e2e/footer.spec.ts` still asserted "the
+Lab is paper, with no link button", which was the decision from 2026-08-25
+and stopped being true when the workspace went dark. Rewritten to the rule
+that holds now, and to both halves of it: the shell on the instrument ground
+with glass ink and no panel on paper, then the Lab's own toggle to light and
+every panel on paper with ink on it. A theme with one half checked is a theme
+that half works.
+
+Worth noting what did not fail: the tile-sheet cases, the console's two
+engines and their parity, the hard-route guard over every link into an
+instrument, the flag on 134 pages, and the Lab's three.

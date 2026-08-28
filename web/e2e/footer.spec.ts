@@ -46,17 +46,52 @@ test.describe("workbench floor", () => {
     });
   }
 
-  test("the Lab is paper, with no link button", async ({ page }) => {
+  /**
+   * The Lab's ground, and it has moved: paper from 2026-08-25, and the
+   * instrument ground again from 2026-08-28 (owner: "Lab workspace should be
+   * dark theme"). The Lab is twenty-six panels of values read off storage on
+   * a running die, so STYLE.md's rule puts it on panel; what paper bought is
+   * kept as the Lab's own light theme, under the toggle it has always had.
+   * Both halves are held here, because a theme with one half checked is a
+   * theme that half works.
+   */
+  test("the Lab is dark, paper under its own toggle, and has no link button", async ({ page }) => {
     await open(page, "/6502/lab", 6000);
-    const r = await page.evaluate(() => {
-      const lum = (c: string) => { const m = c.match(/\d+/g)!; return (0.2126 * +m[0] + 0.7152 * +m[1] + 0.0722 * +m[2]); };
+    // Computed colours come back as rgb() or as color(srgb 0..1) depending on
+    // how the value was authored, and reading the second as the first is how
+    // a light ink reads as a dark one.
+    const read = () => page.evaluate(() => {
+      const lum = (c: string) => {
+        const n = (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+        const scale = c.startsWith("color(") ? 255 : 1;
+        return (0.2126 * n[0] + 0.7152 * n[1] + 0.0722 * n[2]) * scale;
+      };
       const panels = [...document.querySelectorAll<HTMLElement>(".lab-shell .panel")];
-      return { panels: panels.length, dark: panels.filter((p) => lum(getComputedStyle(p).backgroundColor) < 128).length, ink: lum(getComputedStyle(panels[0]).color), share: document.querySelector<HTMLElement>("#share")!.offsetWidth };
+      const shell = document.querySelector<HTMLElement>(".lab-shell")!;
+      return {
+        panels: panels.length,
+        light: panels.filter((p) => lum(getComputedStyle(p).backgroundColor) >= 128).length,
+        ground: lum(getComputedStyle(shell).backgroundColor),
+        ink: lum(getComputedStyle(panels[0]).color),
+        share: document.querySelector<HTMLElement>("#share")!.offsetWidth,
+      };
     });
-    expect(r.panels).toBeGreaterThan(10);
-    expect(r.dark, "no panel on the dark ground").toBe(0);
-    expect(r.ink, "ink on paper, not glass").toBeLessThan(128);
-    expect(r.share, "the header's link button").toBe(0);
+
+    const dark = await read();
+    expect(dark.panels).toBeGreaterThan(10);
+    expect(dark.light, "no panel on paper").toBe(0);
+    expect(dark.ground, "the shell is the instrument ground").toBeLessThan(64);
+    expect(dark.ink, "glass ink, read on panel").toBeGreaterThan(128);
+    expect(dark.share, "the header's link button").toBe(0);
+
+    // The Lab's own toggle writes data-theme on <html>; light is the paper set
+    // (lab.css), so the switch is a choice between two house grounds.
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+    const light = await read();
+    expect(light.panels, "the same panels").toBe(dark.panels);
+    expect(light.light, "every one of them on paper").toBe(light.panels);
+    expect(light.ground, "and the shell with them").toBeGreaterThan(128);
+    expect(light.ink, "ink on paper, not glass").toBeLessThan(128);
   });
 });
 
