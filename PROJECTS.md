@@ -2240,3 +2240,27 @@ The port is 0, so the kernel picks it. That is not carelessness about the
 port trap in CLAUDE.md, it is the trap's answer: a chosen port can be held by
 something else and questioned instead of this server, and an ephemeral one
 cannot.
+
+## Checkpoint, 2026-08-28, at 1.0.176
+
+Live: 1.0.176 (built from `a639a77`; the two commits since are notes and
+e2e only, nothing served changed), on 6502 v0.280 `f065cd8` (halfphi 0.1.2,
+boarded, 42 tests). Full e2e suite green against production: 469 passed,
+5 skipped with reasons, 0 failed, 9.7 minutes. Tree clean on `main`, in sync
+with `origin/main`; no other branches, stashes or worktrees of this repo.
+
+**This round.** The language switch was measured and is not broken; what the
+owner saw was coverage, and `check-i18n.py --live` now counts it (25 of 68
+pages have a Japanese body) and polices the untranslated notice, which moved
+into one component and onto the 38 ported pages (owner's call). v0.280 was
+boarded and four build-time patches came out, one of them with an anchor
+that still matched. Parity compares the released pages again, from the
+release directory and never the worktree, and refuses a page that 404d.
+The notes (`modules.md`, `one-engine.md`, `upstream-transport.md`, ISSUES
+#16) are current as of `634ba3e`.
+
+**Open.** The console needs work (owner, next). The Lab's engine key stays
+grey until the page drives `Machine.traceRows` (upstream at `f065cd8`,
+boarded, unused here yet). Forward step 3 waits on the subdomain logs. No new
+subdomains. Unchanged: React #418 on Shell pages, `TM_SELF_NETS` in
+`visitors.env`, article images (owner's), the three engine write-ups.
