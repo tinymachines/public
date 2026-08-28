@@ -45,10 +45,21 @@ export function localize(lang: Lang, href: string): string {
   return href === "/" ? "/ja" : `/ja${href}`;
 }
 
-/** The path with any language prefix removed: what the labels are keyed by. */
+/**
+ * The path with any language prefix removed: what the labels are keyed by.
+ *
+ * `/en/...` counts as one of those prefixes, and that is not a nicety. It is
+ * the INTERNAL spelling of an English path: English is served unprefixed and
+ * rewritten onto `app/[lang]` (next.config.ts, afterFiles), so a client
+ * component reading `usePathname()` inside a prerendered English page sees
+ * `/en/6502/lab` where the browser's address bar says `/6502/lab`. Measured
+ * 2026-08-28: every statically rendered English page shipped a language
+ * switch pointing at `/ja/en/6502/lab`, which is a path this site does not
+ * have. Public `/en/*` redirects away, so there is nothing ambiguous about
+ * reading it as English here.
+ */
 export function delocalize(pathname: string): { lang: Lang; path: string } {
   for (const l of LANGS) {
-    if (l === "en") continue;
     if (pathname === `/${l}`) return { lang: l, path: "/" };
     if (pathname.startsWith(`/${l}/`)) return { lang: l, path: pathname.slice(l.length + 1) };
   }

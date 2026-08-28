@@ -1895,3 +1895,34 @@ console, so the house sheet arriving second used to take the screen from the
 cartridge. It is load-bearing, checked the way this repo requires: with that
 patch taken back out of the served module and the house sheet held back a
 second and a half, the linked cartridge's legend became the house sheet's.
+
+## The Lab: dark again, a flag that goes where it says, and why the engine key is grey
+
+Three from the owner on `/6502/lab`.
+
+**The workspace is dark.** The Lab wore paper from 2026-08-25 (the page) and
+2026-08-27 (the panels); it is an instrument all the way down, twenty-six
+panels of values read off storage on a running die, so the shell takes the
+instrument ground and the panels are raised on it. The set is the one the
+panels themselves wore, moved out to the shell so it reaches the furniture
+between them. The paper set is kept as the Lab's light theme, under its own
+toggle, so the switch is now a choice between two house grounds rather than a
+door into a palette this site does not have.
+
+**The language switch was pointing at a page that does not exist,** and not
+only here. English is served unprefixed and rewritten onto `app/[lang]`, so a
+path has two spellings, and a client component reading `usePathname()` in a
+prerendered page is handed the internal one: `/en/6502/lab`. `delocalize` did
+not read `/en` as a language prefix, so every statically rendered English page
+shipped a flag pointing at `/ja/en/...`. One line, and `lib/lang.test.ts` now
+holds both spellings and the pair of them; `e2e/header.spec.ts` asserts on
+every page it walks that the flag is that page in the other language.
+
+**The engine key stays grey on the Lab, and that is honest.** The Lab does not
+step a machine, it records one: a single `/v1/step` with `trace: true,
+format: "rows"` brings back 34 columns per half-cycle, and every panel reads
+that recording while the player scrubs inside it. The wasm build has no trace,
+so a local Lab needs `v6502-wasm` to emit the same rows; doing it in
+JavaScript would be a second implementation of what `service/app.py` already
+owns. Measured, written up in `notes/one-engine.md` and filed in
+`notes/upstream-transport.md`.

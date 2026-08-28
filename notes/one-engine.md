@@ -202,6 +202,33 @@ have caught it runs the default engine through a game over and a second
 boot, because fourteen frames is under four seconds and a check that stops
 at the first frame passes straight over it.
 
-What is left of the shape: the Lab's chip, which is its own wasm and its own
-player, and a driver shape that lets a page state its own engine default
-rather than writing the floor's (`notes/upstream-transport.md`).
+### The Lab's engine key stays grey, and this is the reason (2026-08-28)
+
+Reported by the owner: no local option on `/6502/lab`. The Lab's driver says
+`engine: false, runsOn: "api"`, and that is honest rather than an oversight.
+
+Measured, from the Lab's own calls: the Lab does not step a machine the way
+the console does. It RECORDS. One `POST /v1/step` with `trace: true` and
+`format: "rows"` brings back the whole run as 34 columns per half-cycle,
+which is what the datapath, the latch tables, the timing lane, the footprint
+map and the half-cycle diff all read; the player then scrubs inside that
+recording without asking the engine anything. Those columns are `alu`,
+`alua`, `alub`, `sb`, `idb`, `idl`, `dor`, `adl`, `adh`, `abl`, `abh`,
+`pclp`, `pchp`, `tstates`, `hidden`, `store_data` and the rest: internal
+datapath values the service packs (`_pack_rows` in `service/app.py`) from
+halfwave's TRACE verb.
+
+**The wasm build has no trace.** It exposes registers, node levels, timing
+states and a machine, and nothing that emits a row per half-cycle. So a local
+Lab is not a wiring job here; it needs `v6502-wasm` to carry the same rows,
+and doing it from JavaScript instead would mean reading thirteen registers
+bit by named bit out of the die on every half-cycle, which is a second
+implementation of a fact the service already owns. Filed for upstream in
+`notes/upstream-transport.md`.
+
+Until then the key greys itself, which is what `caps.engine: false` is for,
+and the Lab keeps saying where it runs (`runsOn`).
+
+What is left of the shape: the Lab's chip, which needs that trace, and a
+driver shape that lets a page state its own engine default rather than
+writing the floor's (`notes/upstream-transport.md`).

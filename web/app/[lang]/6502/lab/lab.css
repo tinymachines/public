@@ -69,15 +69,100 @@
   --glow: var(--phi1);
 }
 
-/* PAPER PAGE, PAPER PANELS, the same ground the explorer's instruments got.
+/* THE WORKSPACE IS DARK (owner's call, 2026-08-28: "Lab workspace should be
+   dark theme"). The Lab is an instrument all the way down: twenty-six panels
+   of values read off storage nodes on a running die, a scope, a datapath and
+   a half-cycle diff. STYLE.md section 1 says panel is the machine talking,
+   and here the machine is doing all of the talking, so the shell takes the
+   instrument ground and the panels are raised on it.
 
-   The page went paper first (2026-08-25) with the panels left dark as the
-   machine talking; the panels followed on 2026-08-27 (the rule below the
-   shell block says why). So the one set here is the whole Lab's: the base
-   forms of the hues went with the dark ground, and the -ink forms hold
-   throughout, because everything is read on paper.
+   This is the set the panels themselves wore until 2026-08-27, moved out to
+   the shell so that it reaches the furniture between them as well: the tab
+   strip, the transport bar and the instruction lane belong to the instrument
+   rather than being documentation about it. The ladder is derived from the
+   kit's three panel tokens rather than replaced by them, because fourteen
+   near-blacks are how a cell reads as raised, a lane as recessed and a hover
+   as different from the thing it is over. A palette change still reaches
+   every step.
+
+   The Lab's own theme toggle keeps working: it writes data-theme on <html>,
+   and light is the paper set below, which is the ground this page wore for
+   three days and is worth keeping as the other half of the switch.
    ------------------------------------------------------------------------ */
 .lab-shell {
+  /* THE GROUND AND ITS LADDER. panel is the instrument face; raised and sunk
+     are the two directions off it, and everything between is mixed at
+     percentages that preserve the ordering the Lab's own values had. */
+  --ground:   var(--color-panel);
+  --panel:    var(--color-panel-raised);
+  --panel2:   color-mix(in srgb, var(--color-panel) 70%, var(--color-panel-raised));
+  --sunk:     var(--color-panel-sunk);
+  --code:     var(--color-panel-sunk);
+  --foot:     color-mix(in srgb, var(--color-panel) 85%, var(--color-panel-sunk));
+  --lane:     color-mix(in srgb, var(--color-panel) 88%, var(--color-panel-sunk));
+  --cell:     color-mix(in srgb, var(--color-panel-raised) 92%, var(--color-glass));
+  --mcell:    color-mix(in srgb, var(--color-panel-raised) 97%, var(--color-panel));
+  --cell2:    color-mix(in srgb, var(--color-panel-raised) 84%, var(--color-glass));
+  --cell3:    color-mix(in srgb, var(--color-panel-raised) 94%, var(--color-panel));
+  --hotfill:  color-mix(in srgb, var(--color-panel-raised) 88%, var(--color-glass));
+  --hover:    color-mix(in srgb, var(--color-panel-raised) 95%, var(--color-glass));
+  --onbg:     color-mix(in srgb, var(--color-panel-raised) 89%, var(--color-glass));
+
+  /* HAIRLINES. The kit's rule on panel, and three weaker steps toward it. */
+  --rule:     var(--color-rule-panel);
+  --cellrule: color-mix(in srgb, var(--color-rule-panel) 80%, var(--color-glass));
+  --grid:     color-mix(in srgb, var(--color-rule-panel) 70%, var(--color-panel));
+  --faint:    color-mix(in srgb, var(--color-rule-panel) 60%, var(--color-glass));
+
+  /* TEXT. Two levels in the kit, four in the Lab, so the two middles are
+     mixed. glass is 13.6:1 on panel and glass-muted 5.4:1, so nothing here
+     is dimmer than glass-muted. */
+  --bright:   var(--color-glass);
+  --text:     color-mix(in srgb, var(--color-glass) 88%, var(--color-glass-muted));
+  --mid:      var(--color-glass-muted);
+  --dim:      var(--color-glass-muted);
+  --reg:      color-mix(in srgb, var(--color-glass-muted) 70%, var(--color-glass));
+  --axis:     var(--color-glass-muted);
+
+  /* THE BUSES, which is what the categorical hues are for: address, data and
+     ALU are three signal classes. The base forms, because this is panel. */
+  --addr:     var(--color-ocean);
+  --data:     var(--color-burnt);
+  --alu:      var(--color-mustard);
+  --teal:     var(--color-ocean);
+
+  /* TRACES AND THE CURSOR. Categorical again, and distinct from the buses. */
+  --cursor:   var(--color-mustard);
+  --t2:       var(--color-forest);
+  --t3:       var(--color-mustard);
+
+  /* POWER, and this one is a correction rather than a mapping: it was a red,
+     and in this palette red means ASSERTION FAILED and nothing else, so a red
+     power key would make a destructive control and a broken invariant look
+     the same. ATTENTION is the accent for something that needs a human. */
+  --power:    var(--color-orange);
+
+  /* TYPE. The Lab and the style guide had converged on these three families
+     independently, which is why dropping the Lab's <head> costs nothing. */
+  --mono:     var(--font-mono);
+  --sans:     var(--font-sans);
+  --disp:     var(--font-display);
+
+  background: var(--color-panel);
+  color: var(--color-glass);
+  font-family: var(--font-sans);
+}
+
+/* AND LIGHT IS PAPER: the same names in the paper set, which is what the whole
+   Lab wore from 2026-08-25 to 2026-08-28. The Lab's toggle is a choice between
+   two house grounds now rather than a switch into a palette this site does not
+   have.
+
+   Doubled after the root condition: lib/lab.ts keeps `:root[data-theme=...]`
+   in front of the scope when it scopes the Lab's own rules, so the Lab's own
+   light block has this shape too and comes later in the document. The second
+   class is the smallest thing that wins without !important. */
+:root[data-theme="light"] .lab-shell.lab-shell {
   --ground:   var(--color-paper);
   --panel:    var(--color-paper-sunk);
   --panel2:   var(--color-paper-sunk);
@@ -130,22 +215,13 @@
   font-family: var(--font-sans);
 }
 
-/* THE PANELS GO PAPER TOO (owner's call, 2026-08-27: "dark themed lab
-   component; does not match theme"). This is the explorer's call of
-   2026-08-24 ("why are they all still black?") arriving at the Lab: the
-   binder these pages resemble is paper with instrument photographs printed
-   on it, and the Lab is twenty-six panels, so on panel it read as a black
-   page with cream margins under a paper site. Until this the block here
-   restated all 38 names inside .panel in the panel ladder; now the shell's
-   paper set above reaches every panel, and dark survives only where a
-   surface paints itself dark: the scope canvas and the map.
-
-   What this rule still has to do is undo the kit. The kit's own .panel is
-   the brushed bezel (a chrome gradient, 3px of it, glass ink), and it is
-   unscoped, so it reaches in here and under the Lab's own rule for the
-   same name; with the panels dark that was invisible, on paper it is glass
-   ink on cream. Same species as the explorer's .panel rule: a name two
-   designs share, not a component they share. Doubled for the cascade. */
+/* THE PANELS, RAISED ON THE SHELL'S GROUND. What this rule has to do is undo
+   the kit: the kit's own .panel is the brushed bezel (a chrome gradient, 3px
+   of it), and it is unscoped, so it reaches in here and under the Lab's own
+   rule for the same name. Same species as the explorer's .panel rule: a name
+   two designs share, not a component they share. Doubled for the cascade,
+   because the Lab's stylesheet is a link in the body and this file is one in
+   the head. */
 .lab-shell.lab-shell .panel {
   background: var(--panel);
   color: var(--text);

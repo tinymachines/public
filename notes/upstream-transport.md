@@ -256,3 +256,29 @@ With the patch it keeps its own. `web/e2e/console-cart.spec.ts` holds all
 three: arrive on a published cartridge from the registry, check it draws in
 its own sheet, delay the house sheet and check it still does, then choose
 Silicon Snake and see the legend is the house sheet again.
+
+## A trace the wasm build can emit, so the Lab can run in the page (2026-08-28)
+
+The owner asked for the local option on `/6502/lab`. The console has it; the
+Lab cannot, and the reason is one API shape rather than any wiring.
+
+The Lab records rather than steps: one `POST /v1/step` with `trace: true,
+format: "rows"` and it holds the whole run, 34 columns per half-cycle, which
+every panel on the page reads and the player scrubs inside. The columns are
+the service's `_pack_rows`: `half_cycle, cycle, clk0, phase, addr, data, rw,
+sync, pc, a, x, y, s, p, ir, alu, alua, alub, sb, idb, idl, dor, adl, adh,
+abl, abh, pclp, pchp, tstates, hidden, store_data, fetch_addr, fetch_opcode,
+watch`.
+
+`v6502-wasm` has no equivalent. It can give registers, node levels, timing
+states and a machine, so the missing piece is a `traceRows(halfCycles,
+watch)` (or a stepping callback) that emits exactly those columns in exactly
+that order, with the same watch-mask packing the service uses. Then the
+roof's transport (`globalThis.tm6502Transport`, above) answers the Lab's one
+call the way it answers the console's, the Lab's driver can say `engine:
+true`, and the strip's key stops being grey on the last page that greys it.
+
+Doing it in JavaScript instead would mean reading thirteen internal registers
+bit by named bit off the die on every half-cycle, which is a second
+implementation of something `service/app.py` already owns, and the two would
+disagree the first time either changed. So this one waits for the crate.

@@ -24,6 +24,7 @@ for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
             bars: document.querySelectorAll(".topbar").length,
             die: document.querySelectorAll(".topbar .die").length,
             flags: document.querySelectorAll(".topbar a.lang-switch, .topbar .lang-switch a").length,
+            flagHref: document.querySelector<HTMLAnchorElement>(".topbar a.lang-switch, .topbar .lang-switch a")?.getAttribute("href") ?? null,
             page: document.querySelectorAll(".topbar .tb-page").length,
             // The right edge: the label is wider in Japanese, the edge is the slot.
             menuX: Math.round(menu.right),
@@ -32,6 +33,12 @@ for (const [name, vp] of [["phone", PHONE], ["desk", DESK]] as const) {
         expect(r.bars, `${p}: one bar`).toBe(1);
         expect(r.die, `${p}: the die tile`).toBe(1);
         expect(r.flags, `${p}: one flag`).toBe(1);
+        // The flag is this page in the other language, and nothing else. It
+        // pointed at /ja/en/... on every statically rendered English page
+        // until 2026-08-28, because the internal spelling of an English path
+        // carries the /en the rewrite adds and `delocalize` did not read it.
+        const twin = p.startsWith("/ja") ? (p.slice(3) || "/") : (p === "/" ? "/ja" : `/ja${p}`);
+        expect(r.flagHref, `${p}: the flag points at the same page in the other language`).toBe(twin);
         // The name beside the mark is the workbench bar's slot; a Shell page
         // names itself in the page head under the bar, so the bar carries the
         // mark alone there. One or the other, never both, never neither.
