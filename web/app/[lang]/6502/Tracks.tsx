@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteLink } from "@/app/components/SiteLink";
 import type { Lang } from "@/lib/lang";
 import { localize, t } from "@/lib/i18n";
 import { TRACKS } from "@/lib/tracks";
@@ -18,16 +19,21 @@ export function TrackGrid({ lang }: { lang: Lang }) {
           </h2>
           <p>{tr.what[lang]}</p>
           <p className="piece-links">
+            {/* A file is a file, and everything else asks the one rule
+                (SiteLink -> isHardRoute). The `hard` flag in lib/tracks.ts
+                was a third hand-kept copy of that rule: it named the explorer
+                and the tracer and not the Lab or the console, so those two
+                were reached through the client router from here. It survives
+                as an override for a headline that is not a page. */}
             {tr.headline.map((h) =>
-              h.hard ? (
-                // eslint-disable-next-line @next/next/no-html-link-for-pages
-                <a key={h.href} className="tag live" href={h.href.endsWith(".md") ? h.href : localize(lang, h.href)}>
+              h.href.endsWith(".md") ? (
+                <a key={h.href} className="tag live" href={h.href}>
                   {h.label[lang]}
                 </a>
               ) : (
-                <Link key={h.href} className="tag live" href={localize(lang, h.href)}>
+                <SiteLink key={h.href} lang={lang} className="tag live" href={h.href} hard={h.hard}>
                   {h.label[lang]}
-                </Link>
+                </SiteLink>
               ),
             )}
           </p>
