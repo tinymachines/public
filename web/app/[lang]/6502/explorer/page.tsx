@@ -6,6 +6,7 @@ import { explorer } from "@/lib/explorer";
 import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { SectionStrip } from "@/app/components/SectionStrip";
 import { ChipModules } from "./ChipModules";
+import { Untranslated } from "@/app/components/Untranslated";
 import "./explorer.css";
 
 /**
@@ -73,6 +74,9 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
       />
       <SectionStrip />
       <div className="wb-main">
+      {/* Still an English document under the Japanese chrome: see
+          app/components/Untranslated.tsx. */}
+      <Untranslated lang={lang} />
       {/* The explorer's own 180 KB of rules, with its :root replaced by
           explorer.css and every selector scoped to .explorer-shell. Inline
           rather than a file because, unlike the lab's, this stylesheet is
@@ -80,7 +84,7 @@ export default async function ExplorerPage({ params }: { params: Promise<{ lang:
           asset here would be the copy this whole arrangement avoids. */}
       <style dangerouslySetInnerHTML={{ __html: style }} />
 
-      <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
+      <div className="explorer-shell" lang="en" dangerouslySetInnerHTML={{ __html: body }} />
 
       <ChipModules entry={script} />
       {/* What is running, on every page (owner's call, 2026-08-27): a

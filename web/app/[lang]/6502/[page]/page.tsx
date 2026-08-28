@@ -11,6 +11,7 @@ import Link from "next/link";
 import { articlePages } from "@/lib/article";
 import { ChipModules } from "../explorer/ChipModules";
 import { Justify } from "@/app/components/Justify";
+import { Untranslated } from "@/app/components/Untranslated";
 import "../explorer/explorer.css";
 
 /**
@@ -98,8 +99,12 @@ export default async function ExplorerSubPage({ params }: { params: Promise<{ la
       />
       <SectionStrip />
       <div className="wb-main">
+        {/* The body below is the tool's own English document. The notice says
+            so; `lang` on the shell tells a screen reader the same thing, which
+            matters more here than on a page a reader can see is English. */}
+        <Untranslated lang={lang} />
         <style dangerouslySetInnerHTML={{ __html: style }} />
-        <div className="explorer-shell" dangerouslySetInnerHTML={{ __html: body }} />
+        <div className="explorer-shell" lang="en" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={script} />
         {/* The prose under the instrument, and the caption the script writes
             under the drawing, set by pretext (components/Justify.tsx): the

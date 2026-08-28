@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import { apidoc } from "@/lib/apidoc";
 import { Shell } from "@/app/components/SiteFrame";
+import { Untranslated } from "@/app/components/Untranslated";
 import "./apidoc.css";
 
 /**
@@ -63,7 +64,8 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
       {/* The document itself, its :root replaced by apidoc.css and every
           selector scoped to .apidoc-shell. Not one of its own rules is edited
           and not a word of it is retyped. */}
-      <div className="apidoc-shell" dangerouslySetInnerHTML={{ __html: body }} />
+      <Untranslated lang={lang} />
+      <div className="apidoc-shell" lang="en" dangerouslySetInnerHTML={{ __html: body }} />
     </Shell>
   );
 }

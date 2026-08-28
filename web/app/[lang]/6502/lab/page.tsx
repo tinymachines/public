@@ -4,6 +4,7 @@ import { pageMeta } from "@/lib/seo";
 import Script from "next/script";
 import { lab, CHIP_API } from "@/lib/lab";
 import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
+import { Untranslated } from "@/app/components/Untranslated";
 import "./lab.css";
 
 /**
@@ -98,6 +99,10 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
       />
       <div className="wb-main">
 
+      {/* The Lab is 21 KB of English markup read out of the 6502 checkout.
+          Nothing here translates it, so the page says so. */}
+      <Untranslated lang={lang} />
+
       {/* The lab's own 35 KB of rules, with its :root replaced by lab.css and
           every selector scoped to .lab-shell. A LINK rather than an inline
           <style>: a server component's props are serialised into the RSC
@@ -110,7 +115,7 @@ export default async function LabPage({ params }: { params: Promise<{ lang: Lang
       {/* .lab-shell carries the token mapping and the ground. The lab's own
           rules style `body`, which no longer reaches anything now that it is a
           div inside this site. */}
-      <div className="lab-shell" data-chip-api={CHIP_API} dangerouslySetInnerHTML={{ __html: body }} />
+      <div className="lab-shell" lang="en" data-chip-api={CHIP_API} dangerouslySetInnerHTML={{ __html: body }} />
 
       {/* The canned demo trace. A data island the lab looks up by id, so it is
           rendered as the element it is and never executed. It went through

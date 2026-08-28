@@ -4,6 +4,7 @@ import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import Guide from "../../../../style/STYLE.md";
 import { Shell } from "@/app/components/SiteFrame";
+import { Untranslated } from "@/app/components/Untranslated";
 
 /**
  * The style guide: ../../style/STYLE.md, rendered through the same MDX
@@ -38,7 +39,12 @@ export default async function StylePage({ params }: { params: Promise<{ lang: La
         /* STYLE.md opens with its own h1. */
         titleIsHeading={false}
       >
-      <main className="prose">
+      {/* STYLE.md is the owner's document and it is English. The zoo is
+          left out of this: it is not in the sitemap and brings its own
+          full-page chrome, with nothing of the house frame to hang a notice
+          on. */}
+      <Untranslated lang={lang} />
+      <main className="prose" lang="en">
         {/* The measured chip, used the way the zoo uses it: an inline span
             carrying a figure and where the figure came from, inside a chips
             row. It is not a paragraph class. The first version of this put it

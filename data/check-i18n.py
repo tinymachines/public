@@ -106,8 +106,30 @@ def body_of(html: str) -> str:
     the whole document and its number is a whole-page number, diluted by a
     chrome that IS translated. It reads 0% even so, which is the answer.
     """
+    # The notice comes out before the count. It is Japanese text that the
+    # page prints BECAUSE the body is English, so leaving it in raises the
+    # share of exactly the pages it is reporting on: /6502/block/article has
+    # a 133 character body and the notice alone carried it from 0% to 24%,
+    # over the floor, where the check then called it translated.
+    html = re.sub(r"<p[^>]*class=\"[^\"]*untranslated[^\"]*\"[^>]*>.*?</p>", " ", html, flags=re.S)
     m = re.search(r"<main\b[^>]*>(.*?)</main>", html, re.S)
     return visible(m.group(1) if m else html)
+
+
+def notice() -> str:
+    """The untranslated notice's own sentence, read from the component.
+
+    Not retyped here. The page prints it from app/components/Untranslated.tsx
+    and this check looks for it in the served HTML, so the two agree by
+    construction: reword the sentence and the check follows it. A miss is a
+    hard failure rather than a scan that quietly matches nothing, which is the
+    same rule as everywhere else in this repo.
+    """
+    src = (ROOT / "web" / "app" / "components" / "Untranslated.tsx").read_text()
+    m = re.search(r'className="notice untranslated"[^>]*>\s*([^<]+?)\s*</p>', src, re.S)
+    if not m:
+        raise SystemExit("check-i18n: no notice sentence in app/components/Untranslated.tsx")
+    return " ".join(m.group(1).split())
 
 
 def fetch(url: str) -> str:
@@ -121,6 +143,7 @@ def live(base: str) -> int:
     xml = fetch(f"{base}/sitemap.xml")
     paths = sorted({re.sub(r"/$", "", u.split(base, 1)[-1]) or "/" for u in re.findall(r"<loc>([^<]+)</loc>", xml)})
     english = [p for p in paths if p != "/ja" and not p.startswith("/ja/")]
+    sentence = notice()
     if len(english) < 50:
         print(f"check-i18n: the sitemap lists {len(english)} English pages; that is not this site", file=sys.stderr)
         return 1
@@ -130,12 +153,13 @@ def live(base: str) -> int:
         try:
             en_html, ja_html = fetch(base + p), fetch(base + twin)
         except Exception as e:  # a page that will not answer is a finding, not a crash
-            return (p, None, f"unreachable: {e}")
+            return (p, None, f"unreachable: {e}", False)
         # The BODIES, not the documents: the chrome is translated on every
         # page, so whole-page equality is a comparison that can never be true
         # and would report nothing forever.
         same = body_of(en_html) == body_of(ja_html)
-        return (p, ja_share(body_of(ja_html)), "byte for byte the English page" if same else "")
+        note = "byte for byte the English page" if same else ""
+        return (p, ja_share(body_of(ja_html)), note, sentence in ja_html)
 
     with concurrent.futures.ThreadPoolExecutor(8) as pool:
         rows = list(pool.map(one, english))
@@ -145,11 +169,26 @@ def live(base: str) -> int:
     # English however much of its chrome flipped.
     FLOOR = 0.2
     print(f"check-i18n: {len(rows)} published pages, measured at {base}")
-    for p, share, note in rows:
-        mark = "  " if share is not None and share >= FLOOR else "EN"
+    for p, share, note, said in rows:
+        english = share is None or share < FLOOR
+        mark = "EN" if english else "  "
         print(f"  {mark} {p:44} {'-' if share is None else f'{share:.0%}':>5}  {note}")
-    english_only = [p for p, s, _ in rows if s is None or s < FLOOR]
+    english_only = [p for p, s, _, _ in rows if s is None or s < FLOOR]
     print(f"check-i18n: {len(rows) - len(english_only)} of {len(rows)} pages have a Japanese body")
+
+    # The notice and the measurement have to agree. A page that serves an
+    # English body and says nothing is the thing the owner ran into; a page
+    # that says it is untranslated when it is not is the same fault inverted,
+    # and it is the one that arrives later, when somebody translates a page
+    # and leaves the notice on it.
+    silent = [p for p, s, _, said in rows if (s is None or s < FLOOR) and not said]
+    stale = [p for p, s, _, said in rows if s is not None and s >= FLOOR and said]
+    for p in silent:
+        print(f"  SILENT: {p} serves an English body under /ja and does not say so")
+    for p in stale:
+        print(f"  STALE: {p} has a Japanese body and still prints the untranslated notice")
+    if (silent or stale) and "--strict" in sys.argv:
+        return 1
     return 0
 
 

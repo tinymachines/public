@@ -2138,3 +2138,65 @@ What is still open is the owner's call, not a bug: 38 pages carry
 `<html lang="ja">` over an English document with nothing on the page saying
 so. The sentence for that already exists in the docs template. Extending it is
 copy on 38 pages and therefore a decision, not a fix.
+
+## The notice on 38 pages, and a check that polices it
+
+The owner's call after the scan: the ported pages say so. The sentence already
+existed, written inline in the docs template, so it moved to
+`web/app/components/Untranslated.tsx` and both callers read it from there. It
+renders nothing outside Japanese, so a page that is only ever English can
+place it unconditionally.
+
+It is on the eighteen ported explorer documents, their seventeen article
+twins, the Lab, the API reference and the style guide: 38 pages, plus the five
+docs pages that already had it, and the built tree carries it on exactly those
+43 and on no English page. The same edit marks the ported markup `lang="en"`,
+because a document that declares `lang="ja"` over an English body is telling a
+screen reader something the notice tells a reader, and only one of the two was
+being told. The zoo is left out: it is not in the sitemap and brings its own
+full-page chrome, with nothing of the house frame to hang a notice on.
+
+**The check now polices the notice, and it caught two things immediately.**
+`check-i18n.py --live` reads the sentence out of the component rather than
+carrying its own copy, so rewording it moves the check with it, and reports
+two failures: a page under the floor that does not print it, and a page over
+the floor that does. Run against the site before the deploy it flagged four
+SILENT pages and one STALE, which is exactly what a check earning its place
+looks like.
+
+The STALE one was the check measuring its own notice. `/6502/block/article`
+has a 133 character body, the notice is Japanese text inside `<main>`, and it
+carried that page from 0% to 24%: over the floor, where the check then called
+it translated. The notice comes out of the count now. A measurement that
+includes the thing it is measuring the absence of is a measurement of nothing.
+
+## Boarded v0.280, and four patches came out
+
+`6502@f065cd8` is served and boarded: halfphi's three chips and v6502-sim's
+39, run here on the served commit, 42 tests. Three of the roof's six
+build-time patches stopped matching, which is the gate working rather than
+breaking, and the fourth is the interesting one.
+
+The console's transport seam is upstream, read per call, which is stronger
+than at construction: installing or deleting a transport mid-game hands the
+running machine across instead of rebooting it. The tile sheet fix is upstream
+as one function rather than the roof's three edits: the set is decoded onto
+the cartridge as `cart.tileset`, the shipped sheet is held apart as `HOUSE`,
+and `selectTiles()` is called wherever either changes.
+
+**The picker patch's anchor still matched, and it came out anyway.** Upstream
+calls `selectTiles()` on the line after the one the anchor names, so keeping
+the patch would have been a second answer to a question already answered, in
+terms (`state.house`) that upstream no longer sets. An anchor that still
+matches is not a reason to keep a patch; what the file does is.
+
+## A local build is a live change
+
+Worth writing down where the traps live rather than in a session. `next start`
+serves the `.next` directory it finds, which deploy.sh's own header has said
+since the ninety second outage that produced it. What follows and had not been
+said: a `bun run build` in this working tree, run to LOOK at something, is
+therefore live the moment it finishes. The notice reached production that way,
+before its version bump and before its deploy. Nothing was broken by it (every
+page 200, chunks resolving), but the site was serving a build no commit
+described. Build to a scratch directory or expect to be publishing.

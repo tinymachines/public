@@ -9,6 +9,7 @@ import { article, articlePages } from "@/lib/article";
 import { explorerLabel } from "@/lib/explorer-menu";
 import { Shell } from "@/app/components/SiteFrame";
 import { Justify } from "@/app/components/Justify";
+import { Untranslated } from "@/app/components/Untranslated";
 import { ChipModules } from "../../explorer/ChipModules";
 import "../../explorer/explorer.css";
 import "./article.css";
@@ -78,12 +79,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
   return (
     <Shell lang={lang} die="6502" title={name} titleIsHeading={false}>
       <article className="art" data-chip-api={chipApi()}>
+        <Untranslated lang={lang} />
         <style dangerouslySetInnerHTML={{ __html: x.style }} />
-        <header className="explorer-shell art-head" dangerouslySetInnerHTML={{ __html: hero }} />
-        <div className="explorer-shell" hidden dangerouslySetInnerHTML={{ __html: body }} />
+        <header className="explorer-shell art-head" lang="en" dangerouslySetInnerHTML={{ __html: hero }} />
+        <div className="explorer-shell" hidden lang="en" dangerouslySetInnerHTML={{ __html: body }} />
         <ChipModules entry={x.script} />
 
-        <div className="explorer-shell art-body" dangerouslySetInnerHTML={{ __html: a.html }} />
+        <div className="explorer-shell art-body" lang="en" dangerouslySetInnerHTML={{ __html: a.html }} />
         <Justify root=".art-body" />
         {/* Just the article (owner's call, 2026-08-27): the head, the
             prose with its subheads, and a way back. Inline images are to

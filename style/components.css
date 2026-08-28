@@ -278,6 +278,13 @@ h2.display { font-size: var(--text-h2); }
 .notice.fail { border-left-color: var(--color-red-ink); }
 .notice b { font-weight: 700; }
 
+/* The untranslated notice (app/components/Untranslated.tsx) on a workbench.
+   .wb-main has no gutter of its own, because the instruments inside it are
+   full bleed, so the notice supplies one rather than sitting flush against
+   the glass. On a Shell page it is already inside the content column and
+   needs nothing. */
+.workbench .untranslated { margin: calc(var(--u) * 4); }
+
 .crumb {
   font-family: var(--font-mono);
   font-size: var(--text-fine);

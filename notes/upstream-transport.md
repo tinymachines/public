@@ -196,6 +196,12 @@ transport is the API's own: `(path, body) => Promise<{ machine, observe }>`,
 because that is what `post()` already returns, and it is what makes the two
 engines exchangeable mid-run.
 
+**Taken upstream the same day, 6502@f065cd8, and boarded here in v0.280.**
+`post()` reads `globalThis.tm6502Transport` per call, which is stronger than
+reading it at construction: installing or deleting it mid-game hands the
+running machine across instead of rebooting it. The roof's patch is gone from
+`web/lib/console-modules.ts`.
+
 **And a second one, smaller: a driver may state its own engine default.**
 `chip-controls.js` holds one engine choice for the floor, default `local`,
 which is right for a page whose press is a few half-cycles and wrong for a
@@ -257,6 +263,15 @@ three: arrive on a published cartridge from the registry, check it draws in
 its own sheet, delay the house sheet and check it still does, then choose
 Silicon Snake and see the legend is the house sheet again.
 
+**All three patches are gone from the roof as of v0.280 (6502@f065cd8).**
+Upstream's shape is one function rather than three edits: the set is decoded
+onto the cartridge as `cart.tileset`, the shipped sheet is held apart as
+`HOUSE`, and `selectTiles()` is called wherever either changes. Worth
+recording that the picker patch's anchor STILL matched after boarding and was
+removed anyway: `$('#cart').onchange` calls `selectTiles()` on the next line,
+so keeping it would have been a second answer to a question already answered.
+An anchor that still matches is not a reason to keep a patch.
+
 ## A trace the wasm build can emit, so the Lab can run in the page (2026-08-28)
 
 The owner asked for the local option on `/6502/lab`. The console has it; the
@@ -282,3 +297,13 @@ Doing it in JavaScript instead would mean reading thirteen internal registers
 bit by named bit off the die on every half-cycle, which is a second
 implementation of something `service/app.py` already owns, and the two would
 disagree the first time either changed. So this one waits for the crate.
+
+**Taken upstream, 6502@f065cd8: `Machine.traceRows(halfCycles, watch)`.** It
+returns the `trace_rows` shape `POST /v1/step` returns for format `rows`, from
+the same Rust function at both ends (`v6502_sim::rows::push_row`), so
+`service/app.py`'s `_pack_rows` is gone and neither end can drift. It steps
+the machine itself, so it is called instead of `halfStep` for the recorded
+stretch, and it refuses an unknown watch name or more than 10,000 half-cycles
+before the chip moves. The Lab's key is still grey: driving it from the page
+is its own change, with its own measurement against the API's rows, and it is
+not something to slip into a deploy about something else.

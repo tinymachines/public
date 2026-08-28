@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-08-28T01:01:26+00:00",
+  "boarded_at": "2026-08-28T16:26:13+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.274",
-    "commit": "33752d779b54f9ec51f77c373103e89e9f45b4b8",
-    "built": "2026-08-28T00:55:24+00:00",
+    "version": "v0.280",
+    "commit": "f065cd8b79d601e73ecb33c7913ea4b4bd85c35c",
+    "built": "2026-08-28T16:21:58+00:00",
     "dirty": false,
     "their_tests": {
-      "ran": "2026-08-28T00:55:00+00:00",
+      "ran": "2026-08-28T16:21:36+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 91,
+        "passed": 94,
         "failed": 0,
         "require_chips": true,
         "require_golden": true
@@ -22,11 +22,11 @@
       }
     }
   },
-  "running": "33752d779b54f9ec51f77c373103e89e9f45b4b8",
+  "running": "f065cd8b79d601e73ecb33c7913ea4b4bd85c35c",
   "worktree": {
-    "commit": "33752d779b54f9ec51f77c373103e89e9f45b4b8",
-    "subject": "The subdomains forward to the apex, and the verifier survives it",
-    "committed": "2026-08-27T20:46:57-04:00",
+    "commit": "f065cd8b79d601e73ecb33c7913ea4b4bd85c35c",
+    "subject": "The console's transport is a page-level seam",
+    "committed": "2026-08-28T12:10:55-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -49,10 +49,10 @@
     }
   },
   "halfwave": {
-    "sha256": "6cb8487d26a51074438e2b152d3873531ea9c827e627d5a293c2e813410234c5",
-    "bytes": 533664,
-    "modified": "2026-08-28T00:53:15+00:00",
-    "stated": "33752d779b54f9ec51f77c373103e89e9f45b4b8"
+    "sha256": "5f42981d0e2f1d7942345618ca99950249e90d9ca246382f0e6b06b41c11bb17",
+    "bytes": 540904,
+    "modified": "2026-08-28T16:19:56+00:00",
+    "stated": "f065cd8b79d601e73ecb33c7913ea4b4bd85c35c"
   },
   "tests": [
     {
@@ -64,7 +64,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 1.1,
+      "seconds": 4.8,
       "ok": true
     },
     {
@@ -73,10 +73,10 @@
       "env": {
         "V6502_REQUIRE_GOLDEN": "1"
       },
-      "passed": 36,
+      "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 9.0,
+      "seconds": 13.9,
       "ok": true
     }
   ]

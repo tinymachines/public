@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import { allPages, pageForSlug } from "@/lib/docs";
 import { t } from "@/lib/i18n";
 import { abs, pageMeta } from "@/lib/seo";
-import { localize } from "@/lib/lang";
+import { localize, type Lang } from "@/lib/lang";
 import { JsonLd } from "@/app/components/JsonLd";
+import { Untranslated } from "@/app/components/Untranslated";
 
 /**
  * Every docs URL, and the content behind it.
@@ -97,11 +98,10 @@ export default async function DocsPage({
           isPartOf: { "@type": "WebSite", name: "tinymachines", url: abs("/") },
         }}
       />
-      {lang === "ja" && !useJa ? (
-        <p className="notice" lang="ja">
-          この文書はまだ翻訳されていません。本文は英語のまま表示されています。
-        </p>
-      ) : null}
+      {/* The sentence itself moved to app/components/Untranslated.tsx on
+          2026-08-28, when 38 ported pages needed the same one. The DECISION
+          to print it stays here, next to the import that decides it. */}
+      {useJa ? null : <Untranslated lang={lang as Lang} />}
       <Content />
     </>
   );
