@@ -72,7 +72,23 @@ test("a linked cartridge draws in its own tiles, and the next cartridge gets its
   const after = await sheet(page);
   expect(after, "Silicon Snake draws in the house sheet, not the linked cartridge's").toEqual(house);
 
+  // The house sheet arriving late must not take the screen from the
+  // cartridge. The two fetches start together and landed two milliseconds
+  // apart when this was measured, so the order is a coin toss; here the
+  // house sheet is held back a second and a half and the cartridge has to
+  // keep its own tiles.
+  await page.route("**/6502/games/art/tiles.chr", async (route) => {
+    await new Promise((r) => setTimeout(r, 1500));
+    await route.continue();
+  });
+  await open(page, `${GAMES}?cart=${encodeURIComponent(cartUrl!)}`, 6000);
+  await expect(page.locator("#k-cart")).not.toHaveText("--", { timeout: 20000 });
+  expect(await sheet(page), "the cartridge keeps its tiles when the house sheet lands after it").toEqual(linked);
+  await page.unroute("**/6502/games/art/tiles.chr");
+
   // And it plays: the contract, the ROM and the sheet are one cartridge's.
+  await pickSnake(page);
+  expect(await sheet(page), "the house sheet is back for a built-in cartridge").toEqual(house);
   await page.locator('.hit[data-act="reset"]').click();
   await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
   test.skip((await page.locator(".shell").getAttribute("data-phase")) === "stopped", "the chip did not boot on this origin");

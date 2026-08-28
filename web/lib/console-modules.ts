@@ -185,6 +185,31 @@ export const PATCHES: Patch[] = [
     why: "the chosen cartridge draws in its own tiles, or in the house sheet, rather than in the last loaded cartridge's",
   },
   {
+    file: "game.js",
+    // The house sheet landing: art/tiles.chr, fetched at load beside a
+    // linked cartridge's own. Measured on the live console 2026-08-28, the
+    // two responses land two milliseconds apart, so whichever was second
+    // used to win and this one winning drew the linked cartridge in the
+    // house tiles.
+    find:
+      "    TILES = t;\n" +
+      "    state.sheet = null;              // force the atlas to be rebuilt\n" +
+      "    fit();\n" +
+      "    legend();",
+    replace:
+      "    /* Patched by tinymachines/public at build time (lib/console-modules.ts):\n" +
+      "     * the house sheet is kept, and it takes the screen only where no cartridge\n" +
+      "     * has brought its own. This is the third quarter of the same rule: the\n" +
+      "     * sheet belongs to the cartridge, and the page holds the one for the\n" +
+      "     * cartridges that carry none. */\n" +
+      "    state.house = t;\n" +
+      "    if (!(state.cart && state.cart.chr && state.cart.chr.length >= 32)) TILES = t;\n" +
+      "    state.sheet = null;              // force the atlas to be rebuilt\n" +
+      "    fit();\n" +
+      "    legend();",
+    why: "the house sheet arriving after a linked cartridge must not take the screen from it, and it is what the picker restores",
+  },
+  {
     file: "registry.js",
     // `export const`: the anchor carries the keyword so the comment lands
     // before it, not between `export` and `const`, which the first draft did
