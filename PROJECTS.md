@@ -2307,3 +2307,17 @@ while the chip API, the registry and the wasm release are the 6502
 project's; the console runs on the v6502 engine in two forms (halfwave over
 HTTP, the wasm build in a worker, the default), and halfphi is boarded and
 tested but nothing on the site drives it directly.
+
+## Checkpoint, 2026-08-28, console v2 live
+
+Live at `30dd44d` (version 1.0.176; the version bumps on the next deploy
+that changes it). `/6502/consolev2` is up, noindex, with its spec. Full e2e
+on that deploy: 474 passed, 5 skipped with reasons, 0 failed (479 tests, 22
+specs, 9.6 minutes). Engine boarded at 6502 v0.280 (`f065cd8`). Tree clean
+on `main`, in sync with origin.
+
+Open, unchanged from the previous checkpoint: the Lab's grey engine key
+(drive `Machine.traceRows` from the page); forward step 3 waits on the
+subdomain logs; React #418 on Shell pages; `TM_SELF_NETS` in `visitors.env`;
+article images (owner's); three engine write-ups. New: the owner's
+experiments on console v2, not yet named.
