@@ -2,6 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
+import { SiteLink } from "@/app/components/SiteLink";
 import { localize, t } from "@/lib/i18n";
 import { arrivedSurfaces, project } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
@@ -62,7 +63,6 @@ export default async function CartPage({ params }: { params: Promise<{ lang: Lan
       <p className="prose">{S.briefLede}</p>
       <pre className="mint-token"><code>https://tinymachines.ai/6502/cart/brief.md</code></pre>
       <p className="prose">
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a className="tag live" href="/6502/cart/brief.md">{S.brief}</a>
       </p>
       <h2 className="eyebrow">{S.places}</h2>
@@ -76,7 +76,7 @@ export default async function CartPage({ params }: { params: Promise<{ lang: Lan
               {s.prerendered === false ? (
                 <a className="tag live" href={s.lands_at}>{t(lang, s.nav_label ?? s.name)}</a>
               ) : (
-                <Link className="tag live" href={localize(lang, s.lands_at)}>{t(lang, s.nav_label ?? s.name)}</Link>
+                <SiteLink lang={lang} className="tag live" href={s.lands_at}>{t(lang, s.nav_label ?? s.name)}</SiteLink>
               )}
             </p>
           </article>

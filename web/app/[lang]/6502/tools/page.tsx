@@ -1,7 +1,7 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import Link from "next/link";
+import { SiteLink } from "@/app/components/SiteLink";
 import { localize, t } from "@/lib/i18n";
 import { explorerMenu } from "@/lib/explorer-menu";
 import { arrivedSurfaces, project } from "@/lib/projects";
@@ -36,7 +36,6 @@ export default async function ToolsPage({ params }: { params: Promise<{ lang: La
             <ul className="rail-list">
               {g.items.map((it) => (
                 <li key={it.href}>
-                  {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
                   <a href={localize(lang, it.href)}>{t(lang, it.label)}</a>
                   {it.hint ? <span>{t(lang, it.hint)}</span> : null}
                 </li>
@@ -48,7 +47,7 @@ export default async function ToolsPage({ params }: { params: Promise<{ lang: La
           <article className="rail">
             <h3>{S.lab}</h3>
             <p>{t(lang, lab.what)}</p>
-            <p className="piece-links"><Link className="tag live" href={localize(lang, lab.lands_at)}>{t(lang, lab.nav_label ?? lab.name)}</Link></p>
+            <p className="piece-links"><SiteLink lang={lang} className="tag live" href={lab.lands_at}>{t(lang, lab.nav_label ?? lab.name)}</SiteLink></p>
           </article>
         ) : null}
       </div>

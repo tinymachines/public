@@ -2,6 +2,7 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
+import { SiteLink } from "@/app/components/SiteLink";
 import Script from "next/script";
 import { localize } from "@/lib/i18n";
 import { chipApi } from "@/lib/projects";
@@ -229,9 +230,9 @@ export default async function ManagePage({ params }: { params: Promise<{ lang: L
           <Link className="tag" href={localize(lang, "/6502/builders")}>
             {S.allBuilders}
           </Link>
-          <Link className="tag" href={localize(lang, "/6502/games")}>
+          <SiteLink lang={lang} className="tag" href="/6502/games">
             {S.theConsole}
-          </Link>
+          </SiteLink>
           <Link className="tag" href={localize(lang, "/6502/api")}>
             {S.theApiRef}
           </Link>
