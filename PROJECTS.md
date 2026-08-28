@@ -1951,3 +1951,23 @@ measurements per half-cycle, and only the engine behind the API produces
 those. The line goes when `v6502-wasm` can emit the rows
 (`notes/upstream-transport.md`); until then the key explains itself instead of
 looking like a fault.
+
+## The console had the same bug, and now one rule covers both
+
+The owner asked whether the console shared the Lab's nested-window bug. It
+did, by the same route: the flag on the console's settings page was the one
+soft link off that page, and `game.js` is a module like the Lab's, so what
+arrived was a Japanese console with a blank screen, no tile key, the
+cartridge blurb missing and none of its handlers bound. Measured, then fixed:
+the flag is hard and the three site links beside it are plain anchors, which
+is also the rule in the other direction, since a client-side departure would
+leave game.js's frame loop posting frames at a canvas that is gone.
+
+The fix that matters is the third one. `isHardRoute()` in `lib/nav.ts` is the
+site's one answer to "must this link start from a fresh document", and it
+knew only about the explorer's pages; the menu kept a second copy of the same
+set. Both now come from that one function and it covers the Lab and the
+console, so every computed link into a module page is a real navigation
+without each page having to remember. `lib/lang.test.ts` holds the rule in
+both languages, and `web/e2e/lab.spec.ts` and `shell.spec.ts` each walk the
+flag and assert what arrives is built rather than merely rendered.
