@@ -1,0 +1,109 @@
+/* Console v2: black, one line, nothing else. Deliberately not on the kit's
+   tokens for colour (the brief is "all black background with a simple line"),
+   so the two colours below are literal and the experiment can be judged
+   without the palette in the way. Sizes use the kit's unit. */
+
+.cv2 {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
+.cv2-head { height: 0; overflow: hidden; }
+
+.cv2-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.cv2-tabs { display: flex; gap: calc(var(--u) * 2); padding: calc(var(--u) * 2); justify-content: center; }
+.cv2-tab {
+  background: none; border: 1px solid #fff; color: #fff; font: inherit;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3); cursor: pointer; text-transform: lowercase;
+}
+.cv2-tab[aria-pressed="true"] { background: #fff; color: #000; }
+.cv2-tab:focus-visible, .cv2-key:focus-visible, .cv2-btn:focus-visible, .cv2-card:focus-visible, .cv2-opt:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* The three screens: one shown, the others kept in the document. */
+.cv2-play, .cv2-carts, .cv2-settings, .cv2-status { display: none; }
+.cv2-body[data-screen="play"] .cv2-play { display: flex; }
+.cv2-body[data-screen="carts"] .cv2-carts { display: block; }
+.cv2-body[data-screen="settings"] .cv2-settings { display: block; }
+.cv2-body[data-screen="settings"] .cv2-status { display: block; }
+/* The status block sits after the settings section in the DOM order of
+   `children`; it is placed under the settings prose with order. */
+.cv2-carts, .cv2-settings, .cv2-status { flex: 1; min-height: 0; overflow-y: auto; padding: calc(var(--u) * 3); }
+.cv2-settings { order: 1; }
+.cv2-status { order: 2; }
+
+/* Play: the screen in a one-pixel line, the keys under it. */
+.cv2-play { flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2); }
+.cv2-screen {
+  width: min(100%, 70vh);
+  max-width: 48rem;
+  aspect-ratio: 1;
+  border: 1px solid #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(var(--u) * 2);
+  box-sizing: border-box;
+}
+.cv2-screen canvas { display: block; image-rendering: pixelated; max-width: 100%; max-height: 100%; height: auto; touch-action: none; }
+
+.cv2-pad {
+  display: grid;
+  grid-template-columns: repeat(3, calc(var(--u) * 14));
+  grid-template-rows: repeat(3, calc(var(--u) * 14));
+  gap: calc(var(--u) * 1);
+}
+.cv2-key {
+  background: none; border: 1px solid #fff; color: #fff; font: inherit; font-size: 1.25rem; cursor: pointer;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.cv2-key:active { background: #fff; color: #000; }
+.cv2-key[data-dir="up"]    { grid-column: 2; grid-row: 1; }
+.cv2-key[data-dir="left"]  { grid-column: 1; grid-row: 2; }
+.cv2-key[data-dir="right"] { grid-column: 3; grid-row: 2; }
+.cv2-key[data-dir="down"]  { grid-column: 2; grid-row: 3; }
+
+.cv2-row { display: flex; gap: calc(var(--u) * 2); }
+.cv2-btn { background: none; border: 1px solid #fff; color: #fff; font: inherit; padding: calc(var(--u) * 2) calc(var(--u) * 4); cursor: pointer; }
+.cv2-btn:disabled { opacity: 0.4; cursor: default; }
+.cv2-note { margin: 0; max-width: 40rem; text-align: center; opacity: 0.7; }
+.cv2-err { margin: 0; max-width: 40rem; text-align: center; }
+.cv2-err[hidden] { display: none; }
+
+/* Cartridges: two columns at phone width, more as the width allows. */
+.cv2-h { font: inherit; text-transform: lowercase; opacity: 0.7; margin: calc(var(--u) * 4) 0 calc(var(--u) * 2); }
+.cv2-h:first-child { margin-top: 0; }
+.cv2-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--u) * 2); }
+@media (min-width: 40rem) { .cv2-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 64rem) { .cv2-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.cv2-card {
+  display: flex; flex-direction: column; gap: calc(var(--u) * 1); align-items: flex-start; text-align: left;
+  background: none; border: 1px solid #fff; color: #fff; font: inherit; padding: calc(var(--u) * 3); cursor: pointer; min-height: calc(var(--u) * 18);
+}
+.cv2-card b { font-weight: 600; }
+.cv2-card span, .cv2-card i { font-style: normal; opacity: 0.7; font-size: var(--text-micro); overflow-wrap: anywhere; }
+.cv2-card[aria-pressed="true"] { background: #fff; color: #000; }
+.cv2-card:disabled { cursor: default; }
+.cv2-card:disabled:not([aria-busy="true"]) { opacity: 0.5; }
+.cv2-bad { opacity: 1; }
+
+/* Settings. */
+.cv2-opts { display: grid; gap: calc(var(--u) * 2); }
+.cv2-opt { background: none; border: 1px solid #fff; color: #fff; font: inherit; padding: calc(var(--u) * 2) calc(var(--u) * 3); cursor: pointer; text-align: left; }
+.cv2-opt[aria-pressed="true"] { background: #fff; color: #000; }
+
+.cv2-kv { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--u) * 0.5) calc(var(--u) * 3); max-width: 24rem; }
+.cv2-kv span { opacity: 0.7; }
+.cv2-kv b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.cv2-gates { display: grid; grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr)); gap: calc(var(--u) * 1); margin-top: calc(var(--u) * 3); }
+.cv2-gates .gate { border: 1px solid #fff; padding: calc(var(--u) * 1); display: grid; grid-template-columns: 1fr auto; gap: 0 calc(var(--u) * 1); font-size: var(--text-micro); }
+.cv2-gates .gate b { font-weight: 600; }
+.cv2-gates .gate span { grid-column: 1; opacity: 0.7; overflow-wrap: anywhere; }
+.cv2-gates .gate i { grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-size: 1.25rem; align-self: center; }
+.cv2-gates .gate.hi i { background: #fff; color: #000; padding: 0 calc(var(--u) * 1); }
