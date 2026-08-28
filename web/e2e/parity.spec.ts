@@ -18,8 +18,11 @@ async function links(page: import("@playwright/test").Page, url: string) {
 }
 
 test.beforeAll(async () => {
-  const r = await fetch(`${UPSTREAM}/`).catch(() => null);
-  test.skip(!r || !r.ok, `${UPSTREAM} is not answering`);
+  // redirect: "manual", because since the forward (2026-08-27) the subdomain
+  // answers 301 to the apex; following it would compare each page to itself,
+  // which is a check that passes on nothing.
+  const r = await fetch(`${UPSTREAM}/`, { redirect: "manual" }).catch(() => null);
+  test.skip(!r || r.status !== 200, `${UPSTREAM} is not serving pages (${r ? r.status : "unreachable"}): nothing to compare`);
 });
 
 for (const p of TOOL_PAGES) {

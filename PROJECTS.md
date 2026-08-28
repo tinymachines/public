@@ -1756,3 +1756,24 @@ has been told. Open, unchanged: React #418 on Shell pages, forward steps 2
 and 3, `visitors.env`, article images (owner's), SSE only if a tool wants
 progress, the three engine write-ups now that the engine they describe may
 be the served one.
+
+## Same day: step 2 of the forward, the subdomain pages redirect
+
+The owner granted this agent control of nginx and services on the host,
+so `notes/forward.md` step 2 went from proposal to action: the three
+subdomain vhosts now answer 301 for page paths (the 6502 pages with or
+without `.html`, `/archive/`, the `/api` reference page; the games
+console, builders, manage, `/b/<handle>` and `/b/<handle>/<slug>` to the
+console with the apex cartridge address; the halfwave Lab), and keep
+serving `/api/`, the hashed assets, `sw.js`, `game.js` and the manifests.
+Every table row curl-checked after the reload; the details are in
+`notes/forward.md` under step 2. The 6502 repository's `deploy/*.nginx`
+copies were byte-identical to the live files before the edit; the diff went
+to that project's session to commit. `web/e2e/parity.spec.ts` skips unless
+the upstream answers 200 (it now answers 301, and following it would
+compare a page to itself). The engine was re-boarded on v0.270 `f4b8976`
+(39 tests). The 6502 project has taken both console proposals upstream
+(the `power()` generation guards live on games.tinymachines.ai at
+`7ebac9a`, the frame period at `12d4616`); the fourth build-time patch
+stays until a tagged release carries `12d4616`, because `pull-console`
+reads game.js from the served worktree, not from the games host.

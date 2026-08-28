@@ -1,6 +1,6 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-08-27T23:48:29+00:00",
+  "boarded_at": "2026-08-28T00:35:43+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
     "version": "v0.270",
@@ -64,7 +64,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 14.2,
+      "seconds": 5.5,
       "ok": true
     },
     {
@@ -76,7 +76,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 13.9,
+      "seconds": 8.6,
       "ok": true
     }
   ]

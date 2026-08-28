@@ -108,6 +108,36 @@ and every `/api/` path to the locations that already serve them (quote
 it: nginx reads `{` as a block). Order inside the file matters and the
 6502 file's own comments already record why.
 
+Done 2026-08-27, live on the three vhosts (the owner granted this
+repository's agent control of nginx and services on the host that day, so
+it was an action after all). What landed, per vhost:
+
+- `6502`: a `map $uri $tm6502_forward` (`/`, `/index.html`, and the 18
+  pages with or without `.html`, to `/6502/<page>`), applied by an `if`
+  inside `location /` ahead of `try_files`, so every other location is
+  untouched. `= /api` and `= /api/` forward to `/6502/api`; `/archive/`
+  forwards whole to `/6502/archive/...`. `/api/v1/...`, `openapi.json`,
+  `/api/docs`, `sw.js`, `build-info.json` and the hashed assets serve as
+  before.
+- `games`: `/`, `/index.html` (with `?cart=`), `/builders`, `/manage`,
+  `/b/<handle>` and `/b/<handle>/<slug>` forward; the ROM page forwards to
+  `/6502/games?cart=` with the apex API's cartridge address
+  (`.../6502/api/v1/registry/b/<handle>/roms/<slug>/cart`), percent-encoded
+  the way Builder.tsx encodes it. `/api/`, `game.js`, `site.css`, `art/`,
+  `rom/` serve as before.
+- `halfwave`: `/` and `/index.html` forward to `/6502/lab` with the query;
+  `sw.js`, the manifest, the icons and `/api/` serve as before.
+
+Every row in the tables above was checked with curl after the reload, the
+kept rows for 200 and the forwarded rows for their exact location, a POST to
+`/api/v1/boot` on the subdomain still answers 200, and the forwarded ROM
+page lands on a 200 console whose cartridge address answers 200. The live
+files were edited in place; the 6502 repository's `deploy/*.nginx` copies
+matched them byte for byte before the edit and the diff was handed to that
+project's session to commit. `web/e2e/parity.spec.ts` now fetches the
+upstream with `redirect: "manual"` and skips on anything but a 200: after
+the forward, following the 301 would compare each apex page to itself.
+
 **Step 3, later: the subdomains stop serving.** Once the redirect has
 been live long enough that the subdomain logs show only 301s and API
 calls (a month is the cache life of nothing here; the reason to wait is
