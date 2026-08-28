@@ -204,3 +204,42 @@ at mount when the floor has never chosen (`ConsoleDriver.tsx`), which is a
 page reaching into a site-wide fact to state a page-wide one. A
 `engineDefault` on the driver, honoured by `registerDriver` only when
 nothing is recorded, would say the same thing without the reach.
+
+## The tile sheet belongs to the cartridge (2026-08-28)
+
+Reported by the owner on the live console and reproduced: arrive on a
+`?cart=` link, play it, choose Silicon Snake from the shelf, power on, and
+the snake and its food are drawn as invaders and a ship. The contract and
+the ROM are Snake's; only the sprites are wrong.
+
+`useCart()` replaces the module's `TILES` with the loaded cartridge's CHR,
+which is right, and nothing ever puts them back, which is not:
+`$('#cart').onchange` swaps `state.cart` and leaves the sheet where it was.
+So every cartridge chosen after a loaded one borrows that one's tiles, and
+the legend goes on showing them too, which breaks the page's own promise
+that a swatch cannot show something the screen does not.
+
+The roof patches both halves (`web/lib/console-modules.ts`, the fifth and
+sixth). In `useCart`, the sheet being displaced is kept:
+
+```js
+if (t.length) { state.house = state.house || TILES; TILES = t; state.sheet = null; }
+```
+
+and in the picker, the cartridge draws in its own CHR if it carries one and
+in the displaced sheet if it does not:
+
+```js
+const own = state.cart.chr && state.cart.chr.length >= 32
+  ? decodeCHR(Uint8Array.from(state.cart.chr.match(/../g), (h) => parseInt(h, 16)))
+  : (state.house || TILES);
+if (own && own.length) { TILES = own; state.sheet = null; legend(); }
+```
+
+Proposal: upstream carries the same two, or the tidier version of the same
+idea, which is to decode a cartridge's tiles onto the cartridge object once
+(`cart.tiles`) and have the picker read `state.cart.tiles || HOUSE`. Either
+way the rule is that the sheet is a property of the cartridge rather than
+of the page. `web/e2e/console-cart.spec.ts` holds it: arrive on a published
+cartridge from the registry, check it draws in its own sheet, choose Silicon
+Snake, and the legend is the house sheet again.

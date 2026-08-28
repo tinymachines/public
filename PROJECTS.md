@@ -1858,3 +1858,23 @@ rather than the result on both sides, which the first page-side build did and
 the move into a worker dropped. `notes/console-shell/ISSUES.md` #15 has the
 hunt; the e2e case now runs the default engine through a game over and a
 second boot, because fourteen frames is under four seconds.
+
+## Silicon Snake, drawn as a broken Space Invaders
+
+The owner's report, the same day: arrive on a cartridge link, play it, choose
+Silicon Snake, power on, and the snake and its food are invaders and a ship.
+
+Not the engine, and not the new default: upstream `game.js` keeps one tile
+sheet for the module, `useCart()` replaces it with a loaded cartridge's CHR
+and nothing puts it back. Every cartridge chosen after a linked one borrowed
+its sprites, and the legend went on showing them, which breaks the page's own
+promise that a swatch cannot show something the screen does not. It has been
+true for as long as `?cart=` has existed, and `?cart=` is the first thing most
+people see of this console.
+
+Two build-time patches, one fix: `useCart` keeps the sheet it displaces, the
+picker puts back the one the chosen cartridge should draw in and redraws the
+key with it. `notes/console-shell/ISSUES.md` #16, filed upstream in
+`notes/upstream-transport.md`, and `web/e2e/console-cart.spec.ts` walks the
+owner's path against a published cartridge from the registry and compares the
+legend rather than the canvas.

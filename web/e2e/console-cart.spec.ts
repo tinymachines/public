@@ -66,8 +66,9 @@ test("a linked cartridge draws in its own tiles, and the next cartridge gets its
   // does not, the rest of the test would pass on nothing.
   test.skip(JSON.stringify(linked) === JSON.stringify(house), `${linkedName} carries no tiles of its own`);
 
+  // The picker blanks the readout until the next boot (game.js), so the
+  // cartridge is confirmed by the select and the sheet is read straight away.
   await pickSnake(page);
-  await expect(page.locator("#k-cart")).toHaveText(/Silicon Snake/, { timeout: 20000 });
   const after = await sheet(page);
   expect(after, "Silicon Snake draws in the house sheet, not the linked cartridge's").toEqual(house);
 
@@ -76,5 +77,6 @@ test("a linked cartridge draws in its own tiles, and the next cartridge gets its
   await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);
   test.skip((await page.locator(".shell").getAttribute("data-phase")) === "stopped", "the chip did not boot on this origin");
   await expect.poll(async () => Number(await page.locator("#k-frames").textContent()), { timeout: 20000 }).toBeGreaterThan(2);
+  await expect(page.locator("#k-cart"), "the cartridge that booted is the one chosen").toHaveText(/Silicon Snake/);
   expect(await sheet(page), "and the sheet is still the house's while it runs").toEqual(house);
 });

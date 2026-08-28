@@ -215,3 +215,23 @@ page-side build had it and the move into a worker dropped it.
 `e2e/console-engine.spec.ts` now runs the default engine through a game over
 and a second boot: fourteen frames is under four seconds, so a check that
 stops at the first frame passes over this.
+
+## 16. Silicon Snake, drawn as a broken Space Invaders
+
+**Reported by the owner, 2026-08-28,** and reproduced on the live console:
+arrive on a `?cart=` link (Die Invaders), play it, choose Silicon Snake from
+the shelf, power on, and the snake's body and its food are drawn as
+invaders and a ship. The cartridge that boots is the right one, the readouts
+agree, and only the sprites are somebody else's.
+
+Upstream `game.js` gives the module one `TILES` array. `useCart()` replaces
+it with a loaded cartridge's CHR and nothing puts it back, so the next
+cartridge borrows the sheet, and the legend keeps showing it too.
+
+**Resolution applied.** Two build-time patches (`lib/console-modules.ts`):
+`useCart` keeps the sheet it displaces on `state.house`, and the picker sets
+the tiles the chosen cartridge should draw in, redrawing the legend with
+them. Filed upstream in `notes/upstream-transport.md`;
+`e2e/console-cart.spec.ts` walks the owner's path against the registry's own
+published cartridges and compares the legend, which is the sheet itself
+rather than a canvas at whatever frame it had reached.
