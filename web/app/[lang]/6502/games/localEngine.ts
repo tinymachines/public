@@ -54,6 +54,8 @@ let nextId = 1;
 const waiting = new Map<number, { ok: (a: Answer) => void; no: (e: Error) => void }>();
 
 let on = false;
+/** An install in flight, so a second caller waits on the first. */
+let starting: Promise<void> | null = null;
 let refused: string | null = null;
 const watchers = new Set<() => void>();
 
@@ -149,21 +151,30 @@ const transport: Transport = async (path, body) => {
  * mid-game: the caller (ConsoleDriver) puts the console back on the API and
  * `refusal()` is what the settings page shows. Idempotent.
  */
-export async function runHere(): Promise<void> {
-  if (on) return;
-  try {
-    if (typeof Worker !== "function") throw new Error("this browser has no workers to run the chip on");
-    await ask("hello", {});
-    (globalThis as Host).tm6502Transport = transport;
-    on = true;
-    refused = null;
-  } catch (e) {
-    on = false;
-    refused = e instanceof Error ? e.message : String(e);
-    announce();
-    throw e;
+export function runHere(): Promise<void> {
+  if (on) return Promise.resolve();
+  // The PROMISE is kept, not just the flag: the store announces more than
+  // once at mount and every announce asks the driver to follow it, so two
+  // installs used to start a millisecond apart, and both greeted the chip
+  // before either had set the flag. The worker's own comment has what that
+  // cost (two wasm instances, a console that played fourteen frames and
+  // then trapped).
+  if (!starting) {
+    starting = (async () => {
+      if (typeof Worker !== "function") throw new Error("this browser has no workers to run the chip on");
+      await ask("hello", {});
+      (globalThis as Host).tm6502Transport = transport;
+      on = true;
+      refused = null;
+      announce();
+    })().catch((e) => {
+      on = false;
+      refused = e instanceof Error ? e.message : String(e);
+      announce();
+      throw e;
+    }).finally(() => { starting = null; });
   }
-  announce();
+  return starting;
 }
 
 /**

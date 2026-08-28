@@ -35,24 +35,47 @@
 
 const CHIP = "/6502/chip";
 
-let chip = null;
+/**
+ * The engine, loaded once. The PROMISE is what is kept, not the machine it
+ * settles to, and that is the whole of it: a second caller arriving while
+ * the first is still loading has to wait on the first load, not start
+ * another.
+ *
+ * Measured, 2026-08-28, when it kept only the machine. Two `hello` messages
+ * posted a millisecond apart both passed the `if (chip)` guard, both ran the
+ * glue's `init()`, which instantiates the wasm module a second time and
+ * rebinds the glue to it, and both built a Machine. The console then ran on
+ * a pointer into the FIRST instance while every call went to the second: it
+ * played fourteen frames of Die Runner, perfectly, and then trapped
+ * (`unreachable`) with the console reporting "the engine stopped answering".
+ * Every later call failed with wasm-bindgen's "recursive use of an object",
+ * because the panic left the borrow held. Nothing about the failure pointed
+ * at its cause, which is what a race gets you.
+ */
+let ready = null;
 
-/** The engine, loaded once, from the release beside this site. */
-async function engine() {
-  if (chip) return chip;
-  const res = await fetch(`${CHIP}/asset-manifest.json`, { cache: "no-cache" });
-  if (!res.ok) {
-    throw new Error(`the chip is not served here: ${CHIP}/asset-manifest.json answered ${res.status}`);
+function engine() {
+  if (!ready) {
+    ready = (async () => {
+      const res = await fetch(`${CHIP}/asset-manifest.json`, { cache: "no-cache" });
+      if (!res.ok) {
+        throw new Error(`the chip is not served here: ${CHIP}/asset-manifest.json answered ${res.status}`);
+      }
+      const manifest = await res.json();
+      const glue = manifest["pkg/v6502_wasm.js"];
+      if (!glue) throw new Error("the chip release has no pkg/v6502_wasm.js");
+      // No argument to init(): the glue resolves the bundle against its own
+      // URL, and the build rewrote that to the hashed name, so the pair
+      // always match.
+      const mod = await import(`${CHIP}/${glue}`);
+      await mod.default();
+      return new mod.Machine();
+    })().catch((e) => {
+      ready = null; // a failed load is not a loaded chip; the next call retries
+      throw e;
+    });
   }
-  const manifest = await res.json();
-  const glue = manifest["pkg/v6502_wasm.js"];
-  if (!glue) throw new Error("the chip release has no pkg/v6502_wasm.js");
-  // No argument to init(): the glue resolves the bundle against its own URL,
-  // and the build rewrote that to the hashed name, so the pair always match.
-  const mod = await import(`${CHIP}/${glue}`);
-  await mod.default();
-  chip = new mod.Machine();
-  return chip;
+  return ready;
 }
 
 const pageBytes = (hex) => {

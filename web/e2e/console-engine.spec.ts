@@ -176,4 +176,28 @@ test("with the chip in the page the frames keep coming and the request count sto
   // `requests` counts round trips, and there are none: the cartridge and its
   // tiles were fetched before the boot, the frames since have gone nowhere.
   expect(then.requests, "no request was made for a frame").toBe(first.requests);
+
+  // And it goes on answering, through a game over and into the next boot.
+  // This is the assertion that would have caught the race that shipped for
+  // one deploy: two installs at mount instantiated the wasm twice, the
+  // console ran on the first instance and called into the second, and it
+  // played fourteen frames of Die Runner before trapping. Every call after
+  // that failed, so the reboot below is the part that could not recover.
+  // Fourteen frames is under four seconds, which a check that stops at the
+  // first frame passes straight over.
+  await page.waitForTimeout(8000);
+  const stopped = async () => page.evaluate(() => {
+    const e = document.getElementById("err") as HTMLElement;
+    return { phase: document.querySelector<HTMLElement>(".shell")!.dataset.phase ?? "", err: e.hidden ? "" : (e.textContent ?? "") };
+  });
+  const mid = await stopped();
+  expect(mid.err, "nothing stopped answering").not.toMatch(/stopped answering/i);
+  expect(mid.phase, "and the console is not in its stopped state").not.toBe("stopped");
+
+  await page.locator('.hit[data-act="reset"]').click();
+  await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toBe("live");
+  await expect.poll(async () => (await read()).frames, { timeout: 20000 }).toBeGreaterThan(3);
+  const after = await stopped();
+  expect(after.err, "the second boot is answered too").not.toMatch(/stopped answering/i);
+  expect((await read()).requests, "and still nothing left the page").toBe(0);
 });
