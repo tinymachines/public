@@ -84,3 +84,59 @@ Three rules, each already paid for elsewhere in the tree:
 
 Every step leaves the disabled controls exactly as they are until the step
 that makes them true.
+
+## The console joins the switch, 2026-08-28
+
+The console was the page the shape named last: it had a chip nobody could
+move, so its driver said `engine: false, runsOn: 'api'` and the strip's key
+was greyed there. It is real now.
+
+**The seam is one function.** `console.js`'s `post()` is the only place the
+console reaches the outside: `boot` and `step`, the whole machine out and
+back. The build patches it to try `globalThis.tm6502Transport` first
+(`web/lib/console-modules.ts`, the fourth patch), and
+`web/app/[lang]/6502/games/localEngine.ts` puts the wasm chip behind it,
+loaded at runtime from the 6502 release nginx already serves at
+`/6502/chip/` (the same bundle every explorer page on this site runs; no die
+data is copied here, NOTICE.md). `ConsoleDriver.tsx` installs it when the
+store's engine is `local` and takes it away when it is `api`, which is the
+only place either happens.
+
+**Switching mid-run is a hand-off, not a reboot,** because the machine is a
+value `console.js` is holding between frames. The next frame simply leaves
+for somewhere else, and the frame count, the score and the half-cycle keep
+counting.
+
+### Measured, 2026-08-28, before any of it was written
+
+The two engines are the same engine built twice, and that is checked rather
+than repeated: `web/e2e/console-engine.spec.ts` boots Die Runner and runs one
+8,704 half-cycle frame on each and compares. Identical `value`, `pullup`,
+`pulldown`, `trans_on` and `half_cycle`, identical memory page for page, and
+the eight watched gates agree. Both after the boot and after the frame.
+
+What it costs, on this desk (Chrome, production, the server one hop away):
+
+| | in the page | over the API |
+|---|---|---|
+| Silicon Snake, 600 half-cycles a frame | 24.7 ms, 40.5 fps | 25.1 ms, 39.9 fps |
+| Die Runner, 8,704 half-cycles a frame | 353 ms, 2.8 fps | 301 ms, 3.3 fps |
+
+The in-page chip runs 24,503 half-cycles a second; halfwave's native build,
+round trip included, 30,400. Under a fourfold CPU throttle, which is roughly
+a mid-range phone, the in-page chip drops to 5,975 a second: 1.5 s a frame
+for Die Runner, against the API's 0.3 s from anywhere. The wasm bundle is
+121 KB (56 KB gzipped) and loads in 19 ms here, 59 ms throttled sixfold.
+
+**So the console states a default the store does not have.** The store's
+default engine is `local`, which is right for the explorer, where a press is
+a few half-cycles and the round trip is the whole cost. A console frame is
+three orders of magnitude more work than that, so a floor with no recorded
+choice gets `api` written by the console at mount (`ConsoleDriver.tsx`), and
+the key overrules it in either direction from then on. That is a choice made
+in one line rather than a default nobody chose, and it is the line to change
+if the trade moves.
+
+What is left of the shape: the Lab's chip, which is its own wasm and its own
+player, and a driver shape that lets a page state its own engine default
+rather than writing the floor's (`notes/upstream-transport.md`).

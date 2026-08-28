@@ -1,14 +1,14 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-08-28T00:35:43+00:00",
+  "boarded_at": "2026-08-28T01:01:26+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.270",
-    "commit": "f4b897659213f662b98b93547390b40ecb887ff4",
-    "built": "2026-08-27T23:26:30+00:00",
+    "version": "v0.274",
+    "commit": "33752d779b54f9ec51f77c373103e89e9f45b4b8",
+    "built": "2026-08-28T00:55:24+00:00",
     "dirty": false,
     "their_tests": {
-      "ran": "2026-08-27T23:26:07+00:00",
+      "ran": "2026-08-28T00:55:00+00:00",
       "cargo": {
         "command": "cargo test --workspace",
         "passed": 91,
@@ -22,11 +22,11 @@
       }
     }
   },
-  "running": "f4b897659213f662b98b93547390b40ecb887ff4",
+  "running": "33752d779b54f9ec51f77c373103e89e9f45b4b8",
   "worktree": {
-    "commit": "f4b897659213f662b98b93547390b40ecb887ff4",
-    "subject": "The throughput figure is measured once and derived everywhere else",
-    "committed": "2026-08-27T19:23:34-04:00",
+    "commit": "33752d779b54f9ec51f77c373103e89e9f45b4b8",
+    "subject": "The subdomains forward to the apex, and the verifier survives it",
+    "committed": "2026-08-27T20:46:57-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -49,10 +49,10 @@
     }
   },
   "halfwave": {
-    "sha256": "157274819b5ba8a462c2a59850e27778ada1afe6066ec3097793930755b821f3",
+    "sha256": "6cb8487d26a51074438e2b152d3873531ea9c827e627d5a293c2e813410234c5",
     "bytes": 533664,
-    "modified": "2026-08-27T23:24:39+00:00",
-    "stated": "f4b897659213f662b98b93547390b40ecb887ff4"
+    "modified": "2026-08-28T00:53:15+00:00",
+    "stated": "33752d779b54f9ec51f77c373103e89e9f45b4b8"
   },
   "tests": [
     {
@@ -64,7 +64,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 5.5,
+      "seconds": 1.1,
       "ok": true
     },
     {
@@ -76,7 +76,7 @@
       "passed": 36,
       "failed": 0,
       "skipped": [],
-      "seconds": 8.6,
+      "seconds": 9.0,
       "ok": true
     }
   ]

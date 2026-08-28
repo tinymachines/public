@@ -79,6 +79,11 @@ describe("a module that stops matching is refused", () => {
   });
 
   test("a file with no patch passes through untouched", () => {
-    expect(patch("console.js", "anything")).toBe("anything");
+    // chr.js, and the test asserts that it is still one of the unpatched:
+    // console.js was named here until the transport patch landed on it, and
+    // a file that quietly acquires a patch would have made this pass on the
+    // wrong claim.
+    expect(PATCHES.some((p) => p.file === "chr.js")).toBe(false);
+    expect(patch("chr.js", "anything")).toBe("anything");
   });
 });

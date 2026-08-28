@@ -23,6 +23,12 @@ export interface ChipStore {
   setPower(on: boolean): Promise<void>;
   reset(): void;
   subscribe(fn: () => void): () => void;
+  /* The floor's engine choice, which the console honours: 'local' is the
+     chip in this page, 'api' is halfwave over HTTP. One choice, written down
+     by the store, shown by the strip's key and the console's settings page.
+     Optional because a release before the switch had neither. */
+  engine?(): "local" | "api";
+  setEngine?(which: "local" | "api"): void;
 }
 
 type Host = Window & { tmChipStore?: ChipStore };

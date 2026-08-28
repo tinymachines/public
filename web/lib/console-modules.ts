@@ -30,10 +30,17 @@ import path from "node:path";
  * and wrong under the apex, where that path is the roof's own API: a service
  * that is up and answers 404 to every request, so the console would render,
  * fail to power on, and read as a broken cartridge. And game.js links a
- * cartridge's builder at `/b/<handle>`, which this site does not serve. The
- * fourth is the console's slow mode: game.js runs frames as fast as the
- * round trip, and the shell wants a switch, so the loop reads a frame period
- * off the page the way it reads the API.
+ * cartridge's builder at `/b/<handle>`, which this site does not serve.
+ *
+ * The fourth is the console's engine. `post()` is the one place the console
+ * reaches the outside: boot and step, the whole machine out and back. The
+ * patch lets the page answer instead, through a transport it puts on the
+ * window, which is how the in-page wasm chip runs the same frames with no
+ * round trip (games/localEngine.ts). Unset, every call goes over HTTP as it
+ * always has, and the retry loop below it is untouched.
+ *
+ * The slow mode's frame period was the fifth and is upstream now
+ * (6502@12d4616): `game.js` reads `[data-frame-ms]` off the page itself.
  *
  * Each patch is an exact string the upstream line must match, ONCE. A module
  * that stops matching fails the build naming the file and the patch, rather
@@ -97,28 +104,28 @@ export const PATCHES: Patch[] = [
     why: "the builder credit links where the builder pages are, read off the page, not at a /b/ this site does not serve",
   },
   {
-    file: "game.js",
-    // The loop's fps block, once: the pace lands after the frame is painted
-    // and counted, before the next request leaves.
-    find: "        state.fpsAt = now;\n        state.fpsFrames = 0;\n      }\n",
+    file: "console.js",
+    // The two lines that open post(), with the transport landing between
+    // them: a patch's replacement must not carry the upstream text
+    // (console-modules.test.ts), and inserting inside the anchor is how
+    // this one adds a path without rewriting the one that is there.
+    find: "  async post(path, body, tries = 3) {\n    const payload = JSON.stringify(body);",
     replace:
-      // The two assignments on one line: a patch's replacement must not
-      // carry the upstream text (console-modules.test.ts), and this one
-      // adds after the anchor rather than changing it.
-      "        state.fpsAt = now; state.fpsFrames = 0;\n" +
-      "      }\n" +
-      "      /* Patched by tinymachines/public at build time (lib/console-modules.ts):\n" +
-      "       * a frame period, read off the page ([data-frame-ms]). Unset, frames run\n" +
-      "       * as fast as the round trip, as above; set, a frame is released no\n" +
-      "       * sooner than that many ms after the last, so the period is the longer\n" +
-      "       * of the two. The console's shell offers it as its slow mode. */\n" +
-      "      const period = +(document.querySelector('[data-frame-ms]')?.dataset.frameMs ?? 0);\n" +
-      "      if (period > 0) {\n" +
-      "        const wait = period - (performance.now() - (state.paceAt || 0));\n" +
-      "        if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));\n" +
-      "      }\n" +
-      "      state.paceAt = performance.now();\n",
-    why: "the page may declare a frame period ([data-frame-ms]); the shell's slow mode is that, and nothing else in the module changes",
+      "  /* Patched by tinymachines/public at build time (lib/console-modules.ts):\n" +
+      "   * the page may answer this call itself. `globalThis.tm6502Transport` is a\n" +
+      "   * transport of the same shape as the API, and the roof puts the in-page\n" +
+      "   * wasm chip behind it, so a frame runs here with no round trip. The\n" +
+      "   * machine is a value either way, which is what lets the engine change\n" +
+      "   * between one frame and the next. Unset, everything below is unchanged,\n" +
+      "   * including `this.requests`, which counts round trips and so does not\n" +
+      "   * move while the chip is in the page. */\n" +
+      "  async post(path, body, tries = 3) {\n" +
+      "    const here = globalThis.tm6502Transport;\n" +
+      "    if (here) return here(path, body);\n" +
+      "    const payload = JSON.stringify(body);",
+    why:
+      "the page may run the frame itself (globalThis.tm6502Transport, the in-page wasm chip); " +
+      "unset, every call goes over HTTP exactly as upstream",
   },
   {
     file: "registry.js",

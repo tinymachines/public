@@ -1788,3 +1788,36 @@ its `deploy/` copies. Open, unchanged: forward step 3 (wait on the logs);
 the fourth game.js patch until a tagged release carries `12d4616`;
 intermittent React #418 on Shell pages; `TM_SELF_NETS` in `visitors.env`;
 article images (owner's); the three engine write-ups.
+
+## The console's engine key: the chip in the page, or the chip behind the API
+
+The console was the last page on the 6502 floor whose engine key was grey.
+It is live now, and it is the same key: one choice in one store, shown on
+the strip and on the console's settings page, with `api` handing every
+frame to halfwave over HTTP and `local` handing it to the wasm chip running
+in the tab.
+
+The seam is three lines. `console.js`'s `post()` is the only place the
+console reaches the outside, so the build patches it to try a transport the
+page may offer (`web/lib/console-modules.ts`, and the proposal is in
+`notes/upstream-transport.md`); `games/localEngine.ts` puts the chip behind
+it, loaded at runtime from the release nginx already serves at
+`/6502/chip/`, so no die data comes near this repository. Switching mid-game
+is a hand-off rather than a reboot, because the machine is a value the
+console holds between frames.
+
+Measured before it was written, and now held by
+`web/e2e/console-engine.spec.ts`: boot and one 8,704 half-cycle frame of
+Die Runner leave the two engines with identical chip state, identical
+memory and the same eight gates. Speed, on this desk: Silicon Snake 40.5 fps
+in the page against 39.9 over the API, Die Runner 2.8 against 3.3; under a
+fourfold CPU throttle, which is roughly a phone, the in-page chip falls to
+1.5 s a frame for Die Runner. So the console writes `api` into the store as
+its default when the floor has never chosen, which is the one decision
+here that is a judgement rather than a measurement, and the key overrules
+it either way. `notes/one-engine.md` has the table and the reasoning; the
+same note's last open piece is now the Lab's chip.
+
+The frame period patch is gone: the served release carries it upstream, so
+the engine was re-boarded (v0.274 `33752d7`, 39 tests) and the patch list
+is four places over three files again, the newest being this transport.

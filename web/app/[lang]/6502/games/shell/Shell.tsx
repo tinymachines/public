@@ -7,6 +7,7 @@ import { LangSwitch } from "@/app/components/LangSwitch";
 import { clipPolygon, points } from "@/lib/shell/geom";
 import { solve, type Dock, type Solved } from "@/lib/shell/solve";
 import { readConsole, watchConsole, type Phase } from "../consoleState";
+import { inPage, refusal, watchEngine } from "../localEngine";
 import { useChipStore, useChipState } from "../chipStore";
 import { AB, Cart, Coin, Counter, Dpad, Pills, Power, Quick, Rail, Speaker } from "./Kit";
 
@@ -62,6 +63,10 @@ const W = {
     busy: "Booting: the cartridge can change once it has landed",
     speed: "speed",
     speedWhy: (ms: number) => `Fast: every frame leaves as soon as the last is back, so the rate is the round trip. Slow: a frame is released no sooner than ${ms} ms after the last.`,
+    engine: "engine",
+    engs: { api: "api", local: "local" } as Record<string, string>,
+    engineWhy: "A frame is a whole machine handed to a chip: the ROM, the memory, and every node on the die. api sends it to halfwave and back over HTTP. local runs the same chip here in the page, in WebAssembly, so nothing leaves this tab and the requests readout stops moving. Which is quicker is your device's answer: the status page counts frames a second. Same key as the one on the strip.",
+    engineNone: "The strip has not loaded here, and the engine is its switch. The frames are going over the API.",
     fs: "full screen",
     fsGo: "Full screen",
     fsInstalled: "This is the full screen: the console was opened from the home screen.",
@@ -99,6 +104,10 @@ const W = {
     busy: "起動中: カートリッジは起動が終わってから替えられる",
     speed: "速度",
     speedWhy: (ms: number) => `fast: 前のフレームが戻り次第、次が出る。レートは往復そのもの。slow: 前のフレームから ${ms} ms 経つまで次を出さない。`,
+    engine: "エンジン",
+    engs: { api: "api", local: "local" } as Record<string, string>,
+    engineWhy: "1 フレームは、マシン全体をチップに手渡すことだ: ROM、メモリ、ダイ上のすべてのノード。api はそれを HTTP で halfwave に送って受け取る。local は同じチップをこのページの中、WebAssembly で走らせる。何もタブの外に出ず、リクエストの数字は止まる。どちらが速いかは使っている機械が答える: 状態ページが毎秒フレーム数を数えている。ストリップのキーと同じ切り替えだ。",
+    engineNone: "ストリップが読み込まれていない。エンジンはそのスイッチなので、フレームは API を通っている。",
     fs: "全画面",
     fsGo: "全画面",
     fsInstalled: "これが全画面: このコンソールはホーム画面から開かれている。",
@@ -206,6 +215,13 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
   const store = useChipStore();
   const chip = useChipState(store);
   const [localOff, setLocalOff] = useState(false);
+  // Where the console's frames are running, and why they are not where they
+  // were asked to run. Both are localEngine's facts, read the way the store's
+  // are: the driver (ConsoleDriver) is the one that installs the transport,
+  // and this is a view of what it did.
+  const here = useSyncExternalStore(watchEngine, inPage, () => false);
+  const engErr = useSyncExternalStore(watchEngine, refusal, () => null);
+  const engine = store?.setEngine ? (store.engine?.() ?? "api") : null;
   // Off, as distinct from never booted: the store is off while the console
   // holds a paused machine. A console that has not booted is "off" in the
   // HUD's words already, and start spends a credit to boot it.
@@ -440,6 +456,7 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
       data-tv={S.tvs[fx.tv]}
       data-wear={fx.wear || undefined}
       data-pace={pace}
+      data-engine={here ? "local" : "api"}
       data-frame-ms={pace === "slow" ? SLOW_MS : 0}
       data-solved={measured ? "1" : undefined}
       style={{ ["--shell-accent" as string]: accent }}
@@ -508,6 +525,20 @@ export function Shell({ lang = "en", carts, children }: { lang?: Lang; carts: Ca
                   {(["fast", "slow"] as const).map((m) => <button key={m} type="button" className={pace === m ? "on" : ""} aria-pressed={pace === m} onClick={() => setPace(m)} data-pace-pick={m}>{S[m]}</button>)}
                 </span>
                 <small>{S.speedWhy(SLOW_MS)}</small>
+              </label>
+              {/* The engine, which is the strip's key seen from the console:
+                  one choice in one store (notes/one-engine.md rule 3), shown
+                  in the two places a hand lands. A page with no strip has no
+                  store to hold it, and says so rather than offering a switch
+                  that would do nothing. */}
+              <label className={engine ? undefined : "no"} data-engine={here ? "local" : "api"}><span>{S.engine}</span>
+                <span className="seg">
+                  {(["api", "local"] as const).map((e) => (
+                    <button key={e} type="button" className={engine === e ? "on" : ""} aria-pressed={engine === e}
+                      disabled={!engine} onClick={() => store?.setEngine?.(e)} data-engine-pick={e}>{S.engs[e]}</button>
+                  ))}
+                </span>
+                <small>{engine ? (engErr ?? S.engineWhy) : S.engineNone}</small>
               </label>
               <FullscreenRow label={S.fs} go={S.fsGo} installed={S.fsInstalled} native={S.fsNative} none={S.fsNone} />
               <label className="no"><span>{S.rewind}</span><input type="range" disabled aria-disabled="true" /><small>{S.rewindWhy}</small></label>

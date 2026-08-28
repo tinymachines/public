@@ -159,11 +159,48 @@ which is the rule `loop()` already keeps and the comment on `state.gen`
 already states. Until then the roof's shell refuses a cartridge change while
 `#b-power` reads "booting..." (`notes/console-shell/ISSUES.md` #13).
 
-**A frame period, read off the page.** The shell wants a fast/slow switch;
-`game.js` runs frames as fast as the round trip. The roof patches the loop at
-build time (`web/lib/console-modules.ts`, the fourth patch) to read
-`[data-frame-ms]` off the page and release a frame no sooner than that after
-the last. Upstream could carry the same eleven lines, and then the patch
-list is three again. The unit is a period in ms, not a rate: a period
-composes with the round trip (the longer of the two wins) where a rate would
-promise something the trip may not deliver.
+**A frame period, read off the page. Done (6502@12d4616).** The shell wanted
+a fast/slow switch and `game.js` ran frames as fast as the round trip; the
+roof patched the loop to read `[data-frame-ms]` off the page. Upstream
+carries it now, `frameMs()` and `state.paceAt`, and the patch is gone. The
+unit is a period in ms, not a rate: a period composes with the round trip
+(the longer of the two wins) where a rate would promise something the trip
+may not deliver.
+
+## The console's transport, proposed 2026-08-28
+
+`console.js`'s `post()` is the one place the console reaches the outside, and
+the roof now patches it to try a transport the page may put on the window
+before it makes the request:
+
+```js
+async post(path, body, tries = 3) {
+  const here = globalThis.tm6502Transport;
+  if (here) return here(path, body);
+  const payload = JSON.stringify(body);
+  ...
+}
+```
+
+Three lines, and everything below them is untouched, including the retry
+loop and `this.requests`, which counts round trips and therefore stops while
+the frames are running in the page. Behind that transport the roof puts the
+wasm chip (`web/app/[lang]/6502/games/localEngine.ts`), so the console
+honours the strip's engine key like every other page on the floor
+(`notes/one-engine.md`).
+
+Proposal: upstream carries the same three lines. Nothing about the console
+changes for anyone who does not set a transport, and a page that has a chip
+of its own stops needing a patched module to use it. The shape of the
+transport is the API's own: `(path, body) => Promise<{ machine, observe }>`,
+because that is what `post()` already returns, and it is what makes the two
+engines exchangeable mid-run.
+
+**And a second one, smaller: a driver may state its own engine default.**
+`chip-controls.js` holds one engine choice for the floor, default `local`,
+which is right for a page whose press is a few half-cycles and wrong for a
+console whose frame is 8,704. Today the console writes `api` into the store
+at mount when the floor has never chosen (`ConsoleDriver.tsx`), which is a
+page reaching into a site-wide fact to state a page-wide one. A
+`engineDefault` on the driver, honoured by `registerDriver` only when
+nothing is recorded, would say the same thing without the reach.

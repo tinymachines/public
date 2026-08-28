@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { readConsole, watchConsole } from "./consoleState";
+import { inPage, runHere, runOverApi } from "./localEngine";
 
 /**
  * The console, registered as a driver of the one chip store.
@@ -33,9 +34,28 @@ import { readConsole, watchConsole } from "./consoleState";
  *
  * What the console can honour: power (boot; off is a pause, since game.js
  * has no off and holds the frame it was on), reset (its power/reset button)
- * and the half-cycle count (its own readout). It runs whole frames over a
- * round trip and has no half-step, no step back and no clock, and the
- * driver says so in `caps`, which is what the strip shows.
+ * and the half-cycle count (its own readout). It runs whole frames and has
+ * no half-step, no step back and no clock, and the driver says so in
+ * `caps`, which is what the strip shows.
+ *
+ * ## The engine key
+ *
+ * The console honours it (`caps.engine`), which is the last piece of
+ * notes/one-engine.md the console owed. The store holds the choice for the
+ * whole floor and this driver follows it: `api` leaves every frame to
+ * halfwave over HTTP, `local` puts the wasm chip of games/localEngine.ts
+ * behind `console.js`'s own `post()`. Nothing reboots at the switch, because
+ * the machine is a value the console is holding: the next frame simply
+ * leaves for somewhere else.
+ *
+ * **The console's default is the API, and it says so in the store** when the
+ * floor has no recorded choice. The store's own default is the chip in the
+ * page, which is right for the explorer, where a press is a few half-cycles.
+ * A frame of Die Runner is 8,704, and measured (notes/one-engine.md) that is
+ * 0.36 s in this page against 0.30 s over the API on a desk, and 1.5 s in
+ * the page under a fourfold CPU throttle, which is a phone. Defaulting a
+ * console on a phone to two frames every three seconds would be a choice
+ * nobody made, so it is made here, once, and the key overrules it.
  */
 
 interface Store {
@@ -46,7 +66,17 @@ interface Store {
   isPowered?(): boolean;
   isBooting?(): boolean;
   setPower?(on: boolean): Promise<void>;
+  engine?(): "local" | "api";
+  setEngine?(which: "local" | "api"): void;
 }
+
+/**
+ * Where the store writes the floor's engine choice. Read here, and only to
+ * tell a choice that was made from one that has never been made: the console
+ * states its own default in that second case (the block comment above), and
+ * a store that already has a choice is followed without argument.
+ */
+const ENGINE_KEY = "v6502.engine";
 
 const $ = (id: string) => document.getElementById(id);
 
@@ -55,6 +85,7 @@ export function ConsoleDriver() {
     let cancelled = false;
     let unsub: (() => void) | null = null;
     let unwatch: (() => void) | null = null;
+    let unfollow: (() => void) | null = null;
     (async () => {
       const res = await fetch("/6502/chip/asset-manifest.json", { cache: "no-cache" });
       if (!res.ok) return;
@@ -74,8 +105,20 @@ export function ConsoleDriver() {
           };
           poll();
         });
+      // The console's default, stated once, before anything registers: a
+      // floor that has never chosen an engine plays over the API.
+      const chosen = (() => {
+        try { return localStorage.getItem(ENGINE_KEY); } catch { return null; }
+      })();
+      if (chosen !== "local" && chosen !== "api") store.setEngine?.("api");
+
       store.registerDriver({
-        caps: { power: true, back: false, step: false, cycle: false, op: false, rate: false, seek: false, engine: false, runsOn: "api" },
+        // A function, so `runsOn` is where the frames are running now rather
+        // than where they were when the console loaded.
+        caps: () => ({
+          power: true, back: false, step: false, cycle: false, op: false,
+          rate: false, seek: false, engine: true, runsOn: inPage() ? "local" : "api",
+        }),
         powered() {
           return readConsole()?.powered ?? false;
         },
@@ -98,6 +141,28 @@ export function ConsoleDriver() {
           return Number.isFinite(n) ? n : null;
         },
       });
+
+      // The engine, followed off the store. The strip's key and the settings
+      // page's row are two views of that one choice; neither decides
+      // anything here, and this is the only place the transport is installed
+      // or taken away.
+      const follow = async () => {
+        const want = store.engine?.() ?? "api";
+        if (want === (inPage() ? "local" : "api")) return;
+        if (want === "api") { runOverApi(); return; }
+        try {
+          await runHere();
+          // A load takes a moment, and the key can be pressed twice inside
+          // it. The choice that stands when it lands is the one that holds.
+          if (store.engine?.() !== "local") runOverApi();
+        } catch {
+          // Why is on localEngine's refusal(), which the settings page
+          // shows. Back to the engine that is answering.
+          store.setEngine?.("api");
+        }
+      };
+      void follow();
+      unfollow = store.subscribe(() => { void follow(); });
 
       // console -> store. Running, and power: the console's own power button
       // (the shell's reset key) boots a machine, and the store must know it
@@ -158,6 +223,10 @@ export function ConsoleDriver() {
       cancelled = true;
       if (unsub) unsub();
       if (unwatch) unwatch();
+      if (unfollow) unfollow();
+      // The transport is this page's; a page without the console must not
+      // find one on the window.
+      runOverApi();
     };
   }, []);
   return null;

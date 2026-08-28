@@ -149,12 +149,15 @@ const PROSE = {
     whySlow: "Why it is slow, and what that measures",
     slow: (
       <>
-        A frame costs <b id="k-cost">600</b> half-cycles, about 0.3&nbsp;ms of
-        chip time. Everything else is the round trip: the whole machine
-        travels to the engine and back on every frame, because the server
-        keeps no sessions. The chip is not the bottleneck by three orders of
-        magnitude, and the frame rate above is the round trip being measured
-        rather than the die.
+        A frame costs <b id="k-cost">600</b> half-cycles, and every one of
+        them is solved switch by switch on the die: this is a simulation of
+        the transistors, not of the instruction set. That is where the time
+        goes. Over the API the whole machine travels to the engine and back
+        on each frame besides, because the server keeps no sessions; the
+        engine key on the strip, and the settings page, hand the same
+        machine to a chip running in this page instead, where there is no
+        trip left to pay for. The frames a second above is the measurement,
+        either way.
       </>
     ),
     cart: (api: string, b: string, m: string) => (
@@ -207,8 +210,7 @@ const PROSE = {
     whySlow: "なぜ遅いのか、そしてそれは何の測定か",
     slow: (
       <>
-        1 フレームは <b id="k-cost">600</b> 半サイクル、チップ時間で
-        0.3&nbsp;ms ほど。残りはすべて往復だ: サーバがセッションを持たないので、マシン全体が毎フレーム、エンジンまで行って帰ってくる。チップは三桁の差でボトルネックではなく、上のフレームレートはダイではなく往復の測定値だ。
+        1 フレームは <b id="k-cost">600</b> 半サイクル。その 1 つずつを、ダイの上のスイッチ単位で解いている: 命令セットではなくトランジスタのシミュレーションだ。時間はそこで使われる。API ではさらに、サーバがセッションを持たないので、マシン全体が毎フレーム、エンジンまで行って帰ってくる。ストリップのエンジンキー、そして設定ページは、同じマシンをこのページの中で走るチップに渡す。往復はもう残らない。上の毎秒フレーム数は、どちらであれ測定値だ。
       </>
     ),
     cart: (api: string, b: string, m: string) => (
