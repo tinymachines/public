@@ -43,7 +43,10 @@ html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
 /* Play: the screen in a one-pixel line, the keys under it. */
 .cv2-play { flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2); }
 .cv2-screen {
-  width: min(100%, 70vh);
+  /* Bounded by the height the keys and buttons below it leave, so the column
+     never outgrows the viewport: at 1280x900 the 70vh box sat over the tabs
+     and swallowed their clicks (e2e, 2026-08-28). */
+  width: min(100%, max(12rem, calc(100vh - 24rem)), 48rem);
   max-width: 48rem;
   aspect-ratio: 1;
   border: 1px solid #fff;
