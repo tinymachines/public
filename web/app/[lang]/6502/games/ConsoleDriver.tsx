@@ -48,14 +48,14 @@ import { inPage, runHere, runOverApi } from "./localEngine";
  * the machine is a value the console is holding: the next frame simply
  * leaves for somewhere else.
  *
- * **The console's default is the API, and it says so in the store** when the
- * floor has no recorded choice. The store's own default is the chip in the
- * page, which is right for the explorer, where a press is a few half-cycles.
- * A frame of Die Runner is 8,704, and measured (notes/one-engine.md) that is
- * 0.36 s in this page against 0.30 s over the API on a desk, and 1.5 s in
- * the page under a fourfold CPU throttle, which is a phone. Defaulting a
- * console on a phone to two frames every three seconds would be a choice
- * nobody made, so it is made here, once, and the key overrules it.
+ * **The store's default is the console's default**, which is the chip in the
+ * page (owner's call, 2026-08-28: try it as the default and see how it
+ * feels). This driver wrote `api` there for one round, because a frame of
+ * Die Runner is 8,704 half-cycles against the explorer's few and a phone
+ * solves them slowly; that line is gone, and the floor now has one default
+ * rather than a page overruling it from underneath. What a device actually
+ * delivers is on the status page, in frames a second, and the key is one
+ * press away in both directions.
  */
 
 interface Store {
@@ -69,14 +69,6 @@ interface Store {
   engine?(): "local" | "api";
   setEngine?(which: "local" | "api"): void;
 }
-
-/**
- * Where the store writes the floor's engine choice. Read here, and only to
- * tell a choice that was made from one that has never been made: the console
- * states its own default in that second case (the block comment above), and
- * a store that already has a choice is followed without argument.
- */
-const ENGINE_KEY = "v6502.engine";
 
 const $ = (id: string) => document.getElementById(id);
 
@@ -105,13 +97,6 @@ export function ConsoleDriver() {
           };
           poll();
         });
-      // The console's default, stated once, before anything registers: a
-      // floor that has never chosen an engine plays over the API.
-      const chosen = (() => {
-        try { return localStorage.getItem(ENGINE_KEY); } catch { return null; }
-      })();
-      if (chosen !== "local" && chosen !== "api") store.setEngine?.("api");
-
       store.registerDriver({
         // A function, so `runsOn` is where the frames are running now rather
         // than where they were when the console loaded.

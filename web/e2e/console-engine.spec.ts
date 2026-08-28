@@ -13,8 +13,9 @@ import { DESK, open } from "./lib";
  * that came back, including the eight gates the cartridge watches.
  *
  * The rest is the switch: the strip's engine key and the settings page's row
- * are two views of one choice, the console starts on the API, and when the
- * chip is in the page the frames keep coming while the request count stops.
+ * are two views of one choice, a console that arrives with no choice recorded
+ * runs the chip in the page, and while it does the frames keep coming and the
+ * request count stops.
  *
  * Every test needs the 6502 release at /6502/chip, which is nginx's on
  * production and absent from a preview, so each skips rather than fails
@@ -122,28 +123,30 @@ test("the chip in the page and the chip behind the API answer the same frame ide
   expect(out.hereWatch, "the gates sampled on each chip").toEqual(out.apiWatch);
 });
 
-test("the engine key is live on the console, the console starts on the API, and the two switches are one choice", async ({ page }) => {
+test("the engine key is live on the console, the chip in the page is the default, and the two switches are one choice", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, GAMES);
   await chipServed(page);
 
-  // A fresh profile has no recorded choice, and the console states its own.
-  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "api");
+  // A fresh profile: the floor's default, which is the chip in the page, and
+  // the console writes nothing of its own into the store to get there.
+  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "local", { timeout: 15000 });
   const key = page.locator(".chip-transport .tbtn.eng");
   await expect(key).toBeEnabled();
-  await expect(key).toHaveAttribute("data-engine", "api");
-  expect(await page.evaluate(() => localStorage.getItem("v6502.engine"))).toBe("api");
+  await expect(key).toHaveAttribute("data-engine", "local");
+  expect(await page.evaluate(() => localStorage.getItem("v6502.engine")), "nothing recorded until a press").toBeNull();
 
   // The settings row moves the strip's key, because there is one choice.
   await page.locator('.hit[data-act="page-settings"]').click();
-  await page.locator('.toys [data-engine-pick="local"]').click();
-  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "local");
-  await expect(key).toHaveAttribute("data-engine", "local");
+  await page.locator('.toys [data-engine-pick="api"]').click();
+  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "api");
+  await expect(key).toHaveAttribute("data-engine", "api");
+  expect(await page.evaluate(() => localStorage.getItem("v6502.engine"))).toBe("api");
 
   // And the key moves the row.
   await key.click();
-  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "api");
-  await expect(page.locator('.toys [data-engine-pick="api"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "local");
+  await expect(page.locator('.toys [data-engine-pick="local"]')).toHaveAttribute("aria-pressed", "true");
 });
 
 test("with the chip in the page the frames keep coming and the request count stops", async ({ page }) => {
@@ -152,9 +155,7 @@ test("with the chip in the page the frames keep coming and the request count sto
   await open(page, GAMES);
   await chipServed(page);
 
-  await page.locator('.hit[data-act="page-settings"]').click();
-  await page.locator('.toys [data-engine-pick="local"]').click();
-  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "local");
+  await expect(page.locator(".shell")).toHaveAttribute("data-engine", "local", { timeout: 15000 });
 
   await page.locator('.hit[data-act="reset"]').click();
   await expect.poll(() => page.locator(".shell").getAttribute("data-phase"), { timeout: 30000 }).toMatch(/live|stopped/);

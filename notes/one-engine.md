@@ -149,14 +149,15 @@ it buys back everything the page does between frames. The table above is
 from the worker build; the difference it made is the difference between a
 console and a slideshow.
 
-**So the console states a default the store does not have.** The store's
-default engine is `local`, which is right for the explorer, where a press is
-a few half-cycles and the round trip is the whole cost. A console frame is
-three orders of magnitude more work than that, so a floor with no recorded
-choice gets `api` written by the console at mount (`ConsoleDriver.tsx`), and
-the key overrules it in either direction from then on. That is a choice made
-in one line rather than a default nobody chose, and it is the line to change
-if the trade moves.
+**The default is the store's, and the store's is the chip in the page**
+(owner's call, 2026-08-28: make local the default and see how it feels). For
+one round the console wrote `api` into the store at mount when the floor had
+never chosen, on the argument above: a console frame is three orders of
+magnitude more work than an explorer press, and a phone solves it slowly.
+That line is gone. The floor has one default and no page overrules it from
+underneath, a first visit records nothing, and the key moves it in either
+direction. What a device actually delivers is on the status page in frames a
+second, which is the honest place for it.
 
 What is left of the shape: the Lab's chip, which is its own wasm and its own
 player, and a driver shape that lets a page state its own engine default
