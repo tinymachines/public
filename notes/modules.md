@@ -144,6 +144,7 @@ can close.
 |---|---|---|---|
 | explorer pages and stylesheet | `lib/explorer.ts` reads `../6502/web/*.html`, `style.css` | build | `check-build.mjs` (the DOM contract), `deploy.sh` stage 6 sweeps every page; `board-engine.py --check` holds the tree to the boarded commit |
 | explorer modules, wasm, die data | nginx `alias` of the 6502 release directory at `/6502/chip/` | request | `board-engine.py --check` compares the release's `build-info.json` commit to the boarded one |
+| the released pages, for parity | `e2e/served.ts` serves that same release directory on a loopback port during `e2e/parity.spec.ts`; the path comes from this repo's own nginx file, as `board-engine.py` reads it (`TM_CHIP_RELEASE` overrides) | test | the server records every 404 it serves and the spec refuses a comparison against a page that asked for a file the release does not have |
 | the chip API, halfwave | nginx proxies `/6502/api/` to `127.0.0.1:6502` | request | `deploy.sh` stage 6 (the door answers); `board-engine.py --check` holds the binary's digest |
 | the chip's two figures | `data/chip.json`, re-derived by `data/verify-chip.py` from `/v1/meta` | by hand | `data/check-figures.py` scans the prose for stray digits |
 | the API reference | `lib/apidoc.ts` reads `../6502/service/api.html` | build | throws when the document stops matching its transforms |

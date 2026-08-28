@@ -2200,3 +2200,43 @@ therefore live the moment it finishes. The notice reached production that way,
 before its version bump and before its deploy. Nothing was broken by it (every
 page 200, chunks resolving), but the site was serving a build no commit
 described. Build to a scratch directory or expect to be publishing.
+
+## Parity had stopped comparing, and had been comparing less than it looked
+
+`parity.spec.ts` holds the eighteen ported pages to the pages they were
+ported from: the same in-content links, the same state from the same query,
+the same twelve block cards. Since the forward on 2026-08-27 it skipped
+itself, correctly, because `6502.tinymachines.ai` answers 301 to the apex and
+following that would compare each page to itself. Twenty tests then sat in
+every full run reporting as a suite that passes.
+
+Repointed, on the owner's call, at what parity actually means now: the
+RELEASED pages. Not the worktree's `web/`, which was the first attempt and
+was wrong in a way worth keeping. The worktree holds the sources; the release
+holds what that project's deploy made of them. Served from the worktree, six
+pages asked for `pkg/v6502_wasm.js`, `build-info.json` and the
+content-hashed `decode.json` and `schematic.json`, got 404s, rendered their
+chrome, and reported zero links to compare. Every one of those would have
+passed: an empty upstream list makes the missing list empty too.
+
+So the server counts the 404s it serves and the spec refuses to compare
+against a page that asked for a file the release does not have. That is what
+separates "nothing to compare" from "nothing ran", and the two are identical
+from outside: chrome renders, thirty anchors appear, the instrument that
+would have carried the links is missing.
+
+**Four of the eighteen were vacuous even when the subdomain was up.**
+`/decode`, `/trace`, `/exploded` and `/halfshot` carry every link in the
+chrome this site replaces, so there was never anything to compare on them.
+They skip now, with that as the reason, rather than passing on an empty list.
+The schematic's caption and the block's twelve cards, which had not run since
+the forward, run and pass.
+
+15 passed, 5 skipped, 0 failed. Both halves are proved load-bearing: pointed
+at the worktree (`TM_CHIP_RELEASE`), the 404 guard fails naming the page;
+with one of our links dropped, the comparison fails naming the page.
+
+The port is 0, so the kernel picks it. That is not carelessness about the
+port trap in CLAUDE.md, it is the trap's answer: a chosen port can be held by
+something else and questioned instead of this server, and an ephemeral one
+cannot.
