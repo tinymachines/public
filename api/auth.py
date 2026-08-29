@@ -99,8 +99,9 @@ def enabled() -> bool:
 
 
 def active_max() -> int:
-    """How many live tokens one account may hold. Three: a page, a spare, a mistake."""
-    return int(os.environ.get("TM_ACCOUNT_TOKENS", "3"))
+    """How many live tokens one account may hold. Ten (owner, 2026-08-28; it was
+    three). Revoking one frees its slot: the count is live tokens only."""
+    return int(os.environ.get("TM_ACCOUNT_TOKENS", "10"))
 
 
 def _secure(request: Request) -> bool:

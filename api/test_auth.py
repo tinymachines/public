@@ -190,6 +190,24 @@ def test_account_mints_holds_reissues_and_revokes(client, github, registry, fake
     assert client.get("/v1/me").json()["limits"]["active"] == 0
 
 
+def test_account_holds_ten_and_a_revoke_frees_a_slot(client, github, registry, fake, monkeypatch):
+    monkeypatch.delenv("TM_ACCOUNT_TOKENS", raising=False)
+    sign_in(client)
+    assert client.get("/v1/me").json()["limits"]["active_max"] == 10
+    for _ in range(10):  # ten mint; the eleventh is refused
+        assert client.post("/v1/me/tokens", json={}).status_code == 201
+    r = client.post("/v1/me/tokens", json={})
+    assert r.status_code == 429
+    assert "holds 10 live" in r.json()["detail"]
+    me = client.get("/v1/me").json()
+    assert me["limits"]["remaining"] == 0 and len(me["tokens"]) == 10
+    assert client.delete(f"/v1/me/tokens/{me['tokens'][0]['id']}").status_code == 204
+    me = client.get("/v1/me").json()
+    assert me["limits"]["active"] == 9 and me["limits"]["remaining"] == 1
+    assert client.post("/v1/me/tokens", json={}).status_code == 201
+    assert client.post("/v1/me/tokens", json={}).status_code == 429
+
+
 def test_account_limit_is_live_tokens(client, github, registry, fake, monkeypatch):
     monkeypatch.setenv("TM_ACCOUNT_TOKENS", "1")
     sign_in(client)
