@@ -1,5 +1,5 @@
-/* Console v2: black, one line, nothing else. Deliberately not on the kit's
-   tokens for colour (the brief is "all black background with a simple line"),
+/* Console v2: black, nothing else. Deliberately not on the kit's
+   tokens for colour (the brief is "all black background"),
    so the two colours below are literal and the experiment can be judged
    without the palette in the way. Sizes use the kit's unit. */
 
@@ -18,13 +18,21 @@
 html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
 .cv2-head { height: 0; overflow: hidden; }
 
-.cv2-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.cv2-body { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
 
-.cv2-tabs { display: flex; gap: calc(var(--u) * 2); padding: calc(var(--u) * 2); justify-content: center; }
-.cv2-tab {
-  background: none; border: 1px solid #fff; color: #fff; font: inherit;
-  padding: calc(var(--u) * 1.5) calc(var(--u) * 3); cursor: pointer; text-transform: lowercase;
+ /* The screen switches: a small staggered stack in the bottom-left corner
+   (owner, 2026-08-28), out of the play column's flow so the screen keeps the
+   whole width. Each one steps in a little further than the one above it. */
+.cv2-tabs {
+  position: absolute; left: calc(var(--u) * 2); bottom: calc(var(--u) * 2); z-index: 1;
+  display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--u) * 1);
 }
+.cv2-tab {
+  background: #000; border: 1px solid #fff; color: #fff; font: inherit; font-size: var(--text-micro);
+  padding: calc(var(--u) * 1) calc(var(--u) * 2); cursor: pointer; text-transform: lowercase; line-height: 1.2;
+}
+.cv2-tab:nth-child(2) { margin-left: calc(var(--u) * 2); }
+.cv2-tab:nth-child(3) { margin-left: calc(var(--u) * 4); }
 .cv2-tab[aria-pressed="true"] { background: #fff; color: #000; }
 .cv2-tab:focus-visible, .cv2-key:focus-visible, .cv2-btn:focus-visible, .cv2-card:focus-visible, .cv2-opt:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
@@ -40,21 +48,17 @@ html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
 .cv2-settings { order: 1; }
 .cv2-status { order: 2; }
 
-/* Play: the screen in a one-pixel line, the keys under it. */
-.cv2-play { flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2); }
+/* Play: the screen across the whole width, no line (owner, 2026-08-28), the
+   keys under it. The box takes whatever height the keys and buttons leave;
+   the canvas fits inside it, so the column never outgrows the viewport. */
+.cv2-play { flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2) 0 calc(var(--u) * 2); }
 .cv2-screen {
-  /* Bounded by the height the keys and buttons below it leave, so the column
-     never outgrows the viewport: at 1280x900 the 70vh box sat over the tabs
-     and swallowed their clicks (e2e, 2026-08-28). */
-  width: min(100%, max(12rem, calc(100vh - 24rem)), 48rem);
-  max-width: 48rem;
-  aspect-ratio: 1;
-  border: 1px solid #fff;
+  width: 100%;
+  flex: 1; min-height: 0;
   display: flex; align-items: center; justify-content: center;
-  padding: calc(var(--u) * 2);
   box-sizing: border-box;
 }
-.cv2-screen canvas { display: block; image-rendering: pixelated; max-width: 100%; max-height: 100%; height: auto; touch-action: none; }
+.cv2-screen canvas { display: block; image-rendering: pixelated; width: 100%; max-height: 100%; height: auto; object-fit: contain; touch-action: none; }
 
 .cv2-pad {
   display: grid;
@@ -72,7 +76,7 @@ html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
 .cv2-key[data-dir="right"] { grid-column: 3; grid-row: 2; }
 .cv2-key[data-dir="down"]  { grid-column: 2; grid-row: 3; }
 
-.cv2-row { display: flex; gap: calc(var(--u) * 2); }
+.cv2-row { display: flex; gap: calc(var(--u) * 2); margin-bottom: calc(var(--u) * 14); }
 .cv2-btn { background: none; border: 1px solid #fff; color: #fff; font: inherit; padding: calc(var(--u) * 2) calc(var(--u) * 4); cursor: pointer; }
 .cv2-btn:disabled { opacity: 0.4; cursor: default; }
 .cv2-note { margin: 0; max-width: 40rem; text-align: center; opacity: 0.7; }

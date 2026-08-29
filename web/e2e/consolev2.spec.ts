@@ -6,7 +6,9 @@ import { DESK, PHONE, open, overflow } from "./lib";
  * a shelf and a settings screen. The rules it is held to, from the owner's
  * brief (2026-08-28):
  *
- *   - fullscreen and black, one line around the play area, nothing scrolls
+ *   - fullscreen and black, the screen across the whole width with no line
+ *     around it, the screen switches a small staggered stack at bottom-left
+ *     (owner, 2026-08-28), nothing scrolls
  *   - the four movement keys are game.js's own `[data-dir]` contract
  *   - the shelf lists MORE than the two built-ins: the registry's playable
  *     cartridges, two columns at phone width; the headless programs (the
@@ -18,13 +20,23 @@ import { DESK, PHONE, open, overflow } from "./lib";
 
 const P = "/6502/consolev2";
 
-test("black, fullscreen, one line, and nothing scrolls", async ({ page }) => {
+test("black, fullscreen, the screen across the width, the switches bottom-left, and nothing scrolls", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, P);
   const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".cv2")!).backgroundColor);
   expect(bg).toBe("rgb(0, 0, 0)");
   const line = await page.evaluate(() => getComputedStyle(document.querySelector(".cv2-screen")!).borderTopWidth);
-  expect(line).toBe("1px");
+  expect(line).toBe("0px");
+  const screen = await page.locator(".cv2-screen").boundingBox();
+  expect(screen!.width).toBe(PHONE.width);
+  // The three switches: a column at bottom-left, each stepped in further than the one above.
+  const tabs = await page.locator(".cv2-tab").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, h: r.height }; }));
+  expect(tabs).toHaveLength(3);
+  expect(tabs[0].x).toBeLessThan(tabs[1].x);
+  expect(tabs[1].x).toBeLessThan(tabs[2].x);
+  expect(tabs[0].y).toBeLessThan(tabs[1].y);
+  expect(tabs[2].y + tabs[2].h).toBeLessThanOrEqual(PHONE.height);
+  expect(tabs[2].y + tabs[2].h).toBeGreaterThan(PHONE.height * 0.8);
   expect((await overflow(page)).px).toBe(0);
   await expect(page.locator(".app-head, .site-head, .chip-transport")).toHaveCount(0);
 });
