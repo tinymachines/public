@@ -151,7 +151,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
         {/* game.js's #note: the running cartridge's blurb. It lives on the
             shelf rather than under the keys so the play screen is the screen
             and the controls, nothing else (owner, 2026-08-28). */}
-        <p className="cv2-note" id="note" />
+        <p className="cv2-blurb" id="note" />
         <h2 className="cv2-h">{T.builtIn}</h2>
         <div className="cv2-grid">
           {carts.map((c) => (
