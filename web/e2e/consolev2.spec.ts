@@ -37,6 +37,9 @@ test("black, fullscreen, the screen across the width, the switches bottom-left, 
   expect(tabs[0].y).toBeLessThan(tabs[1].y);
   expect(tabs[2].y + tabs[2].h).toBeLessThanOrEqual(PHONE.height);
   expect(tabs[2].y + tabs[2].h).toBeGreaterThan(PHONE.height * 0.8);
+  // The note under the buttons does not sit behind the stack.
+  const note = await page.locator("#note").boundingBox();
+  expect(note!.y + note!.height).toBeLessThanOrEqual(tabs[0].y);
   expect((await overflow(page)).px).toBe(0);
   await expect(page.locator(".app-head, .site-head, .chip-transport")).toHaveCount(0);
 });
