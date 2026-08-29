@@ -76,7 +76,6 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
             <button className="cv2-btn" id="b-power" type="button">power on</button>
             <button className="cv2-btn" id="b-pause" type="button" disabled>pause</button>
           </div>
-          <p className="cv2-note" id="note" />
           <p className="cv2-err" id="err" hidden />
         </div>
 

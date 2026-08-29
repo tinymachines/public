@@ -51,7 +51,9 @@ html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
 /* Play: the screen across the whole width, no line (owner, 2026-08-28), the
    keys under it. The box takes whatever height the keys and buttons leave;
    the canvas fits inside it, so the column never outgrows the viewport. */
-.cv2-play { flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * 3); /* The bottom padding is the height of the switch stack, so the note never sits behind it at phone height. */ padding: calc(var(--u) * 2) 0 calc(var(--u) * 26); }
+/* The controls sit at the very bottom, beside the switch stack; the screen
+   takes everything above them. */
+.cv2-play { flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: flex-end; gap: calc(var(--u) * 3); padding: calc(var(--u) * 2) 0; }
 .cv2-screen {
   width: 100%;
   flex: 1; min-height: 0;
@@ -79,7 +81,8 @@ html:has(.cv2), html:has(.cv2) body { overflow: hidden; background: #000; }
 .cv2-row { display: flex; gap: calc(var(--u) * 2); }
 .cv2-btn { background: none; border: 1px solid #fff; color: #fff; font: inherit; padding: calc(var(--u) * 2) calc(var(--u) * 4); cursor: pointer; }
 .cv2-btn:disabled { opacity: 0.4; cursor: default; }
-.cv2-note { margin: 0; max-width: 40rem; text-align: center; opacity: 0.7; }
+.cv2-note { margin: 0 0 calc(var(--u) * 3); max-width: 40rem; opacity: 0.7; }
+.cv2-note:empty { display: none; }
 .cv2-err { margin: 0; max-width: 40rem; text-align: center; }
 .cv2-err[hidden] { display: none; }
 

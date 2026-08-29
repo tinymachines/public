@@ -37,9 +37,13 @@ test("black, fullscreen, the screen across the width, the switches bottom-left, 
   expect(tabs[0].y).toBeLessThan(tabs[1].y);
   expect(tabs[2].y + tabs[2].h).toBeLessThanOrEqual(PHONE.height);
   expect(tabs[2].y + tabs[2].h).toBeGreaterThan(PHONE.height * 0.8);
-  // The note under the buttons does not sit behind the stack.
-  const note = await page.locator("#note").boundingBox();
-  expect(note!.y + note!.height).toBeLessThanOrEqual(tabs[0].y);
+  // The controls are at the very bottom, beside the stack, and the
+  // cartridge's blurb is on the shelf, not on the play screen.
+  const row = await page.locator(".cv2-row").boundingBox();
+  expect(row!.y + row!.height).toBeGreaterThan(PHONE.height * 0.9);
+  expect(row!.x).toBeGreaterThanOrEqual(tabs[2].x + 40);
+  await expect(page.locator(".cv2-play #note")).toHaveCount(0);
+  await expect(page.locator(".cv2-carts #note")).toHaveCount(1);
   expect((await overflow(page)).px).toBe(0);
   await expect(page.locator(".app-head, .site-head, .chip-transport")).toHaveCount(0);
 });
