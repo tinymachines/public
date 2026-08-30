@@ -67,6 +67,8 @@ let kind: EngineKind = "chip";
 /** An install in flight, so a second caller waits on the first. */
 let starting: Promise<void> | null = null;
 let refused: string | null = null;
+/** Where the refusal came from, so the right thing clears it. */
+let refusedBy: "transport" | "switch" | null = null;
 const watchers = new Set<() => void>();
 
 /** Whether the console's frames are running in this page right now. */
@@ -79,7 +81,14 @@ export function engineKind(): EngineKind | null {
   return on ? kind : null;
 }
 
-/** Why the in-page chip is not running, or null. Cleared by a call that lands. */
+/**
+ * Why the in-page chip is not running, or null. A refusal knows its source:
+ * a TRANSPORT refusal (a frame that failed here) is cleared by the next call
+ * that lands, and a SWITCH refusal (an engine that never started) stays
+ * until a switch lands or the API takes over. The frames landing on the old
+ * engine prove the transport works; they say nothing about the refused
+ * switch, and wiping its reason was exactly the bug (2026-08-30).
+ */
 export function refusal(): string | null {
   return refused;
 }
@@ -120,6 +129,7 @@ function thread(): Worker {
       waiting.clear();
       worker = null;
       refused = err.message;
+      refusedBy = "transport";
       on = false;
       delete (globalThis as Host).tm6502Transport;
       announce();
@@ -151,10 +161,11 @@ const transport: Transport = async (path, body) => {
     // The kind is read per call, like the transport itself: a switch between
     // the two in-page engines lands on the next frame, machine in hand.
     const out = await ask(path, body, kind);
-    if (refused) { refused = null; announce(); }
+    if (refused && refusedBy === "transport") { refused = null; refusedBy = null; announce(); }
     return out;
   } catch (e) {
     refused = e instanceof Error ? e.message : String(e);
+    refusedBy = "transport";
     announce();
     throw e;
   }
@@ -186,12 +197,14 @@ export function runHere(which: EngineKind = "chip"): Promise<void> {
     (globalThis as Host).tm6502Transport = transport;
     on = true;
     refused = null;
+    refusedBy = null;
     announce();
   }).catch((e) => {
     // A greeting that failed leaves whatever was answering before it (a
     // running rung keeps running, a cold start stays on the API), and the
     // reason is kept for the settings screen either way.
     refused = e instanceof Error ? e.message : String(e);
+    refusedBy = "switch";
     announce();
     throw e;
   }).finally(() => { if (starting === start) starting = null; });
@@ -208,5 +221,6 @@ export function runOverApi(): void {
   delete (globalThis as Host).tm6502Transport;
   on = false;
   refused = null;
+  refusedBy = null;
   announce();
 }
