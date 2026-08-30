@@ -5,8 +5,16 @@
  * HTTP, or this worker. It speaks the API's own two verbs so that the page
  * side is a transport and nothing more:
  *
- *   main -> here    { id, path: 'hello' | 'boot' | 'step', body }
+ *   main -> here    { id, path: 'hello' | 'boot' | 'step', body, engine }
  *   here -> main    { id, ok: true, answer } | { id, ok: false, error }
+ *
+ * `engine` picks which chip answers: 'chip' (rung 0, the switch-level
+ * solver) or 'hybrid' (rung 1, the same solver with the recognised gates
+ * folded into counters, bit-exact with rung 0 every node every half-cycle).
+ * The two hold the machine as the SAME value, so a run can cross between
+ * them mid-game; the page's settings screen is where that choice lives.
+ * A release whose glue has no HybridMachine refuses rung 1 by name rather
+ * than answering with the wrong chip.
  *
  * ## Why a worker and not just the chip in the page
  *
@@ -52,11 +60,11 @@ const CHIP = "/6502/chip";
  * because the panic left the borrow held. Nothing about the failure pointed
  * at its cause, which is what a race gets you.
  */
-let ready = null;
+let glueReady = null;
 
-function engine() {
-  if (!ready) {
-    ready = (async () => {
+function loadGlue() {
+  if (!glueReady) {
+    glueReady = (async () => {
       const res = await fetch(`${CHIP}/asset-manifest.json`, { cache: "no-cache" });
       if (!res.ok) {
         throw new Error(`the chip is not served here: ${CHIP}/asset-manifest.json answered ${res.status}`);
@@ -69,13 +77,37 @@ function engine() {
       // always match.
       const mod = await import(`${CHIP}/${glue}`);
       await mod.default();
-      return new mod.Machine();
+      return mod;
     })().catch((e) => {
-      ready = null; // a failed load is not a loaded chip; the next call retries
+      glueReady = null; // a failed load is not a loaded chip; the next call retries
       throw e;
     });
   }
-  return ready;
+  return glueReady;
+}
+
+/** One machine per engine, each held as its promise like the glue above. */
+const machines = new Map();
+
+function engine(kind) {
+  const which = kind === "hybrid" ? "hybrid" : "chip";
+  if (!machines.has(which)) {
+    const p = (async () => {
+      const mod = await loadGlue();
+      if (which === "hybrid") {
+        if (typeof mod.HybridMachine !== "function") {
+          throw new Error("this chip release has no rung 1 (HybridMachine); the 6502 site needs a newer release");
+        }
+        return new mod.HybridMachine();
+      }
+      return new mod.Machine();
+    })().catch((e) => {
+      machines.delete(which); // a refused engine is not a loaded engine
+      throw e;
+    });
+    machines.set(which, p);
+  }
+  return machines.get(which);
 }
 
 const pageBytes = (hex) => {
@@ -124,12 +156,12 @@ function sample(m, names) {
  * Any other path is refused rather than answered with an `undefined` the
  * console would carry as a machine.
  */
-async function answer(path, body) {
+async function answer(path, body, kind) {
   if (path === "hello") {
-    await engine();
+    await engine(kind);
     return { ok: true };
   }
-  const m = await engine();
+  const m = await engine(kind);
   const watch = body?.watch;
   if (path === "boot") {
     const mem = body?.memory ?? { fill: "00", pages: {} };
@@ -155,9 +187,9 @@ async function answer(path, body) {
 }
 
 self.onmessage = async (e) => {
-  const { id, path, body } = e.data ?? {};
+  const { id, path, body, engine: kind } = e.data ?? {};
   try {
-    self.postMessage({ id, ok: true, answer: await answer(path, body) });
+    self.postMessage({ id, ok: true, answer: await answer(path, body, kind) });
   } catch (err) {
     self.postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) });
   }

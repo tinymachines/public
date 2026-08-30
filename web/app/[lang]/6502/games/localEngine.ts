@@ -49,11 +49,21 @@ type Host = typeof globalThis & { tm6502Transport?: Transport };
 
 const WORKER = "/engine/console-chip.worker.mjs";
 
+/**
+ * Which chip in this page answers: rung 0 (`chip`, the switch-level solver)
+ * or rung 1 (`hybrid`, the same solver with the recognised gates folded into
+ * counters, bit-exact with rung 0 every node every half-cycle). The machine
+ * is the same value on both, so switching mid-game hands the run over
+ * whole, exactly as switching to the API does.
+ */
+export type EngineKind = "chip" | "hybrid";
+
 let worker: Worker | null = null;
 let nextId = 1;
 const waiting = new Map<number, { ok: (a: Answer) => void; no: (e: Error) => void }>();
 
 let on = false;
+let kind: EngineKind = "chip";
 /** An install in flight, so a second caller waits on the first. */
 let starting: Promise<void> | null = null;
 let refused: string | null = null;
@@ -62,6 +72,11 @@ const watchers = new Set<() => void>();
 /** Whether the console's frames are running in this page right now. */
 export function inPage(): boolean {
   return on;
+}
+
+/** Which in-page engine is answering, or null while the API is. */
+export function engineKind(): EngineKind | null {
+  return on ? kind : null;
 }
 
 /** Why the in-page chip is not running, or null. Cleared by a call that lands. */
@@ -114,12 +129,12 @@ function thread(): Worker {
   return worker;
 }
 
-function ask(path: string, body: Record<string, unknown>): Promise<Answer> {
+function ask(path: string, body: Record<string, unknown>, engine: EngineKind): Promise<Answer> {
   const id = nextId++;
   const w = thread();
   return new Promise<Answer>((ok, no) => {
     waiting.set(id, { ok, no });
-    w.postMessage({ id, path, body });
+    w.postMessage({ id, path, body, engine });
   });
 }
 
@@ -133,7 +148,9 @@ function ask(path: string, body: Record<string, unknown>): Promise<Answer> {
  */
 const transport: Transport = async (path, body) => {
   try {
-    const out = await ask(path, body);
+    // The kind is read per call, like the transport itself: a switch between
+    // the two in-page engines lands on the next frame, machine in hand.
+    const out = await ask(path, body, kind);
     if (refused) { refused = null; announce(); }
     return out;
   } catch (e) {
@@ -151,30 +168,35 @@ const transport: Transport = async (path, body) => {
  * mid-game: the caller (ConsoleDriver) puts the console back on the API and
  * `refusal()` is what the settings page shows. Idempotent.
  */
-export function runHere(): Promise<void> {
-  if (on) return Promise.resolve();
+export function runHere(which: EngineKind = "chip"): Promise<void> {
+  if (on && kind === which) return Promise.resolve();
   // The PROMISE is kept, not just the flag: the store announces more than
   // once at mount and every announce asks the driver to follow it, so two
   // installs used to start a millisecond apart, and both greeted the chip
   // before either had set the flag. The worker's own comment has what that
   // cost (two wasm instances, a console that played fourteen frames and
-  // then trapped).
-  if (!starting) {
-    starting = (async () => {
-      if (typeof Worker !== "function") throw new Error("this browser has no workers to run the chip on");
-      await ask("hello", {});
-      (globalThis as Host).tm6502Transport = transport;
-      on = true;
-      refused = null;
-      announce();
-    })().catch((e) => {
-      on = false;
-      refused = e instanceof Error ? e.message : String(e);
-      announce();
-      throw e;
-    }).finally(() => { starting = null; });
-  }
-  return starting;
+  // then trapped). With two in-page engines the starts are serialised for
+  // the same reason: the second wish waits for the first greeting, then
+  // greets its own chip.
+  const start = (starting ?? Promise.resolve()).catch(() => {}).then(async () => {
+    if (on && kind === which) return;
+    if (typeof Worker !== "function") throw new Error("this browser has no workers to run the chip on");
+    await ask("hello", {}, which);
+    kind = which;
+    (globalThis as Host).tm6502Transport = transport;
+    on = true;
+    refused = null;
+    announce();
+  }).catch((e) => {
+    // A greeting that failed leaves whatever was answering before it (a
+    // running rung keeps running, a cold start stays on the API), and the
+    // reason is kept for the settings screen either way.
+    refused = e instanceof Error ? e.message : String(e);
+    announce();
+    throw e;
+  }).finally(() => { if (starting === start) starting = null; });
+  starting = start;
+  return start;
 }
 
 /**

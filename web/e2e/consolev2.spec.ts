@@ -102,7 +102,8 @@ test("the settings screen has the engine and the speed", async ({ page }) => {
   await open(page, P);
   await page.getByRole("button", { name: "settings" }).click();
   const opts = page.locator(".cv2-settings .cv2-opt");
-  await expect(opts).toHaveCount(4);
+  await expect(opts).toHaveCount(5);
+  await expect(opts.filter({ hasText: "rung 1" })).toHaveCount(1);
   await expect(opts.filter({ hasText: "API" })).toHaveCount(1);
   await opts.filter({ hasText: /^slow/ }).click();
   expect(await page.locator("[data-frame-ms]").getAttribute("data-frame-ms")).toBe("250");
