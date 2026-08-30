@@ -9,11 +9,13 @@
  *   here -> main    { id, ok: true, answer } | { id, ok: false, error }
  *
  * `engine` picks which chip answers: 'chip' (rung 0, the switch-level
- * solver) or 'hybrid' (rung 1, the same solver with the recognised gates
- * folded into counters, bit-exact with rung 0 every node every half-cycle).
- * The two hold the machine as the SAME value, so a run can cross between
- * them mid-game; the page's settings screen is where that choice lives.
- * A release whose glue has no HybridMachine refuses rung 1 by name rather
+ * solver), 'hybrid' (rung 1, the same solver with the recognised gates
+ * folded into counters, bit-exact with rung 0 every node every half-cycle),
+ * or 'compiled' (rung 2, the recognised network as generated code, held to
+ * rung 0 at the pins, the gates and the memory rather than node for node).
+ * All of them hold the machine as the SAME value, so a run can cross
+ * between them mid-game; the page's settings screen is where that choice
+ * lives. A release whose glue lacks an engine refuses it by name rather
  * than answering with the wrong chip.
  *
  * ## Why a worker and not just the chip in the page
@@ -90,7 +92,7 @@ function loadGlue() {
 const machines = new Map();
 
 function engine(kind) {
-  const which = kind === "hybrid" ? "hybrid" : "chip";
+  const which = kind === "hybrid" || kind === "compiled" ? kind : "chip";
   if (!machines.has(which)) {
     const p = (async () => {
       const mod = await loadGlue();
@@ -99,6 +101,12 @@ function engine(kind) {
           throw new Error("this chip release has no rung 1 (HybridMachine); the 6502 site needs a newer release");
         }
         return new mod.HybridMachine();
+      }
+      if (which === "compiled") {
+        if (typeof mod.CompiledMachine !== "function") {
+          throw new Error("this chip release has no rung 2 (CompiledMachine); the 6502 site needs a newer release");
+        }
+        return new mod.CompiledMachine();
       }
       return new mod.Machine();
     })().catch((e) => {

@@ -14,7 +14,10 @@ import { DESK, open } from "./lib";
  * and over the API and compares everything that came back, including the
  * eight gates the cartridge watches; the second does the same on rung 1,
  * which is bit-exact with rung 0 by construction and held to it here at the
- * machine value.
+ * machine value. Rung 2 (the recognised network as generated code) is NOT
+ * node-exact by nature, so its test holds it at the pins, the gates,
+ * `half_cycle`, `last_fetch` and the memory instead; the test itself says
+ * why the rest is excluded.
  *
  * The rest is the switch: the strip's engine key and the settings page's row
  * are two views of one choice, a console that arrives with no choice recorded
@@ -213,6 +216,102 @@ test("rung 1 in the page answers the same frame as the API, byte for byte", asyn
   expect(out.pages, "the machine carries its memory").toBeGreaterThan(2);
   expect(out.unknownNodes, "every watched line is a node on this die").toEqual([]);
   expect(out.stepChip, "the chip state after one frame").toEqual([]);
+  expect(out.stepMemory, "the memory after one frame").toEqual([]);
+  expect(Object.keys(out.hereWatch).length, "eight gates").toBe(8);
+  expect(out.hereWatch, "the gates sampled on each chip").toEqual(out.apiWatch);
+});
+
+test("rung 2 in the page answers the same frame as the API at the pins, the gates and the memory", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await chipServed(page);
+
+  const has = await page.evaluate(async () => {
+    const manifest = await (await fetch("/6502/chip/asset-manifest.json")).json();
+    const wasm = await import(/* webpackIgnore: true */ "/6502/chip/" + manifest["pkg/v6502_wasm.js"]);
+    return typeof wasm.CompiledMachine === "function";
+  });
+  test.skip(!has, "this chip release has no rung 2 (CompiledMachine) yet");
+
+  const out = await page.evaluate(async ({ WATCH, FRAME, ORG }) => {
+    const manifest = await (await fetch("/6502/chip/asset-manifest.json")).json();
+    const wasm = await import(/* webpackIgnore: true */ "/6502/chip/" + manifest["pkg/v6502_wasm.js"]);
+    await wasm.default();
+    const chip = new wasm.CompiledMachine();
+
+    const rom = new Uint8Array(await (await fetch("/6502/games/rom/dierunner.rom")).arrayBuffer());
+    const pages: Record<string, string> = {};
+    const hex = (bytes: number[]) => bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+    for (let n = 0; n < rom.length; n += 256) {
+      const addr = ORG + n, key = (addr >> 8).toString(16).padStart(2, "0"), off = addr & 0xff;
+      const page = new Array(256).fill(0);
+      for (let i = 0; i + off < 256 && n + i < rom.length; i++) page[off + i] = rom[n + i];
+      pages[key] = hex(page);
+    }
+    const vec = new Array(256).fill(0);
+    vec[0xfc] = ORG & 0xff; vec[0xfd] = ORG >> 8;
+    pages.ff = hex(vec);
+    const memory = { fill: "00", pages };
+
+    const api = (document.querySelector("[data-chip-api]") as HTMLElement).dataset.chipApi;
+    const post = async (path: string, body: unknown) => {
+      const r = await fetch(`${api}/v1/${path}`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
+      return r.json();
+    };
+
+    const apiBoot = await post("boot", { memory, watch: WATCH });
+    // The crossing itself: the API's booted machine resumes on rung 2, the
+    // way a mid-game engine switch hands it over, and the frame runs here.
+    const s = apiBoot.machine.state;
+    const keys = Object.keys(apiBoot.machine.memory.pages);
+    const ids = new Uint8Array(keys.map((k: string) => parseInt(k, 16)));
+    const bytes = new Uint8Array(keys.length * 256);
+    keys.forEach((k: string, i: number) => {
+      const hexPage = apiBoot.machine.memory.pages[k];
+      for (let j = 0; j < 256; j++) bytes[i * 256 + j] = parseInt(hexPage.slice(j * 2, j * 2 + 2), 16);
+    });
+    chip.importMachine(s.value, s.pullup, s.pulldown, s.trans_on, s.half_cycle,
+      s.last_fetch ? s.last_fetch.addr : -1, s.last_fetch ? s.last_fetch.opcode : 0,
+      parseInt(apiBoot.machine.memory.fill, 16), ids, bytes);
+
+    const apiStep = await post("step", { machine: apiBoot.machine, half_cycles: FRAME, watch: WATCH });
+    chip.runHalfCycles(FRAME);
+    const hereStep = JSON.parse(chip.exportMachine());
+    const hereWatch: Record<string, boolean> = {};
+    for (const name of WATCH) hereWatch[name] = chip.isNodeHigh(chip.nodeId(name));
+
+    const memoryDiff = (a: { pages: Record<string, string> }, b: { pages: Record<string, string> }) =>
+      [...new Set([...Object.keys(a.pages), ...Object.keys(b.pages)])].filter((k) => a.pages[k] !== b.pages[k]);
+
+    return {
+      unknownNodes: WATCH.filter((n) => chip.nodeId(n) < 0),
+      stepMemory: memoryDiff(hereStep.memory, apiStep.machine.memory),
+      halfCycle: hereStep.state.half_cycle,
+      apiHalfCycle: apiStep.machine.state.half_cycle,
+      lastFetch: hereStep.state.last_fetch,
+      apiLastFetch: apiStep.machine.state.last_fetch,
+      pages: Object.keys(hereStep.memory.pages).length,
+      hereWatch,
+      apiWatch: apiStep.observe.watch,
+    };
+  }, { WATCH, FRAME, ORG });
+
+  // Rung 2 is the recognised network as generated code and is NOT node-exact
+  // with rung 0 by nature: `value`, `pullup`, `pulldown` and `trans_on` are
+  // EXPECTED to differ, and comparing them would fail on what the rung is,
+  // not on a bug. Do not "fix" this test into a state comparison. What the
+  // 6502 side proves at every half-cycle both directions (tests/crossing.rs,
+  // 20,000/20,000 after a mid-run crossing) is what is held here: the pins
+  // and watched gates, `half_cycle`, `last_fetch`, and the memory image.
+  expect(out.halfCycle, "the frame ran on rung 2").toBe(FRAME);
+  expect(out.apiHalfCycle, "and over the API").toBe(FRAME);
+  expect(out.pages, "the machine carries its memory").toBeGreaterThan(2);
+  expect(out.unknownNodes, "every watched line is a node on this die").toEqual([]);
+  expect(out.lastFetch, "the last fetch after one frame").toEqual(out.apiLastFetch);
   expect(out.stepMemory, "the memory after one frame").toEqual([]);
   expect(Object.keys(out.hereWatch).length, "eight gates").toBe(8);
   expect(out.hereWatch, "the gates sampled on each chip").toEqual(out.apiWatch);

@@ -50,13 +50,15 @@ type Host = typeof globalThis & { tm6502Transport?: Transport };
 const WORKER = "/engine/console-chip.worker.mjs";
 
 /**
- * Which chip in this page answers: rung 0 (`chip`, the switch-level solver)
- * or rung 1 (`hybrid`, the same solver with the recognised gates folded into
- * counters, bit-exact with rung 0 every node every half-cycle). The machine
- * is the same value on both, so switching mid-game hands the run over
+ * Which chip in this page answers: rung 0 (`chip`, the switch-level solver),
+ * rung 1 (`hybrid`, the same solver with the recognised gates folded into
+ * counters, bit-exact with rung 0 every node every half-cycle), or rung 2
+ * (`compiled`, the recognised network as generated code, held to rung 0 at
+ * the pins, the gates and the memory rather than node for node). The machine
+ * is the same value on all of them, so switching mid-game hands the run over
  * whole, exactly as switching to the API does.
  */
-export type EngineKind = "chip" | "hybrid";
+export type EngineKind = "chip" | "hybrid" | "compiled";
 
 let worker: Worker | null = null;
 let nextId = 1;

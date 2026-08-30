@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Lang } from "@/lib/lang";
 import type { Builder, Index, Rom } from "@/lib/registry";
-import { engineKind, inPage, refusal, runHere, runOverApi, watchEngine } from "../games/localEngine";
+import { engineKind, refusal, runHere, runOverApi, watchEngine } from "../games/localEngine";
 
 /**
  * The three screens of console v2: play, cartridges, settings.
@@ -31,7 +31,7 @@ const S = {
     play: "play", carts: "cartridges", settings: "settings",
     builtIn: "built in", loading: "loading", failed: "could not load",
     registry: "published", fetching: "reading the registry", none: "the registry answered with nothing playable",
-    engine: "engine", local: "the chip in this page", hybrid: "rung 1 in this page: the gates folded, bit-exact", api: "halfwave over the API",
+    engine: "engine", local: "the chip in this page", hybrid: "rung 1 in this page: the gates folded, bit-exact", compiled: "rung 2 in this page: the network as code, held at the pins", api: "halfwave over the API",
     speed: "speed", fast: "fast: as quick as the frame returns", slow: `slow: one frame every ${SLOW_MS} ms`,
     readout: "readout", by: "by",
   },
@@ -39,7 +39,7 @@ const S = {
     play: "プレイ", carts: "カートリッジ", settings: "設定",
     builtIn: "内蔵", loading: "読み込み中", failed: "読み込めなかった",
     registry: "公開済み", fetching: "レジストリを読んでいる", none: "レジストリに遊べるものがなかった",
-    engine: "エンジン", local: "このページ内のチップ", hybrid: "このページ内のラング 1（ゲート畳み込み、ビット一致）", api: "API 経由の halfwave",
+    engine: "エンジン", local: "このページ内のチップ", hybrid: "このページ内のラング 1（ゲート畳み込み、ビット一致）", compiled: "このページ内のラング 2（ネットワークをコード化、ピンで一致）", api: "API 経由の halfwave",
     speed: "速度", fast: "fast: フレームが戻り次第", slow: `slow: ${SLOW_MS} ms に 1 フレーム`,
     readout: "読み出し", by: "作",
   },
@@ -61,7 +61,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
   const [failed, setFailed] = useState<Record<string, string>>({});
   const [roms, setRoms] = useState<Rom[] | null>(null);
   const [romsErr, setRomsErr] = useState<string | null>(null);
-  const [engine, setEngine] = useState<"local" | "hybrid" | "api">("api");
+  const [engine, setEngine] = useState<"local" | "hybrid" | "compiled" | "api">("api");
   const [why, setWhy] = useState<string | null>(null);
   const [pace, setPace] = useState<"fast" | "slow">("fast");
 
@@ -69,7 +69,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
   // console starts there too. A browser that cannot run it says why on the
   // settings screen and the frames go over the API instead.
   useEffect(() => {
-    const paint = () => { setEngine(inPage() ? (engineKind() === "hybrid" ? "hybrid" : "local") : "api"); setWhy(refusal()); };
+    const paint = () => { const k = engineKind(); setEngine(k === null ? "api" : k === "chip" ? "local" : k); setWhy(refusal()); };
     const off = watchEngine(paint);
     runHere().catch(() => {}).finally(paint);
     return off;
@@ -129,9 +129,9 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
     }
   }, [chipApi, busy]);
 
-  const chooseEngine = useCallback(async (which: "local" | "hybrid" | "api") => {
+  const chooseEngine = useCallback(async (which: "local" | "hybrid" | "compiled" | "api") => {
     if (which === "api") { runOverApi(); return; }
-    try { await runHere(which === "hybrid" ? "hybrid" : "chip"); } catch { /* refusal() has the reason; the watcher paints it */ }
+    try { await runHere(which === "local" ? "chip" : which); } catch { /* refusal() has the reason; the watcher paints it */ }
   }, []);
 
   return (
@@ -185,6 +185,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
         <div className="cv2-opts">
           <button type="button" className="cv2-opt" aria-pressed={engine === "local"} onClick={() => chooseEngine("local")}>{T.local}</button>
           <button type="button" className="cv2-opt" aria-pressed={engine === "hybrid"} onClick={() => chooseEngine("hybrid")}>{T.hybrid}</button>
+          <button type="button" className="cv2-opt" aria-pressed={engine === "compiled"} onClick={() => chooseEngine("compiled")}>{T.compiled}</button>
           <button type="button" className="cv2-opt" aria-pressed={engine === "api"} onClick={() => chooseEngine("api")}>{T.api}</button>
         </div>
         {why && <p className="cv2-err">{why}</p>}
