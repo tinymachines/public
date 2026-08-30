@@ -89,6 +89,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "True random bytes from radioactive decay: a Geiger counter on a Pi, with bits taken from the timing between events.",
   },
+  "/hotbits/space": {
+    title: "The entropy, drawn",
+    description:
+      "Four views of the same radioactive decay: a 3D field, a return map, a bit raster, and the measurements in phase space. Read from the archive, never the fresh pool.",
+  },
   "/hotbits/api": {
     title: "The hotbits API",
     description:

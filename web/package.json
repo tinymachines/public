@@ -1,6 +1,6 @@
 {
   "name": "tinymachines-web",
-  "version": "1.0.176",
+  "version": "1.0.177",
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 6511",
@@ -16,13 +16,16 @@
     "@mdx-js/loader": "^3.1.1",
     "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.3.2",
+    "@react-three/drei": "10.7.7",
+    "@react-three/fiber": "9.6.1",
     "@types/mdx": "^2.0.14",
     "gray-matter": "^4.0.3",
     "next": "16.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "remark-frontmatter": "^5.0.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "three": "0.184.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
