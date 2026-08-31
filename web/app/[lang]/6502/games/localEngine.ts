@@ -27,10 +27,15 @@
  * (it embeds die data; NOTICE.md).
  */
 
-/** A machine, in the shape the API carries it and `console.js` holds it. */
+/** A machine, in the shape the API carries it and `console.js` holds it.
+ * The node engines carry four hex planes; rung 3 carries `micro`, its own
+ * value, where the planes would be. Exactly one of the two shapes is
+ * present, and the worker refuses a machine handed to an engine that
+ * cannot continue it. */
 export interface Machine {
   state: {
-    value: string; pullup: string; pulldown: string; trans_on: string;
+    value?: string; pullup?: string; pulldown?: string; trans_on?: string;
+    micro?: string;
     half_cycle: number;
     last_fetch: { addr: number; opcode: number } | null;
   };
@@ -52,13 +57,18 @@ const WORKER = "/engine/console-chip.worker.mjs";
 /**
  * Which chip in this page answers: rung 0 (`chip`, the switch-level solver),
  * rung 1 (`hybrid`, the same solver with the recognised gates folded into
- * counters, bit-exact with rung 0 every node every half-cycle), or rung 2
+ * counters, bit-exact with rung 0 every node every half-cycle), rung 2
  * (`compiled`, the recognised network as generated code, held to rung 0 at
- * the pins, the gates and the memory rather than node for node). The machine
- * is the same value on all of them, so switching mid-game hands the run over
- * whole, exactly as switching to the API does.
+ * the pins, the gates and the memory rather than node for node), or rung 3
+ * (`micro`, no nodes at all: the control table measured out of rung 0,
+ * held to the whole pin golden, and quick enough for real time). The
+ * machine is the same value on the first three, so switching among them or
+ * to the API hands the run over whole. Rung 3's machine value is ITS OWN
+ * (state.micro on the wire), so a run cannot cross onto or off it
+ * mid-game: the worker refuses by name, and pressing power starts the
+ * cartridge on the chosen engine.
  */
-export type EngineKind = "chip" | "hybrid" | "compiled";
+export type EngineKind = "chip" | "hybrid" | "compiled" | "micro";
 
 let worker: Worker | null = null;
 let nextId = 1;

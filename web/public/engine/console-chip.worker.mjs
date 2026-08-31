@@ -11,12 +11,16 @@
  * `engine` picks which chip answers: 'chip' (rung 0, the switch-level
  * solver), 'hybrid' (rung 1, the same solver with the recognised gates
  * folded into counters, bit-exact with rung 0 every node every half-cycle),
- * or 'compiled' (rung 2, the recognised network as generated code, held to
- * rung 0 at the pins, the gates and the memory rather than node for node).
- * All of them hold the machine as the SAME value, so a run can cross
- * between them mid-game; the page's settings screen is where that choice
- * lives. A release whose glue lacks an engine refuses it by name rather
- * than answering with the wrong chip.
+ * 'compiled' (rung 2, the recognised network as generated code, held to
+ * rung 0 at the pins, the gates and the memory rather than node for node),
+ * or 'micro' (rung 3, no nodes at all: the measured control table through
+ * the authored datapath, held to the whole pin golden, quick enough for
+ * real time). The first three hold the machine as the SAME value, so a run
+ * can cross between them mid-game; rung 3's value is its own
+ * (`state.micro`), so `put` refuses a handover in either direction by
+ * name, and the way onto or off that rung is the power switch. The page's
+ * settings screen is where the choice lives. A release whose glue lacks an
+ * engine refuses it by name rather than answering with the wrong chip.
  *
  * ## Why a worker and not just the chip in the page
  *
@@ -92,7 +96,7 @@ function loadGlue() {
 const machines = new Map();
 
 function engine(kind) {
-  const which = kind === "hybrid" || kind === "compiled" ? kind : "chip";
+  const which = kind === "hybrid" || kind === "compiled" || kind === "micro" ? kind : "chip";
   if (!machines.has(which)) {
     const p = (async () => {
       const mod = await loadGlue();
@@ -107,6 +111,12 @@ function engine(kind) {
           throw new Error("this chip release has no rung 2 (CompiledMachine); the 6502 site needs a newer release");
         }
         return new mod.CompiledMachine();
+      }
+      if (which === "micro") {
+        if (typeof mod.MicroMachine !== "function") {
+          throw new Error("this chip release has no rung 3 (MicroMachine); the 6502 site needs a newer release");
+        }
+        return new mod.MicroMachine();
       }
       return new mod.Machine();
     })().catch((e) => {
@@ -124,7 +134,12 @@ const pageBytes = (hex) => {
   return out;
 };
 
-/** Put a machine into the chip: the state and its memory, or neither. */
+/** Put a machine into the chip: the state and its memory, or neither.
+ *
+ * Two shapes exist and each engine continues only its own: the node
+ * engines take the four hex planes, rung 3 takes `state.micro`. A machine
+ * handed across that line is refused with the way out named, because
+ * continuing it would mean inventing state the engine does not have. */
 function put(m, machine) {
   const s = machine.state;
   const mem = machine.memory ?? { fill: "00", pages: {} };
@@ -132,6 +147,16 @@ function put(m, machine) {
   const ids = new Uint8Array(keys.map((k) => parseInt(k, 16)));
   const bytes = new Uint8Array(keys.length * 256);
   keys.forEach((k, i) => bytes.set(pageBytes(mem.pages[k]), i * 256));
+  if (typeof m.importMicro === "function") {
+    if (!s.micro) {
+      throw new Error("this run's machine is a node engine's; rung 3 carries its own and cannot continue it. Press power to start the cartridge on rung 3.");
+    }
+    m.importMicro(s.micro, parseInt(mem.fill ?? "00", 16), ids, bytes);
+    return;
+  }
+  if (s.micro) {
+    throw new Error("this run's machine is rung 3's own; a node engine cannot continue it. Press power to start the cartridge on this engine.");
+  }
   m.importMachine(
     s.value, s.pullup, s.pulldown, s.trans_on, s.half_cycle,
     s.last_fetch ? s.last_fetch.addr : -1,

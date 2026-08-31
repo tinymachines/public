@@ -31,7 +31,7 @@ const S = {
     play: "play", carts: "cartridges", settings: "settings",
     builtIn: "built in", loading: "loading", failed: "could not load",
     registry: "published", fetching: "reading the registry", none: "the registry answered with nothing playable",
-    engine: "engine", local: "the chip in this page", hybrid: "rung 1 in this page: the gates folded, bit-exact", compiled: "rung 2 in this page: the network as code, held at the pins", api: "halfwave over the API",
+    engine: "engine", local: "the chip in this page", hybrid: "rung 1 in this page: the gates folded, bit-exact", compiled: "rung 2 in this page: the network as code, held at the pins", micro: "rung 3 in this page: the measured microcode, real time; carries its own machine, so it starts at the power switch", api: "halfwave over the API",
     speed: "speed", fast: "fast: as quick as the frame returns", slow: `slow: one frame every ${SLOW_MS} ms`,
     readout: "readout", by: "by",
   },
@@ -39,7 +39,7 @@ const S = {
     play: "プレイ", carts: "カートリッジ", settings: "設定",
     builtIn: "内蔵", loading: "読み込み中", failed: "読み込めなかった",
     registry: "公開済み", fetching: "レジストリを読んでいる", none: "レジストリに遊べるものがなかった",
-    engine: "エンジン", local: "このページ内のチップ", hybrid: "このページ内のラング 1（ゲート畳み込み、ビット一致）", compiled: "このページ内のラング 2（ネットワークをコード化、ピンで一致）", api: "API 経由の halfwave",
+    engine: "エンジン", local: "このページ内のチップ", hybrid: "このページ内のラング 1（ゲート畳み込み、ビット一致）", compiled: "このページ内のラング 2（ネットワークをコード化、ピンで一致）", micro: "このページ内のラング 3（実測マイクロコード、リアルタイム。マシンを独自に持つため、開始は電源スイッチから）", api: "API 経由の halfwave",
     speed: "速度", fast: "fast: フレームが戻り次第", slow: `slow: ${SLOW_MS} ms に 1 フレーム`,
     readout: "読み出し", by: "作",
   },
@@ -61,7 +61,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
   const [failed, setFailed] = useState<Record<string, string>>({});
   const [roms, setRoms] = useState<Rom[] | null>(null);
   const [romsErr, setRomsErr] = useState<string | null>(null);
-  const [engine, setEngine] = useState<"local" | "hybrid" | "compiled" | "api">("api");
+  const [engine, setEngine] = useState<"local" | "hybrid" | "compiled" | "micro" | "api">("api");
   const [why, setWhy] = useState<string | null>(null);
   const [pace, setPace] = useState<"fast" | "slow">("fast");
 
@@ -129,7 +129,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
     }
   }, [chipApi, busy]);
 
-  const chooseEngine = useCallback(async (which: "local" | "hybrid" | "compiled" | "api") => {
+  const chooseEngine = useCallback(async (which: "local" | "hybrid" | "compiled" | "micro" | "api") => {
     if (which === "api") { runOverApi(); return; }
     try { await runHere(which === "local" ? "chip" : which); } catch { /* refusal() has the reason; the watcher paints it */ }
   }, []);
@@ -186,6 +186,7 @@ export function ConsoleV2({ lang, carts, chipApi, children }: { lang: Lang; cart
           <button type="button" className="cv2-opt" aria-pressed={engine === "local"} onClick={() => chooseEngine("local")}>{T.local}</button>
           <button type="button" className="cv2-opt" aria-pressed={engine === "hybrid"} onClick={() => chooseEngine("hybrid")}>{T.hybrid}</button>
           <button type="button" className="cv2-opt" aria-pressed={engine === "compiled"} onClick={() => chooseEngine("compiled")}>{T.compiled}</button>
+          <button type="button" className="cv2-opt" aria-pressed={engine === "micro"} onClick={() => chooseEngine("micro")}>{T.micro}</button>
           <button type="button" className="cv2-opt" aria-pressed={engine === "api"} onClick={() => chooseEngine("api")}>{T.api}</button>
         </div>
         {why && <p className="cv2-err">{why}</p>}

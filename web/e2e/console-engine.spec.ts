@@ -317,6 +317,168 @@ test("rung 2 in the page answers the same frame as the API at the pins, the gate
   expect(out.hereWatch, "the gates sampled on each chip").toEqual(out.apiWatch);
 });
 
+test("rung 3 in the page answers the same frame as the API at the memory, the gates and the fetch, through its own machine value", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await chipServed(page);
+
+  const has = await page.evaluate(async () => {
+    const manifest = await (await fetch("/6502/chip/asset-manifest.json")).json();
+    const wasm = await import(/* webpackIgnore: true */ "/6502/chip/" + manifest["pkg/v6502_wasm.js"]);
+    return typeof wasm.MicroMachine === "function";
+  });
+  test.skip(!has, "this chip release has no rung 3 (MicroMachine) yet");
+
+  const out = await page.evaluate(async ({ WATCH, FRAME, ORG }) => {
+    const manifest = await (await fetch("/6502/chip/asset-manifest.json")).json();
+    const wasm = await import(/* webpackIgnore: true */ "/6502/chip/" + manifest["pkg/v6502_wasm.js"]);
+    await wasm.default();
+
+    const rom = new Uint8Array(await (await fetch("/6502/games/rom/dierunner.rom")).arrayBuffer());
+    const pages: Record<string, string> = {};
+    const hex = (bytes: number[]) => bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+    for (let n = 0; n < rom.length; n += 256) {
+      const addr = ORG + n, key = (addr >> 8).toString(16).padStart(2, "0"), off = addr & 0xff;
+      const page = new Array(256).fill(0);
+      for (let i = 0; i + off < 256 && n + i < rom.length; i++) page[off + i] = rom[n + i];
+      pages[key] = hex(page);
+    }
+    const vec = new Array(256).fill(0);
+    vec[0xfc] = ORG & 0xff; vec[0xfd] = ORG >> 8;
+    pages.ff = hex(vec);
+    const memory = { fill: "00", pages };
+
+    const api = (document.querySelector("[data-chip-api]") as HTMLElement).dataset.chipApi;
+    const post = async (path: string, body: unknown) => {
+      const r = await fetch(`${api}/v1/${path}`, {
+        method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
+      return r.json();
+    };
+    const lay = (m: { fillMemory: (b: number) => void; load: (a: number, b: Uint8Array) => void }) => {
+      m.fillMemory(0);
+      for (const [key, page] of Object.entries(memory.pages)) {
+        const bytes = new Uint8Array(256);
+        for (let i = 0; i < 256; i++) bytes[i] = parseInt((page as string).slice(i * 2, i * 2 + 2), 16);
+        m.load(parseInt(key, 16) << 8, bytes);
+      }
+    };
+
+    const apiBoot = await post("boot", { memory, watch: WATCH });
+    const apiStep = await post("step", { machine: apiBoot.machine, half_cycles: FRAME, watch: WATCH });
+
+    // Rung 3 cannot take the API's node-shaped machine, and says so: the
+    // same image boots here, and its own value crosses the export/import
+    // seam once (a fresh MicroMachine continues it), which is exactly what
+    // every console frame does.
+    const a = new wasm.MicroMachine();
+    lay(a);
+    a.powerCycle();
+    const booted = JSON.parse(a.exportMachine());
+    const b = new wasm.MicroMachine();
+    const keys = Object.keys(booted.memory.pages);
+    const ids = new Uint8Array(keys.map((k: string) => parseInt(k, 16)));
+    const bytes = new Uint8Array(keys.length * 256);
+    keys.forEach((k: string, i: number) => {
+      const hexPage = booted.memory.pages[k];
+      for (let j = 0; j < 256; j++) bytes[i * 256 + j] = parseInt(hexPage.slice(j * 2, j * 2 + 2), 16);
+    });
+    b.importMicro(booted.state.micro, parseInt(booted.memory.fill, 16), ids, bytes);
+    b.runHalfCycles(FRAME);
+    const hereStep = JSON.parse(b.exportMachine());
+    const hereWatch: Record<string, boolean> = {};
+    for (const name of WATCH) hereWatch[name] = b.isNodeHigh(b.nodeId(name));
+
+    const memoryDiff = (x: { pages: Record<string, string> }, y: { pages: Record<string, string> }) =>
+      [...new Set([...Object.keys(x.pages), ...Object.keys(y.pages)])].filter((k) => x.pages[k] !== y.pages[k]);
+
+    return {
+      unknownNodes: WATCH.filter((n) => b.nodeId(n) < 0),
+      micro: typeof hereStep.state.micro,
+      planes: hereStep.state.value === undefined,
+      stepMemory: memoryDiff(hereStep.memory, apiStep.machine.memory),
+      halfCycle: hereStep.state.half_cycle,
+      apiHalfCycle: apiStep.machine.state.half_cycle,
+      lastFetch: hereStep.state.last_fetch,
+      apiLastFetch: apiStep.machine.state.last_fetch,
+      pages: Object.keys(hereStep.memory.pages).length,
+      hereWatch,
+      apiWatch: apiStep.observe.watch,
+    };
+  }, { WATCH, FRAME, ORG });
+
+  // Rung 3 has no nodes: `state.micro` is its whole machine, and the node
+  // planes are absent by design, so nothing here compares them. What the
+  // 6502 side proves against the whole pin golden is what is held: the
+  // memory image, `half_cycle`, `last_fetch` and the eight watched control
+  // lines, whose levels are the measured table's own words.
+  expect(out.halfCycle, "the frame ran on rung 3").toBe(FRAME);
+  expect(out.apiHalfCycle, "and over the API").toBe(FRAME);
+  expect(out.micro, "the machine value is rung 3's own").toBe("string");
+  expect(out.planes, "and carries no node planes").toBe(true);
+  expect(out.pages, "the machine carries its memory").toBeGreaterThan(2);
+  expect(out.unknownNodes, "every watched line is a control column here").toEqual([]);
+  expect(out.lastFetch, "the last fetch after one frame").toEqual(out.apiLastFetch);
+  expect(out.stepMemory, "the memory after one frame").toEqual([]);
+  expect(Object.keys(out.hereWatch).length, "eight gates").toBe(8);
+  expect(out.hereWatch, "the gates sampled on each chip").toEqual(out.apiWatch);
+});
+
+test("the worker refuses a machine handed across the rung 3 line, both ways and by name", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, GAMES);
+  await chipServed(page);
+
+  const has = await page.evaluate(async () => {
+    const manifest = await (await fetch("/6502/chip/asset-manifest.json")).json();
+    const wasm = await import(/* webpackIgnore: true */ "/6502/chip/" + manifest["pkg/v6502_wasm.js"]);
+    return typeof wasm.MicroMachine === "function";
+  });
+  test.skip(!has, "this chip release has no rung 3 (MicroMachine) yet");
+
+  const out = await page.evaluate(async () => {
+    // The REAL worker, driven on its own wire: this is the seam the engine
+    // switch crosses, so the refusal is tested where it lives rather than
+    // re-stated in a fake.
+    const w = new Worker("/engine/console-chip.worker.mjs", { type: "module" });
+    let id = 0;
+    const call = (path: string, body: unknown, engine: string) =>
+      new Promise<{ ok: boolean; answer?: { machine: unknown }; error?: string }>((done) => {
+        const me = ++id;
+        const on = (e: MessageEvent) => {
+          if (e.data?.id !== me) return;
+          w.removeEventListener("message", on);
+          done(e.data);
+        };
+        w.addEventListener("message", on);
+        w.postMessage({ id: me, path, body, engine });
+      });
+
+    const memory = { fill: "00", pages: { "02": "ea".repeat(256), ff: "00".repeat(252) + "0002" + "0000" } };
+    const chipBoot = await call("boot", { memory, watch: [] }, "chip");
+    const microBoot = await call("boot", { memory, watch: [] }, "micro");
+    const nodeIntoMicro = await call("step", { machine: chipBoot.answer?.machine, half_cycles: 2, watch: [] }, "micro");
+    const microIntoNode = await call("step", { machine: microBoot.answer?.machine, half_cycles: 2, watch: [] }, "chip");
+    const microOnMicro = await call("step", { machine: microBoot.answer?.machine, half_cycles: 2, watch: [] }, "micro");
+    w.terminate();
+    return {
+      chipBooted: chipBoot.ok,
+      microBooted: microBoot.ok,
+      nodeIntoMicro: nodeIntoMicro.ok ? "accepted" : nodeIntoMicro.error,
+      microIntoNode: microIntoNode.ok ? "accepted" : microIntoNode.error,
+      microOnMicro: microOnMicro.ok,
+    };
+  });
+
+  expect(out.chipBooted, "rung 0 boots").toBe(true);
+  expect(out.microBooted, "rung 3 boots").toBe(true);
+  expect(out.microOnMicro, "rung 3 continues its own machine").toBe(true);
+  expect(out.nodeIntoMicro, "a node machine is refused with the way out").toMatch(/rung 3 carries its own.*power/i);
+  expect(out.microIntoNode, "a rung 3 machine is refused with the way out").toMatch(/rung 3's own.*power/i);
+});
+
 test("the engine key is live on the console, the chip in the page is the default, and the two switches are one choice", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, GAMES);
