@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-08-30T22:24:51+00:00",
+  "boarded_at": "2026-08-31T00:43:36+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.287",
-    "commit": "273766c1bd2397f4cba32f54ff6eb1b2e81bf30d",
-    "built": "2026-08-30T22:23:13+00:00",
+    "version": "v0.288",
+    "commit": "8d61917921cb78043366abef16ae7c31c0b53bcf",
+    "built": "2026-08-31T00:42:28+00:00",
     "dirty": false,
     "their_tests": {
-      "ran": "2026-08-30T22:22:24+00:00",
+      "ran": "2026-08-31T00:40:09+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 108,
+        "passed": 110,
         "failed": 0,
         "require_chips": true,
         "require_golden": true,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "273766c1bd2397f4cba32f54ff6eb1b2e81bf30d",
+  "running": "8d61917921cb78043366abef16ae7c31c0b53bcf",
   "worktree": {
-    "commit": "273766c1bd2397f4cba32f54ff6eb1b2e81bf30d",
-    "subject": "The machine value crosses to rung 1, and the wasm surface carries both rungs",
-    "committed": "2026-08-30T17:32:35-04:00",
+    "commit": "8d61917921cb78043366abef16ae7c31c0b53bcf",
+    "subject": "The machine value crosses to rung 2, held at the contract rather than the nodes",
+    "committed": "2026-08-30T19:06:25-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "0679f23e131957cf7cb226fc92f8100780bdbe7435e245d513bde6e2f9d01a96",
+    "sha256": "3b3b262cb08bfa1141900a5cb19a65a97262d0153d27513882e976a79ba755fd",
     "bytes": 540896,
-    "modified": "2026-08-30T22:19:19+00:00",
-    "stated": "273766c1bd2397f4cba32f54ff6eb1b2e81bf30d"
+    "modified": "2026-08-31T00:37:21+00:00",
+    "stated": "8d61917921cb78043366abef16ae7c31c0b53bcf"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.4,
+      "seconds": 3.8,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 14.7,
+      "seconds": 9.1,
       "ok": true
     }
   ]
