@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-01T00:15:47+00:00",
+  "boarded_at": "2026-09-01T18:44:39+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.296",
-    "commit": "cfaf1ec4aa05e9c5e9a6b922a8ae1504ef13aed9",
-    "built": "2026-09-01T00:13:39+00:00",
+    "version": "v0.300",
+    "commit": "f8d3fa8ebacfbfd8c7abf40a8a08bff3c4e9bacb",
+    "built": "2026-09-01T18:43:31+00:00",
     "dirty": false,
     "their_tests": {
-      "ran": "2026-09-01T00:08:57+00:00",
+      "ran": "2026-09-01T18:40:45+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 115,
+        "passed": 117,
         "failed": 0,
         "require_chips": true,
         "require_golden": true,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "cfaf1ec4aa05e9c5e9a6b922a8ae1504ef13aed9",
+  "running": "f8d3fa8ebacfbfd8c7abf40a8a08bff3c4e9bacb",
   "worktree": {
-    "commit": "cfaf1ec4aa05e9c5e9a6b922a8ae1504ef13aed9",
-    "subject": "Decimal mode: measured on the SB-to-AC path, authored under a seventh selector bit",
-    "committed": "2026-08-31T18:50:01-04:00",
+    "commit": "f8d3fa8ebacfbfd8c7abf40a8a08bff3c4e9bacb",
+    "subject": "The swarm's styles move into style.css, the sheet the roof carries",
+    "committed": "2026-09-01T14:31:29-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "ce07a649faef8a5e9929bee9d139142634a4c4b669fc1ad05c63b9a02cb94e53",
+    "sha256": "8333b75ed34e6ea95401431e19a9139b14e5f868f6cb8b228ca535894a150170",
     "bytes": 634240,
-    "modified": "2026-09-01T00:03:56+00:00",
-    "stated": "cfaf1ec4aa05e9c5e9a6b922a8ae1504ef13aed9"
+    "modified": "2026-09-01T18:38:05+00:00",
+    "stated": "f8d3fa8ebacfbfd8c7abf40a8a08bff3c4e9bacb"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 21.9,
+      "seconds": 0.3,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 32.5,
+      "seconds": 7.3,
       "ok": true
     }
   ]
