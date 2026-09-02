@@ -87,14 +87,14 @@ export default async function BuildersPage({ params }: { params: Promise<{ lang:
   const S = PROSE[lang];
   return (
     <Shell lang={lang} die="REG" title={S.title}>
-      <main className="prose">
+      <div className="prose">
         <p>{S.intro}</p>
 
         <Builders api={chipApi()} lang={lang} />
 
         <h2>{S.pubTitle}</h2>
         <p>{S.pub(localize(lang, "/6502/manage"))}</p>
-      </main>
+      </div>
     </Shell>
   );
 }

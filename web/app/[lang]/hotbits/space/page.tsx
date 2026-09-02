@@ -59,7 +59,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
 
   return (
     <Shell lang={lang} die="ENT" title={t(lang, "The entropy, drawn")}>
-      <main className="prose" lang={lang}>
+      <div className="prose" lang={lang}>
         <p className="lede">
           {t(
             lang,
@@ -74,7 +74,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
           <Link href={`/hotbits`}>{t(lang, "The instrument itself")}</Link>{" "}
           {t(lang, "reports what it is doing right now.")}
         </p>
-      </main>
+      </div>
 
       <Space labels={labels} />
     </Shell>

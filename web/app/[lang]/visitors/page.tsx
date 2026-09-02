@@ -46,11 +46,11 @@ export default async function VisitorsPage({ params }: { params: Promise<{ lang:
   const S = PROSE[lang];
   return (
     <Shell lang={lang} die="LOG" title="Visitors">
-      <main className="prose visitors">
+      <div className="prose visitors">
         <p>{S.lede}</p>
         <VisitorsBoard lang={lang} />
         <p className="quiet">{S.read}</p>
-      </main>
+      </div>
     </Shell>
   );
 }

@@ -97,7 +97,7 @@ export default async function HotbitsPage({ params }: { params: Promise<{ lang: 
 
   return (
     <Shell lang={lang} die="TRNG" title={p.name}>
-      <main className="prose">
+      <div className="prose">
         <p>{t(lang, p.what)}</p>
 
         <p>{S.how}</p>
@@ -143,7 +143,7 @@ export default async function HotbitsPage({ params }: { params: Promise<{ lang: 
 
         <h2>{S.refTitle}</h2>
         <p>{S.ref(localize(lang, "/hotbits/api"))}</p>
-      </main>
+      </div>
     </Shell>
   );
 }

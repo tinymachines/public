@@ -44,7 +44,7 @@ export default async function StylePage({ params }: { params: Promise<{ lang: La
           full-page chrome, with nothing of the house frame to hang a notice
           on. */}
       <Untranslated lang={lang} />
-      <main className="prose" lang="en">
+      <div className="prose" lang="en">
         {/* The measured chip, used the way the zoo uses it: an inline span
             carrying a figure and where the figure came from, inside a chips
             row. It is not a paragraph class. The first version of this put it
@@ -56,7 +56,7 @@ export default async function StylePage({ params }: { params: Promise<{ lang: La
           the what, and it is the normative one of the pair.
         </p>
         <Guide />
-      </main>
+      </div>
     </Shell>
   );
 }

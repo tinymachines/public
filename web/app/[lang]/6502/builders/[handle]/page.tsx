@@ -60,14 +60,14 @@ export default async function BuilderPage({ params }: PageProps<"/[lang]/6502/bu
 
   return (
     <Shell lang={lang as Lang} die="REG" title={`@${handle}`}>
-      <main className="prose">
+      <div className="prose">
         <p className="crumb">
           <Link href={localize(lang as Lang, "/6502/builders")}>
             {lang === "ja" ? "ビルダー一覧" : "All builders"}
           </Link>
         </p>
         <Builder handle={handle.toLowerCase()} api={chipApi()} lang={lang as Lang} />
-      </main>
+      </div>
     </Shell>
   );
 }

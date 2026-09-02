@@ -132,6 +132,20 @@ for (const file of files) {
       "    If the content carries its own heading, the masthead's title should not be one:\n" +
       "    pass titleIsHeading={false} to Shell. It looks identical either way.");
   }
+
+  // 2c. At most one <main>, because a document has one main landmark.
+  //     Eleven pages shipped a <main className="prose"> INSIDE the Shell's
+  //     <main className="app-main">: invalid HTML, two main landmarks for a
+  //     screen reader, and invisible on screen, which is why it survived
+  //     until an e2e locator("main") refused to pick one. The content inside
+  //     the Shell is a <div>; the Shell owns the landmark. This is what
+  //     remembers.
+  const mains = (body.match(/<main[\s>]/gi) ?? []).length;
+  if (mains > 1) {
+    failures.push(
+      `${path.relative(APP, file)}: ${mains} <main> elements; a page inside the Shell\n` +
+      "    should wrap its content in a <div>, because the Shell already owns the landmark.");
+  }
 }
 
 // 3. The document surface must be in the stylesheet. The docs layout uses

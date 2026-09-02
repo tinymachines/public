@@ -119,7 +119,7 @@ export default async function BenchPage({ params }: { params: Promise<{ lang: La
 
   return (
     <Shell lang={lang} die="NTSC" title={lang === "ja" ? "ntsc ベンチ" : "The ntsc bench"}>
-      <main className="prose">
+      <div className="prose">
         <p>{S.what}</p>
         <p>{S.slow(r.wasm_fps.notch, r.wasm_fps.comb3, r.wasm_fps.stamp)}</p>
 
@@ -131,7 +131,7 @@ export default async function BenchPage({ params }: { params: Promise<{ lang: La
         <p>
           <Link href={localize(lang, "/ntsc")}>{lang === "ja" ? "実測報告へ戻る" : "Back to the measurement report"}</Link>
         </p>
-      </main>
+      </div>
     </Shell>
   );
 }

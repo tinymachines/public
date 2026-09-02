@@ -317,7 +317,7 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
 
   return (
     <Shell lang={lang} die="NTSC" title={p.name}>
-      <main className="prose">
+      <div className="prose">
         <p>{t(lang, p.what)}</p>
 
         <p>{S.kinship}</p>
@@ -374,7 +374,7 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
         </ul>
 
         <p>{S.repo(r.repo)}</p>
-      </main>
+      </div>
     </Shell>
   );
 }

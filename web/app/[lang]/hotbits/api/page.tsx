@@ -72,12 +72,12 @@ export default async function HotbitsApiPage({ params }: { params: Promise<{ lan
 
   return (
     <Shell lang={lang} die="TRNG" title="The hotbits API">
-      <main className="prose">
+      <div className="prose">
         <p>{S.p1(api)}</p>
         <p>{S.p2}</p>
 
         <Reference api={api} lang={lang} />
-      </main>
+      </div>
     </Shell>
   );
 }

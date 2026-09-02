@@ -194,7 +194,7 @@ export default async function ArchivePage({ params }: { params: Promise<{ lang: 
       {/* .prose is what sets the reading measure and the heading scale. Without
           it the copy ran the full 1056px column and the h2s rendered at body
           size, which reads as a page that forgot its own type scale. */}
-      <main className="prose">
+      <div className="prose">
       <p>{S.intro}</p>
 
       <p className="notice">{S.notOurs}</p>
@@ -237,7 +237,7 @@ export default async function ArchivePage({ params }: { params: Promise<{ lang: 
         </div>
       </div>
 
-      </main>
+      </div>
     </Shell>
   );
 }
