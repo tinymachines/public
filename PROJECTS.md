@@ -23,13 +23,16 @@ If you find yourself writing a second list, stop.
 Six surfaces across three projects, because the apex is two surfaces rather
 than one and both are already here.
 
-**hotbits is the next project**, after 6502 settles. It has a manifest entry
-and a silo file and nothing else, which is the correct amount of hotbits to
-have built today.
+**hotbits arrived second** (the landing page with the live pool, and the
+reference generated from the instrument's schema), and **ntsc-crt is the
+third**: signal-level NTSC, registered 2026-09-02 with a landing page that
+is a measurement report. The registration reasoning is in the checkpoint of
+that date.
 
 ## A project, and a surface
 
-A **project** is a body of work with an identity: 6502, then hotbits. It owns a
+A **project** is a body of work with an identity: 6502, then hotbits, then
+ntsc-crt. It owns a
 short list of design tokens and nothing else about the design system.
 
 A **surface** is one addressable thing that project serves: a site, an API, a
@@ -53,14 +56,14 @@ web/app/
     layout.tsx      stamps data-project="6502"
     page.tsx        the project index, built from the manifest
     ...             the explorer, the games and the lab arrive here
-  hotbits/          when there is a hotbits
+  hotbits/  ntsc/   the other projects' landings
 api/                the roof's own API
 projects/
   6502/
     archive/        the archival drip: tools a project owns that are not routes
 style/
   tokens.css  components.css  zoo.html         the kit, shared, never forked
-  projects/6502.css  projects/hotbits.css      the silos
+  projects/6502.css  hotbits.css  ntsc.css     the silos
 data/projects.json                             the manifest
 ```
 
@@ -116,18 +119,22 @@ and a check that can pass on nothing is not a check. The self test feeds it
 three synthetic silos that each break one rule and requires all three to be
 caught.
 
-## Both silos are empty, deliberately
+## Each silo turns one knob, deliberately
 
-`style/projects/6502.css` overrides nothing because the palette in `tokens.css`
-was sampled off the binder scans **for this work**. Burnt Silicon, Mustard
-Conductor, Forest Logic and Ocean Data are the 6502's own colours. Restating
-them in the silo would be a second copy of the palette, and a second copy
-drifts in one of them while both still look like a palette.
+Every silo pins its accent and nothing else. `style/projects/6502.css` pins
+Burnt Silicon, and pins it even though it is also the house default: the
+palette in `tokens.css` was sampled off the binder scans **for this work**,
+so the file says what the section's colour is, and changing the house
+default one day does not silently recolour the 6502. `hotbits.css` pins
+Forest Logic for the instrument that counts decays; `ntsc.css` pins Ocean
+Data for the project whose subject is a signal on a wire. Chosen from the
+four categorical hues rather than invented: a knob turned, not a colour
+picked.
 
-`style/projects/hotbits.css` lists every lever, commented out, with no values.
-The palette, the display face and the mark are the owner's, exactly as the
-house palette was. Designing hotbits should be filling in values, not working
-out which values a project is allowed to have.
+Every other lever is listed in each file, commented out, with no values.
+The palettes, the display faces and the marks are the owner's, exactly as
+the house palette was. Designing a project should be filling in values, not
+working out which values a project is allowed to have.
 
 ## The order of work
 
@@ -322,6 +329,7 @@ Checked against the running site on 2026-08-24, not from memory.
 | the 6502 API | **the reference is here.** The service still answers at its own address, and this page says why it is not proxied |
 | the cartridge editor | **not moved.** `/manage`, blocked by a missing CORS header |
 | hotbits | **here, undesigned.** A landing page with the live pool, and a reference generated from the instrument's schema and checked against it |
+| ntsc-crt | **here, undesigned** (2026-09-02). A measurement-report landing page whose figures are re-measured at a pinned commit by `scripts/board-ntsc.py`; the live bench is the next surface |
 
 ### What is left, and what each one waits on
 
@@ -2321,3 +2329,39 @@ Open, unchanged from the previous checkpoint: the Lab's grey engine key
 subdomain logs; React #418 on Shell pages; `TM_SELF_NETS` in `visitors.env`;
 article images (owner's); three engine write-ups. New: the owner's
 experiments on console v2, not yet named.
+
+## Checkpoint, 2026-09-02, the third project registered
+
+ntsc-crt joins the manifest: key `ntsc`, name `ntsc-crt`, landing `/ntsc`,
+silo `style/projects/ntsc.css` (accent pinned to Ocean Data, everything
+else the owner's). One surface today, the landing, which is a measurement
+report; the live bench (`/ntsc/bench`, the wasm pipeline in the page with
+the drift counters visible) is the planned second surface and is prose on
+the landing rather than a manifest row, because a surface with no address
+that answers would need a `serves_today` that lies.
+
+Why a sibling project and not a page under /6502 (the director's call,
+carried in the ntsc-crt repository's docs/public-handoff.md): the engine
+ladder simulates the chip at its switches; ntsc-crt simulates the SIGNAL
+between a console and a tube. They meet at the NES and are otherwise
+separate bodies of work with separate licences: ntsc-crt is MIT throughout,
+embeds no die data, and its one LGPL piece (the blargg oracle) is native
+test rig that no shipped artefact contains. So unlike the 6502 fold there
+is no licence boundary to guard, and when the wasm bundle boards for the
+bench, the roof may build and commit it freely from a recorded commit.
+
+The boarding discipline mirrors the engine's, without the deploy gate:
+`scripts/board-ntsc.py --board` refuses a dirty checkout, runs the ntsc-crt
+repository's own scanner, full suite and MUTATE=1 run at the recorded
+commit, and is the only writer of `data/ntsc.json`; the page reads only
+that record, so no number on /ntsc is typed. No gate in deploy stage 2e,
+deliberately: phase 1 ships nothing built from the checkout, so a stale
+record is a page a reader can date rather than a deploy to refuse. First
+boarding: `498801c`, 58 tests green, 33 MUTATE reds, 54 claims verified.
+
+The registration itself: projects.json (+ ja.json for its strings),
+lib/pages.ts (+ the projectFor accent map), the sitemap, the deploy
+stage-6 sweep list, globals.css importing the silo, docs/index.md's third
+project section (en and ja), and the e2e spec. The front page, the site
+navigation, the menu and the breadcrumbs all picked the project up from
+the manifest without edits, which is those derivations doing their job.

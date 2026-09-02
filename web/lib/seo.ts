@@ -31,7 +31,7 @@ export const SITE_NAME = "tinymachines";
 
 /** The site in one sentence, English; translated where it is used. */
 export const SITE_DESCRIPTION =
-  "A transistor-level MOS 6502 and the things built on it, and true random bytes from radioactive decay. Everything measured, nothing asserted.";
+  "A transistor-level MOS 6502 and the things built on it, true random bytes from radioactive decay, and the NTSC signal simulated at the waveform. Everything measured, nothing asserted.";
 
 /** Absolute, and the root without its slash, which is how Next writes the
  * canonical: two spellings of one address would be two addresses. */

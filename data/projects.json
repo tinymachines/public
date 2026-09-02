@@ -213,6 +213,29 @@
         }
       ],
       "landing": "/hotbits"
+    },
+    {
+      "key": "ntsc",
+      "name": "ntsc-crt",
+      "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, decoded through four separation rungs, displayed through a five-stage CRT model, with an oracle and a way to fail at every stage.",
+      "silo": "style/projects/ntsc.css",
+      "status": "here",
+      "surfaces": [
+        {
+          "key": "site",
+          "name": "The measurement report",
+          "what": "What was built, what was measured, and the three spec claims that did not survive measurement.",
+          "nav": false,
+          "nav_label": null,
+          "piece": null,
+          "serves_today": "https://tinymachines.ai/ntsc",
+          "lands_at": "/ntsc",
+          "lands_at_settled": true,
+          "status": "here",
+          "prerendered": true
+        }
+      ],
+      "landing": "/ntsc"
     }
   ]
 }

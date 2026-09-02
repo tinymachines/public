@@ -1,0 +1,57 @@
+/* ---------------------------------------------------------------------------
+   ntsc-crt: the project silo. One knob turned, the rest reserved.
+
+   The third project under the roof: signal-level NTSC, the waveform between
+   a console and a tube. Its palette, its display face and its mark are the
+   owner's, exactly as the house palette was and as hotbits' is, so nothing
+   is invented here. This file shows where the levers are so that designing
+   ntsc-crt is a matter of filling in values rather than working out which
+   values a project is allowed to have.
+
+   style/check-silo.py enforces the list. It fails if a silo assigns anything
+   outside it, invents a token, or lands a text pair below WCAG AA against
+   the palette it would really render with.
+   ------------------------------------------------------------------------ */
+
+[data-project="ntsc"] {
+
+  /* THE ACCENT, the one thing chosen so far: Ocean Data, the palette's
+     blue-green, for the project whose subject is a signal on a wire. Chosen
+     from the four categorical hues rather than invented, a knob turned and
+     not a colour picked. Not burnt: Burnt Silicon is the 6502's own colour
+     (6502.css says why it is also the house default), and a second project
+     wearing it would make the accent stop meaning anything. Both forms,
+     because the tile in the bar is read on ink and the eyebrows are read
+     on paper. */
+  --color-accent:     var(--color-ocean);
+  --color-accent-ink: var(--color-ocean-ink);
+
+
+  /* THE CATEGORICAL HUES. Four, each in two forms, because contrast is
+     ground-dependent: the base reads on panel, the -ink form reads on paper.
+     Using the wrong one is the single most common way this palette goes
+     illegible, and the checker computes both. */
+
+  /* --color-burnt:       ; --color-burnt-ink:   ; */
+  /* --color-mustard:     ; --color-mustard-ink: ; */
+  /* --color-forest:      ; --color-forest-ink:  ; */
+  /* --color-ocean:       ; --color-ocean-ink:   ; */
+
+  /* THE GROUNDS. Their meaning is fixed everywhere (paper is documentation,
+     panel is the machine talking) and only their values are a project's. */
+
+  /* --color-paper:       ; --color-paper-sunk:  ; */
+  /* --color-panel:       ; --color-panel-raised: ; --color-panel-sunk: ; */
+  /* --color-ink:         ; --color-ink-muted:   ; --color-ink-faint: ; */
+  /* --color-glass:       ; --color-glass-muted: ; */
+
+  /* THE DISPLAY FACE. tokens.css calls this the swap seam. */
+
+  /* --font-display:      ; */
+
+  /* NOT AVAILABLE HERE, and the checker will say so: the logic accents
+     (blue is ACTIVE, orange is ATTENTION, red is ASSERTION FAILED), the
+     drive ramp, the chrome set, the type scale, the grid unit, the motion
+     curves, the shadows and the radii. Those are what a reader carries
+     between projects. */
+}

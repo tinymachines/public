@@ -99,6 +99,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The Geiger TRNG's own schema, rendered and then checked against the running instrument.",
   },
+  "/ntsc": {
+    title: "ntsc-crt",
+    description:
+      "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with an oracle at every stage and three spec claims that did not survive measurement.",
+  },
   "/style": {
     title: "Style guide",
     description:
@@ -115,7 +120,7 @@ export const PAGES: Record<string, FixedPage> = {
 /** Which project a path belongs to, for the accent it wears. */
 export function projectFor(path: string): string | null {
   // A document about a project is that project's: /docs/6502/... wears 6502.
-  const m = path.match(/^\/(?:docs\/)?(6502|hotbits)(\/|$)/);
+  const m = path.match(/^\/(?:docs\/)?(6502|hotbits|ntsc)(\/|$)/);
   return m ? m[1] : null;
 }
 

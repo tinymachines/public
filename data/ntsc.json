@@ -1,0 +1,24 @@
+{
+  "note": "Written only by scripts/board-ntsc.py --board. Every figure was verified by running the repository's own scanner (full suite and MUTATE run) at this commit; the rates are recomputed here exactly.",
+  "boarded_on": "2026-09-02",
+  "repo": "https://github.com/tinymachines/ntsc-crt",
+  "commit": "498801ca7f097e0860a2b3eabb9dbacb8b811bf1",
+  "claims_verified": 54,
+  "tests_green": 58,
+  "mutate_red": 33,
+  "crates": 9,
+  "transcription_gate_values": 43,
+  "blargg_zip_sha256": "ca1a420d721d83b944142c366a917ba199dbc10cf91ad6f21dc712ed1069d58e",
+  "st170m_zip_sha256": "dc9a1f0487385b697de0caca0a8371d61d84bffe7352bcf707818cc9bd8df2bd",
+  "wasm_fps": {
+    "notch": 4.87,
+    "comb3": 5.2,
+    "stamp": "M2 run, node v24, Ryzen 5 5600X, best of 3"
+  },
+  "rates": {
+    "nes_full_hz": "60.09848",
+    "nes_short_hz": "60.09915",
+    "nes_pair_hz": "60.09881",
+    "broadcast_field_hz": "59.94006"
+  }
+}

@@ -36,10 +36,12 @@
    reach, or lands a text pair below WCAG AA against the palette it would
    actually render with. See PROJECTS.md.
 
-   These come last so a silo wins over the house value it overrides. Both files
-   are deliberately empty of overrides today. */
+   These come last so a silo wins over the house value it overrides. Each
+   silo carries at most its accent today; every other lever is listed in the
+   files, commented out, waiting for the owner. */
 @import "../../style/projects/6502.css";
 @import "../../style/projects/hotbits.css";
+@import "../../style/projects/ntsc.css";
 
 /* Nothing else belongs in this file. A colour, a size or a font added below
    is a token that the style guide cannot reach: put it in style/tokens.css

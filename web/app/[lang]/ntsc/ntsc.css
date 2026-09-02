@@ -1,0 +1,38 @@
+/* /ntsc page pieces. Every value is a token from style/tokens.css; nothing
+   is invented here, and the project's identity lives in
+   style/projects/ntsc.css, not in this file. */
+
+/* The CRT frame wears the die-imagery treatment (components.css): panel
+   content photographed into the binder, framed by the kit's bezel, never
+   bled to the page edge. Restated for a figure element because the docs
+   rule is scoped to markdown's lone-image paragraph shape. */
+.crt-figure {
+  width: fit-content;
+  max-width: 100%;
+  margin: calc(var(--u) * 6) 0 calc(var(--u) * 2);
+  padding: 3px;
+  background: var(--bezel-brushed);
+  border-radius: 6px;
+  box-shadow: var(--shadow-panel);
+}
+.crt-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-mod);
+  background: var(--color-panel);
+}
+.crt-figure figcaption {
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  padding: calc(var(--u) * 2) calc(var(--u) * 1) calc(var(--u) * 1);
+  max-width: 58ch;
+}
+
+/* The boarded figures, as the kit's measured chips in a wrappable row. */
+.boarded {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 2) calc(var(--u) * 4);
+  margin: calc(var(--u) * 4) 0;
+}

@@ -1,13 +1,14 @@
 ---
 title: tinymachines
-description: One roof over the 6502 work and the hotbits instrument, both already running.
+description: One roof over the 6502 work, the hotbits instrument and the ntsc-crt simulator, all already running.
 order: 1
 ---
 
 # tinymachines
 
 A transistor-level MOS 6502 and the things built on it, a Geiger counter
-turning decay into random bytes, and the documentation for both. Everything
+turning decay into random bytes, an NTSC signal simulated at the waveform,
+and the documentation for all of it. Everything
 documented here exists and runs. This tree is where it is written down
 together for the first time.
 
@@ -97,6 +98,22 @@ It has no design yet, deliberately. `style/projects/hotbits.css` lists every
 lever a project may pull, commented out and empty, and the palette is the
 owner's to make. The day it is filled in both pages change and neither is
 edited.
+
+## The third project
+
+[ntsc-crt](/ntsc) is signal-level NTSC: the composite waveform between a
+console and a tube, encoded from three sources, decoded through four
+separation rungs, and displayed through a five-stage CRT model. The 6502
+work simulates a chip at its switches; this simulates the signal, and the
+two meet at the NES.
+
+Its landing page is a measurement report. The repository declared every
+pre-computed number in its own spec a claim for a test to confirm, and three
+did not survive; the page carries the corrections, and every figure it
+states was re-measured for it by running the project's own scanner, suite
+and mutation run at a pinned commit. The documentation has not moved into
+this tree yet; it lives in
+[the repository](https://github.com/tinymachines/ntsc-crt).
 
 ## What is not here yet
 

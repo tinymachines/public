@@ -40,6 +40,7 @@ const STATIC = [
   "/6502/archive",
   "/hotbits",
   "/hotbits/api",
+  "/ntsc",
   "/style",
 ];
 
