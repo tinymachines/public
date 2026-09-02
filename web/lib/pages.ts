@@ -104,6 +104,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with an oracle at every stage and three spec claims that did not survive measurement.",
   },
+  "/ntsc/bench": {
+    title: "The ntsc bench",
+    description:
+      "The signal path live in the page: dot planes encoded to the composite waveform and decoded on the rung you choose, with the drift counters visible.",
+  },
   "/style": {
     title: "Style guide",
     description:

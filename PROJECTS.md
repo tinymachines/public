@@ -2334,11 +2334,11 @@ experiments on console v2, not yet named.
 
 ntsc-crt joins the manifest: key `ntsc`, name `ntsc-crt`, landing `/ntsc`,
 silo `style/projects/ntsc.css` (accent pinned to Ocean Data, everything
-else the owner's). One surface today, the landing, which is a measurement
-report; the live bench (`/ntsc/bench`, the wasm pipeline in the page with
-the drift counters visible) is the planned second surface and is prose on
-the landing rather than a manifest row, because a surface with no address
-that answers would need a `serves_today` that lies.
+else the owner's). Two surfaces, registered together because they ship
+together: the landing, a measurement report, and the bench
+(`/ntsc/bench`), the wasm pipeline running in the page with the drift
+counters visible. Both arrive in the same deploy, so neither manifest row
+claims an address before it answers.
 
 Why a sibling project and not a page under /6502 (the director's call,
 carried in the ntsc-crt repository's docs/public-handoff.md): the engine
@@ -2347,8 +2347,13 @@ between a console and a tube. They meet at the NES and are otherwise
 separate bodies of work with separate licences: ntsc-crt is MIT throughout,
 embeds no die data, and its one LGPL piece (the blargg oracle) is native
 test rig that no shipped artefact contains. So unlike the 6502 fold there
-is no licence boundary to guard, and when the wasm bundle boards for the
-bench, the roof may build and commit it freely from a recorded commit.
+is no licence boundary to guard, and the wasm bundle is built and
+committed freely: `scripts/board-ntsc.py --wasm` builds it from a fresh
+clone at the boarded commit (tagged `v0.1.0` in that repository), records
+each file's sha256 in `data/ntsc.json`, a lib test holds the shipped bytes
+to those hashes on every deploy, and another EXECUTES the shipped bundle
+(one frame per rung, the refusal, the drift arithmetic), so a bundle that
+verifies but does not run cannot ship.
 
 The boarding discipline mirrors the engine's, without the deploy gate:
 `scripts/board-ntsc.py --board` refuses a dirty checkout, runs the ntsc-crt

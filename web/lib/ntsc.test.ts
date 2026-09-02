@@ -41,4 +41,23 @@ describe("the boarded ntsc record", () => {
     expect(r.wasm_fps.comb3).toBeGreaterThan(0);
     expect(r.wasm_fps.stamp.length).toBeGreaterThan(10);
   });
+
+  test("the shipped bundle is byte for byte the boarded one", async () => {
+    // The bench page runs web/public/ntsc/wasm/*, and the record says what
+    // was built at the boarded commit. A hand-edited or stale bundle would
+    // still be a working page, which is exactly why the hashes are checked
+    // here, in a deploy stage, and not left to a reader's trust.
+    const { bundle } = r;
+    expect(bundle).toBeDefined();
+    const files = Object.entries(bundle!.files);
+    expect(files.length).toBe(2);
+    for (const [name, meta] of files) {
+      const bytes = await Bun.file(
+        new URL(`../public/ntsc/wasm/${name}`, import.meta.url),
+      ).arrayBuffer();
+      expect(bytes.byteLength).toBe(meta.bytes);
+      const hash = new Bun.CryptoHasher("sha256").update(bytes).digest("hex");
+      expect(hash).toBe(meta.sha256);
+    }
+  });
 });

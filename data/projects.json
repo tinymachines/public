@@ -233,6 +233,19 @@
           "lands_at_settled": true,
           "status": "here",
           "prerendered": true
+        },
+        {
+          "key": "bench",
+          "name": "The bench",
+          "what": "The signal path live in the page: dot planes encoded to the composite waveform and decoded on the rung you choose, with the drift counters visible.",
+          "nav": false,
+          "nav_label": "Bench",
+          "piece": null,
+          "serves_today": "https://tinymachines.ai/ntsc/bench",
+          "lands_at": "/ntsc/bench",
+          "lands_at_settled": true,
+          "status": "here",
+          "prerendered": true
         }
       ],
       "landing": "/ntsc"

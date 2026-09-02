@@ -15,6 +15,17 @@ skipped rows), and only when it exits green extracts the page's figures
 with the commit they were measured at.
 
     python3 scripts/board-ntsc.py --board [--repo PATH]
+    python3 scripts/board-ntsc.py --wasm  [--repo PATH]
+
+`--wasm` builds the bench's bundle: a fresh clone of the checkout into a
+temp directory, checked out at the BOARDED commit (data/ntsc.json must
+exist and --board must have run first), `wasm-pack build --target web
+--release`, and the two shipped files copied into web/public/ntsc/wasm/
+with their sha256s recorded in the same data file. A clone rather than the
+checkout itself, so the build can never read an uncommitted edit, and the
+roof may commit this bundle because ntsc-crt is MIT throughout: it embeds
+no die data, and the LGPL oracle is a native test rig outside the wasm
+dependency graph (NOTICE.md there; docs/public-handoff.md).
 
 The extraction regexes are anchored to lines the scanner itself verifies;
 when the shape moves, this fails loudly rather than recording a guess. The
@@ -65,11 +76,85 @@ def extract(text: str, pattern: str, where: str) -> str:
     return m.group(1)
 
 
+def build_wasm(repo: Path) -> int:
+    """Build the bench bundle from a fresh clone at the boarded commit and
+    record it beside the boarding. The clone means the build can never read
+    an uncommitted edit in the checkout; the boarded commit means the bundle
+    and the record describe the same tree."""
+    import hashlib
+    import os
+    import shutil
+    import tempfile
+
+    if not RECORD.is_file():
+        fail("data/ntsc.json does not exist; run --board first")
+    record = json.loads(RECORD.read_text())
+    commit = record["commit"]
+
+    dest = ROOT / "web" / "public" / "ntsc" / "wasm"
+    env = {**os.environ, "PATH": f"{Path.home()}/.cargo/bin:{os.environ['PATH']}"}
+    with tempfile.TemporaryDirectory(prefix="ntsc-wasm-") as tmp:
+        clone = Path(tmp) / "ntsc-crt"
+        for cmd in (
+            ["git", "clone", "-q", str(repo), str(clone)],
+            ["git", "-C", str(clone), "checkout", "-q", commit],
+        ):
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode != 0:
+                fail(f"{' '.join(cmd)}: {r.stderr.strip()}")
+        # The tag is provenance for a reader; the commit is the pin. Record
+        # whichever tags point at the boarded commit in the source repo.
+        tags = run(["git", "tag", "--points-at", commit], repo).stdout.split()
+        print(f"board-ntsc: building the bundle at {commit[:7]}"
+              f"{' (' + ', '.join(tags) + ')' if tags else ''}...")
+        r = subprocess.run(
+            ["wasm-pack", "build", "crates/ntsc-wasm", "--target", "web", "--release"],
+            cwd=clone, capture_output=True, text=True, env=env,
+        )
+        if r.returncode != 0:
+            fail(f"wasm-pack failed:\n{r.stderr[-2000:]}")
+        pkg = clone / "crates" / "ntsc-wasm" / "pkg"
+        dest.mkdir(parents=True, exist_ok=True)
+        files = {}
+        for name in ("ntsc_wasm.js", "ntsc_wasm_bg.wasm"):
+            src = pkg / name
+            if not src.is_file():
+                fail(f"the build produced no {name}; wasm-pack's layout moved")
+            shutil.copy2(src, dest / name)
+            files[name] = {
+                "sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+                "bytes": src.stat().st_size,
+            }
+        tool = subprocess.run(["wasm-pack", "--version"], capture_output=True,
+                              text=True, env=env).stdout.strip()
+        rustc = subprocess.run(["rustc", "--version"], capture_output=True,
+                               text=True, env=env).stdout.strip()
+
+    record["bundle"] = {
+        "note": "Built by scripts/board-ntsc.py --wasm from a fresh clone at the "
+                "boarded commit; the files in web/public/ntsc/wasm/ must hash to "
+                "these values.",
+        "commit": commit,
+        "tags": tags,
+        "built_on": dt.date.today().isoformat(),
+        "built_with": f"{tool}; {rustc}",
+        "files": files,
+    }
+    RECORD.write_text(json.dumps(record, indent=2) + "\n")
+    shipped = ", ".join(f"{n} ({v['bytes']} bytes)" for n, v in files.items())
+    print(f"board-ntsc: bundle recorded: {shipped}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--board", action="store_true", help="measure and write data/ntsc.json")
+    ap.add_argument("--wasm", action="store_true",
+                    help="build the bench bundle at the boarded commit and record it")
     ap.add_argument("--repo", type=Path, default=ROOT.parent / "ntsc-crt")
     args = ap.parse_args()
+    if args.wasm and not args.board:
+        return build_wasm(args.repo.resolve())
     if not args.board:
         ap.print_help()
         return 2

@@ -166,6 +166,7 @@ const PROSE = {
     mCommit: (commit: string, href: string) => (
       <>commit: <b><a data-address href={href}>{commit}</a></b></>
     ),
+    benchH: "The bench runs the pipeline live",
     notHereH: "What is not here yet",
     open1: (
       <>
@@ -178,11 +179,11 @@ const PROSE = {
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
       <>
-        The live bench is next: this pipeline running in the page, dot
-        planes in and decoded RGBA out, with the drift counters visible. In
-        the browser it measures about five frames a second ({notch} on the
-        notch rung, {comb3} on the three-line comb; {stamp}), and the bench
-        will say so rather than hide it.
+        <Link href="/ntsc/bench">The live bench</Link> runs this pipeline in
+        the page, dot planes in and decoded RGBA out, with the drift
+        counters visible. In the browser it measures about five frames a
+        second ({notch} on the notch rung, {comb3} on the three-line comb;{" "}
+        {stamp}), and the bench says so rather than hides it.
       </>
     ),
     open3: (
@@ -277,6 +278,7 @@ const PROSE = {
     mCommit: (commit: string, href: string) => (
       <>コミット: <b><a data-address href={href}>{commit}</a></b></>
     ),
+    benchH: "ベンチはパイプラインを生で走らせる",
     notHereH: "まだ無いもの",
     open1: (
       <>
@@ -285,7 +287,7 @@ const PROSE = {
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
       <>
-        次はライブベンチ: このパイプラインをページ内で走らせ、ドット面を入れてデコード済み RGBA を出し、ドリフトのカウンタを見せる。ブラウザでの実測はおよそ毎秒 5 フレーム（ノッチで {notch}、3 ラインコムで {comb3}。{stamp}）で、ベンチはそれを隠さず表示する。
+        <Link href="/ja/ntsc/bench">ライブベンチ</Link>はこのパイプラインをページ内で走らせ、ドット面を入れてデコード済み RGBA を出し、ドリフトのカウンタを見せる。ブラウザでの実測はおよそ毎秒 5 フレーム（ノッチで {notch}、3 ラインコムで {comb3}。{stamp}）で、ベンチはそれを隠さず表示する。
       </>
     ),
     open3: (
@@ -362,10 +364,12 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
           <span className="measured">{S.mCommit(commitShort, commitHref)}</span>
         </div>
 
+        <h2>{S.benchH}</h2>
+        <p>{S.open2(r.wasm_fps.notch, r.wasm_fps.comb3, r.wasm_fps.stamp)}</p>
+
         <h2>{S.notHereH}</h2>
         <ul>
           <li>{S.open1}</li>
-          <li>{S.open2(r.wasm_fps.notch, r.wasm_fps.comb3, r.wasm_fps.stamp)}</li>
           <li>{S.open3}</li>
         </ul>
 

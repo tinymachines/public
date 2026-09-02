@@ -36,3 +36,24 @@
   gap: calc(var(--u) * 2) calc(var(--u) * 4);
   margin: calc(var(--u) * 4) 0;
 }
+
+/* The bench: the decoded frame on panel (the machine talking), controls and
+   readouts below it. The canvas bitmap is 2048 x 240, the active sample
+   grid; it is DISPLAYED at the picture's own shape, 256 dots by 240 lines,
+   because the 2048 samples are eight per dot, not extra picture. The NES
+   8/7 pixel aspect is deliberately not applied, matching the CRT stages'
+   recorded choice. */
+.bench { display: grid; gap: calc(var(--u) * 3); margin: calc(var(--u) * 4) 0; }
+.bench-screen {
+  display: block;
+  width: 100%;
+  aspect-ratio: 256 / 240;
+  background: var(--color-panel-sunk);
+}
+.bench-controls { display: grid; gap: calc(var(--u) * 2); }
+.bench-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 2) calc(var(--u) * 4);
+  margin: 0;
+}

@@ -13,3 +13,14 @@ repository's rule (docs/m3-report.md). Provenance:
 
 To refresh: re-run the example at the boarded commit (data/ntsc.json
 records it) and convert again. Do not edit the pixels.
+
+`wasm/` is the bench's bundle: `ntsc_wasm.js` and `ntsc_wasm_bg.wasm`,
+built by `scripts/board-ntsc.py --wasm` from a fresh clone at the boarded
+commit (`wasm-pack build crates/ntsc-wasm --target web --release`), with
+the sha256 of each file recorded in `data/ntsc.json`. Committed rather
+than built per deploy because it is small, MIT throughout (no die data;
+the LGPL oracle is native test rig outside the wasm dependency graph),
+and pinned: rebuild it only through the boarding script, never by hand.
+
+`bench.worker.mjs` is this repository's own code (the bench's thread),
+not a build artefact.

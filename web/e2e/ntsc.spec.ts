@@ -57,6 +57,31 @@ test("the CRT frame is served, and the page says it is illustrative", async ({ p
   ).toBeVisible();
 });
 
+test("the bench decodes a frame in the page and counts it", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/ntsc/bench", 500);
+
+  // One step: the worker fetches the boarded wasm, encodes one frame of
+  // hue bands and paints it. A blank canvas afterwards would mean the
+  // bundle, the worker or the paint path is broken, whatever the page says.
+  await page.getByRole("button", { name: "Step one frame" }).click();
+  await expect(page.locator("[data-bench-stats] .measured").first()).toContainText("1", {
+    timeout: 20_000,
+  });
+  const painted = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>(".bench-screen");
+    const d = c?.getContext("2d")?.getImageData(0, 120, c.width, 1).data;
+    if (!d) return -1;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+    return sum;
+  });
+  expect(painted).toBeGreaterThan(0);
+
+  // No refusal notice: the boarded bundle answered.
+  await expect(page.locator("[data-bench-why]")).toHaveCount(0);
+});
+
 test("the Japanese page carries a Japanese body, not a fallback", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/ja/ntsc", 500);

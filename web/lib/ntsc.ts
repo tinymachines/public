@@ -31,6 +31,14 @@ export interface NtscRecord {
     nes_pair_hz: string;
     broadcast_field_hz: string;
   };
+  /** The bench's wasm bundle, present once --wasm has boarded one. */
+  bundle?: {
+    commit: string;
+    tags: string[];
+    built_on: string;
+    built_with: string;
+    files: Record<string, { sha256: string; bytes: number }>;
+  };
 }
 
 const FILE = path.join(process.cwd(), "..", "data", "ntsc.json");
