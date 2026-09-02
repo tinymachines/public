@@ -181,16 +181,19 @@ const PROSE = {
       <>
         <Link href="/ntsc/bench">The live bench</Link> runs this pipeline in
         the page, dot planes in and decoded RGBA out, with the drift
-        counters visible. In the browser it measures about five frames a
-        second ({notch} on the notch rung, {comb3} on the three-line comb;{" "}
-        {stamp}), and the bench says so rather than hides it.
+        counters visible. In the browser it measures at least {notch}{" "}
+        frames a second on the notch rung and {comb3} on the three-line
+        comb ({stamp}): near the source&rsquo;s own 60.09881 Hz, and the
+        bench prints its measured rate rather than a promise.
       </>
     ),
     open3: (
       <>
-        Real-time decode is a named optimization with named levers,
-        decimation before the chroma lowpass and explicit SIMD in the line
-        convolutions, and deliberately not a correctness milestone.
+        The levers that made it fast, decimation before the chroma lowpass
+        and convolutions restructured for the vectorizer, were named in the
+        M2 report before being built, and every frozen comparison envelope
+        held through the change: the speed came from the same commit the
+        figures above were re-verified at.
       </>
     ),
     repo: (href: string) => (
@@ -287,12 +290,12 @@ const PROSE = {
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
       <>
-        <Link href="/ja/ntsc/bench">ライブベンチ</Link>はこのパイプラインをページ内で走らせ、ドット面を入れてデコード済み RGBA を出し、ドリフトのカウンタを見せる。ブラウザでの実測はおよそ毎秒 5 フレーム（ノッチで {notch}、3 ラインコムで {comb3}。{stamp}）で、ベンチはそれを隠さず表示する。
+        <Link href="/ja/ntsc/bench">ライブベンチ</Link>はこのパイプラインをページ内で走らせ、ドット面を入れてデコード済み RGBA を出し、ドリフトのカウンタを見せる。ブラウザでの実測はノッチ・ラングで毎秒 {notch} フレーム以上、3 ラインコムで {comb3}（{stamp}）。ソース自身の 60.09881 Hz に迫る速さで、ベンチは約束ではなく実測レートを表示する。
       </>
     ),
     open3: (
       <>
-        リアルタイムデコードは、レバーに名前の付いた最適化課題（クロマ・ローパス前のデシメーションと、行畳み込みへの明示的 SIMD）であり、意図して正しさのマイルストーンではない。
+        速くしたレバー（クロマ・ローパス前のデシメーションと、ベクトル化器のために組み替えた畳み込み）は、作られる前に M2 レポートで名指しされていたものだ。変更の間、凍結された比較エンベロープはすべて保たれた: 速さは、上の数字が再検証されたのと同じコミットから来ている。
       </>
     ),
     repo: (href: string) => (

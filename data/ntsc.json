@@ -2,7 +2,7 @@
   "note": "Written only by scripts/board-ntsc.py --board. Every figure was verified by running the repository's own scanner (full suite and MUTATE run) at this commit; the rates are recomputed here exactly.",
   "boarded_on": "2026-09-02",
   "repo": "https://github.com/tinymachines/ntsc-crt",
-  "commit": "498801ca7f097e0860a2b3eabb9dbacb8b811bf1",
+  "commit": "c2977b2e65bab7461d0b13df9dd38ac16e937a43",
   "claims_verified": 54,
   "tests_green": 58,
   "mutate_red": 33,
@@ -11,9 +11,9 @@
   "blargg_zip_sha256": "ca1a420d721d83b944142c366a917ba199dbc10cf91ad6f21dc712ed1069d58e",
   "st170m_zip_sha256": "dc9a1f0487385b697de0caca0a8371d61d84bffe7352bcf707818cc9bd8df2bd",
   "wasm_fps": {
-    "notch": 4.87,
-    "comb3": 5.2,
-    "stamp": "M2 run, node v24, Ryzen 5 5600X, best of 3"
+    "notch": 41.5,
+    "comb3": 44.4,
+    "stamp": "perf-report run 2026-09-02, wasm+simd128 (the shipped bundle), node v24, Ryzen 5 5600X, low end of the spread over three fresh processes"
   },
   "rates": {
     "nes_full_hz": "60.09848",
@@ -23,20 +23,20 @@
   },
   "bundle": {
     "note": "Built by scripts/board-ntsc.py --wasm from a fresh clone at the boarded commit; the files in web/public/ntsc/wasm/ must hash to these values.",
-    "commit": "498801ca7f097e0860a2b3eabb9dbacb8b811bf1",
+    "commit": "c2977b2e65bab7461d0b13df9dd38ac16e937a43",
     "tags": [
-      "v0.1.0"
+      "v0.2.0"
     ],
     "built_on": "2026-09-02",
-    "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
     "files": {
       "ntsc_wasm.js": {
         "sha256": "e01d48ceca0901f3df97454cd00b8335991b9f5a3c4a7d0a671a9f140ba7f3b9",
         "bytes": 9441
       },
       "ntsc_wasm_bg.wasm": {
-        "sha256": "d22a5af452c1e0b5912e1e01fcde8b47f537fa2b5c1be4519ea7b02e323cd352",
-        "bytes": 46460
+        "sha256": "f20503f53a6a986b73c654a895717b4296f17c1ae9d2a778b1a8c88944e863a6",
+        "bytes": 47003
       }
     }
   }

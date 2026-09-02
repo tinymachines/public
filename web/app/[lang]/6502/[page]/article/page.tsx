@@ -71,9 +71,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ lang: 
   // the tool's body (the instrument) is rendered hidden so its script
   // finds every element it asks for at boot. Nothing is deleted.
   const hero = (x.body.match(/<section class="hero[^"]*"[\s\S]*?<\/section>/) ?? [""])[0];
+  // The tool's own <main> becomes a <div> here: the Shell already owns
+  // the page's landmark, and this copy of the instrument is hidden
+  // scaffolding for the script, not a region a reader navigates. The
+  // chip stylesheet styles classes, never the main element (checked
+  // when this line was written), so the rename is invisible to it.
   const body = x.body
     .replace(/<section class="wrap sec bp-prose[\s\S]*?<\/section>/g, "")
-    .replace(/<section class="hero[^"]*"[\s\S]*?<\/section>/g, "");
+    .replace(/<section class="hero[^"]*"[\s\S]*?<\/section>/g, "")
+    .replace(/<main\b/g, "<div")
+    .replace(/<\/main>/g, "</div>");
   const name = t(lang, explorerLabel(page) ?? a.title);
 
   return (

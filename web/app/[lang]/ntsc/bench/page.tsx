@@ -34,14 +34,15 @@ const PROSE = {
     ),
     slow: (notch: number, comb3: number, stamp: string) => (
       <>
-        This is a laboratory instrument, not a game, and it is honest about
-        the cost: one frame is a few hundred milliseconds of filtering in
-        one thread ({notch} frames/s on the notch rung, {comb3} on the
-        three-line comb; {stamp}). Step advances the source one frame. Run
-        is a real free-run: the source advances at its own exact rate
-        against the wall clock, the page encodes what it can, and the drift
-        counters print what a real display would have duplicated or
-        dropped, exactly as the bridge&rsquo;s pacing policy specifies.
+        This is a laboratory instrument that now runs near the signal&rsquo;s
+        own rate: at least {notch} frames/s on the notch rung and {comb3}
+        on the three-line comb in one thread ({stamp}), after the
+        decimation and vectorization levers the repository&rsquo;s perf
+        report records. Step advances the source one frame. Run is a real
+        free-run: the source advances at its own exact rate against the
+        wall clock, the page encodes what it can, and the drift counters
+        print what a real display would have duplicated or dropped,
+        exactly as the bridge&rsquo;s pacing policy specifies.
       </>
     ),
     patterns: (
@@ -81,7 +82,7 @@ const PROSE = {
     ),
     slow: (notch: number, comb3: number, stamp: string) => (
       <>
-        これは実験器具であってゲームではなく、コストに正直だ: 1 フレームは 1 スレッドで数百ミリ秒のフィルタ処理になる（ノッチで {notch} フレーム/秒、3 ラインコムで {comb3}。{stamp}）。「1 フレーム進める」はソースを 1 フレーム進める。「走らせる」は本物のフリーランで、ソースは壁時計に対して自身の正確なレートで進み、ページはできる分だけエンコードし、実際のディスプレイなら重複・欠落させたはずの分をドリフトカウンタが表示する。ブリッジのペーシング方針そのままに。
+        これは実験器具で、いまや信号自身のレート近くで走る: 1 スレッドでノッチ・ラングが毎秒 {notch} フレーム以上、3 ラインコムが {comb3}（{stamp}）。リポジトリの性能レポートが記録するデシメーションとベクトル化のレバーの後の数字だ。「1 フレーム進める」はソースを 1 フレーム進める。「走らせる」は本物のフリーランで、ソースは壁時計に対して自身の正確なレートで進み、ページはできる分だけエンコードし、実際のディスプレイなら重複・欠落させたはずの分をドリフトカウンタが表示する。ブリッジのペーシング方針そのままに。
       </>
     ),
     patterns: (

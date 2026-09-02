@@ -107,9 +107,17 @@ def build_wasm(repo: Path) -> int:
         tags = run(["git", "tag", "--points-at", commit], repo).stdout.split()
         print(f"board-ntsc: building the bundle at {commit[:7]}"
               f"{' (' + ', '.join(tags) + ')' if tags else ''}...")
+        # simd128, explicitly and recorded: the repository's perf report
+        # (ntsc-crt docs/perf-report.md, 2026-09-02) measured the flag at
+        # 1.5x on the notch rung once the convolutions vectorized, and
+        # every browser since early 2023 (Chrome 91, Firefox 89, Safari
+        # 16.4) instantiates it. The flag lives here rather than in an
+        # ambient RUSTFLAGS so the bundle's provenance names it.
+        wasm_flags = "-C target-feature=+simd128"
         r = subprocess.run(
             ["wasm-pack", "build", "crates/ntsc-wasm", "--target", "web", "--release"],
-            cwd=clone, capture_output=True, text=True, env=env,
+            cwd=clone, capture_output=True, text=True,
+            env={**env, "RUSTFLAGS": wasm_flags},
         )
         if r.returncode != 0:
             fail(f"wasm-pack failed:\n{r.stderr[-2000:]}")
@@ -137,7 +145,7 @@ def build_wasm(repo: Path) -> int:
         "commit": commit,
         "tags": tags,
         "built_on": dt.date.today().isoformat(),
-        "built_with": f"{tool}; {rustc}",
+        "built_with": f"{tool}; {rustc}; RUSTFLAGS {wasm_flags}",
         "files": files,
     }
     RECORD.write_text(json.dumps(record, indent=2) + "\n")
@@ -200,8 +208,14 @@ def main() -> int:
     # the scanner's own rule that re-running a recorded best-of-N here would
     # replace a measurement with a noisier one.
     m2 = (repo / "docs" / "m2-report.md").read_text()
-    fps_notch = float(extract(m2, r"\| NES notch, wasm \(node v24\) \| ([0-9.]+) \|", "wasm notch fps"))
-    fps_comb3 = float(extract(m2, r"\| NES comb3, wasm \| ([0-9.]+) \|", "wasm comb3 fps"))
+    # The shipped bundle is the simd128 build, so the recorded figures are
+    # the perf report's simd128 rows, at the LOW end of the spread over
+    # fresh processes: the conservative number is the honest one to print.
+    perf = (repo / "docs" / "perf-report.md").read_text()
+    fps_notch = float(extract(
+        perf, r"\| NES notch, wasm \+simd128 \| [0-9.]+ \| ([0-9.]+) to", "simd notch fps"))
+    fps_comb3 = float(extract(
+        perf, r"\| NES comb3, wasm \+simd128 \| [0-9.]+ \| ([0-9.]+) to", "simd comb3 fps"))
 
     # The rates, recomputed exactly rather than extracted: the one place this
     # script measures instead of reading, because it can.
@@ -230,7 +244,7 @@ def main() -> int:
         "transcription_gate_values": gate_values,
         "blargg_zip_sha256": blargg_sha,
         "st170m_zip_sha256": smpte_sha,
-        "wasm_fps": {"notch": fps_notch, "comb3": fps_comb3, "stamp": "M2 run, node v24, Ryzen 5 5600X, best of 3"},
+        "wasm_fps": {"notch": fps_notch, "comb3": fps_comb3, "stamp": "perf-report run 2026-09-02, wasm+simd128 (the shipped bundle), node v24, Ryzen 5 5600X, low end of the spread over three fresh processes"},
         "rates": rates,
     }
     RECORD.write_text(json.dumps(record, indent=2) + "\n")

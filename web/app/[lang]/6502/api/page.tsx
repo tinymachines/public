@@ -65,7 +65,7 @@ export default async function ApiPage({ params }: { params: Promise<{ lang: Lang
           selector scoped to .apidoc-shell. Not one of its own rules is edited
           and not a word of it is retyped. */}
       <Untranslated lang={lang} />
-      <div className="apidoc-shell" lang="en" dangerouslySetInnerHTML={{ __html: body }} />
+      <div className="apidoc-shell" lang="en" dangerouslySetInnerHTML={{ __html: body.replace(/<main\b/g, "<div").replace(/<\/main>/g, "</div>") }} />
     </Shell>
   );
 }

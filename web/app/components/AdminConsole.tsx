@@ -183,7 +183,7 @@ export function AdminConsole() {
   }
 
   return (
-    <main className="prose">
+    <div className="prose">
       <Identity
         who={who}
         onSignOut={() => {
@@ -253,7 +253,7 @@ export function AdminConsole() {
           )}
         </>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -283,7 +283,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (key: string, who: WhoAmI) => void
   }
 
   return (
-    <main className="prose">
+    <div className="prose">
       <form onSubmit={submit} style={{ maxWidth: "34rem" }}>
         <div className={error ? "field bad" : "field"}>
           <label htmlFor="admin-key">Dev key</label>
@@ -317,7 +317,7 @@ function SignIn({ onSignedIn }: { onSignedIn: (key: string, who: WhoAmI) => void
         every admin key and a restart mints another, which is the recovery path
         rather than a flag to remember.
       </p>
-    </main>
+    </div>
   );
 }
 
