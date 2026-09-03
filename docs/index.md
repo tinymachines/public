@@ -127,7 +127,11 @@ golden traces rather than intentions. The new repositories are public:
   instead of against copies.
 - [2a03](https://github.com/tinymachines/2a03) is the NES CPU, the family's
   fifth chip through the same engine calls, and the first whose node golden
-  replays against its reference with no exemption list at all.
+  replays against its reference with no exemption list at all. It has also
+  made first sound: an authored program runs on the chip through a memory
+  harness, the reference's own run of the same program replays through it
+  bit-exact, and the square channel's output swings in plateaus whose
+  length derives from the program's own timer byte.
 - [2c02](https://github.com/tinymachines/2c02) is the PPU, whose golden now
   runs through the contract's pin frames, with a mutation that lies about
   one pin's polarity and must go red.

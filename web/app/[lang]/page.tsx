@@ -3,6 +3,7 @@ import type { Lang } from "@/lib/lang";
 import Link from "next/link";
 import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
+import { engine } from "@/lib/engine";
 import { arrivedSurfaces, projects } from "@/lib/projects";
 import { isHardRoute, whereToRead } from "@/lib/nav";
 import { Shell } from "@/app/components/SiteFrame";
@@ -115,6 +116,15 @@ const PROSE = {
         before anything is published or priced.
       </>
     ),
+    halfphiBoarded: (version: string, servedV: string, digest: string, identical: boolean) => (
+      <p className="halfphi-boarded">
+        <span className="measured">
+          the served release ({servedV}) carries halfphi {version}; its six
+          shared files hash to {digest}
+          {identical ? ", identical in both repositories" : ""}
+        </span>
+      </p>
+    ),
   },
   ja: {
     heroTitle: (
@@ -173,12 +183,22 @@ const PROSE = {
         <a href="https://github.com/tinymachines/public/blob/main/NOTICE.md">ライセンスの注記</a>を読むこと。
       </>
     ),
+    halfphiBoarded: (version: string, servedV: string, digest: string, identical: boolean) => (
+      <p className="halfphi-boarded">
+        <span className="measured">
+          提供中のリリース（{servedV}）は halfphi {version} を積む。共有 6
+          ファイルのハッシュは {digest}
+          {identical ? "。二つのリポジトリで同一" : ""}
+        </span>
+      </p>
+    ),
   },
 } as const;
 
 export default async function Home({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
   const S = PROSE[lang];
+  const eng = engine();
   const six = pieces();
   const die = chip();
   const hosted = six.filter((p) => p.public_url);
@@ -280,7 +300,15 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
 
       <h2 className="eyebrow">{S.startHere}</h2>
 
-      <Halfphi piece={{ ...halfphi, what: t(lang, halfphi.what) }} />
+      <Halfphi
+        piece={{ ...halfphi, what: t(lang, halfphi.what) }}
+        boarded={S.halfphiBoarded(
+          eng.halfphi.version,
+          eng.served.version,
+          eng.halfphi.shared_files_sha256.slice(0, 12),
+          eng.halfphi.standalone.shared_files_identical,
+        )}
+      />
 
       <h2 className="eyebrow">{S.pieceByPiece}</h2>
 

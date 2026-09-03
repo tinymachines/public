@@ -27,7 +27,7 @@ import type { Piece } from "@/lib/pieces";
  * panel" is the rule that keeps a dark box meaning "these values came off the
  * engine".
  */
-export function Halfphi({ piece }: { piece: Piece }) {
+export function Halfphi({ piece, boarded }: { piece: Piece; boarded?: React.ReactNode }) {
   return (
     <section className="rail halfphi">
       <Image
@@ -49,6 +49,10 @@ export function Halfphi({ piece }: { piece: Piece }) {
           <span className="tag">{piece.code_licence}</span>
           <span className="tag">{piece.ships_as}</span>
         </p>
+        {/* The boarded provenance line, composed by the page from
+            data/engine.json's slots: which version the served release
+            carries, and the digest a reader can check the tags against. */}
+        {boarded}
       </div>
     </section>
   );
