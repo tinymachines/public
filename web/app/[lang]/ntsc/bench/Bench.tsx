@@ -29,9 +29,9 @@ import {
 
 const S = {
   en: {
-    rung: "Separation rung",
-    notch: "notch (Rung A)",
-    comb3: "3-line comb (Rung C)",
+    rung: "Filter",
+    notch: "notch filter",
+    comb3: "3-line comb",
     pattern: "Pattern",
     hueBands: "hue bands",
     stripes: "stripes",
@@ -58,9 +58,9 @@ const S = {
     canvasLabel: "The decoded frame: 2048 samples by 240 lines of the active picture",
   },
   ja: {
-    rung: "分離ラング",
-    notch: "ノッチ (ラング A)",
-    comb3: "3 ラインコム (ラング C)",
+    rung: "フィルタ",
+    notch: "ノッチフィルタ",
+    comb3: "3 ラインコム",
     pattern: "パターン",
     hueBands: "色相帯",
     stripes: "ストライプ",

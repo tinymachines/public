@@ -55,7 +55,7 @@ test("the CRT frame is served, and the page says it is illustrative", async ({ p
   const r = await request.get("/ntsc/crt-hue-bands.png");
   expect(r.status()).toBe(200);
   expect(r.headers()["content-type"]).toContain("image/png");
-  await expect(page.locator(".crt-figure figcaption").first()).toContainText("Illustrative");
+  await expect(page.locator(".crt-figure figcaption").first()).toContainText("not as proof");
 
   // The repository is the story's home and must be linked.
   await expect(

@@ -102,8 +102,8 @@ edited.
 ## The third project
 
 [ntsc-crt](/ntsc) is signal-level NTSC: the composite waveform between a
-console and a tube, encoded from three sources, decoded through four
-separation rungs, and displayed through a five-stage CRT model. The 6502
+console and a tube, encoded from three sources, pulled apart by four
+different filters, and displayed through a five-stage CRT model. The 6502
 work simulates a chip at its switches; this simulates the signal, and the
 two meet at the NES.
 
@@ -119,23 +119,24 @@ this tree yet; it lives in
 
 [The console arc has a landing now](/nes), a measurement report in the
 house shape. The 6502 work and the signal work meet at the NES, and the meeting is now
-being built end to end, chip by chip, under a ratified plan whose gates are
-golden traces rather than intentions. The new repositories are public:
+being built end to end, chip by chip, under a written plan whose checkpoints
+are recorded reference traces rather than intentions. The new repositories
+are public:
 
 - [nes-bus](https://github.com/tinymachines/nes-bus) holds the contracts:
   the frame types and pin tables every chip crate speaks, dependency-free,
   so the PPU, the CPU and the encoder can be proven against each other
   instead of against copies.
 - [2a03](https://github.com/tinymachines/2a03) is the NES CPU, the family's
-  fifth chip through the same engine calls, and the first whose node golden
-  replays against its reference with no exemption list at all. It has also
-  made first sound: an authored program runs on the chip through a memory
-  harness, the reference's own run of the same program replays through it
-  bit-exact, and the square channel's output swings in plateaus whose
-  length derives from the program's own timer byte.
-- [2c02](https://github.com/tinymachines/2c02) is the PPU, whose golden now
-  runs through the contract's pin frames, with a mutation that lies about
-  one pin's polarity and must go red.
+  fifth chip through the same engine calls, and the first to match its
+  reference bit for bit with no list of exceptions at all. It has also
+  made first sound: a small program of ours runs on the chip through a
+  memory harness, the reference's own run of the same program replays
+  through it bit for bit, and the square channel's output swings in
+  plateaus whose length comes straight from the program's own timer byte.
+- [2c02](https://github.com/tinymachines/2c02) is the PPU, whose recorded
+  reference run now goes through the contract's pin frames, with a built-in
+  sabotage that lies about one pin's polarity and must make it fail.
 
 The fifth chip also settled a question the engine had carried since its
 first release: which way a group resolves when a layout pull fights an

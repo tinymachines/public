@@ -33,30 +33,32 @@ const PROSE = {
         switches; <Link href="/ntsc">ntsc-crt</Link> simulates the signal
         between a console and a tube. This project is where they stop being
         neighbours and become one machine: a working NES assembled chip by
-        chip, with the contracts between the chips proven by golden traces
-        rather than promised by documentation.
+        chip, with the contracts between the chips proven by recorded
+        reference traces rather than promised by documentation.
       </>
     ),
-    contractsH: "The contracts have a home, and lying about a pin goes red",
+    contractsH: "The chips share one contract, and a lie about a pin fails the tests",
     contracts: (busHref: string, ppuHref: string) => (
       <>
         <a data-address href={busHref}>nes-bus</a> holds the frame types and
-        pin tables every chip crate speaks, dependency-free. The gates are
-        not compile checks: the PPU&rsquo;s (
-        <a data-address href={ppuHref}>2c02</a>) node golden now replays
-        through the contract&rsquo;s pin frames, and a built-in mutation
-        that lies about one pin&rsquo;s polarity must send it red.
+        pin tables every chip crate speaks, dependency-free. These are not
+        just compile checks: the PPU&rsquo;s (
+        <a data-address href={ppuHref}>2c02</a>) recorded reference run now
+        replays through the contract&rsquo;s pin frames, and a built-in
+        sabotage that lies about one pin&rsquo;s polarity must make it
+        fail.
       </>
     ),
-    fifthH: "The fifth chip replays its reference with no exemption list",
+    fifthH: "The fifth chip matches its reference exactly, with no list of exceptions",
     fifth: (r: ReturnType<typeof nes>, repoHref: string) => (
       <>
         <a data-address href={repoHref}>2a03</a> is the NES CPU: a 6502
         core, the clock divider, the audio units, all
         {" "}{r.a0.transistors} transistors over {r.a0.defined_nodes} defined
-        nodes, agreed by both real parsers. Its node golden replays against
-        the reference simulator bit-exact across {r.a0.golden_states} states
-        with no exemption list at all, the first chip in the family to
+        nodes, counted identically by two independent parsers. Its recorded
+        run replays against the reference simulator bit for bit across{" "}
+        {r.a0.golden_states} states with no list of exceptions at all, the
+        first chip in the family to
         manage it. Getting there settled a question the engine had carried
         since its first release: the 2A03 forms {r.a0.contested_groups}{" "}
         contested groups at power-on where a layout pull fights an external
@@ -68,38 +70,39 @@ const PROSE = {
     soundH: "First sound, and the note is exactly the program's",
     sound: (r: ReturnType<typeof nes>) => (
       <>
-        An authored program runs on the chip through a memory harness and
-        makes the square channel sing. The reference&rsquo;s own run of the
-        same program replays through the harness bit-exact over{" "}
+        A small program of ours runs on the chip through a memory harness
+        and makes the square channel sing. The reference&rsquo;s own run of
+        the same program replays through the harness bit for bit over{" "}
         {r.first_sound.golden_states} states: the core, the audio units and
-        the bus glue under one comparison. The note is measured, not
-        assumed: the channel&rsquo;s output swings in plateaus of exactly{" "}
+        the bus glue under one comparison. And we measured the note itself
+        rather than assuming it: the channel&rsquo;s output swings in
+        plateaus of exactly{" "}
         {r.first_sound.plateau_half_steps} half-steps, {r.first_sound.plateaus_measured}{" "}
-        of them measured, where {r.first_sound.plateau_half_steps} derives
-        from the program&rsquo;s own timer byte ({r.first_sound.timer_byte}).
-        Under mutation the harness serves that byte wrong, and both gates go
-        red: the replay at the byte&rsquo;s first bus crossing, and the
-        plateau at the mutated arithmetic&rsquo;s own number.
+        of them counted, and {r.first_sound.plateau_half_steps} comes
+        straight from the program&rsquo;s own timer byte ({r.first_sound.timer_byte}).
+        As sabotage, the test harness serves that byte wrong, and both
+        checks fail: the replay at the byte&rsquo;s first bus crossing, and
+        the plateau count at exactly the number the wrong byte predicts.
       </>
     ),
     soundAlt:
       "Two aligned traces: the square channel's 4-bit output code swinging between 0 and 15 in regular plateaus, and the same run mixed to the AD1 pin's level.",
     soundCaption: (r: ReturnType<typeof nes>) => (
       <>
-        The measurement itself: sq0_out sampled every CPU half-step off the
+        The trace we measured: sq0_out sampled every CPU half-step off the
         running chip, and the same run through the transcribed mixer as the
         AD1 pin&rsquo;s level ({r.first_sound.ad1_high} at the top).
-        The mixer constants are the nesdev wiki&rsquo;s, a dated claim
-        awaiting the bench.
+        The mixer constants are the nesdev wiki&rsquo;s; we have not yet
+        put them on the bench ourselves.
       </>
     ),
-    boardedH: "Measured for this page, not copied from the reports",
+    boardedH: "Every number here comes from re-running the tests",
     boardedIntro: (date: string) => (
       <>
-        The figures below were re-measured on {date} by running the chip
-        repository&rsquo;s own suite, with its netlist and goldens required,
-        and its MUTATE=1 run, at the recorded commit; this page reads only
-        what that run wrote.
+        The figures below come from running the chip repository&rsquo;s own
+        suite again on {date}, with its netlist and reference runs
+        required, plus its MUTATE=1 run, all at the recorded commit; this
+        page reads only what that run wrote.
       </>
     ),
     mTests: (n: number) => <>suite: <b>{n} tests green</b></>,
@@ -111,13 +114,14 @@ const PROSE = {
     aheadH: "The milestones between here and a bootable console",
     ahead: (sketchHref: string) => (
       <>
-        The plan is written down and ratified:{" "}
+        The plan is written down and agreed:{" "}
         <a href={sketchHref}>the end-to-end sketch</a> in the contract
-        repository, with a gate per milestone. Still ahead, in order: the
-        PPU&rsquo;s contested corners (sprite-0, the vblank read race, OAM
-        corruption) by crafted micro-trace; the 2A03&rsquo;s core held to
+        repository, with a check per milestone. Still ahead, in order: the
+        PPU&rsquo;s tricky corners (sprite-0, the vblank read race, OAM
+        corruption), each pinned by a small crafted trace; the
+        2A03&rsquo;s core held to
         the 6502 pin contract in lockstep; the fast per-dot PPU with its
-        gate stated in frame time; and then the glue, a cartridge, and both
+        check stated in frame time; and then the glue, a cartridge, and both
         chips making a frame together. The signal side is already real:{" "}
         <Link href="/ntsc">the ntsc page</Link> carries frames decoded from
         a physical console.
@@ -136,38 +140,38 @@ const PROSE = {
   ja: {
     kinship: (
       <>
-        <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬し、<Link href="/ja/ntsc">ntsc-crt</Link> はコンソールとブラウン管の間の信号を模擬する。このプロジェクトは、その二つが隣人であることをやめて一台の機械になる場所だ: 動く NES をチップごとに組み上げ、チップ間の規約は文書の約束ではなくゴールデントレースで証明する。
+        <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬し、<Link href="/ja/ntsc">ntsc-crt</Link> はコンソールとブラウン管の間の信号を模擬する。このプロジェクトは、その二つが隣人であることをやめて一台の機械になる場所だ: 動く NES をチップごとに組み上げ、チップ間の規約は文書の約束ではなく、記録済みのリファレンストレースで証明する。
       </>
     ),
-    contractsH: "規約には家があり、ピンについて嘘をつけば赤になる",
+    contractsH: "チップは一つの規約を共有し、ピンについての嘘はテストで落ちる",
     contracts: (busHref: string, ppuHref: string) => (
       <>
-        <a data-address href={busHref}>nes-bus</a> は、すべてのチップクレートが話すフレーム型とピン表を依存ゼロで持つ。ゲートはコンパイル検査ではない: PPU（<a data-address href={ppuHref}>2c02</a>）のノード・ゴールデンはいま規約のピンフレームを通して再生され、一本のピンの極性について嘘をつく組み込みミューテーションは赤にならなければならない。
+        <a data-address href={busHref}>nes-bus</a> は、すべてのチップクレートが話すフレーム型とピン表を依存ゼロで持つ。これは単なるコンパイル検査ではない: PPU（<a data-address href={ppuHref}>2c02</a>）の記録済みリファレンス走行はいま規約のピンフレームを通して再生され、一本のピンの極性について嘘をつく仕込みの妨害は、再生を失敗させなければならない。
       </>
     ),
-    fifthH: "五つ目のチップは、例外リストなしでリファレンスを再生する",
+    fifthH: "五つ目のチップは、例外リストなしにリファレンスと厳密に一致する",
     fifth: (r: ReturnType<typeof nes>, repoHref: string) => (
       <>
-        <a data-address href={repoHref}>2a03</a> は NES の CPU: 6502 コア、クロック分周器、音源ユニット、合わせて {r.a0.transistors} 個のトランジスタと {r.a0.defined_nodes} 個の定義済みノードで、二つの実パーサが数を一致させた。ノード・ゴールデンはリファレンスシミュレータに対し {r.a0.golden_states} 状態をビット単位で、例外リストを一切持たずに再生する。一族で最初のチップだ。そこへ至る途中で、エンジンが初版から抱えていた問いも決着した: 2A03 は電源投入時に、レイアウトのプルと外部駆動が争うグループを {r.a0.contested_groups} 個作る（どのチップでも初のゼロでない数）。halfphi {r.halfphi} はそれをシリコンと同じ向きに解決し、他のどのチップでも観測不能であることが証明されている。
+        <a data-address href={repoHref}>2a03</a> は NES の CPU: 6502 コア、クロック分周器、音源ユニット、合わせて {r.a0.transistors} 個のトランジスタと {r.a0.defined_nodes} 個の定義済みノードで、二つの独立したパーサが同じ数を数えた。記録済みの走行はリファレンスシミュレータに対し {r.a0.golden_states} 状態をビット単位で、例外リストを一切持たずに再生する。一族で最初のチップだ。そこへ至る途中で、エンジンが初版から抱えていた問いも決着した: 2A03 は電源投入時に、レイアウトのプルと外部駆動が争うグループを {r.a0.contested_groups} 個作る（どのチップでも初のゼロでない数）。halfphi {r.halfphi} はそれをシリコンと同じ向きに解決し、他のどのチップでも観測不能であることが証明されている。
       </>
     ),
     soundH: "最初の音。そして音程はプログラムそのもの",
     sound: (r: ReturnType<typeof nes>) => (
       <>
-        作曲済みのプログラムがメモリハーネス越しにチップ上で走り、方形波チャネルを歌わせる。同じプログラムをリファレンス自身が走らせた結果は、ハーネスを通して {r.first_sound.golden_states} 状態をビット単位で再生する: コアと音源ユニットとバスの糊を、一つの比較の下で。音程は仮定ではなく実測だ: チャネルの出力はちょうど {r.first_sound.plateau_half_steps} ハーフステップの台地で振れ、{r.first_sound.plateaus_measured} 個が実測された。{r.first_sound.plateau_half_steps} はプログラム自身のタイマーバイト（{r.first_sound.timer_byte}）から導かれる。ミューテーションではハーネスがそのバイトを偽って供給し、両方のゲートが赤になる: 再生はバイトが最初にバスを渡る瞬間に、台地は偽の算術が言う数そのもので。
+        うちの小さなプログラムがメモリハーネス越しにチップ上で走り、方形波チャネルを歌わせる。同じプログラムをリファレンス自身が走らせた結果は、ハーネスを通して {r.first_sound.golden_states} 状態をビット単位で再生する: コアと音源ユニットとバスの糊を、一つの比較の下で。そして音程は仮定ではなく、こちらで実測した: チャネルの出力はちょうど {r.first_sound.plateau_half_steps} ハーフステップの台地で振れ、{r.first_sound.plateaus_measured} 個を数えた。{r.first_sound.plateau_half_steps} はプログラム自身のタイマーバイト（{r.first_sound.timer_byte}）から直接来る。妨害としてテストハーネスがそのバイトを偽って供給すると、二つの検査が両方落ちる: 再生はバイトが最初にバスを渡る瞬間に、台地の数は偽のバイトが予言する数そのもので。
       </>
     ),
     soundAlt:
       "揃えた二本のトレース: 方形波チャネルの 4 ビット出力コードが 0 と 15 の間を規則的な台地で振れ、同じ走行がミキサーを通って AD1 ピンのレベルになる。",
     soundCaption: (r: ReturnType<typeof nes>) => (
       <>
-        実測そのもの: 走行中のチップから CPU ハーフステップごとに読んだ sq0_out と、同じ走行を転記済みミキサーに通した AD1 ピンのレベル（上端は {r.first_sound.ad1_high}）。ミキサー定数は nesdev wiki のもので、ベンチを待つ日付入りの主張だ。
+        実測したトレース: 走行中のチップから CPU ハーフステップごとに読んだ sq0_out と、同じ走行を転記済みミキサーに通した AD1 ピンのレベル（上端は {r.first_sound.ad1_high}）。ミキサー定数は nesdev wiki のもので、まだ自分たちのベンチには載せていない。
       </>
     ),
-    boardedH: "このページのために実測した。報告書から写していない",
+    boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
-        下の数字は {date} に、記録されたコミットでチップリポジトリ自身のスイート（ネットリストとゴールデンを必須にして）と MUTATE=1 走行を実行し直して得たもので、このページはその走行が書いたものだけを読む。
+        下の数字は {date} に、記録されたコミットでチップリポジトリ自身のスイート（ネットリストとリファレンス走行を必須にして）と MUTATE=1 をもう一度走らせて得たもので、このページはその走行が書いたものだけを読む。
       </>
     ),
     mTests: (n: number) => <>スイート: <b>{n} テスト緑</b></>,
@@ -179,7 +183,7 @@ const PROSE = {
     aheadH: "ここから起動するコンソールまでのマイルストーン",
     ahead: (sketchHref: string) => (
       <>
-        計画は書かれ、批准済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとのゲートがある。これから順に: PPU の争いの多い隅（スプライト 0、vblank 読み出しレース、OAM 破損）をマイクロトレースで、2A03 のコアを 6502 ピン規約とロックステップで、フレーム時間でゲートを述べる高速なドット単位 PPU、そして糊とカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載っている。
+        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。これから順に: PPU の厄介な隅（スプライト 0、vblank 読み出しレース、OAM 破損）をそれぞれ小さな専用トレースで留め、2A03 のコアを 6502 ピン規約とロックステップで、フレーム時間で検査を述べる高速なドット単位 PPU、そして糊とカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載っている。
       </>
     ),
     repo: (href: string) => (

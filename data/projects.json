@@ -217,7 +217,7 @@
   {
    "key": "ntsc",
    "name": "ntsc-crt",
-   "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, decoded through four separation rungs, displayed through a five-stage CRT model, with an oracle and a way to fail at every stage.",
+   "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, pulled apart by four different filters, and displayed through a five-stage CRT model, with a check that can fail at every stage.",
    "silo": "style/projects/ntsc.css",
    "status": "here",
    "surfaces": [
@@ -237,7 +237,7 @@
     {
      "key": "bench",
      "name": "The bench",
-     "what": "The signal path live in the page: dot planes encoded to the composite waveform and decoded on the rung you choose, with the drift counters visible.",
+     "what": "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
      "nav": false,
      "nav_label": "Bench",
      "piece": null,
@@ -253,14 +253,14 @@
   {
    "key": "nes",
    "name": "the NES console",
-   "what": "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by golden traces, and the signal path already real.",
+   "what": "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by recorded reference traces, and the signal path already real.",
    "silo": "style/projects/nes.css",
    "status": "here",
    "surfaces": [
     {
      "key": "site",
      "name": "The console arc",
-     "what": "What exists, what each gate proved, and the milestones between here and a bootable console.",
+     "what": "What exists, what each check proved, and the milestones between here and a bootable console.",
      "nav": false,
      "nav_label": null,
      "piece": null,

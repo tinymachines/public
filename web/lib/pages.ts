@@ -102,17 +102,17 @@ export const PAGES: Record<string, FixedPage> = {
   "/nes": {
     title: "the NES console",
     description:
-      "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by golden traces, and first sound already played.",
+      "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.",
   },
   "/ntsc": {
     title: "ntsc-crt",
     description:
-      "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with an oracle at every stage and three spec claims that did not survive measurement.",
+      "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with a check at every stage and three spec claims that did not survive measurement.",
   },
   "/ntsc/bench": {
     title: "The ntsc bench",
     description:
-      "The signal path live in the page: dot planes encoded to the composite waveform and decoded on the rung you choose, with the drift counters visible.",
+      "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
   },
   "/style": {
     title: "Style guide",

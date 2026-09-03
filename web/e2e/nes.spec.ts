@@ -59,5 +59,5 @@ test("the Japanese page carries a Japanese body, not a fallback", async ({ page 
   await open(page, "/ja/nes", 500);
   const text = await page.locator("main").innerText();
   expect(text).toContain("実測");
-  expect(text).not.toContain("no exemption list at all");
+  expect(text).not.toContain("no list of exceptions at all");
 });
