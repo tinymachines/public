@@ -51,8 +51,8 @@ publishes the threshold as `reject_us` in [/stats](https://hotbits.tinymachines.
 ## What it costs
 
 A bit consumes two fresh intervals, so the byte rate is set by the tube and
-the source geometry and by nothing downstream. Measured on 2026-08-24 by
-watching `/stats` for six minutes: the pool grew 216 bytes in 362 seconds,
+the source geometry and by nothing downstream. We measured it on 2026-08-24
+by watching `/stats` for six minutes: the pool grew 216 bytes in 362 seconds,
 which is **about 36 bytes a minute, about 4.8 bits a second**. The service's
 own retirement notice cites about 75 bytes a minute, a figure from when it was
 written; the rate moves when the source or the tube moves, which is why the

@@ -53,7 +53,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
     phase: t(lang, "Phase space"),
     phaseWhy: t(
       lang,
-      "Not the bits: the measurements. Each point is one window of output placed by its own bias, entropy and serial correlation, so the cloud is the source describing itself over the last day rather than a single snapshot.",
+      "This one plots the measurements rather than the bits themselves. Each point is one window of output placed by its own bias, entropy and serial correlation, so the cloud is the source describing itself over the last day rather than a single snapshot.",
     ),
   };
 

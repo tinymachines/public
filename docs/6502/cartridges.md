@@ -57,9 +57,9 @@ request read back.** The console asks for `frameCost` half-cycles and then
 reports what it spent, so whatever was written there confirmed itself: 12,000
 was a number the file had typed, not a number the chip had produced.
 
-Measured on the ladder, Die Runner's steady frame is **8,704**, rock solid over
-twelve frames, with the first at 5,440. That is about 28% less chip time a
-frame than the page was buying.
+We ran it and measured: Die Runner's steady frame is **8,704**, rock solid
+over twelve frames, with the first at 5,440. That is about 28% less chip time
+a frame than the page was buying.
 
 ## Loading one
 

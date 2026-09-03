@@ -23,8 +23,8 @@ The wasm crate exports `exportMachine()` and `importState()`, both built on the
 same codec the service uses: `state::snapshot` and `MachineState::from_hex`, in
 `crates/v6502-sim/src/state.rs`. `exportMachine()` emits the API's own JSON.
 
-So the two surfaces already exchange a machine. Verified against the live API
-rather than read off the source: a machine shaped exactly as the wasm emits it,
+So the two surfaces already exchange a machine. We verified this against the
+live API rather than reading it off the source: a machine shaped exactly as the wasm emits it,
 **including the missing `version` field**, is accepted by `POST /v1/step` and
 steps correctly. `version` carries a default, so its absence is not an error.
 

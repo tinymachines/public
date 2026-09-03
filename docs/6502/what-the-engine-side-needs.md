@@ -37,7 +37,7 @@ time.
 service already uses: `state::snapshot` and `MachineState::from_hex`.
 `exportMachine()` emits the API's own `{state, memory}` JSON.
 
-Measured rather than read: a machine shaped exactly as the wasm emits it,
+We measured this rather than reading it: a machine shaped exactly as the wasm emits it,
 including the missing `version` field, was posted to the live `POST /v1/step`
 and stepped from half-cycle 0 to 8. `version` is `const 1` with a default and
 is absent from the schema's `required` list, so its absence validates.
@@ -151,7 +151,7 @@ worth causing one.
 The list above is mostly deficits, and the balance is misleading.
 
 - **The codec is the same on both sides and it is written down.** Lowercase
-  hex, bit *i* of a set in byte *i*/8 LSB first. Measured on a live machine:
+  hex, bit *i* of a set in byte *i*/8 LSB first. We measured it on a live machine:
   216 bytes per node set, 432 hex characters, and 439 bytes for the transistor
   set, 878 characters. Exactly the numbers the brief states.
 - **`exportMachine` emits the service's shape rather than a second one.** That
