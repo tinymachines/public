@@ -117,7 +117,8 @@ this tree yet; it lives in
 
 ## The console taking shape
 
-The 6502 work and the signal work meet at the NES, and the meeting is now
+[The console arc has a landing now](/nes), a measurement report in the
+house shape. The 6502 work and the signal work meet at the NES, and the meeting is now
 being built end to end, chip by chip, under a ratified plan whose gates are
 golden traces rather than intentions. The new repositories are public:
 

@@ -2409,3 +2409,27 @@ it and board-engine.py --board re-runs; the engine record still says
 0.1.2 and is honest about the commit it describes. And the new
 repositories are not registered as projects or pieces; they are links in
 a docs section until they have surfaces of their own.
+
+## Checkpoint, 2026-09-03, the fourth project registered
+
+/nes: the console arc's landing, registered the way the third was and
+verified against the same checklist. The manifest row (projects.json,
+with ja.json for its strings), the silo (style/projects/nes.css,
+accent Mustard Conductor, the last unclaimed categorical hue, imported
+by globals.css), lib/pages.ts (+ the projectFor regex), the sitemap,
+the deploy stage-6 sweep list, the e2e spec, and the docs index's
+console section linking the landing (en and ja). The front page and
+navigation derive it from the manifest without edits.
+
+Its record: data/nes.json, written only by scripts/board-nes.py
+--board, which runs the 2a03 repository's full suite (netlist and
+goldens REQUIRED) and its MUTATE=1 run (which must go red) at the
+pinned commit, then extracts every figure by anchored regex from the
+repository's own milestone reports, recomputing where arithmetic
+allows (the plateau from the program's timer byte; the mixer level
+from the constants mixer.rs transcribed) and refusing on disagreement.
+First boarding: be0d3c9, 5 tests green, 2 MUTATE reds, halfphi 0.1.3.
+
+The one figure, web/public/nes/first-sound.png, is the A3
+measurement drawn from the repository's own a3-dump example at the
+boarded commit, with provenance rows in web/public/nes/README.md.

@@ -1,0 +1,53 @@
+/* ---------------------------------------------------------------------------
+   the NES console: the project silo. One knob turned, the rest reserved.
+
+   The fourth project under the roof: the console arc, the chips and the
+   contracts between them being assembled into a working NES. Its palette,
+   its display face and its mark are the owner's, exactly as the other
+   silos are, so nothing is invented here. This file shows where the levers
+   are so that designing the console pages is a matter of filling in values
+   rather than working out which values a project is allowed to have.
+
+   style/check-silo.py enforces the list. It fails if a silo assigns anything
+   outside it, invents a token, or lands a text pair below WCAG AA against
+   the palette it would really render with.
+   ------------------------------------------------------------------------ */
+
+[data-project="nes"] {
+
+  /* THE ACCENT, the one thing chosen so far: Mustard Conductor, the last
+     unclaimed categorical hue, for the project whose subject is the traces
+     that carry the chips' signals to each other. Chosen from the four
+     rather than invented. Both forms, because the tile in the bar is read
+     on ink and the eyebrows are read on paper. */
+  --color-accent:     var(--color-mustard);
+  --color-accent-ink: var(--color-mustard-ink);
+
+  /* THE CATEGORICAL HUES. Four, each in two forms, because contrast is
+     ground-dependent: the base reads on panel, the -ink form reads on paper.
+     Using the wrong one is the single most common way this palette goes
+     illegible, and the checker computes both. */
+
+  /* --color-burnt:       ; --color-burnt-ink:   ; */
+  /* --color-mustard:     ; --color-mustard-ink: ; */
+  /* --color-forest:      ; --color-forest-ink:  ; */
+  /* --color-ocean:       ; --color-ocean-ink:   ; */
+
+  /* THE GROUNDS. Their meaning is fixed everywhere (paper is documentation,
+     panel is the machine talking) and only their values are a project's. */
+
+  /* --color-paper:       ; --color-paper-sunk:  ; */
+  /* --color-panel:       ; --color-panel-raised: ; --color-panel-sunk: ; */
+  /* --color-ink:         ; --color-ink-muted:   ; --color-ink-faint: ; */
+  /* --color-glass:       ; --color-glass-muted: ; */
+
+  /* THE DISPLAY FACE. tokens.css calls this the swap seam. */
+
+  /* --font-display:      ; */
+
+  /* NOT AVAILABLE HERE, and the checker will say so: the logic accents
+     (blue is ACTIVE, orange is ATTENTION, red is ASSERTION FAILED), the
+     drive ramp, the chrome set, the type scale, the grid unit, the motion
+     curves, the shadows and the radii. Those are what a reader carries
+     between projects. */
+}

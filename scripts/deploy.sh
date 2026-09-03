@@ -349,7 +349,7 @@ bad=0
 # our deploy depend on a row in somebody else's database.
 for p in / /docs /docs/6502 /docs/6502/atlas /docs/6502/idioms /docs/6502/walk-snake /docs/hotbits /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
          /6502 /6502/explorer /6502/games /6502/manage /6502/lab /6502/builders /6502/builders/nobody /6502/api \
-         /hotbits /hotbits/api /ntsc /ntsc/bench /ntsc/wasm/ntsc_wasm_bg.wasm /ja /ja/docs /ja/6502/explorer \
+         /hotbits /hotbits/api /ntsc /ntsc/bench /nes /ntsc/wasm/ntsc_wasm_bg.wasm /ja /ja/docs /ja/6502/explorer \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   printf '  %-28s %s\n' "$p" "$code"

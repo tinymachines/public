@@ -1,254 +1,277 @@
 {
-  "measured_on": "2026-08-23",
-  "note": "serves_today was probed, not remembered. lands_at is a proposal until lands_at_settled is true: see PROJECTS.md. nav decides what the site navigation shows, and it is the only list of that.",
-  "projects": [
+ "measured_on": "2026-08-23",
+ "note": "serves_today was probed, not remembered. lands_at is a proposal until lands_at_settled is true: see PROJECTS.md. nav decides what the site navigation shows, and it is the only list of that.",
+ "projects": [
+  {
+   "key": "roof",
+   "name": "tinymachines.ai",
+   "what": "The front door, the documentation, the style guide and the site's own API.",
+   "silo": null,
+   "status": "serving",
+   "surfaces": [
     {
-      "key": "roof",
-      "name": "tinymachines.ai",
-      "what": "The front door, the documentation, the style guide and the site's own API.",
-      "silo": null,
-      "status": "serving",
-      "surfaces": [
-        {
-          "key": "site",
-          "name": "The main site",
-          "nav": false,
-          "nav_label": null,
-          "what": "The front page.",
-          "piece": null,
-          "serves_today": "https://tinymachines.ai",
-          "lands_at": "/",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        },
-        {
-          "key": "docs",
-          "name": "The documentation tree",
-          "nav": true,
-          "nav_label": "Documentation",
-          "what": "The written documentation, with its navigation built from the documents themselves.",
-          "piece": null,
-          "serves_today": "https://tinymachines.ai/docs",
-          "lands_at": "/docs",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        },
-        {
-          "key": "style",
-          "name": "The style guide",
-          "nav": true,
-          "nav_label": "Style guide",
-          "what": "The guide and the widget zoo: every component, shown working.",
-          "piece": null,
-          "serves_today": "https://tinymachines.ai/style",
-          "lands_at": "/style",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        },
-        {
-          "key": "admin",
-          "name": "Admin",
-          "nav": false,
-          "nav_label": null,
-          "what": "Dev keys and the people they belong to.",
-          "piece": null,
-          "serves_today": "https://tinymachines.ai/admin",
-          "lands_at": "/admin",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        },
-        {
-          "key": "api",
-          "name": "The roof API",
-          "nav": true,
-          "nav_label": "API",
-          "what": "What the pieces are and which of them are answering, spoken as REST and as MCP.",
-          "piece": null,
-          "serves_today": "https://tinymachines.ai/api/",
-          "lands_at": "/api",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": false
-        }
-      ],
-      "landing": "/"
+     "key": "site",
+     "name": "The main site",
+     "nav": false,
+     "nav_label": null,
+     "what": "The front page.",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai",
+     "lands_at": "/",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
     },
     {
-      "key": "6502",
-      "name": "6502",
-      "what": "A transistor-level MOS 6502 traced from die photographs, and everything built on it: the explorer, the API over the real chip, the warm engine process and the console.",
-      "silo": "style/projects/6502.css",
-      "status": "moving",
-      "surfaces": [
-        {
-          "key": "explorer",
-          "name": "The explorer",
-          "what": "The die itself, lit by what it is doing, plus the measured tables and the primer.",
-          "piece": "explorer",
-          "serves_today": "https://6502.tinymachines.ai",
-          "lands_at": "/6502/explorer",
-          "lands_at_settled": true,
-          "status": "here",
-          "nav": false,
-          "nav_label": "Explorer",
-          "prerendered": true
-        },
-        {
-          "key": "api",
-          "name": "The 6502 API",
-          "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference checks itself against the running service.",
-          "piece": "chip-api",
-          "serves_today": "https://tinymachines.ai/6502/api/",
-          "lands_at": "/6502/api",
-          "lands_at_settled": true,
-          "status": "here; the subdomain still answers too, until the forward (notes/forward.md)",
-          "nav": false,
-          "nav_label": "6502 API",
-          "prerendered": true
-        },
-        {
-          "key": "games",
-          "name": "Die Runner",
-          "what": "Die Runner: a console whose frames are run on the real die. The builder pages and the cartridge editor live beside it.",
-          "piece": "console",
-          "serves_today": "https://games.tinymachines.ai",
-          "lands_at": "/6502/games",
-          "lands_at_settled": true,
-          "status": "here",
-          "nav": false,
-          "nav_label": null,
-          "prerendered": true
-        },
-        {
-          "key": "editor",
-          "name": "The editor",
-          "what": "Claim a handle, edit your page, publish a ROM: the registry's writing half, signed in with your token.",
-          "piece": null,
-          "serves_today": "https://games.tinymachines.ai/manage",
-          "lands_at": "/6502/manage",
-          "lands_at_settled": true,
-          "status": "here",
-          "nav": false,
-          "nav_label": "Editor",
-          "prerendered": true
-        },
-        {
-          "key": "registry",
-          "name": "The registry",
-          "what": "Everyone publishing cartridges, and what they published.",
-          "piece": null,
-          "serves_today": "https://games.tinymachines.ai/builders",
-          "lands_at": "/6502/builders",
-          "lands_at_settled": true,
-          "status": "here",
-          "nav": false,
-          "nav_label": "Registry",
-          "prerendered": true
-        },
-        {
-          "key": "lab",
-          "name": "The halfwave lab",
-          "what": "A 6502, half a clock phase at a time. The research bench, and it stays one.",
-          "piece": "halfwave",
-          "serves_today": "https://halfwave.tinymachines.ai",
-          "lands_at": "/6502/lab",
-          "lands_at_settled": true,
-          "status": "here",
-          "nav": false,
-          "nav_label": "Halfwave Lab",
-          "prerendered": true
-        },
-        {
-          "key": "archive",
-          "name": "The visual6502 archive",
-          "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it: the wiki rebuilt from its wikitext and the die photography made browsable again.",
-          "nav": false,
-          "nav_label": "visual6502 Archive",
-          "piece": null,
-          "serves_today": "https://6502.tinymachines.ai/archive/",
-          "lands_at": "/6502/archive",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        }
-      ],
-      "landing": "/6502"
+     "key": "docs",
+     "name": "The documentation tree",
+     "nav": true,
+     "nav_label": "Documentation",
+     "what": "The written documentation, with its navigation built from the documents themselves.",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/docs",
+     "lands_at": "/docs",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
     },
     {
-      "key": "hotbits",
-      "name": "hotbits",
-      "what": "True random bytes from the decay of a radioactive source: a Geiger counter on a Pi, with bits taken from the timing between decay events.",
-      "silo": "style/projects/hotbits.css",
-      "status": "moving",
-      "surfaces": [
-        {
-          "key": "gateway",
-          "name": "The entropy gateway",
-          "what": "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone.",
-          "nav": false,
-          "nav_label": "hotbits API",
-          "piece": null,
-          "serves_today": "https://hotbits.tinymachines.ai/v1/seeds",
-          "lands_at": "/hotbits/api",
-          "lands_at_settled": true,
-          "status": "documented here, not moved",
-          "prerendered": true
-        },
-        {
-          "key": "trng",
-          "name": "The Geiger TRNG",
-          "what": "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors.",
-          "nav": false,
-          "nav_label": "Geiger TRNG",
-          "piece": null,
-          "serves_today": "https://hotbits.tinymachines.ai/openapi.json",
-          "lands_at": "/hotbits",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        }
-      ],
-      "landing": "/hotbits"
+     "key": "style",
+     "name": "The style guide",
+     "nav": true,
+     "nav_label": "Style guide",
+     "what": "The guide and the widget zoo: every component, shown working.",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/style",
+     "lands_at": "/style",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
     },
     {
-      "key": "ntsc",
-      "name": "ntsc-crt",
-      "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, decoded through four separation rungs, displayed through a five-stage CRT model, with an oracle and a way to fail at every stage.",
-      "silo": "style/projects/ntsc.css",
-      "status": "here",
-      "surfaces": [
-        {
-          "key": "site",
-          "name": "The measurement report",
-          "what": "What was built, what was measured, and the three spec claims that did not survive measurement.",
-          "nav": false,
-          "nav_label": null,
-          "piece": null,
-          "serves_today": "https://tinymachines.ai/ntsc",
-          "lands_at": "/ntsc",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        },
-        {
-          "key": "bench",
-          "name": "The bench",
-          "what": "The signal path live in the page: dot planes encoded to the composite waveform and decoded on the rung you choose, with the drift counters visible.",
-          "nav": false,
-          "nav_label": "Bench",
-          "piece": null,
-          "serves_today": "https://tinymachines.ai/ntsc/bench",
-          "lands_at": "/ntsc/bench",
-          "lands_at_settled": true,
-          "status": "here",
-          "prerendered": true
-        }
-      ],
-      "landing": "/ntsc"
+     "key": "admin",
+     "name": "Admin",
+     "nav": false,
+     "nav_label": null,
+     "what": "Dev keys and the people they belong to.",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/admin",
+     "lands_at": "/admin",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "api",
+     "name": "The roof API",
+     "nav": true,
+     "nav_label": "API",
+     "what": "What the pieces are and which of them are answering, spoken as REST and as MCP.",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/api/",
+     "lands_at": "/api",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": false
     }
-  ]
+   ],
+   "landing": "/"
+  },
+  {
+   "key": "6502",
+   "name": "6502",
+   "what": "A transistor-level MOS 6502 traced from die photographs, and everything built on it: the explorer, the API over the real chip, the warm engine process and the console.",
+   "silo": "style/projects/6502.css",
+   "status": "moving",
+   "surfaces": [
+    {
+     "key": "explorer",
+     "name": "The explorer",
+     "what": "The die itself, lit by what it is doing, plus the measured tables and the primer.",
+     "piece": "explorer",
+     "serves_today": "https://6502.tinymachines.ai",
+     "lands_at": "/6502/explorer",
+     "lands_at_settled": true,
+     "status": "here",
+     "nav": false,
+     "nav_label": "Explorer",
+     "prerendered": true
+    },
+    {
+     "key": "api",
+     "name": "The 6502 API",
+     "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference checks itself against the running service.",
+     "piece": "chip-api",
+     "serves_today": "https://tinymachines.ai/6502/api/",
+     "lands_at": "/6502/api",
+     "lands_at_settled": true,
+     "status": "here; the subdomain still answers too, until the forward (notes/forward.md)",
+     "nav": false,
+     "nav_label": "6502 API",
+     "prerendered": true
+    },
+    {
+     "key": "games",
+     "name": "Die Runner",
+     "what": "Die Runner: a console whose frames are run on the real die. The builder pages and the cartridge editor live beside it.",
+     "piece": "console",
+     "serves_today": "https://games.tinymachines.ai",
+     "lands_at": "/6502/games",
+     "lands_at_settled": true,
+     "status": "here",
+     "nav": false,
+     "nav_label": null,
+     "prerendered": true
+    },
+    {
+     "key": "editor",
+     "name": "The editor",
+     "what": "Claim a handle, edit your page, publish a ROM: the registry's writing half, signed in with your token.",
+     "piece": null,
+     "serves_today": "https://games.tinymachines.ai/manage",
+     "lands_at": "/6502/manage",
+     "lands_at_settled": true,
+     "status": "here",
+     "nav": false,
+     "nav_label": "Editor",
+     "prerendered": true
+    },
+    {
+     "key": "registry",
+     "name": "The registry",
+     "what": "Everyone publishing cartridges, and what they published.",
+     "piece": null,
+     "serves_today": "https://games.tinymachines.ai/builders",
+     "lands_at": "/6502/builders",
+     "lands_at_settled": true,
+     "status": "here",
+     "nav": false,
+     "nav_label": "Registry",
+     "prerendered": true
+    },
+    {
+     "key": "lab",
+     "name": "The halfwave lab",
+     "what": "A 6502, half a clock phase at a time. The research bench, and it stays one.",
+     "piece": "halfwave",
+     "serves_today": "https://halfwave.tinymachines.ai",
+     "lands_at": "/6502/lab",
+     "lands_at_settled": true,
+     "status": "here",
+     "nav": false,
+     "nav_label": "Halfwave Lab",
+     "prerendered": true
+    },
+    {
+     "key": "archive",
+     "name": "The visual6502 archive",
+     "what": "visual6502.org recovered from the Wayback Machine, 174 MB of it: the wiki rebuilt from its wikitext and the die photography made browsable again.",
+     "nav": false,
+     "nav_label": "visual6502 Archive",
+     "piece": null,
+     "serves_today": "https://6502.tinymachines.ai/archive/",
+     "lands_at": "/6502/archive",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    }
+   ],
+   "landing": "/6502"
+  },
+  {
+   "key": "hotbits",
+   "name": "hotbits",
+   "what": "True random bytes from the decay of a radioactive source: a Geiger counter on a Pi, with bits taken from the timing between decay events.",
+   "silo": "style/projects/hotbits.css",
+   "status": "moving",
+   "surfaces": [
+    {
+     "key": "gateway",
+     "name": "The entropy gateway",
+     "what": "Keys and byte budgets in front of the TRNG. /v1/bytes needs a bearer token; /v1/seeds needs no key and cannot drain the pool. The open /random/* endpoints answer 410 and say why: the pool refills at a few dozen bytes a minute and was reachable by anyone.",
+     "nav": false,
+     "nav_label": "hotbits API",
+     "piece": null,
+     "serves_today": "https://hotbits.tinymachines.ai/v1/seeds",
+     "lands_at": "/hotbits/api",
+     "lands_at_settled": true,
+     "status": "documented here, not moved",
+     "prerendered": true
+    },
+    {
+     "key": "trng",
+     "name": "The Geiger TRNG",
+     "what": "The instrument itself, and what it has measured: the byte pool, the randomness batteries, long-term and diurnal series, incidents and sensors.",
+     "nav": false,
+     "nav_label": "Geiger TRNG",
+     "piece": null,
+     "serves_today": "https://hotbits.tinymachines.ai/openapi.json",
+     "lands_at": "/hotbits",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    }
+   ],
+   "landing": "/hotbits"
+  },
+  {
+   "key": "ntsc",
+   "name": "ntsc-crt",
+   "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, decoded through four separation rungs, displayed through a five-stage CRT model, with an oracle and a way to fail at every stage.",
+   "silo": "style/projects/ntsc.css",
+   "status": "here",
+   "surfaces": [
+    {
+     "key": "site",
+     "name": "The measurement report",
+     "what": "What was built, what was measured, and the three spec claims that did not survive measurement.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/ntsc",
+     "lands_at": "/ntsc",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "bench",
+     "name": "The bench",
+     "what": "The signal path live in the page: dot planes encoded to the composite waveform and decoded on the rung you choose, with the drift counters visible.",
+     "nav": false,
+     "nav_label": "Bench",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/ntsc/bench",
+     "lands_at": "/ntsc/bench",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    }
+   ],
+   "landing": "/ntsc"
+  },
+  {
+   "key": "nes",
+   "name": "the NES console",
+   "what": "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by golden traces, and the signal path already real.",
+   "silo": "style/projects/nes.css",
+   "status": "here",
+   "surfaces": [
+    {
+     "key": "site",
+     "name": "The console arc",
+     "what": "What exists, what each gate proved, and the milestones between here and a bootable console.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/nes",
+     "lands_at": "/nes",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    }
+   ],
+   "landing": "/nes"
+  }
+ ]
 }

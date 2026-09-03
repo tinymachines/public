@@ -1,0 +1,25 @@
+/* /nes page pieces. Every value is a token from style/tokens.css; the
+   project's identity lives in style/projects/nes.css, not here. The
+   figure frame is the same treatment the /ntsc page restates: panel
+   content in the kit's bezel, never bled to the page edge. */
+.crt-figure {
+  width: fit-content;
+  max-width: 100%;
+  margin: calc(var(--u) * 6) 0 calc(var(--u) * 2);
+  padding: 3px;
+  background: var(--bezel-brushed);
+  border-radius: 6px;
+  box-shadow: var(--shadow-panel);
+}
+.crt-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+.crt-figure figcaption {
+  padding: calc(var(--u) * 2) calc(var(--u) * 2) calc(var(--u) * 1.5);
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  max-width: 60ch;
+}

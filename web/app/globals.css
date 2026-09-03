@@ -42,6 +42,7 @@
 @import "../../style/projects/6502.css";
 @import "../../style/projects/hotbits.css";
 @import "../../style/projects/ntsc.css";
+@import "../../style/projects/nes.css";
 
 /* Nothing else belongs in this file. A colour, a size or a font added below
    is a token that the style guide cannot reach: put it in style/tokens.css

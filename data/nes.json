@@ -1,0 +1,31 @@
+{
+  "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
+  "boarded_on": "2026-09-03",
+  "repo": "https://github.com/tinymachines/2a03",
+  "commit": "be0d3c9d5fcdbed0fd47887f368cb6786fcf04be",
+  "tests_green": 5,
+  "mutate_red": 2,
+  "halfphi": "0.1.3",
+  "a0": {
+    "transistors": "10,946",
+    "defined_nodes": "5,577",
+    "supply_gated": 100,
+    "contested_groups": 3,
+    "golden_states": 601,
+    "quiescent_half_steps_per_s": "114,740"
+  },
+  "first_sound": {
+    "golden_states": "2,001",
+    "timer_byte": 8,
+    "plateau_half_steps": 144,
+    "plateaus_measured": "ten",
+    "ad1_high": "0.1494",
+    "stamp": "a3-report run 2026-09-03; the mixer constants are the nesdev wiki's APU Mixer page, a dated claim awaiting the bench"
+  },
+  "family": {
+    "nes_bus": "https://github.com/tinymachines/nes-bus",
+    "c2a03": "https://github.com/tinymachines/2a03",
+    "c2c02": "https://github.com/tinymachines/2c02",
+    "sketch": "https://github.com/tinymachines/nes-bus/blob/main/docs/nes-end-to-end-v0_2.md"
+  }
+}
