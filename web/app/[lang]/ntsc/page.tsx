@@ -506,6 +506,8 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
             width={2000}
             height={672}
             alt={S.realScanAlt}
+            // Committed bytes, per the provenance README: served as-is.
+            unoptimized
           />
           <figcaption>{S.realScanCaption}</figcaption>
         </figure>
@@ -548,6 +550,8 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
             width={1024}
             height={960}
             alt={S.realScoreAlt}
+            // Committed bytes, per the provenance README: served as-is.
+            unoptimized
           />
           <figcaption>{S.realScoreCaption}</figcaption>
         </figure>
