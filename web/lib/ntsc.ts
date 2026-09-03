@@ -31,6 +31,20 @@ export interface NtscRecord {
     nes_pair_hz: string;
     broadcast_field_hz: string;
   };
+  real_capture: {
+    stamp: string;
+    captures: number;
+    msa_per_s: number;
+    luma_delta: string;
+    hue_delta_deg: string;
+    sat_hot_pct: number;
+    sat_real: string;
+    sat_synth: string;
+    rate_ppm_range: string;
+    broadcast_line_bias_ppm: string;
+    nes_line_grid: number;
+    broadcast_line_grid: number;
+  };
   /** The bench's wasm bundle, present once --wasm has boarded one. */
   bundle?: {
     commit: string;
@@ -50,6 +64,7 @@ export function ntsc(): NtscRecord {
   for (const k of [
     "boarded_on", "repo", "commit", "claims_verified", "tests_green",
     "mutate_red", "crates", "transcription_gate_values", "wasm_fps", "rates",
+    "real_capture",
   ] as const) {
     if (record[k] === undefined) {
       throw new Error(`data/ntsc.json has no ${k}; re-run scripts/board-ntsc.py --board`);

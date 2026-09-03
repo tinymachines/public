@@ -2370,3 +2370,42 @@ stage-6 sweep list, globals.css importing the silo, docs/index.md's third
 project section (en and ja), and the e2e spec. The front page, the site
 navigation, the menu and the breadcrumbs all picked the project up from
 the manifest without edits, which is those derivations doing their job.
+
+## Checkpoint, 2026-09-02, the console arc and the real captures surfaced
+
+The evening's milestones from the workshop reached the site. Two kinds of
+addition, held apart the way the pages hold them apart: a story with
+links, and measurements with provenance.
+
+The story: docs/index.md (en and ja) gains "The console taking shape",
+naming the three new public repositories (nes-bus, the contracts; 2a03,
+the fifth chip, first to replay its node golden with no exemption list;
+2c02 now proving its golden through the contract's pin frames) and the
+halfphi 0.1.3 drive-order decision the fifth chip forced. No figures are
+typed there; the claims that carry numbers live where boarding can hold
+them.
+
+The measurements: /ntsc gains "A real console reached the pipeline before
+the bars did". Five figures went into web/public/ntsc/ with provenance
+rows in its README (a raw scanline with the burst zoomed, the same
+capture decoded under both phase models side by side, the U-V score of
+colour $22, and two decoded game frames, reproduced for commentary);
+every number in the section is a slot from data/ntsc.json's new
+real_capture block. board-ntsc.py extracts that block from the M4
+report's second addendum by anchored regex, stamps the run it quotes
+(the captures are gitignored bench data a fresh clone cannot re-derive,
+the wasm_fps precedent), and recomputes the broadcast-line bias of 733
+ppm exactly, refusing if the report's own figure drifts from the
+arithmetic. Re-boarded at ntsc-crt da405db (v0.2.3): 59 tests green, 33
+MUTATE reds, 54 claims verified, and the bench bundle rebuilt at the
+same commit. The "what is not here yet" list narrowed honestly: the
+real-recording gate's bars half stays open (a game cartridge draws no
+bars), and the saturation finding's terminated re-capture is now listed
+as the designed experiment it is.
+
+Not done here, recorded so it is not forgotten: halfphi 0.1.3 is in
+data/engine.json only when the 6502 project serves a release built with
+it and board-engine.py --board re-runs; the engine record still says
+0.1.2 and is honest about the commit it describes. And the new
+repositories are not registered as projects or pieces; they are links in
+a docs section until they have surfaces of their own.

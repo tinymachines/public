@@ -115,6 +115,34 @@ and mutation run at a pinned commit. The documentation has not moved into
 this tree yet; it lives in
 [the repository](https://github.com/tinymachines/ntsc-crt).
 
+## The console taking shape
+
+The 6502 work and the signal work meet at the NES, and the meeting is now
+being built end to end, chip by chip, under a ratified plan whose gates are
+golden traces rather than intentions. The new repositories are public:
+
+- [nes-bus](https://github.com/tinymachines/nes-bus) holds the contracts:
+  the frame types and pin tables every chip crate speaks, dependency-free,
+  so the PPU, the CPU and the encoder can be proven against each other
+  instead of against copies.
+- [2a03](https://github.com/tinymachines/2a03) is the NES CPU, the family's
+  fifth chip through the same engine calls, and the first whose node golden
+  replays against its reference with no exemption list at all.
+- [2c02](https://github.com/tinymachines/2c02) is the PPU, whose golden now
+  runs through the contract's pin frames, with a mutation that lies about
+  one pin's polarity and must go red.
+
+The fifth chip also settled a question the engine had carried since its
+first release: which way a group resolves when a layout pull fights an
+external drive. Four chips never formed such a group; the 2A03's set
+overflow chain forms three at power-on, its reference resolves them low,
+and [halfphi](https://github.com/tinymachines/halfphi) 0.1.3 now agrees,
+with the swap proven unobservable on every other chip. And the signal side
+has met real silicon: [the ntsc page](/ntsc) now carries frames decoded
+from raw oscilloscope records of a real console, and the first colour
+scored against the pipeline's own synthesis. Documentation for these lives
+in the repositories until it moves into this tree.
+
 ## What is not here yet
 
 This tree is being moved out of four repository READMEs that were reachable

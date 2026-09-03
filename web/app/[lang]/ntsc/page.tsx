@@ -149,6 +149,86 @@ const PROSE = {
         agreed on all {gate} numeric values.
       </>
     ),
+    realH: "A real console reached the pipeline before the bars did",
+    realIntro: (captures: number, msa: number) => (
+      <>
+        On 2026-09-02 a front-loader NES and a Super Mario Bros. / Duck
+        Hunt cartridge met the family&rsquo;s oscilloscope: {captures} raw
+        composite records, twelve million samples each at {msa} MSa/s,
+        captured straight off the video pin with no capture card and no
+        decoder chip in the path. Everything below was measured from those
+        records by the repository&rsquo;s own recovery.
+      </>
+    ),
+    realScanAlt:
+      "One scanline of the raw Super Mario Bros. capture: the sync tip, the ten-cycle colorburst, and the chroma-modulated active picture, with a zoom on the burst.",
+    realScanCaption: (
+      <>
+        Verification material, not an illustration: one scanline of the
+        paused World 1-1 record as the ADC saw it, and the colorburst the
+        recovery locks to. Drawn from the raw samples; no decode involved.
+      </>
+    ),
+    realFinding: (nesLine: number, bLine: number, bias: string, range: string) => (
+      <>
+        The first decode came out wrong in an instructive way. The recovery
+        assumed broadcast geometry, and the NES is not broadcast: its line
+        is 227 and a third subcarrier cycles ({nesLine} grid samples where
+        broadcast has {bLine}), so the burst phase advances a third of a
+        cycle per line, not half. Decoded under the wrong model, every
+        line landed slightly more hue-rotated than the last, a smooth
+        colour roll down the whole frame, and the same two-sample bias
+        mismeasured the scope&rsquo;s clock at {bias} ppm slow. Under the
+        NES profile the identical records measure {range} ppm. The fix,
+        recover_nes, is proven on a synthetic NES capture whose built-in
+        mutation is the broadcast recovery itself: the exact failure the
+        real console exposed, kept as the proof it cannot return.
+      </>
+    ),
+    realPairAlt:
+      "The same Super Mario Bros. capture decoded twice: hue rolling smoothly down the frame under the broadcast model on the left, flat and correct under the NES profile on the right.",
+    realPairCaption: (
+      <>
+        The finding, visible: one capture, two phase models. The left
+        frame is what a broadcast decode makes of an NES signal.
+      </>
+    ),
+    realScore: (luma: string, hue: string, pct: number, real: string, synth: string) => (
+      <>
+        With the geometry right, the sky in paused World 1-1 became the
+        first real region scored against the family&rsquo;s own synthesis:
+        the same colour, $22, generated from the transcribed level table
+        and decoded through the identical path. Luma agrees within {luma}{" "}
+        and hue within {hue} degrees. Saturation does not: the real
+        console&rsquo;s chroma measures {pct} percent hotter ({real}{" "}
+        against {synth}). That number is a finding, not a tolerance to
+        widen. Either the unterminated probe run flatters the chroma
+        swing, or the real DAC&rsquo;s AC swing genuinely exceeds the
+        table&rsquo;s DC-measured levels, and one 75 ohm terminated
+        re-capture decides which.
+      </>
+    ),
+    realScoreAlt:
+      "The U-V chroma plane with two vectors: the real console's measured colour $22 and the synthesized one, same direction, the real one longer.",
+    realScoreCaption: (
+      <>
+        The score as vectors on the chroma plane: same hue, hotter
+        saturation. Numbers from the repository&rsquo;s own
+        score-real-region run at the boarded commit.
+      </>
+    ),
+    realDecodedAlt1:
+      "Super Mario Bros., World 1-1 paused, decoded from the raw scope capture: purple-blue sky, cloud, green hill, orange bricks.",
+    realDecodedAlt2:
+      "Duck Hunt in play, decoded from the raw scope capture: blue sky, green tree and grass, a duck mid-flight, the HIT and SCORE bar.",
+    realDecodedCaption: (
+      <>
+        Two of the five records, decoded end to end: probe, scope, sync,
+        burst lock, resample, separate, demodulate. Game frames are
+        Nintendo&rsquo;s, reproduced for commentary on the measurement;
+        the famous $22 sky really is that purple.
+      </>
+    ),
     boardedH: "Measured for this page, not copied from the report",
     boardedIntro: (date: string) => (
       <>
@@ -170,11 +250,20 @@ const PROSE = {
     notHereH: "What is not here yet",
     open1: (
       <>
-        The capture source&rsquo;s real-recording gate is open. Its synthetic
-        roundtrip is closed, and the last step waits on one file: a real
-        composite recording of colour bars.{" "}
+        The bars half of the real-recording gate is still open. Real
+        console captures now decode end to end, but the gate&rsquo;s own
+        check wants the seven 75 percent colour bars, which a game
+        cartridge does not draw; it waits on a test ROM.{" "}
         <a href={`${REPORTS}/capture-instructions.md`}>The instructions</a>{" "}
         are one page.
+      </>
+    ),
+    open4: (
+      <>
+        The saturation question above has a designed experiment waiting:
+        the same capture through a 75 ohm feedthrough terminator, which
+        separates the probe run&rsquo;s flattery from the DAC&rsquo;s own
+        behaviour.
       </>
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
@@ -268,6 +357,52 @@ const PROSE = {
         放送エンコーダは SMPTE ST 170M-2004 そのもの（SMPTE のリポジトリから取得しハッシュで固定）に照らされ、公表カラーバー列を規格自身の条項から再導出するところまで確認される。NES のレベル表は、二つのエージェントが同じ Wiki 版を独立に転記し、全 {gate} 個の数値が一致して初めて受理された。
       </>
     ),
+    realH: "カラーバーより先に、実機がパイプラインに届いた",
+    realIntro: (captures: number, msa: number) => (
+      <>
+        2026-09-02、前面ローダーの NES と『スーパーマリオブラザーズ / ダックハント』のカートリッジが、うちのオシロスコープと出会った。生のコンポジット記録が {captures} 本、各 1200 万サンプル、{msa} MSa/s。ビデオピンから直接で、キャプチャカードもデコーダチップも経路にない。以下はすべて、その記録からリポジトリ自身のリカバリで実測したものだ。
+      </>
+    ),
+    realScanAlt:
+      "生のスーパーマリオ・キャプチャの 1 走査線: 同期チップ、10 周期のカラーバースト、クロマ変調された有効画面。バーストの拡大付き。",
+    realScanCaption: (
+      <>
+        例示ではなく検証素材: 一時停止した World 1-1 の記録の 1 走査線を ADC が見たままに、そしてリカバリがロックするカラーバースト。生サンプルから描画し、デコードは介在しない。
+      </>
+    ),
+    realFinding: (nesLine: number, bLine: number, bias: string, range: string) => (
+      <>
+        最初のデコードは、示唆的な形で間違った。リカバリは放送の幾何を仮定していたが、NES は放送ではない: 1 行は副搬送波 227 と 3 分の 1 周期（グリッドで {nesLine} サンプル。放送は {bLine}）で、バースト位相は行ごとに半周期ではなく 3 分の 1 周期進む。間違ったモデルでデコードすると、各行が前の行より少しずつ色相回転して着地し、フレーム全体を色がなだらかに転がり落ちる。同じ 2 サンプルの偏りがスコープのクロックを {bias} ppm 遅いと誤測定した。NES プロファイルでは同一の記録が {range} ppm と実測される。修正の recover_nes は合成 NES キャプチャで証明され、その組み込みミューテーションは放送リカバリそのもの: 実機が暴いた失敗を、戻れない証明として残してある。
+      </>
+    ),
+    realPairAlt:
+      "同じスーパーマリオのキャプチャを二度デコード: 左は放送モデルで色相がフレームを転がり落ち、右は NES プロファイルで平坦かつ正しい。",
+    realPairCaption: (
+      <>
+        発見を目で見る: キャプチャは一つ、位相モデルは二つ。左は放送デコードが NES 信号から作るもの。
+      </>
+    ),
+    realScore: (luma: string, hue: string, pct: number, real: string, synth: string) => (
+      <>
+        幾何が正しくなったところで、一時停止した World 1-1 の空が、一族自身の合成に対して採点された最初の実領域になった。同じ色 $22 を転記済みレベル表から生成し、同一経路でデコードして比べる。輝度は {luma} 以内、色相は {hue} 度以内で一致する。彩度は一致しない: 実機のクロマは {pct} パーセント熱い（{synth} に対して {real}）。この数字は所見であって、広げるべき許容誤差ではない。終端していないプローブ経路がクロマ振幅をよく見せているのか、実 DAC の AC 振幅が表の DC 実測値を本当に超えているのか。75 オーム終端での再キャプチャ一回が決める。
+      </>
+    ),
+    realScoreAlt:
+      "U-V クロマ平面上の二本のベクトル: 実機で測った色 $22 と合成した $22。向きは同じで、実機の方が長い。",
+    realScoreCaption: (
+      <>
+        採点をクロマ平面のベクトルで: 色相は同じ、彩度が熱い。数字はリポジトリ自身の score-real-region を記録済みコミットで走らせたもの。
+      </>
+    ),
+    realDecodedAlt1:
+      "スーパーマリオブラザーズ、World 1-1 一時停止中。生のスコープキャプチャからデコード: 青紫の空、雲、緑の丘、オレンジのレンガ。",
+    realDecodedAlt2:
+      "プレイ中のダックハント。生のスコープキャプチャからデコード: 青空、緑の木と草、飛んでいるカモ、HIT と SCORE のバー。",
+    realDecodedCaption: (
+      <>
+        5 本の記録のうち 2 本を端から端までデコード: プローブ、スコープ、同期、バーストロック、リサンプル、分離、復調。ゲーム画面は任天堂のもので、測定への論評のために転載した。有名な $22 の空は本当にこの紫だ。
+      </>
+    ),
     boardedH: "このページのために実測した。報告書から写していない",
     boardedIntro: (date: string) => (
       <>
@@ -285,7 +420,12 @@ const PROSE = {
     notHereH: "まだ無いもの",
     open1: (
       <>
-        キャプチャソースの実録音ゲートは開いたまま。合成往復は閉じており、最後の一歩はファイル一つを待つ: カラーバーの実コンポジット録音だ。<a href={`${REPORTS}/capture-instructions.md`}>手順</a>は 1 ページ。
+        実録音ゲートのカラーバー側は開いたまま。実機キャプチャは端から端までデコードできるようになったが、ゲート自身の検査は 75 パーセントの 7 本カラーバーを求め、ゲームカートリッジはそれを描かない: テスト ROM を待っている。<a href={`${REPORTS}/capture-instructions.md`}>手順</a>は 1 ページ。
+      </>
+    ),
+    open4: (
+      <>
+        上の彩度の疑問には、設計済みの実験が待っている: 同じキャプチャを 75 オームのフィードスルー終端を通して録り直す。プローブ経路のお世辞と DAC 自身の振る舞いを、それが切り分ける。
       </>
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
@@ -357,6 +497,79 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
         <p>{S.blargg("https://github.com/tinymachines/ntsc-crt/blob/main/docs/divergences.md")}</p>
         <p>{S.smpte(r.transcription_gate_values)}</p>
 
+        <h2>{S.realH}</h2>
+        <p>{S.realIntro(r.real_capture.captures, r.real_capture.msa_per_s)}</p>
+
+        <figure className="crt-figure">
+          <Image
+            src="/ntsc/real-scanline.png"
+            width={2000}
+            height={672}
+            alt={S.realScanAlt}
+          />
+          <figcaption>{S.realScanCaption}</figcaption>
+        </figure>
+
+        <p>
+          {S.realFinding(
+            r.real_capture.nes_line_grid,
+            r.real_capture.broadcast_line_grid,
+            r.real_capture.broadcast_line_bias_ppm,
+            r.real_capture.rate_ppm_range,
+          )}
+        </p>
+
+        <figure className="crt-figure">
+          <Image
+            src="/ntsc/broadcast-vs-nes.png"
+            width={1316}
+            height={550}
+            alt={S.realPairAlt}
+            // Decoded pixels: an optimizer resampling the chroma fringes
+            // would blur the artefact the caption points at.
+            unoptimized
+          />
+          <figcaption>{S.realPairCaption}</figcaption>
+        </figure>
+
+        <p>
+          {S.realScore(
+            r.real_capture.luma_delta,
+            r.real_capture.hue_delta_deg,
+            r.real_capture.sat_hot_pct,
+            r.real_capture.sat_real,
+            r.real_capture.sat_synth,
+          )}
+        </p>
+
+        <figure className="crt-figure">
+          <Image
+            src="/ntsc/colour-22-score.png"
+            width={1024}
+            height={960}
+            alt={S.realScoreAlt}
+          />
+          <figcaption>{S.realScoreCaption}</figcaption>
+        </figure>
+
+        <figure className="crt-figure">
+          <Image
+            src="/ntsc/decoded-smb-1-1.png"
+            width={640}
+            height={480}
+            alt={S.realDecodedAlt1}
+            unoptimized
+          />
+          <Image
+            src="/ntsc/decoded-duckhunt.png"
+            width={640}
+            height={480}
+            alt={S.realDecodedAlt2}
+            unoptimized
+          />
+          <figcaption>{S.realDecodedCaption}</figcaption>
+        </figure>
+
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>
         <div className="boarded" data-boarded>
@@ -373,6 +586,7 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
         <h2>{S.notHereH}</h2>
         <ul>
           <li>{S.open1}</li>
+          <li>{S.open4}</li>
           <li>{S.open3}</li>
         </ul>
 

@@ -217,6 +217,24 @@ def main() -> int:
     fps_comb3 = float(extract(
         perf, r"\| NES comb3, wasm \+simd128 \| [0-9.]+ \| ([0-9.]+) to", "simd comb3 fps"))
 
+    # The real-console session (the M4 report's second addendum). These are
+    # stamped measurements like the fps rows: the captures are gitignored
+    # bench data a fresh clone cannot re-derive, so the figures are read
+    # from the report's own sentences by anchored capture, and the stamp
+    # names the run. The line-geometry ppm is recomputed exactly below and
+    # cross-checked against the report's claim, because it can be.
+    m4 = re.sub(r"\s+", " ", (repo / "docs" / "m4-report.md").read_text())
+    rc_luma = extract(m4, r"luma within (0\.\d+), hue within", "real-capture luma")
+    rc_hue = extract(m4, r"hue within (0\.\d+) degrees", "real-capture hue")
+    m_sat = re.search(r"saturation (\d+) percent HOT \((0\.\d+) vs (0\.\d+)\)", m4)
+    if not m_sat:
+        fail("real-capture saturation not found in the M4 addendum")
+    rc_ppm = extract(m4, r"the same records measure (-\d+ to -\d+) ppm", "real-capture ppm range")
+    if "Five captures" not in m4:
+        fail("the M4 addendum no longer says how many captures were banked")
+    if "125 MSa/s" not in m4:
+        fail("the M4 addendum no longer states the capture rate")
+
     # The rates, recomputed exactly rather than extracted: the one place this
     # script measures instead of reading, because it can.
     fsc = Fraction(315_000_000, 88)
@@ -229,6 +247,28 @@ def main() -> int:
     }
     if rates["nes_pair_hz"][:7] != "60.0988":
         fail(f"the recomputed pair rate {rates['nes_pair_hz']} lost the famous figure")
+    # A broadcast line is 227.5 subcarrier cycles (2730 grid samples); a NES
+    # line is 227 and a third (2728). Decoding one as the other biases the
+    # measured sample rate by exactly 2 parts in 2730.
+    line_bias_ppm = f"{2 / 2730 * 1e6:.0f}"
+    if f"{line_bias_ppm} ppm" not in m4:
+        fail(f"the recomputed line bias {line_bias_ppm} ppm is not the report's own figure")
+    real_capture = {
+        "stamp": "m4-report second addendum, 2026-09-02: five captures from a "
+                 "front-loader NES (SMB/Duck Hunt) at 125 MSa/s on a DS1054Z, "
+                 "scored by examples/score-real-region.rs at the boarded commit",
+        "captures": 5,
+        "msa_per_s": 125,
+        "luma_delta": rc_luma,
+        "hue_delta_deg": rc_hue,
+        "sat_hot_pct": int(m_sat.group(1)),
+        "sat_real": m_sat.group(2),
+        "sat_synth": m_sat.group(3),
+        "rate_ppm_range": rc_ppm,
+        "broadcast_line_bias_ppm": line_bias_ppm,
+        "nes_line_grid": 341 * 8,
+        "broadcast_line_grid": int(Fraction(455, 2) * 12),
+    }
 
     record = {
         "note": "Written only by scripts/board-ntsc.py --board. Every figure was "
@@ -246,6 +286,7 @@ def main() -> int:
         "st170m_zip_sha256": smpte_sha,
         "wasm_fps": {"notch": fps_notch, "comb3": fps_comb3, "stamp": "perf-report run 2026-09-02, wasm+simd128 (the shipped bundle), node v24, Ryzen 5 5600X, low end of the spread over three fresh processes"},
         "rates": rates,
+        "real_capture": real_capture,
     }
     RECORD.write_text(json.dumps(record, indent=2) + "\n")
     print(f"board-ntsc: recorded {commit[:7]}: {tests_green} tests green, "

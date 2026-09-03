@@ -24,3 +24,29 @@ and pinned: rebuild it only through the boarding script, never by hand.
 
 `bench.worker.mjs` is this repository's own code (the bench's thread),
 not a build artefact.
+
+The real-console figures (2026-09-02 session; the M4 report's second
+addendum tells the story, and `data/ntsc.json`'s `real_capture` block
+records the numbers). Sources are the five raw scope records banked at
+the bench (12 M points each at 125 MSa/s, gitignored in ntsc-crt as
+bench data), decoded at `tinymachines/ntsc-crt@da405db` (tag v0.2.3):
+
+- `decoded-smb-1-1.png`, `decoded-duckhunt.png`: fields decoded by
+  `cargo run --release -p ntsc-source-cap --example recover-real --
+  captures/<name>.u8 u8 125000000 --nes`, the 2271-wide PPM resized to
+  640 x 480 with Lanczos. Verification path, editorial content: the
+  frames show Nintendo's Super Mario Bros. and Duck Hunt, reproduced
+  for commentary on the measurement.
+- `broadcast-vs-nes.png`: the same capture decoded twice, without and
+  with `--nes`, composited side by side. The hue roll on the left is
+  the broadcast phase model chasing an NES signal; the finding that
+  forced `recover_nes`.
+- `real-scanline.png`: one scanline of the raw record plus a colorburst
+  zoom, drawn by a matplotlib script from `captures/smb-1-1-paused.u8`
+  directly (ADC counts, no decode involved).
+- `colour-22-score.png`: the U-V plane figure of
+  `examples/score-real-region.rs`'s printed numbers, the same run the
+  boarded record quotes.
+
+To refresh any of them: re-run the named command at the boarded commit
+against the banked captures. Do not edit the pixels.

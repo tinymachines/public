@@ -2,9 +2,9 @@
   "note": "Written only by scripts/board-ntsc.py --board. Every figure was verified by running the repository's own scanner (full suite and MUTATE run) at this commit; the rates are recomputed here exactly.",
   "boarded_on": "2026-09-02",
   "repo": "https://github.com/tinymachines/ntsc-crt",
-  "commit": "c2977b2e65bab7461d0b13df9dd38ac16e937a43",
+  "commit": "da405db9ac05ca6da84fa8c5d0db34f0b2fc7bf2",
   "claims_verified": 54,
-  "tests_green": 58,
+  "tests_green": 59,
   "mutate_red": 33,
   "crates": 9,
   "transcription_gate_values": 43,
@@ -21,11 +21,25 @@
     "nes_pair_hz": "60.09881",
     "broadcast_field_hz": "59.94006"
   },
+  "real_capture": {
+    "stamp": "m4-report second addendum, 2026-09-02: five captures from a front-loader NES (SMB/Duck Hunt) at 125 MSa/s on a DS1054Z, scored by examples/score-real-region.rs at the boarded commit",
+    "captures": 5,
+    "msa_per_s": 125,
+    "luma_delta": "0.003",
+    "hue_delta_deg": "0.6",
+    "sat_hot_pct": 28,
+    "sat_real": "0.573",
+    "sat_synth": "0.448",
+    "rate_ppm_range": "-7 to -19",
+    "broadcast_line_bias_ppm": "733",
+    "nes_line_grid": 2728,
+    "broadcast_line_grid": 2730
+  },
   "bundle": {
     "note": "Built by scripts/board-ntsc.py --wasm from a fresh clone at the boarded commit; the files in web/public/ntsc/wasm/ must hash to these values.",
-    "commit": "c2977b2e65bab7461d0b13df9dd38ac16e937a43",
+    "commit": "da405db9ac05ca6da84fa8c5d0db34f0b2fc7bf2",
     "tags": [
-      "v0.2.0"
+      "v0.2.3"
     ],
     "built_on": "2026-09-02",
     "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
@@ -35,8 +49,8 @@
         "bytes": 9441
       },
       "ntsc_wasm_bg.wasm": {
-        "sha256": "f20503f53a6a986b73c654a895717b4296f17c1ae9d2a778b1a8c88944e863a6",
-        "bytes": 47003
+        "sha256": "0b0814b20aa1e4e00447d780caa749bfa6f1c0d677010f44aa51f50d5306a49e",
+        "bytes": 47044
       }
     }
   }
