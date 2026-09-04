@@ -115,6 +115,13 @@ and mutation run at a pinned commit. The documentation has not moved into
 this tree yet; it lives in
 [the repository](https://github.com/tinymachines/ntsc-crt).
 
+[The composite deep-dive](/ntsc/composite) reads a real console's video
+off the scope into 75 ohms, level by level: the scanline, the burst with
+every sample drawn, the levels beside the transcribed table, and what the
+first, unterminated captures had flattered. The saturation gap the
+landing reported turns out to be the probe, not the console, and the
+page says so from a boarded measurement rather than from memory.
+
 ## The console taking shape
 
 [The console arc has a landing now](/nes), a measurement report in the

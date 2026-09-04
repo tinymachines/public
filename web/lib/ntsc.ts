@@ -13,6 +13,16 @@ import path from "node:path";
  * of each fact, and the JSON never reaches the browser.
  */
 
+export interface CompositeSide {
+  window: string;
+  sync_tip_v: number;
+  blanking_v: number;
+  sync_to_blank_v: number;
+  burst_pp_v: number;
+  burst_over_sync: number;
+  peak_v: number;
+}
+
 export interface NtscRecord {
   boarded_on: string;
   repo: string;
@@ -45,6 +55,27 @@ export interface NtscRecord {
     nes_line_grid: number;
     broadcast_line_grid: number;
   };
+  /** The composite deep-dive's measurements (the M4 third addendum). */
+  composite: {
+    stamp: string;
+    loaded: CompositeSide & {
+      lines_found: number;
+      line_period_us_median: number;
+      line_period_nominal_us: number;
+      line_period_nes_2728_of_2730_us: number;
+    };
+    unloaded: CompositeSide;
+    table: {
+      sync: number;
+      blank: number;
+      burst_low: number;
+      burst_high: number;
+      low: number[];
+      high: number[];
+      burst_over_sync: number;
+    };
+    ratio_unloaded_over_loaded: { sync_to_blank: number; burst_pp: number };
+  };
   /** The bench's wasm bundle, present once --wasm has boarded one. */
   bundle?: {
     commit: string;
@@ -64,7 +95,7 @@ export function ntsc(): NtscRecord {
   for (const k of [
     "boarded_on", "repo", "commit", "claims_verified", "tests_green",
     "mutate_red", "crates", "transcription_gate_values", "wasm_fps", "rates",
-    "real_capture",
+    "real_capture", "composite",
   ] as const) {
     if (record[k] === undefined) {
       throw new Error(`data/ntsc.json has no ${k}; re-run scripts/board-ntsc.py --board`);

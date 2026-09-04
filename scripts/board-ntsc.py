@@ -270,6 +270,32 @@ def main() -> int:
         "broadcast_line_grid": int(Fraction(455, 2) * 12),
     }
 
+    # The composite deep-dive (the M4 report's third addendum): the figures
+    # tools/composite-figures.py measured from the terminated and the
+    # unterminated records, committed there as docs/composite-figures.json
+    # because the records themselves are gitignored bench data. Read as
+    # written; the ratio the page leans on is re-derived here from the two
+    # swings it is made of, and must agree with the file's own.
+    cf = json.loads((repo / "docs" / "composite-figures.json").read_text())
+    for side in ("loaded", "unloaded"):
+        got = cf[side]["burst_pp_v"] / cf[side]["sync_to_blank_v"]
+        if abs(got - cf[side]["burst_over_sync"]) > 0.01:
+            fail(f"composite-figures.json: {side} burst_over_sync {cf[side]['burst_over_sync']} is not {got:.3f}")
+    table_ratio = (cf["table"]["burst_high"] - cf["table"]["burst_low"]) / (cf["table"]["blank"] - cf["table"]["sync"])
+    if abs(table_ratio - cf["table"]["burst_over_sync"]) > 0.01:
+        fail("composite-figures.json: the table ratio does not re-derive")
+    if "Third addendum" not in m4:
+        fail("the M4 report has no third addendum for the terminator")
+    composite = {
+        "stamp": "m4-report third addendum, 2026-09-04: the same console into a 75 ohm "
+                 "feedthrough terminator, CH3 DC 200 mV/div, 12 Mpt at 125 MSa/s, the "
+                 "cartridge menu on screen, measured by tools/composite-figures.py",
+        "loaded": cf["loaded"],
+        "unloaded": cf["unloaded"],
+        "table": cf["table"],
+        "ratio_unloaded_over_loaded": cf["ratio_unloaded_over_loaded"],
+    }
+
     record = {
         "note": "Written only by scripts/board-ntsc.py --board. Every figure was "
                 "verified by running the repository's own scanner (full suite and "
@@ -287,6 +313,7 @@ def main() -> int:
         "wasm_fps": {"notch": fps_notch, "comb3": fps_comb3, "stamp": "perf-report run 2026-09-02, wasm+simd128 (the shipped bundle), node v24, Ryzen 5 5600X, low end of the spread over three fresh processes"},
         "rates": rates,
         "real_capture": real_capture,
+        "composite": composite,
     }
     RECORD.write_text(json.dumps(record, indent=2) + "\n")
     print(f"board-ntsc: recorded {commit[:7]}: {tests_green} tests green, "

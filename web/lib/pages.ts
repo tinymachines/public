@@ -114,6 +114,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
   },
+  "/ntsc/composite": {
+    title: "Composite, terminated",
+    description:
+      "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
+  },
   "/style": {
     title: "Style guide",
     description:

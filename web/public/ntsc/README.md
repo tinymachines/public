@@ -50,3 +50,15 @@ bench data), decoded at `tinymachines/ntsc-crt@da405db` (tag v0.2.3):
 
 To refresh any of them: re-run the named command at the boarded commit
 against the banked captures. Do not edit the pixels.
+
+## composite/
+
+The composite deep-dive's figures, drawn by `tools/composite-figures.py`
+in tinymachines/ntsc-crt from two scope records (the terminated
+`captures/loaded-a` and the unterminated `captures/smb-1-1-paused`,
+both gitignored bench data there) at ntsc-crt@9fb2386; the numbers the
+page states come from `docs/composite-figures.json` at that commit
+through `scripts/board-ntsc.py`. `decoded-menu-terminated.png` is the
+terminated record decoded by `recover-real --nes` (goldens/real-capture.ppm
+there), resampled to 640 x 480 with Pillow; the frame is Nintendo's,
+reproduced for commentary on the measurement.

@@ -268,10 +268,12 @@ const PROSE = {
     ),
     open4: (
       <>
-        The saturation question above has a designed experiment waiting:
-        the same capture through a 75 ohm feedthrough terminator, which
-        separates the probe run&rsquo;s flattery from the DAC&rsquo;s own
-        behaviour.
+        The saturation question above had a designed experiment waiting,
+        and it has run: the same console through a 75 ohm feedthrough
+        terminator, which separates the probe run&rsquo;s flattery from
+        the DAC&rsquo;s own behaviour.{" "}
+        <Link href="/ntsc/composite">The composite deep-dive</Link> reads
+        the terminated signal off the scope, level by level.
       </>
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
@@ -433,7 +435,7 @@ const PROSE = {
     ),
     open4: (
       <>
-        上の彩度の疑問には、設計済みの実験が待っている: 同じキャプチャを 75 オームのフィードスルー終端を通して録り直す。プローブ経路のお世辞と DAC 自身の振る舞いを、それが切り分ける。
+        上の彩度の疑問には設計済みの実験が待っていて、それは走った: 同じ実機を 75 オームのフィードスルー終端に通す。プローブ経路のお世辞と DAC 自身の振る舞いを、それが切り分ける。<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>は、終端した信号をスコープからレベルごとに読む。
       </>
     ),
     open2: (notch: number, comb3: number, stamp: string) => (

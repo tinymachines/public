@@ -42,6 +42,7 @@ const STATIC = [
   "/hotbits/api",
   "/ntsc",
   "/ntsc/bench",
+  "/ntsc/composite",
   "/nes",
   "/style",
 ];
