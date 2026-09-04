@@ -145,6 +145,20 @@ are public:
   reference run now goes through the contract's pin frames, with a built-in
   sabotage that lies about one pin's polarity and must make it fail.
 
+Since then the PPU has come a long way on [the same page](/nes). Its
+contested corners, sprite 0, the vblank read race and OAM corruption,
+were each pinned by a crafted register program the reference replays
+blindly. A per-dot fast PPU now renders a frame in well under a
+millisecond against the 16.639 ms period, dot for dot with the
+switch-level chip on three worlds, its sequencer a table measured out of
+the switches rather than a second model. And two engine divergences
+were found by the chips and fixed in halfphi (0.1.5's rail-conflict
+hold, 0.1.6's per-netlist charge rule), after which both of the PPU's
+node goldens replay with no exemption at all: the latches the family had
+read as undefined power-on state were the engine's rule, not the
+silicon. The 6502 site now serves that engine, and [the engine
+record](/6502) boards it.
+
 The fifth chip also settled a question the engine had carried since its
 first release: which way a group resolves when a layout pull fights an
 external drive. Four chips never formed such a group; the 2A03's set

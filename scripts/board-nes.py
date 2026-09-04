@@ -112,6 +112,88 @@ def main() -> int:
     halfphi_tag = extract((repo / "crates" / "v2a03-sim" / "Cargo.toml").read_text(),
                           r'halfphi", tag = "v([0-9.]+)"', "halfphi pin")
 
+    # The PPU (2c02), boarded the same way: a clean checkout, its full
+    # suite with every golden required, run with --nocapture so the gates'
+    # own measurement lines are on the output, then the MUTATE=1 run; the
+    # figures are anchored extractions from those lines and from the
+    # milestone reports. P2's positions come from its report because the
+    # P2 gate asserts them without printing them.
+    ppu = (args.repo.parent / "2c02").resolve()
+    if not (ppu / "crates" / "v2c02-fast").is_dir():
+        fail(f"{ppu} is not a 2c02 checkout")
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=ppu,
+                           capture_output=True, text=True).stdout.strip()
+    if dirty:
+        fail(f"the 2c02 checkout is dirty:\n{dirty}")
+    ppu_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ppu,
+                                capture_output=True, text=True).stdout.strip()
+    ppu_remote = re.sub(r"\.git$", "", subprocess.run(["git", "remote", "get-url", "origin"], cwd=ppu,
+                                                        capture_output=True, text=True).stdout.strip())
+    ppu_env = {**os.environ, "REQUIRE_NETLIST": "1", "REQUIRE_GOLDEN": "1", "REQUIRE_GOLDEN_P1": "1",
+               "REQUIRE_GOLDEN_P2": "1", "REQUIRE_GOLDEN_P3": "1"}
+    print(f"board-nes: running the 2c02 suite at {ppu_commit[:7]} (every golden required, minutes)...")
+    ppu_suite = subprocess.run(["cargo", "test", "--workspace", "--release", "--", "--nocapture"], cwd=ppu,
+                               capture_output=True, text=True, env=ppu_env)
+    if ppu_suite.returncode != 0:
+        fail(f"the 2c02 suite is not green:\n{ppu_suite.stdout[-2000:]}{ppu_suite.stderr[-2000:]}")
+    ppu_passed = sum(int(m) for m in re.findall(r"(\d+) passed", ppu_suite.stdout))
+    out = ppu_suite.stdout + ppu_suite.stderr
+    print("board-nes: the 2c02 MUTATE=1 run (must go red)...")
+    ppu_mut = subprocess.run(["cargo", "test", "--workspace", "--release"], cwd=ppu,
+                             capture_output=True, text=True, env={**ppu_env, "MUTATE": "1"})
+    ppu_red = sum(int(m) for m in re.findall(r"(\d+) failed", ppu_mut.stdout))
+    if ppu_mut.returncode == 0 or ppu_red == 0:
+        fail("the 2c02 MUTATE=1 run did not go red")
+    p0_states = int(extract(out, r"replayed (\d+) states bit-exact on every node, no exemption", "P0 states"))
+    p1_states = int(extract(out, r"replayed (\d+) states through the harness, every node, no exemption", "P1 states"))
+    visible = int(extract(out, r"(\d+) visible dots agree with rung 0, backdrop", "P3 visible dots"))
+    m_ft = re.search(r"frame period ([\d.]+) ms; (\d+) frames: mean ([\d.]+) ms \(([\d.]+)x inside\), worst ([\d.]+) ms \(([\d.]+)x inside\)", out)
+    if not m_ft:
+        fail("the P3 frame-time line was not printed")
+    m_spr = re.search(r"(\d+) visible dots agree with rung 0 with sprites on; sprite 0 hit at Some\(\((\d+), (\d+)\)\) \(chip Some\(\((\d+), (\d+)\)\)\)", out)
+    if not m_spr:
+        fail("the P3 sprite line was not printed")
+    scroll_dots = int(extract(out, r"(\d+) visible dots agree with rung 0 through the register file", "P3 scroll dots"))
+    write_plateau = sorted(int(d) for d in re.findall(r"write delay (\d+): 0 mismatching dots", out))
+    if not write_plateau:
+        fail("the P3 write-delay plateau was not printed")
+    area_vote_lows = int(extract(out, r"area_vote_lows (\d+)", "charge-rule gate"))
+    p2 = re.sub(r"\s+", " ", (ppu / "docs" / "p2-report.md").read_text())
+    p2_hit = re.search(r"hits at \*\*vpos (\d+), hpos (\d+)\*\*", p2)
+    if not p2_hit:
+        fail("P2 hit position not found in the report")
+    p2_states = int(extract(p2, r"\*\*(\d+) states bit-exact, node for node", "P2 sprite states"))
+    if "**[0, 0, 1]**" not in p2:
+        fail("the P2 race result is no longer stated as [0, 0, 1]")
+    ppu_halfphi = extract((ppu / "crates" / "v2c02-sim" / "Cargo.toml").read_text(),
+                          r'halfphi", tag = "v([0-9.]+)"', "2c02 halfphi pin")
+    c2c02 = {
+        "repo": ppu_remote,
+        "commit": ppu_commit,
+        "halfphi": ppu_halfphi,
+        "tests_green": ppu_passed,
+        "mutate_red": ppu_red,
+        "p0_states": p0_states,
+        "p1_states": p1_states,
+        "p2": {"sprite_states": p2_states, "hit_vpos": int(p2_hit.group(1)), "hit_hpos": int(p2_hit.group(2)), "race_bits": "[0, 0, 1]"},
+        "p3": {
+            "visible_dots": visible,
+            "frame_period_ms": m_ft.group(1),
+            "frames_timed": int(m_ft.group(2)),
+            "mean_ms": m_ft.group(3),
+            "mean_inside_x": m_ft.group(4),
+            "worst_ms": m_ft.group(5),
+            "worst_inside_x": m_ft.group(6),
+            "sprite_dots": int(m_spr.group(1)),
+            "hit_line": int(m_spr.group(2)),
+            "hit_pixel": int(m_spr.group(3)),
+            "chip_hit_hpos": int(m_spr.group(5)),
+            "scroll_dots": scroll_dots,
+            "write_delay_plateau": ", ".join(str(d) for d in write_plateau),
+        },
+        "area_vote_lows": area_vote_lows,
+    }
+
     record = {
         "note": "Written only by scripts/board-nes.py --board. The suite and the "
                 "MUTATE=1 run were executed at this commit with the netlist and "
@@ -131,6 +213,7 @@ def main() -> int:
             "golden_states": int(golden_states),
             "quiescent_half_steps_per_s": throughput,
         },
+        "c2c02": c2c02,
         "first_sound": {
             "golden_states": a3_states,
             "timer_byte": timer,

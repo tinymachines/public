@@ -19,6 +19,13 @@ const record = JSON.parse(
   halfphi: string;
   a0: { transistors: string; golden_states: number };
   first_sound: { plateau_half_steps: number; timer_byte: number };
+  c2c02: {
+    commit: string;
+    tests_green: number;
+    mutate_red: number;
+    p1_states: number;
+    p3: { visible_dots: number; mean_ms: string; mean_inside_x: string; hit_line: number; hit_pixel: number };
+  };
 };
 
 test("the landing shows the boarded figures, not remembered ones", async ({ page }) => {
@@ -35,6 +42,32 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   const text = (await page.locator("main").innerText()).replace(/\s+/g, " ");
   expect(text).toContain(record.a0.transistors);
   expect(text).toContain(String(record.first_sound.plateau_half_steps));
+
+  // The PPU's row of chips and its figures, from the same record.
+  const ppu = page.locator("[data-boarded-ppu] .measured");
+  await expect(ppu).toHaveCount(3);
+  await expect(ppu.nth(0)).toContainText(String(record.c2c02.tests_green));
+  await expect(ppu.nth(1)).toContainText(String(record.c2c02.mutate_red));
+  await expect(ppu.nth(2)).toContainText(record.c2c02.commit.slice(0, 7));
+  expect(text).toContain(String(record.c2c02.p1_states));
+  expect(text).toContain(String(record.c2c02.p3.visible_dots));
+  expect(text).toContain(`${record.c2c02.p3.mean_ms} ms`);
+  expect(text).toContain(`${record.c2c02.p3.mean_inside_x} times`);
+  expect(text).toContain(`(${record.c2c02.p3.hit_line}, ${record.c2c02.p3.hit_pixel})`);
+});
+
+test("the PPU figures serve and decode", async ({ page, request }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes", 500);
+  for (const asset of ["/nes/ppu-sequencer.png", "/nes/ppu-sprite-world.png", "/nes/ppu-scroll-world.png"]) {
+    const img = page.locator(`.crt-figure img[src="${asset}"]`);
+    await expect(img).toBeVisible();
+    await img.scrollIntoViewIfNeeded();
+    await expect.poll(async () => img.evaluate((e) => (e as HTMLImageElement).naturalWidth), { timeout: 10_000 }).toBeGreaterThan(0);
+    const r = await request.get(asset);
+    expect(r.status()).toBe(200);
+    expect(r.headers()["content-type"]).toContain("image/png");
+  }
 });
 
 test("the first-sound figure serves as committed bytes", async ({ page, request }) => {

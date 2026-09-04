@@ -26,6 +26,33 @@ export interface NesRecord {
     golden_states: number;
     quiescent_half_steps_per_s: string;
   };
+  /** The PPU (2c02), boarded from its own gates' output. */
+  c2c02: {
+    repo: string;
+    commit: string;
+    halfphi: string;
+    tests_green: number;
+    mutate_red: number;
+    p0_states: number;
+    p1_states: number;
+    p2: { sprite_states: number; hit_vpos: number; hit_hpos: number; race_bits: string };
+    p3: {
+      visible_dots: number;
+      frame_period_ms: string;
+      frames_timed: number;
+      mean_ms: string;
+      mean_inside_x: string;
+      worst_ms: string;
+      worst_inside_x: string;
+      sprite_dots: number;
+      hit_line: number;
+      hit_pixel: number;
+      chip_hit_hpos: number;
+      scroll_dots: number;
+      write_delay_plateau: string;
+    };
+    area_vote_lows: number;
+  };
   first_sound: {
     golden_states: string;
     timer_byte: number;
@@ -48,7 +75,7 @@ export function nes(): NesRecord {
   const record = JSON.parse(fs.readFileSync(FILE, "utf8")) as NesRecord;
   for (const k of [
     "boarded_on", "repo", "commit", "tests_green", "mutate_red",
-    "a0", "first_sound", "family",
+    "a0", "c2c02", "first_sound", "family",
   ] as const) {
     if (record[k] === undefined) {
       throw new Error(`data/nes.json has no ${k}; re-run scripts/board-nes.py --board`);
