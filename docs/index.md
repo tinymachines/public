@@ -21,7 +21,7 @@ switches, and the behaviour falls out of simulating them.
 | | |
 |---|---|
 | [The simulator](/docs/6502) | what runs the chip, and why every register value is read back off the die |
-| [Verification](/docs/6502/verification) | the two oracles, and why either alone is insufficient |
+| [Verification](/docs/6502/verification) | the two independent checks, and why either alone is insufficient |
 | [The API](/docs/6502/the-api) | the whole machine travels in every request |
 | [The chip atlas](/docs/6502/the-atlas) | what a wire is part of |
 | [The console contract](/docs/6502/the-console-contract) | a frame is an agreement, not hardware |
@@ -120,7 +120,7 @@ off the scope into 75 ohms, level by level: the scanline, the burst with
 every sample drawn, the levels beside the transcribed table, and what the
 first, unterminated captures had flattered. The saturation gap the
 landing reported turns out to be the probe, not the console, and the
-page says so from a boarded measurement rather than from memory.
+page says so from a recorded measurement rather than from memory.
 
 ## The console taking shape
 
@@ -154,10 +154,10 @@ switch-level chip on three worlds, its sequencer a table measured out of
 the switches rather than a second model. And two engine divergences
 were found by the chips and fixed in halfphi (0.1.5's rail-conflict
 hold, 0.1.6's per-netlist charge rule), after which both of the PPU's
-node goldens replay with no exemption at all: the latches the family had
-read as undefined power-on state were the engine's rule, not the
-silicon. The 6502 site now serves that engine, and [the engine
-record](/6502) boards it.
+recorded reference runs replay with no exceptions at all: the latches
+the family had read as undefined power-on state were the engine's rule,
+not the silicon. The 6502 site now serves that engine, and [the engine
+record](/6502) carries it.
 
 The fifth chip also settled a question the engine had carried since its
 first release: which way a group resolves when a layout pull fights an

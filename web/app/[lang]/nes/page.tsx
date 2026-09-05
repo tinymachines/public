@@ -107,7 +107,7 @@ const PROSE = {
         {r.c2c02.p2.hit_vpos}, dot {r.c2c02.p2.hit_hpos}, the sprite&rsquo;s
         own x plus the two-dot pipeline, and the two sprite windows replay
         node for node over {r.c2c02.p2.sprite_states} states with no
-        exemption. The famous missed-vblank window measures about a dot
+        exceptions. The famous missed-vblank window measures about a dot
         and a half wide, and three reads across the flag&rsquo;s rise
         return bit 7 as {r.c2c02.p2.race_bits} (miss, suppress, consume),
         cross-checked against the reference&rsquo;s own sampled data bit.
@@ -128,16 +128,16 @@ const PROSE = {
         resolves. The 2C02&rsquo;s reference weighs the members&rsquo;
         areas; visual6502 lets any one charged member win. halfphi{" "}
         {r.c2c02.halfphi} lets a netlist declare which, and with the vote
-        declared the PPU&rsquo;s two node goldens replay with no exemption
-        at all: {r.c2c02.p0_states} states from power-on and{" "}
-        {r.c2c02.p1_states} states through the bus harness, every one of
-        10,906 nodes. The nine and then 27 latches those goldens had
+        declared the PPU&rsquo;s two recorded reference runs replay with
+        no exceptions at all: {r.c2c02.p0_states} states from power-on
+        and {r.c2c02.p1_states} states through the bus harness, every one
+        of 10,906 nodes. The nine and then 27 latches those runs had
         masked as undefined power-on state were the charge rule, not the
-        silicon. A gate now holds the declaration, and building the chip
-        under the old rule turns it red.
+        silicon. A check now holds the declaration, and building the chip
+        under the old rule turns that check red.
       </>
     ),
-    ladderH: "The ladder: a PPU sixteen times faster than real time, dot for dot",
+    ladderH: "The fast PPU matches the chip dot for dot, well inside the frame period",
     ladder: (r: ReturnType<typeof nes>) => (
       <>
         The fast PPU is not a second model of the chip. Its sequencer is
@@ -176,9 +176,9 @@ const PROSE = {
       "The scroll world as the switch-level PPU drew it: a scrolled XOR-patterned background with visible breaks where mid-frame register writes changed the scroll.",
     worldsCaption: (
       <>
-        Two of the fast PPU&rsquo;s oracles, drawn by the switch-level
-        chip and shown through the ntsc-crt path (encode, decode, the
-        CRT stages). The worlds are functions of the address, so they are
+        Two of the worlds the fast PPU is checked against, drawn by the
+        switch-level chip and shown through the ntsc-crt path (encode,
+        decode, the CRT stages). The worlds are functions of the address, so they are
         busy by construction; the scroll world&rsquo;s two breaks are the
         register writes landing mid-frame. The fast PPU reproduces both
         pictures to the dot.
@@ -187,8 +187,9 @@ const PROSE = {
     pinsH: "The 2A03's core at the 6502's pins",
     pins: (
       <>
-        The console sketch&rsquo;s new kind of gate, chip versus chip
-        through the contract, has its first half: the 2A03&rsquo;s 6502
+        The console sketch calls for a new kind of check, chip against
+        chip through the contract, and the first half of it exists: the
+        2A03&rsquo;s 6502
         core is presented as a pin frame of the 6502 project&rsquo;s own
         contract crate, one per clock phase, and held to what a 6502 must
         do there, the reset vector, execution entering at it, opcode
@@ -223,7 +224,7 @@ const PROSE = {
         The plan is written down and agreed:{" "}
         <a href={sketchHref}>the end-to-end sketch</a> in the contract
         repository, with a check per milestone. The PPU&rsquo;s corners,
-        the fast PPU and the pin gate&rsquo;s chip side are done. Still
+        the fast PPU and the chip side of the pin check are done. Still
         ahead, in order: the console layer, where the two chips meet
         through the contract, the 2A03&rsquo;s core is compared with the
         6502 at the pins with decimal mode as the named divergence, and
@@ -285,10 +286,10 @@ const PROSE = {
     enginesH: "エンジンの相違が二つ、どちらもチップが見つけ、エンジンで直った",
     engines: (r: ReturnType<typeof nes>) => (
       <>
-        スプライト 0 をそもそも当てることが最初の相違を暴いた: グループが両方のレールを含むときにリファレンスが特別扱いする OAM データ線を、エンジンはゼロに潰していた。halfphi 0.1.5 はその修正を汎用のホールドとして持ち、面積で重み付けした電荷投票、つまりリファレンス自身の規則で決める。二つ目はパレット書き込みを実 CPU と同じ間隔で行うまで隠れていた: バイトはうちのエンジンではアドレス下位バイトと OR されて着地し、リファレンスでは書いたとおりに着地した。原因は駆動されていないグループの解決のしかただった。2C02 のリファレンスはメンバーの面積を量り、visual6502 は電荷を持つメンバー一つで勝たせる。halfphi {r.c2c02.halfphi} はネットリストにどちらかを宣言させ、投票を宣言すると PPU の二つのノードゴールデンは例外を一切持たずに再生する: 電源投入からの {r.c2c02.p0_states} 状態と、バスハーネス越しの {r.c2c02.p1_states} 状態、10,906 ノードの一つ残らず。それらのゴールデンが未定義の電源投入状態として隠していた 9 個、次いで 27 個のラッチは、シリコンではなく電荷規則だった。いまはゲートが宣言を押さえ、古い規則でチップを組むと赤になる。
+        スプライト 0 をそもそも当てることが最初の相違を暴いた: グループが両方のレールを含むときにリファレンスが特別扱いする OAM データ線を、エンジンはゼロに潰していた。halfphi 0.1.5 はその修正を汎用のホールドとして持ち、面積で重み付けした電荷投票、つまりリファレンス自身の規則で決める。二つ目はパレット書き込みを実 CPU と同じ間隔で行うまで隠れていた: バイトはうちのエンジンではアドレス下位バイトと OR されて着地し、リファレンスでは書いたとおりに着地した。原因は駆動されていないグループの解決のしかただった。2C02 のリファレンスはメンバーの面積を量り、visual6502 は電荷を持つメンバー一つで勝たせる。halfphi {r.c2c02.halfphi} はネットリストにどちらかを宣言させ、投票を宣言すると PPU の二つの記録済みリファレンス走行は例外を一切持たずに再生する: 電源投入からの {r.c2c02.p0_states} 状態と、バスハーネス越しの {r.c2c02.p1_states} 状態、10,906 ノードの一つ残らず。それらの走行が未定義の電源投入状態として隠していた 9 個、次いで 27 個のラッチは、シリコンではなく電荷規則だった。いまは検査が宣言を押さえ、古い規則でチップを組むとその検査が赤になる。
       </>
     ),
-    ladderH: "はしご: 実時間の 16 倍速い PPU、ドット単位で一致",
+    ladderH: "高速 PPU はドット単位でチップと一致し、フレーム周期の内側に収まる",
     ladder: (r: ReturnType<typeof nes>) => (
       <>
         高速 PPU はチップの二つ目のモデルではない。そのシーケンサはビルド時にスイッチレベルのチップから測り出した表で、フレームの各ドットに一語: チップがどのフェッチをラッチしたか、いつアドレスを進めたか、いつスクロールをコピーしたか、いつフラグが立ったか。書き下ろしたのはデータパスだけで、それはチップ自身のフレームに押さえられている: 最初のワールドで {r.c2c02.p3.visible_dots} 個の可視ドットがスイッチレベルの描画と一致し、64 スプライトのワールド（反転、優先度、一行に九つ、スプライト 0 の当たりは ({r.c2c02.p3.hit_line}, {r.c2c02.p3.hit_pixel})、チップ自身のフラグはドット {r.c2c02.p3.chip_hit_hpos} で立った）で {r.c2c02.p3.sprite_dots} 個すべて、そしてフレーム途中に五つのレジスタ書き込みが着地するスクロールワールドで {r.c2c02.p3.scroll_dots} 個すべて。書き込みはそれぞれ自分のバスアクセスの中で効く（アクセス開始から {r.c2c02.p3.write_delay_plateau} ドットの台地）。1 フレームを {r.c2c02.p3.mean_ms} ms で描き、フレーム周期 {r.c2c02.p3.frame_period_ms} ms の {r.c2c02.p3.mean_inside_x} 倍内側、最悪フレーム {r.c2c02.p3.worst_ms} ms、{r.c2c02.p3.frames_timed} フレームで計測。
@@ -307,13 +308,13 @@ const PROSE = {
       "スイッチレベルの PPU が描いたスクロールワールド: スクロールした XOR 模様の背景に、フレーム途中のレジスタ書き込みがスクロールを変えた切れ目が見える。",
     worldsCaption: (
       <>
-        高速 PPU のオラクル二つ。スイッチレベルのチップが描き、ntsc-crt の経路（エンコード、デコード、CRT 段）を通して示した。ワールドはアドレスの関数なので構造上ごちゃごちゃしている。スクロールワールドの二本の切れ目は、フレーム途中に着地したレジスタ書き込みだ。高速 PPU はどちらの絵もドット単位で再現する。
+        高速 PPU の検査に使うワールドが二つ。スイッチレベルのチップが描き、ntsc-crt の経路（エンコード、デコード、CRT 段）を通して示した。ワールドはアドレスの関数なので構造上ごちゃごちゃしている。スクロールワールドの二本の切れ目は、フレーム途中に着地したレジスタ書き込みだ。高速 PPU はどちらの絵もドット単位で再現する。
       </>
     ),
     pinsH: "6502 のピンに現れた 2A03 のコア",
     pins: (
       <>
-        コンソールのスケッチが言う新種のゲート、規約を介したチップ対チップの前半ができた: 2A03 の 6502 コアを 6502 プロジェクト自身の規約クレートのピンフレームとしてクロック位相ごとに提示し、6502 がそこでしなければならないことに押さえる。リセットベクタ、そこから始まる実行、sync で印された命令フェッチ、セルに着地するストア。チップ間の比較と 10 進モードの相違は、両方のチップに手が届くコンソール層のものだ。
+        コンソールのスケッチが言う新種の検査、規約を介したチップ対チップの比較は、前半ができた: 2A03 の 6502 コアを 6502 プロジェクト自身の規約クレートのピンフレームとしてクロック位相ごとに提示し、6502 がそこでしなければならないことに押さえる。リセットベクタ、そこから始まる実行、sync で印された命令フェッチ、セルに着地するストア。チップ間の比較と 10 進モードの相違は、両方のチップに手が届くコンソール層のものだ。
       </>
     ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
@@ -336,7 +337,7 @@ const PROSE = {
     aheadH: "ここから起動するコンソールまでのマイルストーン",
     ahead: (sketchHref: string) => (
       <>
-        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅、高速 PPU、ピンゲートのチップ側は済んだ。これから順に: 二つのチップが規約を介して出会うコンソール層。そこで 2A03 のコアを 6502 とピンで比べ（10 進モードが名指しの相違）、実 CPU を付けて標準テストスイートを走らせる。それから糊とカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅、高速 PPU、ピン検査のチップ側は済んだ。これから順に: 二つのチップが規約を介して出会うコンソール層。そこで 2A03 のコアを 6502 とピンで比べ（10 進モードが名指しの相違）、実 CPU を付けて標準テストスイートを走らせる。それから糊とカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (

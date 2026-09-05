@@ -142,9 +142,10 @@ const PROSE = {
     decodeH: "What the decode makes of it",
     decode: (
       <>
-        The terminated record through the repository&rsquo;s recovery:
-        sync found, burst locked, resampled onto the NES grid, separated,
-        demodulated. The cartridge menu was on screen. The frame is
+        This frame is the terminated record run end to end through the
+        repository&rsquo;s recovery, which finds the sync, locks to the
+        burst, resamples onto the NES grid, and pulls colour and
+        brightness back apart. The cartridge menu was on screen. The frame is
         Nintendo&rsquo;s, reproduced for commentary on the measurement.
       </>
     ),
@@ -154,7 +155,7 @@ const PROSE = {
     boardedH: "Where the numbers come from",
     boarded: (stamp: string, commit: string, href: string) => (
       <>
-        {stamp}. The page reads the record boarded from{" "}
+        {stamp}. The page reads the record as it was committed at{" "}
         <a data-address href={href}>{commit}</a>, and nothing on it is
         typed.
       </>
@@ -166,7 +167,8 @@ const PROSE = {
         was scored on the paused World 1-1 sky, and the confirmation is
         that same region through the same scorer from a terminated
         record. The console needs its Mario paused again; when it is,
-        the number lands here through the same boarding, not from memory.{" "}
+        the number will land here the way every other number on this
+        page did, measured and committed, not from memory.{" "}
         <Link href="/ntsc">Back to the NTSC landing.</Link>
       </>
     ),
@@ -232,7 +234,7 @@ const PROSE = {
     decodeH: "デコードが作るもの",
     decode: (
       <>
-        終端した記録をリポジトリの復元に通す: 同期を見つけ、バーストにロックし、NES のグリッドにリサンプルし、分離し、復調する。画面はカートリッジのメニューだった。画面は任天堂のもので、測定への論評のために転載した。
+        このフレームは、終端した記録をリポジトリの復元に端から端まで通したものだ: 同期を見つけ、バーストにロックし、NES のグリッドにリサンプルし、色と明るさをもう一度引き離す。画面はカートリッジのメニューだった。画面は任天堂のもので、測定への論評のために転載した。
       </>
     ),
     decodeAlt:
@@ -241,13 +243,13 @@ const PROSE = {
     boardedH: "数字の出どころ",
     boarded: (stamp: string, commit: string, href: string) => (
       <>
-        {stamp}。このページは <a data-address href={href}>{commit}</a> から搭載した記録を読み、打ち込んだ数字は一つもない。
+        {stamp}。このページは <a data-address href={href}>{commit}</a> でコミットされたとおりの記録を読み、打ち込んだ数字は一つもない。
       </>
     ),
     notHereH: "まだ無いもの",
     notHere: (
       <>
-        終端した空。ランディングページの彩度の所見は一時停止した World 1-1 の空で採点され、その確認は終端した記録から同じ領域を同じ採点器に通すことだ。実機のマリオをもう一度一時停止させる必要がある。そうなれば数字は記憶からではなく同じ搭載を通ってここに来る。<Link href="/ja/ntsc">NTSC のランディングへ戻る。</Link>
+        終端した空。ランディングページの彩度の所見は一時停止した World 1-1 の空で採点され、その確認は終端した記録から同じ領域を同じ採点器に通すことだ。実機のマリオをもう一度一時停止させる必要がある。そうなれば数字は記憶からではなく、このページの他の数字と同じく実測されコミットされて、ここに来る。<Link href="/ja/ntsc">NTSC のランディングへ戻る。</Link>
       </>
     ),
   },
