@@ -164,10 +164,11 @@ const PROSE = {
       "A timing chart of one PPU scanline: rows for the nametable, attribute and pattern fetches and for the address increments, copies and sprite evaluation, with a tick at each dot the switch-level chip fires them.",
     sequencerCaption: (
       <>
-        The sequencer read off the switches: one visible line of the
-        first world, per dot, every named control line the fast PPU is
-        built from. Fetches in blue, address and sprite events in red.
-        Drawn from the measurement, not from a diagram.
+        One scanline of the chip&rsquo;s internal schedule, read off the
+        switches themselves. Each row is a control signal the fast PPU
+        is built from, and each tick marks a dot where the real chip
+        fired it: fetches in blue, address and sprite events in red. It
+        is a measurement, not a redrawing of a diagram.
       </>
     ),
     worldsAlt1:
@@ -176,12 +177,14 @@ const PROSE = {
       "The scroll world as the switch-level PPU drew it: a scrolled XOR-patterned background with visible breaks where mid-frame register writes changed the scroll.",
     worldsCaption: (
       <>
-        Two of the worlds the fast PPU is checked against, drawn by the
-        switch-level chip and shown through the ntsc-crt path (encode,
-        decode, the CRT stages). The worlds are functions of the address, so they are
-        busy by construction; the scroll world&rsquo;s two breaks are the
-        register writes landing mid-frame. The fast PPU reproduces both
-        pictures to the dot.
+        Two of the test pictures the fast PPU has to reproduce. The
+        switch-level chip drew them, and they are shown the way a TV
+        would show them, encoded to composite and decoded onto a
+        simulated CRT. They look like noise on purpose: every tile is
+        computed from its own position, so a single wrong dot has
+        nowhere to hide. The two breaks across the scroll world are
+        deliberate too, scroll changes written mid-frame. The fast PPU
+        gets both pictures right to the dot.
       </>
     ),
     pinsH: "The 2A03's core at the 6502's pins",
@@ -299,7 +302,7 @@ const PROSE = {
       "PPU の 1 走査線のタイミング図: ネームテーブル、属性、パターンのフェッチと、アドレス増分、コピー、スプライト評価の行に、スイッチレベルのチップがそれを発火させる各ドットの目盛り。",
     sequencerCaption: (
       <>
-        スイッチから読み取ったシーケンサ: 最初のワールドの可視ライン一本、ドットごとに、高速 PPU の材料である名前付き制御線すべて。青がフェッチ、赤がアドレスとスプライトのイベント。図解ではなく実測から描いた。
+        チップ内部のスケジュールを走査線一本ぶん、スイッチそのものから読み取った。各行は高速 PPU の材料になる制御信号で、目盛りは実チップがそれを発火させたドット: 青がフェッチ、赤がアドレスとスプライトのイベント。図解を写したものではなく、実測だ。
       </>
     ),
     worldsAlt1:
@@ -308,7 +311,7 @@ const PROSE = {
       "スイッチレベルの PPU が描いたスクロールワールド: スクロールした XOR 模様の背景に、フレーム途中のレジスタ書き込みがスクロールを変えた切れ目が見える。",
     worldsCaption: (
       <>
-        高速 PPU の検査に使うワールドが二つ。スイッチレベルのチップが描き、ntsc-crt の経路（エンコード、デコード、CRT 段）を通して示した。ワールドはアドレスの関数なので構造上ごちゃごちゃしている。スクロールワールドの二本の切れ目は、フレーム途中に着地したレジスタ書き込みだ。高速 PPU はどちらの絵もドット単位で再現する。
+        高速 PPU が再現しなければならないテスト画像が二つ。スイッチレベルのチップが描き、テレビが映すのと同じように、コンポジットにエンコードして模擬ブラウン管にデコードして示した。わざとノイズのように見せている: どのタイルも自分の位置から計算されるので、一つの間違ったドットにも隠れる場所がない。スクロールワールドを横切る二本の切れ目もわざとで、フレーム途中に書き込まれたスクロールの変更だ。高速 PPU はどちらの絵もドット単位で正しく描く。
       </>
     ),
     pinsH: "6502 のピンに現れた 2A03 のコア",
