@@ -115,6 +115,16 @@ to exist in two files, it needs to exist in one and be read by both.
   a false positive to leave alone, not a hit to fix.)
 - **Headings state a fact, not a promise.** "Twelve opcodes never finish", not
   "∞ is a measurement too."
+- **Shipped prose speaks the reader's language, not the repository's.** This is
+  a labor of love by a garage band, not a marketing site: plain, warm
+  sentences, in the "we" voice where it fits. Translate the working vocabulary
+  at the page boundary: a node golden is a recorded reference run, an oracle
+  is a check against something real, a gate is a check, a rung is a filter, a
+  mutation is a sabotage the tests must catch, and a record is committed or
+  recorded, never boarded. No label-fronted openers ("Measured on the ladder,
+  the frame is..."): say who did what as a sentence. This rule exists because
+  new pages keep shipping in repo vocabulary and needing a sweep afterwards
+  (ee1bbdf, c406d0e, eccd22e); write them plain the first time.
 - Say what is not covered. An archive that hides its gaps is worth less than
   one that shows them.
 
