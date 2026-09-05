@@ -141,6 +141,14 @@ are public:
   memory harness, the reference's own run of the same program replays
   through it bit for bit, and the square channel's output swings in
   plateaus whose length comes straight from the program's own timer byte.
+  Its ladder is now built (2026-09-05): the 6502's fast core with the
+  decimal adjust disconnected, chosen by comparing the switch-level 2A03
+  against the 6502's recorded pin traces chip against chip; an APU
+  authored around tables measured out of the chip, held to its five
+  output codes at every half-step (and finding the noise and DMC timers
+  to be shift registers, with one period-ROM entry that disagrees with
+  every published table); and the DMA units, held frame for frame with
+  RDY. About nine times real time, all attached.
 - [2c02](https://github.com/tinymachines/2c02) is the PPU, whose recorded
   reference run now goes through the contract's pin frames, with a built-in
   sabotage that lies about one pin's polarity and must make it fail.

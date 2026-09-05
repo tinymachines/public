@@ -61,6 +61,36 @@ export interface NesRecord {
     ad1_high: string;
     stamp: string;
   };
+  /** N3, the 2A03 ladder: the gates' own measurement lines and the report. */
+  n3: {
+    /** The cross-chip pin lockstep against the 6502's recorded golden. */
+    traces_compared: number;
+    traces_refused: number;
+    traces_exact: number;
+    stack_offset_hex: string;
+    decimal_stores: number;
+    /** The core rung against rung 0 over the same programs. */
+    core_programs: number;
+    core_half_cycles: number;
+    core_exact: number;
+    /** The APU gate: worlds, half-steps per world. */
+    apu_worlds: number;
+    apu_half_steps: number;
+    /** The stall gate: frames per program, RDY-low counts. */
+    dma_frames: number;
+    dma_rdy_low_even: number;
+    dma_rdy_low_odd: number;
+    dmc_frames: number;
+    dmc_rdy_low: number;
+    /** Throughput with the APU attached, and the real-time multiple. */
+    half_cycles_per_s: string;
+    real_time_x: string;
+    /** The noise period ROM's disagreement, index 12: die against published. */
+    noise_index12_die: number;
+    noise_index12_published: number;
+    /** The 6502 golden as it stands: traces recorded there. */
+    golden_traces: number;
+  };
   family: {
     nes_bus: string;
     c2a03: string;
@@ -75,7 +105,7 @@ export function nes(): NesRecord {
   const record = JSON.parse(fs.readFileSync(FILE, "utf8")) as NesRecord;
   for (const k of [
     "boarded_on", "repo", "commit", "tests_green", "mutate_red",
-    "a0", "c2c02", "first_sound", "family",
+    "a0", "c2c02", "first_sound", "n3", "family",
   ] as const) {
     if (record[k] === undefined) {
       throw new Error(`data/nes.json has no ${k}; re-run scripts/board-nes.py --board`);

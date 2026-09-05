@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-04T22:19:18+00:00",
+  "boarded_at": "2026-09-05T16:09:14+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "served": {
-    "version": "v0.309",
-    "commit": "66053fd6537bfd12147ff9f27f8bd4e2185ac80a",
-    "built": "2026-09-04T22:17:21+00:00",
+    "version": "v0.312",
+    "commit": "e26a7faff82313a79a1599ba436635372f194877",
+    "built": "2026-09-05T15:32:12+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-04T22:10:28+00:00",
+      "ran": "2026-09-05T15:28:19+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 117,
+        "passed": 119,
         "failed": 0,
         "require_chips": true,
         "require_golden": true,
@@ -23,16 +23,16 @@
       }
     }
   },
-  "running": "66053fd6537bfd12147ff9f27f8bd4e2185ac80a",
+  "running": "e26a7faff82313a79a1599ba436635372f194877",
   "worktree": {
-    "commit": "66053fd6537bfd12147ff9f27f8bd4e2185ac80a",
-    "subject": "halfphi 0.1.6",
-    "committed": "2026-09-04T13:23:16-04:00",
+    "commit": "e26a7faff82313a79a1599ba436635372f194877",
+    "subject": "The RDY-in-write script loads A first: a store of the power-on A is not its claim",
+    "committed": "2026-09-05T11:24:16-04:00",
     "dirty": false
   },
   "halfphi": {
     "version": "0.1.6",
-    "tag": "halfphi-v0.1.6",
+    "tag": null,
     "shared_files": [
       "src/lib.rs",
       "src/source.rs",
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "728e9c697f3242895a50768208b8e81394f72474794dd9abbd08bd9f8f46cbe4",
-    "bytes": 635120,
-    "modified": "2026-09-04T22:05:06+00:00",
-    "stated": "66053fd6537bfd12147ff9f27f8bd4e2185ac80a"
+    "sha256": "13cea08eeb2045cf897f2e3f4b351e5845079c74758d125648948bad05f31be8",
+    "bytes": 635168,
+    "modified": "2026-09-05T15:25:43+00:00",
+    "stated": "e26a7faff82313a79a1599ba436635372f194877"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 39.2,
+      "seconds": 18.8,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 16.6,
+      "seconds": 13.5,
       "ok": true
     }
   ]

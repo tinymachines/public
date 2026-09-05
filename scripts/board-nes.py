@@ -58,9 +58,12 @@ def main() -> int:
                             capture_output=True, text=True).stdout.strip()
     remote = re.sub(r"\.git$", "", remote)
 
-    env = {**os.environ, "REQUIRE_NETLIST": "1", "REQUIRE_GOLDEN": "1"}
-    print(f"board-nes: running the suite at {commit[:7]} (netlist and goldens required)...")
-    suite = subprocess.run(["cargo", "test", "--workspace", "--release"], cwd=repo,
+    # REQUIRE_PINS: the N3 gates read the 6502 repository's recorded pin
+    # golden from the sibling checkout; without it they would SKIP and
+    # the counts below would be a smaller suite than the one claimed.
+    env = {**os.environ, "REQUIRE_NETLIST": "1", "REQUIRE_GOLDEN": "1", "REQUIRE_PINS": "1"}
+    print(f"board-nes: running the suite at {commit[:7]} (netlist, goldens and the 6502's pin golden required)...")
+    suite = subprocess.run(["cargo", "test", "--workspace", "--release", "--", "--nocapture"], cwd=repo,
                            capture_output=True, text=True, env=env)
     if suite.returncode != 0:
         fail(f"the suite is not green:\n{suite.stdout[-2000:]}{suite.stderr[-2000:]}")
@@ -70,7 +73,9 @@ def main() -> int:
         fail(f"suite counts unusable: {passed} passed, {failed} failed")
 
     print("board-nes: the MUTATE=1 run (must go red)...")
-    mut = subprocess.run(["cargo", "test", "--workspace", "--release"], cwd=repo,
+    # --no-fail-fast: cargo test otherwise stops at the first red test
+    # binary, and the count below would be that binary's reds alone.
+    mut = subprocess.run(["cargo", "test", "--workspace", "--release", "--no-fail-fast"], cwd=repo,
                          capture_output=True, text=True,
                          env={**env, "MUTATE": "1"})
     mutate_red = sum(int(m) for m in re.findall(r"(\d+) failed", mut.stdout))
@@ -112,6 +117,65 @@ def main() -> int:
     halfphi_tag = extract((repo / "crates" / "v2a03-sim" / "Cargo.toml").read_text(),
                           r'halfphi", tag = "v([0-9.]+)"', "halfphi pin")
 
+    # N3, the 2A03 ladder: the gates print their own measurement lines
+    # (the suite ran with --nocapture above), and the report carries
+    # the bench and the one finding. Each is an anchored extraction.
+    out = suite.stdout + suite.stderr
+    xc = re.search(r"cross-chip: (\d+) traces compared, (\d+) refused by name \([^)]*\), (\d+) exact in every field; "
+                   r"stack pointer at h=0 \$([0-9a-f]{2}) on the 6502 and \$([0-9a-f]{2}) on the 2A03", out)
+    if not xc:
+        fail("the cross-chip gate's summary line is not on the suite output")
+    core = re.search(r"core rung vs rung 0: (\d+) programs, (\d+) half-cycles, (\d+) exact in every field", out)
+    if not core:
+        fail("the core rung gate's summary line is not on the suite output")
+    worlds = re.findall(r"world: (\d+) half-steps, five codes and the frame IRQ flag identical to rung 0", out)
+    if len(worlds) < 2 or len(set(worlds)) != 1:
+        fail(f"the APU gate's worlds are not on the output as one length: {worlds}")
+    dma_even = re.search(r"sprite DMA, write on an even cycle: (\d+) frames identical in every field but (\d+) write-phi1 bytes; RDY low on (\d+)", out)
+    dma_odd = re.search(r"sprite DMA, write on an odd cycle: (\d+) frames identical in every field but (\d+) write-phi1 bytes; RDY low on (\d+)", out)
+    dmc = re.search(r"DMC fetches: (\d+) frames identical in every field but (\d+) write-phi1 bytes; RDY low on (\d+)", out)
+    if not (dma_even and dma_odd and dmc):
+        fail("the stall gate's summary lines are not on the suite output")
+    if dma_even.group(1) != dma_odd.group(1):
+        fail("the two sprite DMA programs ran different lengths")
+    n3r = re.sub(r"\s+", " ", (repo / "docs" / "n3-report.md").read_text())
+    n3_hcs = extract(n3r, r"\| the core rung with the APU \| ([\d,]+) \|", "N3 throughput with the APU")
+    n3_rt_m = re.search(r"\*\*About ([\d,]+)x rung 0 and ([\d.]+)x the 2A03's real time\*\* with the APU attached", n3r)
+    if not n3_rt_m:
+        fail("anchored extraction failed: N3 real-time multiple")
+    n3_rt = n3_rt_m.group(2)
+    noise_die = extract(n3r, r"index 12 measures (\d+) where the published value is (\d+)", "noise index 12")
+    noise_pub = re.search(r"index 12 measures (\d+) where the published value is (\d+)", n3r).group(2)
+    stores = len(re.findall(r"\| \$00[0-9A-F]{2} \| \$[0-9A-F]{2} \| \$[0-9A-F]{2} \(", n3r)) + len(re.findall(r"\| \$01FA \(PHP\)", n3r))
+    if stores != 9:
+        fail(f"the decimal store table in n3-report.md has {stores} rows, not the nine the gate lists")
+    golden_dir = (args.repo.parent / "6502" / "tools" / "pin-golden").resolve()
+    golden_traces = len(list(golden_dir.glob("*.pins"))) if golden_dir.is_dir() else 0
+    if golden_traces != int(xc.group(1)) + int(xc.group(2)):
+        fail(f"the pin golden has {golden_traces} traces but the gate compared {xc.group(1)} and refused {xc.group(2)}")
+    n3 = {
+        "traces_compared": int(xc.group(1)),
+        "traces_refused": int(xc.group(2)),
+        "traces_exact": int(xc.group(3)),
+        "stack_offset_hex": f"{(int(xc.group(4), 16) - int(xc.group(5), 16)) & 0xff:02x}",
+        "decimal_stores": stores,
+        "core_programs": int(core.group(1)),
+        "core_half_cycles": int(core.group(2)),
+        "core_exact": int(core.group(3)),
+        "apu_worlds": len(worlds),
+        "apu_half_steps": int(worlds[0]),
+        "dma_frames": int(dma_even.group(1)),
+        "dma_rdy_low_even": int(dma_even.group(3)),
+        "dma_rdy_low_odd": int(dma_odd.group(3)),
+        "dmc_frames": int(dmc.group(1)),
+        "dmc_rdy_low": int(dmc.group(3)),
+        "half_cycles_per_s": n3_hcs,
+        "real_time_x": n3_rt,
+        "noise_index12_die": int(noise_die),
+        "noise_index12_published": int(noise_pub),
+        "golden_traces": golden_traces,
+    }
+
     # The PPU (2c02), boarded the same way: a clean checkout, its full
     # suite with every golden required, run with --nocapture so the gates'
     # own measurement lines are on the output, then the MUTATE=1 run; the
@@ -139,7 +203,7 @@ def main() -> int:
     ppu_passed = sum(int(m) for m in re.findall(r"(\d+) passed", ppu_suite.stdout))
     out = ppu_suite.stdout + ppu_suite.stderr
     print("board-nes: the 2c02 MUTATE=1 run (must go red)...")
-    ppu_mut = subprocess.run(["cargo", "test", "--workspace", "--release"], cwd=ppu,
+    ppu_mut = subprocess.run(["cargo", "test", "--workspace", "--release", "--no-fail-fast"], cwd=ppu,
                              capture_output=True, text=True, env={**ppu_env, "MUTATE": "1"})
     ppu_red = sum(int(m) for m in re.findall(r"(\d+) failed", ppu_mut.stdout))
     if ppu_mut.returncode == 0 or ppu_red == 0:
@@ -214,6 +278,7 @@ def main() -> int:
             "quiescent_half_steps_per_s": throughput,
         },
         "c2c02": c2c02,
+        "n3": n3,
         "first_sound": {
             "golden_states": a3_states,
             "timer_byte": timer,

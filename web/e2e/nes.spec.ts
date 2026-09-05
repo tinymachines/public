@@ -26,6 +26,17 @@ const record = JSON.parse(
     p1_states: number;
     p3: { visible_dots: number; mean_ms: string; mean_inside_x: string; hit_line: number; hit_pixel: number };
   };
+  n3: {
+    traces_compared: number;
+    traces_exact: number;
+    apu_worlds: number;
+    apu_half_steps: number;
+    dma_frames: number;
+    dmc_frames: number;
+    real_time_x: string;
+    noise_index12_die: number;
+    noise_index12_published: number;
+  };
 };
 
 test("the landing shows the boarded figures, not remembered ones", async ({ page }) => {
@@ -54,12 +65,22 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   expect(text).toContain(`${record.c2c02.p3.mean_ms} ms`);
   expect(text).toContain(`${record.c2c02.p3.mean_inside_x} times`);
   expect(text).toContain(`(${record.c2c02.p3.hit_line}, ${record.c2c02.p3.hit_pixel})`);
+
+  // The 2A03 ladder's row of chips and its prose, from the same record.
+  const n3 = page.locator("[data-boarded-n3] .measured");
+  await expect(n3).toHaveCount(3);
+  await expect(n3.nth(0)).toContainText(`${record.n3.apu_worlds} worlds, ${record.n3.apu_half_steps} half-steps`);
+  await expect(n3.nth(1)).toContainText(String(2 * record.n3.dma_frames + record.n3.dmc_frames));
+  await expect(n3.nth(2)).toContainText(`${record.n3.real_time_x}x real time`);
+  expect(text).toContain(`${record.n3.traces_compared} traces compare`);
+  expect(text).toContain(`${record.n3.traces_exact} of them exact`);
+  expect(text).toContain(`${record.n3.noise_index12_die} cycles where every published table says ${record.n3.noise_index12_published}`);
 });
 
-test("the PPU figures serve and decode", async ({ page, request }) => {
+test("the PPU and APU figures serve and decode", async ({ page, request }) => {
   await page.setViewportSize(DESK);
   await open(page, "/nes", 500);
-  for (const asset of ["/nes/ppu-sequencer.png", "/nes/ppu-sprite-world.png", "/nes/ppu-scroll-world.png"]) {
+  for (const asset of ["/nes/ppu-sequencer.png", "/nes/ppu-sprite-world.png", "/nes/ppu-scroll-world.png", "/nes/apu-codes.png"]) {
     const img = page.locator(`.crt-figure img[src="${asset}"]`);
     await expect(img).toBeVisible();
     await img.scrollIntoViewIfNeeded();

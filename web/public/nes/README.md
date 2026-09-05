@@ -31,3 +31,15 @@ not edit the pixels.
   Converted from PPM with Pillow. The pictures are the switch-level
   chip's; the sprites and tiles are the worlds' XOR VRAM function, not a
   game's.
+
+## The 2A03 ladder's figure (2026-09-05)
+
+- `apu-codes.png`: the 2A03's five output codes (`sq0_out`, `sq1_out`,
+  `tri_out`, `noi_out`, `pcm_out`) over the N3 gate's long-note world,
+  80,000 CPU half-steps, drawn by `tools/apu-figure.py` in
+  tinymachines/2a03 (at cf026db) from the CSV
+  `cargo run --release -p v2a03-micro --example apu-codes` writes. The
+  streams are the authored APU's, which `tests/apu.rs` held identical
+  to the switch-level chip's at every half-step, so the picture is what
+  the chip's own output nodes did; the vertical line is the frame IRQ
+  flag's rise. Do not edit the pixels.

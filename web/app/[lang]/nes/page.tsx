@@ -187,20 +187,91 @@ const PROSE = {
         gets both pictures right to the dot.
       </>
     ),
-    pinsH: "The 2A03's core at the 6502's pins",
-    pins: (
+    pinsH: "The 2A03's core at the 6502's pins, chip against chip",
+    pins: (r: ReturnType<typeof nes>) => (
       <>
         The console sketch calls for a new kind of check, chip against
-        chip through the contract, and the first half of it exists: the
-        2A03&rsquo;s 6502
-        core is presented as a pin frame of the 6502 project&rsquo;s own
-        contract crate, one per clock phase, and held to what a 6502 must
-        do there, the reset vector, execution entering at it, opcode
-        fetches marked by sync, a store landing on its cell. The
-        cross-chip comparison and the decimal-mode divergence belong to
-        the console layer, where both chips are reachable.
+        chip through the contract, and both halves now exist. The
+        2A03&rsquo;s 6502 core is presented as a pin frame of the 6502
+        project&rsquo;s own contract crate, one per clock phase, and then
+        run through every recorded trace of the 6502&rsquo;s pin golden
+        ({r.n3.golden_traces} of them: seven programs, the reference&rsquo;s
+        program, the scripted interrupt and RDY runs, three decimal-mode
+        chains, all 256 opcodes), the other chip entering as recorded text
+        and never as an engine. {r.n3.traces_compared} traces compare
+        ({r.n3.traces_refused} drive pins the 2A03 does not have and are
+        refused by name), {r.n3.traces_exact} of them exact in every field
+        at every half-cycle, and the rest differ only inside four named
+        and bounded classes: the stack page (the two dies&rsquo; simulated
+        power-on stack pointers differ by ${r.n3.stack_offset_hex}, derived
+        from both cores&rsquo; own registers), the data byte in a
+        write&rsquo;s phi1 half (nothing is serviced there), the decimal
+        chains, where the 2A03 stores the binary sums and binary flags the
+        6502 adjusts, {r.n3.decimal_stores} bytes listed with their
+        arithmetic, and a mid-run reset, where the 2A03 holds its core
+        still under RES while the 6502 runs on, both reading the vector at
+        the same half-cycle. That list decided the shape of the 2A03&rsquo;s
+        own fast core: the 6502&rsquo;s rung 3 with its decimal adjust
+        disconnected and its stack pointer seeded from this chip, two knobs
+        landed in the 6502 repository and held to its golden there. Against
+        the switch-level 2A03 on every program and script:{" "}
+        {r.n3.core_programs} programs, {r.n3.core_half_cycles} half-cycles,
+        the write-phi1 byte the one difference left.
       </>
     ),
+    apuH: "The APU as tables, held to the chip at every half-step",
+    apu: (r: ReturnType<typeof nes>, repoHref: string) => (
+      <>
+        The sound side follows the PPU&rsquo;s pattern: tables measured out
+        of the switch-level chip at build time, machinery authored around
+        them from headless probes, the whole held to the chip&rsquo;s own
+        output. The probes came first, eleven measurements kept as
+        instruments (the frame sequencer in both modes, the length table,
+        the duty sequences, the envelope and sweep clocks, the triangle,
+        the noise and DMC period tables, the sprite DMA, the controller
+        strobes), and they found two things the published model does not
+        say. The noise and DMC timers are not counters but linear feedback
+        shift registers, free-running from power-on, each reloading one of
+        sixteen recorded states when it reaches a terminal: the die&rsquo;s
+        period ROMs, and the noise ROM&rsquo;s index 12 lands at{" "}
+        {r.n3.noise_index12_die} cycles where every published table says{" "}
+        {r.n3.noise_index12_published}, either a transcription defect in
+        the die data or a quirk of the part, named and carried. Every
+        timing inside a unit is a fitted constant measured with a probe
+        when the gate&rsquo;s code streams first parted: a low-byte period
+        write makes the next tick a reload, a square&rsquo;s code lags its
+        step by two half-steps, the DMC&rsquo;s output unit counts eight
+        completions from power-on before it speaks. The gate is two
+        register programs under both frame modes, {r.n3.apu_worlds} worlds
+        of {r.n3.apu_half_steps} half-steps each, the five output codes and
+        the frame IRQ flag identical to the switch-level chip at every
+        half-step. Then the stalls: the whole chip at the pins, its DMA
+        units taking the bus, against the switch-level chip frame for frame
+        with RDY compared like any other field, a sprite DMA at both write
+        alignments ({r.n3.dma_frames} frames each, RDY low on{" "}
+        {r.n3.dma_rdy_low_even} and {r.n3.dma_rdy_low_odd}) and the
+        DMC&rsquo;s sample fetches ({r.n3.dmc_frames} frames, RDY low on{" "}
+        {r.n3.dmc_rdy_low}). With everything attached the chip runs at{" "}
+        {r.n3.half_cycles_per_s} half-cycles a second, {r.n3.real_time_x}{" "}
+        times real time. The account, step by step, is{" "}
+        <a href={`${repoHref}/blob/main/docs/n3-report.md`}>the N3 report</a>.
+      </>
+    ),
+    apuAlt: "Five stacked traces over 22 milliseconds of 2A03 time: two squares, the triangle, the noise and the DMC output codes, with the frame IRQ marked",
+    apuCaption: (r: ReturnType<typeof nes>) => (
+      <>
+        The five output codes over the gate&rsquo;s long-note world,{" "}
+        {r.n3.apu_half_steps} half-steps: the authored APU&rsquo;s streams,
+        which the gate held identical to the switch-level chip&rsquo;s at
+        every one of them. Square 1 sweeps up to its mute, square 0&rsquo;s
+        envelope starts at the first quarter frame, the noise&rsquo;s LFSR
+        waits out its timer&rsquo;s power-on lap, the DMC walks a 33-byte
+        sample; the vertical line is the frame IRQ.
+      </>
+    ),
+    mApuHalfSteps: (n: number, w: number) => <>APU gate: <b>{w} worlds, {n} half-steps each, identical</b></>,
+    mStalls: (n: number) => <>stall gate: <b>{n} frames identical, RDY included</b></>,
+    mRealTime: (x: string) => <>with the APU attached: <b>{x}x real time</b></>,
     boardedH: "Every number here comes from re-running the tests",
     boardedIntro: (date: string) => (
       <>
@@ -226,15 +297,16 @@ const PROSE = {
       <>
         The plan is written down and agreed:{" "}
         <a href={sketchHref}>the end-to-end sketch</a> in the contract
-        repository, with a check per milestone. The PPU&rsquo;s corners,
-        the fast PPU and the chip side of the pin check are done. Still
-        ahead, in order: the console layer, where the two chips meet
-        through the contract, the 2A03&rsquo;s core is compared with the
-        6502 at the pins with decimal mode as the named divergence, and
-        the standard test suites run with a real CPU attached; then the
-        glue, a cartridge, and both chips making a frame together. The
-        signal side is already real: <Link href="/ntsc">the ntsc page</Link>{" "}
-        carries frames decoded from a physical console, and{" "}
+        repository, with a check per milestone. The PPU&rsquo;s corners and
+        its fast rung, the pin check in both halves, and the 2A03&rsquo;s
+        ladder (its core, its APU, its DMA units) are done. Still ahead, in
+        order: the glue, a few authored parts held to their datasheets;
+        the console layer, where the two chips meet through the contract
+        on one master clock and the standard test suites run with a real
+        CPU attached; then a cartridge, and both chips making a frame
+        together. The signal side is already real:{" "}
+        <Link href="/ntsc">the ntsc page</Link> carries frames decoded from
+        a physical console, and{" "}
         <Link href="/ntsc/composite">its composite deep-dive</Link> reads
         that console&rsquo;s video off the scope level by level.
       </>
@@ -314,12 +386,27 @@ const PROSE = {
         高速 PPU が再現しなければならないテスト画像が二つ。スイッチレベルのチップが描き、テレビが映すのと同じように、コンポジットにエンコードして模擬ブラウン管にデコードして示した。わざとノイズのように見せている: どのタイルも自分の位置から計算されるので、一つの間違ったドットにも隠れる場所がない。スクロールワールドを横切る二本の切れ目もわざとで、フレーム途中に書き込まれたスクロールの変更だ。高速 PPU はどちらの絵もドット単位で正しく描く。
       </>
     ),
-    pinsH: "6502 のピンに現れた 2A03 のコア",
-    pins: (
+    pinsH: "6502 のピンに現れた 2A03 のコア、チップ対チップ",
+    pins: (r: ReturnType<typeof nes>) => (
       <>
-        コンソールのスケッチが言う新種の検査、規約を介したチップ対チップの比較は、前半ができた: 2A03 の 6502 コアを 6502 プロジェクト自身の規約クレートのピンフレームとしてクロック位相ごとに提示し、6502 がそこでしなければならないことに押さえる。リセットベクタ、そこから始まる実行、sync で印された命令フェッチ、セルに着地するストア。チップ間の比較と 10 進モードの相違は、両方のチップに手が届くコンソール層のものだ。
+        コンソールのスケッチが言う新種の検査、規約を介したチップ対チップの比較は、両半分がそろった。2A03 の 6502 コアを 6502 プロジェクト自身の規約クレートのピンフレームとしてクロック位相ごとに提示し、6502 のピンゴールデンに記録された全トレース（{r.n3.golden_traces} 本: 七つのプログラム、リファレンスのプログラム、割り込みと RDY のスクリプト走行、三本の 10 進モード連鎖、全 256 命令）を通す。相手のチップは記録されたテキストとして入り、エンジンとしては決して入らない。{r.n3.traces_compared} 本が比較され（{r.n3.traces_refused} 本は 2A03 にないピンを駆動するので名指しで拒む）、うち {r.n3.traces_exact} 本は全ハーフサイクルの全フィールドで一致。残りは名前と境界を持つ四つのクラスの内側でだけ異なる: スタックページ（二つのダイの模擬電源投入スタックポインタは ${r.n3.stack_offset_hex} 違い、両コア自身のレジスタから導いた）、書き込みの phi1 半分のデータバイト（そこでは何も供給されない）、10 進連鎖（6502 が補正するところを 2A03 は二進の和と二進のフラグを書く、{r.n3.decimal_stores} バイトを算術と共に列挙）、そして走行中のリセット（2A03 は RES の間コアを止め、6502 は走り続け、どちらも同じハーフサイクルでベクタを読む）。この一覧が 2A03 自身の高速コアの形を決めた: 10 進補正を切り離し、スタックポインタをこのチップから種付けした 6502 のラング 3。二つのつまみは 6502 リポジトリに着地し、そこのゴールデンに押さえられている。スイッチレベルの 2A03 に対して全プログラムと全スクリプトで: {r.n3.core_programs} プログラム、{r.n3.core_half_cycles} ハーフサイクル、残る差は write-phi1 のバイトだけ。
       </>
     ),
+    apuH: "表としての APU、ハーフステップごとにチップに押さえる",
+    apu: (r: ReturnType<typeof nes>, repoHref: string) => (
+      <>
+        音の側は PPU の型に従う: ビルド時にスイッチレベルのチップから測り出した表、ヘッドレスなプローブから書き下ろした周りの機構、そして全体をチップ自身の出力に押さえる。先にプローブ、計測器として残した十一の実測（両モードのフレームシーケンサ、長さ表、デューティ列、エンベロープとスイープのクロック、三角波、ノイズと DMC の周期表、スプライト DMA、コントローラのストローブ）が、公開モデルの言わないことを二つ見つけた。ノイズと DMC のタイマはカウンタではなく線形帰還シフトレジスタで、電源投入から自走し、終端に達すると記録済み十六状態の一つを再装填する: ダイの周期 ROM で、ノイズ ROM のインデックス 12 は公開表がすべて {r.n3.noise_index12_published} と言うところで {r.n3.noise_index12_die} サイクルに落ちる。ダイデータの転記欠陥か部品の癖か、名指しして持ち越す。ユニット内部のタイミングはすべて、検査の符号列が最初に分かれた時にプローブで測って留めた定数だ: 下位バイトの周期書き込みは次のティックを再装填にし、方形波の符号はステップから 2 ハーフステップ遅れ、DMC の出力ユニットは電源投入から八回の完了を数えてから鳴る。検査は両フレームモード下の二つのレジスタプログラム、{r.n3.apu_worlds} ワールド各 {r.n3.apu_half_steps} ハーフステップで、五つの出力符号とフレーム IRQ フラグが全ハーフステップでスイッチレベルのチップと同一。次にストール: ピンに現れたチップ全体、DMA ユニットがバスを取る様子を、RDY も他のフィールド同様に比べながらフレーム単位でスイッチレベルのチップと照らす。両方の書き込み整列でのスプライト DMA（各 {r.n3.dma_frames} フレーム、RDY 低は {r.n3.dma_rdy_low_even} と {r.n3.dma_rdy_low_odd}）と DMC のサンプル取り込み（{r.n3.dmc_frames} フレーム、RDY 低は {r.n3.dmc_rdy_low}）。すべてを付けたチップは毎秒 {r.n3.half_cycles_per_s} ハーフサイクル、実時間の {r.n3.real_time_x} 倍で走る。段階ごとの記録は<a href={`${repoHref}/blob/main/docs/n3-report.md`}>N3 報告</a>。
+      </>
+    ),
+    apuAlt: "2A03 時間 22 ミリ秒にわたる五段のトレース: 二つの方形波、三角波、ノイズ、DMC の出力符号とフレーム IRQ の印",
+    apuCaption: (r: ReturnType<typeof nes>) => (
+      <>
+        検査の長音ワールド {r.n3.apu_half_steps} ハーフステップにわたる五つの出力符号: 書き下ろした APU の列で、検査はそのすべてでスイッチレベルのチップと同一だと押さえた。方形波 1 はミュートまでスイープし、方形波 0 のエンベロープは最初の四分フレームで始まり、ノイズの LFSR はタイマの電源投入周回を待ち、DMC は 33 バイトのサンプルを歩く。縦線はフレーム IRQ。
+      </>
+    ),
+    mApuHalfSteps: (n: number, w: number) => <>APU 検査: <b>{w} ワールド、各 {n} ハーフステップ同一</b></>,
+    mStalls: (n: number) => <>ストール検査: <b>{n} フレーム同一、RDY 込み</b></>,
+    mRealTime: (x: string) => <>APU 込みで: <b>実時間の {x} 倍</b></>,
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
@@ -340,7 +427,7 @@ const PROSE = {
     aheadH: "ここから起動するコンソールまでのマイルストーン",
     ahead: (sketchHref: string) => (
       <>
-        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅、高速 PPU、ピン検査のチップ側は済んだ。これから順に: 二つのチップが規約を介して出会うコンソール層。そこで 2A03 のコアを 6502 とピンで比べ（10 進モードが名指しの相違）、実 CPU を付けて標準テストスイートを走らせる。それから糊とカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅と高速ラング、ピン検査の両半分、そして 2A03 の梯子（コア、APU、DMA ユニット）は済んだ。これから順に: 糊、データシートに押さえた少数の書き下ろし部品。コンソール層、二つのチップが一つのマスタクロック上で規約を介して出会い、実 CPU を付けて標準テストスイートを走らせる場所。それからカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (
@@ -416,7 +503,22 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
         </figure>
 
         <h2>{S.pinsH}</h2>
-        <p>{S.pins}</p>
+        <p>{S.pins(r)}</p>
+
+        <h2>{S.apuH}</h2>
+        <p>{S.apu(r, r.repo)}</p>
+
+        <figure className="crt-figure">
+          <Image
+            src="/nes/apu-codes.png"
+            width={1210}
+            height={935}
+            alt={S.apuAlt}
+            // Committed bytes, per the provenance README: served as-is.
+            unoptimized
+          />
+          <figcaption>{S.apuCaption(r)}</figcaption>
+        </figure>
 
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>
@@ -430,6 +532,11 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
           <span className="measured">{S.mPpuTests(r.c2c02.tests_green)}</span>
           <span className="measured">{S.mPpuReds(r.c2c02.mutate_red)}</span>
           <span className="measured">{S.mPpuCommit(r.c2c02.commit.slice(0, 7), `${r.c2c02.repo}/commit/${r.c2c02.commit}`)}</span>
+        </div>
+        <div className="boarded" data-boarded-n3>
+          <span className="measured">{S.mApuHalfSteps(r.n3.apu_half_steps, r.n3.apu_worlds)}</span>
+          <span className="measured">{S.mStalls(2 * r.n3.dma_frames + r.n3.dmc_frames)}</span>
+          <span className="measured">{S.mRealTime(r.n3.real_time_x)}</span>
         </div>
 
         <h2>{S.aheadH}</h2>
