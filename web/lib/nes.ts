@@ -91,10 +91,31 @@ export interface NesRecord {
     /** The 6502 golden as it stands: traces recorded there. */
     golden_traces: number;
   };
+  /** N4 and N5, the nes repository: the glue's and the console's suite,
+   *  the plumbing gate's line, and the N5 report's gate-2 table. */
+  console: {
+    repo: string;
+    commit: string;
+    tests_green: number;
+    pin_6502: string;
+    alignment: { cpu_phase: number; ppu_phase: number };
+    plumbing: { frames: number; master_half_steps: number; cpu_half_cycles: number; nmis: number };
+    /** Frames a second on one core, low and high, and the real-time multiples. */
+    frames_per_s: [number, number];
+    real_time_x: [string, string];
+    blargg: {
+      cpu_timing_pass: number;
+      instr_pass: number; instr_total: number;
+      sprite_pass: number; sprite_total: number;
+      vbl_nmi_pass: number; vbl_nmi_total: number;
+      apu_pass: number; apu_total: number;
+    };
+  };
   family: {
     nes_bus: string;
     c2a03: string;
     c2c02: string;
+    nes: string;
     sketch: string;
   };
 }
@@ -105,7 +126,7 @@ export function nes(): NesRecord {
   const record = JSON.parse(fs.readFileSync(FILE, "utf8")) as NesRecord;
   for (const k of [
     "boarded_on", "repo", "commit", "tests_green", "mutate_red",
-    "a0", "c2c02", "first_sound", "n3", "family",
+    "a0", "c2c02", "first_sound", "n3", "console", "family",
   ] as const) {
     if (record[k] === undefined) {
       throw new Error(`data/nes.json has no ${k}; re-run scripts/board-nes.py --board`);

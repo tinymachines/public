@@ -272,6 +272,66 @@ const PROSE = {
     mApuHalfSteps: (n: number, w: number) => <>APU gate: <b>{w} worlds, {n} half-steps each, identical</b></>,
     mStalls: (n: number) => <>stall gate: <b>{n} frames identical, RDY included</b></>,
     mRealTime: (x: string) => <>with the APU attached: <b>{x}x real time</b></>,
+    consoleH: "Both chips on one clock, and the standard test ROMs run with a real CPU attached",
+    console: (r: ReturnType<typeof nes>) => (
+      <>
+        The glue came first: the NES-001 mainboard&rsquo;s handful of
+        parts, the address decoder, the PPU&rsquo;s address latch, the two
+        RAMs, the controller port buffers with the controller behind them,
+        the reset chain, each a few lines held to its datasheet by its own
+        test and labelled authored, since nothing there goes through a
+        netlist. Two of them were authored wrong the first time and the
+        tests said so. Then the console: the 2A03&rsquo;s fast core and
+        the fast PPU on one master half-step counter, the CPU advancing
+        every twelve and the PPU every eight, at the alignment measured
+        off the two switch-level chips&rsquo; own clock dividers
+        (cpu_phase {r.console.alignment.cpu_phase}, ppu_phase{" "}
+        {r.console.alignment.ppu_phase}, one of four the dividers can
+        power up in, and the one the run stamps). The plumbing gate runs
+        a test cartridge for {r.console.plumbing.frames} frames and holds
+        the master counter to eight per dot, the odd frames a dot short,
+        the picture to the standalone PPU&rsquo;s, and the NMI count in
+        RAM to one a frame. It runs at {r.console.frames_per_s[0]} to{" "}
+        {r.console.frames_per_s[1]} frames a second on one core,{" "}
+        {r.console.real_time_x[0]} to {r.console.real_time_x[1]} times
+        real time.
+        {" "}Then the oracle the whole arc was built toward: blargg&rsquo;s
+        test ROMs through the entire console, the first real programs
+        these fast rungs had run for millions of cycles. The CPU timing
+        test passes; {r.console.blargg.instr_pass} of{" "}
+        {r.console.blargg.instr_total} instruction tests pass, every
+        official and unofficial opcode; {r.console.blargg.sprite_pass} of{" "}
+        {r.console.blargg.sprite_total} sprite-hit tests pass, the one
+        left refused by name (tall sprites are not modelled);{" "}
+        {r.console.blargg.vbl_nmi_pass} of {r.console.blargg.vbl_nmi_total}{" "}
+        vblank and NMI timing tests pass, the rest one dot off and each
+        named (two of them move with the alignment, as the ROMs&rsquo; own
+        notes say a real console does after some resets; three are the
+        clear-side race the fast PPU does not yet model);{" "}
+        {r.console.blargg.apu_pass} of {r.console.blargg.apu_total} APU
+        tests pass, the rest all the frame sequencer&rsquo;s position after
+        a write, carried to the 2A03 by name. What the ROMs found is the
+        point of running them: the CPU&rsquo;s fast rung had replayed
+        every recorded trace exactly and still carried four misses no
+        trace had covered (a carry that rides an undriven bus line into
+        the next instruction, a shift&rsquo;s carry read from the wrong
+        capture, three opcodes whose result is a bus fight the switch
+        model settles its own way, an interrupt edge in an
+        instruction&rsquo;s last cycle), and the fast PPU four more. Each
+        was located by running the switch-level chip and the fast rung in
+        lockstep on the ROM until they disagreed, measured on the chip,
+        then authored and held by a fixture that goes red without it. The
+        account is{" "}
+        <a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>the N5 report</a>;
+        the play gate waits on a cartridge.
+      </>
+    ),
+    mConsoleTests: (n: number) => <>nes suite: <b>{n} tests green</b></>,
+    mConsoleInstr: (p: number, t: number) => <>instruction tests: <b>{p} of {t} pass</b></>,
+    mConsoleRate: (lo: string, hi: string) => <>the console: <b>{lo} to {hi}x real time</b></>,
+    mConsoleCommit: (commit: string, href: string) => (
+      <>nes commit: <b><a data-address href={href}>{commit}</a></b></>
+    ),
     boardedH: "Every number here comes from re-running the tests",
     boardedIntro: (date: string) => (
       <>
@@ -298,13 +358,13 @@ const PROSE = {
         The plan is written down and agreed:{" "}
         <a href={sketchHref}>the end-to-end sketch</a> in the contract
         repository, with a check per milestone. The PPU&rsquo;s corners and
-        its fast rung, the pin check in both halves, and the 2A03&rsquo;s
-        ladder (its core, its APU, its DMA units) are done. Still ahead, in
-        order: the glue, a few authored parts held to their datasheets;
-        the console layer, where the two chips meet through the contract
-        on one master clock and the standard test suites run with a real
-        CPU attached; then a cartridge, and both chips making a frame
-        together. The signal side is already real:{" "}
+        its fast rung, the pin check in both halves, the 2A03&rsquo;s
+        ladder (its core, its APU, its DMA units) and the glue are done,
+        and the console runs the standard suites. Still open there: the
+        alignment gate&rsquo;s two replays through the console, the
+        clear-side race in the fast PPU, the APU&rsquo;s write timing, and
+        the play gate, which waits on a cartridge. Then the picture through
+        the encoder, and the sound. The signal side is already real:{" "}
         <Link href="/ntsc">the ntsc page</Link> carries frames decoded from
         a physical console, and{" "}
         <Link href="/ntsc/composite">its composite deep-dive</Link> reads
@@ -407,6 +467,19 @@ const PROSE = {
     mApuHalfSteps: (n: number, w: number) => <>APU 検査: <b>{w} ワールド、各 {n} ハーフステップ同一</b></>,
     mStalls: (n: number) => <>ストール検査: <b>{n} フレーム同一、RDY 込み</b></>,
     mRealTime: (x: string) => <>APU 込みで: <b>実時間の {x} 倍</b></>,
+    consoleH: "二つのチップが一つのクロックに乗り、実 CPU を付けて標準テスト ROM が走る",
+    console: (r: ReturnType<typeof nes>) => (
+      <>
+        まず糊。NES-001 基板の少数の部品、アドレスデコーダ、PPU のアドレスラッチ、二つの RAM、コントローラポートのバッファとその先のコントローラ、リセット連鎖を、それぞれ数行で自前の検査によりデータシートに押さえ、書き下ろしと札を付けた。そこにはネットリストを通るものがないからだ。二つは最初の書き下ろしが間違っていて、検査がそう言った。次にコンソール: 2A03 の高速コアと高速 PPU を一つのマスタハーフステップ計数器に乗せ、CPU は十二ごと、PPU は八ごとに進み、位相は二つのスイッチレベルチップ自身のクロック分周器から測った（cpu_phase {r.console.alignment.cpu_phase}、ppu_phase {r.console.alignment.ppu_phase}。分周器が電源投入で取り得る四つの一つで、走行がスタンプに記す）。配管の検査はテストカートリッジを {r.console.plumbing.frames} フレーム走らせ、マスタ計数器がドットあたり八であること、奇数フレームが一ドット短いこと、絵が単体 PPU のものと同じこと、RAM の NMI 計数が一フレーム一回であることを押さえる。一コアで毎秒 {r.console.frames_per_s[0]} から {r.console.frames_per_s[1]} フレーム、実時間の {r.console.real_time_x[0]} から {r.console.real_time_x[1]} 倍。
+        そして、この弧全体が目指してきたオラクル: blargg のテスト ROM をコンソール全体に通す。これらの高速ラングが何百万サイクルも実プログラムを走らせた最初の機会だ。CPU タイミング検査は合格。命令検査は {r.console.blargg.instr_total} 本中 {r.console.blargg.instr_pass} 本が合格、公式・非公式の全命令。スプライトヒット検査は {r.console.blargg.sprite_total} 本中 {r.console.blargg.sprite_pass} 本が合格、残る一本は名指しで拒む（縦長スプライトは模していない）。vblank と NMI のタイミング検査は {r.console.blargg.vbl_nmi_total} 本中 {r.console.blargg.vbl_nmi_pass} 本が合格、残りは一ドットずれで、それぞれ名前がある（二本は位相で動く。ROM 自身の注記が、実機もリセットによってはそうなると言う通り。三本は高速 PPU がまだ模していないクリア側の競合）。APU 検査は {r.console.blargg.apu_total} 本中 {r.console.blargg.apu_pass} 本が合格、残りはすべて書き込み後のフレームシーケンサの位置で、名指しで 2A03 へ持ち越す。ROM が見つけたものこそ走らせる意味だ: CPU の高速ラングは記録済みの全トレースを正確に再生しながら、トレースが覆っていなかった四つの見落としを抱えていた（駆動されないバス線に乗って次の命令へ渡る桁上げ、誤った捕捉から読んだシフトの桁上げ、結果がバスの取り合いでありスイッチモデルが独自に決着させる三命令、命令最終サイクルの割り込みエッジ）。高速 PPU にも四つ。それぞれ、スイッチレベルチップと高速ラングを ROM 上で食い違うまで並走させて位置を特定し、チップで測り、書き下ろし、無ければ赤になる固定具で押さえた。記録は<a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>N5 報告</a>。遊びの検査はカートリッジ待ち。
+      </>
+    ),
+    mConsoleTests: (n: number) => <>nes スイート: <b>{n} テスト緑</b></>,
+    mConsoleInstr: (p: number, t: number) => <>命令検査: <b>{t} 本中 {p} 本合格</b></>,
+    mConsoleRate: (lo: string, hi: string) => <>コンソール: <b>実時間の {lo} から {hi} 倍</b></>,
+    mConsoleCommit: (commit: string, href: string) => (
+      <>nes コミット: <b><a data-address href={href}>{commit}</a></b></>
+    ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
@@ -427,7 +500,7 @@ const PROSE = {
     aheadH: "ここから起動するコンソールまでのマイルストーン",
     ahead: (sketchHref: string) => (
       <>
-        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅と高速ラング、ピン検査の両半分、そして 2A03 の梯子（コア、APU、DMA ユニット）は済んだ。これから順に: 糊、データシートに押さえた少数の書き下ろし部品。コンソール層、二つのチップが一つのマスタクロック上で規約を介して出会い、実 CPU を付けて標準テストスイートを走らせる場所。それからカートリッジ、二つのチップが一緒に作る最初のフレーム。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅と高速ラング、ピン検査の両半分、2A03 の梯子（コア、APU、DMA ユニット）、そして糊は済み、コンソールは標準スイートを走らせている。そこで開いているもの: 位相検査の二つの再生、高速 PPU のクリア側の競合、APU の書き込みタイミング、そしてカートリッジ待ちの遊びの検査。それからエンコーダを通る絵と、音。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (
@@ -520,6 +593,9 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
           <figcaption>{S.apuCaption(r)}</figcaption>
         </figure>
 
+        <h2>{S.consoleH}</h2>
+        <p>{S.console(r)}</p>
+
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>
         <div className="boarded" data-boarded>
@@ -537,6 +613,12 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
           <span className="measured">{S.mApuHalfSteps(r.n3.apu_half_steps, r.n3.apu_worlds)}</span>
           <span className="measured">{S.mStalls(2 * r.n3.dma_frames + r.n3.dmc_frames)}</span>
           <span className="measured">{S.mRealTime(r.n3.real_time_x)}</span>
+        </div>
+        <div className="boarded" data-boarded-console>
+          <span className="measured">{S.mConsoleTests(r.console.tests_green)}</span>
+          <span className="measured">{S.mConsoleInstr(r.console.blargg.instr_pass, r.console.blargg.instr_total)}</span>
+          <span className="measured">{S.mConsoleRate(r.console.real_time_x[0], r.console.real_time_x[1])}</span>
+          <span className="measured">{S.mConsoleCommit(r.console.commit.slice(0, 7), `${r.console.repo}/commit/${r.console.commit}`)}</span>
         </div>
 
         <h2>{S.aheadH}</h2>

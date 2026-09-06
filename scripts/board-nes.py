@@ -258,6 +258,102 @@ def main() -> int:
         "area_vote_lows": area_vote_lows,
     }
 
+    # The console (nes): the glue and the console crates' suite at a clean
+    # commit, the plumbing gate's own summary line, and the N5 report's
+    # gate-2 table read row by row (a pass counted by its word, never
+    # typed). The console has no MUTATE=1 run of its own yet, and the
+    # record says so by carrying no count for it.
+    con = (args.repo.parent / "nes").resolve()
+    if not (con / "crates" / "nes-console").is_dir():
+        fail(f"{con} is not a nes checkout")
+    con_dirty = subprocess.run(["git", "status", "--porcelain"], cwd=con, capture_output=True, text=True).stdout.strip()
+    if con_dirty:
+        fail(f"the nes checkout is dirty:\n{con_dirty}")
+    con_commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=con, capture_output=True, text=True).stdout.strip()
+    con_remote = re.sub(r"\.git$", "", subprocess.run(["git", "remote", "get-url", "origin"], cwd=con,
+                                                        capture_output=True, text=True).stdout.strip())
+    print(f"board-nes: running the nes suite at {con_commit[:7]}...")
+    con_suite = subprocess.run(["cargo", "test", "--workspace", "--release", "--", "--nocapture"], cwd=con,
+                               capture_output=True, text=True, env=os.environ)
+    if con_suite.returncode != 0:
+        fail(f"the nes suite is not green:\n{con_suite.stdout[-2000:]}{con_suite.stderr[-2000:]}")
+    con_passed = sum(int(m) for m in re.findall(r"(\d+) passed", con_suite.stdout))
+    con_failed = sum(int(m) for m in re.findall(r"(\d+) failed", con_suite.stdout))
+    if con_passed == 0 or con_failed:
+        fail(f"nes suite counts unusable: {con_passed} passed, {con_failed} failed")
+    out = con_suite.stdout + con_suite.stderr
+    plumb = re.search(r"(\d+) frames, (\d+) master half-steps, (\d+) CPU half-cycles, (\d+) NMIs counted by the program", out)
+    if not plumb:
+        fail("the console's plumbing gate summary line is not on the suite output")
+    n5r = re.sub(r"\s+", " ", (con / "docs" / "n5-report.md").read_text())
+    pin_6502 = extract(n5r, r"Pins: 6502 `([0-9a-f]{7,})`", "N5 pin of the 6502")
+    cargo_pin = extract((con / "crates" / "nes-console" / "Cargo.toml").read_text(),
+                        r'v6502-micro = \{[^}]*rev = "([0-9a-f]{7,})"', "nes-console's v6502-micro pin")
+    if cargo_pin != pin_6502:
+        fail(f"the N5 report says the 6502 pin is {pin_6502} but Cargo.toml pins {cargo_pin}")
+    align_m = re.search(r"Alignment stamp: `Alignment::MEASURED`, cpu_phase (\d+), ppu_phase (\d+)", n5r)
+    if not align_m:
+        fail("anchored extraction failed: N5 alignment stamp")
+    rate_m = re.search(r"Throughput: (\d+) to (\d+) frames a second on one core, ([\d.]+)x to ([\d.]+)x real time", n5r)
+    if not rate_m:
+        fail("anchored extraction failed: N5 throughput")
+    # The gate-2 table: one row per suite or group of ROMs. A row passes
+    # when its result cell begins with "pass" (bold or not); the ROM
+    # lists on grouped rows are counted from their ranges.
+    rows = re.findall(r"\| ((?:cpu_timing|instr_test|ppu_vbl_nmi|sprite_hit|apu_test)[^|]*) \| ([^|]*) \|", n5r)
+    if not rows:
+        fail("the N5 report's gate-2 table is not where the extraction looks")
+
+    def roms(label: str) -> int:
+        tail = label.split(" ", 1)[1] if " " in label else ""
+        n = 0
+        for part in tail.split(","):
+            part = part.strip()
+            m = re.match(r"(\d+)\.\.(\d+)$", part)
+            if m:
+                n += int(m.group(2)) - int(m.group(1)) + 1
+            elif re.match(r"\d+", part):
+                n += 1
+        return n
+
+    tally: dict = {}
+    for label, result in rows:
+        suite = label.split(" ", 1)[0]
+        n = roms(label) or 1
+        ok = re.sub(r"\*", "", result).strip().lower().startswith("pass")
+        t = tally.setdefault(suite, [0, 0])
+        t[0] += n if ok else 0
+        t[1] += n
+    inst_m = re.search(r"\| instr_test-v5 01\.\.16 \| \*\*(\d+) of (\d+) pass\*\* \|", n5r)
+    if not inst_m:
+        fail("anchored extraction failed: the instr_test row")
+    tally["instr_test-v5"] = [int(inst_m.group(1)), int(inst_m.group(2))]
+    for suite, total in [("cpu_timing_test6", 1), ("instr_test-v5", 16), ("ppu_vbl_nmi", 10), ("sprite_hit_tests", 11), ("apu_test", 8)]:
+        if suite not in tally or tally[suite][1] != total:
+            fail(f"the gate-2 table's {suite} rows count {tally.get(suite)} ROMs, not {total}")
+    console = {
+        "repo": con_remote,
+        "commit": con_commit,
+        "tests_green": con_passed,
+        "pin_6502": pin_6502,
+        "alignment": {"cpu_phase": int(align_m.group(1)), "ppu_phase": int(align_m.group(2))},
+        "plumbing": {
+            "frames": int(plumb.group(1)),
+            "master_half_steps": int(plumb.group(2)),
+            "cpu_half_cycles": int(plumb.group(3)),
+            "nmis": int(plumb.group(4)),
+        },
+        "frames_per_s": [int(rate_m.group(1)), int(rate_m.group(2))],
+        "real_time_x": [rate_m.group(3), rate_m.group(4)],
+        "blargg": {
+            "cpu_timing_pass": tally["cpu_timing_test6"][0],
+            "instr_pass": tally["instr_test-v5"][0], "instr_total": tally["instr_test-v5"][1],
+            "sprite_pass": tally["sprite_hit_tests"][0], "sprite_total": tally["sprite_hit_tests"][1],
+            "vbl_nmi_pass": tally["ppu_vbl_nmi"][0], "vbl_nmi_total": tally["ppu_vbl_nmi"][1],
+            "apu_pass": tally["apu_test"][0], "apu_total": tally["apu_test"][1],
+        },
+    }
+
     record = {
         "note": "Written only by scripts/board-nes.py --board. The suite and the "
                 "MUTATE=1 run were executed at this commit with the netlist and "
@@ -279,6 +375,7 @@ def main() -> int:
         },
         "c2c02": c2c02,
         "n3": n3,
+        "console": console,
         "first_sound": {
             "golden_states": a3_states,
             "timer_byte": timer,
@@ -292,6 +389,7 @@ def main() -> int:
             "nes_bus": "https://github.com/tinymachines/nes-bus",
             "c2a03": remote,
             "c2c02": "https://github.com/tinymachines/2c02",
+            "nes": con_remote,
             "sketch": "https://github.com/tinymachines/nes-bus/blob/main/docs/nes-end-to-end-v0_2.md",
         },
     }

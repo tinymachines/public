@@ -2,7 +2,7 @@
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
   "boarded_on": "2026-09-05",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "cf026dbe4d70958b72dc35b996898df33de566e6",
+  "commit": "ac098d0fc238ecd06f0391fcc67c0e06121b9ea4",
   "tests_green": 10,
   "mutate_red": 8,
   "halfphi": "0.1.6",
@@ -16,7 +16,7 @@
   },
   "c2c02": {
     "repo": "https://github.com/tinymachines/2c02",
-    "commit": "d4dcb3ea364c3e5d997e5b3ed7b5bd65c55e5fdb",
+    "commit": "3a48687af7d83747fe98e1f38353907ae6588f44",
     "halfphi": "0.1.6",
     "tests_green": 11,
     "mutate_red": 8,
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "0.774",
-      "mean_inside_x": "21.5",
-      "worst_ms": "1.092",
-      "worst_inside_x": "15.2",
+      "mean_ms": "1.175",
+      "mean_inside_x": "14.2",
+      "worst_ms": "1.813",
+      "worst_inside_x": "9.2",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -46,14 +46,14 @@
     "area_vote_lows": 121
   },
   "n3": {
-    "traces_compared": 272,
+    "traces_compared": 278,
     "traces_refused": 4,
-    "traces_exact": 130,
+    "traces_exact": 131,
     "stack_offset_hex": "40",
     "decimal_stores": 9,
-    "core_programs": 272,
-    "core_half_cycles": 52048,
-    "core_exact": 133,
+    "core_programs": 278,
+    "core_half_cycles": 62754,
+    "core_exact": 135,
     "apu_worlds": 4,
     "apu_half_steps": 80001,
     "dma_frames": 1201,
@@ -65,7 +65,42 @@
     "real_time_x": "9.0",
     "noise_index12_die": 964,
     "noise_index12_published": 762,
-    "golden_traces": 276
+    "golden_traces": 282
+  },
+  "console": {
+    "repo": "https://github.com/tinymachines/nes",
+    "commit": "4918d0ae123cb12018ad7a89d73cdc0b7f8bcc7c",
+    "tests_green": 19,
+    "pin_6502": "9c177cd",
+    "alignment": {
+      "cpu_phase": 4,
+      "ppu_phase": 3
+    },
+    "plumbing": {
+      "frames": 6,
+      "master_half_steps": 4288396,
+      "cpu_half_cycles": 357366,
+      "nmis": 4
+    },
+    "frames_per_s": [
+      125,
+      140
+    ],
+    "real_time_x": [
+      "2.1",
+      "2.3"
+    ],
+    "blargg": {
+      "cpu_timing_pass": 1,
+      "instr_pass": 16,
+      "instr_total": 16,
+      "sprite_pass": 10,
+      "sprite_total": 11,
+      "vbl_nmi_pass": 5,
+      "vbl_nmi_total": 10,
+      "apu_pass": 2,
+      "apu_total": 8
+    }
   },
   "first_sound": {
     "golden_states": "2,001",
@@ -79,6 +114,7 @@
     "nes_bus": "https://github.com/tinymachines/nes-bus",
     "c2a03": "https://github.com/tinymachines/2a03",
     "c2c02": "https://github.com/tinymachines/2c02",
+    "nes": "https://github.com/tinymachines/nes",
     "sketch": "https://github.com/tinymachines/nes-bus/blob/main/docs/nes-end-to-end-v0_2.md"
   }
 }

@@ -152,6 +152,16 @@ are public:
 - [2c02](https://github.com/tinymachines/2c02) is the PPU, whose recorded
   reference run now goes through the contract's pin frames, with a built-in
   sabotage that lies about one pin's polarity and must make it fail.
+- [nes](https://github.com/tinymachines/nes) is the console, where the
+  chips meet (2026-09-05): the mainboard's glue, each part held to its
+  datasheet and labelled authored, and both fast rungs on one master
+  clock at the alignment measured off the switch-level chips' own
+  dividers, a little over twice real time. blargg's test ROMs run through
+  the whole thing with a real CPU attached, and the page carries every
+  result, pass or named failure. Running them found misses in the CPU's
+  fast rung that no recorded trace had covered, each located by running
+  the switch-level chip alongside it until they disagreed, then measured
+  and held by a fixture.
 
 Since then the PPU has come a long way on [the same page](/nes). Its
 contested corners, sprite 0, the vblank read race and OAM corruption,

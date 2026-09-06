@@ -37,6 +37,17 @@ const record = JSON.parse(
     noise_index12_die: number;
     noise_index12_published: number;
   };
+  console: {
+    commit: string;
+    tests_green: number;
+    alignment: { cpu_phase: number; ppu_phase: number };
+    real_time_x: [string, string];
+    blargg: {
+      instr_pass: number; instr_total: number;
+      sprite_pass: number; sprite_total: number;
+      vbl_nmi_pass: number; vbl_nmi_total: number;
+    };
+  };
 };
 
 test("the landing shows the boarded figures, not remembered ones", async ({ page }) => {
@@ -75,6 +86,17 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   expect(text).toContain(`${record.n3.traces_compared} traces compare`);
   expect(text).toContain(`${record.n3.traces_exact} of them exact`);
   expect(text).toContain(`${record.n3.noise_index12_die} cycles where every published table says ${record.n3.noise_index12_published}`);
+
+  // The console's row and its prose, from the same record.
+  const con = page.locator("[data-boarded-console] .measured");
+  await expect(con).toHaveCount(4);
+  await expect(con.nth(0)).toContainText(String(record.console.tests_green));
+  await expect(con.nth(1)).toContainText(`${record.console.blargg.instr_pass} of ${record.console.blargg.instr_total}`);
+  await expect(con.nth(2)).toContainText(`${record.console.real_time_x[0]} to ${record.console.real_time_x[1]}x`);
+  await expect(con.nth(3)).toContainText(record.console.commit.slice(0, 7));
+  expect(text).toContain(`${record.console.blargg.sprite_pass} of ${record.console.blargg.sprite_total} sprite-hit`);
+  expect(text).toContain(`${record.console.blargg.vbl_nmi_pass} of ${record.console.blargg.vbl_nmi_total} vblank`);
+  expect(text).toContain(`cpu_phase ${record.console.alignment.cpu_phase}, ppu_phase ${record.console.alignment.ppu_phase}`);
 });
 
 test("the PPU and APU figures serve and decode", async ({ page, request }) => {
@@ -101,7 +123,7 @@ test("the first-sound figure serves as committed bytes", async ({ page, request 
   expect(r.headers()["content-type"]).toContain("image/png");
 
   // The story's homes are linked.
-  for (const repo of ["nes-bus", "2a03", "2c02"]) {
+  for (const repo of ["nes-bus", "2a03", "2c02", "nes"]) {
     await expect(
       page.locator(`main a[href*="github.com/tinymachines/${repo}"]`).first(),
     ).toBeVisible();
