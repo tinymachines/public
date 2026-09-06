@@ -59,13 +59,18 @@ const PROSE = {
         run but not decoded. The readout measures all of it live and the
         drift counters print what a real display would have duplicated or
         dropped, as the pacing rules specify. Where the browser gives the
-        picture thread WebGPU, the comb decode runs there as three compute
-        passes, the native shell&rsquo;s shader with the display gamma
-        left off, every constant taken from the decoder instance; before
-        it is used it decodes the first frame both ways and the readout
-        states by how many bytes of 255 it differed from the wasm decode
-        and the tolerance it had to meet. Without WebGPU, or on a miss,
-        the wasm decode paints and the readout says so.{" "}
+        picture thread WebGPU, the whole picture runs there: the NES
+        encoder as a compute pass (the source&rsquo;s segment map, its
+        transcribed levels and its wave rule, ported line for line, the
+        levels and the grid taken from the encoder instance) and the comb
+        decode as three more, the native shell&rsquo;s shader with the
+        display gamma left off, every constant from the decoder instance.
+        Before it is used the first frame goes through the bundle&rsquo;s
+        own encoder and decoder as well: the readout states by how many
+        volts the two encoders differed on any sample and by how many
+        bytes of 255 the two decodes did, each against the tolerance it
+        had to meet. Without WebGPU, or on a miss, the wasm path paints
+        and the readout says so.{" "}
         <Link href="/nes">The console page</Link> has the native
         shell&rsquo;s figures.
       </>
@@ -95,7 +100,7 @@ const PROSE = {
     ),
     rate: (fps: string, x: string, stamp: string) => (
       <>
-        リポジトリのベンチの node 上では、音付きのコンソールは毎秒 {fps} フレーム、実時間の {x} 倍で走る（{stamp}）。ページではコンソールと信号経路がそれぞれ自分のスレッドで走る。ネイティブのシェルが落ち着いた形だ: コンソールは壁時計に対してソースのレートを保ち、音もそれに従う。絵はこのブラウザがこなすレートで最新のフレームを復号し、絵が忙しい間に届いたフレームは「走ったが復号されなかった」と数える。読み出しはそのすべてを生で測り、ドリフトカウンタは実際のディスプレイなら重複・欠落させたはずの分を、ペーシング規則の通りに表示する。ブラウザが絵のスレッドに WebGPU を与える場合、コム復号はそこで三つの計算パスとして走る。ネイティブのシェルのシェーダから表示ガンマを外したもので、すべての定数は復号器のインスタンスから取る。使う前に最初のフレームを両方の経路で復号し、読み出しは wasm 復号との差を 255 分の何バイトかと、満たすべき許容で述べる。WebGPU が無いか外れた場合は wasm 復号が描き、読み出しがそう告げる。ネイティブのシェルの数字は<Link href="/ja/nes">コンソールのページ</Link>に。数字は<Link href="/ja/nes">コンソールのページ</Link>に。
+        リポジトリのベンチの node 上では、音付きのコンソールは毎秒 {fps} フレーム、実時間の {x} 倍で走る（{stamp}）。ページではコンソールと信号経路がそれぞれ自分のスレッドで走る。ネイティブのシェルが落ち着いた形だ: コンソールは壁時計に対してソースのレートを保ち、音もそれに従う。絵はこのブラウザがこなすレートで最新のフレームを復号し、絵が忙しい間に届いたフレームは「走ったが復号されなかった」と数える。読み出しはそのすべてを生で測り、ドリフトカウンタは実際のディスプレイなら重複・欠落させたはずの分を、ペーシング規則の通りに表示する。ブラウザが絵のスレッドに WebGPU を与える場合、絵の全体がそこで走る: NES の符号化器は一つの計算パス（ソースのセグメント表、転写されたレベル、波の規則を一行ずつ移植し、レベルとグリッドは符号化器のインスタンスから取る）、コム復号はさらに三つで、ネイティブのシェルのシェーダから表示ガンマを外したもの、すべての定数は復号器のインスタンスから。使う前に最初のフレームをバンドル自身の符号化器と復号器にも通し、読み出しは二つの符号化器がどの標本でも何ボルト違ったか、二つの復号が 255 分の何バイト違ったかを、それぞれ満たすべき許容とともに述べる。WebGPU が無いか外れた場合は wasm の経路が描き、読み出しがそう告げる。ネイティブのシェルの数字は<Link href="/ja/nes">コンソールのページ</Link>に。数字は<Link href="/ja/nes">コンソールのページ</Link>に。
       </>
     ),
     boarded: (commit: string, href: string, ntscCommit: string, ntscHref: string) => (

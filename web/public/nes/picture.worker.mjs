@@ -1,13 +1,19 @@
 /**
  * The picture, on a thread of its own: the signal path's boarded bundle
- * encodes each frame (the NES source, the phase chained frame to frame),
- * and the three-line comb decode runs one of two ways. On WebGPU, the
- * decode is three compute passes over storage buffers (the native
- * shell's picture.wgsl, passes 1 to 3: the comb's chroma demodulated at
+ * encodes each frame (the NES source, the phase chained frame to frame)
+ * and the three-line comb decodes it, one of two ways. On WebGPU, both
+ * are compute passes over storage buffers: the encoder (the NES source's
+ * segment map, the transcribed levels and the wave rule, ported line for
+ * line, with the levels and the grid from `encoder_params`) writes the
+ * composite samples from the dot planes, and the decode is the native
+ * shell's picture.wgsl, passes 1 to 3 (the comb's chroma demodulated at
  * each line's phase and block-averaged, the decimated lowpass, the luma
  * scale and Catmull-Rom back to the grid with the matrix and the clamp),
  * every constant from the decoder instance (`decoder_params`), drawn
- * into this thread's own OffscreenCanvas. Without WebGPU, or if the
+ * into this thread's own OffscreenCanvas. Before either is used, the
+ * first frame goes through the bundle's own encoder and decoder as well:
+ * the samples must agree to the stated volts and the bytes to the stated
+ * count, and the readout carries both figures. Without WebGPU, or if the
  * WebGPU decode disagrees with the bundle's own decode on the first
  * frame by more than the stated tolerance, or if WebGPU cannot present,
  * the wasm decode paints into a fresh OffscreenCanvas instead and the
@@ -28,6 +34,10 @@ const HEIGHT = 240;
 const LINES = 262;
 /** The WebGPU decode against the wasm decode, bytes of 255, on the first frame. */
 const TOLERANCE = 2;
+/** The WebGPU encoder against the wasm encoder, volts, on the first frame:
+ *  the levels are table entries and the phase is integer arithmetic, so
+ *  the two must agree to f32 rounding. */
+const TOLERANCE_V = 1e-6;
 
 let pipe = null;
 let canvas = null; // this thread's own OffscreenCanvas, WebGPU or 2d
@@ -36,6 +46,7 @@ let gpu = null; // { device, ... } once built
 let path = "wasm";
 let why = null;
 let agreement = null; // max byte difference measured on the first frame
+let agreementV = null; // max volt difference of the encoders on the first frame
 let checked = false;
 let lit = 0; // the first frame's middle-row byte sum, whichever path painted it
 
@@ -46,9 +57,89 @@ struct Params {
   black: f32, scale_y: f32, amp_k: f32, pad0: f32,
   r_from_v: f32, g_from_u: f32, g_from_v: f32, b_from_u: f32,
   comb: vec4<f32>,
+  // The encoder: levels and grid, then per frame the origin, the parity
+  // and the line count.
+  low: vec4<f32>, high: vec4<f32>, low_att: vec4<f32>, high_att: vec4<f32>,
+  sync_v: f32, burst_lo: f32, burst_hi: f32, blank: f32,
+  emph_waves: vec4<u32>,   // three waves and the colourburst wave
+  spd: u32, dpl: u32, lines_n: u32, deficit: u32,
+  step: u32, origin: u32, parity: u32, emph_words: u32,
 }
 @group(0) @binding(0) var<uniform> p: Params;
-@group(0) @binding(1) var<storage, read> samples: array<f32>;
+@group(0) @binding(1) var<storage, read_write> samples: array<f32>;
+// The two dot planes in one buffer, bytes packed four to a word, the
+// emphasis plane at word offset emph_words (eight storage buffers is a
+// browser's default per-stage limit, and the decode already holds seven).
+@group(1) @binding(0) var<storage, read> dots: array<u32>;
+
+fn colour_at(i: u32) -> u32 {
+  return (dots[i >> 2u] >> ((i & 3u) * 8u)) & 255u;
+}
+fn emph_at(i: u32) -> u32 {
+  return (dots[p.emph_words + (i >> 2u)] >> ((i & 3u) * 8u)) & 255u;
+}
+
+fn wave_high(wave: u32, ph: u32) -> bool {
+  return (wave + ph) % 12u < 6u;
+}
+
+// The segment map, the NES source's segment(row, dot) ported line for
+// line: 0 sync, 1 blank, 2 burst, 3 picture.
+fn segment(row: u32, dot: u32) -> u32 {
+  if row <= 241u {
+    if dot >= 277u && dot <= 301u { return 0u; }
+    if dot >= 306u && dot <= 320u { return 2u; }
+    if (dot >= 302u && dot <= 305u) || (dot >= 321u && dot <= 325u) || (dot >= 268u && dot <= 276u) { return 1u; }
+    return 3u;
+  }
+  if row >= 245u && row <= 247u {
+    if dot >= 254u && dot < 286u { return 1u; }
+    return 0u;
+  }
+  if dot >= 277u && dot <= 301u { return 0u; }
+  if dot >= 306u && dot <= 320u { return 2u; }
+  return 1u;
+}
+
+// The NES source's Levels::signal, ported.
+fn signal(colour: u32, emphasis: u32, ph: u32) -> f32 {
+  let color = colour & 15u;
+  var level = (colour >> 4u) & 3u;
+  if color > 13u { level = 1u; }
+  var attenuated = false;
+  if color < 14u {
+    for (var bit = 0u; bit < 3u; bit = bit + 1u) {
+      if (emphasis & (1u << bit)) != 0u && wave_high(p.emph_waves[bit], ph) { attenuated = true; }
+    }
+  }
+  var lo: f32;
+  var hi: f32;
+  if attenuated { lo = p.low_att[level]; hi = p.high_att[level]; } else { lo = p.low[level]; hi = p.high[level]; }
+  if color == 0u { lo = hi; }
+  if color > 12u { hi = lo; }
+  if wave_high(color, ph) { return hi; }
+  return lo;
+}
+
+// The encoder: one thread per sample of every line, the short last
+// line's tail padded with its last real sample as the bundle pads it.
+@compute @workgroup_size(64)
+fn encode(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let idx = gid.x;
+  if idx >= p.lines_n * p.n { return; }
+  let line = idx / p.n;
+  var i = idx % p.n;
+  if p.parity == 2u && line == p.lines_n - 1u && i >= p.n - p.deficit { i = p.n - p.deficit - 1u; }
+  let dot = i / p.spd;
+  let ph = (p.origin + line * p.step + i) % 12u;
+  let seg = segment(line, dot);
+  var v: f32;
+  if seg == 0u { v = p.sync_v; }
+  else if seg == 1u { v = p.blank; }
+  else if seg == 2u { if wave_high(p.emph_waves[3], ph) { v = p.burst_hi; } else { v = p.burst_lo; } }
+  else { v = signal(colour_at(line * p.dpl + dot), emph_at(line * p.dpl + dot), ph); }
+  samples[idx] = v;
+}
 @group(0) @binding(2) var<storage, read> lines: array<vec4<u32>>;
 @group(0) @binding(3) var<storage, read> sincos: array<vec4<f32>>;
 @group(0) @binding(4) var<storage, read> taps: array<f32>;
@@ -169,21 +260,41 @@ async function buildGpu(probe) {
   const nd = Math.ceil(n / d);
   const rows = HEIGHT;
   const shader = device.createShaderModule({ code: SHADER });
+  // A shader that does not compile makes every pass a silent no-op:
+  // ask, and refuse by name.
+  const info = await shader.getCompilationInfo();
+  const errors = info.messages.filter((m) => m.type === "error");
+  if (errors.length) return { why: `the shader did not compile: ${errors[0].message} (line ${errors[0].lineNum})` };
   const buf = (size, usage) => device.createBuffer({ size, usage });
   const ST = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST;
-  const params = buf(80, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
-  const samples = buf(LINES * n * 4, ST);
+  const params = buf(208, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
+  const samples = buf(LINES * n * 4, ST | GPUBufferUsage.COPY_SRC);
+  const planeBytes = Math.ceil((LINES * 341) / 4) * 4;
+  const dotsBuf = buf(planeBytes * 2, ST);
   const linesBuf = buf(rows * 16, ST);
   const sincos = buf(12 * 16, ST);
   const tapsBuf = buf(taps.length * 4, ST);
   const dec = buf(rows * nd * 8, GPUBufferUsage.STORAGE);
   const lp = buf(rows * nd * 8, GPUBufferUsage.STORAGE);
   const grid = buf(rows * WIDTH * 4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC);
-  // Params, laid out as the shader declares: eight u32, eight f32, one vec4.
-  const pv = new ArrayBuffer(80);
+  // Params, laid out as the shader declares: eight u32, eight f32, the comb
+  // vec4, then the encoder's four level vec4s, four scalars, the waves,
+  // the grid and the per-frame origin, parity and line count.
+  const ep = probe.encoder_params();
+  const pv = new ArrayBuffer(208);
   const dv = new DataView(pv);
   [n, nd, d, rows, row0, WIDTH, taps.length, taps.length >> 1].forEach((v, i) => dv.setUint32(i * 4, v, true));
   [black, scaleY, ampK, 0, rFromV, gFromU, gFromV, bFromU, w0, w1, w2, 0].forEach((v, i) => dv.setFloat32(32 + i * 4, v, true));
+  for (let i = 0; i < 20; i++) dv.setFloat32(80 + i * 4, ep[i], true); // levels: 16 table entries, sync, burst lo, burst hi, blank
+  [ep[20], ep[21], ep[22], ep[23]].forEach((v, i) => dv.setUint32(160 + i * 4, Math.round(v), true)); // emphasis waves, colourburst wave
+  const spd = Math.round(ep[24]);
+  const dpl = Math.round(ep[25]);
+  const linesN = Math.round(ep[26]);
+  const deficit = Math.round(ep[27]);
+  const step = Math.round(ep[28]);
+  [spd, dpl, linesN, deficit].forEach((v, i) => dv.setUint32(176 + i * 4, v, true));
+  dv.setUint32(192, step, true); // then origin at 196 and parity at 200, per frame
+  dv.setUint32(204, planeBytes / 4, true);
   device.queue.writeBuffer(params, 0, pv);
   const sc = new Float32Array(12 * 4);
   for (let q = 0; q < 12; q++) {
@@ -193,20 +304,32 @@ async function buildGpu(probe) {
   }
   device.queue.writeBuffer(sincos, 0, sc);
   device.queue.writeBuffer(tapsBuf, 0, new Float32Array(taps));
+  device.pushErrorScope("validation");
   const layout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      ...[1, 2, 3, 4].map((b) => ({ binding: b, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } })),
+      { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+      ...[2, 3, 4].map((b) => ({ binding: b, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } })),
       { binding: 5, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
       { binding: 6, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
       { binding: 7, visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT, buffer: { type: "storage" } },
     ],
   });
+  const layout1 = device.createBindGroupLayout({
+    entries: [{ binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } }],
+  });
   const bind = device.createBindGroup({
     layout,
     entries: [params, samples, linesBuf, sincos, tapsBuf, dec, lp, grid].map((b, i) => ({ binding: i, resource: { buffer: b } })),
   });
-  const pl = device.createPipelineLayout({ bindGroupLayouts: [layout] });
+  const bind1 = device.createBindGroup({ layout: layout1, entries: [{ binding: 0, resource: { buffer: dotsBuf } }] });
+  const pl = device.createPipelineLayout({ bindGroupLayouts: [layout, layout1] });
+  const lerr = await device.popErrorScope();
+  if (lerr) return { why: `the bind layouts were refused: ${lerr.message}` };
+  device.pushErrorScope("validation");
+  const encoder = device.createComputePipeline({ layout: pl, compute: { module: shader, entryPoint: "encode" } });
+  const perr = await device.popErrorScope();
+  if (perr) return { why: `the encoder pipeline was refused: ${perr.message}` };
   const passes = ["decimate", "uv_filter", "rgb"].map((entryPoint) => device.createComputePipeline({ layout: pl, compute: { module: shader, entryPoint } }));
   const counts = [rows * nd, rows * nd, rows * WIDTH];
   const gpuCanvas = new OffscreenCanvas(WIDTH, HEIGHT);
@@ -215,18 +338,52 @@ async function buildGpu(probe) {
   context.configure({ device, format, alphaMode: "opaque" });
   const blit = device.createRenderPipeline({ layout: pl, vertex: { module: shader, entryPoint: "vs" }, fragment: { module: shader, entryPoint: "fs", targets: [{ format }] }, primitive: { topology: "triangle-list" } });
   const staging = buf(rows * WIDTH * 4, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST);
-  return { device, params, samples, linesBuf, grid, staging, bind, passes, counts, context, blit, canvas: gpuCanvas, n, rows, row0 };
+  const samplesStaging = buf(LINES * n * 4, GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST);
+  const activeStart = probe.active_start();
+  const planeUp = new Uint8Array(planeBytes * 2);
+  return { activeStart, planeUp, planeBytes, device, params, pv, dv, samples, samplesStaging, dotsBuf, linesBuf, grid, staging, bind, bind1, encoder, passes, counts, context, blit, canvas: gpuCanvas, n, rows, row0, spd, dpl, linesN, deficit, step };
 }
 
-function uploadFrame(g, samplesF32, phases, start) {
-  g.device.queue.writeBuffer(g.samples, 0, samplesF32);
+/** The dot planes and this frame's origin and parity, for the GPU encoder;
+ *  the lines table from the origin (line phase = origin + line * step). */
+function uploadDots(g, colour, emphasis, parity, origin, start) {
+  // The planes are 89,342 bytes, not a multiple of four: padded once
+  // into the word-sized upload buffers.
+  g.planeUp.set(colour, 0);
+  g.planeUp.set(emphasis, g.planeBytes);
+  g.device.queue.writeBuffer(g.dotsBuf, 0, g.planeUp);
+  g.dv.setUint32(196, origin, true);
+  g.dv.setUint32(200, parity, true);
+  g.device.queue.writeBuffer(g.params, 0, g.pv);
   const lines = new Uint32Array(g.rows * 4);
   for (let r = 0; r < g.rows; r++) {
-    lines[r * 4] = g.row0 + r;
+    const line = g.row0 + r;
+    lines[r * 4] = line;
     lines[r * 4 + 1] = start;
-    lines[r * 4 + 2] = phases[g.row0 + r];
+    lines[r * 4 + 2] = (origin + line * g.step) % 12;
   }
   g.device.queue.writeBuffer(g.linesBuf, 0, lines);
+}
+
+function runEncoder(g) {
+  const enc = g.device.createCommandEncoder();
+  const c = enc.beginComputePass();
+  c.setPipeline(g.encoder);
+  c.setBindGroup(0, g.bind);
+  c.setBindGroup(1, g.bind1);
+  c.dispatchWorkgroups(Math.ceil((g.linesN * g.n) / 64));
+  c.end();
+  g.device.queue.submit([enc.finish()]);
+}
+
+async function readSamples(g) {
+  const enc = g.device.createCommandEncoder();
+  enc.copyBufferToBuffer(g.samples, 0, g.samplesStaging, 0, LINES * g.n * 4);
+  g.device.queue.submit([enc.finish()]);
+  await g.samplesStaging.mapAsync(GPUMapMode.READ);
+  const out = new Float32Array(g.samplesStaging.getMappedRange().slice(0));
+  g.samplesStaging.unmap();
+  return out;
 }
 
 function runPasses(g, present) {
@@ -235,6 +392,7 @@ function runPasses(g, present) {
     const c = enc.beginComputePass();
     c.setPipeline(pass);
     c.setBindGroup(0, g.bind);
+    c.setBindGroup(1, g.bind1);
     c.dispatchWorkgroups(Math.ceil(g.counts[i] / 64));
     c.end();
   });
@@ -243,6 +401,7 @@ function runPasses(g, present) {
     const r = enc.beginRenderPass({ colorAttachments: [{ view, loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }] });
     r.setPipeline(g.blit);
     r.setBindGroup(0, g.bind);
+    r.setBindGroup(1, g.bind1);
     r.draw(3);
     r.end();
   }
@@ -259,20 +418,31 @@ async function readGrid(g) {
   return out;
 }
 
-/** The first frame both ways: the WebGPU decode against the wasm decode. */
+/** The first frame both ways: the WebGPU encoder against the wasm encoder
+ *  (volts, on every sample of every line) and then the WebGPU decode of
+ *  the WebGPU-encoded samples against the wasm decode (bytes of 255). */
 async function check(colour, emphasis, parity) {
   const cpu = new Pipeline("comb3");
-  const gpuPipe = new Pipeline("comb3");
+  const ref = new Pipeline("comb3");
+  const origin = ref.origin();
+  const wantSamples = ref.encode(colour, emphasis, parity);
+  const start = ref.active_start();
   const want = cpu.push_frame(colour, emphasis, parity);
-  const s = gpuPipe.encode(colour, emphasis, parity);
-  uploadFrame(gpu, s, gpuPipe.line_phases(), gpuPipe.active_start());
+  gpu.device.pushErrorScope("validation");
+  uploadDots(gpu, colour, emphasis, parity, origin, start);
+  runEncoder(gpu);
+  const gotSamples = await readSamples(gpu);
+  const verr = await gpu.device.popErrorScope();
+  if (verr) throw new Error(`validation: ${verr.message}`);
+  let worstV = 0;
+  for (let i = 0; i < wantSamples.length; i++) worstV = Math.max(worstV, Math.abs(wantSamples[i] - gotSamples[i]));
   runPasses(gpu, false);
   const got = await readGrid(gpu);
   let worst = 0;
   for (let i = 0; i < want.length; i += 4) {
     for (let c = 0; c < 3; c++) worst = Math.max(worst, Math.abs(want[i + c] - got[i + c]));
   }
-  return { worst, lit: litOf(got) };
+  return { worst, worstV, lit: litOf(got) };
 }
 
 /** How lit a frame is: the byte sum of one row, for the page's check. Row
@@ -338,7 +508,13 @@ async function handle(e) {
           stage = "first frame";
           const c = await check(colour, emphasis, parity);
           agreement = c.worst;
+          agreementV = c.worstV;
           lit = c.lit;
+          if (agreementV > TOLERANCE_V) {
+            why = `the WebGPU encoder differs from the wasm encoder by ${agreementV} V on the first frame (tolerance ${TOLERANCE_V})`;
+            gpu = null;
+            return;
+          }
           if (agreement > TOLERANCE) {
             why = `the WebGPU decode differs from the wasm decode by ${agreement} of 255 on the first frame (tolerance ${TOLERANCE})`;
             gpu = null;
@@ -368,13 +544,18 @@ async function handle(e) {
       let bitmap;
       if (path === "webgpu" && gpu) {
         try {
-          const s = pipe.encode(colour, emphasis, parity);
-          const t1 = performance.now();
-          uploadFrame(gpu, s, pipe.line_phases(), pipe.active_start());
+          // The whole path on the GPU: the planes go up, the phase is
+          // carried by the bundle without encoding.
+          const origin = pipe.origin();
+          uploadDots(gpu, colour, emphasis, parity, origin, gpu.activeStart);
+          pipe.advance(parity);
+          runEncoder(gpu);
           runPasses(gpu, true);
+          // Taking the bitmap is where the thread waits for the frame;
+          // the figure covers the upload, both submissions and that wait.
           bitmap = gpu.canvas.transferToImageBitmap();
-          encodeMs = t1 - t0;
-          decodeMs = performance.now() - t1;
+          encodeMs = 0;
+          decodeMs = performance.now() - t0;
         } catch (err) {
           // WebGPU failed mid-run (a lost device, a canvas it can no
           // longer present to): the wasm path takes over for good.
@@ -389,7 +570,7 @@ async function handle(e) {
         if (!lit) lit = litOf(rgba);
         bitmap = paintWasm(rgba);
       }
-      self.postMessage({ id, ok: true, answer: { bitmap, path, why, agreement, tolerance: TOLERANCE, lit, encodeMs, decodeMs, width: WIDTH, height: HEIGHT } }, [bitmap]);
+      self.postMessage({ id, ok: true, answer: { bitmap, path, why, agreement, tolerance: TOLERANCE, agreementV, toleranceV: TOLERANCE_V, lit, encodeMs, decodeMs, width: WIDTH, height: HEIGHT } }, [bitmap]);
       return;
     }
     throw new Error(`unknown path ${JSON.stringify(p)}`);

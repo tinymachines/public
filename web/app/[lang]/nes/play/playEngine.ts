@@ -43,6 +43,9 @@ export interface PlayState {
   /** The WebGPU decode against the wasm decode on the first frame, bytes of 255. */
   agreement: number | null;
   tolerance: number | null;
+  /** The WebGPU encoder against the wasm encoder on the first frame, volts. */
+  agreementV: number | null;
+  toleranceV: number | null;
   /** The first painted frame's middle-row byte sum: a lit picture. */
   lit: number;
   encodeMs: number | null;
@@ -67,6 +70,8 @@ interface PictureAnswer {
   why: string | null;
   agreement: number | null;
   tolerance: number;
+  agreementV: number | null;
+  toleranceV: number;
   lit: number;
   encodeMs: number;
   decodeMs: number;
@@ -95,6 +100,8 @@ const INITIAL: PlayState = {
   pathWhy: null,
   agreement: null,
   tolerance: null,
+  agreementV: null,
+  toleranceV: null,
   lit: 0,
   encodeMs: null,
   stats: null,
@@ -287,6 +294,8 @@ function paint(a: PictureAnswer) {
     pathWhy: a.why,
     agreement: a.agreement,
     tolerance: a.tolerance,
+    agreementV: a.agreementV,
+    toleranceV: a.toleranceV,
     lit: a.lit,
   });
   // For the site's own check, which cannot read an OffscreenCanvas.

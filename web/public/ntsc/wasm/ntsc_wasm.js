@@ -19,6 +19,12 @@ export class Pipeline {
         return ret >>> 0;
     }
     /**
+     * @param {number} parity
+     */
+    advance(parity) {
+        wasm.pipeline_advance(this.__wbg_ptr, parity);
+    }
+    /**
      * @returns {Float32Array}
      */
     decoder_params() {
@@ -45,6 +51,15 @@ export class Pipeline {
         var v3 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
         return v3;
+    }
+    /**
+     * @returns {Float32Array}
+     */
+    encoder_params() {
+        const ret = wasm.pipeline_encoder_params(this.__wbg_ptr);
+        var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
     }
     /**
      * @returns {number}
@@ -79,6 +94,14 @@ export class Pipeline {
         this.__wbg_ptr = ret;
         PipelineFinalization.register(this, this.__wbg_ptr, this);
         return this;
+    }
+    /**
+     * The phase the next frame is encoded at, 0..12.
+     * @returns {number}
+     */
+    origin() {
+        const ret = wasm.pipeline_origin(this.__wbg_ptr);
+        return ret;
     }
     /**
      * @param {Uint8Array} colour

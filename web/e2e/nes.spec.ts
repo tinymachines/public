@@ -201,8 +201,11 @@ test("the console runs a cartridge in the page and paints it", async ({ page }) 
     const m = text.match(/within\s*(\d+) of 255 \(tolerance (\d+)\)/);
     expect(m).not.toBeNull();
     expect(Number(m![1])).toBeLessThanOrEqual(Number(m![2]));
+    const v = text.match(/within\s*([0-9.e-]+) V \(tolerance ([0-9.e-]+)\)/);
+    expect(v).not.toBeNull();
+    expect(Number(v![1])).toBeLessThanOrEqual(Number(v![2]));
   } else {
-    expect(text).toContain("decode: wasm");
+    expect(text).toContain("picture: wasm");
   }
   await expect(page.locator("[data-play-why]")).toHaveCount(0);
   expect(text).toMatch(/display callbacks:\s*\d+/);

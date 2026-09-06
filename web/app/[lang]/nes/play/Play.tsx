@@ -19,14 +19,19 @@ const S = {
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
     frames: (n: number, u: number) => <>frames shown: <b>{n}</b>, run but not decoded: <b>{u}</b></>,
-    cost: (c: number, e: number, p: number) => (
-      <>per frame: console <b>{c.toFixed(1)} ms</b>, encode <b>{e.toFixed(1)} ms</b>, decode <b>{p.toFixed(1)} ms</b>, on their own threads</>
-    ),
-    path: (path: string, why: string | null, agreement: number | null, tol: number | null) =>
-      path === "webgpu" ? (
-        <>decode: <b>WebGPU</b>, against the wasm decode on the first frame within <b>{agreement} of 255</b> (tolerance {tol})</>
+    cost: (c: number, e: number, p: number, gpu: boolean) =>
+      gpu ? (
+        <>per frame: console <b>{c.toFixed(1)} ms</b>, picture submitted to the GPU in <b>{p.toFixed(1)} ms</b> (encode and decode, upload included), on their own threads</>
       ) : (
-        <>decode: <b>wasm</b>{why ? <> ({why})</> : null}</>
+        <>per frame: console <b>{c.toFixed(1)} ms</b>, encode and decode <b>{(e + p).toFixed(1)} ms</b>, on their own threads</>
+      ),
+    path: (path: string, why: string | null, agreement: number | null, tol: number | null, agreementV: number | null, tolV: number | null) =>
+      path === "webgpu" ? (
+        <>
+          picture: <b>WebGPU</b>, its encoder against the wasm encoder on the first frame within <b>{agreementV} V</b> (tolerance {tolV}), its decode against the wasm decode within <b>{agreement} of 255</b> (tolerance {tol})
+        </>
+      ) : (
+        <>picture: <b>wasm</b>{why ? <> ({why})</> : null}</>
       ),
     fps: (v: number) => <>pictures in the last second: <b>{v}</b></>,
     drift: (s: DriftStats) => (
@@ -43,14 +48,19 @@ const S = {
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
     frames: (n: number, u: number) => <>表示したフレーム: <b>{n}</b>、走ったが復号されなかったもの: <b>{u}</b></>,
-    cost: (c: number, e: number, p: number) => (
-      <>一フレームあたり: コンソール <b>{c.toFixed(1)} ms</b>、符号化 <b>{e.toFixed(1)} ms</b>、復号 <b>{p.toFixed(1)} ms</b>、それぞれ別スレッドで</>
-    ),
-    path: (path: string, why: string | null, agreement: number | null, tol: number | null) =>
-      path === "webgpu" ? (
-        <>復号: <b>WebGPU</b>、最初のフレームで wasm 復号との差は <b>255 分の {agreement}</b> 以内（許容 {tol}）</>
+    cost: (c: number, e: number, p: number, gpu: boolean) =>
+      gpu ? (
+        <>一フレームあたり: コンソール <b>{c.toFixed(1)} ms</b>、絵の GPU への投入 <b>{p.toFixed(1)} ms</b>（符号化と復号、転送込み）、それぞれ別スレッドで</>
       ) : (
-        <>復号: <b>wasm</b>{why ? <>（{why}）</> : null}</>
+        <>一フレームあたり: コンソール <b>{c.toFixed(1)} ms</b>、符号化と復号 <b>{(e + p).toFixed(1)} ms</b>、それぞれ別スレッドで</>
+      ),
+    path: (path: string, why: string | null, agreement: number | null, tol: number | null, agreementV: number | null, tolV: number | null) =>
+      path === "webgpu" ? (
+        <>
+          絵: <b>WebGPU</b>、最初のフレームで符号化器は wasm 符号化器と <b>{agreementV} V</b> 以内（許容 {tolV}）、復号は wasm 復号と <b>255 分の {agreement}</b> 以内（許容 {tol}）
+        </>
+      ) : (
+        <>絵: <b>wasm</b>{why ? <>（{why}）</> : null}</>
       ),
     fps: (v: number) => <>直近一秒の絵: <b>{v}</b></>,
     drift: (s: DriftStats) => (
@@ -118,8 +128,8 @@ export function Play({ lang }: { lang: Lang }) {
           <>
             <span className="measured">{T.loaded(s.loaded)}</span>
             <span className="measured">{T.frames(s.frames, s.undecoded)}</span>
-            {s.consoleMs !== null && s.pipeMs !== null && s.encodeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.encodeMs, s.pipeMs)}</span> : null}
-            {s.path ? <span className="measured" data-play-path={s.path}>{T.path(s.path, s.pathWhy, s.agreement, s.tolerance)}</span> : null}
+            {s.consoleMs !== null && s.pipeMs !== null && s.encodeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.encodeMs, s.pipeMs, s.path === "webgpu")}</span> : null}
+            {s.path ? <span className="measured" data-play-path={s.path}>{T.path(s.path, s.pathWhy, s.agreement, s.tolerance, s.agreementV, s.toleranceV)}</span> : null}
             {s.fps !== null ? <span className="measured">{T.fps(s.fps)}</span> : null}
             {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
             {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}

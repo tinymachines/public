@@ -71,3 +71,21 @@ Found on the way: Chrome under Xvfb gives the page a WebGPU adapter but
 its workers none, and the software adapter could not present to a
 canvas whose control the page had transferred, which is why the worker
 owns its canvases and ships bitmaps.
+
+## Fourth pass: the encoder on WebGPU too
+
+ntsc-crt 0.2.6's bridge hands out the encoder's levels and grid and
+advances the phase without encoding. The picture worker's shader gained
+the NES source's encoder (the segment map and the signal rule ported
+line for line) as a fourth compute pass writing the samples buffer the
+decode reads, so only the two dot planes go up per frame. The first
+frame's check now covers both: the GPU encoder against the wasm encoder
+on every sample of every line (tolerance 1e-6 V, measured 0) and the
+GPU path's bytes against the wasm decode (measured 0 of 255). The
+picture thread's cost is a fraction of a millisecond; the console is
+the page's limit now. Found on the way: eight storage buffers is the
+default per-stage limit, so both planes share one buffer; a WGSL pointer
+parameter to storage needs a feature this browser did not have; and
+awaiting the queue's completion promise on the software adapter broke
+the canvas ("A valid external Instance reference no longer exists"),
+so the bitmap transfer is the sync point.
