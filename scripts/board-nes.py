@@ -36,11 +36,69 @@ def extract(text: str, pattern: str, where: str) -> str:
     return m.group(1)
 
 
+def build_wasm(con: Path) -> int:
+    """The console's bundle for /nes/play: nes-wasm built for the web with
+    simd128 at the BOARDED nes commit (the checkout must be clean and at
+    it; the chip tables inside are measured out of die data fetched into
+    the sibling checkouts, so a fresh clone could not build), copied to
+    web/public/nes/wasm/ (gitignored: those tables are NC-SA-derived and
+    this public repository does not carry them) and recorded with its
+    hashes, which check-build.mjs holds the shipped files to."""
+    import datetime as dt
+    import hashlib
+    import shutil
+
+    if not RECORD.is_file():
+        fail("data/nes.json does not exist; run --board first")
+    record = json.loads(RECORD.read_text())
+    commit = record["console"]["commit"]
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=con, capture_output=True, text=True).stdout.strip()
+    if dirty:
+        fail(f"the nes checkout is dirty:\n{dirty}")
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=con, capture_output=True, text=True).stdout.strip()
+    if head != commit:
+        fail(f"the nes checkout is at {head[:7]}, the record's console commit is {commit[:7]}; re-board or check it out")
+    env = {**os.environ, "PATH": f"{Path.home()}/.cargo/bin:{os.environ['PATH']}"}
+    wasm_flags = "-C target-feature=+simd128"
+    print(f"board-nes: building the console bundle at {commit[:7]}...")
+    out = con / "target" / "nes-wasm-web"
+    r = subprocess.run(["wasm-pack", "build", "crates/nes-wasm", "--target", "web", "--release", "--out-dir", str(out)],
+                       cwd=con, capture_output=True, text=True, env={**env, "RUSTFLAGS": wasm_flags})
+    if r.returncode != 0:
+        fail(f"wasm-pack failed:\n{r.stderr[-2000:]}")
+    dest = ROOT / "web" / "public" / "nes" / "wasm"
+    dest.mkdir(parents=True, exist_ok=True)
+    files = {}
+    for name in ("nes_wasm.js", "nes_wasm_bg.wasm"):
+        src = out / name
+        if not src.is_file():
+            fail(f"the build produced no {name}; wasm-pack's layout moved")
+        shutil.copy2(src, dest / name)
+        files[name] = {"sha256": hashlib.sha256(src.read_bytes()).hexdigest(), "bytes": src.stat().st_size}
+    tool = subprocess.run(["wasm-pack", "--version"], capture_output=True, text=True, env=env).stdout.strip()
+    rustc = subprocess.run(["rustc", "--version"], capture_output=True, text=True, env=env).stdout.strip()
+    record["console"]["wasm_bundle"] = {
+        "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in "
+                "web/public/nes/wasm/ must hash to these values and are never committed (the "
+                "chip tables inside are derived from NC-SA die data).",
+        "commit": commit,
+        "built_on": dt.date.today().isoformat(),
+        "built_with": f"{tool}; {rustc}; RUSTFLAGS {wasm_flags}",
+        "files": files,
+    }
+    RECORD.write_text(json.dumps(record, indent=2) + "\n")
+    print("board-nes: console bundle recorded: " + ", ".join(f"{n} ({v['bytes']} bytes)" for n, v in files.items()))
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--board", action="store_true")
+    ap.add_argument("--wasm", action="store_true", help="build the console bundle at the boarded nes commit and record it")
     ap.add_argument("--repo", type=Path, default=ROOT.parent / "2a03")
     args = ap.parse_args()
+    if args.wasm and not args.board:
+        return build_wasm((args.repo.parent / "nes").resolve())
     if not args.board:
         ap.print_help()
         return 2

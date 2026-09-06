@@ -104,6 +104,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.",
   },
+  "/nes/play": {
+    title: "Play",
+    description:
+      "The console from the repository running in the page: both fast rungs, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
+  },
   "/ntsc": {
     title: "ntsc-crt",
     description:

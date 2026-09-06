@@ -150,6 +150,14 @@ export interface NesRecord {
       pacing: Record<string, { ticks: number; new: number; duplicated: number; dropped: number }>;
       wasm: { frames: number; seconds: string; frames_per_s: string; real_time_x: string; sound_per_frame: string; rom: string };
     };
+    /** The console bundle /nes/play runs, built by board-nes.py --wasm at
+     *  the boarded commit; absent until that has run. */
+    wasm_bundle?: {
+      commit: string;
+      built_on: string;
+      built_with: string;
+      files: Record<string, { sha256: string; bytes: number }>;
+    };
     blargg: {
       cpu_timing_pass: number;
       instr_pass: number; instr_total: number;

@@ -643,6 +643,37 @@ if (manifest) {
   }
 }
 
+// The console bundle /nes/play runs is never committed (its chip tables are
+// NC-SA-derived), so a build has to prove the served files are the boarded
+// ones: present in public/nes/wasm and hashing to data/nes.json's record.
+// Without the record the page refuses at build; with the record and no
+// files, or the wrong files, the page would be dead buttons behind good
+// prose, which is the failure this exists for.
+{
+  const { createHash } = await import("node:crypto");
+  const NES = path.join(import.meta.dirname, "..", "..", "data", "nes.json");
+  let rec = null;
+  try { rec = JSON.parse(await readFile(NES, "utf8")); } catch { /* reported below */ }
+  const bundle = rec?.console?.wasm_bundle;
+  if (!bundle) {
+    failures.push("data/nes.json has no console wasm_bundle; run scripts/board-nes.py --wasm.");
+  } else {
+    for (const [name, want] of Object.entries(bundle.files)) {
+      const f = path.join(PUBLIC, "nes", "wasm", name);
+      let bytes = null;
+      try { bytes = await readFile(f); } catch { /* reported below */ }
+      if (!bytes) {
+        failures.push(`public/nes/wasm/${name} is missing; the bundle is built by scripts/board-nes.py --wasm and never committed.`);
+        continue;
+      }
+      const sha = createHash("sha256").update(bytes).digest("hex");
+      if (sha !== want.sha256 || bytes.length !== want.bytes) {
+        failures.push(`public/nes/wasm/${name} does not hash to data/nes.json's record (${sha.slice(0, 12)} vs ${want.sha256.slice(0, 12)}); rebuild with scripts/board-nes.py --wasm.`);
+      }
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`\ncheck-build: ${failures.length} problem(s) in the generated output:\n`);
   for (const f of failures) console.error("  " + f + "\n");

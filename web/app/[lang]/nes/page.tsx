@@ -691,7 +691,7 @@ const PROSE = {
         <>
           一フレームが一コアで要する時間は何かを書く前に測られ、仕事がどこへ行くべきかを告げた: コンソールと符号化器は一コアに収まり、コム復号と五段の CRT は CPU のどこにも収まらない。その二つはいま GPU 上の八つの計算パスで、すべての定数は打ち込まれるのではなく復号器と CRT のパラメータから送られ、連続する三フレーム（最後は残光が見えるよう黒）の全画素の全成分で信号経路自身の CPU 連鎖に押さえられる。書き下ろしのパラメータでは最悪の成分差が {g.worst.toExponential(1)}、平均が {g.mean.toExponential(1)}。マスクと幾何を入れると {m.worst.toExponential(1)} と {m.mean.toExponential(1)}。先に述べた許容は {s.gpu_tolerance.worst} と {s.gpu_tolerance.mean}。一フレームは {g.adapter} で転送込み {g.ms_per_frame} ms。残光を飛ばすのが赤の走行。
           窓は Linux のバイナリ: 音付きのコンソールが自分のスレッドで、信号経路のドリフト方針が壁時計から決める分だけ周期ごとにフレーム単位で進み、重複と欠落を数え、時間方向には決して再標本化しない。表示は新しいフレームごとに符号化して GPU の絵を走らせ、音は音声デバイスへ、キーボードはコントローラ 1。ループは合成クロックで押さえる: ちょうど周期では {p.at_period.ticks} 拍で新フレーム {p.at_period.new}、重複 {p.at_period.duplicated}、欠落 {p.at_period.dropped}。半周期では {p.at_half.ticks} 拍のうち {p.at_half.duplicated} が前のフレームを再提示。二倍では {p.at_twice.ticks} 拍で {p.at_twice.dropped} 欠落。この機械では仮想ディスプレイで走った。本物の画面、スピーカー、手が机の項目。
-          二つ目の標的はブラウザ: 音付きのコンソールを wasm-bindgen の後ろに置き、node で {w.rom} を測った: {w.frames} フレームを {w.seconds} 秒、毎秒 {w.frames_per_s} フレーム、実時間の {w.real_time_x} 倍、一フレームあたり {w.sound_per_frame} 音声標本。それを載せるページはこのサイトの項目。記録は<a href={`${r.console.repo}/blob/main/docs/n8-report.md`}>N8 報告</a>。
+          二つ目の標的はブラウザ: 音付きのコンソールを wasm-bindgen の後ろに置き、node で {w.rom} を測った: {w.frames} フレームを {w.seconds} 秒、毎秒 {w.frames_per_s} フレーム、実時間の {w.real_time_x} 倍、一フレームあたり {w.sound_per_frame} 音声標本。その標的はいまページを持つ: <Link href="/ja/nes/play">コンソールはここで走る</Link>。自分のディスクのカートリッジで、ntsc ベンチと同じ信号経路を通り、ドリフトカウンタを生で表示する。記録は<a href={`${r.console.repo}/blob/main/docs/n8-report.md`}>N8 報告</a>。
         </>
       );
     },

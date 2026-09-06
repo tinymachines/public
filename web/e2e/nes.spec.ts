@@ -169,3 +169,34 @@ test("the Japanese page carries a Japanese body, not a fallback", async ({ page 
   expect(text).toContain("実測");
   expect(text).not.toContain("no list of exceptions at all");
 });
+
+test("the console runs a cartridge in the page and paints it", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  // The repository's own test cartridge (nobody's game), from disk, as a
+  // reader would load one. The worker builds the console and the pipeline.
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("testcart.nes", { timeout: 20_000 });
+  await page.locator("[data-play-run]").click();
+  // Frames shown climbs past a handful: the console ran, the comb decoded,
+  // the canvas painted, the pacing counted.
+  await expect
+    .poll(async () => {
+      const t = await page.locator("[data-play-stats]").innerText();
+      const m = t.match(/frames shown:\s*(\d+)/);
+      return m ? Number(m[1]) : 0;
+    }, { timeout: 30_000 })
+    .toBeGreaterThan(10);
+  const painted = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>("[data-play] .bench-screen");
+    const d = c?.getContext("2d")?.getImageData(0, 60, c.width, 1).data;
+    if (!d) return -1;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+    return sum;
+  });
+  expect(painted).toBeGreaterThan(0);
+  await expect(page.locator("[data-play-why]")).toHaveCount(0);
+  const text = await page.locator("[data-play-stats]").innerText();
+  expect(text).toMatch(/display callbacks:\s*\d+/);
+});

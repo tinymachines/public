@@ -269,6 +269,19 @@
      "lands_at_settled": true,
      "status": "here",
      "prerendered": true
+    },
+    {
+     "key": "play",
+     "name": "Play",
+     "what": "The console from the repository running in the page: both fast rungs, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
+     "nav": false,
+     "nav_label": "Play",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/nes/play",
+     "lands_at": "/nes/play",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
     }
    ],
    "landing": "/nes"

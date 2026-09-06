@@ -85,6 +85,11 @@ docs/6502/walk-snake.md
 web/public/6502/chipdocs/
 docs/6502/findings-answers.md
 
+# The console's wasm bundle for /nes/play, built by scripts/board-nes.py
+# --wasm: its chip tables are measured from NC-SA die data, so the site
+# serves it from build output and git never carries it.
+web/public/nes/wasm/
+
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.
 docs/nes/
