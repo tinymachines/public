@@ -36,3 +36,18 @@ iNES, nobody's game), runs for a second, and the canvas is painted and
 the counters advance; a refusal notice is a failure. `check-build.mjs`
 refuses a build whose console bundle is missing or does not hash to the
 record. The deploy's route list gains /nes/play and the bundle.
+
+## Second pass, the same day: two workers
+
+The first page ran the console and the signal path in one worker and
+measured 16 pictures a second from a headless browser on this box, the
+console asked for more frames each slow tick. The native shell's shape
+was applied: the console worker keeps the source's rate and the sound,
+the picture worker decodes the newest frame at its own rate, and a frame
+that arrives while the picture is busy is counted as run but not
+decoded. The pacer in the console worker is an instance of the signal
+path's Pipeline that pushes no frame, so the drift rule is the
+repository's and not restated. Measured the same way on the same loaded
+box (load average about eight from other sessions), the pictures a
+second did not move, because both threads contend for the same busy
+cores; what changed is the shape, which is the right one for a desk.

@@ -51,12 +51,16 @@ const PROSE = {
       <>
         Under node on the repository&rsquo;s bench the console with its
         sound runs at {fps} frames a second, {x} times real time ({stamp}).
-        In a page the worker also runs the signal path, which is the
-        larger half of a frame, so what this browser manages is measured
-        live in the readout and the drift counters print what a real
-        display would have duplicated or dropped, as the pacing rules
-        specify. The native shell moves that half to the GPU;{" "}
-        <Link href="/nes">the console page</Link> has its figures.
+        In a page the console and the signal path run on threads of their
+        own, the shape the native shell settled on: the console keeps the
+        source&rsquo;s rate against the wall clock and the sound with it,
+        and the picture decodes the newest frame at whatever rate this
+        browser manages, a frame that arrived while it was busy counted as
+        run but not decoded. The readout measures all of it live and the
+        drift counters print what a real display would have duplicated or
+        dropped, as the pacing rules specify. The native shell moves the
+        picture to the GPU; <Link href="/nes">the console page</Link> has
+        its figures.
       </>
     ),
     boarded: (commit: string, href: string, ntscCommit: string, ntscHref: string) => (
@@ -84,7 +88,7 @@ const PROSE = {
     ),
     rate: (fps: string, x: string, stamp: string) => (
       <>
-        リポジトリのベンチの node 上では、音付きのコンソールは毎秒 {fps} フレーム、実時間の {x} 倍で走る（{stamp}）。ページではワーカーが信号経路も走らせ、それがフレームの大きい方の半分なので、このブラウザがこなす分は読み出しで生で測り、ドリフトカウンタは実際のディスプレイなら重複・欠落させたはずの分を、ペーシング規則の通りに表示する。ネイティブのシェルはその半分を GPU に移す。数字は<Link href="/ja/nes">コンソールのページ</Link>に。
+        リポジトリのベンチの node 上では、音付きのコンソールは毎秒 {fps} フレーム、実時間の {x} 倍で走る（{stamp}）。ページではコンソールと信号経路がそれぞれ自分のスレッドで走る。ネイティブのシェルが落ち着いた形だ: コンソールは壁時計に対してソースのレートを保ち、音もそれに従う。絵はこのブラウザがこなすレートで最新のフレームを復号し、絵が忙しい間に届いたフレームは「走ったが復号されなかった」と数える。読み出しはそのすべてを生で測り、ドリフトカウンタは実際のディスプレイなら重複・欠落させたはずの分を、ペーシング規則の通りに表示する。ネイティブのシェルは絵を GPU に移す。数字は<Link href="/ja/nes">コンソールのページ</Link>に。
       </>
     ),
     boarded: (commit: string, href: string, ntscCommit: string, ntscHref: string) => (

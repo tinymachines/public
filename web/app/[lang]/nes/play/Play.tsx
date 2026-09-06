@@ -18,11 +18,11 @@ const S = {
     pause: "Pause",
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
-    frames: (n: number) => <>frames shown: <b>{n}</b></>,
+    frames: (n: number, u: number) => <>frames shown: <b>{n}</b>, run but not decoded: <b>{u}</b></>,
     cost: (c: number, p: number) => (
-      <>last tick: console <b>{c.toFixed(1)} ms</b>, signal path <b>{p.toFixed(1)} ms</b></>
+      <>per frame: console <b>{c.toFixed(1)} ms</b>, signal path <b>{p.toFixed(1)} ms</b>, on their own threads</>
     ),
-    fps: (v: number) => <>measured here: <b>{v.toFixed(1)} frames/s</b></>,
+    fps: (v: number) => <>pictures in the last second: <b>{v}</b></>,
     drift: (s: DriftStats) => (
       <>display callbacks: <b>{s.presented}</b>, duplicated: <b>{s.duplicated}</b>, dropped: <b>{s.dropped}</b></>
     ),
@@ -36,11 +36,11 @@ const S = {
     pause: "停止",
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
-    frames: (n: number) => <>表示したフレーム: <b>{n}</b></>,
+    frames: (n: number, u: number) => <>表示したフレーム: <b>{n}</b>、走ったが復号されなかったもの: <b>{u}</b></>,
     cost: (c: number, p: number) => (
-      <>直近の拍: コンソール <b>{c.toFixed(1)} ms</b>、信号経路 <b>{p.toFixed(1)} ms</b></>
+      <>一フレームあたり: コンソール <b>{c.toFixed(1)} ms</b>、信号経路 <b>{p.toFixed(1)} ms</b>、それぞれ別スレッドで</>
     ),
-    fps: (v: number) => <>この環境での実測: <b>{v.toFixed(1)} フレーム/秒</b></>,
+    fps: (v: number) => <>直近一秒の絵: <b>{v}</b></>,
     drift: (s: DriftStats) => (
       <>表示コールバック: <b>{s.presented}</b>、重複: <b>{s.duplicated}</b>、欠落: <b>{s.dropped}</b></>
     ),
@@ -60,8 +60,6 @@ export function Play({ lang }: { lang: Lang }) {
     return () => detach();
   }, []);
 
-  const total = s.consoleMs !== null && s.pipeMs !== null ? s.consoleMs + s.pipeMs : null;
-  const fps = total !== null && total > 0 ? Math.min(60.0988, 1000 / total) : null;
 
   return (
     <section className="bench" data-play>
@@ -107,9 +105,9 @@ export function Play({ lang }: { lang: Lang }) {
         ) : (
           <>
             <span className="measured">{T.loaded(s.loaded)}</span>
-            <span className="measured">{T.frames(s.frames)}</span>
+            <span className="measured">{T.frames(s.frames, s.undecoded)}</span>
             {s.consoleMs !== null && s.pipeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.pipeMs)}</span> : null}
-            {fps !== null ? <span className="measured">{T.fps(fps)}</span> : null}
+            {s.fps !== null ? <span className="measured">{T.fps(s.fps)}</span> : null}
             {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
             {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}
           </>

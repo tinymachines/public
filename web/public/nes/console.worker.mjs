@@ -1,9 +1,7 @@
 /**
- * The console in the page, on a thread of its own: both boarded bundles,
- * the console (nes_wasm: the 2A03's and the 2C02's fast rungs through
- * the authored glue, with the sound) and the signal path (ntsc_wasm: the
- * NES encoder and the three-line comb, whose Pipeline also carries the
- * drift policy). The shape is the ntsc bench's worker.
+ * The console in the page, on a thread of its own (N8's second target,
+ * in the shape the native shell settled on: the console on one thread
+ * paced by the wall clock, the picture on another).
  *
  *   main -> here   { id, path: 'hello' }
  *                  { id, path: 'load', rom: ArrayBuffer }
@@ -11,13 +9,15 @@
  *   here -> main   { id, ok: true, answer } | { id, ok: false, error }
  *
  * 'load' builds a console from the ROM bytes (NROM only; anything else is
- * refused by name) and a fresh pipeline with its counters at zero. 'tick'
- * is one display callback: the pipeline's pacing decides from dtNs how
- * many console frames are due, the console runs them with the pad as it
- * stands, the newest frame goes through the encoder and the comb, and the
- * answer carries the RGBA frame, the 48 kHz sound those frames produced,
- * the counters and the milliseconds the console and the pipeline took.
- * The ROM never leaves this browser.
+ * refused by name) and a fresh pacer with its counters at zero. 'tick' is
+ * one display callback: the drift policy decides from dtNs how many
+ * frames are due (the signal path's own Pipeline carries that policy, so
+ * an instance of it is the pacer here and pushes no frame; the rule is
+ * the repository's, never restated), the console runs them with the pad
+ * as it stands, and the answer carries the newest frame's dot planes and
+ * parity, the 48 kHz sound those frames produced, the counters and the
+ * milliseconds the console took. The picture worker takes the planes
+ * from there. The ROM never leaves this browser.
  */
 
 import initNes, { Nes } from "./wasm/nes_wasm.js";
@@ -26,15 +26,14 @@ import initNtsc, { Pipeline } from "../ntsc/wasm/ntsc_wasm.js";
 const ready = Promise.all([initNes(), initNtsc()]);
 
 let nes = null;
-let pipe = null;
+let pacer = null;
 
 self.onmessage = async (e) => {
   const { id, path } = e.data;
   try {
     await ready;
     if (path === "hello") {
-      const p = pipe ?? new Pipeline("comb3");
-      self.postMessage({ id, ok: true, answer: { width: p.width(), height: p.height() } });
+      self.postMessage({ id, ok: true, answer: { alive: true } });
       return;
     }
     if (path === "load") {
@@ -42,18 +41,18 @@ self.onmessage = async (e) => {
       if (nes) nes.free();
       nes = null;
       nes = new Nes(bytes);
-      pipe = new Pipeline("comb3");
-      self.postMessage({ id, ok: true, answer: { width: pipe.width(), height: pipe.height(), bytes: bytes.length } });
+      pacer = new Pipeline("comb3");
+      self.postMessage({ id, ok: true, answer: { bytes: bytes.length } });
       return;
     }
     if (path === "tick") {
-      if (!nes || !pipe) throw new Error("no cartridge loaded");
+      if (!nes || !pacer) throw new Error("no cartridge loaded");
       const { dtNs, pad } = e.data;
-      const advanced = pipe.tick(dtNs);
-      const s = pipe.stats();
+      const advanced = pacer.tick(dtNs);
+      const s = pacer.stats();
       const stats = { presented: s[0], duplicated: s[1], dropped: s[2] };
       if (advanced === 0) {
-        self.postMessage({ id, ok: true, answer: { rgba: null, sound: null, stats, advanced, consoleMs: 0, pipeMs: 0 } });
+        self.postMessage({ id, ok: true, answer: { colour: null, emphasis: null, parity: 0, sound: null, stats, advanced, consoleMs: 0 } });
         return;
       }
       nes.set_pad(pad & 0xff);
@@ -63,12 +62,10 @@ self.onmessage = async (e) => {
       const emphasis = nes.emphasis();
       const parity = nes.parity();
       const sound = nes.sound();
-      const t1 = performance.now();
-      const rgba = pipe.push_frame(colour, emphasis, parity);
-      const t2 = performance.now();
+      const consoleMs = performance.now() - t0;
       self.postMessage(
-        { id, ok: true, answer: { rgba, sound, stats, advanced, consoleMs: t1 - t0, pipeMs: t2 - t1, width: pipe.width(), height: pipe.height() } },
-        [rgba.buffer, sound.buffer],
+        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs } },
+        [colour.buffer, emphasis.buffer, sound.buffer],
       );
       return;
     }
