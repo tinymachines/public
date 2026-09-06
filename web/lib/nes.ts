@@ -106,6 +106,31 @@ export interface NesRecord {
     /** Frames a second on one core, low and high, and the real-time multiples. */
     frames_per_s: [number, number];
     real_time_x: [string, string];
+    /** N6, the picture: the picture gate (a console frame through
+     *  ntsc-crt equal to the rung's own, the phase across the parity
+     *  sequence) and the capture path's synthetic roundtrip on the bars
+     *  cartridge, its figures as capture-score printed them, held or not. */
+    picture: {
+      ntsc_crt: string;
+      parity: string;
+      components_equal: number;
+      displayed: [number, number];
+      phase_frames: number;
+      phase_short: number;
+      phase: number;
+      capture: {
+        rom: string;
+        regions: number;
+        within_all: number;
+        luma_within: number;
+        hue_within: number; hue_regions: number;
+        sat_within: number;
+        worst_luma: string; worst_hue_deg: string; worst_sat: string; worst_chroma: string;
+        tol_luma: string; tol_hue_deg: string; tol_sat_pct: number; tol_sat_abs: string;
+        recovered_ppm: string; burst_residual: string;
+        held: boolean;
+      };
+    };
     blargg: {
       cpu_timing_pass: number;
       instr_pass: number; instr_total: number;
@@ -134,6 +159,9 @@ export function nes(): NesRecord {
     if (record[k] === undefined) {
       throw new Error(`data/nes.json has no ${k}; re-run scripts/board-nes.py --board`);
     }
+  }
+  if (record.console.picture === undefined) {
+    throw new Error("data/nes.json's console has no picture (N6); re-run scripts/board-nes.py --board");
   }
   return record;
 }

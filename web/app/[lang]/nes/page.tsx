@@ -343,6 +343,62 @@ const PROSE = {
         the play gate waits on a cartridge.
       </>
     ),
+    pictureH: "The console's frames through the television model, and a capture of them scored",
+    picture: (r: ReturnType<typeof nes>) => {
+      const p = r.console.picture;
+      const c = p.capture;
+      return (
+        <>
+          The picture is ntsc-crt&rsquo;s chain ({p.ntsc_crt}, pinned by
+          tag) with two things added by the console: the order of the
+          frames and the subcarrier phase carried from one to the next,
+          which the odd frame&rsquo;s short line moves, so the console
+          hands over its parity and not just its dots. Each frame is
+          encoded by the NES source, decoded on the three-line comb and
+          run through the CRT stages at their authored parameters. Two
+          checks hold it: a console frame through that chain is the
+          standalone PPU rung&rsquo;s frame from the same world through
+          the same chain on every decoded sample ({p.components_equal}{" "}
+          components equal, a {p.parity} frame, {p.displayed[0]} by{" "}
+          {p.displayed[1]} on the screen), and the phase after{" "}
+          {p.phase_frames} console frames, {p.phase_short} of them short,
+          is what the grid&rsquo;s arithmetic gives that sequence
+          (phase {p.phase}; forcing every frame even reads differently
+          and is the red run). The bars cartridge the real comparison
+          wants paints with the PPU&rsquo;s rendering off, which the fast
+          PPU had never been asked about: measured on the switch-level
+          chip, the picture with rendering off is the palette entry the
+          address register points at, and its timing against a mid-line
+          write is now a fixture there.
+          {" "}Then the capture path, the machine half of the comparison
+          the real console will join: the bars ROM ({c.rom}) through the
+          console, its frames through ntsc-crt&rsquo;s capture-card model
+          and recovered exactly as a real record is (rate found to{" "}
+          {c.recovered_ppm} ppm, burst residual {c.burst_residual}{" "}
+          samples), then every flat region scored against the
+          console&rsquo;s own synthesis through the identical decoder.
+          The tolerances were written down before the run: luma within{" "}
+          {c.tol_luma}, hue within {c.tol_hue_deg} degree, saturation
+          within {c.tol_sat_pct} percent. Of {c.regions} regions, luma
+          holds on {c.luma_within}, hue on {c.hue_within} of{" "}
+          {c.hue_regions} that have one, saturation on {c.sat_within};{" "}
+          {c.within_all} hold all three, so the roundtrip{" "}
+          {c.held ? "closes" : "does not close"} at the stated
+          tolerances. The worst region misses luma by {c.worst_luma},
+          hue by {c.worst_hue_deg} degrees on a near-grey, saturation by{" "}
+          {c.worst_sat}, a chroma vector of at most {c.worst_chroma}: the
+          same with the noise off and at the grid&rsquo;s own rate, so
+          it is the card model&rsquo;s anti-alias filter against the
+          encoder&rsquo;s square wave, not the console, recorded rather
+          than fitted away. The first run found something else first:
+          the recovery&rsquo;s level re-referencing was a histogram bin
+          coarse and read as a gain across the whole frame, fixed in
+          ntsc-crt and re-pinned. The real record of the same cartridge
+          on the real console is the bench item; the account is{" "}
+          <a href={`${r.console.repo}/blob/main/docs/n6-report.md`}>the N6 report</a>.
+        </>
+      );
+    },
     mConsoleTests: (n: number) => <>nes suite: <b>{n} tests green</b></>,
     mConsoleInstr: (p: number, t: number) => <>instruction tests: <b>{p} of {t} pass</b></>,
     mConsoleRate: (lo: string, hi: string) => <>the console: <b>{lo} to {hi}x real time</b></>,
@@ -491,6 +547,17 @@ const PROSE = {
         そして、この弧全体が目指してきたオラクル: blargg のテスト ROM をコンソール全体に通す。これらの高速ラングが何百万サイクルも実プログラムを走らせた最初の機会だ。CPU タイミング検査は合格。命令検査は {r.console.blargg.instr_total} 本中 {r.console.blargg.instr_pass} 本が合格、公式・非公式の全命令。スプライトヒット検査は {r.console.blargg.sprite_total} 本中 {r.console.blargg.sprite_pass} 本が合格、残る一本は名指しで拒む（縦長スプライトは模していない）。vblank と NMI のタイミング検査は {r.console.blargg.vbl_nmi_total} 本中 {r.console.blargg.vbl_nmi_pass} 本が合格、残りは文書化された実機から一、二ドットのずれで、すべて一つの問いに帰する: 実機の NMI は、それぞれ自身の実測タイミングに押さえた二つのチップが許すより約二ドット遅れて CPU に届く。決めるのは実基板に当てるスコープだ。APU 検査は {r.console.blargg.apu_total} 本中 {r.console.blargg.apu_pass} 本が合格。うち六本は、不合格をスイッチレベルの 2A03 で測って書き下ろしてからの合格だ: $4017 書き込みの位相ジッタと即時クロック、バスに尋ねた半ステップ後にラッチされるステータス、三サイクル続けて立つ IRQ フラグ、読み出しが着地する所で数え落とされる DMC のバイト。ROM が見つけたものこそ走らせる意味だ: CPU の高速ラングは記録済みの全トレースを正確に再生しながら、トレースが覆っていなかった四つの見落としを抱えていた（駆動されないバス線に乗って次の命令へ渡る桁上げ、誤った捕捉から読んだシフトの桁上げ、結果がバスの取り合いでありスイッチモデルが独自に決着させる三命令、割り込み入力を標本化するハーフサイクル（位相の検査が捕まえた）、そしてバスに尋ねるより遅くラッチされるバイト）。高速 PPU にも四つ。それぞれ、スイッチレベルチップと高速ラングを ROM 上で食い違うまで並走させて位置を特定し、チップで測り、書き下ろし、無ければ赤になる固定具で押さえた。記録は<a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>N5 報告</a>。遊びの検査はカートリッジ待ち。
       </>
     ),
+    pictureH: "コンソールのフレームがテレビ模型を通り、その捕捉が採点される",
+    picture: (r: ReturnType<typeof nes>) => {
+      const p = r.console.picture;
+      const c = p.capture;
+      return (
+        <>
+          絵は ntsc-crt の連鎖（{p.ntsc_crt}、タグで固定）で、コンソールが足すのは二つだけ: フレームの順序と、一つのフレームから次へ持ち越す副搬送波の位相だ。奇数フレームの短い一行が位相を動かすので、コンソールはドットだけでなくパリティを渡す。各フレームは NES ソースで符号化され、三ラインコムで復号され、書き下ろしの定数で CRT の各段を通る。押さえは二つ。コンソールのフレームをこの連鎖に通したものは、同じ世界から単体 PPU ラングが出したフレームを同じ連鎖に通したものと、復号された全標本で一致する（{p.components_equal} 成分が一致、{p.parity} フレーム、画面上 {p.displayed[0]} × {p.displayed[1]}）。そして {p.phase_frames} フレーム（うち {p.phase_short} が短い）後の位相は、その列にグリッドの算術が与えるもの（位相 {p.phase}。全フレームを偶数に強制すると違う値になり、それが赤の走行）。実機比較が欲しがるカラーバーのカートリッジは PPU の描画を切って塗るが、高速 PPU はそれを訊かれたことがなかった: スイッチレベルのチップで測ると、描画を切った絵はアドレスレジスタが指すパレット項目で、行途中の書き込みに対するタイミングは今そこに固定具として在る。
+          次に捕捉経路、実機が加わる比較の機械側半分: カラーバー ROM（{c.rom}）をコンソールに通し、そのフレームを ntsc-crt の捕捉カード模型に通して、実記録とまったく同じ手順で復元し（レートは {c.recovered_ppm} ppm、バースト残差 {c.burst_residual} 標本）、平坦な領域すべてを、同一の復号器を通したコンソール自身の合成に対して採点する。許容は走らせる前に書いた: 輝度 {c.tol_luma} 以内、色相 {c.tol_hue_deg} 度以内、彩度 {c.tol_sat_pct} パーセント以内。{c.regions} 領域のうち、輝度は {c.luma_within} で成り立ち、色相は色相を持つ {c.hue_regions} のうち {c.hue_within}、彩度は {c.sat_within}。三つすべてが成り立つのは {c.within_all} で、往復は述べた許容で{c.held ? "閉じる" : "閉じない"}。最悪の領域は輝度で {c.worst_luma}、色相はほぼ灰色の領域で {c.worst_hue_deg} 度、彩度で {c.worst_sat} 外れ、クロマベクトルは最大 {c.worst_chroma}: 雑音を切っても、グリッド自身のレートでも同じなので、コンソールではなく、捕捉カード模型の折り返し防止フィルタと符号化器の方形波の関係であり、合わせ込まずに記録した。最初の走行はまず別のものを見つけた: 復元のレベル基準合わせがヒストグラムの一区画分粗く、フレーム全体の利得として現れたので、ntsc-crt 側で直して固定し直した。同じカートリッジの実機記録がベンチ項目。記録は<a href={`${r.console.repo}/blob/main/docs/n6-report.md`}>N6 報告</a>。
+        </>
+      );
+    },
     mConsoleTests: (n: number) => <>nes スイート: <b>{n} テスト緑</b></>,
     mConsoleInstr: (p: number, t: number) => <>命令検査: <b>{t} 本中 {p} 本合格</b></>,
     mConsoleRate: (lo: string, hi: string) => <>コンソール: <b>実時間の {lo} から {hi} 倍</b></>,
@@ -612,6 +679,9 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
 
         <h2>{S.consoleH}</h2>
         <p>{S.console(r)}</p>
+
+        <h2>{S.pictureH}</h2>
+        <p>{S.picture(r)}</p>
 
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>

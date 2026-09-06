@@ -16,10 +16,10 @@
   },
   "c2c02": {
     "repo": "https://github.com/tinymachines/2c02",
-    "commit": "474b7e7251782e00c8c0047d1a6a3e246c802dd9",
+    "commit": "0b25e83edf065a740c69f5cf5e97b85c1ddc96bc",
     "halfphi": "0.1.6",
-    "tests_green": 14,
-    "mutate_red": 9,
+    "tests_green": 15,
+    "mutate_red": 10,
     "p0_states": 601,
     "p1_states": 4008,
     "p2": {
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.162",
-      "mean_inside_x": "14.3",
-      "worst_ms": "1.893",
-      "worst_inside_x": "8.8",
+      "mean_ms": "1.421",
+      "mean_inside_x": "11.7",
+      "worst_ms": "2.747",
+      "worst_inside_x": "6.1",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,8 +69,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "5d1b62d93c032ba573752f300645cf19d9228135",
-    "tests_green": 22,
+    "commit": "65f016ee377a22eaf2fc6e0a058225be90b5d942",
+    "tests_green": 24,
     "pin_6502": "8b9e0b5",
     "alignment": {
       "cpu_phase": 4,
@@ -97,6 +97,38 @@
       "2.1",
       "2.3"
     ],
+    "picture": {
+      "ntsc_crt": "v0.2.4",
+      "parity": "OddShort",
+      "components_equal": 1474560,
+      "displayed": [
+        768,
+        720
+      ],
+      "phase_frames": 12,
+      "phase_short": 4,
+      "phase": 4,
+      "capture": {
+        "rom": "full_palette.nes",
+        "regions": 436,
+        "within_all": 367,
+        "luma_within": 436,
+        "hue_within": 352,
+        "hue_regions": 418,
+        "sat_within": 431,
+        "worst_luma": "0.0096",
+        "worst_hue_deg": "12.1",
+        "worst_sat": "0.0078",
+        "worst_chroma": "0.0086",
+        "tol_luma": "0.01",
+        "tol_hue_deg": "1",
+        "tol_sat_pct": 5,
+        "tol_sat_abs": "0.005",
+        "recovered_ppm": "+0.7",
+        "burst_residual": "0.010",
+        "held": false
+      }
+    },
     "blargg": {
       "cpu_timing_pass": 1,
       "instr_pass": 16,

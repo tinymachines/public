@@ -163,7 +163,16 @@ are public:
   result, pass or named failure. Running them found misses in the CPU's
   fast rung that no recorded trace had covered, each located by running
   the switch-level chip alongside it until they disagreed, then measured
-  and held by a fixture.
+  and held by a fixture. Its frames now go through the television model
+  (2026-09-06): ntsc-crt's chain with the phase carried from frame to
+  frame, a console frame through it equal to the standalone PPU's on
+  every decoded sample, and the capture path run in the machine with a
+  colour-bars cartridge, every flat region scored against the console's
+  own synthesis at tolerances written before the run. Luma holds
+  everywhere; hue and saturation miss by a small chroma residual that
+  belongs to the capture model's filter and is recorded, not fitted
+  away. The first run found the capture recovery's level reference a
+  histogram bin coarse, fixed in ntsc-crt.
 
 Since then the PPU has come a long way on [the same page](/nes). Its
 contested corners, sprite 0, the vblank read race and OAM corruption,

@@ -43,6 +43,12 @@ const record = JSON.parse(
     alignment: { cpu_phase: number; ppu_phase: number };
     gate1: { nmi_half_cycles: number; race_reads_set: number; race_reads_clear: number; alignments: number };
     real_time_x: [string, string];
+    picture: {
+      components_equal: number;
+      phase: number;
+      phase_frames: number;
+      capture: { regions: number; within_all: number; luma_within: number; hue_within: number; hue_regions: number; worst_chroma: string; held: boolean };
+    };
     blargg: {
       instr_pass: number; instr_total: number;
       sprite_pass: number; sprite_total: number;
@@ -101,6 +107,14 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   expect(text).toContain(`${record.console.gate1.nmi_half_cycles} of them agree`);
   expect(text).toContain(`${record.console.gate1.race_reads_set} reads around the flag`);
   expect(text).toContain(`all ${record.console.gate1.alignments} alignments`);
+  // N6, the picture: the gate's figures and the capture roundtrip's
+  // verdict, as boarded (a miss is boarded as a miss).
+  const pic = record.console.picture;
+  expect(text).toContain(`${pic.components_equal} components equal`);
+  expect(text).toContain(`phase ${pic.phase};`);
+  expect(text).toContain(`Of ${pic.capture.regions} regions, luma holds on ${pic.capture.luma_within}, hue on ${pic.capture.hue_within} of ${pic.capture.hue_regions}`);
+  expect(text).toContain(`${pic.capture.within_all} hold all three, so the roundtrip ${pic.capture.held ? "closes" : "does not close"}`);
+  expect(text).toContain(`a chroma vector of at most ${pic.capture.worst_chroma}`);
 });
 
 test("the PPU and APU figures serve and decode", async ({ page, request }) => {
