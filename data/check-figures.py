@@ -35,7 +35,11 @@ CHIP = ROOT / "data" / "chip.json"
 # it closely. Deliberately narrow: "6502" is a chip name and "2026" is a year,
 # and neither should be dragged into this.
 CONTEXT = r"(?:wires?|switches|switch|nodes?|transistors?|byte)"
-FIGURE = re.compile(rf"\b(\d{{4}})\b[\s\-]*(?:\S+\s+){{0,2}}?{CONTEXT}\b", re.I)
+# A register address ($4015, $2002) is four digits after a dollar sign and
+# is never a count of anything; the console arc's reports say "the $4015
+# status byte" and the first pull of them tripped here. The narrowing is on
+# the sigil, not on the number, so "4015 bytes" would still be checked.
+FIGURE = re.compile(rf"(?<!\$)\b(\d{{4}})\b[\s\-]*(?:\S+\s+){{0,2}}?{CONTEXT}\b", re.I)
 
 # Chip designations, which are four digits and are never a count of anything.
 # The comment above already claimed 6502 would not be dragged in, and the

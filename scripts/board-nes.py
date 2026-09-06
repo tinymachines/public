@@ -370,6 +370,45 @@ def main() -> int:
         "tolerance_pct": 5,
         "roms": sound_roms,
     }
+    # N8, the shell: the GPU picture gate's lines (worst and mean per
+    # world, the GPU frame time), the paced loop's lines, and the wasm
+    # target measured under node (wasm-pack, then tools/wasm-bench.mjs on
+    # the bars cartridge).
+    gpu_worlds = {}
+    for m in re.finditer(r"(authored|mask and geometry on), frame (\d) on ([^:]+): worst ([0-9.e+-]+) at [^,]+, mean ([0-9.e+-]+) over (\d+) components", out):
+        w = gpu_worlds.setdefault(m.group(1), {"adapter": m.group(3).strip(), "worst": 0.0, "mean": 0.0, "components": int(m.group(6))})
+        w["worst"] = max(w["worst"], float(m.group(4)))
+        w["mean"] = max(w["mean"], float(m.group(5)))
+    for m in re.finditer(r"(authored|mask and geometry on): ([0-9.]+) ms a frame on the GPU, upload included, over (\d+) frames", out):
+        gpu_worlds.setdefault(m.group(1), {})["ms_per_frame"] = m.group(2)
+    if set(gpu_worlds) != {"authored", "mask and geometry on"} or any("ms_per_frame" not in w for w in gpu_worlds.values()):
+        fail(f"the shell's GPU gate lines are not on the suite output (found {list(gpu_worlds)}); an adapter is required to board")
+    pace = re.search(r"at the period: (\d+) ticks, (\d+) frames presented new, (\d+) duplicated, (\d+) dropped", out)
+    half = re.search(r"at half the period: (\d+) ticks, (\d+) frames presented new, (\d+) duplicated, (\d+) dropped", out)
+    twice = re.search(r"at twice the period: (\d+) ticks, (\d+) frames presented new, (\d+) duplicated, (\d+) dropped", out)
+    if not (pace and half and twice):
+        fail("the shell's pacing gate lines are not on the suite output")
+    print("board-nes: building the wasm target and measuring it under node...")
+    wasm_dir = con / "target" / "wasm-bench-pkg"
+    wp = subprocess.run(["wasm-pack", "build", "crates/nes-wasm", "--target", "nodejs", "--out-dir", str(wasm_dir), "--release"],
+                        cwd=con, capture_output=True, text=True, env=os.environ)
+    if wp.returncode != 0:
+        fail(f"wasm-pack failed:\n{wp.stderr[-1500:]}")
+    wb = subprocess.run(["node", "tools/wasm-bench.mjs", str(wasm_dir), str(bars), "300"], cwd=con, capture_output=True, text=True, env=os.environ)
+    wasm_m = re.search(r"wasm: (\d+) frames in ([0-9.]+) s \(([0-9.]+) frames/s, ([0-9.]+)x real time\); frame (\d+) dots, (\d+) distinct colours, parity (\d); (\d+) sound samples \(([0-9.]+) a frame\)", wb.stdout)
+    if not wasm_m:
+        fail(f"the wasm bench line is not on its output:\n{wb.stdout[-800:]}{wb.stderr[-800:]}")
+    shell = {
+        "gpu": {k.replace(" ", "_"): v for k, v in gpu_worlds.items()},
+        "gpu_tolerance": {"worst": "1e-3", "mean": "1e-5"},
+        "pacing": {
+            "at_period": {"ticks": int(pace.group(1)), "new": int(pace.group(2)), "duplicated": int(pace.group(3)), "dropped": int(pace.group(4))},
+            "at_half": {"ticks": int(half.group(1)), "new": int(half.group(2)), "duplicated": int(half.group(3)), "dropped": int(half.group(4))},
+            "at_twice": {"ticks": int(twice.group(1)), "new": int(twice.group(2)), "duplicated": int(twice.group(3)), "dropped": int(twice.group(4))},
+        },
+        "wasm": {"frames": int(wasm_m.group(1)), "seconds": wasm_m.group(2), "frames_per_s": wasm_m.group(3), "real_time_x": wasm_m.group(4),
+                 "sound_per_frame": wasm_m.group(9), "rom": "full_palette.nes"},
+    }
     n5r = re.sub(r"\s+", " ", (con / "docs" / "n5-report.md").read_text())
     pin_6502 = extract(n5r, r"Pins: 6502 `([0-9a-f]{7,})`", "N5 pin of the 6502")
     cargo_pin = extract((con / "crates" / "nes-console" / "Cargo.toml").read_text(),
@@ -443,6 +482,7 @@ def main() -> int:
         "real_time_x": [rate_m.group(3), rate_m.group(4)],
         "picture": picture,
         "sound": sound,
+        "shell": shell,
         "blargg": {
             "cpu_timing_pass": tally["cpu_timing_test6"][0],
             "instr_pass": tally["instr_test-v5"][0], "instr_total": tally["instr_test-v5"][1],

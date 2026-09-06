@@ -180,6 +180,21 @@ are public:
   ROMs; triangle and noise agree to a fraction of a percent, square
   and dmc leave the real DAC curves as the scope's question.
 
+The arc's own documents are here now, pulled from the repositories at
+build time:
+
+| | |
+|---|---|
+| [The console arc, in retrospect](/docs/console-arc) | what the sketch asked for, what the chips and the ROMs taught, and what stays for a bench |
+| [The notebook](/docs/nes) | every milestone's plan and report, from the sketch to the shell, in the arc's order |
+
+And the shell (2026-09-06): a Linux binary puts the console in a window
+with the decode and the CRT stages on the GPU, held to the signal path's
+CPU chain on every pixel, the console on its own thread paced by the wall
+clock, sound out and the keyboard in; and a wasm build of the console
+measured under node. It ran under a virtual display here; a real screen
+is the desk item.
+
 Since then the PPU has come a long way on [the same page](/nes). Its
 contested corners, sprite 0, the vblank read race and OAM corruption,
 were each pinned by a crafted register program the reference replays

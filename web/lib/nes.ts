@@ -140,6 +140,16 @@ export interface NesRecord {
       tolerance_pct: number;
       roms: Record<string, { beep_rms: string; rms_pct: string; tone_pct: string; rec_rms_pct: string; rec_tone_pct: string }>;
     };
+    /** N8, the shell: the GPU picture against the CPU chain per world
+     *  (worst and mean component over the three frames, the GPU frame
+     *  time), the paced loop's counts on a synthetic clock, and the wasm
+     *  target under node. */
+    shell: {
+      gpu: Record<string, { adapter: string; worst: number; mean: number; components: number; ms_per_frame: string }>;
+      gpu_tolerance: { worst: string; mean: string };
+      pacing: Record<string, { ticks: number; new: number; duplicated: number; dropped: number }>;
+      wasm: { frames: number; seconds: string; frames_per_s: string; real_time_x: string; sound_per_frame: string; rom: string };
+    };
     blargg: {
       cpu_timing_pass: number;
       instr_pass: number; instr_total: number;
@@ -168,6 +178,9 @@ export function nes(): NesRecord {
     if (record[k] === undefined) {
       throw new Error(`data/nes.json has no ${k}; re-run scripts/board-nes.py --board`);
     }
+  }
+  if (record.console.shell === undefined) {
+    throw new Error("data/nes.json's console has no shell (N8); re-run scripts/board-nes.py --board");
   }
   if (record.console.sound === undefined) {
     throw new Error("data/nes.json's console has no sound (N7); re-run scripts/board-nes.py --board");

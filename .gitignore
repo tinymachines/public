@@ -85,6 +85,10 @@ docs/6502/walk-snake.md
 web/public/6502/chipdocs/
 docs/6502/findings-answers.md
 
+# The console arc's notebook, pulled from the sibling checkouts at build
+# time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.
+docs/nes/
+
 # The console-shell handoff pack: its sources/ carry third-party IP and are mood only.
 docs/nes-arcade-handoff-v0.1
 docs/nes-arcade-handoff-*.zip

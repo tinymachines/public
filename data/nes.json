@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.007",
-      "mean_inside_x": "16.5",
-      "worst_ms": "1.884",
-      "worst_inside_x": "8.8",
+      "mean_ms": "1.019",
+      "mean_inside_x": "16.3",
+      "worst_ms": "1.235",
+      "worst_inside_x": "13.5",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,8 +69,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "ae59144b785eb244d1ea24a1b9f45e1d9d024f07",
-    "tests_green": 27,
+    "commit": "82860f3de9fe4d889e3e6b8fe2fb78e479314a1f",
+    "tests_green": 30,
     "pin_6502": "8b9e0b5",
     "alignment": {
       "cpu_phase": 4,
@@ -168,6 +168,56 @@
           "rec_rms_pct": "5.6",
           "rec_tone_pct": "5.4"
         }
+      }
+    },
+    "shell": {
+      "gpu": {
+        "authored": {
+          "adapter": "NVIDIA GeForce RTX 3070",
+          "worst": 4.77e-07,
+          "mean": 1.24e-08,
+          "components": 1658880,
+          "ms_per_frame": "0.99"
+        },
+        "mask_and_geometry_on": {
+          "adapter": "NVIDIA GeForce RTX 3070",
+          "worst": 2.83e-05,
+          "mean": 1.89e-07,
+          "components": 1658880,
+          "ms_per_frame": "0.94"
+        }
+      },
+      "gpu_tolerance": {
+        "worst": "1e-3",
+        "mean": "1e-5"
+      },
+      "pacing": {
+        "at_period": {
+          "ticks": 60,
+          "new": 59,
+          "duplicated": 1,
+          "dropped": 0
+        },
+        "at_half": {
+          "ticks": 60,
+          "new": 29,
+          "duplicated": 31,
+          "dropped": 0
+        },
+        "at_twice": {
+          "ticks": 20,
+          "new": 20,
+          "duplicated": 0,
+          "dropped": 19
+        }
+      },
+      "wasm": {
+        "frames": 300,
+        "seconds": "3.39",
+        "frames_per_s": "88.5",
+        "real_time_x": "1.47",
+        "sound_per_frame": "798.7",
+        "rom": "full_palette.nes"
       }
     },
     "blargg": {

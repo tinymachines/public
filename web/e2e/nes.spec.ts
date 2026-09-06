@@ -49,6 +49,7 @@ const record = JSON.parse(
       phase_frames: number;
       capture: { regions: number; within_all: number; luma_within: number; hue_within: number; hue_regions: number; worst_chroma: string; held: boolean };
     };
+    shell: { gpu: Record<string, { worst: number; mean: number; ms_per_frame: string }>; wasm: { frames_per_s: string; frames: number } };
     sound: { tolerance_pct: number; stage: { tau_hp_ms: string; gain: string }; roms: Record<string, { rms_pct: string; rec_rms_pct: string }> };
     blargg: {
       instr_pass: number; instr_total: number;
@@ -123,6 +124,11 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   for (const k of ["square", "triangle", "noise", "dmc"]) {
     expect(text).toContain(`${k} ${snd.roms[k].rms_pct} percent against ${snd.roms[k].rec_rms_pct}`);
   }
+  // N8, the shell: the GPU gate's worst and the wasm rate, as boarded.
+  const sh = record.console.shell;
+  expect(text).toContain(`worst component differs by ${sh.gpu.authored.worst.toExponential(1)}`);
+  expect(text).toContain(`A frame takes ${sh.gpu.authored.ms_per_frame} ms`);
+  expect(text).toContain(`${sh.wasm.frames_per_s} frames a second`);
 });
 
 test("the PPU and APU figures serve and decode", async ({ page, request }) => {

@@ -455,6 +455,55 @@ const PROSE = {
         </>
       );
     },
+    shellH: "The console in a window, its picture on the GPU held to the CPU chain, and a second target in the browser",
+    shell: (r: ReturnType<typeof nes>) => {
+      const s = r.console.shell;
+      const g = s.gpu.authored;
+      const m = s.gpu.mask_and_geometry_on;
+      const p = s.pacing;
+      const w = s.wasm;
+      return (
+        <>
+          A frame&rsquo;s time on one core was measured before anything
+          was written, and it said where the work had to go: the console
+          and the encoder fit a core, and the comb decode with the five
+          CRT stages did not fit anywhere on the CPU. Those two are now
+          eight compute passes on the GPU, every constant uploaded from
+          the decoder and the CRT parameters rather than typed, and they
+          are held to the signal path&rsquo;s own CPU chain on every
+          component of every pixel of three consecutive frames, the last
+          one black so that persistence shows. With the authored
+          parameters the worst component differs by {g.worst.toExponential(1)}{" "}
+          and the mean by {g.mean.toExponential(1)}; with the mask and the
+          geometry switched on, {m.worst.toExponential(1)} and{" "}
+          {m.mean.toExponential(1)}; the tolerance stated first was{" "}
+          {s.gpu_tolerance.worst} and {s.gpu_tolerance.mean}. A frame
+          takes {g.ms_per_frame} ms on the {g.adapter}, upload included.
+          Skipping persistence is the red run.
+          {" "}The window is a Linux binary: the console with its sound
+          on its own thread, advanced by whole frames per period as the
+          signal path&rsquo;s drift policy decides from the wall clock,
+          duplicates and drops counted and never resampled in time; the
+          display encodes each new frame and runs the GPU picture; sound
+          through the audio device; the keyboard as controller 1. The
+          loop is held on a synthetic clock: at exactly the period{" "}
+          {p.at_period.ticks} ticks run {p.at_period.new} new frames with{" "}
+          {p.at_period.duplicated} duplicate and {p.at_period.dropped}{" "}
+          drops; at half the period {p.at_half.duplicated} of{" "}
+          {p.at_half.ticks} ticks present the previous frame again; at
+          twice it drops {p.at_twice.dropped} in {p.at_twice.ticks}. It
+          ran under a virtual display on this box; a real screen, a
+          speaker and a hand are the desk items.
+          {" "}The second target is the browser: the console with its
+          sound behind wasm-bindgen, measured under node on {w.rom}:{" "}
+          {w.frames} frames in {w.seconds} s, {w.frames_per_s} frames a
+          second, {w.real_time_x} times real time, {w.sound_per_frame}{" "}
+          sound samples a frame. The page that hosts it is this
+          site&rsquo;s item. The account is{" "}
+          <a href={`${r.console.repo}/blob/main/docs/n8-report.md`}>the N8 report</a>.
+        </>
+      );
+    },
     mConsoleTests: (n: number) => <>nes suite: <b>{n} tests green</b></>,
     mConsoleInstr: (p: number, t: number) => <>instruction tests: <b>{p} of {t} pass</b></>,
     mConsoleRate: (lo: string, hi: string) => <>the console: <b>{lo} to {hi}x real time</b></>,
@@ -631,6 +680,21 @@ const PROSE = {
         </>
       );
     },
+    shellH: "窓の中のコンソール。絵は GPU に置かれて CPU の連鎖に押さえられ、二つ目の標的はブラウザ",
+    shell: (r: ReturnType<typeof nes>) => {
+      const s = r.console.shell;
+      const g = s.gpu.authored;
+      const m = s.gpu.mask_and_geometry_on;
+      const p = s.pacing;
+      const w = s.wasm;
+      return (
+        <>
+          一フレームが一コアで要する時間は何かを書く前に測られ、仕事がどこへ行くべきかを告げた: コンソールと符号化器は一コアに収まり、コム復号と五段の CRT は CPU のどこにも収まらない。その二つはいま GPU 上の八つの計算パスで、すべての定数は打ち込まれるのではなく復号器と CRT のパラメータから送られ、連続する三フレーム（最後は残光が見えるよう黒）の全画素の全成分で信号経路自身の CPU 連鎖に押さえられる。書き下ろしのパラメータでは最悪の成分差が {g.worst.toExponential(1)}、平均が {g.mean.toExponential(1)}。マスクと幾何を入れると {m.worst.toExponential(1)} と {m.mean.toExponential(1)}。先に述べた許容は {s.gpu_tolerance.worst} と {s.gpu_tolerance.mean}。一フレームは {g.adapter} で転送込み {g.ms_per_frame} ms。残光を飛ばすのが赤の走行。
+          窓は Linux のバイナリ: 音付きのコンソールが自分のスレッドで、信号経路のドリフト方針が壁時計から決める分だけ周期ごとにフレーム単位で進み、重複と欠落を数え、時間方向には決して再標本化しない。表示は新しいフレームごとに符号化して GPU の絵を走らせ、音は音声デバイスへ、キーボードはコントローラ 1。ループは合成クロックで押さえる: ちょうど周期では {p.at_period.ticks} 拍で新フレーム {p.at_period.new}、重複 {p.at_period.duplicated}、欠落 {p.at_period.dropped}。半周期では {p.at_half.ticks} 拍のうち {p.at_half.duplicated} が前のフレームを再提示。二倍では {p.at_twice.ticks} 拍で {p.at_twice.dropped} 欠落。この機械では仮想ディスプレイで走った。本物の画面、スピーカー、手が机の項目。
+          二つ目の標的はブラウザ: 音付きのコンソールを wasm-bindgen の後ろに置き、node で {w.rom} を測った: {w.frames} フレームを {w.seconds} 秒、毎秒 {w.frames_per_s} フレーム、実時間の {w.real_time_x} 倍、一フレームあたり {w.sound_per_frame} 音声標本。それを載せるページはこのサイトの項目。記録は<a href={`${r.console.repo}/blob/main/docs/n8-report.md`}>N8 報告</a>。
+        </>
+      );
+    },
     mConsoleTests: (n: number) => <>nes スイート: <b>{n} テスト緑</b></>,
     mConsoleInstr: (p: number, t: number) => <>命令検査: <b>{t} 本中 {p} 本合格</b></>,
     mConsoleRate: (lo: string, hi: string) => <>コンソール: <b>実時間の {lo} から {hi} 倍</b></>,
@@ -758,6 +822,9 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
 
         <h2>{S.consoleSoundH}</h2>
         <p>{S.consoleSound(r)}</p>
+
+        <h2>{S.shellH}</h2>
+        <p>{S.shell(r)}</p>
 
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>
