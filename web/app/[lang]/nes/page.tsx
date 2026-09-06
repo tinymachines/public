@@ -498,7 +498,8 @@ const PROSE = {
           signal path&rsquo;s drift policy decides from the wall clock,
           duplicates and drops counted and never resampled in time; the
           display encodes each new frame and runs the GPU picture; sound
-          through the audio device; the keyboard as controller 1. The
+          through the audio device; the keyboard, and a gamepad through
+          gilrs, as controller 1. The
           loop is held on a synthetic clock: at exactly the period{" "}
           {p.at_period.ticks} ticks run {p.at_period.new} new frames with{" "}
           {p.at_period.duplicated} duplicate and {p.at_period.dropped}{" "}

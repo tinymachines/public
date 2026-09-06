@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.275",
-      "mean_inside_x": "13.0",
-      "worst_ms": "1.935",
-      "worst_inside_x": "8.6",
+      "mean_ms": "1.078",
+      "mean_inside_x": "15.4",
+      "worst_ms": "1.702",
+      "worst_inside_x": "9.8",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,8 +69,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "38fdb865fdca5852bd9efece6fca9519cf9a34ed",
-    "tests_green": 30,
+    "commit": "078a71adeb0dbeb8cad7cc3b0e8fd4b072e9e2fa",
+    "tests_green": 35,
     "pin_6502": "8b9e0b5",
     "alignment": {
       "cpu_phase": 4,
@@ -236,14 +236,14 @@
           "worst": 4.77e-07,
           "mean": 1.24e-08,
           "components": 1658880,
-          "ms_per_frame": "0.97"
+          "ms_per_frame": "0.96"
         },
         "mask_and_geometry_on": {
           "adapter": "NVIDIA GeForce RTX 3070",
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "0.93"
+          "ms_per_frame": "0.91"
         }
       },
       "gpu_tolerance": {
@@ -272,9 +272,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "3.94",
-        "frames_per_s": "76.1",
-        "real_time_x": "1.27",
+        "seconds": "4.14",
+        "frames_per_s": "72.5",
+        "real_time_x": "1.21",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -292,7 +292,7 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "38fdb865fdca5852bd9efece6fca9519cf9a34ed",
+      "commit": "078a71adeb0dbeb8cad7cc3b0e8fd4b072e9e2fa",
       "built_on": "2026-09-06",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
