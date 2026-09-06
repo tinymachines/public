@@ -41,6 +41,7 @@ const record = JSON.parse(
     commit: string;
     tests_green: number;
     alignment: { cpu_phase: number; ppu_phase: number };
+    gate1: { nmi_half_cycles: number; race_reads_set: number; race_reads_clear: number; alignments: number };
     real_time_x: [string, string];
     blargg: {
       instr_pass: number; instr_total: number;
@@ -97,6 +98,9 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   expect(text).toContain(`${record.console.blargg.sprite_pass} of ${record.console.blargg.sprite_total} sprite-hit`);
   expect(text).toContain(`${record.console.blargg.vbl_nmi_pass} of ${record.console.blargg.vbl_nmi_total} vblank`);
   expect(text).toContain(`cpu_phase ${record.console.alignment.cpu_phase}, ppu_phase ${record.console.alignment.ppu_phase}`);
+  expect(text).toContain(`${record.console.gate1.nmi_half_cycles} of them agree`);
+  expect(text).toContain(`${record.console.gate1.race_reads_set} reads around the flag`);
+  expect(text).toContain(`all ${record.console.gate1.alignments} alignments`);
 });
 
 test("the PPU and APU figures serve and decode", async ({ page, request }) => {

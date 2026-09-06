@@ -99,6 +99,9 @@ export interface NesRecord {
     tests_green: number;
     pin_6502: string;
     alignment: { cpu_phase: number; ppu_phase: number };
+    /** Gate 1's replays: half-cycles the NMI-during-BRK replay compared
+     *  and at how many offsets; reads the race replay checked each side. */
+    gate1: { nmi_half_cycles: number; nmi_offsets: number; race_reads_set: number; race_reads_clear: number; alignments: number };
     plumbing: { frames: number; master_half_steps: number; cpu_half_cycles: number; nmis: number };
     /** Frames a second on one core, low and high, and the real-time multiples. */
     frames_per_s: [number, number];

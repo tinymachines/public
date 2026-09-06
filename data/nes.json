@@ -2,7 +2,7 @@
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
   "boarded_on": "2026-09-05",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "ac098d0fc238ecd06f0391fcc67c0e06121b9ea4",
+  "commit": "0e6fc4eccc01741dfc15b056a1b03d878cf07cc0",
   "tests_green": 10,
   "mutate_red": 8,
   "halfphi": "0.1.6",
@@ -16,10 +16,10 @@
   },
   "c2c02": {
     "repo": "https://github.com/tinymachines/2c02",
-    "commit": "3a48687af7d83747fe98e1f38353907ae6588f44",
+    "commit": "474b7e7251782e00c8c0047d1a6a3e246c802dd9",
     "halfphi": "0.1.6",
-    "tests_green": 11,
-    "mutate_red": 8,
+    "tests_green": 14,
+    "mutate_red": 9,
     "p0_states": 601,
     "p1_states": 4008,
     "p2": {
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.175",
-      "mean_inside_x": "14.2",
-      "worst_ms": "1.813",
-      "worst_inside_x": "9.2",
+      "mean_ms": "1.034",
+      "mean_inside_x": "16.1",
+      "worst_ms": "1.206",
+      "worst_inside_x": "13.8",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -46,13 +46,13 @@
     "area_vote_lows": 121
   },
   "n3": {
-    "traces_compared": 278,
+    "traces_compared": 285,
     "traces_refused": 4,
     "traces_exact": 131,
     "stack_offset_hex": "40",
     "decimal_stores": 9,
-    "core_programs": 278,
-    "core_half_cycles": 62754,
+    "core_programs": 285,
+    "core_half_cycles": 65561,
     "core_exact": 135,
     "apu_worlds": 4,
     "apu_half_steps": 80001,
@@ -65,22 +65,29 @@
     "real_time_x": "9.0",
     "noise_index12_die": 964,
     "noise_index12_published": 762,
-    "golden_traces": 282
+    "golden_traces": 289
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "4918d0ae123cb12018ad7a89d73cdc0b7f8bcc7c",
-    "tests_green": 19,
-    "pin_6502": "9c177cd",
+    "commit": "f402c8a81df649f1b5095a73ffb70fad65156b4c",
+    "tests_green": 22,
+    "pin_6502": "0c239cc",
     "alignment": {
       "cpu_phase": 4,
       "ppu_phase": 3
     },
+    "gate1": {
+      "nmi_half_cycles": 960,
+      "nmi_offsets": 8,
+      "race_reads_set": 145,
+      "race_reads_clear": 185,
+      "alignments": 24
+    },
     "plumbing": {
       "frames": 6,
-      "master_half_steps": 4288396,
-      "cpu_half_cycles": 357366,
-      "nmis": 4
+      "master_half_steps": 4288404,
+      "cpu_half_cycles": 357367,
+      "nmis": 3
     },
     "frames_per_s": [
       125,

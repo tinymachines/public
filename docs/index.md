@@ -156,7 +156,9 @@ are public:
   chips meet (2026-09-05): the mainboard's glue, each part held to its
   datasheet and labelled authored, and both fast rungs on one master
   clock at the alignment measured off the switch-level chips' own
-  dividers, a little over twice real time. blargg's test ROMs run through
+  dividers, a little over twice real time, the seam between them held
+  by replaying the PPU's real NMI and the vblank read race through the
+  console against the switch-level chips. blargg's test ROMs run through
   the whole thing with a real CPU attached, and the page carries every
   result, pass or named failure. Running them found misses in the CPU's
   fast rung that no recorded trace had covered, each located by running

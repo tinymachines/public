@@ -285,6 +285,17 @@ def main() -> int:
     plumb = re.search(r"(\d+) frames, (\d+) master half-steps, (\d+) CPU half-cycles, (\d+) NMIs counted by the program", out)
     if not plumb:
         fail("the console's plumbing gate summary line is not on the suite output")
+    # Gate 1's two replays print their own summary lines.
+    nmi_gate = re.search(r"gate 1: (\d+) half-cycles compared over (\w+) offsets, stack offset removed", out)
+    if not nmi_gate:
+        fail("the console's NMI replay summary line is not on the suite output")
+    race_set = re.search(r"gate 1 \(race, set\): (\d+) reads within five dots of the set, every position covered", out)
+    race_clear = re.search(r"gate 1 \(race, clear\): (\d+) reads within five dots of the clear, twenty-four alignments, every position covered", out)
+    if not (race_set and race_clear):
+        fail("the console's race replay summary lines are not on the suite output")
+    offsets_word = {"eight": 8}
+    if nmi_gate.group(2) not in offsets_word:
+        fail(f"the NMI replay's offset count is a word this script does not know: {nmi_gate.group(2)}")
     n5r = re.sub(r"\s+", " ", (con / "docs" / "n5-report.md").read_text())
     pin_6502 = extract(n5r, r"Pins: 6502 `([0-9a-f]{7,})`", "N5 pin of the 6502")
     cargo_pin = extract((con / "crates" / "nes-console" / "Cargo.toml").read_text(),
@@ -337,6 +348,13 @@ def main() -> int:
         "tests_green": con_passed,
         "pin_6502": pin_6502,
         "alignment": {"cpu_phase": int(align_m.group(1)), "ppu_phase": int(align_m.group(2))},
+        "gate1": {
+            "nmi_half_cycles": int(nmi_gate.group(1)),
+            "nmi_offsets": offsets_word[nmi_gate.group(2)],
+            "race_reads_set": int(race_set.group(1)),
+            "race_reads_clear": int(race_clear.group(1)),
+            "alignments": 24,
+        },
         "plumbing": {
             "frames": int(plumb.group(1)),
             "master_half_steps": int(plumb.group(2)),

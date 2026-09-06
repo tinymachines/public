@@ -1,14 +1,14 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-06T00:51:23+00:00",
+  "boarded_at": "2026-09-06T02:07:12+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "served": {
-    "version": "v0.324",
-    "commit": "9c177cd9cb58010cd56a9bd2a945d99f4f3af41b",
-    "built": "2026-09-06T00:50:25+00:00",
+    "version": "v0.325",
+    "commit": "0c239cccbdab608ae92e4cf36d50c08e645ff180",
+    "built": "2026-09-06T02:06:25+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-06T00:46:45+00:00",
+      "ran": "2026-09-06T02:04:08+00:00",
       "cargo": {
         "command": "cargo test --workspace",
         "passed": 125,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "9c177cd9cb58010cd56a9bd2a945d99f4f3af41b",
+  "running": "0c239cccbdab608ae92e4cf36d50c08e645ff180",
   "worktree": {
-    "commit": "9c177cd9cb58010cd56a9bd2a945d99f4f3af41b",
-    "subject": "Rung 3: ASR, ARR and ATX authored against blargg's checksums where rung 0 is not the oracle; an NMI edge in the final cycle waits one instruction",
-    "committed": "2026-09-05T20:09:22-04:00",
+    "commit": "0c239cccbdab608ae92e4cf36d50c08e645ff180",
+    "subject": "Rung 3: the interrupt inputs sampled at every phi1, the NMI edge as two samples compared, and a BRK that takes the NMI's vector or ends without a poll",
+    "committed": "2026-09-05T21:36:15-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "0e0f09f5527f600f71f9d84fe2f5cf5c0459a4140707a1c4676ad77428ba2a5c",
-    "bytes": 637032,
-    "modified": "2026-09-06T00:42:32+00:00",
-    "stated": "9c177cd9cb58010cd56a9bd2a945d99f4f3af41b"
+    "sha256": "273894ef420594be4183b31d9b76b9389902af9fe157e868ac70f9377e16c17b",
+    "bytes": 637432,
+    "modified": "2026-09-06T02:01:20+00:00",
+    "stated": "0c239cccbdab608ae92e4cf36d50c08e645ff180"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 9.1,
+      "seconds": 2.9,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 11.3,
+      "seconds": 10.7,
       "ok": true
     }
   ]
