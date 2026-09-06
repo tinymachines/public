@@ -131,6 +131,15 @@ export interface NesRecord {
         held: boolean;
       };
     };
+    /** N7, the sound: the NES-001 stage's constants as the gate prints
+     *  them, and blargg's four mixer ROMs through the console beside his
+     *  real-hardware recordings, the worst 100 ms window of each test as
+     *  a percentage of the beep. */
+    sound: {
+      stage: { tau_hp_ms: string; tau_lp_us: string; gain: string; step_ratio: string; tone_ratio: string; tone_expected: string };
+      tolerance_pct: number;
+      roms: Record<string, { beep_rms: string; rms_pct: string; tone_pct: string; rec_rms_pct: string; rec_tone_pct: string }>;
+    };
     blargg: {
       cpu_timing_pass: number;
       instr_pass: number; instr_total: number;
@@ -159,6 +168,9 @@ export function nes(): NesRecord {
     if (record[k] === undefined) {
       throw new Error(`data/nes.json has no ${k}; re-run scripts/board-nes.py --board`);
     }
+  }
+  if (record.console.sound === undefined) {
+    throw new Error("data/nes.json's console has no sound (N7); re-run scripts/board-nes.py --board");
   }
   if (record.console.picture === undefined) {
     throw new Error("data/nes.json's console has no picture (N6); re-run scripts/board-nes.py --board");

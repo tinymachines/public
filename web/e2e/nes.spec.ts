@@ -49,6 +49,7 @@ const record = JSON.parse(
       phase_frames: number;
       capture: { regions: number; within_all: number; luma_within: number; hue_within: number; hue_regions: number; worst_chroma: string; held: boolean };
     };
+    sound: { tolerance_pct: number; stage: { tau_hp_ms: string; gain: string }; roms: Record<string, { rms_pct: string; rec_rms_pct: string }> };
     blargg: {
       instr_pass: number; instr_total: number;
       sprite_pass: number; sprite_total: number;
@@ -115,6 +116,13 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   expect(text).toContain(`Of ${pic.capture.regions} regions, luma holds on ${pic.capture.luma_within}, hue on ${pic.capture.hue_within} of ${pic.capture.hue_regions}`);
   expect(text).toContain(`${pic.capture.within_all} hold all three, so the roundtrip ${pic.capture.held ? "closes" : "does not close"}`);
   expect(text).toContain(`a chroma vector of at most ${pic.capture.worst_chroma}`);
+  // N7, the sound: the stage's constants and each ROM's console figure
+  // beside the recording's.
+  const snd = record.console.sound;
+  expect(text).toContain(`a time constant of ${snd.stage.tau_hp_ms} ms, a gain of ${snd.stage.gain}`);
+  for (const k of ["square", "triangle", "noise", "dmc"]) {
+    expect(text).toContain(`${k} ${snd.roms[k].rms_pct} percent against ${snd.roms[k].rec_rms_pct}`);
+  }
 });
 
 test("the PPU and APU figures serve and decode", async ({ page, request }) => {

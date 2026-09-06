@@ -2,7 +2,7 @@
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
   "boarded_on": "2026-09-06",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "44277e10ce0a555ef5d5ce43149b3c30cbb90b96",
+  "commit": "78a1f6e6fbee6c9d193383b31887651d7fed40fa",
   "tests_green": 12,
   "mutate_red": 10,
   "halfphi": "0.1.6",
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.421",
-      "mean_inside_x": "11.7",
-      "worst_ms": "2.747",
-      "worst_inside_x": "6.1",
+      "mean_ms": "1.007",
+      "mean_inside_x": "16.5",
+      "worst_ms": "1.884",
+      "worst_inside_x": "8.8",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,8 +69,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "65f016ee377a22eaf2fc6e0a058225be90b5d942",
-    "tests_green": 24,
+    "commit": "ae59144b785eb244d1ea24a1b9f45e1d9d024f07",
+    "tests_green": 27,
     "pin_6502": "8b9e0b5",
     "alignment": {
       "cpu_phase": 4,
@@ -127,6 +127,47 @@
         "recovered_ppm": "+0.7",
         "burst_residual": "0.010",
         "held": false
+      }
+    },
+    "sound": {
+      "stage": {
+        "tau_hp_ms": "7.50",
+        "tau_lp_us": "10.34",
+        "gain": "-2.350",
+        "step_ratio": "0.3679",
+        "tone_ratio": "0.8401",
+        "tone_expected": "0.8433"
+      },
+      "tolerance_pct": 5,
+      "roms": {
+        "square": {
+          "beep_rms": "0.1714",
+          "rms_pct": "2.4",
+          "tone_pct": "1.5",
+          "rec_rms_pct": "6.1",
+          "rec_tone_pct": "6.0"
+        },
+        "triangle": {
+          "beep_rms": "0.1714",
+          "rms_pct": "2.7",
+          "tone_pct": "1.3",
+          "rec_rms_pct": "3.0",
+          "rec_tone_pct": "1.7"
+        },
+        "noise": {
+          "beep_rms": "0.1714",
+          "rms_pct": "21.1",
+          "tone_pct": "3.7",
+          "rec_rms_pct": "19.0",
+          "rec_tone_pct": "3.3"
+        },
+        "dmc": {
+          "beep_rms": "0.1715",
+          "rms_pct": "3.1",
+          "tone_pct": "1.4",
+          "rec_rms_pct": "5.6",
+          "rec_tone_pct": "5.4"
+        }
       }
     },
     "blargg": {

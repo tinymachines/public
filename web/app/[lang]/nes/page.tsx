@@ -399,6 +399,62 @@ const PROSE = {
         </>
       );
     },
+    consoleSoundH: "The console's sound through the board's audio stage, held to blargg's mixer tests and set beside his recordings",
+    consoleSound: (r: ReturnType<typeof nes>) => {
+      const s = r.console.sound;
+      const roms = ["square", "triangle", "noise", "dmc"] as const;
+      return (
+        <>
+          The 2A03&rsquo;s five output codes leave the chip after every
+          CPU half-cycle and go through the two DACs, the nesdev table
+          the family has carried since first sound, authored and labelled
+          so. What happens next is on the NES-001 schematic, read
+          directly: each audio pin pulled down by 100 ohms (the
+          table&rsquo;s own &ldquo;plus 100&rdquo;), the two pins summed
+          through 20K and 12K (the ratio the table&rsquo;s two constants
+          already carry), a coupling capacitor into a 74HC04 inverter
+          held linear by a 47K feedback resistor with 220 pF across it.
+          So, to the jack: a high-pass with a time constant of{" "}
+          {s.stage.tau_hp_ms} ms, a gain of {s.stage.gain} with the
+          inverter&rsquo;s sign, a low-pass at {s.stage.tau_lp_us}{" "}
+          microseconds, then a windowed-sinc resampler to 48 kHz at the
+          exact rational times. The stage is held to that arithmetic (a
+          step decays by {s.stage.step_ratio} per time constant, a 10 kHz
+          tone against a 200 Hz one comes through at{" "}
+          {s.stage.tone_ratio} where the values give{" "}
+          {s.stage.tone_expected}). Not modelled and said so: the
+          inverter&rsquo;s finite open-loop gain and its rails, and the
+          table&rsquo;s absolute volts, which is one scale factor a
+          scope record supplies.
+          {" "}The oracle is blargg&rsquo;s: four mixer ROMs, each
+          playing a channel while the DMC plays its inverse, so a right
+          mixer cancels to near silence between two reference beeps.
+          Each ran through the whole console; the worst 100 ms window
+          of each test, as a share of the beep, must stay under{" "}
+          {s.tolerance_pct} percent (the DMC&rsquo;s step alone is about
+          two), the noise ROM held on its tone since it fades noise by
+          design. Console, then blargg&rsquo;s recording of the same ROM
+          on real hardware measured by the same code:{" "}
+          {roms.map((k, i) => (
+            <span key={k}>
+              {k} {s.roms[k].rms_pct} percent against {s.roms[k].rec_rms_pct}
+              {i < roms.length - 1 ? "; " : "."}
+            </span>
+          ))}
+          {" "}Triangle and noise agree with the real console to a
+          fraction of a percent. Square and dmc carry twice the
+          console&rsquo;s residual on real hardware, and that residual is
+          a tone: the real pulse and DMC DACs depart from the
+          table&rsquo;s curves by more than the table departs from
+          blargg&rsquo;s inverse, which is the scope&rsquo;s question and
+          is recorded, not held. Mixing through the wiki&rsquo;s linear
+          approximation instead is the red run, at a third of the beep.
+          The account is{" "}
+          <a href={`${r.console.repo}/blob/main/docs/n7-report.md`}>the N7 report</a>;
+          the AUDIO_OUT record is the bench item.
+        </>
+      );
+    },
     mConsoleTests: (n: number) => <>nes suite: <b>{n} tests green</b></>,
     mConsoleInstr: (p: number, t: number) => <>instruction tests: <b>{p} of {t} pass</b></>,
     mConsoleRate: (lo: string, hi: string) => <>the console: <b>{lo} to {hi}x real time</b></>,
@@ -558,6 +614,23 @@ const PROSE = {
         </>
       );
     },
+    consoleSoundH: "コンソールの音が基板の音声段を通り、blargg のミキサー検査に押さえられ、彼の録音と並ぶ",
+    consoleSound: (r: ReturnType<typeof nes>) => {
+      const s = r.console.sound;
+      const roms = ["square", "triangle", "noise", "dmc"] as const;
+      return (
+        <>
+          2A03 の五つの出力コードは CPU ハーフサイクルごとにチップを出て、二つの DAC を通る。一族が初音以来抱えてきた nesdev の表で、書き下ろしと札が付く。その先は NES-001 の回路図にあり、直接読んだ: 各音声ピンは 100 オームで引き下げられ（表自身の「プラス 100」）、二つのピンは 20K と 12K で加算され（表の二つの定数がすでに抱える比）、結合コンデンサを経て、47K の帰還抵抗と並列の 220 pF で線形に保たれた 74HC04 インバータに入る。つまりジャックまでは、時定数 {s.stage.tau_hp_ms} ms のハイパス、インバータの符号付きの利得 {s.stage.gain}、{s.stage.tau_lp_us} マイクロ秒のローパス、そして厳密な有理時刻での窓付き sinc による 48 kHz への再標本化。段はその算術に押さえられる（ステップは時定数ごとに {s.stage.step_ratio} に減衰し、10 kHz の音は 200 Hz に対して {s.stage.tone_ratio} で通り、値が与えるのは {s.stage.tone_expected}）。模していないと明記するもの: インバータの有限な開ループ利得とその電源レール、そして表の絶対電圧。後者はスコープ記録が与える一つの倍率だ。
+          オラクルは blargg のもの: 四つのミキサー ROM で、それぞれ一チャンネルを鳴らしながら DMC がその逆波形を鳴らすので、正しいミキサーは二つの参照ビープの間でほぼ無音に打ち消す。それぞれをコンソール全体に通し、各検査の最悪の 100 ms 窓はビープに対する割合で {s.tolerance_pct} パーセント未満でなければならない（DMC の一段だけで約二）。ノイズ ROM は設計上ノイズがフェードするので純音成分で押さえる。コンソール、次いで同じ ROM を実機で録った blargg の録音を同じコードで測ったもの: {roms.map((k, i) => (
+            <span key={k}>
+              {k} は {s.roms[k].rms_pct} パーセント対 {s.roms[k].rec_rms_pct}
+              {i < roms.length - 1 ? "、" : "。"}
+            </span>
+          ))}
+          三角波とノイズは実機とコンマ数パーセントで一致する。矩形波と dmc は実機でコンソールの二倍の残差を抱え、その残差は純音だ: 実物のパルス DAC と DMC DAC は、表が blargg の逆波形から離れる以上に表の曲線から離れている。これはスコープへの問いで、記録し、押さえない。代わりに wiki の線形近似で混ぜるのが赤の走行で、ビープの三分の一に達する。記録は<a href={`${r.console.repo}/blob/main/docs/n7-report.md`}>N7 報告</a>。AUDIO_OUT の記録がベンチ項目。
+        </>
+      );
+    },
     mConsoleTests: (n: number) => <>nes スイート: <b>{n} テスト緑</b></>,
     mConsoleInstr: (p: number, t: number) => <>命令検査: <b>{t} 本中 {p} 本合格</b></>,
     mConsoleRate: (lo: string, hi: string) => <>コンソール: <b>実時間の {lo} から {hi} 倍</b></>,
@@ -682,6 +755,9 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
 
         <h2>{S.pictureH}</h2>
         <p>{S.picture(r)}</p>
+
+        <h2>{S.consoleSoundH}</h2>
+        <p>{S.consoleSound(r)}</p>
 
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>

@@ -172,7 +172,13 @@ are public:
   everywhere; hue and saturation miss by a small chroma residual that
   belongs to the capture model's filter and is recorded, not fitted
   away. The first run found the capture recovery's level reference a
-  histogram bin coarse, fixed in ntsc-crt.
+  histogram bin coarse, fixed in ntsc-crt. And it has sound (the same
+  day): the 2A03's output codes through the DAC table and the
+  NES-001's audio stage read off the schematic, resampled to 48 kHz,
+  held to blargg's four mixer ROMs cancelling through the whole
+  console and set beside his real-hardware recordings of the same
+  ROMs; triangle and noise agree to a fraction of a percent, square
+  and dmc leave the real DAC curves as the scope's question.
 
 Since then the PPU has come a long way on [the same page](/nes). Its
 contested corners, sprite 0, the vblank read race and OAM corruption,

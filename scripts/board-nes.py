@@ -109,8 +109,9 @@ def main() -> int:
         fail(f"recomputed plateau {2*2*(timer+1)*4} disagrees with the report's {plateau}")
 
     # The mixer's AD1 level for the sung note, recomputed from the
-    # constants mixer.rs transcribed (themselves the nesdev wiki's).
-    mixer = (repo / "crates" / "v2a03-sim" / "src" / "mixer.rs").read_text()
+    # constants the DAC table transcribed (themselves the nesdev wiki's;
+    # v2a03-sim/src/mixer.rs until N7 moved it to its own crate).
+    mixer = (repo / "crates" / "v2a03-dac" / "src" / "lib.rs").read_text()
     c1 = float(extract(mixer, r"\((\d+\.\d+) / \(8128\.0", "mixer 95.88"))
     hi = c1 / (8128.0 / 15.0 + 100.0)
 
@@ -347,6 +348,28 @@ def main() -> int:
             "held": score.returncode == 0,
         },
     }
+    # N7, the sound: the sound gate's per-ROM lines, the console's and
+    # blargg's real-hardware recordings' (SKIPPED without ffmpeg, which
+    # is a failure here: the page carries both columns), and the stage's
+    # constants as the gate prints them.
+    stage = re.search(r"stage: tau_hp ([0-9.]+) ms, tau_lp ([0-9.]+) us, gain (-[0-9.]+); step e\^-1 ([0-9.]+), 10 kHz/200 Hz ([0-9.]+) vs ([0-9.]+)", out)
+    if not stage:
+        fail("the console's stage line is not on the suite output")
+    sound_roms = {}
+    for m in re.finditer(r"(\w+) \(Table\): beeps at [0-9.]+\.\.[0-9.]+ s and [0-9.]+\.\.[0-9.]+ s, RMS ([0-9.]+); worst 100 ms window of the test: RMS ([0-9.]+)% of the beep, tone ([0-9.]+)%", out):
+        sound_roms[m.group(1)] = {"beep_rms": m.group(2), "rms_pct": m.group(3), "tone_pct": m.group(4)}
+    for m in re.finditer(r"(\w+) \(blargg's recording, real hardware\): .*?worst 100 ms window: RMS ([0-9.]+)% of the beep, tone ([0-9.]+)% \(recorded, not held\)", out):
+        sound_roms.setdefault(m.group(1), {})
+        sound_roms[m.group(1)].update({"rec_rms_pct": m.group(2), "rec_tone_pct": m.group(3)})
+    for rom in ["square", "triangle", "noise", "dmc"]:
+        if rom not in sound_roms or "rms_pct" not in sound_roms[rom] or "rec_rms_pct" not in sound_roms[rom]:
+            fail(f"the sound gate's {rom} lines (console and recording) are not both on the suite output")
+    sound = {
+        "stage": {"tau_hp_ms": stage.group(1), "tau_lp_us": stage.group(2), "gain": stage.group(3),
+                  "step_ratio": stage.group(4), "tone_ratio": stage.group(5), "tone_expected": stage.group(6)},
+        "tolerance_pct": 5,
+        "roms": sound_roms,
+    }
     n5r = re.sub(r"\s+", " ", (con / "docs" / "n5-report.md").read_text())
     pin_6502 = extract(n5r, r"Pins: 6502 `([0-9a-f]{7,})`", "N5 pin of the 6502")
     cargo_pin = extract((con / "crates" / "nes-console" / "Cargo.toml").read_text(),
@@ -419,6 +442,7 @@ def main() -> int:
         "frames_per_s": [int(rate_m.group(1)), int(rate_m.group(2))],
         "real_time_x": [rate_m.group(3), rate_m.group(4)],
         "picture": picture,
+        "sound": sound,
         "blargg": {
             "cpu_timing_pass": tally["cpu_timing_test6"][0],
             "instr_pass": tally["instr_test-v5"][0], "instr_total": tally["instr_test-v5"][1],
