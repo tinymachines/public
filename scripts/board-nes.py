@@ -330,15 +330,19 @@ def main() -> int:
     tally: dict = {}
     for label, result in rows:
         suite = label.split(" ", 1)[0]
-        n = roms(label) or 1
-        ok = re.sub(r"\*", "", result).strip().lower().startswith("pass")
+        plain = re.sub(r"\*", "", result).strip().lower()
         t = tally.setdefault(suite, [0, 0])
-        t[0] += n if ok else 0
+        # A row that counts for itself ("8 of 8 pass") is taken as it
+        # says; otherwise its ROMs are counted from the label and pass
+        # or fail together on the cell's first word.
+        counted = re.match(r"(\d+) of (\d+) pass", plain)
+        if counted:
+            t[0] += int(counted.group(1))
+            t[1] += int(counted.group(2))
+            continue
+        n = roms(label) or 1
+        t[0] += n if plain.startswith("pass") else 0
         t[1] += n
-    inst_m = re.search(r"\| instr_test-v5 01\.\.16 \| \*\*(\d+) of (\d+) pass\*\* \|", n5r)
-    if not inst_m:
-        fail("anchored extraction failed: the instr_test row")
-    tally["instr_test-v5"] = [int(inst_m.group(1)), int(inst_m.group(2))]
     for suite, total in [("cpu_timing_test6", 1), ("instr_test-v5", 16), ("ppu_vbl_nmi", 10), ("sprite_hit_tests", 11), ("apu_test", 8)]:
         if suite not in tally or tally[suite][1] != total:
             fail(f"the gate-2 table's {suite} rows count {tally.get(suite)} ROMs, not {total}")

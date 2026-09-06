@@ -331,9 +331,10 @@ const PROSE = {
         had covered (a carry that rides an undriven bus line into the
         next instruction, a shift&rsquo;s carry read from the wrong
         capture, three opcodes whose result is a bus fight the switch
-        model settles its own way, and the half-cycle at which an
-        interrupt input is sampled, which the alignment gate caught),
-        and the fast PPU four more. Each
+        model settles its own way, the half-cycle at which an interrupt
+        input is sampled, which the alignment gate caught, and a byte
+        latched later than the bus is asked for it), and the fast PPU
+        four more. Each
         was located by running the switch-level chip and the fast rung in
         lockstep on the ROM until they disagreed, measured on the chip,
         then authored and held by a fixture that goes red without it. The
@@ -378,7 +379,7 @@ const PROSE = {
         ladder (its core, its APU, its DMA units), the glue and the
         console&rsquo;s alignment gate are done, and the console runs the
         standard suites. Still open there: the NMI&rsquo;s arrival timing
-        on a real board, the APU&rsquo;s write timing, and the play gate,
+        on a real board, and the play gate,
         which waits on a cartridge. Then the picture through
         the encoder, and the sound. The signal side is already real:{" "}
         <Link href="/ntsc">the ntsc page</Link> carries frames decoded from
@@ -487,7 +488,7 @@ const PROSE = {
     console: (r: ReturnType<typeof nes>) => (
       <>
         まず糊。NES-001 基板の少数の部品、アドレスデコーダ、PPU のアドレスラッチ、二つの RAM、コントローラポートのバッファとその先のコントローラ、リセット連鎖を、それぞれ数行で自前の検査によりデータシートに押さえ、書き下ろしと札を付けた。そこにはネットリストを通るものがないからだ。二つは最初の書き下ろしが間違っていて、検査がそう言った。次にコンソール: 2A03 の高速コアと高速 PPU を一つのマスタハーフステップ計数器に乗せ、CPU は十二ごと、PPU は八ごとに進み、位相は二つのスイッチレベルチップ自身のクロック分周器から測った（cpu_phase {r.console.alignment.cpu_phase}、ppu_phase {r.console.alignment.ppu_phase}。分周器が電源投入で取り得る {r.console.gate1.alignments} 通りの一つで、走行がスタンプに記す）。配管の検査はテストカートリッジを {r.console.plumbing.frames} フレーム走らせ、マスタ計数器がドットあたり八であること、奇数フレームが一ドット短いこと、絵が単体 PPU のものと同じこと、RAM の NMI 計数が一フレーム一回であることを押さえる。一コアで毎秒 {r.console.frames_per_s[0]} から {r.console.frames_per_s[1]} フレーム、実時間の {r.console.real_time_x[0]} から {r.console.real_time_x[1]} 倍。位相の検査は、この弧全体の要である継ぎ目を二通りに押さえる。PPU の実 NMI を BRK の周りに一サイクル刻みで {r.console.gate1.nmi_offsets} 通りの位置に落とし、コンソールの CPU を同じエッジで駆動したスイッチレベルの 6502 とハーフサイクルごとに比べる: {r.console.gate1.nmi_half_cycles} ハーフサイクルが一致、取ったベクタも、プッシュも、タイミングも。そして $2002 読み出しの競合をコンソール自身のアクセス形でスイッチレベル PPU 上に全ハーフステップで測り、コンソールの読み出しをその表に {r.console.gate1.alignments} 通りすべての位相で押さえる: フラグのセット周りで {r.console.gate1.race_reads_set} 回、クリア周りで {r.console.gate1.race_reads_clear} 回、両窓の全ハーフステップに届き、結果はすべてチップのもの。
-        そして、この弧全体が目指してきたオラクル: blargg のテスト ROM をコンソール全体に通す。これらの高速ラングが何百万サイクルも実プログラムを走らせた最初の機会だ。CPU タイミング検査は合格。命令検査は {r.console.blargg.instr_total} 本中 {r.console.blargg.instr_pass} 本が合格、公式・非公式の全命令。スプライトヒット検査は {r.console.blargg.sprite_total} 本中 {r.console.blargg.sprite_pass} 本が合格、残る一本は名指しで拒む（縦長スプライトは模していない）。vblank と NMI のタイミング検査は {r.console.blargg.vbl_nmi_total} 本中 {r.console.blargg.vbl_nmi_pass} 本が合格、残りは文書化された実機から一、二ドットのずれで、すべて一つの問いに帰する: 実機の NMI は、それぞれ自身の実測タイミングに押さえた二つのチップが許すより約二ドット遅れて CPU に届く。決めるのは実基板に当てるスコープだ。APU 検査は {r.console.blargg.apu_total} 本中 {r.console.blargg.apu_pass} 本が合格、残りはすべて書き込み後のフレームシーケンサの位置で、名指しで 2A03 へ持ち越す。ROM が見つけたものこそ走らせる意味だ: CPU の高速ラングは記録済みの全トレースを正確に再生しながら、トレースが覆っていなかった四つの見落としを抱えていた（駆動されないバス線に乗って次の命令へ渡る桁上げ、誤った捕捉から読んだシフトの桁上げ、結果がバスの取り合いでありスイッチモデルが独自に決着させる三命令、そして割り込み入力を標本化するハーフサイクル。これは位相の検査が捕まえた）。高速 PPU にも四つ。それぞれ、スイッチレベルチップと高速ラングを ROM 上で食い違うまで並走させて位置を特定し、チップで測り、書き下ろし、無ければ赤になる固定具で押さえた。記録は<a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>N5 報告</a>。遊びの検査はカートリッジ待ち。
+        そして、この弧全体が目指してきたオラクル: blargg のテスト ROM をコンソール全体に通す。これらの高速ラングが何百万サイクルも実プログラムを走らせた最初の機会だ。CPU タイミング検査は合格。命令検査は {r.console.blargg.instr_total} 本中 {r.console.blargg.instr_pass} 本が合格、公式・非公式の全命令。スプライトヒット検査は {r.console.blargg.sprite_total} 本中 {r.console.blargg.sprite_pass} 本が合格、残る一本は名指しで拒む（縦長スプライトは模していない）。vblank と NMI のタイミング検査は {r.console.blargg.vbl_nmi_total} 本中 {r.console.blargg.vbl_nmi_pass} 本が合格、残りは文書化された実機から一、二ドットのずれで、すべて一つの問いに帰する: 実機の NMI は、それぞれ自身の実測タイミングに押さえた二つのチップが許すより約二ドット遅れて CPU に届く。決めるのは実基板に当てるスコープだ。APU 検査は {r.console.blargg.apu_total} 本中 {r.console.blargg.apu_pass} 本が合格。うち六本は、不合格をスイッチレベルの 2A03 で測って書き下ろしてからの合格だ: $4017 書き込みの位相ジッタと即時クロック、バスに尋ねた半ステップ後にラッチされるステータス、三サイクル続けて立つ IRQ フラグ、読み出しが着地する所で数え落とされる DMC のバイト。ROM が見つけたものこそ走らせる意味だ: CPU の高速ラングは記録済みの全トレースを正確に再生しながら、トレースが覆っていなかった四つの見落としを抱えていた（駆動されないバス線に乗って次の命令へ渡る桁上げ、誤った捕捉から読んだシフトの桁上げ、結果がバスの取り合いでありスイッチモデルが独自に決着させる三命令、割り込み入力を標本化するハーフサイクル（位相の検査が捕まえた）、そしてバスに尋ねるより遅くラッチされるバイト）。高速 PPU にも四つ。それぞれ、スイッチレベルチップと高速ラングを ROM 上で食い違うまで並走させて位置を特定し、チップで測り、書き下ろし、無ければ赤になる固定具で押さえた。記録は<a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>N5 報告</a>。遊びの検査はカートリッジ待ち。
       </>
     ),
     mConsoleTests: (n: number) => <>nes スイート: <b>{n} テスト緑</b></>,
@@ -516,7 +517,7 @@ const PROSE = {
     aheadH: "ここから起動するコンソールまでのマイルストーン",
     ahead: (sketchHref: string) => (
       <>
-        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅と高速ラング、ピン検査の両半分、2A03 の梯子（コア、APU、DMA ユニット）、糊、そしてコンソールの位相検査は済み、コンソールは標準スイートを走らせている。そこで開いているもの: 実基板での NMI 到達タイミング、APU の書き込みタイミング、そしてカートリッジ待ちの遊びの検査。それからエンコーダを通る絵と、音。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅と高速ラング、ピン検査の両半分、2A03 の梯子（コア、APU、DMA ユニット）、糊、そしてコンソールの位相検査は済み、コンソールは標準スイートを走らせている。そこで開いているもの: 実基板での NMI 到達タイミング、そしてカートリッジ待ちの遊びの検査。それからエンコーダを通る絵と、音。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (

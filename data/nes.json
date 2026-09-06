@@ -1,10 +1,10 @@
 {
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
-  "boarded_on": "2026-09-05",
+  "boarded_on": "2026-09-06",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "0e6fc4eccc01741dfc15b056a1b03d878cf07cc0",
-  "tests_green": 10,
-  "mutate_red": 8,
+  "commit": "44277e10ce0a555ef5d5ce43149b3c30cbb90b96",
+  "tests_green": 12,
+  "mutate_red": 10,
   "halfphi": "0.1.6",
   "a0": {
     "transistors": "10,946",
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.034",
-      "mean_inside_x": "16.1",
-      "worst_ms": "1.206",
-      "worst_inside_x": "13.8",
+      "mean_ms": "1.162",
+      "mean_inside_x": "14.3",
+      "worst_ms": "1.893",
+      "worst_inside_x": "8.8",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -54,7 +54,7 @@
     "core_programs": 285,
     "core_half_cycles": 65561,
     "core_exact": 135,
-    "apu_worlds": 4,
+    "apu_worlds": 10,
     "apu_half_steps": 80001,
     "dma_frames": 1201,
     "dma_rdy_low_even": 1029,
@@ -69,9 +69,9 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "f402c8a81df649f1b5095a73ffb70fad65156b4c",
+    "commit": "5d1b62d93c032ba573752f300645cf19d9228135",
     "tests_green": 22,
-    "pin_6502": "0c239cc",
+    "pin_6502": "8b9e0b5",
     "alignment": {
       "cpu_phase": 4,
       "ppu_phase": 3
@@ -105,7 +105,7 @@
       "sprite_total": 11,
       "vbl_nmi_pass": 5,
       "vbl_nmi_total": 10,
-      "apu_pass": 2,
+      "apu_pass": 8,
       "apu_total": 8
     }
   },
