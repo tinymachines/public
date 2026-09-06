@@ -14,9 +14,60 @@ export class Pipeline {
     /**
      * @returns {number}
      */
+    active_start() {
+        const ret = wasm.pipeline_active_start(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {Float32Array}
+     */
+    decoder_params() {
+        const ret = wasm.pipeline_decoder_params(this.__wbg_ptr);
+        var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * The composite samples of one frame (every line padded to the
+     * full length), the phase carried; `line_phases` and the two
+     * geometry numbers describe the last one encoded.
+     * @param {Uint8Array} colour
+     * @param {Uint8Array} emphasis
+     * @param {number} parity
+     * @returns {Float32Array}
+     */
+    encode(colour, emphasis, parity) {
+        const ptr0 = passArray8ToWasm0(colour, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(emphasis, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.pipeline_encode(this.__wbg_ptr, ptr0, len0, ptr1, len1, parity);
+        var v3 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v3;
+    }
+    /**
+     * @returns {number}
+     */
     height() {
         const ret = wasm.pipeline_height(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    line_len() {
+        const ret = wasm.pipeline_line_len(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {Uint8Array}
+     */
+    line_phases() {
+        const ret = wasm.pipeline_line_phases(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
     }
     /**
      * @param {string} rung
@@ -97,6 +148,11 @@ const PipelineFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_pipeline_free(ptr, 1));
 
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+
 function getArrayF64FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
@@ -105,6 +161,14 @@ function getArrayF64FromWasm0(ptr, len) {
 function getArrayU8FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+let cachedFloat32ArrayMemory0 = null;
+function getFloat32ArrayMemory0() {
+    if (cachedFloat32ArrayMemory0 === null || cachedFloat32ArrayMemory0.byteLength === 0) {
+        cachedFloat32ArrayMemory0 = new Float32Array(wasm.memory.buffer);
+    }
+    return cachedFloat32ArrayMemory0;
 }
 
 let cachedFloat64ArrayMemory0 = null;
@@ -205,6 +269,7 @@ function __wbg_finalize_init(instance, module) {
     wasmInstance = instance;
     wasm = instance.exports;
     wasmModule = module;
+    cachedFloat32ArrayMemory0 = null;
     cachedFloat64ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();

@@ -19,9 +19,15 @@ const S = {
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
     frames: (n: number, u: number) => <>frames shown: <b>{n}</b>, run but not decoded: <b>{u}</b></>,
-    cost: (c: number, p: number) => (
-      <>per frame: console <b>{c.toFixed(1)} ms</b>, signal path <b>{p.toFixed(1)} ms</b>, on their own threads</>
+    cost: (c: number, e: number, p: number) => (
+      <>per frame: console <b>{c.toFixed(1)} ms</b>, encode <b>{e.toFixed(1)} ms</b>, decode <b>{p.toFixed(1)} ms</b>, on their own threads</>
     ),
+    path: (path: string, why: string | null, agreement: number | null, tol: number | null) =>
+      path === "webgpu" ? (
+        <>decode: <b>WebGPU</b>, against the wasm decode on the first frame within <b>{agreement} of 255</b> (tolerance {tol})</>
+      ) : (
+        <>decode: <b>wasm</b>{why ? <> ({why})</> : null}</>
+      ),
     fps: (v: number) => <>pictures in the last second: <b>{v}</b></>,
     drift: (s: DriftStats) => (
       <>display callbacks: <b>{s.presented}</b>, duplicated: <b>{s.duplicated}</b>, dropped: <b>{s.dropped}</b></>
@@ -37,9 +43,15 @@ const S = {
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
     frames: (n: number, u: number) => <>表示したフレーム: <b>{n}</b>、走ったが復号されなかったもの: <b>{u}</b></>,
-    cost: (c: number, p: number) => (
-      <>一フレームあたり: コンソール <b>{c.toFixed(1)} ms</b>、信号経路 <b>{p.toFixed(1)} ms</b>、それぞれ別スレッドで</>
+    cost: (c: number, e: number, p: number) => (
+      <>一フレームあたり: コンソール <b>{c.toFixed(1)} ms</b>、符号化 <b>{e.toFixed(1)} ms</b>、復号 <b>{p.toFixed(1)} ms</b>、それぞれ別スレッドで</>
     ),
+    path: (path: string, why: string | null, agreement: number | null, tol: number | null) =>
+      path === "webgpu" ? (
+        <>復号: <b>WebGPU</b>、最初のフレームで wasm 復号との差は <b>255 分の {agreement}</b> 以内（許容 {tol}）</>
+      ) : (
+        <>復号: <b>wasm</b>{why ? <>（{why}）</> : null}</>
+      ),
     fps: (v: number) => <>直近一秒の絵: <b>{v}</b></>,
     drift: (s: DriftStats) => (
       <>表示コールバック: <b>{s.presented}</b>、重複: <b>{s.duplicated}</b>、欠落: <b>{s.dropped}</b></>
@@ -106,7 +118,8 @@ export function Play({ lang }: { lang: Lang }) {
           <>
             <span className="measured">{T.loaded(s.loaded)}</span>
             <span className="measured">{T.frames(s.frames, s.undecoded)}</span>
-            {s.consoleMs !== null && s.pipeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.pipeMs)}</span> : null}
+            {s.consoleMs !== null && s.pipeMs !== null && s.encodeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.encodeMs, s.pipeMs)}</span> : null}
+            {s.path ? <span className="measured" data-play-path={s.path}>{T.path(s.path, s.pathWhy, s.agreement, s.tolerance)}</span> : null}
             {s.fps !== null ? <span className="measured">{T.fps(s.fps)}</span> : null}
             {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
             {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}

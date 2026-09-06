@@ -10,7 +10,11 @@
  * picture worker (public/nes/picture.worker.mjs) decodes the newest frame
  * at its own rate: a frame the console produced while the picture was
  * busy is replaced by the next and counted as undecoded, so the console
- * never waits for the picture and the sound never stalls for it. Sound:
+ * never waits for the picture and the sound never stalls for it. The
+ * picture worker draws on its own canvas (WebGPU where the browser gives
+ * it one and its decode agrees with the wasm decode, the wasm decode
+ * otherwise) and sends each frame as an ImageBitmap the page's canvas
+ * shows. Sound:
  * each tick's samples are scheduled on a running cursor a little ahead of
  * the audio clock; a cursor that fell behind is an underrun, counted and
  * reset.
@@ -33,6 +37,15 @@ export interface PlayState {
   pipeMs: number | null;
   /** Pictures painted in the last second. */
   fps: number | null;
+  /** The decode's path: "webgpu" or "wasm", and why the wasm one if so. */
+  path: string | null;
+  pathWhy: string | null;
+  /** The WebGPU decode against the wasm decode on the first frame, bytes of 255. */
+  agreement: number | null;
+  tolerance: number | null;
+  /** The first painted frame's middle-row byte sum: a lit picture. */
+  lit: number;
+  encodeMs: number | null;
   stats: DriftStats | null;
   underruns: number;
   audio: boolean;
@@ -49,8 +62,14 @@ interface ConsoleAnswer {
   consoleMs: number;
 }
 interface PictureAnswer {
-  rgba: Uint8Array;
-  pipeMs: number;
+  bitmap: ImageBitmap;
+  path: string;
+  why: string | null;
+  agreement: number | null;
+  tolerance: number;
+  lit: number;
+  encodeMs: number;
+  decodeMs: number;
   width: number;
   height: number;
 }
@@ -72,6 +91,12 @@ const INITIAL: PlayState = {
   consoleMs: null,
   pipeMs: null,
   fps: null,
+  path: null,
+  pathWhy: null,
+  agreement: null,
+  tolerance: null,
+  lit: 0,
+  encodeMs: null,
   stats: null,
   underruns: 0,
   audio: false,
@@ -177,6 +202,7 @@ export function detach() {
   consoleW.stop();
   pictureW.stop();
   canvas = null;
+  bitmapCtx = null;
   latest = null;
   painted = [];
   void audio?.close();
@@ -187,7 +213,7 @@ export function detach() {
 /** A ROM from the reader's disk. It goes to the console worker and nowhere else. */
 export async function load(file: File) {
   const bytes = await file.arrayBuffer();
-  set({ running: false, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, fps: null, underruns: 0, why: null });
+  set({ running: false, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null });
   latest = null;
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);
@@ -237,21 +263,34 @@ function kick() {
     });
 }
 
+let bitmapCtx: ImageBitmapRenderingContext | null = null;
+
 function paint(a: PictureAnswer) {
+  // The worker painted on its own canvas (WebGPU or 2d) and sent the
+  // bitmap; the page's canvas shows it with no copy.
   if (canvas) {
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      if (canvas.width !== a.width || canvas.height !== a.height) {
-        canvas.width = a.width;
-        canvas.height = a.height;
-      }
-      ctx.putImageData(new ImageData(new Uint8ClampedArray(a.rgba.buffer as ArrayBuffer), a.width, a.height), 0, 0);
-    }
+    if (!bitmapCtx) bitmapCtx = canvas.getContext("bitmaprenderer");
+    if (bitmapCtx) bitmapCtx.transferFromImageBitmap(a.bitmap);
+    else a.bitmap.close();
+  } else {
+    a.bitmap.close();
   }
   const now = performance.now();
   painted.push(now);
   while (painted.length && painted[0] < now - 1000) painted.shift();
-  set({ frames: state.frames + 1, pipeMs: a.pipeMs, fps: painted.length });
+  set({
+    frames: state.frames + 1,
+    pipeMs: a.decodeMs,
+    encodeMs: a.encodeMs,
+    fps: painted.length,
+    path: a.path,
+    pathWhy: a.why,
+    agreement: a.agreement,
+    tolerance: a.tolerance,
+    lit: a.lit,
+  });
+  // For the site's own check, which cannot read an OffscreenCanvas.
+  (window as unknown as { __playLit?: number }).__playLit = a.lit;
 }
 
 async function loop() {

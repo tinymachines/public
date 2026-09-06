@@ -187,16 +187,23 @@ test("the console runs a cartridge in the page and paints it", async ({ page }) 
       return m ? Number(m[1]) : 0;
     }, { timeout: 30_000 })
     .toBeGreaterThan(10);
-  const painted = await page.evaluate(() => {
-    const c = document.querySelector<HTMLCanvasElement>("[data-play] .bench-screen");
-    const d = c?.getContext("2d")?.getImageData(0, 60, c.width, 1).data;
-    if (!d) return -1;
-    let sum = 0;
-    for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
-    return sum;
-  });
-  expect(painted).toBeGreaterThan(0);
+  // The page's canvas shows bitmaps the picture worker painted on its own,
+  // so the page cannot read pixels; the worker measures a painted row of
+  // the first frame itself and the readout names the decode path. On
+  // WebGPU the worker also held its decode to the wasm decode within the
+  // tolerance before choosing it, and the readout says by how much.
+  await expect(page.locator("[data-play-path]")).toHaveCount(1);
+  const path = await page.locator("[data-play-path]").getAttribute("data-play-path");
+  const text = (await page.locator("[data-play-stats]").innerText()).replace(/\s+/g, " ");
+  const lit = await page.evaluate(() => (window as unknown as { __playLit?: number }).__playLit ?? -1);
+  expect(lit).toBeGreaterThan(0);
+  if (path === "webgpu") {
+    const m = text.match(/within\s*(\d+) of 255 \(tolerance (\d+)\)/);
+    expect(m).not.toBeNull();
+    expect(Number(m![1])).toBeLessThanOrEqual(Number(m![2]));
+  } else {
+    expect(text).toContain("decode: wasm");
+  }
   await expect(page.locator("[data-play-why]")).toHaveCount(0);
-  const text = await page.locator("[data-play-stats]").innerText();
   expect(text).toMatch(/display callbacks:\s*\d+/);
 });

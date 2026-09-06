@@ -1,10 +1,10 @@
 {
   "note": "Written only by scripts/board-ntsc.py --board. Every figure was verified by running the repository's own scanner (full suite and MUTATE run) at this commit; the rates are recomputed here exactly.",
-  "boarded_on": "2026-09-04",
+  "boarded_on": "2026-09-06",
   "repo": "https://github.com/tinymachines/ntsc-crt",
-  "commit": "bb310f5277f49debfeedcb0801b8d0b942aaf83f",
+  "commit": "5d9c672f48e4725c8e7fe174bb972485aa2a9a09",
   "claims_verified": 54,
-  "tests_green": 59,
+  "tests_green": 61,
   "mutate_red": 33,
   "crates": 9,
   "transcription_gate_values": 43,
@@ -85,18 +85,20 @@
   },
   "bundle": {
     "note": "Built by scripts/board-ntsc.py --wasm from a fresh clone at the boarded commit; the files in web/public/ntsc/wasm/ must hash to these values.",
-    "commit": "bb310f5277f49debfeedcb0801b8d0b942aaf83f",
-    "tags": [],
-    "built_on": "2026-09-04",
+    "commit": "5d9c672f48e4725c8e7fe174bb972485aa2a9a09",
+    "tags": [
+      "v0.2.5"
+    ],
+    "built_on": "2026-09-06",
     "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
     "files": {
       "ntsc_wasm.js": {
-        "sha256": "e01d48ceca0901f3df97454cd00b8335991b9f5a3c4a7d0a671a9f140ba7f3b9",
-        "bytes": 9441
+        "sha256": "6db03eeeffffc91d1e8e00cb5c197a7c1a5b10fe77505b57b595918378fea0cc",
+        "bytes": 11583
       },
       "ntsc_wasm_bg.wasm": {
-        "sha256": "0b0814b20aa1e4e00447d780caa749bfa6f1c0d677010f44aa51f50d5306a49e",
-        "bytes": 47044
+        "sha256": "fafc30dd9cd87ac4cc6ec03052241d340031b6d529583aebd0893aeef1018d64",
+        "bytes": 49854
       }
     }
   }

@@ -51,3 +51,23 @@ repository's and not restated. Measured the same way on the same loaded
 box (load average about eight from other sessions), the pictures a
 second did not move, because both threads contend for the same busy
 cores; what changed is the shape, which is the right one for a desk.
+
+## Third pass: the decode on WebGPU
+
+The signal path's bridge (ntsc-crt 0.2.5) hands the encoded samples and
+the decoder's constants out, held to push_frame's bytes in its own
+test. The picture worker runs the comb decode as three compute passes
+(the native shell's passes 1 to 3, the display gamma left off because
+push_frame goes straight to bytes) into its own OffscreenCanvas and
+sends an ImageBitmap; the page's canvas is never handed over, so a path
+that fails is replaced by a fresh 2d canvas on the wasm path. Before
+WebGPU is used the first frame is decoded both ways and must agree
+within 2 of 255 (measured: 0), and the attempt races a five-second
+clock. Measured from headless Chromium on this box: decode 0.9 ms
+against 35 on wasm, 57 pictures a second against 29. The console still
+drops source frames here for the same reason as before: the box.
+
+Found on the way: Chrome under Xvfb gives the page a WebGPU adapter but
+its workers none, and the software adapter could not present to a
+canvas whose control the page had transferred, which is why the worker
+owns its canvases and ships bitmaps.
