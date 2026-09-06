@@ -16,10 +16,10 @@
   },
   "c2c02": {
     "repo": "https://github.com/tinymachines/2c02",
-    "commit": "0b25e83edf065a740c69f5cf5e97b85c1ddc96bc",
+    "commit": "1dc887af8f3f5fa378fa89b52302b2c0108f6bc4",
     "halfphi": "0.1.6",
-    "tests_green": 15,
-    "mutate_red": 10,
+    "tests_green": 16,
+    "mutate_red": 11,
     "p0_states": 601,
     "p1_states": 4008,
     "p2": {
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.076",
+      "mean_ms": "1.075",
       "mean_inside_x": "15.5",
-      "worst_ms": "1.635",
-      "worst_inside_x": "10.2",
+      "worst_ms": "1.336",
+      "worst_inside_x": "12.5",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,7 +69,7 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "5c3d8d456f4fd5fdc6dc7b62e7da247e62ee99eb",
+    "commit": "ca95efcf9baa3c21351edfb167043cba0af1bc17",
     "tests_green": 30,
     "pin_6502": "8b9e0b5",
     "alignment": {
@@ -236,14 +236,14 @@
           "worst": 4.77e-07,
           "mean": 1.24e-08,
           "components": 1658880,
-          "ms_per_frame": "0.96"
+          "ms_per_frame": "0.93"
         },
         "mask_and_geometry_on": {
           "adapter": "NVIDIA GeForce RTX 3070",
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "0.96"
+          "ms_per_frame": "0.91"
         }
       },
       "gpu_tolerance": {
@@ -272,9 +272,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "3.82",
-        "frames_per_s": "78.6",
-        "real_time_x": "1.31",
+        "seconds": "4.34",
+        "frames_per_s": "69.2",
+        "real_time_x": "1.15",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -283,7 +283,7 @@
       "cpu_timing_pass": 1,
       "instr_pass": 16,
       "instr_total": 16,
-      "sprite_pass": 10,
+      "sprite_pass": 11,
       "sprite_total": 11,
       "vbl_nmi_pass": 5,
       "vbl_nmi_total": 10,
@@ -292,7 +292,7 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "5c3d8d456f4fd5fdc6dc7b62e7da247e62ee99eb",
+      "commit": "ca95efcf9baa3c21351edfb167043cba0af1bc17",
       "built_on": "2026-09-06",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
@@ -301,8 +301,8 @@
           "bytes": 8367
         },
         "nes_wasm_bg.wasm": {
-          "sha256": "2d4d2e62bfd909578d518c2b0e291a6125c32afbe71e3036b97c610bdb67ecc6",
-          "bytes": 290129
+          "sha256": "1a990f0e62a67a48a8aa96931279cdd3d5b8e8371e3e8fc66b5dbf6be64d224e",
+          "bytes": 290169
         }
       }
     }
