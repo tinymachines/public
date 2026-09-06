@@ -347,6 +347,16 @@ const PROSE = {
     picture: (r: ReturnType<typeof nes>) => {
       const p = r.console.picture;
       const c = p.capture;
+      const rowKeys = ["1", "2", "3", "0"] as const;
+      const rowsEn = rowKeys.map((k, i) => {
+        const row = c.rows[k];
+        return (
+          <span key={k}>
+            luma row {k}: {row.within_all} of {row.regions} regions hold all three (worst luma {row.worst_luma}, hue {row.worst_hue_deg} degrees, saturation {row.worst_sat}, rate found to {row.recovered_ppm} ppm)
+            {i < rowKeys.length - 1 ? "; " : ". "}
+          </span>
+        );
+      });
       return (
         <>
           The picture is ntsc-crt&rsquo;s chain ({p.ntsc_crt}, pinned by
@@ -371,30 +381,30 @@ const PROSE = {
           address register points at, and its timing against a mid-line
           write is now a fixture there.
           {" "}Then the capture path, the machine half of the comparison
-          the real console will join: the bars ROM ({c.rom}) through the
+          the real console will join: a bars cartridge through the
           console, its frames through ntsc-crt&rsquo;s capture-card model
-          and recovered exactly as a real record is (rate found to{" "}
-          {c.recovered_ppm} ppm, burst residual {c.burst_residual}{" "}
-          samples), then every flat region scored against the
-          console&rsquo;s own synthesis through the identical decoder.
-          The tolerances were written down before the run: luma within{" "}
-          {c.tol_luma}, hue within {c.tol_hue_deg} degree, saturation
-          within {c.tol_sat_pct} percent. Of {c.regions} regions, luma
-          holds on {c.luma_within}, hue on {c.hue_within} of{" "}
-          {c.hue_regions} that have one, saturation on {c.sat_within};{" "}
-          {c.within_all} hold all three, so the roundtrip{" "}
-          {c.held ? "closes" : "does not close"} at the stated
-          tolerances. The worst region misses luma by {c.worst_luma},
-          hue by {c.worst_hue_deg} degrees on a near-grey, saturation by{" "}
-          {c.worst_sat}, a chroma vector of at most {c.worst_chroma}: the
-          same with the noise off and at the grid&rsquo;s own rate, so
-          it is the card model&rsquo;s anti-alias filter against the
-          encoder&rsquo;s square wave, not the console, recorded rather
-          than fitted away. The first run found something else first:
-          the recovery&rsquo;s level re-referencing was a histogram bin
-          coarse and read as a gain across the whole frame, fixed in
-          ntsc-crt and re-pinned. The real record of the same cartridge
-          on the real console is the bench item; the account is{" "}
+          and recovered exactly as a real record is, the synthesis
+          through the model&rsquo;s own front end so both sides carry the
+          same band limit, then every flat region scored against that
+          synthesis through the identical decoder, {c.margin_dots} dots
+          in from its edges, a distance derived from the decoder&rsquo;s
+          chroma filter rather than chosen. The tolerances were written
+          down before the run: luma within {c.tol_luma}, hue within{" "}
+          {c.tol_hue_deg} degree, saturation within {c.tol_sat_pct}{" "}
+          percent. The cartridge is the repository&rsquo;s own, since
+          blargg&rsquo;s bars are sixteen dots wide and the decoder settles
+          in five: thirty-two-dot cells of the twelve hues at one luma row
+          and the backdrop, the row stepping every two seconds, scored one
+          run per row.{" "}
+          {rowsEn}
+          {c.held ? "The roundtrip closes." : "The roundtrip does not close."}{" "}
+          The first runs found the instrument three times before the
+          scoring&rsquo;s own geometry: a level re-referencing a histogram
+          bin coarse, a dark picture taken for blanking, and the darkest
+          colours&rsquo; chroma troughs taken for sync edges, each fixed
+          in ntsc-crt and re-pinned. The real record of the same
+          cartridge on the real console is the bench item, and the
+          cartridge exists for it now; the account is{" "}
           <a href={`${r.console.repo}/blob/main/docs/n6-report.md`}>the N6 report</a>.
         </>
       );
@@ -656,10 +666,20 @@ const PROSE = {
     picture: (r: ReturnType<typeof nes>) => {
       const p = r.console.picture;
       const c = p.capture;
+      const rowKeys = ["1", "2", "3", "0"] as const;
+      const rowsJa = rowKeys.map((k, i) => {
+        const row = c.rows[k];
+        return (
+          <span key={k}>
+            輝度行 {k}: {row.regions} 領域中 {row.within_all} が三つとも成立（最悪で輝度 {row.worst_luma}、色相 {row.worst_hue_deg} 度、彩度 {row.worst_sat}、レートは {row.recovered_ppm} ppm）
+            {i < rowKeys.length - 1 ? "。" : "。"}
+          </span>
+        );
+      });
       return (
         <>
           絵は ntsc-crt の連鎖（{p.ntsc_crt}、タグで固定）で、コンソールが足すのは二つだけ: フレームの順序と、一つのフレームから次へ持ち越す副搬送波の位相だ。奇数フレームの短い一行が位相を動かすので、コンソールはドットだけでなくパリティを渡す。各フレームは NES ソースで符号化され、三ラインコムで復号され、書き下ろしの定数で CRT の各段を通る。押さえは二つ。コンソールのフレームをこの連鎖に通したものは、同じ世界から単体 PPU ラングが出したフレームを同じ連鎖に通したものと、復号された全標本で一致する（{p.components_equal} 成分が一致、{p.parity} フレーム、画面上 {p.displayed[0]} × {p.displayed[1]}）。そして {p.phase_frames} フレーム（うち {p.phase_short} が短い）後の位相は、その列にグリッドの算術が与えるもの（位相 {p.phase}。全フレームを偶数に強制すると違う値になり、それが赤の走行）。実機比較が欲しがるカラーバーのカートリッジは PPU の描画を切って塗るが、高速 PPU はそれを訊かれたことがなかった: スイッチレベルのチップで測ると、描画を切った絵はアドレスレジスタが指すパレット項目で、行途中の書き込みに対するタイミングは今そこに固定具として在る。
-          次に捕捉経路、実機が加わる比較の機械側半分: カラーバー ROM（{c.rom}）をコンソールに通し、そのフレームを ntsc-crt の捕捉カード模型に通して、実記録とまったく同じ手順で復元し（レートは {c.recovered_ppm} ppm、バースト残差 {c.burst_residual} 標本）、平坦な領域すべてを、同一の復号器を通したコンソール自身の合成に対して採点する。許容は走らせる前に書いた: 輝度 {c.tol_luma} 以内、色相 {c.tol_hue_deg} 度以内、彩度 {c.tol_sat_pct} パーセント以内。{c.regions} 領域のうち、輝度は {c.luma_within} で成り立ち、色相は色相を持つ {c.hue_regions} のうち {c.hue_within}、彩度は {c.sat_within}。三つすべてが成り立つのは {c.within_all} で、往復は述べた許容で{c.held ? "閉じる" : "閉じない"}。最悪の領域は輝度で {c.worst_luma}、色相はほぼ灰色の領域で {c.worst_hue_deg} 度、彩度で {c.worst_sat} 外れ、クロマベクトルは最大 {c.worst_chroma}: 雑音を切っても、グリッド自身のレートでも同じなので、コンソールではなく、捕捉カード模型の折り返し防止フィルタと符号化器の方形波の関係であり、合わせ込まずに記録した。最初の走行はまず別のものを見つけた: 復元のレベル基準合わせがヒストグラムの一区画分粗く、フレーム全体の利得として現れたので、ntsc-crt 側で直して固定し直した。同じカートリッジの実機記録がベンチ項目。記録は<a href={`${r.console.repo}/blob/main/docs/n6-report.md`}>N6 報告</a>。
+          次に捕捉経路、実機が加わる比較の機械側半分: カラーバーのカートリッジをコンソールに通し、そのフレームを ntsc-crt の捕捉カード模型に通して実記録とまったく同じ手順で復元し、合成は模型自身のフロントエンドを通して両側が同じ帯域制限を持つようにし、平坦な領域すべてを同一の復号器を通したその合成に対して、縁から {c.margin_dots} ドット内側で採点する。この距離は選んだのではなく復号器のクロマフィルタから導いた。許容は走らせる前に書いた: 輝度 {c.tol_luma} 以内、色相 {c.tol_hue_deg} 度以内、彩度 {c.tol_sat_pct} パーセント以内。カートリッジはリポジトリ自身のもの。blargg のバーは十六ドット幅で復号器は五ドットで落ち着くからだ: 三十二ドットのセルに十二の色相を一つの輝度行で並べ、背景色を加え、行は二秒ごとに進み、行ごとに一走行で採点する。{rowsJa}{c.held ? "往復は閉じる。" : "往復は閉じない。"}最初の走行群は採点自身の幾何の前に計器を三度見つけた: ヒストグラム一区画分粗いレベル基準合わせ、消去期間と取り違えられた暗い絵、同期エッジと取り違えられた最も暗い色のクロマの谷。それぞれ ntsc-crt 側で直して固定し直した。同じカートリッジの実機記録がベンチ項目で、そのためのカートリッジはいま在る。記録は<a href={`${r.console.repo}/blob/main/docs/n6-report.md`}>N6 報告</a>。
         </>
       );
     },

@@ -118,16 +118,20 @@ export interface NesRecord {
       phase_frames: number;
       phase_short: number;
       phase: number;
+      /** The capture roundtrip on the console's own bars cartridge, one
+       *  run per luma row (keyed by the row), the region margin derived
+       *  from the decoder, and whether every row held. */
       capture: {
         rom: string;
-        regions: number;
-        within_all: number;
-        luma_within: number;
-        hue_within: number; hue_regions: number;
-        sat_within: number;
-        worst_luma: string; worst_hue_deg: string; worst_sat: string; worst_chroma: string;
+        bars_file: { sha256: string; bytes: number };
+        margin_dots: number;
+        rows: Record<string, {
+          frames: number; regions: number; within_all: number;
+          luma_within: number; hue_within: number; hue_regions: number; sat_within: number;
+          worst_luma: string; worst_hue_deg: string; worst_sat: string; worst_chroma: string;
+          recovered_ppm: string; burst_residual: string; held: boolean;
+        }>;
         tol_luma: string; tol_hue_deg: string; tol_sat_pct: number; tol_sat_abs: string;
-        recovered_ppm: string; burst_residual: string;
         held: boolean;
       };
     };

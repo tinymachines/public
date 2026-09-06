@@ -654,6 +654,15 @@ if (manifest) {
   const NES = path.join(import.meta.dirname, "..", "..", "data", "nes.json");
   let rec = null;
   try { rec = JSON.parse(await readFile(NES, "utf8")); } catch { /* reported below */ }
+  // The bars cartridge served beside it, likewise generated and recorded.
+  const bars = rec?.console?.picture?.capture?.bars_file;
+  if (bars) {
+    const f = path.join(PUBLIC, "nes", "bars.nes");
+    let bytes = null;
+    try { bytes = await readFile(f); } catch { /* reported below */ }
+    if (!bytes) failures.push("public/nes/bars.nes is missing; scripts/board-nes.py --board exports it from the nes tree.");
+    else if (createHash("sha256").update(bytes).digest("hex") !== bars.sha256) failures.push("public/nes/bars.nes does not hash to data/nes.json's record; re-board.");
+  }
   const bundle = rec?.console?.wasm_bundle;
   if (!bundle) {
     failures.push("data/nes.json has no console wasm_bundle; run scripts/board-nes.py --wasm.");

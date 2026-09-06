@@ -47,7 +47,7 @@ const record = JSON.parse(
       components_equal: number;
       phase: number;
       phase_frames: number;
-      capture: { regions: number; within_all: number; luma_within: number; hue_within: number; hue_regions: number; worst_chroma: string; held: boolean };
+      capture: { margin_dots: number; held: boolean; rows: Record<string, { regions: number; within_all: number; worst_luma: string; worst_hue_deg: string }> };
     };
     shell: { gpu: Record<string, { worst: number; mean: number; ms_per_frame: string }>; wasm: { frames_per_s: string; frames: number } };
     sound: { tolerance_pct: number; stage: { tau_hp_ms: string; gain: string }; roms: Record<string, { rms_pct: string; rec_rms_pct: string }> };
@@ -114,9 +114,12 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   const pic = record.console.picture;
   expect(text).toContain(`${pic.components_equal} components equal`);
   expect(text).toContain(`phase ${pic.phase};`);
-  expect(text).toContain(`Of ${pic.capture.regions} regions, luma holds on ${pic.capture.luma_within}, hue on ${pic.capture.hue_within} of ${pic.capture.hue_regions}`);
-  expect(text).toContain(`${pic.capture.within_all} hold all three, so the roundtrip ${pic.capture.held ? "closes" : "does not close"}`);
-  expect(text).toContain(`a chroma vector of at most ${pic.capture.worst_chroma}`);
+  expect(text).toContain(`${pic.capture.margin_dots} dots in from its edges`);
+  for (const k of ["1", "2", "3", "0"]) {
+    const row = pic.capture.rows[k];
+    expect(text).toContain(`luma row ${k}: ${row.within_all} of ${row.regions} regions hold all three (worst luma ${row.worst_luma}, hue ${row.worst_hue_deg} degrees`);
+  }
+  expect(text).toContain(pic.capture.held ? "The roundtrip closes." : "The roundtrip does not close.");
   // N7, the sound: the stage's constants and each ROM's console figure
   // beside the recording's.
   const snd = record.console.sound;

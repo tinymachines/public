@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.014",
-      "mean_inside_x": "16.4",
-      "worst_ms": "1.329",
-      "worst_inside_x": "12.5",
+      "mean_ms": "1.076",
+      "mean_inside_x": "15.5",
+      "worst_ms": "1.635",
+      "worst_inside_x": "10.2",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,7 +69,7 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "5305c30e5bfd063b3341c0cc1075e3e1365e2a82",
+    "commit": "5c3d8d456f4fd5fdc6dc7b62e7da247e62ee99eb",
     "tests_green": 30,
     "pin_6502": "8b9e0b5",
     "alignment": {
@@ -98,7 +98,7 @@
       "2.3"
     ],
     "picture": {
-      "ntsc_crt": "v0.2.4",
+      "ntsc_crt": "v0.2.8",
       "parity": "OddShort",
       "components_equal": 1474560,
       "displayed": [
@@ -109,24 +109,83 @@
       "phase_short": 4,
       "phase": 4,
       "capture": {
-        "rom": "full_palette.nes",
-        "regions": 436,
-        "within_all": 367,
-        "luma_within": 436,
-        "hue_within": 352,
-        "hue_regions": 418,
-        "sat_within": 431,
-        "worst_luma": "0.0096",
-        "worst_hue_deg": "12.1",
-        "worst_sat": "0.0078",
-        "worst_chroma": "0.0086",
+        "rom": "bars.nes (the console's own, testrom::bars_program)",
+        "bars_file": {
+          "sha256": "93150c0ab5579deded8f61a3e4f9bfeac22473b3ce8d86d9b8339788e313cfd7",
+          "bytes": 40976
+        },
+        "margin_dots": 5,
+        "rows": {
+          "1": {
+            "frames": 100,
+            "regions": 13,
+            "within_all": 13,
+            "luma_within": 13,
+            "hue_within": 12,
+            "hue_regions": 12,
+            "sat_within": 13,
+            "worst_luma": "0.0001",
+            "worst_hue_deg": "0.3",
+            "worst_sat": "0.0011",
+            "worst_chroma": "0.0028",
+            "recovered_ppm": "+0.7",
+            "burst_residual": "0.010",
+            "held": true
+          },
+          "2": {
+            "frames": 220,
+            "regions": 13,
+            "within_all": 13,
+            "luma_within": 13,
+            "hue_within": 12,
+            "hue_regions": 12,
+            "sat_within": 13,
+            "worst_luma": "0.0001",
+            "worst_hue_deg": "0.3",
+            "worst_sat": "0.0012",
+            "worst_chroma": "0.0029",
+            "recovered_ppm": "+0.7",
+            "burst_residual": "0.010",
+            "held": true
+          },
+          "3": {
+            "frames": 340,
+            "regions": 13,
+            "within_all": 13,
+            "luma_within": 13,
+            "hue_within": 12,
+            "hue_regions": 12,
+            "sat_within": 13,
+            "worst_luma": "0.0001",
+            "worst_hue_deg": "0.3",
+            "worst_sat": "0.0005",
+            "worst_chroma": "0.0012",
+            "recovered_ppm": "+0.7",
+            "burst_residual": "0.010",
+            "held": true
+          },
+          "0": {
+            "frames": 460,
+            "regions": 13,
+            "within_all": 13,
+            "luma_within": 13,
+            "hue_within": 12,
+            "hue_regions": 12,
+            "sat_within": 13,
+            "worst_luma": "0.0001",
+            "worst_hue_deg": "0.3",
+            "worst_sat": "0.0008",
+            "worst_chroma": "0.0020",
+            "recovered_ppm": "+0.7",
+            "burst_residual": "0.010",
+            "held": true
+          }
+        },
         "tol_luma": "0.01",
         "tol_hue_deg": "1",
         "tol_sat_pct": 5,
         "tol_sat_abs": "0.005",
-        "recovered_ppm": "+0.7",
-        "burst_residual": "0.010",
-        "held": false
+        "held": true
       }
     },
     "sound": {
@@ -177,14 +236,14 @@
           "worst": 4.77e-07,
           "mean": 1.24e-08,
           "components": 1658880,
-          "ms_per_frame": "0.97"
+          "ms_per_frame": "0.96"
         },
         "mask_and_geometry_on": {
           "adapter": "NVIDIA GeForce RTX 3070",
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "1.04"
+          "ms_per_frame": "0.96"
         }
       },
       "gpu_tolerance": {
@@ -213,9 +272,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "3.02",
-        "frames_per_s": "99.5",
-        "real_time_x": "1.66",
+        "seconds": "3.82",
+        "frames_per_s": "78.6",
+        "real_time_x": "1.31",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -233,7 +292,7 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "5305c30e5bfd063b3341c0cc1075e3e1365e2a82",
+      "commit": "5c3d8d456f4fd5fdc6dc7b62e7da247e62ee99eb",
       "built_on": "2026-09-06",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
@@ -242,8 +301,8 @@
           "bytes": 8367
         },
         "nes_wasm_bg.wasm": {
-          "sha256": "24c8c2f4e165ab76bf233dc2c7df23617cc574444d0b8a190dd8981f746374ba",
-          "bytes": 290119
+          "sha256": "2d4d2e62bfd909578d518c2b0e291a6125c32afbe71e3036b97c610bdb67ecc6",
+          "bytes": 290129
         }
       }
     }

@@ -89,6 +89,9 @@ docs/6502/findings-answers.md
 # --wasm: its chip tables are measured from NC-SA die data, so the site
 # serves it from build output and git never carries it.
 web/public/nes/wasm/
+# The console's own bars cartridge, exported by the same script from the
+# nes tree at the boarded commit (nobody's game); generated, not committed.
+web/public/nes/bars.nes
 
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.

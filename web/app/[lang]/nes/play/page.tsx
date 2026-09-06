@@ -44,7 +44,11 @@ const PROSE = {
         it is read into a worker in this browser and goes nowhere else.
         Only NROM loads, the mapper the console has, and anything else
         is refused by name. The repository&rsquo;s own test cartridge is
-        what the site&rsquo;s checks run.
+        what the site&rsquo;s checks run, and its{" "}
+        <a href="/nes/bars.nes">colour-bars cartridge</a> is here to
+        download: nobody&rsquo;s game, the twelve hues in thirty-two-dot
+        cells at one luma row, the row stepping every two seconds, the
+        same file the capture comparison and the bench use.
       </>
     ),
     rate: (fps: string, x: string, stamp: string) => (
@@ -95,7 +99,7 @@ const PROSE = {
     ),
     rom: (
       <>
-        ここにカートリッジは無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザ内のワーカーに読まれ、他のどこへも行かない。読み込めるのはコンソールが持つマッパーである NROM だけで、それ以外は名指しで拒む。サイトの検査が走らせるのはリポジトリ自身のテストカートリッジだ。
+        ここにカートリッジは無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザ内のワーカーに読まれ、他のどこへも行かない。読み込めるのはコンソールが持つマッパーである NROM だけで、それ以外は名指しで拒む。サイトの検査が走らせるのはリポジトリ自身のテストカートリッジで、その<a href="/nes/bars.nes">カラーバーのカートリッジ</a>はここからダウンロードできる: 誰のゲームでもなく、十二の色相を三十二ドットのセルに一つの輝度行で並べ、行は二秒ごとに進む。捕捉比較とベンチが使うのと同じファイルだ。
       </>
     ),
     rate: (fps: string, x: string, stamp: string) => (

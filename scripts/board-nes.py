@@ -366,22 +366,47 @@ def main() -> int:
     phase = re.search(r"(\d+) frames \((\d+) short\): phase (\d+) after the sequence, as the grid's arithmetic gives", out)
     if not (pic and phase):
         fail("the console's picture gate summary lines are not on the suite output")
-    bars = Path(os.environ.get("NES_TEST_ROMS", Path.home() / "roms" / "nes-test-roms")) / "full_palette" / "full_palette.nes"
-    if not bars.is_file():
-        fail(f"the bars cartridge is not at {bars} (NES_TEST_ROMS=<nes-test-roms checkout>)")
-    print("board-nes: running capture-score on the bars cartridge...")
-    score = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "capture-score", "--", str(bars), "30"],
-                           cwd=con, capture_output=True, text=True, env=os.environ)
-    sc = score.stdout
-    regions_m = re.search(r"(\d+) flat regions of distinct \(colour, emphasis\)", sc)
-    within_m = re.search(r"within: luma (\d+) of (\d+), hue (\d+) of (\d+) with a hue, saturation (\d+) of (\d+); "
-                         r"worst: luma ([0-9.]+), hue ([0-9.]+) deg, saturation ([0-9.]+), chroma vector ([0-9.]+)", sc)
-    all_m = re.search(r"(\d+) of (\d+) regions within luma ([0-9.]+), hue ([0-9.]+) deg, saturation (\d+)% \(or ([0-9.]+)\)", sc)
-    recov_m = re.search(r"synthetic capture .*?: recovered ([-+0-9.]+) ppm, worst burst residual ([0-9.]+)", sc)
-    if not (regions_m and within_m and all_m and recov_m):
-        fail(f"capture-score's summary lines are not on its output:\n{sc[-1500:]}{score.stderr[-1500:]}")
-    if int(regions_m.group(1)) != int(all_m.group(2)) or int(within_m.group(2)) != int(all_m.group(2)):
-        fail("capture-score's region counts disagree between its lines")
+    # The bars cartridge is the console's own (testrom::bars_program,
+    # exported here), scored at a frame count inside each of its four luma
+    # rows; the exported file is also served for the play page (gitignored,
+    # its hash recorded), being nobody's game.
+    bars = con / "target" / "bars.nes"
+    ex = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "export-testrom", "--", str(bars), "bars"],
+                        cwd=con, capture_output=True, text=True, env=os.environ)
+    if ex.returncode != 0 or not bars.is_file():
+        fail(f"export-testrom bars failed:\n{ex.stderr[-1500:]}")
+    import hashlib
+    import shutil
+    served = ROOT / "web" / "public" / "nes" / "bars.nes"
+    served.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(bars, served)
+    bars_file = {"sha256": hashlib.sha256(bars.read_bytes()).hexdigest(), "bytes": bars.stat().st_size}
+    rows = {}
+    margin_m = None
+    for luma, frames_n in [(1, 100), (2, 220), (3, 340), (0, 460)]:
+        print(f"board-nes: running capture-score on the bars cartridge, luma row {luma}...")
+        score = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "capture-score", "--", str(bars), str(frames_n)],
+                               cwd=con, capture_output=True, text=True, env=os.environ)
+        sc = score.stdout
+        regions_m = re.search(r"(\d+) flat regions of distinct \(colour, emphasis\) in the last frame \(\w+\), scored (\d+) dots in from their edges", sc)
+        within_m = re.search(r"within: luma (\d+) of (\d+), hue (\d+) of (\d+) with a hue, saturation (\d+) of (\d+); "
+                             r"worst: luma ([0-9.]+), hue ([0-9.]+) deg, saturation ([0-9.]+), chroma vector ([0-9.]+)", sc)
+        all_m = re.search(r"(\d+) of (\d+) regions within luma ([0-9.]+), hue ([0-9.]+) deg, saturation (\d+)% \(or ([0-9.]+)\)", sc)
+        recov_m = re.search(r"synthetic capture .*?: recovered ([-+0-9.]+) ppm, worst burst residual ([0-9.]+)", sc)
+        if not (regions_m and within_m and all_m and recov_m):
+            fail(f"capture-score's summary lines are not on its output (row {luma}):\n{sc[-1500:]}{score.stderr[-1500:]}")
+        if int(regions_m.group(1)) != int(all_m.group(2)) or int(within_m.group(2)) != int(all_m.group(2)):
+            fail("capture-score's region counts disagree between its lines")
+        margin_m = int(regions_m.group(2))
+        rows[str(luma)] = {
+            "frames": frames_n, "regions": int(all_m.group(2)), "within_all": int(all_m.group(1)),
+            "luma_within": int(within_m.group(1)), "hue_within": int(within_m.group(3)), "hue_regions": int(within_m.group(4)),
+            "sat_within": int(within_m.group(5)),
+            "worst_luma": within_m.group(7), "worst_hue_deg": within_m.group(8), "worst_sat": within_m.group(9), "worst_chroma": within_m.group(10),
+            "recovered_ppm": recov_m.group(1), "burst_residual": recov_m.group(2),
+            "held": score.returncode == 0,
+        }
+    held_all = all(r["held"] for r in rows.values())
     ntsc_tag = extract((con / "crates" / "nes-console" / "Cargo.toml").read_text(),
                        r'ntsc-source-nes = \{[^}]*tag = "(v[0-9.]+)"', "nes-console's ntsc-crt pin")
     picture = {
@@ -393,17 +418,12 @@ def main() -> int:
         "phase_short": int(phase.group(2)),
         "phase": int(phase.group(3)),
         "capture": {
-            "rom": "full_palette.nes",
-            "regions": int(all_m.group(2)),
-            "within_all": int(all_m.group(1)),
-            "luma_within": int(within_m.group(1)),
-            "hue_within": int(within_m.group(3)), "hue_regions": int(within_m.group(4)),
-            "sat_within": int(within_m.group(5)),
-            "worst_luma": within_m.group(7), "worst_hue_deg": within_m.group(8),
-            "worst_sat": within_m.group(9), "worst_chroma": within_m.group(10),
+            "rom": "bars.nes (the console's own, testrom::bars_program)",
+            "bars_file": bars_file,
+            "margin_dots": margin_m,
+            "rows": rows,
             "tol_luma": all_m.group(3), "tol_hue_deg": all_m.group(4), "tol_sat_pct": int(all_m.group(5)), "tol_sat_abs": all_m.group(6),
-            "recovered_ppm": recov_m.group(1), "burst_residual": recov_m.group(2),
-            "held": score.returncode == 0,
+            "held": held_all,
         },
     }
     # N7, the sound: the sound gate's per-ROM lines, the console's and
