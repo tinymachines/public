@@ -1,6 +1,6 @@
 {
   "name": "tinymachines-web",
-  "version": "1.0.205",
+  "version": "1.0.206",
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 6511",

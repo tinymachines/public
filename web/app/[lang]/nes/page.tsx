@@ -553,9 +553,14 @@ const PROSE = {
         moved the model: asked what a DMC fetch does to a pad read, the
         switch-level 2A03 answered before the part could, and the core,
         the fast chip and the console changed for it, each change held
-        by a sabotage test that goes red without it. The drawing below is derived from the
+        by a sabotage test that goes red without it. Every milestone&rsquo;s
+        tool now exists ahead of its hardware, from the head that plays a
+        script onto the bridge, the relays and the scope, to the bisection
+        that finds the first poll at which the part and the model
+        disagree, each proved against a stand-in by a sabotage test that
+        goes red without it. The drawing below is derived from the
         wiring tables by a script, so it cannot disagree with them. Plan,
-        wiring and the first report are in{" "}
+        wiring, the script and the running report are in{" "}
         <Link href="/docs/nes">the notebook</Link>; the repository is{" "}
         <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>.
       </>
@@ -773,7 +778,7 @@ const PROSE = {
     benchH: "ベンチ: 実機と模型を同じ入力履歴の下に置く",
     bench: (r: ReturnType<typeof nes>) => (
       <>
-        機械側のマイルストーンがすべて閉じたいま、コンソールがまだ実機について知らないことはベンチを待っており、次に組むのはそのベンチだ。コンソールのコントローラポートと純正パッドの間にブリッジを置く: ブリッジ上のシフトレジスタがコンソールにクロックされるパッドそのものになり、マイクロコントローラはポーリングの合間にその入力を書き、コンソールのラッチとクロックのパルスをハードウェアで数え、LAN 上の Raspberry Pi がスクリプトを受け取り、リセットと電源のリレーを駆動し、スコープをトリガする。スクリプトはラッチ番号ごとのバイトなので、模型と実機は同じ履歴を見る。ブリッジのラッチごとのログと模型のログをラッチ単位で突き合わせ、トリガした取り込みは絵のマイルストーンが閉じたのと同じ往復で採点する。計画はファームウェアより先に四つのマイルストーンと検査を名指しし、最初の「盗み聞き」はすでに模型を動かした: DMC フェッチがパッド読み出しに何をするか問うと、スイッチレベルの 2A03 が実機より先に答え、コアと高速チップとコンソールがそれに合わせて変わり、それぞれの変更は、無ければ赤になる妨害テストが押さえる。下の図は配線表からスクリプトが導いたもので、表と食い違うことはできない。計画、配線、最初の報告は<Link href="/ja/docs/nes">ノートブック</Link>に、リポジトリは <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>。
+        機械側のマイルストーンがすべて閉じたいま、コンソールがまだ実機について知らないことはベンチを待っており、次に組むのはそのベンチだ。コンソールのコントローラポートと純正パッドの間にブリッジを置く: ブリッジ上のシフトレジスタがコンソールにクロックされるパッドそのものになり、マイクロコントローラはポーリングの合間にその入力を書き、コンソールのラッチとクロックのパルスをハードウェアで数え、LAN 上の Raspberry Pi がスクリプトを受け取り、リセットと電源のリレーを駆動し、スコープをトリガする。スクリプトはラッチ番号ごとのバイトなので、模型と実機は同じ履歴を見る。ブリッジのラッチごとのログと模型のログをラッチ単位で突き合わせ、トリガした取り込みは絵のマイルストーンが閉じたのと同じ往復で採点する。計画はファームウェアより先に四つのマイルストーンと検査を名指しし、最初の「盗み聞き」はすでに模型を動かした: DMC フェッチがパッド読み出しに何をするか問うと、スイッチレベルの 2A03 が実機より先に答え、コアと高速チップとコンソールがそれに合わせて変わり、それぞれの変更は、無ければ赤になる妨害テストが押さえる。いまや各マイルストーンの道具はハードウェアに先んじて揃っている: スクリプトをブリッジとリレーとスコープに流すヘッドから、実機と模型が食い違う最初のポーリングを見つける二分探索まで、それぞれ代役に対して検証され、無ければ赤になる妨害テストが押さえる。下の図は配線表からスクリプトが導いたもので、表と食い違うことはできない。計画、配線、スクリプト、進行中の報告は<Link href="/ja/docs/nes">ノートブック</Link>に、リポジトリは <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>。
       </>
     ),
     benchAlt: "ベンチの一枚の図: 上にループ（ワークステーション、Pi、ブリッジ、コンソール、パッド、スコープ、リレー）、下にブリッジのチップと全ピン。",

@@ -53,7 +53,8 @@ const DOCS = [
   { repo: "nes", file: "n8-report.md", slug: "n8-report", order: 27, description: "N8: the shell built and checked headlessly, the GPU picture held to the CPU chain, the wasm target measured." },
   { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", order: 28, description: "The bench, written first: the part and the model under one input history, a controller-port bridge, relays and the scope under one script, B0 to B3 with their checks." },
   { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", order: 29, description: "The bridge's wiring: the register that is the pad, the level shifter, the ESP32-C6's pins, the head's relays, and the meter checks that come before power." },
-  { repo: "nes-bench", file: "b0-report.md", slug: "b0-report", order: 30, description: "B0: the sniff, its machine side closed. The die answered the DMC question before the part could, and the model changed for it." },
+  { repo: "nes-bench", file: "script.md", slug: "bench-script", order: 30, description: "The bench script: one file's words for the head and the model, bytes by latch index, the arm, the trigger, the capture." },
+  { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", order: 31, description: "The bench's running report: B0 to B3 on the machine side, each tool green on a synthesis with a red mutation; the die answered B0's DMC question first and the model changed for it." },
 ];
 
 // The bench's drawing, derived from its wiring tables: refused if stale,
