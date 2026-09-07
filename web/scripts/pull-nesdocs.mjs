@@ -28,17 +28,17 @@ const DOCS = [
   { repo: "nes-bus", file: "n0-report.md", slug: "n0-report", order: 2, description: "N0: the contract. The pin tables, the dot frame and the cartridge edge as one dependency-free crate, held to the recorded runs." },
   { repo: "2a03", file: "a0-report.md", slug: "a0-report", order: 3, description: "A0: the 2A03 at the switch level, bit for bit against its reference with no list of exceptions." },
   { repo: "2a03", file: "a3-report.md", slug: "a3-report", order: 4, description: "A3: first sound. A program's note read off the chip's own output node, and the mixer as a labelled claim." },
-  { repo: "2a03", file: "n3-plan.md", slug: "n3-plan", order: 5, description: "N3, written first: the 2A03 ladder, the 6502's fast core with the decimal adjust disconnected, the APU as measured tables." },
-  { repo: "2a03", file: "n3-report.md", slug: "n3-report", order: 6, description: "N3: the 2A03 ladder built and held at the pins, the APU's tables measured out of the chip, the stalls frame for frame." },
+  { repo: "2a03", file: "n3-plan.md", slug: "n3-plan", order: 5, description: "N3, written first: the fast 2A03: the 6502's fast core with the decimal adjust disconnected, the APU as measured tables." },
+  { repo: "2a03", file: "n3-report.md", slug: "n3-report", order: 6, description: "N3: the fast 2A03 built and held at the pins, the APU's tables measured out of the chip, the stalls frame for frame." },
   { repo: "2c02", file: "p0-report.md", slug: "p0-report", order: 7, description: "P0: the 2C02 at the switch level, its reference replayed, the supply-gated transistors found." },
   { repo: "2c02", file: "p1-report.md", slug: "p1-report", order: 8, description: "P1: the PPU through its harness, the DAC held, the reset-less latches named." },
   { repo: "2c02", file: "p2-report.md", slug: "p2-report", order: 9, description: "P2: sprite 0, the vblank read race and OAM corruption, each pinned by a register program the reference replays blindly." },
   { repo: "2c02", file: "p3-plan.md", slug: "p3-plan", order: 10, description: "P3, written first: the fast PPU, a stepper whose sequencer is a table measured out of the switches." },
   { repo: "2c02", file: "p3-report.md", slug: "p3-report", order: 11, description: "P3: the fast PPU dot for dot with the chip on three worlds, the write path, the blank picture." },
-  { repo: "ntsc-crt", file: "ntsc-crt-handoff-v0_3.md", slug: "ntsc-spec", order: 12, description: "The NTSC signal path's specification, v0.3, ratified: sources, the decoder rungs, the CRT stages, the capture." },
-  { repo: "ntsc-crt", file: "m0-report.md", slug: "m0-report", order: 13, description: "M0: the grid, the residues and the data every later rung stands on." },
-  { repo: "ntsc-crt", file: "m1-report.md", slug: "m1-report", order: 14, description: "M1: the encoders against their oracle." },
-  { repo: "ntsc-crt", file: "m2-report.md", slug: "m2-report", order: 15, description: "M2: the decoder rungs, notch and combs, held to the oracle and to each other." },
+  { repo: "ntsc-crt", file: "ntsc-crt-handoff-v0_3.md", slug: "ntsc-spec", order: 12, description: "The NTSC signal path's specification, v0.3, ratified: sources, the decoder's filters, the CRT stages, the capture." },
+  { repo: "ntsc-crt", file: "m0-report.md", slug: "m0-report", order: 13, description: "M0: the grid, the residues and the data every later stage stands on." },
+  { repo: "ntsc-crt", file: "m1-report.md", slug: "m1-report", order: 14, description: "M1: the encoders against their reference." },
+  { repo: "ntsc-crt", file: "m2-report.md", slug: "m2-report", order: 15, description: "M2: the decoder filters, notch and combs, held to their reference and to each other." },
   { repo: "ntsc-crt", file: "m3-report.md", slug: "m3-report", order: 16, description: "M3: the CRT stages, every parameter authored and labelled." },
   { repo: "ntsc-crt", file: "m4-report.md", slug: "m4-report", order: 17, description: "M4: the capture source, the synthetic roundtrip, and the first real console records scored against the family's own synthesis." },
   { repo: "ntsc-crt", file: "m5-report.md", slug: "m5-report", order: 18, description: "M5: the self-counts, the divergences and the spec's ratification." },
@@ -50,8 +50,8 @@ const DOCS = [
   { repo: "nes", file: "n7-plan.md", slug: "n7-plan", order: 24, description: "N7, written first: the sound through the board's audio stage read off the schematic." },
   { repo: "nes", file: "n7-report.md", slug: "n7-report", order: 25, description: "N7: the sound, blargg's mixer ROMs cancelling, his real-hardware recordings beside." },
   { repo: "nes", file: "n8-plan.md", slug: "n8-plan", order: 26, description: "N8, written first: the shell, the GPU picture, the pacing, the second target." },
-  { repo: "nes", file: "n8-report.md", slug: "n8-report", order: 27, description: "N8: the shell built and gated headlessly, the GPU picture held to the CPU chain, the wasm target measured." },
-  { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", order: 28, description: "The bench, written first: the part and the model under one input history, a controller-port bridge, relays and the scope under one script, B0 to B3 with their gates." },
+  { repo: "nes", file: "n8-report.md", slug: "n8-report", order: 27, description: "N8: the shell built and checked headlessly, the GPU picture held to the CPU chain, the wasm target measured." },
+  { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", order: 28, description: "The bench, written first: the part and the model under one input history, a controller-port bridge, relays and the scope under one script, B0 to B3 with their checks." },
   { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", order: 29, description: "The bridge's wiring: the register that is the pad, the level shifter, the ESP32-C6's pins, the head's relays, and the meter checks that come before power." },
   { repo: "nes-bench", file: "b0-report.md", slug: "b0-report", order: 30, description: "B0: the sniff, its machine side closed. The die answered the DMC question before the part could, and the model changed for it." },
 ];
@@ -115,7 +115,7 @@ order: 30
 # The console arc's notebook
 
 The family's rule is that a milestone is a document twice: the plan,
-written before the code with its gates and tolerances stated, and the
+written before the code with its checks and tolerances stated, and the
 report after it, every figure a measurement with its run stamp. Those
 documents live in their own repositories and this tree pulls them in at
 build time, in the arc's order, so a reader has them in one place and

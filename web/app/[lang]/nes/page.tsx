@@ -194,7 +194,7 @@ const PROSE = {
         chip through the contract, and both halves now exist. The
         2A03&rsquo;s 6502 core is presented as a pin frame of the 6502
         project&rsquo;s own contract crate, one per clock phase, and then
-        run through every recorded trace of the 6502&rsquo;s pin golden
+        run through every trace in the 6502&rsquo;s recorded pin runs
         ({r.n3.golden_traces} of them: seven programs, the reference&rsquo;s
         program, the scripted interrupt and RDY runs, three decimal-mode
         chains, all 256 opcodes), the other chip entering as recorded text
@@ -211,9 +211,9 @@ const PROSE = {
         arithmetic, and a mid-run reset, where the 2A03 holds its core
         still under RES while the 6502 runs on, both reading the vector at
         the same half-cycle. That list decided the shape of the 2A03&rsquo;s
-        own fast core: the 6502&rsquo;s rung 3 with its decimal adjust
+        own fast core: the 6502&rsquo;s fast core with its decimal adjust
         disconnected and its stack pointer seeded from this chip, two knobs
-        landed in the 6502 repository and held to its golden there. Against
+        landed in the 6502 repository and held to its recorded runs there. Against
         the switch-level 2A03 on every program and script:{" "}
         {r.n3.core_programs} programs, {r.n3.core_half_cycles} half-cycles,
         the write-phi1 byte the one difference left.
@@ -238,10 +238,10 @@ const PROSE = {
         {r.n3.noise_index12_published}, either a transcription defect in
         the die data or a quirk of the part, named and carried. Every
         timing inside a unit is a fitted constant measured with a probe
-        when the gate&rsquo;s code streams first parted: a low-byte period
+        the first time the authored stream and the chip&rsquo;s parted: a low-byte period
         write makes the next tick a reload, a square&rsquo;s code lags its
         step by two half-steps, the DMC&rsquo;s output unit counts eight
-        completions from power-on before it speaks. The gate is two
+        completions from power-on before it speaks. The check is two
         register programs under both frame modes, {r.n3.apu_worlds} worlds
         of {r.n3.apu_half_steps} half-steps each, the five output codes and
         the frame IRQ flag identical to the switch-level chip at every
@@ -260,17 +260,17 @@ const PROSE = {
     apuAlt: "Five stacked traces over 22 milliseconds of 2A03 time: two squares, the triangle, the noise and the DMC output codes, with the frame IRQ marked",
     apuCaption: (r: ReturnType<typeof nes>) => (
       <>
-        The five output codes over the gate&rsquo;s long-note world,{" "}
+        The five output codes over the long-note test world,{" "}
         {r.n3.apu_half_steps} half-steps: the authored APU&rsquo;s streams,
-        which the gate held identical to the switch-level chip&rsquo;s at
+        which the check held identical to the switch-level chip&rsquo;s at
         every one of them. Square 1 sweeps up to its mute, square 0&rsquo;s
         envelope starts at the first quarter frame, the noise&rsquo;s LFSR
         waits out its timer&rsquo;s power-on lap, the DMC walks a 33-byte
         sample; the vertical line is the frame IRQ.
       </>
     ),
-    mApuHalfSteps: (n: number, w: number) => <>APU gate: <b>{w} worlds, {n} half-steps each, identical</b></>,
-    mStalls: (n: number) => <>stall gate: <b>{n} frames identical, RDY included</b></>,
+    mApuHalfSteps: (n: number, w: number) => <>APU check: <b>{w} worlds, {n} half-steps each, identical</b></>,
+    mStalls: (n: number) => <>stall check: <b>{n} frames identical, RDY included</b></>,
     mRealTime: (x: string) => <>with the APU attached: <b>{x}x real time</b></>,
     consoleH: "Both chips on one clock, and the standard test ROMs run with a real CPU attached",
     console: (r: ReturnType<typeof nes>) => (
@@ -288,14 +288,14 @@ const PROSE = {
         (cpu_phase {r.console.alignment.cpu_phase}, ppu_phase{" "}
         {r.console.alignment.ppu_phase}, one of{" "}
         {r.console.gate1.alignments} the dividers can power up in, and
-        the one the run stamps). The plumbing gate runs a test cartridge
+        the one the run stamps). The plumbing check runs a test cartridge
         for {r.console.plumbing.frames} frames and holds the master
         counter to eight per dot, the odd frames a dot short, the picture
         to the standalone PPU&rsquo;s, and the NMI count in RAM to one a
         frame. It runs at {r.console.frames_per_s[0]} to{" "}
         {r.console.frames_per_s[1]} frames a second on one core,{" "}
         {r.console.real_time_x[0]} to {r.console.real_time_x[1]} times
-        real time. The alignment gate then holds the seam the whole arc
+        real time. The alignment check then holds the seam the whole arc
         was about, two ways. The PPU&rsquo;s real NMI is made to land
         around a BRK at {r.console.gate1.nmi_offsets} offsets a cycle
         apart, and the console&rsquo;s CPU is compared with the
@@ -309,9 +309,10 @@ const PROSE = {
         flag&rsquo;s set and {r.console.gate1.race_reads_clear} around
         its clear, every half-step of both windows reached, every
         outcome the chip&rsquo;s.
-        {" "}Then the oracle the whole arc was built toward: blargg&rsquo;s
-        test ROMs through the entire console, the first real programs
-        these fast rungs had run for millions of cycles. The CPU timing
+        {" "}Then the check the whole arc was built toward, against
+        something real: blargg&rsquo;s test ROMs through the entire
+        console, the first real programs the fast chips had run for
+        millions of cycles. The CPU timing
         test passes; {r.console.blargg.instr_pass} of{" "}
         {r.console.blargg.instr_total} instruction tests pass, every
         official and unofficial opcode; {r.console.blargg.sprite_pass} of{" "}
@@ -327,23 +328,26 @@ const PROSE = {
         measured timing, allow, and a scope on the real board is what
         settles it;{" "}
         {r.console.blargg.apu_pass} of {r.console.blargg.apu_total} APU
-        tests pass, the rest all the frame sequencer&rsquo;s position after
-        a write, carried to the 2A03 by name. What the ROMs found is the
-        point of running them: the CPU&rsquo;s fast rung had replayed
+        tests pass, six of them only after each miss was measured on the
+        switch-level 2A03 and authored there: the $4017 write&rsquo;s
+        parity jitter and its immediate clock, a status latched a
+        half-step after the bus is asked, an IRQ flag that stays set for
+        three cycles, and a DMC byte counted off where its read lands. What the ROMs found is the
+        point of running them: the fast CPU had replayed
         every recorded trace exactly and still carried misses no trace
         had covered (a carry that rides an undriven bus line into the
         next instruction, a shift&rsquo;s carry read from the wrong
         capture, three opcodes whose result is a bus fight the switch
         model settles its own way, the half-cycle at which an interrupt
-        input is sampled, which the alignment gate caught, and a byte
+        input is sampled, which the alignment check caught, and a byte
         latched later than the bus is asked for it), and the fast PPU
         four more. Each
-        was located by running the switch-level chip and the fast rung in
-        lockstep on the ROM until they disagreed, measured on the chip,
+        was located by running the switch-level chip and its fast
+        counterpart in lockstep on the ROM until they disagreed, measured on the chip,
         then authored and held by a fixture that goes red without it. The
         account is{" "}
         <a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>the N5 report</a>;
-        the play gate waits on a cartridge.
+        the play test waits on a cartridge.
       </>
     ),
     pictureH: "The console's frames through the television model, and a capture of them scored",
@@ -370,14 +374,14 @@ const PROSE = {
           encoded by the NES source, decoded on the three-line comb and
           run through the CRT stages at their authored parameters. Two
           checks hold it: a console frame through that chain is the
-          standalone PPU rung&rsquo;s frame from the same world through
+          standalone fast PPU&rsquo;s frame from the same world through
           the same chain on every decoded sample ({p.components_equal}{" "}
           components equal, a {p.parity} frame, {p.displayed[0]} by{" "}
           {p.displayed[1]} on the screen), and the phase after{" "}
           {p.phase_frames} console frames, {p.phase_short} of them short,
           is what the grid&rsquo;s arithmetic gives that sequence
           (phase {p.phase}; forcing every frame even reads differently
-          and is the red run). The bars cartridge the real comparison
+          and turns the check red). The bars cartridge the real comparison
           wants paints with the PPU&rsquo;s rendering off, which the fast
           PPU had never been asked about: measured on the switch-level
           chip, the picture with rendering off is the palette entry the
@@ -439,7 +443,8 @@ const PROSE = {
           inverter&rsquo;s finite open-loop gain and its rails, and the
           table&rsquo;s absolute volts, which is one scale factor a
           scope record supplies.
-          {" "}The oracle is blargg&rsquo;s: four mixer ROMs, each
+          {" "}The check against real hardware is blargg&rsquo;s: four
+          mixer ROMs, each
           playing a channel while the DMC plays its inverse, so a right
           mixer cancels to near silence between two reference beeps.
           Each ran through the whole console; the worst 100 ms window
@@ -461,7 +466,7 @@ const PROSE = {
           table&rsquo;s curves by more than the table departs from
           blargg&rsquo;s inverse, which is the scope&rsquo;s question and
           is recorded, not held. Mixing through the wiki&rsquo;s linear
-          approximation instead is the red run, at a third of the beep.
+          approximation instead turns the check red, at a third of the beep.
           The account is{" "}
           <a href={`${r.console.repo}/blob/main/docs/n7-report.md`}>the N7 report</a>;
           the AUDIO_OUT record is the bench item.
@@ -492,7 +497,7 @@ const PROSE = {
           {m.mean.toExponential(1)}; the tolerance stated first was{" "}
           {s.gpu_tolerance.worst} and {s.gpu_tolerance.mean}. A frame
           takes {g.ms_per_frame} ms on the {g.adapter}, upload included.
-          Skipping persistence is the red run.
+          Skipping persistence turns the check red.
           {" "}The window is a Linux binary: the console with its sound
           on its own thread, advanced by whole frames per period as the
           signal path&rsquo;s drift policy decides from the wall clock,
@@ -512,8 +517,11 @@ const PROSE = {
           sound behind wasm-bindgen, measured under node on {w.rom}:{" "}
           {w.frames} frames in {w.seconds} s, {w.frames_per_s} frames a
           second, {w.real_time_x} times real time, {w.sound_per_frame}{" "}
-          sound samples a frame. The page that hosts it is this
-          site&rsquo;s item. The account is{" "}
+          sound samples a frame. That target has a page now:{" "}
+          <Link href="/nes/play">the console runs here</Link>, on a
+          cartridge from your own disk, through the same signal path the
+          ntsc bench runs, with the drift counters shown raw. The
+          account is{" "}
           <a href={`${r.console.repo}/blob/main/docs/n8-report.md`}>the N8 report</a>.
         </>
       );
@@ -540,11 +548,11 @@ const PROSE = {
         the model&rsquo;s are diffed latch for latch, and a triggered
         capture is scored through the same roundtrip the picture
         milestone closed on. The plan names four milestones with their
-        gates before any firmware, and the first, the sniff, already
+        checks before any firmware, and the first, the sniff, already
         moved the model: asked what a DMC fetch does to a pad read, the
         switch-level 2A03 answered before the part could, and the core,
-        the chip&rsquo;s rung and the console changed for it, each with
-        a mutation that goes red. The drawing below is derived from the
+        the fast chip and the console changed for it, each change held
+        by a sabotage test that goes red without it. The drawing below is derived from the
         wiring tables by a script, so it cannot disagree with them. Plan,
         wiring and the first report are in{" "}
         <Link href="/docs/nes">the notebook</Link>; the repository is{" "}
@@ -579,16 +587,16 @@ const PROSE = {
         The plan was written down first:{" "}
         <a href={sketchHref}>the end-to-end sketch</a> in the contract
         repository, with a check per milestone. Every milestone it names
-        is built and gated on this machine: the contract, the two chips at
-        the switch level and their fast rungs, the 2A03&rsquo;s ladder,
-        the glue, the console on one clock running the standard suites,
+        is built and checked on this machine: the contract, the two chips
+        at the switch level and the fast chips built from them, the fast
+        2A03 assembled whole, the glue, the console on one clock running the standard suites,
         the picture through the encoder and back through the capture
         path, the sound through the board&rsquo;s own stage, and the
         shell with its GPU picture, its gamepad and its browser target.
         What is left is exactly what a switch-level model cannot settle
         alone, and each item is named in the reports: the NMI&rsquo;s
         arrival timing on a real board, a real cartridge in the play
-        gate, the terminated capture the picture milestone asked for, the
+        test, the terminated capture the picture milestone asked for, the
         sound stage under a real speaker, the alignment the console
         powers on in, and the die&rsquo;s own findings, where the model
         and the part are known to disagree and a logic analyser decides.
@@ -677,7 +685,7 @@ const PROSE = {
     pinsH: "6502 のピンに現れた 2A03 のコア、チップ対チップ",
     pins: (r: ReturnType<typeof nes>) => (
       <>
-        コンソールのスケッチが言う新種の検査、規約を介したチップ対チップの比較は、両半分がそろった。2A03 の 6502 コアを 6502 プロジェクト自身の規約クレートのピンフレームとしてクロック位相ごとに提示し、6502 のピンゴールデンに記録された全トレース（{r.n3.golden_traces} 本: 七つのプログラム、リファレンスのプログラム、割り込みと RDY のスクリプト走行、三本の 10 進モード連鎖、全 256 命令）を通す。相手のチップは記録されたテキストとして入り、エンジンとしては決して入らない。{r.n3.traces_compared} 本が比較され（{r.n3.traces_refused} 本は 2A03 にないピンを駆動するので名指しで拒む）、うち {r.n3.traces_exact} 本は全ハーフサイクルの全フィールドで一致。残りは名前と境界を持つ四つのクラスの内側でだけ異なる: スタックページ（二つのダイの模擬電源投入スタックポインタは ${r.n3.stack_offset_hex} 違い、両コア自身のレジスタから導いた）、書き込みの phi1 半分のデータバイト（そこでは何も供給されない）、10 進連鎖（6502 が補正するところを 2A03 は二進の和と二進のフラグを書く、{r.n3.decimal_stores} バイトを算術と共に列挙）、そして走行中のリセット（2A03 は RES の間コアを止め、6502 は走り続け、どちらも同じハーフサイクルでベクタを読む）。この一覧が 2A03 自身の高速コアの形を決めた: 10 進補正を切り離し、スタックポインタをこのチップから種付けした 6502 のラング 3。二つのつまみは 6502 リポジトリに着地し、そこのゴールデンに押さえられている。スイッチレベルの 2A03 に対して全プログラムと全スクリプトで: {r.n3.core_programs} プログラム、{r.n3.core_half_cycles} ハーフサイクル、残る差は write-phi1 のバイトだけ。
+        コンソールのスケッチが言う新種の検査、規約を介したチップ対チップの比較は、両半分がそろった。2A03 の 6502 コアを 6502 プロジェクト自身の規約クレートのピンフレームとしてクロック位相ごとに提示し、6502 の記録済みピン走行の全トレース（{r.n3.golden_traces} 本: 七つのプログラム、リファレンスのプログラム、割り込みと RDY のスクリプト走行、三本の 10 進モード連鎖、全 256 命令）を通す。相手のチップは記録されたテキストとして入り、エンジンとしては決して入らない。{r.n3.traces_compared} 本が比較され（{r.n3.traces_refused} 本は 2A03 にないピンを駆動するので名指しで拒む）、うち {r.n3.traces_exact} 本は全ハーフサイクルの全フィールドで一致。残りは名前と境界を持つ四つのクラスの内側でだけ異なる: スタックページ（二つのダイの模擬電源投入スタックポインタは ${r.n3.stack_offset_hex} 違い、両コア自身のレジスタから導いた）、書き込みの phi1 半分のデータバイト（そこでは何も供給されない）、10 進連鎖（6502 が補正するところを 2A03 は二進の和と二進のフラグを書く、{r.n3.decimal_stores} バイトを算術と共に列挙）、そして走行中のリセット（2A03 は RES の間コアを止め、6502 は走り続け、どちらも同じハーフサイクルでベクタを読む）。この一覧が 2A03 自身の高速コアの形を決めた: 10 進補正を切り離し、スタックポインタをこのチップから種付けした 6502 の高速コア。二つのつまみは 6502 リポジトリに着地し、そこの記録済み走行に押さえられている。スイッチレベルの 2A03 に対して全プログラムと全スクリプトで: {r.n3.core_programs} プログラム、{r.n3.core_half_cycles} ハーフサイクル、残る差は write-phi1 のバイトだけ。
       </>
     ),
     apuH: "表としての APU、ハーフステップごとにチップに押さえる",
@@ -699,7 +707,7 @@ const PROSE = {
     console: (r: ReturnType<typeof nes>) => (
       <>
         まず糊。NES-001 基板の少数の部品、アドレスデコーダ、PPU のアドレスラッチ、二つの RAM、コントローラポートのバッファとその先のコントローラ、リセット連鎖を、それぞれ数行で自前の検査によりデータシートに押さえ、書き下ろしと札を付けた。そこにはネットリストを通るものがないからだ。二つは最初の書き下ろしが間違っていて、検査がそう言った。次にコンソール: 2A03 の高速コアと高速 PPU を一つのマスタハーフステップ計数器に乗せ、CPU は十二ごと、PPU は八ごとに進み、位相は二つのスイッチレベルチップ自身のクロック分周器から測った（cpu_phase {r.console.alignment.cpu_phase}、ppu_phase {r.console.alignment.ppu_phase}。分周器が電源投入で取り得る {r.console.gate1.alignments} 通りの一つで、走行がスタンプに記す）。配管の検査はテストカートリッジを {r.console.plumbing.frames} フレーム走らせ、マスタ計数器がドットあたり八であること、奇数フレームが一ドット短いこと、絵が単体 PPU のものと同じこと、RAM の NMI 計数が一フレーム一回であることを押さえる。一コアで毎秒 {r.console.frames_per_s[0]} から {r.console.frames_per_s[1]} フレーム、実時間の {r.console.real_time_x[0]} から {r.console.real_time_x[1]} 倍。位相の検査は、この弧全体の要である継ぎ目を二通りに押さえる。PPU の実 NMI を BRK の周りに一サイクル刻みで {r.console.gate1.nmi_offsets} 通りの位置に落とし、コンソールの CPU を同じエッジで駆動したスイッチレベルの 6502 とハーフサイクルごとに比べる: {r.console.gate1.nmi_half_cycles} ハーフサイクルが一致、取ったベクタも、プッシュも、タイミングも。そして $2002 読み出しの競合をコンソール自身のアクセス形でスイッチレベル PPU 上に全ハーフステップで測り、コンソールの読み出しをその表に {r.console.gate1.alignments} 通りすべての位相で押さえる: フラグのセット周りで {r.console.gate1.race_reads_set} 回、クリア周りで {r.console.gate1.race_reads_clear} 回、両窓の全ハーフステップに届き、結果はすべてチップのもの。
-        そして、この弧全体が目指してきたオラクル: blargg のテスト ROM をコンソール全体に通す。これらの高速ラングが何百万サイクルも実プログラムを走らせた最初の機会だ。CPU タイミング検査は合格。命令検査は {r.console.blargg.instr_total} 本中 {r.console.blargg.instr_pass} 本が合格、公式・非公式の全命令。スプライトヒット検査は {r.console.blargg.sprite_total} 本中 {r.console.blargg.sprite_pass} 本が合格{r.console.blargg.sprite_pass === r.console.blargg.sprite_total ? "。縦長の一本は、高速 PPU の縦長スプライト規則をスイッチレベルチップで測ってドット単位で押さえてからの合格だ" : "、残る一本は名指しで拒む（縦長スプライトは模していない）"}。vblank と NMI のタイミング検査は {r.console.blargg.vbl_nmi_total} 本中 {r.console.blargg.vbl_nmi_pass} 本が合格、残りは文書化された実機から一、二ドットのずれで、すべて一つの問いに帰する: 実機の NMI は、それぞれ自身の実測タイミングに押さえた二つのチップが許すより約二ドット遅れて CPU に届く。決めるのは実基板に当てるスコープだ。APU 検査は {r.console.blargg.apu_total} 本中 {r.console.blargg.apu_pass} 本が合格。うち六本は、不合格をスイッチレベルの 2A03 で測って書き下ろしてからの合格だ: $4017 書き込みの位相ジッタと即時クロック、バスに尋ねた半ステップ後にラッチされるステータス、三サイクル続けて立つ IRQ フラグ、読み出しが着地する所で数え落とされる DMC のバイト。ROM が見つけたものこそ走らせる意味だ: CPU の高速ラングは記録済みの全トレースを正確に再生しながら、トレースが覆っていなかった四つの見落としを抱えていた（駆動されないバス線に乗って次の命令へ渡る桁上げ、誤った捕捉から読んだシフトの桁上げ、結果がバスの取り合いでありスイッチモデルが独自に決着させる三命令、割り込み入力を標本化するハーフサイクル（位相の検査が捕まえた）、そしてバスに尋ねるより遅くラッチされるバイト）。高速 PPU にも四つ。それぞれ、スイッチレベルチップと高速ラングを ROM 上で食い違うまで並走させて位置を特定し、チップで測り、書き下ろし、無ければ赤になる固定具で押さえた。記録は<a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>N5 報告</a>。遊びの検査はカートリッジ待ち。
+        そして、この弧全体が目指してきた、本物のプログラムでの検査: blargg のテスト ROM をコンソール全体に通す。これらの高速チップが何百万サイクルも実プログラムを走らせた最初の機会だ。CPU タイミング検査は合格。命令検査は {r.console.blargg.instr_total} 本中 {r.console.blargg.instr_pass} 本が合格、公式・非公式の全命令。スプライトヒット検査は {r.console.blargg.sprite_total} 本中 {r.console.blargg.sprite_pass} 本が合格{r.console.blargg.sprite_pass === r.console.blargg.sprite_total ? "。縦長の一本は、高速 PPU の縦長スプライト規則をスイッチレベルチップで測ってドット単位で押さえてからの合格だ" : "、残る一本は名指しで拒む（縦長スプライトは模していない）"}。vblank と NMI のタイミング検査は {r.console.blargg.vbl_nmi_total} 本中 {r.console.blargg.vbl_nmi_pass} 本が合格、残りは文書化された実機から一、二ドットのずれで、すべて一つの問いに帰する: 実機の NMI は、それぞれ自身の実測タイミングに押さえた二つのチップが許すより約二ドット遅れて CPU に届く。決めるのは実基板に当てるスコープだ。APU 検査は {r.console.blargg.apu_total} 本中 {r.console.blargg.apu_pass} 本が合格。うち六本は、不合格をスイッチレベルの 2A03 で測って書き下ろしてからの合格だ: $4017 書き込みの位相ジッタと即時クロック、バスに尋ねた半ステップ後にラッチされるステータス、三サイクル続けて立つ IRQ フラグ、読み出しが着地する所で数え落とされる DMC のバイト。ROM が見つけたものこそ走らせる意味だ: 高速 CPU は記録済みの全トレースを正確に再生しながら、トレースが覆っていなかった五つの見落としを抱えていた（駆動されないバス線に乗って次の命令へ渡る桁上げ、誤った捕捉から読んだシフトの桁上げ、結果がバスの取り合いでありスイッチモデルが独自に決着させる三命令、割り込み入力を標本化するハーフサイクル（位相の検査が捕まえた）、そしてバスに尋ねるより遅くラッチされるバイト）。高速 PPU にも四つ。それぞれ、スイッチレベルチップと高速チップを ROM 上で食い違うまで並走させて位置を特定し、チップで測り、書き下ろし、無ければ赤になる固定具で押さえた。記録は<a href={`${r.console.repo}/blob/main/docs/n5-report.md`}>N5 報告</a>。遊びの検査はカートリッジ待ち。
       </>
     ),
     pictureH: "コンソールのフレームがテレビ模型を通り、その捕捉が採点される",
@@ -718,7 +726,7 @@ const PROSE = {
       });
       return (
         <>
-          絵は ntsc-crt の連鎖（{p.ntsc_crt}、タグで固定）で、コンソールが足すのは二つだけ: フレームの順序と、一つのフレームから次へ持ち越す副搬送波の位相だ。奇数フレームの短い一行が位相を動かすので、コンソールはドットだけでなくパリティを渡す。各フレームは NES ソースで符号化され、三ラインコムで復号され、書き下ろしの定数で CRT の各段を通る。押さえは二つ。コンソールのフレームをこの連鎖に通したものは、同じ世界から単体 PPU ラングが出したフレームを同じ連鎖に通したものと、復号された全標本で一致する（{p.components_equal} 成分が一致、{p.parity} フレーム、画面上 {p.displayed[0]} × {p.displayed[1]}）。そして {p.phase_frames} フレーム（うち {p.phase_short} が短い）後の位相は、その列にグリッドの算術が与えるもの（位相 {p.phase}。全フレームを偶数に強制すると違う値になり、それが赤の走行）。実機比較が欲しがるカラーバーのカートリッジは PPU の描画を切って塗るが、高速 PPU はそれを訊かれたことがなかった: スイッチレベルのチップで測ると、描画を切った絵はアドレスレジスタが指すパレット項目で、行途中の書き込みに対するタイミングは今そこに固定具として在る。
+          絵は ntsc-crt の連鎖（{p.ntsc_crt}、タグで固定）で、コンソールが足すのは二つだけ: フレームの順序と、一つのフレームから次へ持ち越す副搬送波の位相だ。奇数フレームの短い一行が位相を動かすので、コンソールはドットだけでなくパリティを渡す。各フレームは NES ソースで符号化され、三ラインコムで復号され、書き下ろしの定数で CRT の各段を通る。押さえは二つ。コンソールのフレームをこの連鎖に通したものは、同じ世界から単体の高速 PPU が出したフレームを同じ連鎖に通したものと、復号された全標本で一致する（{p.components_equal} 成分が一致、{p.parity} フレーム、画面上 {p.displayed[0]} × {p.displayed[1]}）。そして {p.phase_frames} フレーム（うち {p.phase_short} が短い）後の位相は、その列にグリッドの算術が与えるもの（位相 {p.phase}。全フレームを偶数に強制すると違う値になり、検査が赤になる）。実機比較が欲しがるカラーバーのカートリッジは PPU の描画を切って塗るが、高速 PPU はそれを訊かれたことがなかった: スイッチレベルのチップで測ると、描画を切った絵はアドレスレジスタが指すパレット項目で、行途中の書き込みに対するタイミングは今そこに固定具として在る。
           次に捕捉経路、実機が加わる比較の機械側半分: カラーバーのカートリッジをコンソールに通し、そのフレームを ntsc-crt の捕捉カード模型に通して実記録とまったく同じ手順で復元し、合成は模型自身のフロントエンドを通して両側が同じ帯域制限を持つようにし、平坦な領域すべてを同一の復号器を通したその合成に対して、縁から {c.margin_dots} ドット内側で採点する。この距離は選んだのではなく復号器のクロマフィルタから導いた。許容は走らせる前に書いた: 輝度 {c.tol_luma} 以内、色相 {c.tol_hue_deg} 度以内、彩度 {c.tol_sat_pct} パーセント以内。カートリッジはリポジトリ自身のもの。blargg のバーは十六ドット幅で復号器は五ドットで落ち着くからだ: 三十二ドットのセルに十二の色相を一つの輝度行で並べ、背景色を加え、行は二秒ごとに進み、行ごとに一走行で採点する。{rowsJa}{c.held ? "往復は閉じる。" : "往復は閉じない。"}最初の走行群は採点自身の幾何の前に計器を三度見つけた: ヒストグラム一区画分粗いレベル基準合わせ、消去期間と取り違えられた暗い絵、同期エッジと取り違えられた最も暗い色のクロマの谷。それぞれ ntsc-crt 側で直して固定し直した。同じカートリッジの実機記録がベンチ項目で、そのためのカートリッジはいま在る。記録は<a href={`${r.console.repo}/blob/main/docs/n6-report.md`}>N6 報告</a>。
         </>
       );
@@ -730,13 +738,13 @@ const PROSE = {
       return (
         <>
           2A03 の五つの出力コードは CPU ハーフサイクルごとにチップを出て、二つの DAC を通る。一族が初音以来抱えてきた nesdev の表で、書き下ろしと札が付く。その先は NES-001 の回路図にあり、直接読んだ: 各音声ピンは 100 オームで引き下げられ（表自身の「プラス 100」）、二つのピンは 20K と 12K で加算され（表の二つの定数がすでに抱える比）、結合コンデンサを経て、47K の帰還抵抗と並列の 220 pF で線形に保たれた 74HC04 インバータに入る。つまりジャックまでは、時定数 {s.stage.tau_hp_ms} ms のハイパス、インバータの符号付きの利得 {s.stage.gain}、{s.stage.tau_lp_us} マイクロ秒のローパス、そして厳密な有理時刻での窓付き sinc による 48 kHz への再標本化。段はその算術に押さえられる（ステップは時定数ごとに {s.stage.step_ratio} に減衰し、10 kHz の音は 200 Hz に対して {s.stage.tone_ratio} で通り、値が与えるのは {s.stage.tone_expected}）。模していないと明記するもの: インバータの有限な開ループ利得とその電源レール、そして表の絶対電圧。後者はスコープ記録が与える一つの倍率だ。
-          オラクルは blargg のもの: 四つのミキサー ROM で、それぞれ一チャンネルを鳴らしながら DMC がその逆波形を鳴らすので、正しいミキサーは二つの参照ビープの間でほぼ無音に打ち消す。それぞれをコンソール全体に通し、各検査の最悪の 100 ms 窓はビープに対する割合で {s.tolerance_pct} パーセント未満でなければならない（DMC の一段だけで約二）。ノイズ ROM は設計上ノイズがフェードするので純音成分で押さえる。コンソール、次いで同じ ROM を実機で録った blargg の録音を同じコードで測ったもの: {roms.map((k, i) => (
+          実機に対する検査は blargg のもの: 四つのミキサー ROM で、それぞれ一チャンネルを鳴らしながら DMC がその逆波形を鳴らすので、正しいミキサーは二つの参照ビープの間でほぼ無音に打ち消す。それぞれをコンソール全体に通し、各検査の最悪の 100 ms 窓はビープに対する割合で {s.tolerance_pct} パーセント未満でなければならない（DMC の一段だけで約二）。ノイズ ROM は設計上ノイズがフェードするので純音成分で押さえる。コンソール、次いで同じ ROM を実機で録った blargg の録音を同じコードで測ったもの: {roms.map((k, i) => (
             <span key={k}>
               {k} は {s.roms[k].rms_pct} パーセント対 {s.roms[k].rec_rms_pct}
               {i < roms.length - 1 ? "、" : "。"}
             </span>
           ))}
-          三角波とノイズは実機とコンマ数パーセントで一致する。矩形波と dmc は実機でコンソールの二倍の残差を抱え、その残差は純音だ: 実物のパルス DAC と DMC DAC は、表が blargg の逆波形から離れる以上に表の曲線から離れている。これはスコープへの問いで、記録し、押さえない。代わりに wiki の線形近似で混ぜるのが赤の走行で、ビープの三分の一に達する。記録は<a href={`${r.console.repo}/blob/main/docs/n7-report.md`}>N7 報告</a>。AUDIO_OUT の記録がベンチ項目。
+          三角波とノイズは実機とコンマ数パーセントで一致する。矩形波と dmc は実機でコンソールの二倍の残差を抱え、その残差は純音だ: 実物のパルス DAC と DMC DAC は、表が blargg の逆波形から離れる以上に表の曲線から離れている。これはスコープへの問いで、記録し、押さえない。代わりに wiki の線形近似で混ぜると検査は赤になり、ビープの三分の一に達する。記録は<a href={`${r.console.repo}/blob/main/docs/n7-report.md`}>N7 報告</a>。AUDIO_OUT の記録がベンチ項目。
         </>
       );
     },
@@ -749,7 +757,7 @@ const PROSE = {
       const w = s.wasm;
       return (
         <>
-          一フレームが一コアで要する時間は何かを書く前に測られ、仕事がどこへ行くべきかを告げた: コンソールと符号化器は一コアに収まり、コム復号と五段の CRT は CPU のどこにも収まらない。その二つはいま GPU 上の八つの計算パスで、すべての定数は打ち込まれるのではなく復号器と CRT のパラメータから送られ、連続する三フレーム（最後は残光が見えるよう黒）の全画素の全成分で信号経路自身の CPU 連鎖に押さえられる。書き下ろしのパラメータでは最悪の成分差が {g.worst.toExponential(1)}、平均が {g.mean.toExponential(1)}。マスクと幾何を入れると {m.worst.toExponential(1)} と {m.mean.toExponential(1)}。先に述べた許容は {s.gpu_tolerance.worst} と {s.gpu_tolerance.mean}。一フレームは {g.adapter} で転送込み {g.ms_per_frame} ms。残光を飛ばすのが赤の走行。
+          一フレームが一コアで要する時間は何かを書く前に測られ、仕事がどこへ行くべきかを告げた: コンソールと符号化器は一コアに収まり、コム復号と五段の CRT は CPU のどこにも収まらない。その二つはいま GPU 上の八つの計算パスで、すべての定数は打ち込まれるのではなく復号器と CRT のパラメータから送られ、連続する三フレーム（最後は残光が見えるよう黒）の全画素の全成分で信号経路自身の CPU 連鎖に押さえられる。書き下ろしのパラメータでは最悪の成分差が {g.worst.toExponential(1)}、平均が {g.mean.toExponential(1)}。マスクと幾何を入れると {m.worst.toExponential(1)} と {m.mean.toExponential(1)}。先に述べた許容は {s.gpu_tolerance.worst} と {s.gpu_tolerance.mean}。一フレームは {g.adapter} で転送込み {g.ms_per_frame} ms。残光を飛ばすと検査が赤になる。
           窓は Linux のバイナリ: 音付きのコンソールが自分のスレッドで、信号経路のドリフト方針が壁時計から決める分だけ周期ごとにフレーム単位で進み、重複と欠落を数え、時間方向には決して再標本化しない。表示は新しいフレームごとに符号化して GPU の絵を走らせ、音は音声デバイスへ、キーボードはコントローラ 1。ループは合成クロックで押さえる: ちょうど周期では {p.at_period.ticks} 拍で新フレーム {p.at_period.new}、重複 {p.at_period.duplicated}、欠落 {p.at_period.dropped}。半周期では {p.at_half.ticks} 拍のうち {p.at_half.duplicated} が前のフレームを再提示。二倍では {p.at_twice.ticks} 拍で {p.at_twice.dropped} 欠落。この機械では仮想ディスプレイで走った。本物の画面、スピーカー、手が机の項目。
           二つ目の標的はブラウザ: 音付きのコンソールを wasm-bindgen の後ろに置き、node で {w.rom} を測った: {w.frames} フレームを {w.seconds} 秒、毎秒 {w.frames_per_s} フレーム、実時間の {w.real_time_x} 倍、一フレームあたり {w.sound_per_frame} 音声標本。その標的はいまページを持つ: <Link href="/ja/nes/play">コンソールはここで走る</Link>。自分のディスクのカートリッジで、ntsc ベンチと同じ信号経路を通り、ドリフトカウンタを生で表示する。記録は<a href={`${r.console.repo}/blob/main/docs/n8-report.md`}>N8 報告</a>。
         </>
@@ -764,7 +772,7 @@ const PROSE = {
     benchH: "ベンチ: 実機と模型を同じ入力履歴の下に置く",
     bench: (r: ReturnType<typeof nes>) => (
       <>
-        機械側のマイルストーンがすべて閉じたいま、コンソールがまだ実機について知らないことはベンチを待っており、次に組むのはそのベンチだ。コンソールのコントローラポートと純正パッドの間にブリッジを置く: ブリッジ上のシフトレジスタがコンソールにクロックされるパッドそのものになり、マイクロコントローラはポーリングの合間にその入力を書き、コンソールのラッチとクロックのパルスをハードウェアで数え、LAN 上の Raspberry Pi がスクリプトを受け取り、リセットと電源のリレーを駆動し、スコープをトリガする。スクリプトはラッチ番号ごとのバイトなので、模型と実機は同じ履歴を見る。ブリッジのラッチごとのログと模型のログをラッチ単位で突き合わせ、トリガした取り込みは絵のマイルストーンが閉じたのと同じ往復で採点する。計画はファームウェアより先に四つのマイルストーンと検査を名指しし、最初の「盗み聞き」はすでに模型を動かした: DMC フェッチがパッド読み出しに何をするか問うと、スイッチレベルの 2A03 が実機より先に答え、コアとチップのラングとコンソールがそれに合わせて変わり、それぞれに赤くなる変異がある。下の図は配線表からスクリプトが導いたもので、表と食い違うことはできない。計画、配線、最初の報告は<Link href="/ja/docs/nes">ノートブック</Link>に、リポジトリは <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>。
+        機械側のマイルストーンがすべて閉じたいま、コンソールがまだ実機について知らないことはベンチを待っており、次に組むのはそのベンチだ。コンソールのコントローラポートと純正パッドの間にブリッジを置く: ブリッジ上のシフトレジスタがコンソールにクロックされるパッドそのものになり、マイクロコントローラはポーリングの合間にその入力を書き、コンソールのラッチとクロックのパルスをハードウェアで数え、LAN 上の Raspberry Pi がスクリプトを受け取り、リセットと電源のリレーを駆動し、スコープをトリガする。スクリプトはラッチ番号ごとのバイトなので、模型と実機は同じ履歴を見る。ブリッジのラッチごとのログと模型のログをラッチ単位で突き合わせ、トリガした取り込みは絵のマイルストーンが閉じたのと同じ往復で採点する。計画はファームウェアより先に四つのマイルストーンと検査を名指しし、最初の「盗み聞き」はすでに模型を動かした: DMC フェッチがパッド読み出しに何をするか問うと、スイッチレベルの 2A03 が実機より先に答え、コアと高速チップとコンソールがそれに合わせて変わり、それぞれの変更は、無ければ赤になる妨害テストが押さえる。下の図は配線表からスクリプトが導いたもので、表と食い違うことはできない。計画、配線、最初の報告は<Link href="/ja/docs/nes">ノートブック</Link>に、リポジトリは <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>。
       </>
     ),
     benchAlt: "ベンチの一枚の図: 上にループ（ワークステーション、Pi、ブリッジ、コンソール、パッド、スコープ、リレー）、下にブリッジのチップと全ピン。",
@@ -789,7 +797,7 @@ const PROSE = {
     aheadH: "スケッチが求めたもの、そして実機を待つもの",
     ahead: (sketchHref: string) => (
       <>
-        計画は先に書かれた: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。そこに名のあるマイルストーンはすべてこの機械の上で組まれ、検査を通っている: 規約、スイッチレベルの二つのチップとその高速ラング、2A03 の梯子、糊、一つのクロックで標準スイートを走らせるコンソール、エンコーダを通って取り込み経路を戻る絵、基板自身の段を通る音、そして GPU の絵とゲームパッドとブラウザ標的を持つシェル。残るのは、スイッチレベルの模型だけでは決められないものそのものであり、各項目は報告に名指しされている: 実基板での NMI 到達タイミング、遊びの検査に入れる実カートリッジ、絵のマイルストーンが求めた終端付きの取り込み、実スピーカーの下での音の段、コンソールが電源投入時に取る位相、そして模型と実機が食い違うと分かっていてロジックアナライザが決めるダイ自身の発見。上のベンチはそれらを閉じる手段だ。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は先に書かれた: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。そこに名のあるマイルストーンはすべてこの機械の上で組まれ、検査を通っている: 規約、スイッチレベルの二つのチップとそこから組んだ高速チップ、丸ごと組み上がった高速 2A03、糊、一つのクロックで標準スイートを走らせるコンソール、エンコーダを通って取り込み経路を戻る絵、基板自身の段を通る音、そして GPU の絵とゲームパッドとブラウザ標的を持つシェル。残るのは、スイッチレベルの模型だけでは決められないものそのものであり、各項目は報告に名指しされている: 実基板での NMI 到達タイミング、遊びの検査に入れる実カートリッジ、絵のマイルストーンが求めた終端付きの取り込み、実スピーカーの下での音の段、コンソールが電源投入時に取る位相、そして模型と実機が食い違うと分かっていてロジックアナライザが決めるダイ自身の発見。上のベンチはそれらを閉じる手段だ。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (

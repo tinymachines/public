@@ -107,7 +107,7 @@ export const PAGES: Record<string, FixedPage> = {
   "/nes/play": {
     title: "Play",
     description:
-      "The console from the repository running in the page: both fast rungs, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
+      "The console from the repository running in the page: both fast chips, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
   },
   "/ntsc": {
     title: "ntsc-crt",

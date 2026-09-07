@@ -111,7 +111,7 @@ Its landing page is a measurement report. The repository declared every
 pre-computed number in its own spec a claim for a test to confirm, and three
 did not survive; the page carries the corrections, and every figure it
 states was re-measured for it by running the project's own scanner, suite
-and mutation run at a pinned commit. The documentation has not moved into
+and sabotage checks at a pinned commit. The documentation has not moved into
 this tree yet; it lives in
 [the repository](https://github.com/tinymachines/ntsc-crt).
 
@@ -141,7 +141,7 @@ are public:
   memory harness, the reference's own run of the same program replays
   through it bit for bit, and the square channel's output swings in
   plateaus whose length comes straight from the program's own timer byte.
-  Its ladder is now built (2026-09-05): the 6502's fast core with the
+  Its fast counterpart is now built (2026-09-05): the 6502's fast core with the
   decimal adjust disconnected, chosen by comparing the switch-level 2A03
   against the 6502's recorded pin traces chip against chip; an APU
   authored around tables measured out of the chip, held to its five
@@ -154,14 +154,14 @@ are public:
   sabotage that lies about one pin's polarity and must make it fail.
 - [nes](https://github.com/tinymachines/nes) is the console, where the
   chips meet (2026-09-05): the mainboard's glue, each part held to its
-  datasheet and labelled authored, and both fast rungs on one master
+  datasheet and labelled authored, and both fast chips on one master
   clock at the alignment measured off the switch-level chips' own
   dividers, a little over twice real time, the seam between them held
   by replaying the PPU's real NMI and the vblank read race through the
   console against the switch-level chips. blargg's test ROMs run through
   the whole thing with a real CPU attached, and the page carries every
-  result, pass or named failure. Running them found misses in the CPU's
-  fast rung that no recorded trace had covered, each located by running
+  result, pass or named failure. Running them found misses in the fast
+  CPU that no recorded trace had covered, each located by running
   the switch-level chip alongside it until they disagreed, then measured
   and held by a fixture. Its frames now go through the television model
   (2026-09-06): ntsc-crt's chain with the phase carried from frame to

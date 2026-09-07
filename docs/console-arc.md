@@ -1,32 +1,32 @@
 ---
 title: The console arc, in retrospect
-description: What the sketch asked for, how each milestone was gated, what the chips and the ROMs taught, and what stays for a bench.
+description: What the sketch asked for, how each milestone was checked, what the chips and the ROMs taught, and what stays for a bench.
 order: 3
 ---
 
 # The console arc, in retrospect
 
 The arc set out to put a whole console together from parts that had each
-been proven on their own: a switch-level 6502 and the fast rungs above it,
-a switch-level 2A03 and 2C02, an NTSC signal path simulated at the
+been proven on their own: a switch-level 6502 and the fast cores held to
+it, a switch-level 2A03 and 2C02, an NTSC signal path simulated at the
 waveform, and the authored glue of an NES-001 mainboard. The sketch that
 ran it is [the first page of the notebook](/docs/nes/sketch); the figures
-every page below states are on [the console page](/nes), boarded from the
+every page below states are on [the console page](/nes), recorded from the
 repositories' own runs, and nothing here retypes them.
 
 ## The rule that shaped everything
 
 A milestone is a document twice. The plan is written before the code,
-with its gates named and its tolerances stated, and the report is written
+with its checks named and its tolerances stated, and the report is written
 after, with every figure a measurement carrying a run stamp. Between the
 two sits one discipline: measure on the switch-level chip before
 authoring, label what is authored as authored, and add a fix only when a
 test fails without it. Each report keeps a list of what it did not do,
 and the next plan starts from that list.
 
-The rule earned its keep in the same way each time. When a fast rung and
+The rule earned its keep in the same way each time. When a fast chip and
 a real program disagreed, the disagreement was located by running the
-switch-level chip in lockstep beside the rung until they parted, measured
+switch-level chip in lockstep beside it until they parted, measured
 there, then authored and held by a fixture that goes red without it.
 Nobody reasoned about what a chip does; the chip was asked.
 
@@ -46,9 +46,9 @@ latches the family had read as undefined at power-on turned out to be the
 engine's rule, not the silicon's; once the rule was right, the PPU's
 recorded runs replayed with no list of exceptions at all.
 
-## What the console taught the rungs
+## What the console taught the fast chips
 
-The fast rungs had replayed every recorded trace exactly and still carried
+The fast chips had replayed every recorded trace exactly and still carried
 misses that no trace had covered, because a trace is only as wide as its
 encoding. Running blargg's test ROMs through the whole console with a real
 CPU attached found them one by one: a carry that rides an undriven bus
@@ -64,7 +64,7 @@ Two findings were not fixes. The console's interrupt reaches its CPU about
 two dots later than the two chips, each held to its own measurements,
 allow; the documented behaviour and the measured chips disagree, and a
 scope on the real board is what settles it. And the PPU's picture with
-rendering off, which the fast rung had only ever authored as the
+rendering off, which the fast PPU had only ever authored as the
 backdrop, is the palette entry the address register points at, with the
 timing of a mid-line write against it now a fixture; a colour-bars
 cartridge was blue stripes until that was measured.
@@ -108,9 +108,9 @@ away the moment a tick was late, which the counters showed in the first
 run. The window ran under a virtual display on a loaded box; a real
 screen, a speaker and a hand are what remain.
 
-One trap is worth its own sentence. The mutation switch the family uses
-everywhere is an environment variable, and the chip rung reads it too, so
-a console-level mutation once mutated the chip underneath and the gate
+One trap is worth its own sentence. The sabotage switch the family uses
+everywhere is an environment variable, and the fast chip reads it too, so
+a console-level sabotage once sabotaged the chip underneath and the check
 went red for the wrong reason. A red that proves nothing is the kind the
 house style warns about, and it was caught by asking what had actually
 failed.
