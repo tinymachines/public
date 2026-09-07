@@ -573,21 +573,28 @@ const PROSE = {
     mPpuCommit: (commit: string, href: string) => (
       <>2c02 commit: <b><a data-address href={href}>{commit}</a></b></>
     ),
-    aheadH: "The milestones between here and a bootable console",
+    aheadH: "What the sketch asked for, and what still waits on the part",
     ahead: (sketchHref: string) => (
       <>
-        The plan is written down and agreed:{" "}
+        The plan was written down first:{" "}
         <a href={sketchHref}>the end-to-end sketch</a> in the contract
-        repository, with a check per milestone. The PPU&rsquo;s corners and
-        its fast rung, the pin check in both halves, the 2A03&rsquo;s
-        ladder (its core, its APU, its DMA units), the glue and the
-        console&rsquo;s alignment gate are done, and the console runs the
-        standard suites. Still open there: the NMI&rsquo;s arrival timing
-        on a real board, and the play gate,
-        which waits on a cartridge. Then the picture through
-        the encoder, and the sound. The signal side is already real:{" "}
-        <Link href="/ntsc">the ntsc page</Link> carries frames decoded from
-        a physical console, and{" "}
+        repository, with a check per milestone. Every milestone it names
+        is built and gated on this machine: the contract, the two chips at
+        the switch level and their fast rungs, the 2A03&rsquo;s ladder,
+        the glue, the console on one clock running the standard suites,
+        the picture through the encoder and back through the capture
+        path, the sound through the board&rsquo;s own stage, and the
+        shell with its GPU picture, its gamepad and its browser target.
+        What is left is exactly what a switch-level model cannot settle
+        alone, and each item is named in the reports: the NMI&rsquo;s
+        arrival timing on a real board, a real cartridge in the play
+        gate, the terminated capture the picture milestone asked for, the
+        sound stage under a real speaker, the alignment the console
+        powers on in, and the die&rsquo;s own findings, where the model
+        and the part are known to disagree and a logic analyser decides.
+        The bench above is how those close. The signal side is already
+        real: <Link href="/ntsc">the ntsc page</Link> carries frames
+        decoded from a physical console, and{" "}
         <Link href="/ntsc/composite">its composite deep-dive</Link> reads
         that console&rsquo;s video off the scope level by level.
       </>
@@ -779,10 +786,10 @@ const PROSE = {
     mPpuCommit: (commit: string, href: string) => (
       <>2c02 コミット: <b><a data-address href={href}>{commit}</a></b></>
     ),
-    aheadH: "ここから起動するコンソールまでのマイルストーン",
+    aheadH: "スケッチが求めたもの、そして実機を待つもの",
     ahead: (sketchHref: string) => (
       <>
-        計画は書かれ、合意済みだ: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。PPU の隅と高速ラング、ピン検査の両半分、2A03 の梯子（コア、APU、DMA ユニット）、糊、そしてコンソールの位相検査は済み、コンソールは標準スイートを走らせている。そこで開いているもの: 実基板での NMI 到達タイミング、そしてカートリッジ待ちの遊びの検査。それからエンコーダを通る絵と、音。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は先に書かれた: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。そこに名のあるマイルストーンはすべてこの機械の上で組まれ、検査を通っている: 規約、スイッチレベルの二つのチップとその高速ラング、2A03 の梯子、糊、一つのクロックで標準スイートを走らせるコンソール、エンコーダを通って取り込み経路を戻る絵、基板自身の段を通る音、そして GPU の絵とゲームパッドとブラウザ標的を持つシェル。残るのは、スイッチレベルの模型だけでは決められないものそのものであり、各項目は報告に名指しされている: 実基板での NMI 到達タイミング、遊びの検査に入れる実カートリッジ、絵のマイルストーンが求めた終端付きの取り込み、実スピーカーの下での音の段、コンソールが電源投入時に取る位相、そして模型と実機が食い違うと分かっていてロジックアナライザが決めるダイ自身の発見。上のベンチはそれらを閉じる手段だ。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (
