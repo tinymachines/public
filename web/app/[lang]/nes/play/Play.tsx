@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
+import { Gamepad } from "./Gamepad";
 import { attach, detach, load, toggleRun, subscribe, snapshot, serverSnapshot, type DriftStats } from "./playEngine";
 
 /**
@@ -38,7 +39,11 @@ const S = {
       <>display callbacks: <b>{s.presented}</b>, duplicated: <b>{s.duplicated}</b>, dropped: <b>{s.dropped}</b></>
     ),
     underruns: (n: number, audio: boolean) => (audio ? <>audio underruns: <b>{n}</b></> : <>audio: <b>none</b> (this browser gave no output)</>),
-    keys: "Keys: arrows, Z and X for B and A, Enter for Start, right Shift for Select.",
+    keys: "Keys: arrows, Z and X for B and A, Enter for Start, right Shift for Select; or the pad below, a thumb on each side.",
+    full: "Full screen",
+    exitFull: "Exit full screen",
+    select: "select",
+    start: "start",
     canvasLabel: "The console's picture through the three-line comb: 2048 samples by 240 lines",
   },
   ja: {
@@ -67,7 +72,11 @@ const S = {
       <>表示コールバック: <b>{s.presented}</b>、重複: <b>{s.duplicated}</b>、欠落: <b>{s.dropped}</b></>
     ),
     underruns: (n: number, audio: boolean) => (audio ? <>音声のアンダーラン: <b>{n}</b></> : <>音声: <b>なし</b>（このブラウザは出力を与えなかった）</>),
-    keys: "キー: 矢印、Z と X が B と A、Enter が Start、右 Shift が Select。",
+    keys: "キー: 矢印、Z と X が B と A、Enter が Start、右 Shift が Select。または下のパッドを両手の親指で。",
+    full: "全画面",
+    exitFull: "全画面を終了",
+    select: "select",
+    start: "start",
     canvasLabel: "3 ラインコムを通したコンソールの絵: 2048 サンプル x 240 ライン",
   },
 } as const;
@@ -75,20 +84,65 @@ const S = {
 export function Play({ lang }: { lang: Lang }) {
   const T = S[lang];
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  // Full screen: the stage (screen and pad) through the Fullscreen API
+  // where the browser has it, and as a fixed overlay where it does not
+  // (iPhone Safari has no element fullscreen). One flag either way, so
+  // the layout and the control read the same state.
+  const [full, setFull] = useState(false);
 
   useEffect(() => {
     if (canvasRef.current) attach(canvasRef.current);
     return () => detach();
   }, []);
 
+  useEffect(() => {
+    // The browser's own exit (Escape, a gesture) leaves the overlay too.
+    const onChange = () => {
+      if (!document.fullscreenElement) setFull(false);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFull = useCallback(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    if (full) {
+      if (document.fullscreenElement) void document.exitFullscreen?.();
+      setFull(false);
+      return;
+    }
+    setFull(true);
+    if (typeof el.requestFullscreen === "function") {
+      el.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+        // Refused (no gesture, or not allowed): the overlay mode stands.
+      });
+    }
+  }, [full]);
+
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFull(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [full]);
 
   return (
     <section className="bench" data-play>
-      <div className="panel">
-        <div className="panel-face">
-          <canvas ref={canvasRef} width={2048} height={240} className="bench-screen" role="img" aria-label={T.canvasLabel} />
+      <div ref={stageRef} className={"play-stage" + (full ? " full" : "")} data-play-stage={full ? "full" : "page"}>
+        <div className="panel play-panel">
+          <div className="panel-face">
+            <canvas ref={canvasRef} width={2048} height={240} className="bench-screen" role="img" aria-label={T.canvasLabel} />
+          </div>
         </div>
+        <Gamepad labels={{ select: T.select, start: T.start }} />
+        <button type="button" className="btn play-full" onClick={toggleFull} aria-pressed={full} data-play-full>
+          {full ? T.exitFull : T.full}
+        </button>
       </div>
 
       {s.why ? (

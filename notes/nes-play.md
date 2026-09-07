@@ -89,3 +89,27 @@ parameter to storage needs a feature this browser did not have; and
 awaiting the queue's completion promise on the software adapter broke
 the canvas ("A valid external Instance reference no longer exists"),
 so the bitmap transfer is the sync point.
+
+## 2026-09-07: the pad on the screen, and full screen
+
+An NES-shaped pad under the screen (`play/Gamepad.tsx`): the cross on
+the left, Select and Start in the middle, B and A on the right, driven
+by pointer events with capture so a thumb can slide across the cross
+and two thumbs can hold A and Up at once; each pointer owns the bits it
+is over and the union goes to the engine as the register's byte, ORed
+with the keyboard's (`setTouchPad`, `padByte`). The cross reads the
+pointer's angle from its centre in eight sectors, so diagonals come
+from the corners. Mobile first: the pad's three zones shrink with the
+screen (a 390 phone holds them with room; the first cut forced the
+stage to 468 and the mobile rule caught it), and the whole stage
+(screen, pad, control) goes full screen through the Fullscreen API
+where a browser has it and as a fixed overlay where it does not (an
+iPhone has no element fullscreen), one flag either way: black ground,
+the picture as large as 256 by 240 allows, the pad over the lower part
+in portrait and at the sides in landscape. The faces are chrome on the
+page and glass over black, lit in the accent under a press. `e2e/nes`
+holds it on a phone: a press on A is bit 0, a slide across the cross
+turns Right into Up with no second press, the stage becomes the
+viewport and back. A synthetic pointer does not scroll, so the test
+scrolls the pad into view first; a thumb is on the screen by
+definition.

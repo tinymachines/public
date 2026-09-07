@@ -23,3 +23,156 @@
   color: var(--color-ink-muted);
   max-width: 60ch;
 }
+
+/* The play page's stage: the screen, the on-screen pad and the full
+   screen control as one block, so the whole of it can go full screen.
+   Mobile first: the pad sits under the screen, the thumbs' two zones at
+   the bottom corners; on a wide screen it stays under the screen at a
+   comfortable width. In full screen (the Fullscreen API, or the fixed
+   overlay where a browser has no element fullscreen) the stage is the
+   viewport: black ground, the picture as large as its 256 by 240 shape
+   allows, the pad over the lower part in portrait and at the sides in
+   landscape, translucent so the picture shows through. */
+.play-stage { position: relative; display: grid; gap: calc(var(--u) * 2); min-width: 0; }
+.play-stage .play-panel { width: 100%; min-width: 0; }
+.play-full { justify-self: end; }
+/* The pad's three zones shrink with the screen (minmax(0, ...)): a 390
+   phone holds the cross at 108, the pills at their smallest and the two
+   round buttons at 52 with room to spare; wider screens get the larger
+   sizes below. All in pixels on purpose: a thumb is a fixed size. */
+.pad {
+  --cross: 108px;
+  --arm: 36px;
+  --round: 52px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2) calc(var(--u) * 1);
+  box-sizing: border-box;
+  max-width: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media (min-width: 480px) {
+  .pad { --cross: 132px; --arm: 44px; --round: 64px; padding: calc(var(--u) * 2); }
+}
+.pad-cross {
+  position: relative;
+  width: var(--cross);
+  height: var(--cross);
+  justify-self: start;
+}
+.pad-arm {
+  position: absolute;
+  width: var(--arm);
+  height: var(--arm);
+  background: var(--color-chrome);
+  border: 1px solid var(--color-chrome-lo);
+  border-radius: 6px;
+  box-shadow: inset 0 -3px 0 var(--color-chrome-lo);
+}
+.pad-arm.up { left: var(--arm); top: 0; }
+.pad-arm.down { left: var(--arm); bottom: 0; }
+.pad-arm.left { left: 0; top: var(--arm); }
+.pad-arm.right { right: 0; top: var(--arm); }
+.pad-hub {
+  position: absolute;
+  left: var(--arm);
+  top: var(--arm);
+  width: var(--arm);
+  height: var(--arm);
+  background: var(--color-chrome);
+}
+.pad-middle { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 1); align-self: end; min-width: 0; }
+.pad-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-chrome-lo);
+  background: var(--color-chrome);
+  color: var(--color-ink);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pad-face { display: flex; gap: calc(var(--u) * 2); justify-self: end; align-items: center; }
+.pad-round {
+  display: grid;
+  place-items: center;
+  width: var(--round);
+  height: var(--round);
+  border-radius: 50%;
+  border: 1px solid var(--color-chrome-lo);
+  background: var(--color-chrome);
+  color: var(--color-ink);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--color-chrome-lo);
+}
+.pad-face .pad-round:first-child { transform: translateY(12px); }
+.pad-arm.lit, .pad-pill.lit, .pad-round.lit { background: var(--color-accent); color: var(--color-glass); box-shadow: none; }
+
+.play-stage.full {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  display: block;
+  padding: 0;
+}
+.play-stage.full .play-panel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #000;
+  box-shadow: none;
+  border-radius: 0;
+}
+.play-stage.full .panel-face { padding: 0; background: #000; }
+.play-stage.full .bench-screen {
+  width: auto;
+  height: auto;
+  max-width: 100vw;
+  max-height: 100dvh;
+  aspect-ratio: 256 / 240;
+}
+@supports not (height: 100dvh) {
+  .play-stage.full .bench-screen { max-height: 100vh; }
+}
+.play-stage.full .pad {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom, 0);
+  opacity: 0.8;
+}
+.play-stage.full .play-full {
+  position: absolute;
+  top: calc(var(--u) * 2);
+  right: calc(var(--u) * 2);
+  color: var(--color-glass);
+  background: var(--color-panel);
+  border-color: var(--color-chrome-lo);
+  opacity: 0.85;
+}
+/* Over the black ground the faces are glass, dimmed so the picture
+   shows through them where they overlap it. */
+.play-stage.full .pad-arm, .play-stage.full .pad-hub, .play-stage.full .pad-pill, .play-stage.full .pad-round {
+  background: var(--color-glass-muted);
+  border-color: var(--color-glass);
+  color: var(--color-ink);
+}
+.play-stage.full .pad-arm.lit, .play-stage.full .pad-pill.lit, .play-stage.full .pad-round.lit { background: var(--color-accent); color: var(--color-glass); }
+/* Portrait: the picture at the top, the pad under it with room. */
+@media (orientation: portrait) {
+  .play-stage.full .play-panel { align-items: start; padding-top: calc(var(--u) * 10); }
+}
+/* Landscape on a phone: the picture centred, the pad's two zones at the
+   sides over it; the middle pills sit low between them. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .play-stage.full .pad { top: 0; padding: calc(var(--u) * 3); align-items: end; }
+}

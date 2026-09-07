@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { DESK, open } from "./lib";
+import { DESK, PHONE, open } from "./lib";
 
 /**
  * /nes: the fourth project's landing is a measurement report, and its
@@ -217,4 +217,48 @@ test("the console runs a cartridge in the page and paints it", async ({ page }) 
   }
   await expect(page.locator("[data-play-why]")).toHaveCount(0);
   expect(text).toMatch(/display callbacks:\s*\d+/);
+});
+
+test("the play page has a pad a thumb can hold and a full screen mode, on a phone", async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await open(page, "/nes/play", 500);
+  const pad = page.locator("[data-play-pad]");
+  await expect(pad).toHaveCount(1);
+  // Nothing scrolls sideways with the pad on the page.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  // A press on A is bit 0 of the register's byte; a release clears it.
+  // (A thumb is on the screen by definition; the synthetic pointer is
+  // not, so the pad is scrolled into view first.)
+  await pad.scrollIntoViewIfNeeded();
+  const a = page.locator('[data-pad-btn="a"]');
+  const box = (await a.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await expect(pad).toHaveAttribute("data-play-pad", "01");
+  await page.mouse.up();
+  await expect(pad).toHaveAttribute("data-play-pad", "00");
+  // The cross: a press on its right arm is Right (bit 7); sliding the
+  // same press to the top arm becomes Up (bit 4), no second press.
+  const cross = (await page.locator('[data-pad-btn="cross"]').boundingBox())!;
+  await page.mouse.move(cross.x + cross.width * 0.85, cross.y + cross.height / 2);
+  await page.mouse.down();
+  await expect(pad).toHaveAttribute("data-play-pad", "80");
+  await page.mouse.move(cross.x + cross.width / 2, cross.y + cross.height * 0.15, { steps: 4 });
+  await expect(pad).toHaveAttribute("data-play-pad", "10");
+  await page.mouse.up();
+  await expect(pad).toHaveAttribute("data-play-pad", "00");
+  // Full screen: the stage becomes the viewport (the overlay where the
+  // headless browser refuses the API, the API where it grants it), the
+  // control reads pressed, and the picture keeps its 256 by 240 shape.
+  await page.locator("[data-play-full]").click();
+  await expect(page.locator("[data-play-stage]")).toHaveAttribute("data-play-stage", "full");
+  const stage = (await page.locator("[data-play-stage]").boundingBox())!;
+  const vp = page.viewportSize()!;
+  expect(Math.round(stage.width)).toBe(vp.width);
+  expect(Math.round(stage.height)).toBe(vp.height);
+  const screen = (await page.locator(".bench-screen").boundingBox())!;
+  expect(Math.abs(screen.width / screen.height - 256 / 240)).toBeLessThan(0.02);
+  expect(screen.width).toBeGreaterThan(vp.width * 0.9);
+  await page.locator("[data-play-full]").click();
+  await expect(page.locator("[data-play-stage]")).toHaveAttribute("data-play-stage", "page");
 });

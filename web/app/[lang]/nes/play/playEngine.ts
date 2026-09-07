@@ -192,6 +192,16 @@ function onKey(e: KeyboardEvent) {
   e.preventDefault();
 }
 
+/** The on-screen pad's buttons, ORed with the keyboard's: bits in the register's order. */
+let touchPad = 0;
+export function setTouchPad(bits: number) {
+  touchPad = bits & 0xff;
+}
+/** The byte the console will read on its next poll. */
+export function padByte(): number {
+  return (pad | touchPad) & 0xff;
+}
+
 export function attach(c: HTMLCanvasElement) {
   canvas = c;
   if (consoleW.worker) return;
@@ -308,7 +318,7 @@ async function loop() {
   const now = performance.now();
   const dtNs = lastT === null ? 0 : (now - lastT) * 1e6;
   lastT = now;
-  const r = await consoleW.call({ path: "tick", dtNs, pad });
+  const r = await consoleW.call({ path: "tick", dtNs, pad: padByte() });
   tickInFlight = false;
   if (!r.ok) {
     set({ running: false, why: r.error });
