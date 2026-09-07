@@ -39,7 +39,9 @@ CONTEXT = r"(?:wires?|switches|switch|nodes?|transistors?|byte)"
 # is never a count of anything; the console arc's reports say "the $4015
 # status byte" and the first pull of them tripped here. The narrowing is on
 # the sigil, not on the number, so "4015 bytes" would still be checked.
-FIGURE = re.compile(rf"(?<!\$)\b(\d{{4}})\b[\s\-]*(?:\S+\s+){{0,2}}?{CONTEXT}\b", re.I)
+# Not preceded by a $ (a hex address) nor by a hyphen (a part number such
+# as an LDO's MCP1700-3302, found in the bench's parts list).
+FIGURE = re.compile(rf"(?<![\$\-])\b(\d{{4}})\b[\s\-]*(?:\S+\s+){{0,2}}?{CONTEXT}\b", re.I)
 
 # Chip designations, which are four digits and are never a count of anything.
 # The comment above already claimed 6502 would not be dragged in, and the

@@ -55,7 +55,13 @@ const DOCS = [
   { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", order: 29, description: "The bridge's wiring: the register that is the pad, the level shifter, the ESP32-C6's pins, the head's relays, and the meter checks that come before power." },
   { repo: "nes-bench", file: "script.md", slug: "bench-script", order: 30, description: "The bench script: one file's words for the head and the model, bytes by latch index, the arm, the trigger, the capture." },
   { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", order: 31, description: "The bench's running report: B0 to B3 on the machine side, each tool green on a synthesis with a red mutation; the die answered B0's DMC question first and the model changed for it." },
+  { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
 ];
+
+// The bench's schematics, drawn by its generator and held to its wiring
+// tables (tools/check-sheets.py): served beside the console's figures,
+// and the build document's image links pointed at them.
+const SHEETS = ["bench-v1.svg", "bench-v2.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The bench's drawing, derived from its wiring tables: refused if stale,
 // then served as-is beside the console's other figures.
@@ -64,8 +70,15 @@ const check = spawnSync("python3", [path.join(BENCH, "tools", "draw-bench.py"), 
 if (check.status !== 0) {
   throw new Error(`nes-bench/docs/bench.svg is not current: ${check.stdout}${check.stderr}`);
 }
-fs.mkdirSync(path.join(ROOT, "web", "public", "nes"), { recursive: true });
+const sheets = spawnSync("python3", [path.join(BENCH, "tools", "check-sheets.py")], { encoding: "utf8" });
+if (sheets.status !== 0) {
+  throw new Error(`nes-bench's sheets disagree with its wiring or its generator: ${sheets.stdout}${sheets.stderr}`);
+}
+fs.mkdirSync(path.join(ROOT, "web", "public", "nes", "bench"), { recursive: true });
 fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "public", "nes", "bench.svg"));
+for (const f of SHEETS) {
+  fs.copyFileSync(path.join(BENCH, "docs", f), path.join(ROOT, "web", "public", "nes", "bench", f));
+}
 
 function transform(doc, md) {
   let s = md;
@@ -77,6 +90,10 @@ function transform(doc, md) {
   for (const d of DOCS) {
     const local = `/docs/nes/${d.slug}`;
     s = s.replace(new RegExp(`\\]\\((?:\\.\\./)*(?:[a-z0-9-]+/)?(?:docs/)?${d.file.replace(".", "\\.")}(#[^)]*)?\\)`, "g"), (_, hash) => `](${local}${hash ?? ""})`);
+  }
+  // The build document's sheets, served from /nes/bench/.
+  for (const f of SHEETS) {
+    s = s.replace(new RegExp(`\\]\\(${f.replace(".", "\\.")}\\)`, "g"), `](/nes/bench/${f})`);
   }
   let fenced = false;
   for (const [i, line] of s.split("\n").entries()) {

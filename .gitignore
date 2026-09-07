@@ -94,6 +94,7 @@ web/public/nes/wasm/
 web/public/nes/bars.nes
 # The bench drawing, pulled from ../nes-bench by pull-nesdocs.mjs
 web/public/nes/bench.svg
+web/public/nes/bench/
 
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.

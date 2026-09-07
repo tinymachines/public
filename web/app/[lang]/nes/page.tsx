@@ -567,6 +567,10 @@ const PROSE = {
     ),
     benchAlt: "The bench as one drawing: the loop above (workstation, Pi, bridge, console, pad, scope, relays) and the bridge's chips with every pin below.",
     benchCaption: "The bench, derived from its wiring tables: the loop, and the bridge with every pin. Nothing in it is built yet.",
+    sheetAlt: "The bridge as a schematic, v1: the console port, the inverter and the shift register at the console's five volts, the level shifter and the ESP32-C6 at three volts three, the pad socket, and the head with its relays and the scope.",
+    sheetCaption: "The same bridge as a schematic, from the bench's electronics review: net labels, three supplies, one ground, held to the wiring tables by a check. The build order and the extended bridge are in the notebook.",
+    timingAlt: "One controller poll as timing lanes: the latch pulse and the register's load window, the eight clock pulses, the data line, what each hardware counter counts, the microcontroller's loop, and where a write is safe.",
+    timingCaption: "One poll on the part as timing lanes: the load window the register's inputs must not change in, what the two counters count, and where the bridge may write. Every width is authored until the scope replaces it.",
     boardedH: "Every number here comes from re-running the tests",
     boardedIntro: (date: string) => (
       <>
@@ -783,6 +787,10 @@ const PROSE = {
     ),
     benchAlt: "ベンチの一枚の図: 上にループ（ワークステーション、Pi、ブリッジ、コンソール、パッド、スコープ、リレー）、下にブリッジのチップと全ピン。",
     benchCaption: "配線表から導いたベンチの図: ループと、全ピン付きのブリッジ。まだ何も組まれていない。",
+    sheetAlt: "回路図としてのブリッジ v1: コントローラポート、コンソールの 5 V 側のインバータとシフトレジスタ、3.3 V 側のレベルシフタと ESP32-C6、パッドソケット、そしてリレーとスコープを持つヘッド。",
+    sheetCaption: "同じブリッジを回路図に: ベンチの電子回路レビューから。ネットラベル、三つの電源、一つのグラウンド、検査で配線表に押さえられている。組み立て順と拡張ブリッジはノートブックに。",
+    timingAlt: "コントローラの一回のポーリングをタイミングレーンに: ラッチパルスとレジスタのロード窓、八つのクロックパルス、データ線、各ハードウェアカウンタが数えるもの、マイクロコントローラのループ、書き込みが安全な場所。",
+    timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
@@ -913,6 +921,14 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
         <figure className="crt-figure">
           <Image src="/nes/bench.svg" width={1200} height={1000} alt={S.benchAlt} unoptimized />
           <figcaption>{S.benchCaption}</figcaption>
+        </figure>
+        <figure className="crt-figure">
+          <Image src="/nes/bench/bench-v1.svg" width={2000} height={1180} alt={S.sheetAlt} unoptimized />
+          <figcaption>{S.sheetCaption}</figcaption>
+        </figure>
+        <figure className="crt-figure">
+          <Image src="/nes/bench/logical-timing.svg" width={1500} height={900} alt={S.timingAlt} unoptimized />
+          <figcaption>{S.timingCaption}</figcaption>
         </figure>
 
         <h2>{S.boardedH}</h2>
