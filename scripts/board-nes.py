@@ -607,6 +607,7 @@ def main() -> int:
             "c2c02": "https://github.com/tinymachines/2c02",
             "nes": con_remote,
             "sketch": "https://github.com/tinymachines/nes-bus/blob/main/docs/nes-end-to-end-v0_2.md",
+            "bench": "https://github.com/tinymachines/nes-bench",
         },
     }
     RECORD.write_text(json.dumps(record, indent=2) + "\n")

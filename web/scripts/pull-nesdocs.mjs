@@ -12,6 +12,7 @@
  * with a broken link or raw HTML.
  */
 
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -50,7 +51,20 @@ const DOCS = [
   { repo: "nes", file: "n7-report.md", slug: "n7-report", order: 25, description: "N7: the sound, blargg's mixer ROMs cancelling, his real-hardware recordings beside." },
   { repo: "nes", file: "n8-plan.md", slug: "n8-plan", order: 26, description: "N8, written first: the shell, the GPU picture, the pacing, the second target." },
   { repo: "nes", file: "n8-report.md", slug: "n8-report", order: 27, description: "N8: the shell built and gated headlessly, the GPU picture held to the CPU chain, the wasm target measured." },
+  { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", order: 28, description: "The bench, written first: the part and the model under one input history, a controller-port bridge, relays and the scope under one script, B0 to B3 with their gates." },
+  { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", order: 29, description: "The bridge's wiring: the register that is the pad, the level shifter, the ESP32-C6's pins, the head's relays, and the meter checks that come before power." },
+  { repo: "nes-bench", file: "b0-report.md", slug: "b0-report", order: 30, description: "B0: the sniff, its machine side closed. The die answered the DMC question before the part could, and the model changed for it." },
 ];
+
+// The bench's drawing, derived from its wiring tables: refused if stale,
+// then served as-is beside the console's other figures.
+const BENCH = path.join(SIBLINGS, "nes-bench");
+const check = spawnSync("python3", [path.join(BENCH, "tools", "draw-bench.py"), "--check"], { encoding: "utf8" });
+if (check.status !== 0) {
+  throw new Error(`nes-bench/docs/bench.svg is not current: ${check.stdout}${check.stderr}`);
+}
+fs.mkdirSync(path.join(ROOT, "web", "public", "nes"), { recursive: true });
+fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "public", "nes", "bench.svg"));
 
 function transform(doc, md) {
   let s = md;

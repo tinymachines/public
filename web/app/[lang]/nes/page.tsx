@@ -524,6 +524,35 @@ const PROSE = {
     mConsoleCommit: (commit: string, href: string) => (
       <>nes commit: <b><a data-address href={href}>{commit}</a></b></>
     ),
+    benchH: "The bench: the part and the model under one input history",
+    bench: (r: ReturnType<typeof nes>) => (
+      <>
+        With every machine milestone closed, what the console does not
+        yet know about the part waits on a bench, and the bench is the
+        next thing built. A bridge sits between the console&rsquo;s
+        controller port and an original pad: a shift register on the
+        bridge is the pad the console clocks, a microcontroller writes
+        its inputs between polls and counts the console&rsquo;s latch
+        and clock pulses in hardware, and a Raspberry Pi on the LAN
+        takes scripts, drives the reset and power relays and triggers
+        the scope. Scripts are bytes by latch index, so the model and
+        the part see one history; the bridge&rsquo;s per-latch log and
+        the model&rsquo;s are diffed latch for latch, and a triggered
+        capture is scored through the same roundtrip the picture
+        milestone closed on. The plan names four milestones with their
+        gates before any firmware, and the first, the sniff, already
+        moved the model: asked what a DMC fetch does to a pad read, the
+        switch-level 2A03 answered before the part could, and the core,
+        the chip&rsquo;s rung and the console changed for it, each with
+        a mutation that goes red. The drawing below is derived from the
+        wiring tables by a script, so it cannot disagree with them. Plan,
+        wiring and the first report are in{" "}
+        <Link href="/docs/nes">the notebook</Link>; the repository is{" "}
+        <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>.
+      </>
+    ),
+    benchAlt: "The bench as one drawing: the loop above (workstation, Pi, bridge, console, pad, scope, relays) and the bridge's chips with every pin below.",
+    benchCaption: "The bench, derived from its wiring tables: the loop, and the bridge with every pin. Nothing in it is built yet.",
     boardedH: "Every number here comes from re-running the tests",
     boardedIntro: (date: string) => (
       <>
@@ -725,6 +754,14 @@ const PROSE = {
     mConsoleCommit: (commit: string, href: string) => (
       <>nes コミット: <b><a data-address href={href}>{commit}</a></b></>
     ),
+    benchH: "ベンチ: 実機と模型を同じ入力履歴の下に置く",
+    bench: (r: ReturnType<typeof nes>) => (
+      <>
+        機械側のマイルストーンがすべて閉じたいま、コンソールがまだ実機について知らないことはベンチを待っており、次に組むのはそのベンチだ。コンソールのコントローラポートと純正パッドの間にブリッジを置く: ブリッジ上のシフトレジスタがコンソールにクロックされるパッドそのものになり、マイクロコントローラはポーリングの合間にその入力を書き、コンソールのラッチとクロックのパルスをハードウェアで数え、LAN 上の Raspberry Pi がスクリプトを受け取り、リセットと電源のリレーを駆動し、スコープをトリガする。スクリプトはラッチ番号ごとのバイトなので、模型と実機は同じ履歴を見る。ブリッジのラッチごとのログと模型のログをラッチ単位で突き合わせ、トリガした取り込みは絵のマイルストーンが閉じたのと同じ往復で採点する。計画はファームウェアより先に四つのマイルストーンと検査を名指しし、最初の「盗み聞き」はすでに模型を動かした: DMC フェッチがパッド読み出しに何をするか問うと、スイッチレベルの 2A03 が実機より先に答え、コアとチップのラングとコンソールがそれに合わせて変わり、それぞれに赤くなる変異がある。下の図は配線表からスクリプトが導いたもので、表と食い違うことはできない。計画、配線、最初の報告は<Link href="/ja/docs/nes">ノートブック</Link>に、リポジトリは <a data-address href={r.family.bench}>{r.family.bench.replace("https://", "")}</a>。
+      </>
+    ),
+    benchAlt: "ベンチの一枚の図: 上にループ（ワークステーション、Pi、ブリッジ、コンソール、パッド、スコープ、リレー）、下にブリッジのチップと全ピン。",
+    benchCaption: "配線表から導いたベンチの図: ループと、全ピン付きのブリッジ。まだ何も組まれていない。",
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
@@ -849,6 +886,13 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
 
         <h2>{S.shellH}</h2>
         <p>{S.shell(r)}</p>
+
+        <h2>{S.benchH}</h2>
+        <p>{S.bench(r)}</p>
+        <figure className="crt-figure">
+          <Image src="/nes/bench.svg" width={1200} height={1000} alt={S.benchAlt} unoptimized />
+          <figcaption>{S.benchCaption}</figcaption>
+        </figure>
 
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>

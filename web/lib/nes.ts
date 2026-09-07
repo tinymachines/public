@@ -176,6 +176,7 @@ export interface NesRecord {
     c2c02: string;
     nes: string;
     sketch: string;
+    bench: string;
   };
 }
 

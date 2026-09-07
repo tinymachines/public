@@ -1,10 +1,10 @@
 {
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
-  "boarded_on": "2026-09-06",
+  "boarded_on": "2026-09-07",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "4993724386552882af2b72dc8912d1186d20becc",
-  "tests_green": 13,
-  "mutate_red": 11,
+  "commit": "dbf116bd3aed789d4d86df7e5685736ba2c095b3",
+  "tests_green": 14,
+  "mutate_red": 12,
   "halfphi": "0.1.6",
   "a0": {
     "transistors": "10,946",
@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.078",
-      "mean_inside_x": "15.4",
-      "worst_ms": "1.702",
-      "worst_inside_x": "9.8",
+      "mean_ms": "1.048",
+      "mean_inside_x": "15.9",
+      "worst_ms": "1.678",
+      "worst_inside_x": "9.9",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,9 +69,9 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "078a71adeb0dbeb8cad7cc3b0e8fd4b072e9e2fa",
-    "tests_green": 35,
-    "pin_6502": "8b9e0b5",
+    "commit": "31cc442adb67d00c45a312ef92087573ff39e7d1",
+    "tests_green": 37,
+    "pin_6502": "89ae24f",
     "alignment": {
       "cpu_phase": 4,
       "ppu_phase": 3
@@ -243,7 +243,7 @@
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "0.91"
+          "ms_per_frame": "1.12"
         }
       },
       "gpu_tolerance": {
@@ -272,9 +272,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "4.14",
-        "frames_per_s": "72.5",
-        "real_time_x": "1.21",
+        "seconds": "3.76",
+        "frames_per_s": "79.8",
+        "real_time_x": "1.33",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -292,8 +292,8 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "078a71adeb0dbeb8cad7cc3b0e8fd4b072e9e2fa",
-      "built_on": "2026-09-06",
+      "commit": "31cc442adb67d00c45a312ef92087573ff39e7d1",
+      "built_on": "2026-09-07",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
         "nes_wasm.js": {
@@ -301,8 +301,8 @@
           "bytes": 8367
         },
         "nes_wasm_bg.wasm": {
-          "sha256": "013961c8ecaddde5163d3313e02c778fa132b4bd2c60418eb33e330b1cae7733",
-          "bytes": 290740
+          "sha256": "ed7e623335757d3f99f5adffecd1342b8f2c69bf3c217d08a5d7cb7046833ab8",
+          "bytes": 292296
         }
       }
     }
@@ -320,6 +320,7 @@
     "c2a03": "https://github.com/tinymachines/2a03",
     "c2c02": "https://github.com/tinymachines/2c02",
     "nes": "https://github.com/tinymachines/nes",
-    "sketch": "https://github.com/tinymachines/nes-bus/blob/main/docs/nes-end-to-end-v0_2.md"
+    "sketch": "https://github.com/tinymachines/nes-bus/blob/main/docs/nes-end-to-end-v0_2.md",
+    "bench": "https://github.com/tinymachines/nes-bench"
   }
 }
