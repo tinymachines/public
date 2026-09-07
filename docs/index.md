@@ -198,8 +198,8 @@ is the desk item.
 Since then the PPU has come a long way on [the same page](/nes). Its
 contested corners, sprite 0, the vblank read race and OAM corruption,
 were each pinned by a crafted register program the reference replays
-blindly. A per-dot fast PPU now renders a frame in well under a
-millisecond against the 16.639 ms period, dot for dot with the
+blindly. A per-dot fast PPU now renders a frame in a small fraction of
+the 16.639 ms period, dot for dot with the
 switch-level chip on three worlds, its sequencer a table measured out of
 the switches rather than a second model. And two engine divergences
 were found by the chips and fixed in halfphi (0.1.5's rail-conflict

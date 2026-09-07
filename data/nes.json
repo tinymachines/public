@@ -2,7 +2,7 @@
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
   "boarded_on": "2026-09-07",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "dbf116bd3aed789d4d86df7e5685736ba2c095b3",
+  "commit": "51c9b4abdff1eb24cd3838de649456be37805d98",
   "tests_green": 14,
   "mutate_red": 12,
   "halfphi": "0.1.6",
@@ -16,12 +16,15 @@
   },
   "c2c02": {
     "repo": "https://github.com/tinymachines/2c02",
-    "commit": "1dc887af8f3f5fa378fa89b52302b2c0108f6bc4",
+    "commit": "c3a4b9b506b28b6a3935130ca5619d5d0b9c9308",
     "halfphi": "0.1.6",
     "tests_green": 16,
     "mutate_red": 11,
     "p0_states": 601,
     "p1_states": 4008,
+    "nodes": "10,906",
+    "masked_latches_p0": 9,
+    "masked_latches_p1": 27,
     "p2": {
       "sprite_states": 600,
       "hit_vpos": 91,
@@ -32,10 +35,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.439",
-      "mean_inside_x": "11.6",
-      "worst_ms": "1.988",
-      "worst_inside_x": "8.4",
+      "mean_ms": "1.081",
+      "mean_inside_x": "15.4",
+      "worst_ms": "1.783",
+      "worst_inside_x": "9.3",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -249,14 +252,14 @@
           "worst": 4.77e-07,
           "mean": 1.24e-08,
           "components": 1658880,
-          "ms_per_frame": "0.96"
+          "ms_per_frame": "1.31"
         },
         "mask_and_geometry_on": {
           "adapter": "NVIDIA GeForce RTX 3070",
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "0.96"
+          "ms_per_frame": "0.88"
         }
       },
       "gpu_tolerance": {
@@ -285,9 +288,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "4.71",
-        "frames_per_s": "63.7",
-        "real_time_x": "1.06",
+        "seconds": "3.39",
+        "frames_per_s": "88.4",
+        "real_time_x": "1.47",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
