@@ -32,10 +32,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.048",
-      "mean_inside_x": "15.9",
-      "worst_ms": "1.678",
-      "worst_inside_x": "9.9",
+      "mean_ms": "1.439",
+      "mean_inside_x": "11.6",
+      "worst_ms": "1.988",
+      "worst_inside_x": "8.4",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -69,8 +69,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "31cc442adb67d00c45a312ef92087573ff39e7d1",
-    "tests_green": 37,
+    "commit": "59d42c8acc4a11a5d174096948cf73690256046f",
+    "tests_green": 38,
     "pin_6502": "89ae24f",
     "alignment": {
       "cpu_phase": 4,
@@ -185,7 +185,20 @@
         "tol_hue_deg": "1",
         "tol_sat_pct": 5,
         "tol_sat_abs": "0.005",
-        "held": true
+        "held": true,
+        "trigger": {
+          "frames": 122,
+          "held": {
+            "within_all": 13,
+            "regions": 13,
+            "held": true
+          },
+          "mutated": {
+            "within_all": 1,
+            "regions": 13,
+            "held": false
+          }
+        }
       }
     },
     "sound": {
@@ -243,7 +256,7 @@
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "1.12"
+          "ms_per_frame": "0.96"
         }
       },
       "gpu_tolerance": {
@@ -272,9 +285,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "3.76",
-        "frames_per_s": "79.8",
-        "real_time_x": "1.33",
+        "seconds": "4.71",
+        "frames_per_s": "63.7",
+        "real_time_x": "1.06",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -292,7 +305,7 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "31cc442adb67d00c45a312ef92087573ff39e7d1",
+      "commit": "59d42c8acc4a11a5d174096948cf73690256046f",
       "built_on": "2026-09-07",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
@@ -301,8 +314,8 @@
           "bytes": 8367
         },
         "nes_wasm_bg.wasm": {
-          "sha256": "ed7e623335757d3f99f5adffecd1342b8f2c69bf3c217d08a5d7cb7046833ab8",
-          "bytes": 292296
+          "sha256": "63109ba7f13028b1c268c814e0a4b37b0c2dfb66dcc2d569adbfe1201fcf1b2f",
+          "bytes": 292594
         }
       }
     }

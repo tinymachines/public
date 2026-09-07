@@ -131,7 +131,8 @@ const PROSE = {
         declared the PPU&rsquo;s two recorded reference runs replay with
         no exceptions at all: {r.c2c02.p0_states} states from power-on
         and {r.c2c02.p1_states} states through the bus harness, every one
-        of 10,906 nodes. The nine and then 27 latches those runs had
+        of {r.c2c02.nodes} nodes. The {r.c2c02.masked_latches_p0} and
+        then {r.c2c02.masked_latches_p1} latches those runs had
         masked as undefined power-on state were the charge rule, not the
         silicon. A check now holds the declaration, and building the chip
         under the old rule turns that check red.
@@ -657,7 +658,7 @@ const PROSE = {
     enginesH: "エンジンの相違が二つ、どちらもチップが見つけ、エンジンで直った",
     engines: (r: ReturnType<typeof nes>) => (
       <>
-        スプライト 0 をそもそも当てることが最初の相違を暴いた: グループが両方のレールを含むときにリファレンスが特別扱いする OAM データ線を、エンジンはゼロに潰していた。halfphi 0.1.5 はその修正を汎用のホールドとして持ち、面積で重み付けした電荷投票、つまりリファレンス自身の規則で決める。二つ目はパレット書き込みを実 CPU と同じ間隔で行うまで隠れていた: バイトはうちのエンジンではアドレス下位バイトと OR されて着地し、リファレンスでは書いたとおりに着地した。原因は駆動されていないグループの解決のしかただった。2C02 のリファレンスはメンバーの面積を量り、visual6502 は電荷を持つメンバー一つで勝たせる。halfphi {r.c2c02.halfphi} はネットリストにどちらかを宣言させ、投票を宣言すると PPU の二つの記録済みリファレンス走行は例外を一切持たずに再生する: 電源投入からの {r.c2c02.p0_states} 状態と、バスハーネス越しの {r.c2c02.p1_states} 状態、10,906 ノードの一つ残らず。それらの走行が未定義の電源投入状態として隠していた 9 個、次いで 27 個のラッチは、シリコンではなく電荷規則だった。いまは検査が宣言を押さえ、古い規則でチップを組むとその検査が赤になる。
+        スプライト 0 をそもそも当てることが最初の相違を暴いた: グループが両方のレールを含むときにリファレンスが特別扱いする OAM データ線を、エンジンはゼロに潰していた。halfphi 0.1.5 はその修正を汎用のホールドとして持ち、面積で重み付けした電荷投票、つまりリファレンス自身の規則で決める。二つ目はパレット書き込みを実 CPU と同じ間隔で行うまで隠れていた: バイトはうちのエンジンではアドレス下位バイトと OR されて着地し、リファレンスでは書いたとおりに着地した。原因は駆動されていないグループの解決のしかただった。2C02 のリファレンスはメンバーの面積を量り、visual6502 は電荷を持つメンバー一つで勝たせる。halfphi {r.c2c02.halfphi} はネットリストにどちらかを宣言させ、投票を宣言すると PPU の二つの記録済みリファレンス走行は例外を一切持たずに再生する: 電源投入からの {r.c2c02.p0_states} 状態と、バスハーネス越しの {r.c2c02.p1_states} 状態、{r.c2c02.nodes} ノードの一つ残らず。それらの走行が未定義の電源投入状態として隠していた {r.c2c02.masked_latches_p0} 個、次いで {r.c2c02.masked_latches_p1} 個のラッチは、シリコンではなく電荷規則だった。いまは検査が宣言を押さえ、古い規則でチップを組むとその検査が赤になる。
       </>
     ),
     ladderH: "高速 PPU はドット単位でチップと一致し、フレーム周期の内側に収まる",

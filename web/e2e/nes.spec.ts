@@ -24,6 +24,9 @@ const record = JSON.parse(
     tests_green: number;
     mutate_red: number;
     p1_states: number;
+    nodes: string;
+    masked_latches_p0: number;
+    masked_latches_p1: number;
     p3: { visible_dots: number; mean_ms: string; mean_inside_x: string; hit_line: number; hit_pixel: number };
   };
   n3: {
@@ -81,6 +84,8 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   await expect(ppu.nth(1)).toContainText(String(record.c2c02.mutate_red));
   await expect(ppu.nth(2)).toContainText(record.c2c02.commit.slice(0, 7));
   expect(text).toContain(String(record.c2c02.p1_states));
+  expect(text).toContain(`every one of ${record.c2c02.nodes} nodes`);
+  expect(text).toContain(`The ${record.c2c02.masked_latches_p0} and then ${record.c2c02.masked_latches_p1} latches`);
   expect(text).toContain(String(record.c2c02.p3.visible_dots));
   expect(text).toContain(`${record.c2c02.p3.mean_ms} ms`);
   expect(text).toContain(`${record.c2c02.p3.mean_inside_x} times`);

@@ -35,6 +35,9 @@ export interface NesRecord {
     mutate_red: number;
     p0_states: number;
     p1_states: number;
+    nodes: string;
+    masked_latches_p0: number;
+    masked_latches_p1: number;
     p2: { sprite_states: number; hit_vpos: number; hit_hpos: number; race_bits: string };
     p3: {
       visible_dots: number;

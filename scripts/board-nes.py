@@ -288,6 +288,30 @@ def main() -> int:
     p2_states = int(extract(p2, r"\*\*(\d+) states bit-exact, node for node", "P2 sprite states"))
     if "**[0, 0, 1]**" not in p2:
         fail("the P2 race result is no longer stated as [0, 0, 1]")
+    # The engines paragraph's counts. The two goldens assert every node
+    # without printing how many there are, so, as with P2, the reports
+    # are the anchored source; both reports state the node count with
+    # the state count beside it, and each state count must equal what
+    # the suite just printed. The masked-latch counts are the exemption
+    # lists the charge rule emptied: P1 states both, P0's as the word
+    # it was written with.
+    p0 = re.sub(r"\s+", " ", (ppu / "docs" / "p0-report.md").read_text())
+    p1 = re.sub(r"\s+", " ", (ppu / "docs" / "p1-report.md").read_text())
+    m_n0 = re.search(r"replays bit-exact on all ([\d,]+) nodes across all ([\d,]+) states", p0)
+    m_n1 = re.search(r"bit-exact on all ([\d,]+) nodes across all ([\d,]+) states", p1)
+    if not m_n0 or not m_n1:
+        fail("a report's node-count line moved (P0 'replays bit-exact on all N nodes', P1 'bit-exact on all N nodes')")
+    if m_n0.group(1) != m_n1.group(1):
+        fail(f"the two reports disagree on the node count: {m_n0.group(1)} vs {m_n1.group(1)}")
+    if int(m_n0.group(2).replace(",", "")) != p0_states or int(m_n1.group(2).replace(",", "")) != p1_states:
+        fail("a report's state count beside the node count disagrees with the suite's own line")
+    ppu_nodes = m_n0.group(1)
+    masked_words = {"nine": 9}
+    masked_word = extract(p1, r"P0 exempted (\w+) reset-less sprite-path latches", "P0 masked latches").lower()
+    if masked_word not in masked_words:
+        fail(f"P0's masked-latch count is written as {masked_word!r}; teach board-nes the word")
+    masked_p0 = masked_words[masked_word]
+    masked_p1 = int(extract(p1, r"the family is (\d+) nodes wide", "P1 masked family"))
     ppu_halfphi = extract((ppu / "crates" / "v2c02-sim" / "Cargo.toml").read_text(),
                           r'halfphi", tag = "v([0-9.]+)"', "2c02 halfphi pin")
     c2c02 = {
@@ -298,6 +322,9 @@ def main() -> int:
         "mutate_red": ppu_red,
         "p0_states": p0_states,
         "p1_states": p1_states,
+        "nodes": ppu_nodes,
+        "masked_latches_p0": masked_p0,
+        "masked_latches_p1": masked_p1,
         "p2": {"sprite_states": p2_states, "hit_vpos": int(p2_hit.group(1)), "hit_hpos": int(p2_hit.group(2)), "race_bits": "[0, 0, 1]"},
         "p3": {
             "visible_dots": visible,
@@ -407,6 +434,25 @@ def main() -> int:
             "held": score.returncode == 0,
         }
     held_all = all(r["held"] for r in rows.values())
+    # The bench's B1 tool (nes-bench/tools/b1-score.py): the synthesis
+    # sliced from a trigger as the head places one, the model's frame
+    # chosen the same way, across the bars cartridge's luma-row step
+    # (frames=122 is the step); the late-trigger mutation must be red
+    # there, which is what proves the frame selection is checked.
+    trigger = {}
+    for label, extra in [("held", {}), ("mutated", {"MUTATE_TRIGGER": "1"})]:
+        print(f"board-nes: running capture-score's triggered roundtrip ({label})...")
+        env = dict(os.environ, SYNTH_TRIGGER="1", **extra)
+        score = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "capture-score", "--", str(bars), "122"],
+                               cwd=con, capture_output=True, text=True, env=env)
+        tm = re.search(r"(\d+) of (\d+) regions within luma", score.stdout)
+        if not tm:
+            fail(f"the triggered roundtrip's summary line is not on its output ({label}):\n{score.stdout[-800:]}{score.stderr[-800:]}")
+        trigger[label] = {"within_all": int(tm.group(1)), "regions": int(tm.group(2)), "held": score.returncode == 0}
+    if not trigger["held"]["held"]:
+        fail("the triggered synthetic roundtrip did not hold")
+    if trigger["mutated"]["held"] or trigger["mutated"]["within_all"] >= trigger["held"]["within_all"]:
+        fail("the late-trigger mutation was not red: the frame selection is not being checked")
     ntsc_tag = extract((con / "crates" / "nes-console" / "Cargo.toml").read_text(),
                        r'ntsc-source-nes = \{[^}]*tag = "(v[0-9.]+)"', "nes-console's ntsc-crt pin")
     picture = {
@@ -424,6 +470,7 @@ def main() -> int:
             "rows": rows,
             "tol_luma": all_m.group(3), "tol_hue_deg": all_m.group(4), "tol_sat_pct": int(all_m.group(5)), "tol_sat_abs": all_m.group(6),
             "held": held_all,
+            "trigger": {"frames": 122, **trigger},
         },
     }
     # N7, the sound: the sound gate's per-ROM lines, the console's and
