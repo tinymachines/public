@@ -55,13 +55,14 @@ const DOCS = [
   { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", order: 29, description: "The bridge's wiring: the register that is the pad, the level shifter, the ESP32-C6's pins, the head's relays, and the meter checks that come before power." },
   { repo: "nes-bench", file: "script.md", slug: "bench-script", order: 30, description: "The bench script: one file's words for the head and the model, bytes by latch index, the arm, the trigger, the capture." },
   { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", order: 31, description: "The bench's running report: B0 to B3 on the machine side, each tool green on a synthesis with a sabotage run that goes red; the die answered B0's DMC question first and the model changed for it." },
-  { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
+  { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1 and v1b), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
+  { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", order: 33, description: "v1b, the bridge on an Arduino UNO with everything at five volts, which is the version built first: why the level shifters go away, the pin table, and the four things writing the firmware proved the plan had wrong." },
 ];
 
 // The bench's schematics, drawn by its generator and held to its wiring
 // tables (tools/check-sheets.py): served beside the console's figures,
 // and the build document's image links pointed at them.
-const SHEETS = ["bench-v1.svg", "bench-v2.svg", "logical-timing.svg", "pad-adapter.svg"];
+const SHEETS = ["bench-v1.svg", "bench-v1b.svg", "bench-v2.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The bench's drawing, derived from its wiring tables: refused if stale,
 // then served as-is beside the console's other figures.

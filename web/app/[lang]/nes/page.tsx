@@ -567,8 +567,8 @@ const PROSE = {
     ),
     benchAlt: "The bench as one drawing: the loop above (workstation, Pi, bridge, console, pad, scope, relays) and the bridge's chips with every pin below.",
     benchCaption: "The bench, derived from its wiring tables: the loop, and the bridge with every pin. Nothing in it is built yet.",
-    sheetAlt: "The bridge as a schematic, v1: the console port, the inverter and the shift register at the console's five volts, the level shifter and the ESP32-C6 at three volts three, the pad socket, and the head with its relays and the scope.",
-    sheetCaption: "The same bridge as a schematic, from the bench's electronics review: net labels, three supplies, one ground, held to the wiring tables by a check. The build order and the extended bridge are in the notebook.",
+    sheetAlt: "The bridge as a schematic, v1b: the console port, an inverter, a shift register that is the pad, a second register fed over SPI, and an Arduino UNO, all on one five volt supply, with the pad socket, and the head with its relays and the scope below.",
+    sheetCaption: "The same bridge as a schematic, and the version that gets built: an Arduino UNO puts everything on one five volt supply, so the level shifters the three volt part needed are gone. Net labels, one supply, one ground, every pin held to the document's own table by a check. The three volt version, the extended bridge and the build order are in the notebook.",
     timingAlt: "One controller poll as timing lanes: the latch pulse and the register's load window, the eight clock pulses, the data line, what each hardware counter counts, the microcontroller's loop, and where a write is safe.",
     timingCaption: "One poll on the part as timing lanes: the load window the register's inputs must not change in, what the two counters count, and where the bridge may write. Every width is authored until the scope replaces it.",
     boardedH: "Every number here comes from re-running the tests",
@@ -787,8 +787,8 @@ const PROSE = {
     ),
     benchAlt: "ベンチの一枚の図: 上にループ（ワークステーション、Pi、ブリッジ、コンソール、パッド、スコープ、リレー）、下にブリッジのチップと全ピン。",
     benchCaption: "配線表から導いたベンチの図: ループと、全ピン付きのブリッジ。まだ何も組まれていない。",
-    sheetAlt: "回路図としてのブリッジ v1: コントローラポート、コンソールの 5 V 側のインバータとシフトレジスタ、3.3 V 側のレベルシフタと ESP32-C6、パッドソケット、そしてリレーとスコープを持つヘッド。",
-    sheetCaption: "同じブリッジを回路図に: ベンチの電子回路レビューから。ネットラベル、三つの電源、一つのグラウンド、検査で配線表に押さえられている。組み立て順と拡張ブリッジはノートブックに。",
+    sheetAlt: "回路図としてのブリッジ v1b: コントローラポート、インバータ、パッドそのものになるシフトレジスタ、SPI で書かれるもう一つのレジスタ、そして Arduino UNO。すべて単一の 5 V 電源上にあり、下にパッドソケットと、リレーとスコープを持つヘッド。",
+    sheetCaption: "同じブリッジを回路図に。そしてこれが実際に組む版だ: Arduino UNO によってすべてが単一の 5 V 電源に載るので、3.3 V の部品が必要としたレベルシフタは消える。ネットラベル、一つの電源、一つのグラウンド、全ピンが文書自身の表に検査で押さえられている。3.3 V 版と拡張ブリッジ、組み立て順はノートブックに。",
     timingAlt: "コントローラの一回のポーリングをタイミングレーンに: ラッチパルスとレジスタのロード窓、八つのクロックパルス、データ線、各ハードウェアカウンタが数えるもの、マイクロコントローラのループ、書き込みが安全な場所。",
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
@@ -923,7 +923,7 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
           <figcaption>{S.benchCaption}</figcaption>
         </figure>
         <figure className="crt-figure">
-          <Image src="/nes/bench/bench-v1.svg" width={2000} height={1180} alt={S.sheetAlt} unoptimized />
+          <Image src="/nes/bench/bench-v1b.svg" width={1900} height={1000} alt={S.sheetAlt} unoptimized />
           <figcaption>{S.sheetCaption}</figcaption>
         </figure>
         <figure className="crt-figure">
