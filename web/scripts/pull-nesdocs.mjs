@@ -54,7 +54,7 @@ const DOCS = [
   { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", order: 28, description: "The bench, written first: the part and the model under one input history, a controller-port bridge, relays and the scope under one script, B0 to B3 with their checks." },
   { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", order: 29, description: "The bridge's wiring: the register that is the pad, the level shifter, the ESP32-C6's pins, the head's relays, and the meter checks that come before power." },
   { repo: "nes-bench", file: "script.md", slug: "bench-script", order: 30, description: "The bench script: one file's words for the head and the model, bytes by latch index, the arm, the trigger, the capture." },
-  { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", order: 31, description: "The bench's running report: B0 to B3 on the machine side, each tool green on a synthesis with a red mutation; the die answered B0's DMC question first and the model changed for it." },
+  { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", order: 31, description: "The bench's running report: B0 to B3 on the machine side, each tool green on a synthesis with a sabotage run that goes red; the die answered B0's DMC question first and the model changed for it." },
   { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
 ];
 
