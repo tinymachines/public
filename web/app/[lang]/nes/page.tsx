@@ -571,6 +571,22 @@ const PROSE = {
     sheetCaption: "The same bridge as a schematic, and the version that gets built: an Arduino UNO puts everything on one five volt supply, so the level shifters the three volt part needed are gone. Net labels, one supply, one ground, every pin held to the document's own table by a check. The three volt version, the extended bridge and the build order are in the notebook.",
     timingAlt: "One controller poll as timing lanes: the latch pulse and the register's load window, the eight clock pulses, the data line, what each hardware counter counts, the microcontroller's loop, and where a write is safe.",
     timingCaption: "One poll on the part as timing lanes: the load window the register's inputs must not change in, what the two counters count, and where the bridge may write. Every width is authored until the scope replaces it.",
+    labNote: (
+      <>
+        The parts are on the desk and the wiring is next, so there is now
+        a <Link href="/docs/nes/lab-notebook">lab notebook</Link>. It is
+        the build as it actually happens: fourteen steps, each ending in
+        a measurement rather than an opinion, every attempt kept
+        including the ones that failed, and a photograph at each stop.
+        Two of the steps retire numbers this site currently calls
+        authored: the scope on a pad&rsquo;s own port measures the latch
+        and clock pulses the timing figure above only guesses at, and the
+        joined bridge answers whether every poll really carries eight
+        clocks. The notebook is generated from the tool that walks the
+        build, so nothing in it is typed, and the site refuses to publish
+        one its own log does not support.
+      </>
+    ),
     boardedH: "Every number here comes from re-running the tests",
     boardedIntro: (date: string) => (
       <>
@@ -791,6 +807,11 @@ const PROSE = {
     sheetCaption: "同じブリッジを回路図に。そしてこれが実際に組む版だ: Arduino UNO によってすべてが単一の 5 V 電源に載るので、3.3 V の部品が必要としたレベルシフタは消える。ネットラベル、一つの電源、一つのグラウンド、全ピンが文書自身の表に検査で押さえられている。3.3 V 版と拡張ブリッジ、組み立て順はノートブックに。",
     timingAlt: "コントローラの一回のポーリングをタイミングレーンに: ラッチパルスとレジスタのロード窓、八つのクロックパルス、データ線、各ハードウェアカウンタが数えるもの、マイクロコントローラのループ、書き込みが安全な場所。",
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
+    labNote: (
+      <>
+        部品は机の上にあり、次は配線だ。そこで<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>を用意した。実際に組み上がっていく過程そのものである: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。
+      </>
+    ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
@@ -930,6 +951,7 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
           <Image src="/nes/bench/logical-timing.svg" width={1500} height={900} alt={S.timingAlt} unoptimized />
           <figcaption>{S.timingCaption}</figcaption>
         </figure>
+        <p>{S.labNote}</p>
 
         <h2>{S.boardedH}</h2>
         <p>{S.boardedIntro(r.boarded_on)}</p>

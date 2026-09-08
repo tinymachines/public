@@ -57,12 +57,19 @@ const DOCS = [
   { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", order: 31, description: "The bench's running report: B0 to B3 on the machine side, each tool green on a synthesis with a sabotage run that goes red; the die answered B0's DMC question first and the model changed for it." },
   { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1 and v1b), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
   { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", order: 33, description: "v1b, the bridge on an Arduino UNO with everything at five volts, which is the version built first: why the level shifters go away, the pin table, and the four things writing the firmware proved the plan had wrong." },
+  { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", order: 34, description: "The lab notebook: the bench being wired one step at a time, every attempt including the ones that failed, each step ending in a measurement rather than an opinion. Generated from the bring-up tool's log, never typed." },
 ];
 
 // The bench's schematics, drawn by its generator and held to its wiring
 // tables (tools/check-sheets.py): served beside the console's figures,
 // and the build document's image links pointed at them.
 const SHEETS = ["bench-v1.svg", "bench-v1b.svg", "bench-v2.svg", "logical-timing.svg", "pad-adapter.svg"];
+
+// The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
+// served from /nes/lab/; the notebook only links a picture that exists,
+// so a page can never carry a broken one, and a picture pushed later
+// appears as soon as the notebook is re-rendered.
+const LAB = path.join(SIBLINGS, "nes-bench", "docs", "lab");
 
 // The bench's drawing, derived from its wiring tables: refused if stale,
 // then served as-is beside the console's other figures.
@@ -75,10 +82,27 @@ const sheets = spawnSync("python3", [path.join(BENCH, "tools", "check-sheets.py"
 if (sheets.status !== 0) {
   throw new Error(`nes-bench's sheets disagree with its wiring or its generator: ${sheets.stdout}${sheets.stderr}`);
 }
+// The notebook is generated from the bring-up log. Publishing a stale one
+// would put a claim on the site that its own log does not support.
+const nb = spawnSync("python3", [path.join(BENCH, "tools", "lab-notebook.py"), "--check"], { encoding: "utf8" });
+if (nb.status !== 0) {
+  throw new Error(`nes-bench's lab notebook is not current: ${nb.stdout}${nb.stderr}`);
+}
 fs.mkdirSync(path.join(ROOT, "web", "public", "nes", "bench"), { recursive: true });
 fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "public", "nes", "bench.svg"));
 for (const f of SHEETS) {
   fs.copyFileSync(path.join(BENCH, "docs", f), path.join(ROOT, "web", "public", "nes", "bench", f));
+}
+const labOut = path.join(ROOT, "web", "public", "nes", "lab");
+fs.mkdirSync(labOut, { recursive: true });
+let labCount = 0;
+if (fs.existsSync(LAB)) {
+  for (const f of fs.readdirSync(LAB)) {
+    if (/\.(jpe?g|png|webp)$/i.test(f)) {
+      fs.copyFileSync(path.join(LAB, f), path.join(labOut, f));
+      labCount++;
+    }
+  }
 }
 
 function transform(doc, md) {
@@ -96,6 +120,8 @@ function transform(doc, md) {
   for (const f of SHEETS) {
     s = s.replace(new RegExp(`\\]\\(${f.replace(".", "\\.")}\\)`, "g"), `](/nes/bench/${f})`);
   }
+  // The lab notebook's photographs, served from /nes/lab/.
+  s = s.replace(/\]\(lab\/([^)]+)\)/g, "](/nes/lab/$1)");
   let fenced = false;
   for (const [i, line] of s.split("\n").entries()) {
     if (/^```/.test(line)) fenced = !fenced;
