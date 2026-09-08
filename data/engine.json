@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-06T06:01:25+00:00",
+  "boarded_at": "2026-09-08T03:11:02+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "served": {
-    "version": "v0.326",
-    "commit": "8b9e0b5494b5e57bfcc829a0d746546ca8a3ace2",
-    "built": "2026-09-06T06:00:45+00:00",
+    "version": "v0.332",
+    "commit": "70142641ae3dba76e74fea8438378d88370b667e",
+    "built": "2026-09-08T03:09:16+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-06T05:58:31+00:00",
+      "ran": "2026-09-08T03:07:10+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 126,
+        "passed": 127,
         "failed": 0,
         "require_chips": true,
         "require_golden": true,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "8b9e0b5494b5e57bfcc829a0d746546ca8a3ace2",
+  "running": "70142641ae3dba76e74fea8438378d88370b667e",
   "worktree": {
-    "commit": "8b9e0b5494b5e57bfcc829a0d746546ca8a3ace2",
-    "subject": "MicroBus::read_late: the byte the core latches at the end of phi2, where a bus sets it apart from the pins' byte",
-    "committed": "2026-09-06T01:01:33-04:00",
+    "commit": "70142641ae3dba76e74fea8438378d88370b667e",
+    "subject": "CLAUDE.md counts 127 cargo tests, which is what the deploy measured",
+    "committed": "2026-09-07T22:59:40-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "f16f3f902ea33ec22a1b7bbd47e65ef3d419ee32c48132ec99bffcc94cd2113a",
-    "bytes": 637464,
-    "modified": "2026-09-06T05:55:48+00:00",
-    "stated": "8b9e0b5494b5e57bfcc829a0d746546ca8a3ace2"
+    "sha256": "b82295d43dc7f004ce2b13ec756ca02582063252db4ba51c24a8b71b905114d8",
+    "bytes": 638432,
+    "modified": "2026-09-08T03:04:56+00:00",
+    "stated": "70142641ae3dba76e74fea8438378d88370b667e"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 3.8,
+      "seconds": 0.7,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 7.7,
+      "seconds": 8.7,
       "ok": true
     }
   ]
