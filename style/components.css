@@ -2230,7 +2230,14 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 }
 .page-head .mh-meta { margin-top: calc(var(--u) * 3); }
 @media (max-width: 34rem) {
-  .page-head :is(h1, .mh-title) { font-size: var(--text-h2); }
+  /* The prose h1 joins the page head here for the same reason the masthead
+     grid uses minmax(0, 1fr): a single unbreakable word at --text-h1 can be
+     wider than a phone's column ("documentation" at 48px is 358px), and the
+     symptom is the whole document sliding sideways, not a clipped heading.
+     The wrap rule is the guarantee for whatever word a pulled document
+     brings next; the smaller size is why it should never be needed. */
+  .page-head :is(h1, .mh-title), .prose > h1 { font-size: var(--text-h2); }
+  .prose > h1 { overflow-wrap: break-word; }
 }
 
 /* The bar is short now, so the fallbacks that assumed an 11rem masthead
