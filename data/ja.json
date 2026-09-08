@@ -227,5 +227,11 @@
  "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by recorded reference traces, and the signal path already real.": "一族の部品から組み上がる動く NES: チップはスイッチのレベルで、チップ間の規約は記録済みのリファレンストレースで証明され、信号経路はすでに実在する。",
  "The console arc": "コンソールの弧",
  "What exists, what each check proved, and the milestones between here and a bootable console.": "何が存在し、各検査が何を証明し、起動するコンソールまでにどのマイルストーンがあるか。",
- "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.": "コンソールの弧: 一族の部品から組み上がる動く NES。チップ間の規約は記録済みのリファレンストレースで証明され、最初の音はもう鳴った。"
+ "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.": "コンソールの弧: 一族の部品から組み上がる動く NES。チップ間の規約は記録済みのリファレンストレースで証明され、最初の音はもう鳴った。",
+ "The console arc's notebook": "コンソールの弧のノート",
+ "The console arc, in retrospect": "コンソールの弧を振り返る",
+ "Composite, terminated": "コンポジット、終端して",
+ "Every milestone's plan and report, from the sketch to the bench, in the arc's order": "各節目の計画と報告を、スケッチからベンチまで弧の順に",
+ "What the sketch asked for, what the chips and the ROMs taught, and what stays for a bench": "スケッチが求めたもの、チップと ROM が教えたもの、ベンチに残るもの",
+ "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered": "実機 NES のコンポジット映像を 75 オームに終端して読む: 走査線、バースト、転記表の横のレベル、そして終端なしのプローブ記録が大きく見せていたもの"
 }

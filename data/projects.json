@@ -246,6 +246,19 @@
      "lands_at_settled": true,
      "status": "here",
      "prerendered": true
+    },
+    {
+     "key": "composite",
+     "name": "Composite, terminated",
+     "what": "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/ntsc/composite",
+     "lands_at": "/ntsc/composite",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
     }
    ],
    "landing": "/ntsc"
@@ -279,6 +292,32 @@
      "piece": null,
      "serves_today": "https://tinymachines.ai/nes/play",
      "lands_at": "/nes/play",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "notebook",
+     "name": "The console arc's notebook",
+     "what": "Every milestone's plan and report, from the sketch to the bench, in the arc's order. The repositories are the one copy; this site pulls them at build time.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/docs/nes",
+     "lands_at": "/docs/nes",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "retrospective",
+     "name": "The console arc, in retrospect",
+     "what": "What the sketch asked for, what the chips and the ROMs taught, and what stays for a bench.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/docs/console-arc",
+     "lands_at": "/docs/console-arc",
      "lands_at_settled": true,
      "status": "here",
      "prerendered": true

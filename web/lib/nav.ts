@@ -157,7 +157,11 @@ export function menuGroups(): MenuGroup[] {
         ...(p.key === "6502"
           ? TRACKS.filter((tr) => tr.path !== "/6502/archive").map((tr) => ({ href: tr.path, label: tr.name.en, hint: firstSentence(tr.what.en) }))
           : []),
-        ...here.map((s) => ({
+        // The landing's own surface IS the Overview above. Listing it
+        // again gave the group two labels for one destination, which is
+        // the reader's job to reconcile and was the panel's job not to
+        // ask; the front page's doors already skip it the same way.
+        ...here.filter((s) => s.lands_at !== p.landing).map((s) => ({
           href: s.lands_at,
           // The one answer, not a second set: this had its own copy of the
           // explorer's routes, and a copy of a rule is a copy that misses
