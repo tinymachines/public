@@ -1,14 +1,14 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-08T03:11:02+00:00",
+  "boarded_at": "2026-09-08T05:05:44+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "served": {
-    "version": "v0.332",
-    "commit": "70142641ae3dba76e74fea8438378d88370b667e",
-    "built": "2026-09-08T03:09:16+00:00",
+    "version": "v0.333",
+    "commit": "8b9de970fa7e988989593f6c2e655b014ce5755a",
+    "built": "2026-09-08T05:04:57+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-08T03:07:10+00:00",
+      "ran": "2026-09-08T05:03:13+00:00",
       "cargo": {
         "command": "cargo test --workspace",
         "passed": 127,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "70142641ae3dba76e74fea8438378d88370b667e",
+  "running": "8b9de970fa7e988989593f6c2e655b014ce5755a",
   "worktree": {
-    "commit": "70142641ae3dba76e74fea8438378d88370b667e",
-    "subject": "CLAUDE.md counts 127 cargo tests, which is what the deploy measured",
-    "committed": "2026-09-07T22:59:40-04:00",
+    "commit": "8b9de970fa7e988989593f6c2e655b014ce5755a",
+    "subject": "The tiles a cartridge does not carry are the house's, in every arrival order",
+    "committed": "2026-09-08T00:58:59-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "b82295d43dc7f004ce2b13ec756ca02582063252db4ba51c24a8b71b905114d8",
+    "sha256": "a566e6709dd1a0edbd933134307f25161c93267328ee296576824ecdedaed450",
     "bytes": 638432,
-    "modified": "2026-09-08T03:04:56+00:00",
-    "stated": "70142641ae3dba76e74fea8438378d88370b667e"
+    "modified": "2026-09-08T05:00:48+00:00",
+    "stated": "8b9de970fa7e988989593f6c2e655b014ce5755a"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.7,
+      "seconds": 0.8,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 8.7,
+      "seconds": 7.8,
       "ok": true
     }
   ]
