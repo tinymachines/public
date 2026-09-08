@@ -573,8 +573,11 @@ const PROSE = {
     timingCaption: "One poll on the part as timing lanes: the load window the register's inputs must not change in, what the two counters count, and where the bridge may write. Every width is authored until the scope replaces it.",
     labNote: (
       <>
-        The parts are on the desk and the wiring is next, so there is now
-        a <Link href="/docs/nes/lab-notebook">lab notebook</Link>. It is
+        The parts are on the desk and the wiring is next, so the build
+        is written out as{" "}
+        <Link href="/docs/nes/build-guide">five sittings</Link>, one
+        command each, and what comes back is a{" "}
+        <Link href="/docs/nes/lab-notebook">lab notebook</Link>. It is
         the build as it actually happens: fourteen steps, each ending in
         a measurement rather than an opinion, every attempt kept
         including the ones that failed, and a photograph at each stop.
@@ -809,7 +812,7 @@ const PROSE = {
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     labNote: (
       <>
-        部品は机の上にあり、次は配線だ。そこで<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>を用意した。実際に組み上がっていく過程そのものである: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。
+        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。
       </>
     ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
