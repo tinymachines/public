@@ -83,6 +83,13 @@ const sheets = spawnSync("python3", [path.join(BENCH, "tools", "check-sheets.py"
 if (sheets.status !== 0) {
   throw new Error(`nes-bench's sheets disagree with its wiring or its generator: ${sheets.stdout}${sheets.stderr}`);
 }
+// The bring-up tool's guards, driven with scripted answers. It is
+// interactive, so nothing else here would ever run its refusals, and a
+// guard that has never been seen to refuse is not a guard.
+const guards = spawnSync("python3", [path.join(BENCH, "tools", "check-bringup.py")], { encoding: "utf8" });
+if (guards.status !== 0) {
+  throw new Error(`nes-bench's bring-up guards do not hold: ${guards.stdout}${guards.stderr}`);
+}
 // The notebook is generated from the bring-up log. Publishing a stale one
 // would put a claim on the site that its own log does not support.
 for (const [tool, what] of [["lab-notebook.py", "lab notebook"], ["build-guide.py", "build guide"]]) {
