@@ -2433,3 +2433,55 @@ First boarding: be0d3c9, 5 tests green, 2 MUTATE reds, halfphi 0.1.3.
 The one figure, web/public/nes/first-sound.png, is the A3
 measurement drawn from the repository's own a3-dump example at the
 boarded commit, with provenance rows in web/public/nes/README.md.
+
+## Checkpoint, 2026-09-09, the suite green and the voice settled
+
+Live 1.0.212 (`f17e250`) on 6502 v0.333 (`8b9de97`). The full e2e
+suite: 710 passed, 5 skipped, 0 failed (the engine power key flaked
+once and passed on retry). Every tree in the family, the roof and its
+six siblings, is clean and in sync with origin.
+
+What this window closed, newest first:
+
+- **The games console's tile sheet merges instead of swapping** (6502
+  v0.333). The registry's "life" cartridge carries one tile, and a
+  house sheet arriving after the cartridge left its borrowed tiles
+  blank for good while the legend kept stale swatches. game.js now
+  builds TILES as the house set with the cartridge's own assigned over
+  it, rebuilt when either changes; proven red-then-green against a
+  local serve before releasing, and console-cart.spec.ts holds it on
+  production.
+- **The section menus reach everything in their section** (`cd0e1cf`).
+  The notebook, the retrospective and the composite deep-dive joined
+  the manifest as surfaces, so the menu, the crumbs and the front
+  page's doors gained them from the one edit; the landing's own
+  surface no longer duplicates Overview; e2e/menu.spec.ts pins the
+  rule. Found because the owner noticed the /nes group was thin;
+  /ntsc/composite had been reachable from no menu at all.
+- **The prose h1 fits a phone** (`33a658d`). "documentation" at
+  --text-h1 is wider than a 360px column and scrolled
+  /docs/nes/m5-report sideways; under 34rem the prose h1 now drops to
+  --text-h2 like the page head, with overflow-wrap as the guarantee.
+- **consolev2 has seven engines**: rung 3, the measured microcode,
+  arrived with v0.332's halfwave; the spec follows the machine.
+- **The /nes engines paragraph states no typed numbers** (`5383049`).
+  The 2C02's node count and the 9-then-27 masked latches are boarded
+  by anchored extraction from the P0/P1 reports, each state count
+  cross-checked against the suite's own printed lines; the fast PPU's
+  frame timing was re-measured on a quiet machine after a loaded first
+  pass, and the docs index's "well under a millisecond" became a claim
+  that stays true.
+- **The plain-voice sweep is complete across four repositories.** The
+  roof's pages and cards, the 6502's generated atlas and idioms (fixed
+  in their exporters, released as v0.332), nes-bench's report and
+  build document, and ntsc-crt's two travelling M1/M2 titles. The rule
+  lives in CLAUDE.md's house style; new prose is the only place it can
+  fail now.
+
+The release chain that carried all of it: a fix lands in the sibling
+repository when the owner asks, the owner runs that project's deploy
+and this one's (both are the owner's to fire), the API restart and the
+boarding are this side's, and the record commits before the roof
+deploy re-pulls. Still open, unchanged: the bench hardware (nothing
+built; every open item is one scope session), the untranslated pulled
+docs, and the 125 pre-existing lint warnings.
