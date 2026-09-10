@@ -113,3 +113,4 @@ web/lib/vendor/pretext.js
 # The schematic sheets as PNGs: rendered from the committed SVGs on every
 # deploy by nes-bench/tools/render-png.py. Generated, so not committed.
 web/public/nes/bench/*.png
+web/public/nes/bench/*.pdf

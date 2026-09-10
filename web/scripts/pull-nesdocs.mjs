@@ -116,6 +116,21 @@ if (png.status !== 0) {
   console.warn(`pull-nesdocs: the sheet PNGs were not rendered, serving SVGs only: ${png.stdout}${png.stderr}`);
 }
 
+// The drawing package: framed sheets and one PDF, built from the same
+// committed SVGs. Served, not committed, like the PNGs.
+const pkg = spawnSync("python3", [path.join(BENCH, "tools", "make-package.py")], { encoding: "utf8" });
+if (pkg.status !== 0) {
+  console.warn(`pull-nesdocs: the drawing package was not built: ${pkg.stdout}${pkg.stderr}`);
+} else {
+  const pkgDir = path.join(BENCH, "docs", "package");
+  for (const f of fs.readdirSync(pkgDir)) {
+    if (f.endsWith(".pdf")) {
+      fs.copyFileSync(path.join(pkgDir, f), path.join(ROOT, "web", "public", "nes", "bench", f));
+      console.log(`pull-nesdocs: ${f}`);
+    }
+  }
+}
+
 const labOut = path.join(ROOT, "web", "public", "nes", "lab");
 fs.mkdirSync(labOut, { recursive: true });
 let labCount = 0;
