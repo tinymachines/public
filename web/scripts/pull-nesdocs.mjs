@@ -104,6 +104,18 @@ fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "p
 for (const f of SHEETS) {
   fs.copyFileSync(path.join(BENCH, "docs", f), path.join(ROOT, "web", "public", "nes", "bench", f));
 }
+// The sheets as PNGs too, for reading offline on a phone. Rendered from
+// the committed SVGs on every deploy, and gitignored: a PNG is a
+// photograph of a drawing, so there is no check that could tell whether
+// a committed one still matched, and PNG bytes are not reproducible
+// across renderer versions anyway. If no renderer is installed this is
+// a warning, not a failure: the SVGs are the artefact.
+const png = spawnSync("python3", [path.join(BENCH, "tools", "render-png.py"),
+                                  path.join(ROOT, "web", "public", "nes", "bench")], { encoding: "utf8" });
+if (png.status !== 0) {
+  console.warn(`pull-nesdocs: the sheet PNGs were not rendered, serving SVGs only: ${png.stdout}${png.stderr}`);
+}
+
 const labOut = path.join(ROOT, "web", "public", "nes", "lab");
 fs.mkdirSync(labOut, { recursive: true });
 let labCount = 0;

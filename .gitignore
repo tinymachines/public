@@ -109,3 +109,7 @@ web/out/
 notes/stash/
 # scripts/build-pretext.mjs bundles extern/pretext at build time
 web/lib/vendor/pretext.js
+
+# The schematic sheets as PNGs: rendered from the committed SVGs on every
+# deploy by nes-bench/tools/render-png.py. Generated, so not committed.
+web/public/nes/bench/*.png
