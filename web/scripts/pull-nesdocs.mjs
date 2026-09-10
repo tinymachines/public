@@ -65,7 +65,9 @@ const DOCS = [
 // The bench's schematics, drawn by its generator and held to its wiring
 // tables (tools/check-sheets.py): served beside the console's figures,
 // and the build document's image links pointed at them.
-const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v2.svg", "bench-v2b.svg", "breadboard-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
+const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v2.svg",
+                "bench-v2b-1.svg", "bench-v2b-2.svg", "bench-v2b-3.svg", "bench-v2b-4.svg",
+                "breadboard-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
@@ -175,12 +177,19 @@ const pkg = spawnSync("python3", [path.join(BENCH, "tools", "make-package.py")],
 if (pkg.status !== 0) {
   console.warn(`pull-nesdocs: the drawing package was not built: ${pkg.stdout}${pkg.stderr}`);
 } else {
+  // One directory per package now (v1b is TM-NESB-001, v2b is -002),
+  // so the PDFs are a level down. They are served flat: the file name
+  // already carries the drawing number.
   const pkgDir = path.join(BENCH, "docs", "package");
-  for (const f of fs.readdirSync(pkgDir)) {
-    if (f.endsWith(".pdf")) {
-      fs.copyFileSync(path.join(pkgDir, f), path.join(ROOT, "web", "public", "nes", "bench", f));
-      console.log(`pull-nesdocs: ${f}`);
+  for (const d of fs.readdirSync(pkgDir, { withFileTypes: true })) {
+    const dir = d.isDirectory() ? path.join(pkgDir, d.name) : pkgDir;
+    for (const f of fs.readdirSync(dir)) {
+      if (f.endsWith(".pdf")) {
+        fs.copyFileSync(path.join(dir, f), path.join(ROOT, "web", "public", "nes", "bench", f));
+        console.log(`pull-nesdocs: ${f}`);
+      }
     }
+    if (!d.isDirectory()) break;
   }
 }
 
