@@ -64,7 +64,7 @@ const DOCS = [
 // The bench's schematics, drawn by its generator and held to its wiring
 // tables (tools/check-sheets.py): served beside the console's figures,
 // and the build document's image links pointed at them.
-const SHEETS = ["bench-v1.svg", "bench-v1b.svg", "bench-v2.svg", "logical-timing.svg", "pad-adapter.svg"];
+const SHEETS = ["bench-v1.svg", "bench-v1b.svg", "bench-v2.svg", "bench-v2b.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
