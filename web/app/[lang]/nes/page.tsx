@@ -587,7 +587,17 @@ const PROSE = {
         joined bridge answers whether every poll really carries eight
         clocks. The notebook is generated from the tool that walks the
         build, so nothing in it is typed, and the site refuses to publish
-        one its own log does not support.
+        one its own log does not support. The same build is also a{" "}
+        <a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">
+          printable drawing package
+        </a>
+        : framed sheets on one page size, each with a title block and a
+        sheet number, carrying the schematics, a{" "}
+        <a href="/nes/bench/breadboard-v1b.png">breadboard layout</a>{" "}
+        that says which hole every part and every jumper goes in, the
+        parts list and the wiring list. Only the placement on that layout
+        is a choice; every wire on it is read back out of the schematic,
+        so the picture cannot show a connection the drawing does not have.
       </>
     ),
     boardedH: "Every number here comes from re-running the tests",
@@ -812,7 +822,7 @@ const PROSE = {
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     labNote: (
       <>
-        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。
+        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">印刷用の図面パッケージ</a>にもなっている: 用紙サイズを揃えた枠付きの図面で、各葉に表題欄と図番があり、回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表を収めてある。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。
       </>
     ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
