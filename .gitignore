@@ -114,3 +114,4 @@ web/lib/vendor/pretext.js
 # deploy by nes-bench/tools/render-png.py. Generated, so not committed.
 web/public/nes/bench/*.png
 web/public/nes/bench/*.pdf
+web/public/nes/bench/fab/

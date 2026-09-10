@@ -125,6 +125,28 @@ if (png.status !== 0) {
   console.warn(`pull-nesdocs: the sheet PNGs were not rendered, serving SVGs only: ${png.stdout}${png.stderr}`);
 }
 
+// The fabrication handoff: KiCad and Protel netlists and a BOM per
+// sheet, written from the committed schematics. --check first, so a
+// part with no footprint stops the deploy rather than shipping a
+// netlist with an empty field in it.
+const fab = spawnSync("python3", [path.join(BENCH, "tools", "export-netlist.py"), "--check"], { encoding: "utf8" });
+if (fab.status !== 0) {
+  throw new Error(`nes-bench has a part with no footprint: ${fab.stdout}${fab.stderr}`);
+}
+const fabw = spawnSync("python3", [path.join(BENCH, "tools", "export-netlist.py")], { encoding: "utf8" });
+if (fabw.status !== 0) {
+  throw new Error(`nes-bench's netlist export failed: ${fabw.stdout}${fabw.stderr}`);
+}
+{
+  const fabDir = path.join(BENCH, "docs", "fab");
+  const dst = path.join(ROOT, "web", "public", "nes", "bench", "fab");
+  fs.mkdirSync(dst, { recursive: true });
+  for (const f of fs.readdirSync(fabDir)) {
+    fs.copyFileSync(path.join(fabDir, f), path.join(dst, f));
+  }
+  console.log(`pull-nesdocs: ${fs.readdirSync(fabDir).length} fabrication files`);
+}
+
 // The drawing package: framed sheets and one PDF, built from the same
 // committed SVGs. Served, not committed, like the PNGs.
 const pkg = spawnSync("python3", [path.join(BENCH, "tools", "make-package.py")], { encoding: "utf8" });
