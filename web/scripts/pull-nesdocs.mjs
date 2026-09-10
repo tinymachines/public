@@ -65,7 +65,7 @@ const DOCS = [
 // The bench's schematics, drawn by its generator and held to its wiring
 // tables (tools/check-sheets.py): served beside the console's figures,
 // and the build document's image links pointed at them.
-const SHEETS = ["bench-v1.svg", "bench-v1b.svg", "bench-v2.svg", "bench-v2b.svg", "breadboard-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
+const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v2.svg", "bench-v2b.svg", "breadboard-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
@@ -108,10 +108,21 @@ for (const [tool, what] of [["lab-notebook.py", "lab notebook"], ["build-guide.p
     throw new Error(`nes-bench's ${what} is not current: ${r.stdout}${r.stderr}`);
   }
 }
-fs.mkdirSync(path.join(ROOT, "web", "public", "nes", "bench"), { recursive: true });
+const benchOut = path.join(ROOT, "web", "public", "nes", "bench");
+fs.mkdirSync(benchOut, { recursive: true });
 fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "public", "nes", "bench.svg"));
+// A renamed sheet leaves its old self behind, and a served file nothing
+// points at is a file somebody eventually links to. bench-v1b.svg
+// became two sheets and both copies sat here until this existed.
+const wanted = new Set([...SHEETS, ...SHEETS.map((f) => f.replace(/\.svg$/, ".png"))]);
+for (const f of fs.readdirSync(benchOut)) {
+  if (/\.(svg|png)$/.test(f) && !wanted.has(f)) {
+    fs.rmSync(path.join(benchOut, f));
+    console.log(`pull-nesdocs: dropped ${f}, no longer a sheet`);
+  }
+}
 for (const f of SHEETS) {
-  fs.copyFileSync(path.join(BENCH, "docs", f), path.join(ROOT, "web", "public", "nes", "bench", f));
+  fs.copyFileSync(path.join(BENCH, "docs", f), path.join(benchOut, f));
 }
 // The sheets as PNGs too, for reading offline on a phone. Rendered from
 // the committed SVGs on every deploy, and gitignored: a PNG is a

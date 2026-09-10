@@ -567,8 +567,10 @@ const PROSE = {
     ),
     benchAlt: "The bench as one drawing: the loop above (workstation, Pi, bridge, console, pad, scope, relays) and the bridge's chips with every pin below.",
     benchCaption: "The bench, derived from its wiring tables: the loop, and the bridge with every pin. Nothing in it is built yet.",
-    sheetAlt: "The bridge as a schematic, v1b: the console port, an inverter, a shift register that is the pad, a second register fed over SPI, and an Arduino UNO, all on one five volt supply, with the pad socket, and the head with its relays and the scope below.",
-    sheetCaption: "The same bridge as a schematic, and the version that gets built: an Arduino UNO puts everything on one five volt supply, so the level shifters the three volt part needed are gone. Net labels, one supply, one ground, every pin held to the document's own table by a check. The three volt version, the extended bridge and the build order are in the notebook.",
+    sheetAlt: "The bridge as a schematic, v1b sheet one of two, the console side: the controller port, an inverter, and a shift register that answers the console the way a pad does, all on one five volt supply.",
+    sheetCaption: "The same bridge as a schematic, and the version that gets built: an Arduino UNO puts everything on one five volt supply, so the level shifters the three volt part needed are gone. Net labels, one supply, one ground, every pin held to the document's own table by a check. This is the console side, and the nets that carry on to the next sheet are flagged with its number. The three volt version, the extended bridge and the build order are in the notebook.",
+    sheetAlt2: "The bridge as a schematic, v1b sheet two of two, the bridge side: the pad socket, the Arduino UNO, the register it writes over SPI, the trigger resistor, and notes on the head, the relays and the scope.",
+    sheetCaption2: "The bridge side. The UNO shifts a byte into the register and one clock edge moves it to the outputs, so the console can never read half of one. Nothing on either sheet is placed by hand: the arrangement is authored and every coordinate comes from the parts' own measured sizes, which is what lets a drawing be sized to the paper rather than shrunk onto it. Under five point type on paper the tool refuses the page instead.",
     timingAlt: "One controller poll as timing lanes: the latch pulse and the register's load window, the eight clock pulses, the data line, what each hardware counter counts, the microcontroller's loop, and where a write is safe.",
     timingCaption: "One poll on the part as timing lanes: the load window the register's inputs must not change in, what the two counters count, and where the bridge may write. Every width is authored until the scope replaces it.",
     labNote: (
@@ -591,8 +593,10 @@ const PROSE = {
         <a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">
           printable drawing package
         </a>
-        : framed sheets on one page size, each with a title block and a
-        sheet number, carrying the schematics, a{" "}
+        : framed landscape letter sheets, each with a title block, a
+        sheet number and its own revision strip, with the two drawings
+        that will not print legibly at that size declaring bigger paper
+        rather than being shrunk onto it. It carries the schematic, a{" "}
         <a href="/nes/bench/breadboard-v1b.png">breadboard layout</a>{" "}
         that says which hole every part and every jumper goes in, the
         parts list and the wiring list. Only the placement on that layout
@@ -816,13 +820,15 @@ const PROSE = {
     ),
     benchAlt: "ベンチの一枚の図: 上にループ（ワークステーション、Pi、ブリッジ、コンソール、パッド、スコープ、リレー）、下にブリッジのチップと全ピン。",
     benchCaption: "配線表から導いたベンチの図: ループと、全ピン付きのブリッジ。まだ何も組まれていない。",
-    sheetAlt: "回路図としてのブリッジ v1b: コントローラポート、インバータ、パッドそのものになるシフトレジスタ、SPI で書かれるもう一つのレジスタ、そして Arduino UNO。すべて単一の 5 V 電源上にあり、下にパッドソケットと、リレーとスコープを持つヘッド。",
-    sheetCaption: "同じブリッジを回路図に。そしてこれが実際に組む版だ: Arduino UNO によってすべてが単一の 5 V 電源に載るので、3.3 V の部品が必要としたレベルシフタは消える。ネットラベル、一つの電源、一つのグラウンド、全ピンが文書自身の表に検査で押さえられている。3.3 V 版と拡張ブリッジ、組み立て順はノートブックに。",
+    sheetAlt: "回路図としてのブリッジ v1b、全2葉の第1葉、コンソール側: コントローラポート、インバータ、そしてパッドと同じようにコンソールに答えるシフトレジスタ。すべて単一の 5 V 電源上にある。",
+    sheetCaption: "同じブリッジを回路図に。そしてこれが実際に組む版だ: Arduino UNO によってすべてが単一の 5 V 電源に載るので、3.3 V の部品が必要としたレベルシフタは消える。ネットラベル、一つの電源、一つのグラウンド、全ピンが文書自身の表に検査で押さえられている。ここはコンソール側で、次の葉へ続くネットにはその葉の番号が旗として付く。3.3 V 版と拡張ブリッジ、組み立て順はノートブックに。",
+    sheetAlt2: "回路図としてのブリッジ v1b、全2葉の第2葉、ブリッジ側: パッドソケット、Arduino UNO、SPI で書き込まれるレジスタ、トリガ用抵抗、そしてヘッドとリレーとスコープについての注記。",
+    sheetCaption2: "ブリッジ側。UNO はレジスタに 1 バイトを送り込み、クロックの一辺がそれを出力へ移す。だからコンソールが半分だけ読むことは起こり得ない。どちらの葉も、部品の位置は手で置いていない: 配置は著述だが、座標はすべて部品自身の実測寸法から出る。だから図面を紙に合わせて作れる。縮めて載せるのではない。紙の上で 5 ポイントを切るなら、道具はその頁を拒む。",
     timingAlt: "コントローラの一回のポーリングをタイミングレーンに: ラッチパルスとレジスタのロード窓、八つのクロックパルス、データ線、各ハードウェアカウンタが数えるもの、マイクロコントローラのループ、書き込みが安全な場所。",
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     labNote: (
       <>
-        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">印刷用の図面パッケージ</a>にもなっている: 用紙サイズを揃えた枠付きの図面で、各葉に表題欄と図番があり、回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表を収めてある。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。
+        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">印刷用の図面パッケージ</a>にもなっている: 横置きレターの枠付き図面で、各葉に表題欄と図番と改訂欄があり、その寸法では読めなくなる二葉だけは縮めずに大きな用紙を申告している。収めてあるのは回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表である。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。
       </>
     ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
@@ -957,8 +963,12 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
           <figcaption>{S.benchCaption}</figcaption>
         </figure>
         <figure className="crt-figure">
-          <Image src="/nes/bench/bench-v1b.svg" width={1900} height={1000} alt={S.sheetAlt} unoptimized />
+          <Image src="/nes/bench/bench-v1b-1.svg" width={1154} height={591} alt={S.sheetAlt} unoptimized />
           <figcaption>{S.sheetCaption}</figcaption>
+        </figure>
+        <figure className="crt-figure">
+          <Image src="/nes/bench/bench-v1b-2.svg" width={1129} height={699} alt={S.sheetAlt2} unoptimized />
+          <figcaption>{S.sheetCaption2}</figcaption>
         </figure>
         <figure className="crt-figure">
           <Image src="/nes/bench/logical-timing.svg" width={1500} height={900} alt={S.timingAlt} unoptimized />
