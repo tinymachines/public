@@ -58,6 +58,7 @@ const DOCS = [
   { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1 and v1b), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
   { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", order: 33, description: "v1b, the bridge on an Arduino UNO with everything at five volts, which is the version built first: why the level shifters go away, the pin table, and the four things writing the firmware proved the plan had wrong." },
   { repo: "nes-bench", file: "build-guide.md", slug: "build-guide", order: 34, description: "The bench built in five sittings, one command each: what to wire pin by pin, what the command then measures, which photographs to take, and where each sitting stands. Generated from the tool that runs it." },
+  { repo: "nes-bench", file: "parts.md", slug: "parts", order: 36, description: "The bench's bill of materials, one table per schematic sheet plus a single list of everything to gather. Generated from the same file that draws the schematics, so a part cannot be on a sheet and missing from the list." },
   { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", order: 35, description: "The lab notebook: the bench being wired one step at a time, every attempt including the ones that failed, each step ending in a measurement rather than an opinion. Generated from the bring-up tool's log, never typed." },
 ];
 
@@ -92,7 +93,7 @@ if (guards.status !== 0) {
 }
 // The notebook is generated from the bring-up log. Publishing a stale one
 // would put a claim on the site that its own log does not support.
-for (const [tool, what] of [["lab-notebook.py", "lab notebook"], ["build-guide.py", "build guide"]]) {
+for (const [tool, what] of [["lab-notebook.py", "lab notebook"], ["build-guide.py", "build guide"], ["parts.py", "parts list"]]) {
   const r = spawnSync("python3", [path.join(BENCH, "tools", tool), "--check"], { encoding: "utf8" });
   if (r.status !== 0) {
     throw new Error(`nes-bench's ${what} is not current: ${r.stdout}${r.stderr}`);
