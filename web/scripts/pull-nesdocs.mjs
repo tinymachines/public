@@ -84,6 +84,15 @@ const sheets = spawnSync("python3", [path.join(BENCH, "tools", "check-sheets.py"
 if (sheets.status !== 0) {
   throw new Error(`nes-bench's sheets disagree with its wiring or its generator: ${sheets.stdout}${sheets.stderr}`);
 }
+// The schematics' own rule check. Clean as of 2026-09-09, so it can be
+// a gate: a net with one end, a duplicated designator, a supply pin
+// nobody mentioned. It cannot catch a connector drawn with the right
+// connections and the wrong pinout, which is what check-sheets.py's
+// port-pinout comparison is for.
+const erc = spawnSync("python3", [path.join(BENCH, "tools", "netlist.py"), "--erc"], { encoding: "utf8" });
+if (erc.status !== 0) {
+  throw new Error(`nes-bench's schematics do not pass their own rule check: ${erc.stdout}${erc.stderr}`);
+}
 // The bring-up tool's guards, driven with scripted answers. It is
 // interactive, so nothing else here would ever run its refusals, and a
 // guard that has never been seen to refuse is not a guard.
