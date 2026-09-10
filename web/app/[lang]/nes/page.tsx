@@ -608,7 +608,17 @@ const PROSE = {
           a package of its own
         </a>
         : four schematic sheets, because eleven parts and forty-two nets
-        do not fit on one page anybody can print.
+        do not fit on one page anybody can print. That{" "}
+        <a href="/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg">
+          board is routed
+        </a>
+        , two layers with ground poured on the back and supply on the
+        front, and the routing is a recorded file the build applies
+        rather than a step anybody has to repeat. Whether every net is
+        joined and whether any copper sits too near copper of another
+        net are asked of the finished board, not taken from the
+        router&rsquo;s own report, because the first run of it said the
+        board was complete while three pads had no copper path at all.
       </>
     ),
     boardedH: "Every number here comes from re-running the tests",
@@ -835,7 +845,7 @@ const PROSE = {
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     labNote: (
       <>
-        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">印刷用の図面パッケージ</a>にもなっている: 横置きレターの枠付き図面で、各葉に表題欄と図番と改訂欄があり、その寸法では読めなくなる二葉だけは縮めずに大きな用紙を申告している。収めてあるのは回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表である。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。ブレッドボードではなく基板を欲しがるのは二ポート版のほうで、こちらには<a href="/nes/bench/nes-bench-TM-NESB-002-revA.pdf">独自のパッケージ</a>がある: 回路図は四葉。部品十一点と四十二本のネットは、誰かが印刷できる一枚には収まらないからだ。
+        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<a href="/nes/bench/nes-bench-TM-NESB-001-revA.pdf">印刷用の図面パッケージ</a>にもなっている: 横置きレターの枠付き図面で、各葉に表題欄と図番と改訂欄があり、その寸法では読めなくなる二葉だけは縮めずに大きな用紙を申告している。収めてあるのは回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表である。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。ブレッドボードではなく基板を欲しがるのは二ポート版のほうで、こちらには<a href="/nes/bench/nes-bench-TM-NESB-002-revA.pdf">独自のパッケージ</a>がある: 回路図は四葉。部品十一点と四十二本のネットは、誰かが印刷できる一枚には収まらないからだ。その<a href="/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg">基板は配線済み</a>である。両面、裏にグラウンド、表に電源を敷き、配線そのものは記録されたファイルで、ビルドはそれを適用するだけだ。誰かが毎回やり直す工程ではない。全ネットがつながっているか、別ネットの銅が近すぎないかは、完成した基板に対して問う。ルータ自身の報告は採らない。最初の実行では、基板は完成したと報告されながら、三つのパッドには銅の経路がまったく無かったからだ。
       </>
     ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
