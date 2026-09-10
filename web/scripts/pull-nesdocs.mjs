@@ -133,6 +133,10 @@ const fab = spawnSync("python3", [path.join(BENCH, "tools", "export-netlist.py")
 if (fab.status !== 0) {
   throw new Error(`nes-bench has a part with no footprint: ${fab.stdout}${fab.stderr}`);
 }
+const pcb = spawnSync("python3", [path.join(BENCH, "tools", "make-pcb.py"), "--plot"], { encoding: "utf8" });
+if (pcb.status !== 0) {
+  console.warn(`pull-nesdocs: the board was not rebuilt (KiCad's pcbnew may not be installed here): ${pcb.stdout}${pcb.stderr}`);
+}
 const fabw = spawnSync("python3", [path.join(BENCH, "tools", "export-netlist.py")], { encoding: "utf8" });
 if (fabw.status !== 0) {
   throw new Error(`nes-bench's netlist export failed: ${fabw.stdout}${fabw.stderr}`);
@@ -141,10 +145,17 @@ if (fabw.status !== 0) {
   const fabDir = path.join(BENCH, "docs", "fab");
   const dst = path.join(ROOT, "web", "public", "nes", "bench", "fab");
   fs.mkdirSync(dst, { recursive: true });
-  for (const f of fs.readdirSync(fabDir)) {
-    fs.copyFileSync(path.join(fabDir, f), path.join(dst, f));
-  }
-  console.log(`pull-nesdocs: ${fs.readdirSync(fabDir).length} fabrication files`);
+  const copyTree = (from, to) => {
+    fs.mkdirSync(to, { recursive: true });
+    for (const f of fs.readdirSync(from, { withFileTypes: true })) {
+      if (f.isDirectory()) copyTree(path.join(from, f.name), path.join(to, f.name));
+      else fs.copyFileSync(path.join(from, f.name), path.join(to, f.name));
+    }
+  };
+  copyTree(fabDir, dst);
+  const count = (d) => fs.readdirSync(d, { withFileTypes: true })
+    .reduce((n, f) => n + (f.isDirectory() ? count(path.join(d, f.name)) : 1), 0);
+  console.log(`pull-nesdocs: ${count(fabDir)} fabrication files`);
 }
 
 // The drawing package: framed sheets and one PDF, built from the same
