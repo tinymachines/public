@@ -27,7 +27,7 @@ const OUT = path.join(ROOT, "docs", "nes");
 // A document that names one of these gets a link to it under its h1,
 // and the pull refuses to publish a link to a file it did not produce.
 const ARTEFACTS = {
-  v1b: { label: "v1b drawing package, TM-NESB-001 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-001-revA.pdf" },
+  v1b: { label: "v1b drawing package, TM-NESB-001 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-001-revB.pdf" },
   v2b: { label: "v2b drawing package, TM-NESB-002 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-002-revA.pdf" },
   board: { label: "v2b board, top copper (SVG)", href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
 };
@@ -67,6 +67,7 @@ const DOCS = [
   { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", artefacts: ["v1b", "v2b"], order: 32, description: "The electronics review's sheets: the bridge as a schematic (v1 and v1b), the extended bridge (v2), one poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
   { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", artefacts: ["v1b", "v2b", "board"], order: 33, description: "v1b, the bridge on an Arduino UNO with everything at five volts, which is the version built first: why the level shifters go away, the pin table, and the four things writing the firmware proved the plan had wrong." },
   { repo: "nes-bench", file: "build-guide.md", slug: "build-guide", artefacts: ["v1b"], order: 34, description: "The bench built in five sittings, one command each: what to wire pin by pin, what the command then measures, which photographs to take, and where each sitting stands. Generated from the tool that runs it." },
+  { repo: "nes-bench", file: "as-built-v1b.md", slug: "as-built", order: 38, artefacts: ["v1b"], description: "The v1b board as built, read off its photographs: which block and half the chips sit in, their notch direction and columns, the rails, the UNO ribbon, and where the headers should move so the jumpers stay short. The holes themselves are on the breadboard sheet and the cheat sheet." },
   { repo: "nes-bench", file: "cheat-sheet.md", slug: "cheat-sheet", artefacts: ["v1b"], order: 37, description: "The bench's cheat sheet: the two breakouts pin by pin (port pin, NES harness colour, breakout lead, where it goes), the head's four jumpers, and every pin of every chip with what it does on the part and what it is wired to here. Generated from the schematic, the lab log and the bring-up tool." },
   { repo: "nes-bench", file: "parts.md", slug: "parts", artefacts: ["v1b", "v2b"], order: 36, description: "The bench's bill of materials, one table per schematic sheet plus a single list of everything to gather. Generated from the same file that draws the schematics, so a part cannot be on a sheet and missing from the list." },
   { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", artefacts: ["v1b"], order: 35, description: "The lab notebook: the bench being wired one step at a time, every attempt including the ones that failed, each step ending in a measurement rather than an opinion. Generated from the bring-up tool's log, never typed." },
