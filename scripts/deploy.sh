@@ -211,8 +211,16 @@ python3 style/check-silo.py || fail "check-silo"
 say "2e. The engine"
 python3 scripts/board-engine.py --check || fail "board-engine: not the boarded engine; python3 scripts/board-engine.py --board tests and records the current one"
 
-say "3. API tests"
-(cd api && python3 -m pytest . -q) || fail "pytest"
+# On the interpreter the service unit runs, not whichever python3 the
+# shell finds first. On 2026-09-11 the tests passed on a pyenv python
+# while /usr/bin/python3 had lost uvicorn (its user site-packages had
+# been wiped by an unrelated install at midday); the build went through
+# and the restart took the API down. The unit says /usr/bin/python3, so
+# the tests say it too.
+API_PY=/usr/bin/python3
+say "3. API tests (on $API_PY, the unit's interpreter)"
+"$API_PY" -c "import uvicorn, fastapi" || fail "$API_PY cannot import uvicorn and fastapi: the service would not start; pip install --user -r api/requirements.txt"
+(cd api && "$API_PY" -m pytest . -q) || fail "pytest"
 
 # The projects' own tools. A separate invocation rather than one rooted at the
 # repo, because api/ has a conftest that points TM_DB at a temp file and
