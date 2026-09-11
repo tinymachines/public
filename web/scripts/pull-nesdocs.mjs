@@ -77,7 +77,7 @@ const DOCS = [
 // and the build document's image links pointed at them.
 const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v2.svg",
                 "bench-v2b-1.svg", "bench-v2b-2.svg", "bench-v2b-3.svg", "bench-v2b-4.svg",
-                "breadboard-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
+                "breadboard-v1b.svg", "wiring-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
