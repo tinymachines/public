@@ -408,6 +408,37 @@ def main() -> int:
     served.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(bars, served)
     bars_file = {"sha256": hashlib.sha256(bars.read_bytes()).hexdigest(), "bytes": bars.stat().st_size}
+    # The bench's polling cartridges beside it (testrom::pad_program, with
+    # and without the looping DMC sample), the family's own like the bars,
+    # served for the flashcart and recorded with the model's own count
+    # of their polls: pad-log over 600 frames with $a5 on the pad, the
+    # figure the bench's compare-logs holds the part's log to.
+    cartridges = {}
+    script = con / "target" / "pad-a5.txt"
+    script.write_text("SET a5\n")
+    for kind in ["pad", "pad-dmc"]:
+        rom = con / "target" / f"{kind}.nes"
+        ex = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "export-testrom", "--", str(rom), kind],
+                            cwd=con, capture_output=True, text=True, env=os.environ)
+        if ex.returncode != 0 or not rom.is_file():
+            fail(f"export-testrom {kind} failed:\n{ex.stderr[-1500:]}")
+        shutil.copy2(rom, served.parent / f"{kind}.nes")
+        log = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "pad-log", "--", str(rom), "600", str(script)],
+                             cwd=con, capture_output=True, text=True, env=os.environ)
+        tail = [l for l in log.stdout.splitlines() if l.startswith("# ")]
+        m = re.search(r"# (\d+) polls over (\d+) frames; clocks per poll \{([^}]*)\}; nine at latches \[([^\]]*)\]", tail[-1] if tail else "")
+        if not m:
+            fail(f"pad-log's summary line is not on its output for {kind}:\n{log.stdout[-800:]}{log.stderr[-800:]}")
+        hist = {k.strip(): int(v) for k, v in (pair.split(":") for pair in m.group(3).split(",") if pair.strip())}
+        cartridges[kind] = {
+            "sha256": hashlib.sha256(rom.read_bytes()).hexdigest(),
+            "bytes": rom.stat().st_size,
+            "served": f"/nes/{kind}.nes",
+            "polls_over_600_frames": int(m.group(1)),
+            "clocks_per_poll": hist,
+            "nine_at_latches": [int(x) for x in m.group(4).split(",") if x.strip()],
+            "script": "SET a5",
+        }
     rows = {}
     margin_m = None
     for luma, frames_n in [(1, 100), (2, 220), (3, 340), (0, 460)]:
@@ -606,6 +637,7 @@ def main() -> int:
         "frames_per_s": [int(rate_m.group(1)), int(rate_m.group(2))],
         "real_time_x": [rate_m.group(3), rate_m.group(4)],
         "picture": picture,
+        "cartridges": cartridges,
         "sound": sound,
         "shell": shell,
         "blargg": {

@@ -663,6 +663,15 @@ if (manifest) {
     if (!bytes) failures.push("public/nes/bars.nes is missing; scripts/board-nes.py --board exports it from the nes tree.");
     else if (createHash("sha256").update(bytes).digest("hex") !== bars.sha256) failures.push("public/nes/bars.nes does not hash to data/nes.json's record; re-board.");
   }
+  // The bench's polling cartridges served beside the bars, likewise
+  // exported at the boarded commit and recorded by hash.
+  for (const [kind, c] of Object.entries(rec?.console?.cartridges ?? {})) {
+    const f = path.join(PUBLIC, "nes", `${kind}.nes`);
+    let bytes = null;
+    try { bytes = await readFile(f); } catch { /* reported below */ }
+    if (!bytes) failures.push(`public/nes/${kind}.nes is missing; scripts/board-nes.py --board exports it from the nes tree.`);
+    else if (createHash("sha256").update(bytes).digest("hex") !== c.sha256) failures.push(`public/nes/${kind}.nes does not hash to data/nes.json's record; re-board.`);
+  }
   const bundle = rec?.console?.wasm_bundle;
   if (!bundle) {
     failures.push("data/nes.json has no console wasm_bundle; run scripts/board-nes.py --wasm.");
