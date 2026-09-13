@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-08T05:05:44+00:00",
+  "boarded_at": "2026-09-13T14:03:37+00:00",
   "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "served": {
-    "version": "v0.333",
-    "commit": "8b9de970fa7e988989593f6c2e655b014ce5755a",
-    "built": "2026-09-08T05:04:57+00:00",
+    "version": "v0.342",
+    "commit": "cb11716bb818d990a5e2a88643ab08a37c71b9a6",
+    "built": "2026-09-13T14:02:08+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-08T05:03:13+00:00",
+      "ran": "2026-09-13T13:54:05+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 127,
+        "passed": 133,
         "failed": 0,
         "require_chips": true,
         "require_golden": true,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "8b9de970fa7e988989593f6c2e655b014ce5755a",
+  "running": "cb11716bb818d990a5e2a88643ab08a37c71b9a6",
   "worktree": {
-    "commit": "8b9de970fa7e988989593f6c2e655b014ce5755a",
-    "subject": "The tiles a cartridge does not carry are the house's, in every arrival order",
-    "committed": "2026-09-08T00:58:59-04:00",
+    "commit": "cb11716bb818d990a5e2a88643ab08a37c71b9a6",
+    "subject": "The console around the half-cycle: the Halfshot page shows the pad, the PPU, the stack page and the picture inside a window",
+    "committed": "2026-09-13T09:48:13-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "a566e6709dd1a0edbd933134307f25161c93267328ee296576824ecdedaed450",
-    "bytes": 638432,
-    "modified": "2026-09-08T05:00:48+00:00",
-    "stated": "8b9de970fa7e988989593f6c2e655b014ce5755a"
+    "sha256": "c9970efdd8c0814900dedb1960140891656ba73acd60af9e342205582824e1c7",
+    "bytes": 717416,
+    "modified": "2026-09-13T13:49:30+00:00",
+    "stated": "cb11716bb818d990a5e2a88643ab08a37c71b9a6"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.8,
+      "seconds": 0.3,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 7.8,
+      "seconds": 12.6,
       "ok": true
     }
   ]
