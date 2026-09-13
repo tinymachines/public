@@ -235,7 +235,11 @@ server {
     # paths: pkg/ belongs to the asset name, and api/ is the proxied service
     # (this regex once swallowed /6502/api/openapi.json, and the deploy's
     # door check caught it).
-    location ~ "^/(?:ja/)?6502/(?:(?!pkg/|api/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm))$" {
+    # ...and .window: a window of a console's record (the chip's Halfshot
+    # and Trace pages' ?window=name), plain text served beside the pages.
+    # Until this line is installed the pages fetch it from the chip's own
+    # host (web/windows.js there), which the connect-src above allows.
+    location ~ "^/(?:ja/)?6502/(?:(?!pkg/|api/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm|window))$" {
         alias /var/www/6502.tinymachines.ai/current/$chipasset;
     }
 
