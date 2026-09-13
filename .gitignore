@@ -92,6 +92,8 @@ web/public/nes/wasm/
 # The console's own bars cartridge, exported by the same script from the
 # nes tree at the boarded commit (nobody's game); generated, not committed.
 web/public/nes/bars.nes
+web/public/nes/cal.json
+web/public/nes/cal.nes
 # The bench drawing, pulled from ../nes-bench by pull-nesdocs.mjs
 web/public/nes/bench.svg
 web/public/nes/bench/

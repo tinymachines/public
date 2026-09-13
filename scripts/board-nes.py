@@ -439,6 +439,28 @@ def main() -> int:
             "nine_at_latches": [int(x) for x in m.group(4).split(",") if x.strip()],
             "script": "SET a5",
         }
+    # The calibration cartridge (nes-bench's calibration plan; nes's
+    # src/cal.rs): served with its manifest of measured regions beside
+    # it, both written by one run of the exporter, so the JSON the tools
+    # read describes the ROM the flashcart carries.
+    rom = con / "target" / "cal.nes"
+    ex = subprocess.run(["cargo", "run", "--release", "-p", "nes-console", "--example", "export-testrom", "--", str(rom), "cal"],
+                        cwd=con, capture_output=True, text=True, env=os.environ)
+    manifest = rom.with_suffix(".json")
+    if ex.returncode != 0 or not rom.is_file() or not manifest.is_file():
+        fail(f"export-testrom cal failed:\n{ex.stderr[-1500:]}")
+    shutil.copy2(rom, served.parent / "cal.nes")
+    shutil.copy2(manifest, served.parent / "cal.json")
+    m_json = json.loads(manifest.read_text())
+    cartridges["cal"] = {
+        "sha256": hashlib.sha256(rom.read_bytes()).hexdigest(),
+        "bytes": rom.stat().st_size,
+        "served": "/nes/cal.nes",
+        "manifest": "/nes/cal.json",
+        "manifest_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
+        "screens": [sc["name"] for sc in m_json["screens"]],
+        "regions": sum(len(sc["regions"]) for sc in m_json["screens"]),
+    }
     rows = {}
     margin_m = None
     for luma, frames_n in [(1, 100), (2, 220), (3, 340), (0, 460)]:
