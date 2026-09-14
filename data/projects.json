@@ -265,7 +265,7 @@
   },
   {
    "key": "nes",
-   "name": "the NES console",
+   "name": "The NES console",
    "what": "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by recorded reference traces, and the signal path already real.",
    "silo": "style/projects/nes.css",
    "status": "here",
@@ -299,12 +299,25 @@
     {
      "key": "notebook",
      "name": "The console arc's notebook",
-     "what": "Every milestone's plan and report, from the sketch to the bench, in the arc's order. The repositories are the one copy; this site pulls them at build time.",
+     "what": "Every plan and report for the console, grouped by the part they are about: the chips, the signal, the console and the bench. The repositories are the one copy; this site pulls them at build time.",
      "nav": false,
      "nav_label": null,
      "piece": null,
      "serves_today": "https://tinymachines.ai/docs/nes",
      "lands_at": "/docs/nes",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "cart",
+     "name": "The calibration cart",
+     "what": "One cartridge of our own whose every screen is built to be measured, off a real console and off the model through the same decoder. The plan, the build, the screens and the blank boards.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/docs/cart",
+     "lands_at": "/docs/cart",
      "lands_at_settled": true,
      "status": "here",
      "prerendered": true

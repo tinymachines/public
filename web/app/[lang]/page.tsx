@@ -88,7 +88,7 @@ const PROSE = {
         them.
       </>
     ),
-    overview: "overview",
+    overview: "Overview",
     startHere: "Start here if you build things",
     pieceByPiece: "The 6502 work, piece by piece",
     piecesProse: (six: number, hosted: number) => (

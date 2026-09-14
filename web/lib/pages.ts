@@ -100,7 +100,7 @@ export const PAGES: Record<string, FixedPage> = {
       "The Geiger TRNG's own schema, rendered and then checked against the running instrument.",
   },
   "/nes": {
-    title: "the NES console",
+    title: "The NES console",
     description:
       "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.",
   },

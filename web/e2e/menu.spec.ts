@@ -23,11 +23,11 @@ async function sectionGroup(page: import("@playwright/test").Page) {
   return { hrefs, labels };
 }
 
-test("the NES group reaches the notebook, the retrospective and Play", async ({ page }) => {
+test("the NES group reaches the notebook, the calibration cart, the retrospective and Play", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/nes", 500);
   const { hrefs } = await sectionGroup(page);
-  for (const want of ["/nes", "/nes/play", "/docs/nes", "/docs/console-arc"]) {
+  for (const want of ["/nes", "/nes/play", "/docs/nes", "/docs/cart", "/docs/console-arc"]) {
     expect(hrefs, `missing ${want}`).toContain(want);
   }
   expect(new Set(hrefs).size, `duplicate destination in ${JSON.stringify(hrefs)}`).toBe(hrefs.length);

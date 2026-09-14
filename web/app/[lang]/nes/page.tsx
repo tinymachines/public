@@ -37,6 +37,19 @@ const PROSE = {
         reference traces rather than promised by documentation.
       </>
     ),
+    // The section's parts, one line each, before the long read below: the
+    // doors a reader came for. Most point into the notebook's grouped
+    // index (e2e/nes-notebook.spec.ts follows every anchor).
+    partsH: "Every part of the console has its own shelf",
+    parts: [
+      { href: "/nes/play", name: "Play", what: "the console running in your browser, on a cartridge from your own disk" },
+      { href: "/docs/nes#the-chips", name: "The chips", what: "the contract, the 2A03 and the 2C02 at their switches, and the fast chips built from them" },
+      { href: "/ntsc", name: "The signal", what: "the composite video between the console and the television, with a live bench and a real console read off the scope" },
+      { href: "/docs/nes#the-console", name: "The console", what: "both chips on one board, then its picture, its sound and the window it plays in" },
+      { href: "/docs/nes#planning-the-bench", name: "The bench", what: "a real console and the model under the same controller presses: the plan, the build and what happened" },
+      { href: "/docs/cart", name: "The calibration cart", what: "one cartridge of our own whose every screen is built to be measured" },
+      { href: "/docs/console-arc", name: "The story so far", what: "what the sketch asked for, what the chips taught us, and what still waits on the real console" },
+    ],
     contractsH: "The chips share one contract, and a lie about a pin fails the tests",
     contracts: (busHref: string, ppuHref: string) => (
       <>
@@ -590,9 +603,9 @@ const PROSE = {
         clocks. The notebook is generated from the tool that walks the
         build, so nothing in it is typed, and the site refuses to publish
         one its own log does not support. The same build is also a{" "}
-        <a href="/nes/bench/nes-bench-TM-NESB-001-revB.pdf">
+        <Link href="/docs/nes#printable">
           printable drawing package
-        </a>
+        </Link>
         : framed landscape letter sheets, each with a title block, a
         sheet number and its own revision strip, with the two drawings
         that will not print legibly at that size declaring bigger paper
@@ -683,6 +696,16 @@ const PROSE = {
         <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬し、<Link href="/ja/ntsc">ntsc-crt</Link> はコンソールとブラウン管の間の信号を模擬する。このプロジェクトは、その二つが隣人であることをやめて一台の機械になる場所だ: 動く NES をチップごとに組み上げ、チップ間の規約は文書の約束ではなく、記録済みのリファレンストレースで証明する。
       </>
     ),
+    partsH: "コンソールの各部分には、それぞれの棚がある",
+    parts: [
+      { href: "/ja/nes/play", name: "遊ぶ", what: "ブラウザの中で動くコンソール。カートリッジはあなた自身のディスクから" },
+      { href: "/ja/docs/nes#the-chips", name: "チップ", what: "規約、スイッチのレベルの 2A03 と 2C02、そしてそこから組んだ高速チップ" },
+      { href: "/ja/ntsc", name: "信号", what: "コンソールとテレビの間のコンポジット映像。動くベンチと、スコープで読んだ実機つき" },
+      { href: "/ja/docs/nes#the-console", name: "コンソール", what: "一枚の基板に載った二つのチップ、そしてその絵、音、遊ぶための窓" },
+      { href: "/ja/docs/nes#planning-the-bench", name: "ベンチ", what: "同じコントローラ入力の下に置いた実機と模型: 計画、製作、そして起きたこと" },
+      { href: "/ja/docs/cart", name: "較正カートリッジ", what: "すべての画面が測られるために作られた、私たち自身のカートリッジ" },
+      { href: "/ja/docs/console-arc", name: "ここまでの話", what: "スケッチが求めたもの、チップが教えてくれたもの、そしてまだ実機を待つもの" },
+    ],
     contractsH: "チップは一つの規約を共有し、ピンについての嘘はテストで落ちる",
     contracts: (busHref: string, ppuHref: string) => (
       <>
@@ -845,7 +868,7 @@ const PROSE = {
     timingCaption: "実機での一回のポーリングをタイミングレーンに: レジスタの入力を変えてはならないロード窓、二つのカウンタが数えるもの、ブリッジが書いてよい場所。すべての幅はスコープが置き換えるまで著述値。",
     labNote: (
       <>
-        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<a href="/nes/bench/nes-bench-TM-NESB-001-revB.pdf">印刷用の図面パッケージ</a>にもなっている: 横置きレターの枠付き図面で、各葉に表題欄と図番と改訂欄があり、その寸法では読めなくなる二葉だけは縮めずに大きな用紙を申告している。収めてあるのは回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表である。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。ブレッドボードではなく基板を欲しがるのは二ポート版のほうで、こちらには<a href="/nes/bench/nes-bench-TM-NESB-002-revA.pdf">独自のパッケージ</a>がある: 回路図は四葉。部品十一点と四十二本のネットは、誰かが印刷できる一枚には収まらないからだ。その<a href="/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg">基板は配線済み</a>である。両面、裏にグラウンド、表に電源を敷き、配線そのものは記録されたファイルで、ビルドはそれを適用するだけだ。誰かが毎回やり直す工程ではない。全ネットがつながっているか、別ネットの銅が近すぎないかは、完成した基板に対して問う。ルータ自身の報告は採らない。最初の実行では、基板は完成したと報告されながら、三つのパッドには銅の経路がまったく無かったからだ。
+        部品は机の上にあり、次は配線だ。組み立ては<Link href="/ja/docs/nes/build-guide">五回の作業</Link>として書き出してあり、一回につきコマンドは一つ。そこから返ってくるのが<Link href="/ja/docs/nes/lab-notebook">ラボノート</Link>である。実際に組み上がっていく過程そのものだ: 十四のステップ、各ステップは意見ではなく測定で終わり、失敗した試行も含めてすべての試行を残し、各段階で写真を撮る。うち二つのステップは、このサイトがいま「著述値」と呼んでいる数字を引退させる: パッド自身のポートにスコープを当てて、上のタイミング図が推測しているだけのラッチとクロックのパルス幅を測り、接続したブリッジが、本当にすべてのポーリングが八クロックを運ぶのかに答える。ノートは組み立てを進める道具から生成されるので、何ひとつ手で書き込まれていない。そしてサイトは、自身のログが裏づけないノートの公開を拒む。同じ組み立ては<Link href="/ja/docs/nes#printable">印刷用の図面パッケージ</Link>にもなっている: 横置きレターの枠付き図面で、各葉に表題欄と図番と改訂欄があり、その寸法では読めなくなる二葉だけは縮めずに大きな用紙を申告している。収めてあるのは回路図、どの部品とどのジャンパがどの穴に入るかを示す<a href="/nes/bench/breadboard-v1b.png">ブレッドボード配置図</a>、部品表、配線表である。この配置図で選択なのは部品の置き場所だけで、線はすべて回路図から読み出されている。だから図面にない接続を絵が示すことはできない。ブレッドボードではなく基板を欲しがるのは二ポート版のほうで、こちらには<a href="/nes/bench/nes-bench-TM-NESB-002-revA.pdf">独自のパッケージ</a>がある: 回路図は四葉。部品十一点と四十二本のネットは、誰かが印刷できる一枚には収まらないからだ。その<a href="/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg">基板は配線済み</a>である。両面、裏にグラウンド、表に電源を敷き、配線そのものは記録されたファイルで、ビルドはそれを適用するだけだ。誰かが毎回やり直す工程ではない。全ネットがつながっているか、別ネットの銅が近すぎないかは、完成した基板に対して問う。ルータ自身の報告は採らない。最初の実行では、基板は完成したと報告されながら、三つのパッドには銅の経路がまったく無かったからだ。
       </>
     ),
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
@@ -894,6 +917,15 @@ export default async function NesPage({ params }: { params: Promise<{ lang: Lang
         <p>{t(lang, p.what)}</p>
 
         <p>{S.kinship}</p>
+
+        <h2>{S.partsH}</h2>
+        <ul className="nes-parts" data-parts>
+          {S.parts.map((d) => (
+            <li key={d.href}>
+              <Link href={d.href}>{d.name}</Link>: {d.what}
+            </li>
+          ))}
+        </ul>
 
         <h2>{S.contractsH}</h2>
         <p>{S.contracts(r.family.nes_bus, r.family.c2c02)}</p>

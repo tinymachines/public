@@ -186,7 +186,8 @@ build time:
 | | |
 |---|---|
 | [The console arc, in retrospect](/docs/console-arc) | what the sketch asked for, what the chips and the ROMs taught, and what stays for a bench |
-| [The notebook](/docs/nes) | every milestone's plan and report, from the sketch to the shell, in the arc's order |
+| [The notebook](/docs/nes) | every plan and report for the console, grouped by the part they are about |
+| [The calibration cart](/docs/cart) | one cartridge of our own whose every screen is built to be measured |
 
 And the shell (2026-09-06): a Linux binary puts the console in a window
 with the decode and the CRT stages on the GPU, held to the signal path's
