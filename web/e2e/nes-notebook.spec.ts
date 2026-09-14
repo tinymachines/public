@@ -26,9 +26,11 @@ for (const lang of ["", "/ja"]) {
     expect(hrefs.length, "the doors list is empty").toBeGreaterThanOrEqual(7);
     for (const href of hrefs) {
       expect(href.startsWith(`${lang}/`), `${href} is not in ${lang || "English"}`).toBe(true);
-      const r = await page.goto(href, { waitUntil: "load" });
-      expect(r?.status(), href).toBe(200);
-      const hash = href.split("#")[1];
+      // The status from a request: a goto from one anchor of a page to
+      // another is a same-document jump and returns no response at all.
+      const [where, hash] = href.split("#");
+      expect((await page.request.get(where)).status(), href).toBe(200);
+      await page.goto(href, { waitUntil: "load" });
       if (hash) await expect(page.locator(`[id="${hash}"]`), `${href}: no heading carries #${hash}`).toHaveCount(1);
     }
   });
@@ -66,7 +68,11 @@ test("the section's name is capitalised where the menu, the crumb and the headin
 test("the front page's overview tags are capitalised", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/", 300);
-  const tags = await page.locator(".piece-links .tag.live").allInnerTexts();
+  // textContent, not innerText: the tags are set in capitals by CSS, so
+  // innerText reads OVERVIEW whatever the source says. Other tags share
+  // the class ("read it here"), so pick the overview ones by their word.
+  const tags = (await page.locator(".piece-links .tag").evaluateAll((as) => as.map((a) => (a.textContent ?? "").trim())))
+    .filter((t) => t.toLowerCase() === "overview");
   expect(tags.length).toBeGreaterThanOrEqual(3);
-  expect(tags.filter((t) => t.trim() !== "Overview")).toEqual([]);
+  expect(tags.filter((t) => t !== "Overview")).toEqual([]);
 });
