@@ -102,7 +102,7 @@ export const PAGES: Record<string, FixedPage> = {
   "/nes": {
     title: "The NES console",
     description:
-      "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.",
+      "A working NES built from our own parts: both chips simulated switch by switch, every connection between them checked against recorded reference runs, and a picture path already tested on a real console.",
   },
   "/nes/chips": {
     title: "The chips",
@@ -132,17 +132,17 @@ export const PAGES: Record<string, FixedPage> = {
   "/nes/signal": {
     title: "The signal",
     description:
-      "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with a check at every stage and three spec claims that did not survive measurement.",
+      "The composite video signal itself, simulated sample by sample: encoded from three sources, pulled apart by four different filters and shown through a five-stage CRT model, with a check that can fail at every stage.",
   },
   "/nes/signal/bench": {
     title: "The ntsc bench",
     description:
-      "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
+      "The signal path running in your browser: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
   },
   "/nes/signal/composite": {
     title: "Composite, terminated",
     description:
-      "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
+      "A real NES's composite video read off the scope into the 75 ohms it was built to drive: the scanline, the burst, the levels beside the transcribed table, and what measuring without the terminator had made look bigger.",
   },
   "/style": {
     title: "Style guide",

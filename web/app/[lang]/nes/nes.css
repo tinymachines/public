@@ -176,3 +176,10 @@
 @media (orientation: landscape) and (max-height: 500px) {
   .play-stage.full .pad { top: 0; padding: calc(var(--u) * 3); align-items: end; }
 }
+
+/* A shelf entry's milestone label ("N3 report"): beside the title, quieter
+   than it, because the title is what a reader is choosing by. */
+.shelf-code {
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+}

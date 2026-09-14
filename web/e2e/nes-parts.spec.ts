@@ -103,3 +103,11 @@ test("the part pages' figures wear the section's frame", async ({ page }) => {
     expect(pads.filter((p) => p !== "3px"), `${route}: a figure without the frame`).toEqual([]);
   }
 });
+
+test("a shelf shows a document's milestone label beside its title", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/chips", 300);
+  const codes = await page.locator('[data-shelf="chips"] li .shelf-code').allTextContents();
+  expect(codes.length, "no labels on the chips shelf").toBeGreaterThan(0);
+  expect(codes.map((c) => c.trim()).filter((c) => !/^[NAP][0-9] (plan|report)$/.test(c))).toEqual([]);
+});

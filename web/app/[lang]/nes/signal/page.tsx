@@ -39,12 +39,12 @@ const PROSE = {
     kinship: (
       <>
         <Link href="/6502">The 6502 work</Link> simulates a chip at its
-        switches. This simulates the signal between a console and a tube:
-        the composite waveform itself, twelve samples per colour subcarrier
-        cycle, on a grid whose rate is held as the exact rational
-        12 x 315/88 MHz and never as a float. The two projects meet at the
-        NES: the engine ladder&rsquo;s machine emits dots, and this turns dots
-        into a waveform and the waveform into phosphor.
+        switches. This part of the console simulates the signal between
+        the console and a tube: the composite waveform itself, twelve
+        samples per colour subcarrier cycle, on a grid whose rate we keep
+        as the exact fraction 12 x 315/88 MHz and never as a rounded float.
+        The console&rsquo;s chips put out dots, and this turns the dots into
+        a waveform and the waveform into glowing phosphor.
       </>
     ),
     figureAlt:
@@ -65,11 +65,12 @@ const PROSE = {
         Three sources converge on one waveform type. A NES dot stream is
         encoded the way the PPU encodes, with levels from a double-checked
         transcription of the measured voltage table. Any RGB framebuffer goes through
-        a broadcast encoder held to SMPTE ST 170M&rsquo;s own clauses, down to
-        the published colour-bar levels. A captured waveform is the one
-        source that must earn its phase: it locks to sync and burst, and is
-        proven by a roundtrip through a modelled capture card that finds an
-        injected 50 ppm rate error to within 5.
+        a broadcast encoder checked against the clauses of SMPTE ST 170M
+        itself, down to the published colour-bar levels. A captured
+        waveform is the one source that has to find its own phase: it locks
+        to sync and burst. We prove that with a round trip through a
+        simulated capture card, which finds a deliberately injected 50 ppm
+        rate error to within 5.
       </>
     ),
     rungs: (
@@ -89,10 +90,10 @@ const PROSE = {
       <>
         The CRT is a model and says so: beam, scanlines, phosphor
         persistence, mask and geometry, every parameter chosen by hand and
-        labelled that way, held by analytic tests because there is nothing
-        real left to compare a model against. And the whole tree runs its
-        suite once more with MUTATE=1, which deliberately corrupts filter
-        coefficients and level tables:{" "}
+        labelled that way. Tests of the arithmetic check it, because there
+        is no real tube here to compare the model against. Then we run the
+        whole suite again as a sabotage run, which deliberately corrupts
+        the filter coefficients and the level tables:{" "}
         <b>{reds} tests must go red</b>, because a check that cannot fail
         is not a check.
       </>
@@ -100,7 +101,7 @@ const PROSE = {
     failedH: "Three of the spec's own numbers did not survive measurement",
     failedIntro: (
       <>
-        The spec this project was built from declared every one of its
+        The specification ntsc-crt was built from declared every one of its
         pre-computed numbers a claim for a test to confirm. Three of them
         failed, and each correction now sits in the current spec beside the
         test that forced it.
@@ -111,8 +112,8 @@ const PROSE = {
         <b>The famous {famous} Hz is real but belongs to a different
         quantity.</b> Full NES frames measure {full} Hz exactly; {pair} Hz is
         the two-frame average with the short frame alternating in, the rate a
-        player actually sees. Each of the three NES rates is now pinned by
-        its own test, so the two can no longer be conflated.
+        player actually sees. Each of the three NES rates now has its own
+        test, so the two can no longer be mixed up.
       </>
     ),
     failedComb: (
@@ -129,17 +130,19 @@ const PROSE = {
       <>
         <b>The classic bandwidths are a historical note, not the
         standard.</b> Y to 4.2 MHz, I to 1.3, Q to 0.4 is what everyone
-        quotes. The primary standard, in hand and pinned by hash, leaves Y
+        quotes. The primary standard, which we have in hand with its hash
+        recorded, leaves Y
         unrestricted and makes the colour-difference channels equiband; the
         split I/Q figures are its own NTSC-1953 continuation note.
       </>
     ),
-    pinnedH: "The reference material is pinned by hash, and every disagreement has a name",
+    pinnedH: "Every reference is recorded by hash, and every disagreement has a name",
     blargg: (href: string) => (
       <>
         The NES pipeline is compared against blargg&rsquo;s nes_ntsc 0.2.2,
         recovered from the Wayback Machine&rsquo;s capture of a dead canonical
-        URL and pinned by hash; it is test rig only, LGPL, and never shipped.
+        URL, with its hash recorded. It is LGPL, used only inside our tests,
+        and never shipped.
         Where the two pipelines disagree, the difference is attributed to a
         specific stage with a test rather than absorbed into a tolerance:
         the level rounding is his, the emphasis approximation is his, the
@@ -150,8 +153,9 @@ const PROSE = {
     ),
     smpte: (gate: number) => (
       <>
-        The broadcast encoder is held to SMPTE ST 170M-2004 itself, fetched
-        from SMPTE&rsquo;s repository and pinned by hash, down to re-deriving
+        The broadcast encoder is checked against SMPTE ST 170M-2004 itself,
+        fetched from SMPTE&rsquo;s repository with its hash recorded, down to
+        re-deriving
         the published colour-bar column from the standard&rsquo;s own
         clauses. The NES level table was accepted only after two
         independent transcriptions of the same wiki revision agreed on
@@ -162,7 +166,7 @@ const PROSE = {
     realIntro: (captures: number, msa: number) => (
       <>
         On 2026-09-02 a front-loader NES and a Super Mario Bros. / Duck
-        Hunt cartridge met the family&rsquo;s oscilloscope: {captures} raw
+        Hunt cartridge met our oscilloscope: {captures} raw
         composite records, twelve million samples each at {msa} MSa/s,
         captured straight off the video pin with no capture card and no
         decoder chip in the path. Everything below was measured from those
@@ -207,7 +211,7 @@ const PROSE = {
     realScore: (luma: string, hue: string, pct: number, real: string, synth: string) => (
       <>
         With the geometry right, the sky in paused World 1-1 became the
-        first real region scored against the family&rsquo;s own synthesis:
+        first real region scored against our own synthesis:
         the same colour, $22, generated from the transcribed level table
         and decoded through the identical path. Luma agrees within {luma}{" "}
         and hue within {hue} degrees. Saturation does not: the real
@@ -246,13 +250,13 @@ const PROSE = {
       <>
         The story above comes from the repository&rsquo;s milestone
         reports, but the figures below are not copied out of them: on{" "}
-        {date} we ran the project&rsquo;s own scanner, its full test suite
-        and its MUTATE=1 run again at the recorded commit, and this page
-        reads only what that run wrote.
+        {date} we ran ntsc-crt&rsquo;s own scanner, its full test suite and
+        its sabotage run again at the recorded commit, and this page reads
+        only what those runs wrote.
       </>
     ),
     mTests: (n: number) => <>suite: <b>{n} tests green</b></>,
-    mReds: (n: number) => <>MUTATE=1: <b>{n} tests red</b></>,
+    mReds: (n: number) => <>sabotage run: <b>{n} tests red</b></>,
     mClaims: (n: number) => <>doc claims re-derived: <b>{n}</b></>,
     mCrates: (n: number) => <>crates: <b>{n}</b></>,
     mCommit: (commit: string, href: string) => (
@@ -304,15 +308,15 @@ const PROSE = {
         The repository is public and MIT:{" "}
         <a data-address href={href}>{href.replace("https://", "")}</a>. Unlike
         the 6502 tree it has no licence boundary inside it: it embeds no die
-        data, and the one LGPL piece is the native test oracle, which no
-        shipped artefact contains.
+        data, and the one LGPL piece is the reference decoder our tests
+        compare against, which nothing we ship contains.
       </>
     ),
   },
   ja: {
     kinship: (
       <>
-        <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬する。こちらが模擬するのは、コンソールとブラウン管の間の信号そのもの: コンポジット波形を色副搬送波 1 周期あたり 12 サンプルで、レートを浮動小数ではなく厳密な有理数 12 x 315/88 MHz として保持する。二つのプロジェクトは NES で出会う。エンジンの梯子の機械がドットを出し、こちらがドットを波形に、波形を蛍光体に変える。
+        <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬する。コンソールのこの部分が模擬するのは、コンソールとブラウン管の間の信号そのもの: コンポジット波形を色副搬送波 1 周期あたり 12 サンプルで、レートは丸めた浮動小数ではなく厳密な分数 12 x 315/88 MHz として持つ。コンソールのチップがドットを出し、こちらがそのドットを波形に、波形を光る蛍光体に変える。
       </>
     ),
     figureAlt:
@@ -326,7 +330,7 @@ const PROSE = {
     oracleH: "どの段も実物に照らして検査され、どの検査も失敗できる",
     sources: (
       <>
-        三つのソースが一つの波形型に収束する。NES のドット列は PPU と同じやり方でエンコードされ、レベルは二重に確認して転記した実測電圧表から来る。任意の RGB フレームバッファは SMPTE ST 170M の条項そのものに照らした放送エンコーダを通り、公表されたカラーバーのレベルまで一致を求められる。キャプチャ波形だけは位相を自分で獲得しなければならないソースで、同期とバーストにロックし、模擬キャプチャカードを通した往復で証明される（注入した 50 ppm のレート誤差を 5 ppm 以内で発見する）。
+        三つのソースが一つの波形型に収束する。NES のドット列は PPU と同じやり方でエンコードされ、レベルは二重に確認して転記した実測電圧表から来る。任意の RGB フレームバッファは SMPTE ST 170M の条項そのものに照らした放送エンコーダを通り、公表されたカラーバーのレベルまで一致を求められる。キャプチャ波形だけは位相を自分で見つけなければならないソースで、同期とバーストにロックする。それを、模擬キャプチャカードを通した往復で証明する（わざと注入した 50 ppm のレート誤差を 5 ppm 以内で見つける）。
       </>
     ),
     rungs: (
@@ -336,18 +340,18 @@ const PROSE = {
     ),
     crt: (reds: number) => (
       <>
-        CRT はモデルであり、そう名乗る: ビーム、走査線、蛍光体の残光、マスク、幾何。パラメータはすべて手で選んだ値で、そう明記され、モデルには照らす実物が残っていないから解析的テストで保持される。そして木全体が MUTATE=1 でもう一度スイートを走らせ、フィルタ係数とレベル表をわざと壊す: <b>{reds} 個のテストが赤にならなければならない</b>。失敗できない検査は検査ではないからだ。
+        CRT はモデルであり、そう名乗る: ビーム、走査線、蛍光体の残光、マスク、幾何。パラメータはすべて手で選んだ値で、そう明記してある。ここには比べる実物のブラウン管が無いので、計算を確かめるテストで検査する。そしてスイート全体を妨害走行としてもう一度走らせ、フィルタ係数とレベル表をわざと壊す: <b>{reds} 個のテストが赤にならなければならない</b>。失敗できない検査は検査ではないからだ。
       </>
     ),
     failedH: "仕様自身の数字のうち三つが、実測に耐えなかった",
     failedIntro: (
       <>
-        このプロジェクトの元になった仕様は、自らの事前計算値をすべて「テストが確認すべき主張」と宣言していた。そのうち三つが落ち、それぞれの訂正はいま、それを強いたテストの隣で現行の仕様に載っている。
+        ntsc-crt の元になった仕様は、自らの事前計算値をすべて「テストが確認すべき主張」と宣言していた。そのうち三つが落ち、それぞれの訂正はいま、それを強いたテストの隣で現行の仕様に載っている。
       </>
     ),
     failedRate: (full: string, famous: string, pair: string) => (
       <>
-        <b>有名な {famous} Hz は実在するが、別の量に属する。</b>NES のフルフレームは正確に {full} Hz と実測される。{pair} Hz は短フレームが交互に入る 2 フレーム平均で、プレイヤーが実際に見るレートだ。三つの NES レートはいまや各自のテストで留められ、二度と混同できない。
+        <b>有名な {famous} Hz は実在するが、別の量に属する。</b>NES のフルフレームは正確に {full} Hz と実測される。{pair} Hz は短フレームが交互に入る 2 フレーム平均で、プレイヤーが実際に見るレートだ。三つの NES レートはいまやそれぞれ自分のテストを持ち、二度と混同できない。
       </>
     ),
     failedComb: (
@@ -357,18 +361,18 @@ const PROSE = {
     ),
     failedBand: (
       <>
-        <b>古典的な帯域幅は歴史的注記であって、規格ではない。</b>Y は 4.2 MHz、I は 1.3、Q は 0.4、と誰もが引用する。手元にありハッシュで留めた一次規格は、Y を無制限のままにし、色差チャネルを等帯域とする。I/Q の分割値は規格自身の NTSC-1953 継続注記だ。
+        <b>古典的な帯域幅は歴史的注記であって、規格ではない。</b>Y は 4.2 MHz、I は 1.3、Q は 0.4、と誰もが引用する。手元にあり、ハッシュを記録してある一次規格は、Y を無制限のままにし、色差チャネルを等帯域とする。I/Q の分割値は規格自身の NTSC-1953 継続注記だ。
       </>
     ),
-    pinnedH: "照合用の資料はハッシュで留められ、不一致にはすべて名前がある",
+    pinnedH: "参照資料はすべてハッシュを記録してあり、不一致にはすべて名前がある",
     blargg: (href: string) => (
       <>
-        NES パイプラインは blargg の nes_ntsc 0.2.2 と比較される。死んだ正規 URL の Wayback Machine 収集から回収し、ハッシュで留めたもので、テスト装置専用（LGPL）であり出荷物には決して入らない。二つのパイプラインが食い違う所では、差は許容誤差に吸収されず、テスト付きで特定の段に帰属される: レベルの丸めは彼のもの、強調近似も彼のもの、デコーダ行列とガンマは双方正当。<a href={href}>統合表</a>が各項を大きさ付きで挙げる。
+        NES パイプラインは blargg の nes_ntsc 0.2.2 と比較される。死んだ正規 URL の Wayback Machine 収集から回収し、ハッシュを記録してある。LGPL で、テストの中だけで使い、出荷物には決して入らない。二つのパイプラインが食い違う所では、差は許容誤差に吸収されず、テスト付きで特定の段に帰属される: レベルの丸めは彼のもの、強調近似も彼のもの、デコーダ行列とガンマは双方正当。<a href={href}>統合表</a>が各項を大きさ付きで挙げる。
       </>
     ),
     smpte: (gate: number) => (
       <>
-        放送エンコーダは SMPTE ST 170M-2004 そのもの（SMPTE のリポジトリから取得しハッシュで固定）に照らされ、公表カラーバー列を規格自身の条項から再導出するところまで確認される。NES のレベル表は、同じ Wiki 版を独立に二回転記し、全 {gate} 個の数値が一致して初めて受理された。
+        放送エンコーダは SMPTE ST 170M-2004 そのもの（SMPTE のリポジトリから取得し、ハッシュを記録）に照らされ、公表カラーバー列を規格自身の条項から再導出するところまで確認される。NES のレベル表は、同じ Wiki 版を独立に二回転記し、全 {gate} 個の数値が一致して初めて受理された。
       </>
     ),
     realH: "カラーバーより先に、実機がパイプラインに届いた",
@@ -398,7 +402,7 @@ const PROSE = {
     ),
     realScore: (luma: string, hue: string, pct: number, real: string, synth: string) => (
       <>
-        幾何が正しくなったところで、一時停止した World 1-1 の空が、一族自身の合成に対して採点された最初の実領域になった。同じ色 $22 を転記済みレベル表から生成し、同一経路でデコードして比べる。輝度は {luma} 以内、色相は {hue} 度以内で一致する。彩度は一致しない: 実機のクロマは {pct} パーセント熱い（{synth} に対して {real}）。この差は本物の所見で、許容誤差を広げて隠したら元も子もない。終端していないプローブ経路がクロマ振幅をよく見せているのか、実 DAC の AC 振幅が表の DC 実測値を本当に超えているのか。75 オーム終端での再キャプチャ一回が決める。
+        幾何が正しくなったところで、一時停止した World 1-1 の空が、私たち自身の合成に対して採点された最初の実領域になった。同じ色 $22 を転記済みレベル表から生成し、同一経路でデコードして比べる。輝度は {luma} 以内、色相は {hue} 度以内で一致する。彩度は一致しない: 実機のクロマは {pct} パーセント熱い（{synth} に対して {real}）。この差は本物の所見で、許容誤差を広げて隠したら元も子もない。終端していないプローブ経路がクロマ振幅をよく見せているのか、実 DAC の AC 振幅が表の DC 実測値を本当に超えているのか。75 オーム終端での再キャプチャ一回が決める。
       </>
     ),
     realScoreAlt:
@@ -420,11 +424,11 @@ const PROSE = {
     boardedH: "ここの数字は、テストを走らせ直した実測から来ている",
     boardedIntro: (date: string) => (
       <>
-        上の物語はリポジトリのマイルストーン報告から来ているが、下の数字はその写しではない: {date} に、記録されたコミットでプロジェクト自身のスキャナと全テストスイートと MUTATE=1 をもう一度走らせ、このページはその走行が書いたものだけを読む。
+        上の物語はリポジトリのマイルストーン報告から来ているが、下の数字はその写しではない: {date} に、記録されたコミットで ntsc-crt 自身のスキャナと全テストスイートと妨害走行をもう一度走らせ、このページはそれらの走行が書いたものだけを読む。
       </>
     ),
     mTests: (n: number) => <>スイート: <b>{n} テスト緑</b></>,
-    mReds: (n: number) => <>MUTATE=1: <b>{n} テスト赤</b></>,
+    mReds: (n: number) => <>妨害走行: <b>{n} テスト赤</b></>,
     mClaims: (n: number) => <>再導出した文書中の主張: <b>{n}</b></>,
     mCrates: (n: number) => <>クレート: <b>{n}</b></>,
     mCommit: (commit: string, href: string) => (
@@ -439,7 +443,7 @@ const PROSE = {
     ),
     open4: (
       <>
-        上の彩度の疑問には設計済みの実験が待っていて、それは走った: 同じ実機を 75 オームのフィードスルー終端に通す。プローブ経路のお世辞と DAC 自身の振る舞いを、それが切り分ける。<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>は、終端した信号をスコープからレベルごとに読む。
+        上の彩度の疑問には設計済みの実験が待っていて、それは走った: 同じ実機を 75 オームのフィードスルー終端に通す。プローブ経路のお世辞と DAC 自身の振る舞いを、それが切り分ける。<Link href="/ja/nes/signal/composite">コンポジット深掘り</Link>は、終端した信号をスコープからレベルごとに読む。
       </>
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
@@ -455,7 +459,7 @@ const PROSE = {
     repo: (href: string) => (
       <>
         リポジトリは公開で MIT:{" "}
-        <a data-address href={href}>{href.replace("https://", "")}</a>。6502 の木と違って内部にライセンス境界はない: ダイ・データを一切埋め込まず、唯一の LGPL 部品はネイティブのテストオラクルで、出荷物には含まれない。
+        <a data-address href={href}>{href.replace("https://", "")}</a>。6502 の木と違って内部にライセンス境界はない: ダイ・データを一切埋め込まず、唯一の LGPL 部品はテストが比較に使うリファレンスデコーダで、出荷物には含まれない。
       </>
     ),
   },

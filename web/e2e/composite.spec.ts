@@ -57,7 +57,7 @@ test("the deep-dive states the boarded levels and serves its figures", async ({ 
   }
 });
 
-test("the landing links to the deep-dive", async ({ page }) => {
+test("the signal page links to the deep-dive", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/nes/signal", 500);
   await expect(page.locator('main a[href="/nes/signal/composite"]').first()).toBeVisible();

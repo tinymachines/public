@@ -30,12 +30,13 @@ const PROSE = {
     what: (
       <>
         The console from the repository, running in this page: the
-        fast 2A03 and the fast 2C02 on one master clock
-        through the authored glue, the sound through the board&rsquo;s
+        fast 2A03 and the fast 2C02 on one master clock through the
+        mainboard&rsquo;s glue logic, which we wrote from the datasheets,
+        the sound through the board&rsquo;s
         audio stage, and every frame encoded to the composite waveform
         and pulled apart by the three-line comb, exactly the signal path
-        the ntsc bench runs. It is the same code the repository&rsquo;s
-        suites hold, compiled to WebAssembly from the recorded commit.
+        the signal bench runs. It is the same code the repository&rsquo;s
+        tests check, compiled to WebAssembly from the recorded commit.
       </>
     ),
     rom: (
@@ -90,12 +91,12 @@ const PROSE = {
         BY-NC-SA, and that reaches this page: nothing here is for sale.
       </>
     ),
-    back: "Back to the console arc",
+    back: "Back to the NES console",
   },
   ja: {
     what: (
       <>
-        リポジトリのコンソールが、このページの中で走る: 2A03 と 2C02 の高速版が書き下ろしの糊を通して一つのマスタクロックに乗り、音は基板の音声段を通り、各フレームはコンポジット波形に符号化されて 3 ラインコムで引き剥がされる。ntsc ベンチが走らせるのと同じ信号経路だ。リポジトリのスイートが押さえているのと同じコードを、記録済みコミットから WebAssembly にコンパイルしたもの。
+        リポジトリのコンソールが、このページの中で走る: 2A03 と 2C02 の高速版が、データシートから私たちが書いた基板のグルーロジックを通して一つのマスタクロックに乗り、音は基板の音声段を通り、各フレームはコンポジット波形に符号化されて 3 ラインコムで引き剥がされる。信号のベンチが走らせるのと同じ信号経路だ。リポジトリのテストが確かめているのと同じコードを、記録済みコミットから WebAssembly にコンパイルしたもの。
       </>
     ),
     rom: (
@@ -113,7 +114,7 @@ const PROSE = {
         コンソールのバンドルは、このページの数字を測るのと同じスクリプトが記録済みコミット <a data-address href={href}>{commit}</a> からビルドし、信号経路のは <a data-address href={ntscHref}>{ntscCommit}</a> から。記録は両バンドルのファイルハッシュを持つ。コンソールの表はスイッチレベルのチップから測り出したもので、そのダイデータは CC BY-NC-SA であり、それはこのページにも及ぶ: ここには売り物が無い。
       </>
     ),
-    back: "コンソールの弧へ戻る",
+    back: "NES コンソールへ戻る",
   },
 } as const;
 

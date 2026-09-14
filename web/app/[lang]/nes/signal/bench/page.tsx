@@ -31,7 +31,7 @@ const PROSE = {
         are generated here, encoded to the composite waveform, pulled
         apart by the filter you choose, demodulated and matrixed, and the
         decoded frame is drawn. It is the same signal path the test suite
-        holds, compiled to WebAssembly from the recorded commit.
+        checks, compiled to WebAssembly from the recorded commit.
       </>
     ),
     slow: (notch: number, comb3: number, stamp: string) => (
@@ -51,8 +51,8 @@ const PROSE = {
       <>
         Three patterns, generated in-page from the documented dot layout
         (341 x 262 dots, colour and emphasis planes, parity alternating
-        Even and OddShort). The hue bands are the frame the landing&rsquo;s
-        tube photograph came from; the stripes put everything at dot
+        Even and OddShort). The hue bands are the frame the signal page&rsquo;s
+        tube picture came from; the stripes put everything at dot
         frequency, which is where a comb earns its keep over the notch;
         the solid frame is one flat colour, where the two filters should
         agree, and do.
@@ -81,7 +81,7 @@ const PROSE = {
   ja: {
     what: (
       <>
-        リポジトリのパイプラインが、このページの中で走る: NES のドットをここで生成し、コンポジット波形にエンコードし、選んだフィルタで引き剥がし、復調して行列を掛け、デコード済みフレームを描く。テストスイートが押さえているのと同じ信号経路を、記録済みコミットから WebAssembly にコンパイルしたものだ。
+        リポジトリのパイプラインが、このページの中で走る: NES のドットをここで生成し、コンポジット波形にエンコードし、選んだフィルタで引き剥がし、復調して行列を掛け、デコード済みフレームを描く。テストスイートが確かめているのと同じ信号経路を、記録済みコミットから WebAssembly にコンパイルしたものだ。
       </>
     ),
     slow: (notch: number, comb3: number, stamp: string) => (
@@ -91,7 +91,7 @@ const PROSE = {
     ),
     patterns: (
       <>
-        パターンは三つ、文書化されたドット配置（341 x 262 ドット、色と強調の面、パリティは Even と OddShort の交互）からページ内で生成する。色相帯はランディングのブラウン管写真の元になったフレーム。ストライプはすべてをドット周波数に置き、コムがノッチに差を付ける場所。単色は一面ひと色のフレームで、二つのフィルタが一致するべき場所であり、実際に一致する。
+        パターンは三つ、文書化されたドット配置（341 x 262 ドット、色と強調の面、パリティは Even と OddShort の交互）からページ内で生成する。色相帯は信号のページのブラウン管の絵の元になったフレーム。ストライプはすべてをドット周波数に置き、コムがノッチに差を付ける場所。単色は一面ひと色のフレームで、二つのフィルタが一致するべき場所であり、実際に一致する。
       </>
     ),
     refused: (

@@ -26,7 +26,7 @@ const record = JSON.parse(
   };
 };
 
-test("the landing shows the boarded figures, not remembered ones", async ({ page }) => {
+test("the signal page shows the recorded figures, not remembered ones", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/nes/signal", 500);
 

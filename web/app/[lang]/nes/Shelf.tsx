@@ -5,7 +5,8 @@ import { shelf, shelfText, type ShelfDoc } from "@/lib/nes-shelves";
 
 /**
  * A shelf of notebook documents on an NES part page: the group's heading,
- * its line, and each document by title with its one-line description.
+ * its line, and each document by title, its milestone label beside it in
+ * small type where it has one, and its one-line description.
  * The documents' titles and lines are English in both editions, because
  * their bodies are (docs/ja has no NES translations yet); the heading and
  * the line are the section's own and are translated.
@@ -27,7 +28,8 @@ export function DocList({ lang, docs }: { lang: Lang; docs: ShelfDoc[] }) {
     <ul className="nes-shelf">
       {docs.map((d) => (
         <li key={d.route}>
-          <Link href={localize(lang, d.route)}>{d.title}</Link>: {d.description}
+          <Link href={localize(lang, d.route)}>{d.title}</Link>
+          {d.code ? <span className="shelf-code"> {d.code}</span> : null}: {d.description}
         </li>
       ))}
     </ul>

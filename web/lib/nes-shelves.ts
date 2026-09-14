@@ -14,7 +14,8 @@ import { DOCS_DIR } from "./docs";
  * with empty shelves, which would look like a section with nothing in it.
  */
 
-export type ShelfDoc = { route: string; title: string; description: string };
+/** `code` is the milestone label ("N3 report"), or null for a document without one. */
+export type ShelfDoc = { route: string; title: string; code: string | null; description: string };
 export type Shelf = {
   key: string;
   heading: string;

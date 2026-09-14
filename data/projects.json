@@ -217,14 +217,14 @@
   {
    "key": "nes",
    "name": "The NES console",
-   "what": "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by recorded reference traces, and the signal path already real.",
+   "what": "A working NES built from our own parts: both chips simulated switch by switch, every connection between them checked against recorded reference runs, and a picture path already tested on a real console.",
    "silo": "style/projects/nes.css",
    "status": "here",
    "surfaces": [
     {
      "key": "site",
      "name": "The console arc",
-     "what": "What exists, what each check proved, and the milestones between here and a bootable console.",
+     "what": "What the console is, where each part of it lives, and what still waits on the real hardware.",
      "nav": false,
      "nav_label": null,
      "piece": null,
@@ -276,7 +276,7 @@
     {
      "key": "signal",
      "name": "The signal",
-     "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, pulled apart by four different filters, and displayed through a five-stage CRT model, with a check that can fail at every stage.",
+     "what": "The composite video signal itself, simulated sample by sample: encoded from three sources, pulled apart by four different filters and shown through a five-stage CRT model, with a check that can fail at every stage.",
      "nav": false,
      "nav_label": null,
      "piece": null,
@@ -289,7 +289,7 @@
     {
      "key": "signal-bench",
      "name": "The signal bench",
-     "what": "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
+     "what": "The signal path running in your browser: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
      "nav": false,
      "nav_label": null,
      "piece": null,
@@ -302,7 +302,7 @@
     {
      "key": "composite",
      "name": "Composite, terminated",
-     "what": "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
+     "what": "A real NES's composite video read off the scope into the 75 ohms it was built to drive: the scanline, the burst, the levels beside the transcribed table, and what measuring without the terminator had made look bigger.",
      "nav": false,
      "nav_label": null,
      "piece": null,

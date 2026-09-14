@@ -53,7 +53,7 @@ const PROSE = {
         line is 227 and a half subcarrier cycles, {broadcast}{" "}
         microseconds; the NES draws 227 and a third, {nes}, and the record
         says so to the third decimal. That difference is the one the
-        landing page&rsquo;s first decode tripped over.
+        signal page&rsquo;s first decode tripped over.
       </>
     ),
     lineAlt:
@@ -92,7 +92,7 @@ const PROSE = {
     termH: "Why the terminator",
     term: (dc: string, ac: string, ratioU: string, ratioL: string, table: string) => (
       <>
-        The landing page&rsquo;s first captures were taken with the probe
+        The signal page&rsquo;s first captures were taken with the probe
         alone: a 1 megohm input on a signal designed for 75 ohms. The
         overlay puts one line of that record over one line of this one.
         Unterminated, the sync-to-blanking step came up {dc} times larger.
@@ -103,7 +103,7 @@ const PROSE = {
         where the terminated one carries {ratioL} and the table {table}.
         A decoder that takes the sync step as its ruler, which is what
         decoders do, saw the colour about 40 percent too strong before
-        its own filtering, and after it the landing page reported the sky
+        its own filtering, and after it the signal page reported the sky
         of World 1-1 decoding 28 percent hotter than its synthesis. That
         was the probe, not the console.
       </>
@@ -165,7 +165,7 @@ const PROSE = {
     notHereH: "What is not here yet",
     notHere: (
       <>
-        The terminated sky. The landing page&rsquo;s saturation finding
+        The terminated sky. The signal page&rsquo;s saturation finding
         was scored on the paused World 1-1 sky, and the confirmation is
         that same region through the same scorer from a terminated
         record. The console needs its Mario paused again; when it is,
@@ -184,7 +184,7 @@ const PROSE = {
     lineH: "ADC が見た一本のライン",
     line: (tip: string, blank: string, step: string, lines: number, period: string, nes: string, broadcast: string) => (
       <>
-        ラインは同期で始まる: 信号は最低レベル、ここでは {tip} V まで落ち、4.7 マイクロ秒それを保つ。ブランキングの {blank} V に戻る。この {step} V の段差を、どのデコーダも物差しにする。次にバースト、次に絵、そして次の同期までまたブランキング。この記録の {lines} 本のラインで、同期は {period} マイクロ秒おきに来る。放送の NTSC はラインを副搬送波 227.5 サイクル、{broadcast} マイクロ秒と定める。NES は 227 と 3 分の 1、{nes} を描き、記録は小数第 3 位までそう言っている。この差が、ランディングページの最初のデコードがつまずいたものだ。
+        ラインは同期で始まる: 信号は最低レベル、ここでは {tip} V まで落ち、4.7 マイクロ秒それを保つ。ブランキングの {blank} V に戻る。この {step} V の段差を、どのデコーダも物差しにする。次にバースト、次に絵、そして次の同期までまたブランキング。この記録の {lines} 本のラインで、同期は {period} マイクロ秒おきに来る。放送の NTSC はラインを副搬送波 227.5 サイクル、{broadcast} マイクロ秒と定める。NES は 227 と 3 分の 1、{nes} を描き、記録は小数第 3 位までそう言っている。この差が、信号のページの最初のデコードがつまずいたものだ。
       </>
     ),
     lineAlt:
@@ -210,7 +210,7 @@ const PROSE = {
     termH: "なぜ終端するのか",
     term: (dc: string, ac: string, ratioU: string, ratioL: string, table: string) => (
       <>
-        ランディングページの最初のキャプチャはプローブだけで録った: 75 オーム向けに設計された信号に 1 メガオームの入力。重ね図はその記録の一本を、この記録の一本に重ねる。終端なしでは、同期からブランキングまでの段差は {dc} 倍に見えた。バーストは {ac} 倍に見えた。同じ数ではなく、その差が話の全部だ: DC レベルはある倍率で、3.58 MHz の副搬送波は別の倍率で伸びたので、終端なしの記録はバースト対同期の比 {ratioU} を運び、終端した記録は {ratioL}、表は {table}。同期の段差を物差しにするデコーダは（デコーダとはそういうものだ）、自分のフィルタの前で色を約 40 パーセント強く見て、フィルタの後でランディングページは World 1-1 の空が合成より 28 パーセント熱いと報告した。プローブのせいで、実機のせいではなかった。
+        信号のページの最初のキャプチャはプローブだけで録った: 75 オーム向けに設計された信号に 1 メガオームの入力。重ね図はその記録の一本を、この記録の一本に重ねる。終端なしでは、同期からブランキングまでの段差は {dc} 倍に見えた。バーストは {ac} 倍に見えた。同じ数ではなく、その差が話の全部だ: DC レベルはある倍率で、3.58 MHz の副搬送波は別の倍率で伸びたので、終端なしの記録はバースト対同期の比 {ratioU} を運び、終端した記録は {ratioL}、表は {table}。同期の段差を物差しにするデコーダは（デコーダとはそういうものだ）、自分のフィルタの前で色を約 40 パーセント強く見て、フィルタの後で信号のページは World 1-1 の空が合成より 28 パーセント熱いと報告した。プローブのせいで、実機のせいではなかった。
       </>
     ),
     overlayAlt:
@@ -251,7 +251,7 @@ const PROSE = {
     notHereH: "まだ無いもの",
     notHere: (
       <>
-        終端した空。ランディングページの彩度の所見は一時停止した World 1-1 の空で採点され、その確認は終端した記録から同じ領域を同じ採点器に通すことだ。実機のマリオをもう一度一時停止させる必要がある。そうなれば数字は記憶からではなく、このページの他の数字と同じく実測されコミットされて、ここに来る。<Link href="/ja/nes/signal">信号のページへ戻る。</Link>
+        終端した空。信号のページの彩度の所見は一時停止した World 1-1 の空で採点され、その確認は終端した記録から同じ領域を同じ採点器に通すことだ。実機のマリオをもう一度一時停止させる必要がある。そうなれば数字は記憶からではなく、このページの他の数字と同じく実測されコミットされて、ここに来る。<Link href="/ja/nes/signal">信号のページへ戻る。</Link>
       </>
     ),
   },
