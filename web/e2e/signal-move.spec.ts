@@ -35,7 +35,10 @@ test("the signal pages' own files still load from /ntsc/", async ({ request }) =
 
 test("the front page no longer lists ntsc-crt as a project of its own", async ({ page }) => {
   await page.goto("/", { waitUntil: "load" });
-  const names = await page.locator(".piece-grid").first().locator("article.rail h3").allInnerTexts();
+  // textContent, not innerText: the names are set in capitals by CSS, and
+  // an innerText of "NTSC-CRT" would let the not.toContain below pass on
+  // nothing.
+  const names = await page.locator(".piece-grid").first().locator("article.rail h3").evaluateAll((hs) => hs.map((h) => (h.textContent ?? "").trim()));
   expect(names.length).toBeGreaterThanOrEqual(3);
   expect(names).not.toContain("ntsc-crt");
   expect(names).toContain("The NES console");
