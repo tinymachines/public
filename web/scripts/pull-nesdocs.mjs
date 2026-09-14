@@ -73,6 +73,7 @@ const DOCS = [
   { repo: "ntsc-crt", file: "m0-report.md", slug: "m0-report", code: "M0 report", title: "The timing grid everything stands on", group: "signal", order: 13, description: "The sample grid, the leftover phase at every step, and the data every later stage depends on." },
   { repo: "ntsc-crt", file: "m1-report.md", slug: "m1-report", code: "M1 report", title: "The NES encoder and the first decoder", group: "signal", order: 14, description: "The encoders checked against their reference, and the first decoding filter checked against blargg's." },
   { repo: "ntsc-crt", file: "m2-report.md", slug: "m2-report", code: "M2 report", title: "The comb filters, the RGB encoder and the speed", group: "signal", order: 15, description: "The decoder's notch and comb filters checked against their reference and against each other, and how fast they run." },
+  { repo: "ntsc-crt", file: "perf-report.md", slug: "perf-report", code: null, title: "Making the signal bench fast", group: "signal", order: 15.5, description: "How the signal path got several times faster, fast enough to run live in the browser: three changes named before they were built, a filter shortcut the comb tests caught being wrong, and the speeds before and after." },
   { repo: "ntsc-crt", file: "m3-report.md", slug: "m3-report", code: "M3 report", title: "The television's picture stages", group: "signal", order: 16, description: "The stages between a decoded signal and a picture on a tube, with every setting we chose labelled as a choice." },
   { repo: "ntsc-crt", file: "m4-report.md", slug: "m4-report", code: "M4 report", title: "Capturing a real console", group: "signal", order: 17, description: "The capture source, the round trip through our own model, and the first recordings of a real console scored against our own synthesis." },
   { repo: "ntsc-crt", file: "m5-report.md", slug: "m5-report", code: "M5 report", title: "Checking what the documents claim", group: "signal", order: 18, description: "A scanner that finds every number the documents state and re-checks it, the known departures from the references, and the specification agreed." },
@@ -102,6 +103,7 @@ const DOCS = [
   { repo: "nes-bench", file: "cheat-sheet.md", slug: "cheat-sheet", code: null, title: "The bench cheat sheet", group: "bench-build", artefacts: ["v1b"], order: 37, description: "Both breakouts pin by pin with the harness colours, the four jumpers, and every pin of every chip with what it does and where it goes. Generated from the schematic and the lab log." },
   { repo: "nes-bench", file: "parts.md", slug: "parts", code: null, title: "The bench's parts list", group: "bench-build", artefacts: ["v1b", "v2b"], order: 36, description: "One table per schematic sheet, and one list of everything to gather. Generated from the file that draws the schematics, so the two cannot disagree." },
   { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", code: null, title: "The lab notebook", group: "bench-record", artefacts: ["v1b"], order: 35, description: "The bench wired one step at a time, every attempt kept including the failures, each step ending in a measurement. Generated from the build tool's log." },
+  { repo: "nes-bench", file: "open-items.md", slug: "open-items", code: null, title: "What is still open", group: "bench-record", order: 35.5, omit: ["The workstation"], description: "Everything noticed along the way that is not finished: the calibration cart's part side, where the model's hue differs from the console's, the grabber, the bench and the cartridge reader, each with why it matters and what would close it." },
 ];
 
 // The bench's schematics, drawn by its generator and held to its wiring
@@ -249,6 +251,16 @@ if (fs.existsSync(LAB)) {
 
 function transform(doc, md) {
   let s = md;
+  // A section this site will not publish, cut from its heading to the next
+  // h2 and replaced by a line saying so. Named by heading and refused when
+  // the heading is gone, so a renamed section cannot quietly come back.
+  // open-items' "The workstation" describes the host the services run on,
+  // which CLAUDE.md keeps off this site (2026-09-14).
+  for (const h of doc.omit ?? []) {
+    const re = new RegExp(`^## ${h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n[\\s\\S]*?(?=^## |(?![\\s\\S]))`, "m");
+    if (!re.test(s)) throw new Error(`${doc.repo}/docs/${doc.file}: no section "${h}" to leave out; check what it became before publishing it`);
+    s = s.replace(re, `## ${h}\n\n*This section is about the computer the bench's services run on, and is left out here: this site does not publish details of the machines behind it. The repository has it.*\n\n`);
+  }
   // A blockquote pointer at the top of a copy (nes-bus's sketch) is not
   // the document.
   s = s.replace(/^(> .*\n)+\n/, "");
