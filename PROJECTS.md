@@ -2485,3 +2485,52 @@ boarding are this side's, and the record commits before the roof
 deploy re-pulls. Still open, unchanged: the bench hardware (nothing
 built; every open item is one scope session), the untranslated pulled
 docs, and the 125 pre-existing lint warnings.
+
+## Checkpoint, 2026-09-14, the NES section in parts
+
+Live at `0d6b172`. The owner asked to rein the site in: the NES and ntsc
+work had spread across five URL roots, with a 5,000-word /nes page and
+a flat notebook of forty documents linked by file name. The plan was
+five steps, one deploy each, with the owner's four calls taken as
+recommended (fold ntsc-crt into NES, the cart under /nes, the reports'
+bodies kept as written with a glossary, plain titles overridden in the
+pull). All five are live, plus one follow-up.
+
+- **The notebook is grouped** (`b84bdc4`). GROUPS in pull-nesdocs.mjs
+  puts every document under a part of the console; /docs/nes has a
+  heading per group, whose anchors are now public. "The NES console"
+  is capitalised; the pull parses every frontmatter it writes after an
+  unquoted colon failed a build.
+- **The parts have pages** (`91386e5`). /nes is the front door; its
+  reports moved whole to /nes/chips, /nes/console and /nes/bench, and
+  /nes/cart is new. The prose is one module (app/[lang]/nes/prose.tsx)
+  and each part page ends in a shelf from docs/nes/shelves.json, which
+  the pull writes because the docs tree allows no extra frontmatter.
+- **ntsc-crt is part of NES** (`d733c35`). Its pages are /nes/signal,
+  /nes/signal/bench and /nes/signal/composite; the manifest folds the
+  project into NES surfaces, the front page lists three projects, and
+  the old addresses 308 in both languages, exactly those three paths
+  so the files under /ntsc/ still serve. deploy.sh checks each redirect
+  lands on its own page. The signal pages now wear the NES colours
+  (`0d6b172`); style/projects/ntsc.css is applied by nothing and stays
+  for the owner.
+- **The section speaks the reader's language** (`804f56a`). Every NES
+  page in both languages, the manifest and the metadata; every document
+  has a title of ours with its milestone label beside it; the reports'
+  shorthand is explained at /docs/words, linked from every pulled
+  footer. The B0 to B3 and C0 to C4 labels are ours, not the repos'.
+- **Two more documents are served** (`72a3a30`): nes-bench's open items
+  and ntsc-crt's performance report. The open items' "The workstation"
+  section describes the host and is cut by heading with a note in its
+  place; the pull refuses if the heading disappears. The same section
+  is still public in the nes-bench repository, which is the owner's
+  call.
+
+Specs guarding it: e2e/nes-notebook, nes-parts, nes, menu, ntsc,
+composite and signal-move. Two traps paid for twice: the site's tags
+and project names are capitalised by CSS, so name checks read
+textContent; and a full suite running across a deploy's restart fails
+the pages it hits in that window (thirteen docs pages did, and passed
+when rerun). The last clean full suite before the colour change was
+793 passed, 5 skipped, 0 failed; the run after it was still going at
+this checkpoint.
