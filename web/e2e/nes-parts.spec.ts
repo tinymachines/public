@@ -85,3 +85,20 @@ test("the Japanese part pages carry Japanese shelves", async ({ page }) => {
   expect(hrefs.length).toBeGreaterThan(0);
   expect(hrefs.filter((h) => !h.startsWith("/ja/docs/nes/"))).toEqual([]);
 });
+
+/**
+ * The figures moved with their reports, and their frame is ./nes.css,
+ * which the landing used to import for itself. A part page without it
+ * still shows every picture, just bled to the edge with no bezel, which
+ * reads as a style choice rather than a missing file. A figure element's
+ * own padding is zero; the frame gives it three pixels.
+ */
+test("the part pages' figures wear the section's frame", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  for (const route of ["/nes/chips", "/nes/bench"]) {
+    await open(page, route, 300);
+    const pads = await page.locator(".crt-figure").evaluateAll((fs) => fs.map((f) => getComputedStyle(f).paddingTop));
+    expect(pads.length, `${route} has no figures`).toBeGreaterThan(0);
+    expect(pads.filter((p) => p !== "3px"), `${route}: a figure without the frame`).toEqual([]);
+  }
+});
