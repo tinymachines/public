@@ -68,8 +68,10 @@ const DOCS = [
   { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", artefacts: ["v1b", "v2b", "board"], order: 33, description: "v1b, the bridge on an Arduino UNO with everything at five volts, which is the version built first: why the level shifters go away, the pin table, and the four things writing the firmware proved the plan had wrong." },
   { repo: "nes-bench", file: "build-guide.md", slug: "build-guide", artefacts: ["v1b"], order: 34, description: "The bench built in five sittings, one command each: what to wire pin by pin, what the command then measures, which photographs to take, and where each sitting stands. Generated from the tool that runs it." },
   { repo: "nes-bench", file: "as-built-v1b.md", slug: "as-built", order: 38, artefacts: ["v1b"], description: "The v1b board as built, read off its photographs: which block and half the chips sit in, their notch direction and columns, the rails, the UNO ribbon, and where the headers should move so the jumpers stay short. The holes themselves are on the breadboard sheet and the cheat sheet." },
-  { repo: "nes-bench", file: "calibration-plan.md", slug: "calibration-plan", order: 41, description: "The calibration cartridge, written first: one NROM cartridge whose every screen is built to be measured off the part and the model through the same reader, under a strip that names every frame; colour, resolution, filtering and the pad's closed loop, C0 to C4." },
-  { repo: "nes-bench", file: "build-the-cal-cart.md", slug: "build-the-cal-cart", order: 42, description: "Build the calibration cart: from the idea of a frame that names itself, through the cartridge written in code with a sixty-line assembler and the blanking budget that shaped it, to the ROM in the model, its manifest, its checksums, and the cartridge in a console." },
+  { repo: "nes-bench", section: "cart", file: "calibration-plan.md", slug: "calibration-plan", order: 2, description: "The calibration cartridge, written first: one NROM cartridge whose every screen is built to be measured off the part and the model through the same reader, under a strip that names every frame; colour, resolution, filtering and the pad's closed loop, C0 to C4." },
+  { repo: "nes-bench", section: "cart", file: "build-the-cal-cart.md", slug: "build-the-cal-cart", order: 3, description: "Build the calibration cart: from the idea of a frame that names itself, through the cartridge written in code with a sixty-line assembler and the blanking budget that shaped it, to the ROM in the model, its manifest, its checksums, and the cartridge in a console." },
+  { repo: "nes-bench", section: "cart", file: "calibration-screens.md", slug: "calibration-screens", order: 4, description: "The calibration cartridge's eight screens as the family's own decoder sees them, the strip that names every frame read off each, and what each screen is for; the grabber's frames of the same screens join here when the cart is in a console." },
+  { repo: "nes-bench", section: "cart", file: "cart-blanks.md", slug: "cart-blanks", order: 5, description: "The blank boards and the programmer on the bench, photographed and read: which board takes the calibration ROM's two chips, what the EPROM adapter is for, and what stays unknown until the chips arrive." },
   { repo: "nes-bench", file: "cartridge.md", slug: "cartridge", order: 40, description: "The bench's cartridge from the reader to the model: why the reader guessed the wrong game from a 512-byte window, the SD-card refresh and the verified dump whose checksum is the reader's own, and the mapper-66 board the console's model grew so it could run the same bytes for a three-way picture comparison." },
   { repo: "nes-bench", file: "eyes-vs-scope.md", slug: "eyes-vs-scope", order: 39, description: "Eyes versus scope: the console's composite split to the scope and to a USB grabber on the Pi, the grabber's driver and how it came to work, and the first comparison of the grabber's picture against the family's own decode of the scope record, aligned on the console's pixel grid and scored." },
   { repo: "nes-bench", file: "cheat-sheet.md", slug: "cheat-sheet", artefacts: ["v1b"], order: 37, description: "The bench's cheat sheet: the two breakouts pin by pin (port pin, NES harness colour, breakout lead, where it goes), the head's four jumpers, and every pin of every chip with what it does on the part and what it is wired to here. Generated from the schematic, the lab log and the bring-up tool." },
@@ -82,7 +84,7 @@ const DOCS = [
 // and the build document's image links pointed at them.
 const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v2.svg",
                 "bench-v2b-1.svg", "bench-v2b-2.svg", "bench-v2b-3.svg", "bench-v2b-4.svg",
-                "breadboard-v1b.svg", "wiring-v1b.svg", "logical-timing.svg", "pad-adapter.svg"];
+                "breadboard-v1b.svg", "wiring-v1b.svg", "wiring-v1b-build.svg", "logical-timing.svg", "pad-adapter.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
@@ -228,7 +230,7 @@ function transform(doc, md) {
   // Cross-links between the pulled documents, however they were written
   // upstream (a bare file, docs/file, a path into a sibling repository).
   for (const d of DOCS) {
-    const local = `/docs/nes/${d.slug}`;
+    const local = `/docs/${d.section ?? "nes"}/${d.slug}`;
     s = s.replace(new RegExp(`\\]\\((?:\\.\\./)*(?:[a-z0-9-]+/)?(?:docs/)?${d.file.replace(".", "\\.")}(#[^)]*)?\\)`, "g"), (_, hash) => `](${local}${hash ?? ""})`);
   }
   // The build document's sheets, served from /nes/bench/.
@@ -248,6 +250,15 @@ function transform(doc, md) {
 }
 
 fs.mkdirSync(OUT, { recursive: true });
+// A document that moved into a section leaves its old copy behind in
+// docs/nes/ (the tree is generated and gitignored), and a page nobody
+// lists is a page somebody eventually links to: drop what is not pulled.
+for (const f of fs.readdirSync(OUT)) {
+  if (f.endsWith(".md") && f !== "index.md" && !DOCS.some((d) => !d.section && `${d.slug}.md` === f)) {
+    fs.rmSync(path.join(OUT, f));
+    console.log(`pull-nesdocs: dropped docs/nes/${f}, no longer pulled here`);
+  }
+}
 for (const d of DOCS) {
   const src = path.join(SIBLINGS, d.repo, "docs", d.file);
   if (!fs.existsSync(src)) {
@@ -273,10 +284,12 @@ for (const d of DOCS) {
   const source = `https://github.com/tinymachines/${d.repo}/blob/main/docs/${d.file}`;
   const front = `---\ntitle: "${h1[1].replace(/"/g, '\\"')}"\ndescription: "${d.description.replace(/"/g, '\\"')}"\norder: ${d.order}\n---\n\n`;
   const note = `\n\n*Pulled at build time from [${d.repo}/docs/${d.file}](${source}); the repository is the one copy.*\n`;
-  fs.writeFileSync(path.join(OUT, `${d.slug}.md`), front + body + note);
+  const dir = d.section ? path.join(OUT, "..", d.section) : OUT;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${d.slug}.md`), front + body + note);
 }
 
-const rows = DOCS.map((d) => `| [${d.slug}](/docs/nes/${d.slug}) | ${d.description} |`).join("\n");
+const rows = DOCS.filter((d) => !d.section).map((d) => `| [${d.slug}](/docs/nes/${d.slug}) | ${d.description} |`).join("\n");
 fs.writeFileSync(
   path.join(OUT, "index.md"),
   `---
@@ -306,4 +319,34 @@ The bench's drawing packages, built from the committed schematics on
 every deploy: ${Object.values(ARTEFACTS).map((a) => `[${a.label}](${a.href})`).join("; ")}.
 `,
 );
-console.log(`pull-nesdocs: ${DOCS.length} documents from the sibling checkouts`);
+// The cart: the calibration cartridge and everything around building
+// one, in a section of its own so the plan, the tutorial, the screens
+// and the boards sit together (owner's call, 2026-09-13).
+const cartRows = DOCS.filter((d) => d.section === "cart").sort((a, b) => a.order - b.order)
+  .map((d) => `| [${d.slug}](/docs/cart/${d.slug}) | ${d.description} |`).join("\n");
+fs.mkdirSync(path.join(OUT, "..", "cart"), { recursive: true });
+fs.writeFileSync(
+  path.join(OUT, "..", "cart", "index.md"),
+  `---
+title: The cart
+description: The calibration cartridge, from the idea of a frame that names itself to a ROM on a board in a console, with the screens it shows and the tool that reads them.
+order: 31
+---
+
+# The cart
+
+One cartridge, the family's own, whose every screen is built to be
+measured: off a console through the scope, the grabber and a camera, and
+off the model through the same decoder, with one tool reading all of
+them. This section holds the plan, the tutorial that builds the ROM and
+puts it on a board, the screens as pictures, and the blank boards
+waiting for their chips. The ROM and its manifest are served here too:
+[cal.nes](/nes/cal.nes) and [cal.json](/nes/cal.json), the same bytes
+the checksums in the tutorial name.
+
+| | |
+|---|---|
+${cartRows}
+`,
+);
+console.log(`pull-nesdocs: ${DOCS.length} documents from the sibling checkouts (${DOCS.filter((d) => d.section === "cart").length} in the cart section)`);

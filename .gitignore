@@ -101,6 +101,7 @@ web/public/nes/bench/
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.
 docs/nes/
+docs/cart/
 
 # The console-shell handoff pack: its sources/ carry third-party IP and are mood only.
 docs/nes-arcade-handoff-v0.1
