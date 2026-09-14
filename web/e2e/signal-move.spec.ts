@@ -43,3 +43,27 @@ test("the front page no longer lists ntsc-crt as a project of its own", async ({
   expect(names).not.toContain("ntsc-crt");
   expect(names).toContain("The NES console");
 });
+
+/**
+ * The signal pages wear the NES section's colours (owner's call,
+ * 2026-09-14). They kept ntsc-crt's own silo through a nested
+ * data-project when they moved; that wrapper is gone, and nothing on a
+ * signal page may reinstate it. Compared with /nes's own computed accent
+ * rather than a hard-coded colour, so a change to the NES palette cannot
+ * fail this.
+ */
+test("the signal pages use the NES section's accent", async ({ page }) => {
+  const accent = () =>
+    page.evaluate(() => {
+      const el = document.querySelector("main") ?? document.body;
+      return getComputedStyle(el).getPropertyValue("--color-accent").trim();
+    });
+  await page.goto("/nes", { waitUntil: "load" });
+  const nes = await accent();
+  expect(nes, "no accent on /nes").not.toBe("");
+  for (const p of ["/nes/signal", "/nes/signal/bench", "/nes/signal/composite"]) {
+    await page.goto(p, { waitUntil: "load" });
+    await expect(page.locator('[data-project="ntsc"]'), `${p} still wraps itself in the ntsc silo`).toHaveCount(0);
+    expect(await accent(), p).toBe(nes);
+  }
+});
