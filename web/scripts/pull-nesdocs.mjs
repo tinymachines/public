@@ -43,14 +43,14 @@ const ARTEFACTS = {
 // 2026-09-14). /nes links to each heading's anchor, so renaming a heading
 // breaks a door: e2e/nes-notebook.spec.ts follows every one.
 const GROUPS = [
-  { key: "start", heading: "Where it started", intro: "The sketch the whole console is built on, written before any of the code." },
-  { key: "chips", heading: "The chips", intro: "The contract every chip speaks, then the NES's two chips at their switches (the 2A03 CPU and sound, the 2C02 picture chip) and the fast versions built from them." },
-  { key: "signal", heading: "The signal", intro: "The composite video between the console and the television: the specification, each milestone of ntsc-crt, and where it knowingly departs from the references." },
-  { key: "console", heading: "The console", intro: "Both chips on one board: the glue, the machine running test ROMs, then its picture, its sound and the window it plays in." },
-  { key: "bench-plan", heading: "Planning the bench", intro: "The bench puts a real console and the model under the same controller presses. These were written first." },
-  { key: "bench-build", heading: "Building the bench", intro: "The bridge as drawn and as built: schematics, parts, the pin-by-pin cheat sheet and the build guide." },
-  { key: "bench-record", heading: "What happened at the bench", intro: "The build, step by step with its photographs, and the running report of what each tool has shown." },
-  { key: "bench-experiments", heading: "Experiments at the bench", intro: "The real console's picture against the model's, and the cartridge the model grew so both could run the same bytes." },
+  { key: "start", heading: "Where it started", intro: "The sketch the whole console is built on, written before any of the code.", ja: { heading: "始まり", intro: "コンソール全体が拠って立つスケッチ。コードより先に書かれた。" } },
+  { key: "chips", heading: "The chips", intro: "The contract every chip speaks, then the NES's two chips at their switches (the 2A03 CPU and sound, the 2C02 picture chip) and the fast versions built from them.", ja: { heading: "チップ", intro: "すべてのチップが話す規約、スイッチのレベルの NES の二つのチップ（CPU と音の 2A03、絵の 2C02）、そしてそこから組んだ高速版。" } },
+  { key: "signal", heading: "The signal", intro: "The composite video between the console and the television: the specification, each milestone of ntsc-crt, and where it knowingly departs from the references.", ja: { heading: "信号", intro: "コンソールとテレビの間のコンポジット映像: 仕様、ntsc-crt の各マイルストーン、そして参照から意図して離れる箇所。" } },
+  { key: "console", heading: "The console", intro: "Both chips on one board: the glue, the machine running test ROMs, then its picture, its sound and the window it plays in.", ja: { heading: "コンソール", intro: "一枚の基板に載った二つのチップ: 糊、テスト ROM を走らせる機械、そしてその絵、音、遊ぶための窓。" } },
+  { key: "bench-plan", heading: "Planning the bench", intro: "The bench puts a real console and the model under the same controller presses. These were written first.", ja: { heading: "ベンチの計画", intro: "ベンチは実機と模型を同じコントローラ入力の下に置く。以下は先に書かれたもの。" } },
+  { key: "bench-build", heading: "Building the bench", intro: "The bridge as drawn and as built: schematics, parts, the pin-by-pin cheat sheet and the build guide.", ja: { heading: "ベンチを組む", intro: "図面の上のブリッジと、組み上がったブリッジ: 回路図、部品、ピンごとの早見表、組み立てガイド。" } },
+  { key: "bench-record", heading: "What happened at the bench", intro: "The build, step by step with its photographs, and the running report of what each tool has shown.", ja: { heading: "ベンチで起きたこと", intro: "写真つきで一歩ずつ進んだ組み立てと、各道具が示したことの経過報告。" } },
+  { key: "bench-experiments", heading: "Experiments at the bench", intro: "The real console's picture against the model's, and the cartridge the model grew so both could run the same bytes.", ja: { heading: "ベンチでの実験", intro: "実機の絵と模型の絵の比較、そして両者が同じバイトを走らせるために模型が備えたカートリッジ。" } },
 ];
 
 const DOCS = [
@@ -367,7 +367,7 @@ every deploy: ${Object.values(ARTEFACTS).map((a) => `[${a.label}](${a.href})`).j
 // one, in a section of its own so the plan, the tutorial, the screens
 // and the boards sit together (owner's call, 2026-09-13).
 const cartRows = DOCS.filter((d) => d.section === "cart").sort((a, b) => a.order - b.order)
-  .map((d) => `| [${d.slug}](/docs/cart/${d.slug}) | ${d.description} |`).join("\n");
+  .map((d) => `| [${cell(d.shownTitle)}](/docs/cart/${d.slug}) | ${cell(d.description)} |`).join("\n");
 fs.mkdirSync(path.join(OUT, "..", "cart"), { recursive: true });
 fs.writeFileSync(
   path.join(OUT, "..", "cart", "index.md"),
@@ -393,6 +393,20 @@ the checksums in the tutorial name.
 ${cartRows}
 `,
 );
+// The shelves the /nes pages show: each group with its documents' titles
+// and lines, as written above. Generated beside the documents (gitignored
+// with them) because the docs tree allows no frontmatter but title,
+// description and order, so a document cannot carry its group itself;
+// lib/nes-shelves.ts reads this and refuses a build without it.
+const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, description: d.description });
+fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
+  groups: GROUPS.map((g) => ({
+    key: g.key, heading: g.heading, intro: g.intro, ja: g.ja,
+    docs: DOCS.filter((d) => !d.section && d.group === g.key).sort((a, b) => a.order - b.order).map(shelf),
+  })),
+  cart: DOCS.filter((d) => d.section === "cart").sort((a, b) => a.order - b.order).map(shelf),
+}, null, 1) + "\n");
+
 // Every page this wrote parses as the docs tree will parse it. An unquoted
 // description with a colon in it is valid-looking YAML that fails only at
 // next build's page collection, minutes into a deploy (2026-09-14).

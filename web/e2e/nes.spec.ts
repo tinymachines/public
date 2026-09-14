@@ -4,10 +4,11 @@ import path from "node:path";
 import { DESK, PHONE, open } from "./lib";
 
 /**
- * /nes: the fourth project's landing is a measurement report, and its
- * figures are slots filled from data/nes.json (the boarded record).
- * The generic pages.spec covers the page's shape; this spec covers the
- * rule that makes it worth shipping: what it shows is what was boarded.
+ * The NES section's measurement pages, /nes/chips and /nes/console (the
+ * landing's reports until 2026-09-14), whose figures are slots filled
+ * from data/nes.json (the boarded record). The generic pages.spec covers
+ * the pages' shape; this spec covers the rule that makes them worth
+ * shipping: what they show is what was boarded.
  */
 
 const record = JSON.parse(
@@ -62,9 +63,9 @@ const record = JSON.parse(
   };
 };
 
-test("the landing shows the boarded figures, not remembered ones", async ({ page }) => {
+test("the chips page shows the boarded figures, not remembered ones", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes", 500);
+  await open(page, "/nes/chips", 500);
 
   const chips = page.locator("[data-boarded] .measured");
   await expect(chips).toHaveCount(4);
@@ -100,6 +101,12 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
   expect(text).toContain(`${record.n3.traces_compared} traces compare`);
   expect(text).toContain(`${record.n3.traces_exact} of them exact`);
   expect(text).toContain(`${record.n3.noise_index12_die} cycles where every published table says ${record.n3.noise_index12_published}`);
+});
+
+test("the console page shows the boarded figures, not remembered ones", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/console", 500);
+  const text = (await page.locator("main").innerText()).replace(/\s+/g, " ");
 
   // The console's row and its prose, from the same record.
   const con = page.locator("[data-boarded-console] .measured");
@@ -141,7 +148,7 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
 
 test("the PPU and APU figures serve and decode", async ({ page, request }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes", 500);
+  await open(page, "/nes/chips", 500);
   for (const asset of ["/nes/ppu-sequencer.png", "/nes/ppu-sprite-world.png", "/nes/ppu-scroll-world.png", "/nes/apu-codes.png"]) {
     const img = page.locator(`.crt-figure img[src="${asset}"]`);
     await expect(img).toBeVisible();
@@ -155,24 +162,27 @@ test("the PPU and APU figures serve and decode", async ({ page, request }) => {
 
 test("the first-sound figure serves as committed bytes", async ({ page, request }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes", 500);
+  await open(page, "/nes/chips", 500);
 
   await expect(page.locator('.crt-figure img[src="/nes/first-sound.png"]')).toBeVisible();
   const r = await request.get("/nes/first-sound.png");
   expect(r.status()).toBe(200);
   expect(r.headers()["content-type"]).toContain("image/png");
 
-  // The story's homes are linked.
-  for (const repo of ["nes-bus", "2a03", "2c02", "nes"]) {
+  // The story's homes are linked: the chip repositories here, the
+  // console's on its own page.
+  for (const repo of ["nes-bus", "2a03", "2c02"]) {
     await expect(
       page.locator(`main a[href*="github.com/tinymachines/${repo}"]`).first(),
     ).toBeVisible();
   }
+  await open(page, "/nes/console", 500);
+  await expect(page.locator('main a[href*="github.com/tinymachines/nes/"]').first()).toBeVisible();
 });
 
 test("the Japanese page carries a Japanese body, not a fallback", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ja/nes", 500);
+  await open(page, "/ja/nes/chips", 500);
   const text = await page.locator("main").innerText();
   expect(text).toContain("実測");
   expect(text).not.toContain("no list of exceptions at all");

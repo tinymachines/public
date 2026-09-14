@@ -237,5 +237,13 @@
  "The calibration cart": "較正カートリッジ",
  "One cartridge of our own whose every screen is built to be measured, off a real console and off the model through the same decoder": "すべての画面が測られるために作られた、私たち自身のカートリッジ。実機からも模型からも、同じデコーダを通して",
  "One cartridge of our own whose every screen is built to be measured, off a real console and off the model through the same decoder. The plan, the build, the screens and the blank boards.": "すべての画面が測られるために作られた、私たち自身のカートリッジ。実機からも模型からも、同じデコーダを通して測る。計画、製作、画面、そして空の基板。",
- "Every plan and report for the console, grouped by the part they are about: the chips, the signal, the console and the bench. The repositories are the one copy; this site pulls them at build time.": "コンソールの計画と報告のすべてを、扱う部分ごとに: チップ、信号、コンソール、ベンチ。リポジトリが唯一の原本で、このサイトはビルド時にそれを取り込む。"
+ "Every plan and report for the console, grouped by the part they are about: the chips, the signal, the console and the bench. The repositories are the one copy; this site pulls them at build time.": "コンソールの計画と報告のすべてを、扱う部分ごとに: チップ、信号、コンソール、ベンチ。リポジトリが唯一の原本で、このサイトはビルド時にそれを取り込む。",
+ "The chips": "チップ",
+ "The console": "コンソール",
+ "The contract every chip speaks, the 2A03 and the 2C02 at their switches, and the fast chips built from them": "すべてのチップが話す規約、スイッチのレベルの 2A03 と 2C02、そしてそこから組んだ高速チップ",
+ "The contract every chip speaks, the 2A03 and the 2C02 at their switches, and the fast chips built from them. Every figure comes from re-running the chip repositories' own tests.": "すべてのチップが話す規約、スイッチのレベルの 2A03 と 2C02、そしてそこから組んだ高速チップ。数字はすべて、チップのリポジトリ自身のテストを走らせ直して得たもの。",
+ "Both chips on one board and one clock, then the picture through the television model, the sound through the board's audio stage, and the window it plays in": "一枚の基板と一つのクロックに載った二つのチップ、そしてテレビの模型を通る絵、基板の音声段を通る音、遊ぶための窓",
+ "Both chips on one board and one clock, then the picture through the television model, the sound through the board's audio stage, and the window it plays in.": "一枚の基板と一つのクロックに載った二つのチップ、そしてテレビの模型を通る絵、基板の音声段を通る音、遊ぶための窓。",
+ "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far": "同じコントローラ入力の下に置いた実機と模型: その間のブリッジの図面と実物、そしてベンチでここまでに起きたこと",
+ "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far.": "同じコントローラ入力の下に置いた実機と模型: その間のブリッジの図面と実物、そしてベンチでここまでに起きたこと。"
 }

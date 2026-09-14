@@ -44,6 +44,10 @@ const STATIC = [
   "/ntsc/bench",
   "/ntsc/composite",
   "/nes",
+  "/nes/chips",
+  "/nes/console",
+  "/nes/bench",
+  "/nes/cart",
   "/style",
 ];
 

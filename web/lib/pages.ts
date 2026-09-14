@@ -104,6 +104,26 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The console arc: a working NES assembled from the family's parts, the contracts between the chips proven by recorded reference traces, and first sound already played.",
   },
+  "/nes/chips": {
+    title: "The chips",
+    description:
+      "The contract every chip speaks, the 2A03 and the 2C02 at their switches, and the fast chips built from them. Every figure comes from re-running the chip repositories' own tests.",
+  },
+  "/nes/console": {
+    title: "The console",
+    description:
+      "Both chips on one board and one clock, then the picture through the television model, the sound through the board's audio stage, and the window it plays in.",
+  },
+  "/nes/bench": {
+    title: "The bench",
+    description:
+      "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far.",
+  },
+  "/nes/cart": {
+    title: "The calibration cart",
+    description:
+      "One cartridge of our own whose every screen is built to be measured, off a real console and off the model through the same decoder. The plan, the build, the screens and the blank boards.",
+  },
   "/nes/play": {
     title: "Play",
     description:

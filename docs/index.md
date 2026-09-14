@@ -196,7 +196,7 @@ clock, sound out and the keyboard in; and a wasm build of the console
 measured under node. It ran under a virtual display here; a real screen
 is the desk item.
 
-Since then the PPU has come a long way on [the same page](/nes). Its
+Since then the PPU has come a long way on [the chips page](/nes/chips). Its
 contested corners, sprite 0, the vblank read race and OAM corruption,
 were each pinned by a crafted register program the reference replays
 blindly. A per-dot fast PPU now renders a frame in a small fraction of

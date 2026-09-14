@@ -11,7 +11,7 @@ been proven on their own: a switch-level 6502 and the fast cores held to
 it, a switch-level 2A03 and 2C02, an NTSC signal path simulated at the
 waveform, and the authored glue of an NES-001 mainboard. The sketch that
 ran it is [the first page of the notebook](/docs/nes/sketch); the figures
-every page below states are on [the console page](/nes), recorded from the
+every page below states are on [the chips page](/nes/chips) and [the console page](/nes/console), recorded from the
 repositories' own runs, and nothing here retypes them.
 
 ## The rule that shaped everything
