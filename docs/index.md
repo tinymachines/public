@@ -101,7 +101,7 @@ edited.
 
 ## The third project
 
-[ntsc-crt](/ntsc) is signal-level NTSC: the composite waveform between a
+[ntsc-crt](/nes/signal) is signal-level NTSC: the composite waveform between a
 console and a tube, encoded from three sources, pulled apart by four
 different filters, and displayed through a five-stage CRT model. The 6502
 work simulates a chip at its switches; this simulates the signal, and the
@@ -115,7 +115,7 @@ and sabotage checks at a pinned commit. The documentation has not moved into
 this tree yet; it lives in
 [the repository](https://github.com/tinymachines/ntsc-crt).
 
-[The composite deep-dive](/ntsc/composite) reads a real console's video
+[The composite deep-dive](/nes/signal/composite) reads a real console's video
 off the scope into 75 ohms, level by level: the scanline, the burst with
 every sample drawn, the levels beside the transcribed table, and what the
 first, unterminated captures had flattered. The saturation gap the
@@ -216,7 +216,7 @@ external drive. Four chips never formed such a group; the 2A03's set
 overflow chain forms three at power-on, its reference resolves them low,
 and [halfphi](https://github.com/tinymachines/halfphi) 0.1.3 now agrees,
 with the swap proven unobservable on every other chip. And the signal side
-has met real silicon: [the ntsc page](/ntsc) now carries frames decoded
+has met real silicon: [the signal page](/nes/signal) now carries frames decoded
 from raw oscilloscope records of a real console, and the first colour
 scored against the pipeline's own synthesis. Documentation for these lives
 in the repositories until it moves into this tree.

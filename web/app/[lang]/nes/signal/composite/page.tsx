@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { ntsc } from "@/lib/ntsc";
+import { t } from "@/lib/i18n";
+import { surface } from "@/lib/projects";
 import Image from "next/image";
 import { Shell } from "@/app/components/SiteFrame";
 import "../ntsc.css";
 
 /**
- * /ntsc/composite: a real NES's composite video, terminated into 75 ohms
+ * /nes/signal/composite (was /ntsc/composite): a real NES's composite video, terminated into 75 ohms
  * and read off the scope level by level. Every number is a slot filled
  * from data/ntsc.json's `composite` record, which scripts/board-ntsc.py
  * writes from the ntsc-crt repository's committed measurement
@@ -19,7 +21,7 @@ import "../ntsc.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/ntsc/composite");
+  return pageMeta(lang, "/nes/signal/composite");
 }
 
 const V = (x: number) => x.toFixed(3);
@@ -169,7 +171,7 @@ const PROSE = {
         record. The console needs its Mario paused again; when it is,
         the number will land here the way every other number on this
         page did, measured and committed, not from memory.{" "}
-        <Link href="/ntsc">Back to the NTSC landing.</Link>
+        <Link href="/nes/signal">Back to the signal.</Link>
       </>
     ),
   },
@@ -249,7 +251,7 @@ const PROSE = {
     notHereH: "まだ無いもの",
     notHere: (
       <>
-        終端した空。ランディングページの彩度の所見は一時停止した World 1-1 の空で採点され、その確認は終端した記録から同じ領域を同じ採点器に通すことだ。実機のマリオをもう一度一時停止させる必要がある。そうなれば数字は記憶からではなく、このページの他の数字と同じく実測されコミットされて、ここに来る。<Link href="/ja/ntsc">NTSC のランディングへ戻る。</Link>
+        終端した空。ランディングページの彩度の所見は一時停止した World 1-1 の空で採点され、その確認は終端した記録から同じ領域を同じ採点器に通すことだ。実機のマリオをもう一度一時停止させる必要がある。そうなれば数字は記憶からではなく、このページの他の数字と同じく実測されコミットされて、ここに来る。<Link href="/ja/nes/signal">信号のページへ戻る。</Link>
       </>
     ),
   },
@@ -269,7 +271,7 @@ export default async function CompositePage({ params }: { params: Promise<{ lang
   const samplesPerCycle = (125e6 / (315e6 / 88)).toFixed(1);
 
   return (
-    <Shell lang={lang} die="NTSC" title={lang === "ja" ? "コンポジット、終端して" : "Composite, terminated"}>
+    <Shell lang={lang} die="NTSC" title={t(lang, surface("nes", "composite").name)}>
       <div className="prose">
         <p>{S.intro}</p>
 

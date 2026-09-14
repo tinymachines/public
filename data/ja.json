@@ -170,8 +170,6 @@
  "hotbits": "hotbits",
  "ntsc-crt": "ntsc-crt",
  "Signal-level NTSC: the composite waveform itself, encoded from three sources, pulled apart by four different filters, and displayed through a five-stage CRT model, with a check that can fail at every stage.": "信号レベルの NTSC: コンポジット波形そのものを、三つのソースからエンコードし、四種類のフィルタで引き剥がし、五段の CRT モデルで表示する。どの段にも、失敗できる検査がある。",
- "The measurement report": "実測報告",
- "What was built, what was measured, and the three spec claims that did not survive measurement.": "何を作り、何を実測し、仕様のどの三つの主張が実測に耐えなかったか。",
  "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with a check at every stage and three spec claims that did not survive measurement.": "信号レベルの NTSC: コンポジット波形をエンコードし、デコードし、CRT モデルで表示する。どの段にも検査があり、仕様の三つの主張は実測に耐えなかった。",
  "The ntsc bench": "ntsc ベンチ",
  "The bench": "ベンチ",
@@ -245,5 +243,7 @@
  "Both chips on one board and one clock, then the picture through the television model, the sound through the board's audio stage, and the window it plays in": "一枚の基板と一つのクロックに載った二つのチップ、そしてテレビの模型を通る絵、基板の音声段を通る音、遊ぶための窓",
  "Both chips on one board and one clock, then the picture through the television model, the sound through the board's audio stage, and the window it plays in.": "一枚の基板と一つのクロックに載った二つのチップ、そしてテレビの模型を通る絵、基板の音声段を通る音、遊ぶための窓。",
  "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far": "同じコントローラ入力の下に置いた実機と模型: その間のブリッジの図面と実物、そしてベンチでここまでに起きたこと",
- "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far.": "同じコントローラ入力の下に置いた実機と模型: その間のブリッジの図面と実物、そしてベンチでここまでに起きたこと。"
+ "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far.": "同じコントローラ入力の下に置いた実機と模型: その間のブリッジの図面と実物、そしてベンチでここまでに起きたこと。",
+ "The signal": "信号",
+ "The signal bench": "信号のベンチ"
 }

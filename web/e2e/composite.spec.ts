@@ -4,7 +4,7 @@ import path from "node:path";
 import { DESK, open } from "./lib";
 
 /**
- * /ntsc/composite: the deep-dive is a measurement report whose figures
+ * /nes/signal/composite (was /ntsc/composite): the deep-dive is a measurement report whose figures
  * are slots filled from data/ntsc.json's `composite` record. This spec
  * covers the rule that makes it worth shipping: what it shows is what was
  * boarded, and the figures it shows are served.
@@ -23,7 +23,7 @@ const record = JSON.parse(
 
 test("the deep-dive states the boarded levels and serves its figures", async ({ page, request }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc/composite", 500);
+  await open(page, "/nes/signal/composite", 500);
 
   const chips = page.locator("[data-boarded] .measured");
   await expect(chips).toHaveCount(5);
@@ -59,13 +59,13 @@ test("the deep-dive states the boarded levels and serves its figures", async ({ 
 
 test("the landing links to the deep-dive", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc", 500);
-  await expect(page.locator('main a[href="/ntsc/composite"]').first()).toBeVisible();
+  await open(page, "/nes/signal", 500);
+  await expect(page.locator('main a[href="/nes/signal/composite"]').first()).toBeVisible();
 });
 
 test("the Japanese deep-dive carries a Japanese body", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ja/ntsc/composite", 500);
+  await open(page, "/ja/nes/signal/composite", 500);
   const text = await page.locator("main").innerText();
   expect(text).toContain("終端");
   expect(text).not.toContain("Why the terminator");

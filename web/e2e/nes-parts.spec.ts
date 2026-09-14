@@ -18,12 +18,13 @@ const PARTS: Record<string, string[]> = {
   "/nes": ["start"],
   "/nes/chips": ["chips"],
   "/nes/console": ["console"],
+  "/nes/signal": ["signal"],
   "/nes/bench": ["bench-plan", "bench-build", "bench-record", "bench-experiments"],
 };
 
 // A shelf's key and the notebook heading's anchor, as the pull names them.
 const ANCHOR: Record<string, string> = {
-  start: "where-it-started", chips: "the-chips", console: "the-console",
+  start: "where-it-started", chips: "the-chips", console: "the-console", signal: "the-signal",
   "bench-plan": "planning-the-bench", "bench-build": "building-the-bench",
   "bench-record": "what-happened-at-the-bench", "bench-experiments": "experiments-at-the-bench",
 };
@@ -52,7 +53,7 @@ test("every shelf on a part page lists what the notebook lists under its group",
       shelves++;
     }
   }
-  expect(shelves).toBe(7);
+  expect(shelves).toBe(8);
 });
 
 test("the cart page lists the cart section's documents, and serves the ROM", async ({ page, request }) => {

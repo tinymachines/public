@@ -27,17 +27,17 @@ test("the NES group reaches every part, the notebook and the retrospective", asy
   await page.setViewportSize(DESK);
   await open(page, "/nes", 500);
   const { hrefs } = await sectionGroup(page);
-  for (const want of ["/nes", "/nes/play", "/nes/chips", "/nes/console", "/nes/bench", "/nes/cart", "/docs/nes", "/docs/console-arc"]) {
+  for (const want of ["/nes", "/nes/play", "/nes/chips", "/nes/console", "/nes/signal", "/nes/bench", "/nes/cart", "/docs/nes", "/docs/console-arc"]) {
     expect(hrefs, `missing ${want}`).toContain(want);
   }
   expect(new Set(hrefs).size, `duplicate destination in ${JSON.stringify(hrefs)}`).toBe(hrefs.length);
 });
 
-test("the ntsc group reaches the composite deep-dive", async ({ page }) => {
+test("inside the signal pages, the NES group reaches all three of them", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc", 500);
+  await open(page, "/nes/signal/composite", 500);
   const { hrefs } = await sectionGroup(page);
-  for (const want of ["/ntsc", "/ntsc/bench", "/ntsc/composite"]) {
+  for (const want of ["/nes", "/nes/signal", "/nes/signal/bench", "/nes/signal/composite"]) {
     expect(hrefs, `missing ${want}`).toContain(want);
   }
   expect(new Set(hrefs).size).toBe(hrefs.length);

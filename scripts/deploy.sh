@@ -357,7 +357,7 @@ bad=0
 # our deploy depend on a row in somebody else's database.
 for p in / /docs /docs/6502 /docs/6502/atlas /docs/6502/idioms /docs/6502/walk-snake /docs/hotbits /style /style/zoo /admin /icon.svg /apple-icon.png /robots.txt \
          /6502 /6502/explorer /6502/games /6502/manage /6502/lab /6502/builders /6502/builders/nobody /6502/api \
-         /hotbits /hotbits/api /ntsc /ntsc/bench /nes /nes/play /nes/wasm/nes_wasm_bg.wasm /nes/bars.nes /ntsc/wasm/ntsc_wasm_bg.wasm /ja /ja/docs /ja/6502/explorer \
+         /hotbits /hotbits/api /nes/signal /nes/signal/bench /nes/signal/composite /nes/chips /nes/console /nes/bench /nes/cart /nes /nes/play /nes/wasm/nes_wasm_bg.wasm /nes/bars.nes /ntsc/wasm/ntsc_wasm_bg.wasm /ja /ja/docs /ja/6502/explorer \
          /api/ /api/health /api/v1/pieces /api/v1/status /api/openapi.json; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)
   printf '  %-28s %s\n' "$p" "$code"
@@ -422,6 +422,20 @@ for p in /6502/b /6502/b/tinymachines /6502/b/tinymachines/die-runner; do
   to=$(curl -s -o /dev/null -w '%{redirect_url}' -m 20 "$BASE$p" || echo "")
   printf '  %-28s %s -> %s\n' "$p" "$code" "${to:-nowhere}"
   [ "$code" = "308" ] || fail "$p answered $code; expected a 308 to /6502/builders or the console"
+done
+
+# ntsc-crt's three pages moved under /nes/signal on 2026-09-14. Each old
+# address, in both languages, must land on its own new page, not merely
+# answer 308: a redirect that sent all three to /nes/signal would pass a
+# code check while every deep link to the bench or the composite page
+# arrived one page short.
+for pair in /ntsc:/nes/signal /ntsc/bench:/nes/signal/bench /ntsc/composite:/nes/signal/composite \
+            /ja/ntsc:/ja/nes/signal /ja/ntsc/bench:/ja/nes/signal/bench /ja/ntsc/composite:/ja/nes/signal/composite; do
+  from="${pair%%:*}"; want="${pair##*:}"
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$from" || echo 000)
+  to=$(curl -s -o /dev/null -w '%{redirect_url}' -m 20 "$BASE$from" || echo "")
+  printf '  %-28s %s -> %s\n' "$from" "$code" "${to:-nowhere}"
+  [ "$code" = "308" ] && [ "${to%/}" = "https://tinymachines.ai$want" ] || fail "$from answered $code -> ${to:-nowhere}; expected a 308 to $want"
 done
 
 # The two-segment form must arrive at the console CARRYING the cartridge: a

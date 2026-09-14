@@ -215,55 +215,6 @@
    "landing": "/hotbits"
   },
   {
-   "key": "ntsc",
-   "name": "ntsc-crt",
-   "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, pulled apart by four different filters, and displayed through a five-stage CRT model, with a check that can fail at every stage.",
-   "silo": "style/projects/ntsc.css",
-   "status": "here",
-   "surfaces": [
-    {
-     "key": "site",
-     "name": "The measurement report",
-     "what": "What was built, what was measured, and the three spec claims that did not survive measurement.",
-     "nav": false,
-     "nav_label": null,
-     "piece": null,
-     "serves_today": "https://tinymachines.ai/ntsc",
-     "lands_at": "/ntsc",
-     "lands_at_settled": true,
-     "status": "here",
-     "prerendered": true
-    },
-    {
-     "key": "bench",
-     "name": "The bench",
-     "what": "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
-     "nav": false,
-     "nav_label": "Bench",
-     "piece": null,
-     "serves_today": "https://tinymachines.ai/ntsc/bench",
-     "lands_at": "/ntsc/bench",
-     "lands_at_settled": true,
-     "status": "here",
-     "prerendered": true
-    },
-    {
-     "key": "composite",
-     "name": "Composite, terminated",
-     "what": "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
-     "nav": false,
-     "nav_label": null,
-     "piece": null,
-     "serves_today": "https://tinymachines.ai/ntsc/composite",
-     "lands_at": "/ntsc/composite",
-     "lands_at_settled": true,
-     "status": "here",
-     "prerendered": true
-    }
-   ],
-   "landing": "/ntsc"
-  },
-  {
    "key": "nes",
    "name": "The NES console",
    "what": "A working NES assembled from the family's parts: the chips at their switches, the contracts between them proven by recorded reference traces, and the signal path already real.",
@@ -318,6 +269,45 @@
      "piece": null,
      "serves_today": "https://tinymachines.ai/nes/console",
      "lands_at": "/nes/console",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "signal",
+     "name": "The signal",
+     "what": "Signal-level NTSC: the composite waveform itself, encoded from three sources, pulled apart by four different filters, and displayed through a five-stage CRT model, with a check that can fail at every stage.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/nes/signal",
+     "lands_at": "/nes/signal",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "signal-bench",
+     "name": "The signal bench",
+     "what": "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/nes/signal/bench",
+     "lands_at": "/nes/signal/bench",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "composite",
+     "name": "Composite, terminated",
+     "what": "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/nes/signal/composite",
+     "lands_at": "/nes/signal/composite",
      "lands_at_settled": true,
      "status": "here",
      "prerendered": true

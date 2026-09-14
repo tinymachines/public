@@ -3,14 +3,18 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
-import { project } from "@/lib/projects";
+import { surface } from "@/lib/projects";
+import { Shelf } from "../Shelf";
 import { ntsc } from "@/lib/ntsc";
 import Image from "next/image";
 import { Shell } from "@/app/components/SiteFrame";
 import "./ntsc.css";
 
 /**
- * /ntsc: the third project gets a roof.
+ * /nes/signal: the composite signal between the console and the
+ * television, the ntsc-crt repository's work. It was a project of its own
+ * at /ntsc until 2026-09-14, when it joined the NES section it serves; the
+ * old addresses redirect here (next.config.ts).
  *
  * A measurement-report page in the house voice. Its story is the ntsc-crt
  * repository's own milestone reports; its figures are slots filled from
@@ -25,7 +29,7 @@ import "./ntsc.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/ntsc");
+  return pageMeta(lang, "/nes/signal");
 }
 
 const REPORTS = "https://github.com/tinymachines/ntsc-crt/blob/main/docs";
@@ -272,13 +276,13 @@ const PROSE = {
         and it has run: the same console through a 75 ohm feedthrough
         terminator, which separates the probe run&rsquo;s flattery from
         the DAC&rsquo;s own behaviour.{" "}
-        <Link href="/ntsc/composite">The composite deep-dive</Link> reads
+        <Link href="/nes/signal/composite">The composite deep-dive</Link> reads
         the terminated signal off the scope, level by level.
       </>
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
       <>
-        <Link href="/ntsc/bench">The live bench</Link> runs this pipeline in
+        <Link href="/nes/signal/bench">The live bench</Link> runs this pipeline in
         the page, NES dots in and decoded pixels out, with the drift
         counters visible. In the browser it measures at least {notch}{" "}
         frames a second on the notch filter and {comb3} on the three-line
@@ -440,7 +444,7 @@ const PROSE = {
     ),
     open2: (notch: number, comb3: number, stamp: string) => (
       <>
-        <Link href="/ja/ntsc/bench">ライブベンチ</Link>はこのパイプラインをページ内で走らせ、NES のドットを入れてデコード済みの画素を出し、ドリフトのカウンタを見せる。ブラウザでの実測はノッチフィルタで毎秒 {notch} フレーム以上、3 ラインコムで {comb3}（{stamp}）。ソース自身の 60.09881 Hz に迫る速さで、ベンチは約束ではなく実際に出たレートを表示する。
+        <Link href="/ja/nes/signal/bench">ライブベンチ</Link>はこのパイプラインをページ内で走らせ、NES のドットを入れてデコード済みの画素を出し、ドリフトのカウンタを見せる。ブラウザでの実測はノッチフィルタで毎秒 {notch} フレーム以上、3 ラインコムで {comb3}（{stamp}）。ソース自身の 60.09881 Hz に迫る速さで、ベンチは約束ではなく実際に出たレートを表示する。
       </>
     ),
     open3: (
@@ -460,7 +464,7 @@ const PROSE = {
 export default async function NtscPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
   const S = PROSE[lang];
-  const p = project("ntsc");
+  const p = surface("nes", "signal");
   const r = ntsc();
   const commitShort = r.commit.slice(0, 7);
   const commitHref = `${r.repo}/commit/${r.commit}`;
@@ -469,7 +473,7 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
   const famous = r.rates.nes_pair_hz.slice(0, 7);
 
   return (
-    <Shell lang={lang} die="NTSC" title={p.name}>
+    <Shell lang={lang} die="NTSC" title={t(lang, p.name)}>
       <div className="prose">
         <p>{t(lang, p.what)}</p>
 
@@ -603,6 +607,8 @@ export default async function NtscPage({ params }: { params: Promise<{ lang: Lan
           <li>{S.open4}</li>
           <li>{S.open3}</li>
         </ul>
+
+        <Shelf lang={lang} group="signal" />
 
         <p>{S.repo(r.repo)}</p>
       </div>

@@ -4,7 +4,7 @@ import path from "node:path";
 import { DESK, open } from "./lib";
 
 /**
- * /ntsc: the third project's landing is a measurement report, and its
+ * /nes/signal (was /ntsc, ntsc-crt's own landing): a measurement report, and its
  * figures are slots filled from data/ntsc.json (the boarded record). The
  * generic pages.spec covers the page's shape; this spec covers the rule
  * that makes the page worth shipping: what it shows is what was boarded.
@@ -28,7 +28,7 @@ const record = JSON.parse(
 
 test("the landing shows the boarded figures, not remembered ones", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc", 500);
+  await open(page, "/nes/signal", 500);
 
   // The boarded chips carry the record's numbers and its commit. If a deploy
   // ships a re-boarded record, the page follows it with no edit; if the page
@@ -48,7 +48,7 @@ test("the landing shows the boarded figures, not remembered ones", async ({ page
 
 test("the CRT frame is served, and the page says it is illustrative", async ({ page, request }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc", 500);
+  await open(page, "/nes/signal", 500);
 
   const img = page.locator('.crt-figure img[src="/ntsc/crt-hue-bands.png"]');
   await expect(img).toBeVisible();
@@ -65,7 +65,7 @@ test("the CRT frame is served, and the page says it is illustrative", async ({ p
 
 test("the real-console section serves its figures and states the boarded numbers", async ({ page, request }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc", 500);
+  await open(page, "/nes/signal", 500);
 
   for (const asset of [
     "/ntsc/real-scanline.png",
@@ -91,7 +91,7 @@ test("the real-console section serves its figures and states the boarded numbers
 
 test("the bench decodes a frame in the page and counts it", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ntsc/bench", 500);
+  await open(page, "/nes/signal/bench", 500);
 
   // One step: the worker fetches the boarded wasm, encodes one frame of
   // hue bands and paints it. A blank canvas afterwards would mean the
@@ -116,7 +116,7 @@ test("the bench decodes a frame in the page and counts it", async ({ page }) => 
 
 test("the Japanese page carries a Japanese body, not a fallback", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/ja/ntsc", 500);
+  await open(page, "/ja/nes/signal", 500);
   const text = await page.locator("main").innerText();
   expect(text).toContain("実測");
   expect(text).not.toContain("did not survive measurement");

@@ -14,7 +14,7 @@ export const PROSE = {
     kinship: (
       <>
         <Link href="/6502">The 6502 work</Link> simulates a chip at its
-        switches; <Link href="/ntsc">ntsc-crt</Link> simulates the signal
+        switches; <Link href="/nes/signal">ntsc-crt</Link> simulates the signal
         between a console and a tube. This project is where they stop being
         neighbours and become one machine: a working NES assembled chip by
         chip, with the contracts between the chips proven by recorded
@@ -27,7 +27,7 @@ export const PROSE = {
     parts: [
       { href: "/nes/play", name: "Play", what: "the console running in your browser, on a cartridge from your own disk" },
       { href: "/nes/chips", name: "The chips", what: "the contract, the 2A03 and the 2C02 at their switches, and the fast chips built from them" },
-      { href: "/ntsc", name: "The signal", what: "the composite video between the console and the television, with a live bench and a real console read off the scope" },
+      { href: "/nes/signal", name: "The signal", what: "the composite video between the console and the television, with a live bench and a real console read off the scope" },
       { href: "/nes/console", name: "The console", what: "both chips on one board, then its picture, its sound and the window it plays in" },
       { href: "/nes/bench", name: "The bench", what: "a real console and the model under the same controller presses: the plan, the build and what happened" },
       { href: "/nes/cart", name: "The calibration cart", what: "one cartridge of our own whose every screen is built to be measured" },
@@ -664,9 +664,9 @@ export const PROSE = {
         powers on in, and the die&rsquo;s own findings, where the model
         and the part are known to disagree and a logic analyser decides.
         <Link href="/nes/bench">The bench</Link> is how those close. The signal side is already
-        real: <Link href="/ntsc">the ntsc page</Link> carries frames
+        real: <Link href="/nes/signal">the signal page</Link> carries frames
         decoded from a physical console, and{" "}
-        <Link href="/ntsc/composite">its composite deep-dive</Link> reads
+        <Link href="/nes/signal/composite">its composite deep-dive</Link> reads
         that console&rsquo;s video off the scope level by level.
       </>
     ),
@@ -683,14 +683,14 @@ export const PROSE = {
   ja: {
     kinship: (
       <>
-        <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬し、<Link href="/ja/ntsc">ntsc-crt</Link> はコンソールとブラウン管の間の信号を模擬する。このプロジェクトは、その二つが隣人であることをやめて一台の機械になる場所だ: 動く NES をチップごとに組み上げ、チップ間の規約は文書の約束ではなく、記録済みのリファレンストレースで証明する。
+        <Link href="/ja/6502">6502 の仕事</Link>はチップをスイッチのレベルで模擬し、<Link href="/ja/nes/signal">ntsc-crt</Link> はコンソールとブラウン管の間の信号を模擬する。このプロジェクトは、その二つが隣人であることをやめて一台の機械になる場所だ: 動く NES をチップごとに組み上げ、チップ間の規約は文書の約束ではなく、記録済みのリファレンストレースで証明する。
       </>
     ),
     partsH: "コンソールの各部分には、それぞれの棚がある",
     parts: [
       { href: "/ja/nes/play", name: "遊ぶ", what: "ブラウザの中で動くコンソール。カートリッジはあなた自身のディスクから" },
       { href: "/ja/nes/chips", name: "チップ", what: "規約、スイッチのレベルの 2A03 と 2C02、そしてそこから組んだ高速チップ" },
-      { href: "/ja/ntsc", name: "信号", what: "コンソールとテレビの間のコンポジット映像。動くベンチと、スコープで読んだ実機つき" },
+      { href: "/ja/nes/signal", name: "信号", what: "コンソールとテレビの間のコンポジット映像。動くベンチと、スコープで読んだ実機つき" },
       { href: "/ja/nes/console", name: "コンソール", what: "一枚の基板に載った二つのチップ、そしてその絵、音、遊ぶための窓" },
       { href: "/ja/nes/bench", name: "ベンチ", what: "同じコントローラ入力の下に置いた実機と模型: 計画、製作、そして起きたこと" },
       { href: "/ja/nes/cart", name: "較正カートリッジ", what: "すべての画面が測られるために作られた、私たち自身のカートリッジ" },
@@ -886,7 +886,7 @@ export const PROSE = {
     aheadH: "スケッチが求めたもの、そして実機を待つもの",
     ahead: (sketchHref: string) => (
       <>
-        計画は先に書かれた: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。そこに名のあるマイルストーンはすべてこの機械の上で組まれ、検査を通っている: 規約、スイッチレベルの二つのチップとそこから組んだ高速チップ、丸ごと組み上がった高速 2A03、糊、一つのクロックで標準スイートを走らせるコンソール、エンコーダを通って取り込み経路を戻る絵、基板自身の段を通る音、そして GPU の絵とゲームパッドとブラウザ標的を持つシェル。残るのは、スイッチレベルの模型だけでは決められないものそのものであり、各項目は報告に名指しされている: 実基板での NMI 到達タイミング、遊びの検査に入れる実カートリッジ、絵のマイルストーンが求めた終端付きの取り込み、実スピーカーの下での音の段、コンソールが電源投入時に取る位相、そして模型と実機が食い違うと分かっていてロジックアナライザが決めるダイ自身の発見。<Link href="/ja/nes/bench">ベンチ</Link>はそれらを閉じる手段だ。信号の側はすでに実在する: <Link href="/ja/ntsc">ntsc のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/ntsc/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
+        計画は先に書かれた: 規約リポジトリの<a href={sketchHref}>エンドツーエンドのスケッチ</a>に、マイルストーンごとの検査がある。そこに名のあるマイルストーンはすべてこの機械の上で組まれ、検査を通っている: 規約、スイッチレベルの二つのチップとそこから組んだ高速チップ、丸ごと組み上がった高速 2A03、糊、一つのクロックで標準スイートを走らせるコンソール、エンコーダを通って取り込み経路を戻る絵、基板自身の段を通る音、そして GPU の絵とゲームパッドとブラウザ標的を持つシェル。残るのは、スイッチレベルの模型だけでは決められないものそのものであり、各項目は報告に名指しされている: 実基板での NMI 到達タイミング、遊びの検査に入れる実カートリッジ、絵のマイルストーンが求めた終端付きの取り込み、実スピーカーの下での音の段、コンソールが電源投入時に取る位相、そして模型と実機が食い違うと分かっていてロジックアナライザが決めるダイ自身の発見。<Link href="/ja/nes/bench">ベンチ</Link>はそれらを閉じる手段だ。信号の側はすでに実在する: <Link href="/ja/nes/signal">信号のページ</Link>には実機からデコードしたフレームが載り、<Link href="/ja/nes/signal/composite">コンポジット深掘り</Link>はその実機の映像をスコープからレベルごとに読む。
       </>
     ),
     repo: (href: string) => (

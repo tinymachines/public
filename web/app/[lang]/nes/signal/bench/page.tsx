@@ -4,12 +4,14 @@ import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize } from "@/lib/i18n";
 import { ntsc } from "@/lib/ntsc";
+import { t } from "@/lib/i18n";
+import { surface } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { Bench } from "./Bench";
 import "../ntsc.css";
 
 /**
- * /ntsc/bench: the whole signal path, encode to decoded frame, live in the
+ * /nes/signal/bench (was /ntsc/bench): the whole signal path, encode to decoded frame, live in the
  * page. The wasm bundle is the boarded one (data/ntsc.json records the
  * commit, the tag and the file hashes; scripts/board-ntsc.py --wasm is the
  * only thing that writes either), so what runs here is what was measured.
@@ -18,7 +20,7 @@ import "../ntsc.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/ntsc/bench");
+  return pageMeta(lang, "/nes/signal/bench");
 }
 
 const PROSE = {
@@ -60,7 +62,7 @@ const PROSE = {
       <>
         Two filters are here because only two make sense for the NES: the
         notch and the NES-native three-line comb. The two-line comb is
-        not, for the reason the <Link href="/ntsc">landing</Link> gives: on
+        not, for the reason the <Link href="/nes/signal">signal page</Link> gives: on
         this signal it cannot work, and the code refuses it outright, with
         the reason spelled out, rather than shipping a quietly worse
         picture.
@@ -94,7 +96,7 @@ const PROSE = {
     ),
     refused: (
       <>
-        フィルタが二つなのは、NES で意味を持つのが二つだけだからだ: ノッチと、NES 本来の 3 ラインコム。2 ラインコムが無いのは<Link href="/ja/ntsc">ランディング</Link>の述べる理由による: この信号では原理的に働けず、コードは黙って劣化した絵にする代わりに、理由を明記してきっぱり拒む。
+        フィルタが二つなのは、NES で意味を持つのが二つだけだからだ: ノッチと、NES 本来の 3 ラインコム。2 ラインコムが無いのは<Link href="/ja/nes/signal">信号のページ</Link>の述べる理由による: この信号では原理的に働けず、コードは黙って劣化した絵にする代わりに、理由を明記してきっぱり拒む。
       </>
     ),
     boarded: (commit: string, href: string, tag: string) => (
@@ -121,7 +123,7 @@ export default async function BenchPage({ params }: { params: Promise<{ lang: La
   const commitHref = `${r.repo}/commit/${r.commit}`;
 
   return (
-    <Shell lang={lang} die="NTSC" title={lang === "ja" ? "ntsc ベンチ" : "The ntsc bench"}>
+    <Shell lang={lang} die="NTSC" title={t(lang, surface("nes", "signal-bench").name)}>
       <div className="prose">
         <p>{S.what}</p>
         <p>{S.slow(r.wasm_fps.notch, r.wasm_fps.comb3, r.wasm_fps.stamp)}</p>
@@ -132,7 +134,7 @@ export default async function BenchPage({ params }: { params: Promise<{ lang: La
         <p>{S.refused}</p>
         <p>{S.boarded(commitShort, commitHref, bundle?.tags?.[0] ?? "")}</p>
         <p>
-          <Link href={localize(lang, "/ntsc")}>{lang === "ja" ? "実測報告へ戻る" : "Back to the measurement report"}</Link>
+          <Link href={localize(lang, "/nes/signal")}>{lang === "ja" ? "信号のページへ戻る" : "Back to the signal"}</Link>
         </p>
       </div>
     </Shell>

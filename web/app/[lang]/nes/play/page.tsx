@@ -7,7 +7,7 @@ import { nes } from "@/lib/nes";
 import { ntsc } from "@/lib/ntsc";
 import { Shell } from "@/app/components/SiteFrame";
 import { Play } from "./Play";
-import "../../ntsc/ntsc.css";
+import "../signal/ntsc.css";
 import "../nes.css";
 
 /**

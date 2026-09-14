@@ -88,6 +88,16 @@ const nextConfig: NextConfig = {
       { source: "/en", destination: "/", permanent: false },
       { source: "/en/:path*", destination: "/:path*", permanent: false },
       { source: "/6502/b", destination: "/6502/builders", permanent: true },
+      // ntsc-crt joined the NES section on 2026-09-14: the signal between the
+      // console and the television is a part of the console's story, not a
+      // project beside it. Its three pages keep their old addresses as
+      // redirects, in both languages, and exactly those three: /ntsc/wasm and
+      // the figures under /ntsc/ are files the pages still load from there.
+      ...["", "/ja"].flatMap((l) => [
+        { source: `${l}/ntsc`, destination: `${l}/nes/signal`, permanent: true },
+        { source: `${l}/ntsc/bench`, destination: `${l}/nes/signal/bench`, permanent: true },
+        { source: `${l}/ntsc/composite`, destination: `${l}/nes/signal/composite`, permanent: true },
+      ]),
       { source: "/6502/b/:handle", destination: "/6502/builders/:handle", permanent: true },
       // The third spelling the registry hands out: /b/<handle>/<slug> is a
       // published ROM's own address, served by the games origin as the console

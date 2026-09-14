@@ -129,17 +129,17 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The console from the repository running in the page: both fast chips, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
   },
-  "/ntsc": {
-    title: "ntsc-crt",
+  "/nes/signal": {
+    title: "The signal",
     description:
       "Signal-level NTSC: the composite waveform encoded, decoded and displayed through a CRT model, with a check at every stage and three spec claims that did not survive measurement.",
   },
-  "/ntsc/bench": {
+  "/nes/signal/bench": {
     title: "The ntsc bench",
     description:
       "The signal path live in the page: NES dots encoded to the composite waveform and decoded by the filter you choose, with the drift counters visible.",
   },
-  "/ntsc/composite": {
+  "/nes/signal/composite": {
     title: "Composite, terminated",
     description:
       "A real NES's composite video read off the scope into 75 ohms: the scanline, the burst, the levels beside the transcribed table, and what the unterminated probe run had flattered.",
