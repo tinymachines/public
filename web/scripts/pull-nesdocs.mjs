@@ -15,6 +15,7 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import matter from "gray-matter";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const ROOT = path.join(HERE, "..", "..");
@@ -339,7 +340,7 @@ fs.writeFileSync(
   path.join(OUT, "index.md"),
   `---
 title: The console arc's notebook
-description: Every plan and report for the NES console, grouped by the part they are about: the chips, the signal, the console and the bench.
+description: "Every plan and report for the NES console, grouped by the part they are about: the chips, the signal, the console and the bench."
 order: 30
 ---
 
@@ -372,7 +373,7 @@ fs.writeFileSync(
   path.join(OUT, "..", "cart", "index.md"),
   `---
 title: The calibration cart
-description: The calibration cartridge, from the idea of a frame that names itself to a ROM on a board in a console, with the screens it shows and the tool that reads them.
+description: "The calibration cartridge, from the idea of a frame that names itself to a ROM on a board in a console, with the screens it shows and the tool that reads them."
 order: 31
 ---
 
@@ -392,4 +393,16 @@ the checksums in the tutorial name.
 ${cartRows}
 `,
 );
+// Every page this wrote parses as the docs tree will parse it. An unquoted
+// description with a colon in it is valid-looking YAML that fails only at
+// next build's page collection, minutes into a deploy (2026-09-14).
+for (const dir of [OUT, path.join(OUT, "..", "cart")]) {
+  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".md"))) {
+    try {
+      matter(fs.readFileSync(path.join(dir, f), "utf8"));
+    } catch (e) {
+      throw new Error(`${path.relative(ROOT, path.join(dir, f))}: frontmatter does not parse: ${e.reason ?? e.message}`);
+    }
+  }
+}
 console.log(`pull-nesdocs: ${DOCS.length} documents from the sibling checkouts (${DOCS.filter((d) => d.section === "cart").length} in the cart section)`);
