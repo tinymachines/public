@@ -33,7 +33,7 @@ const OUT = path.join(ROOT, "docs", "nes");
 // A document that names one of these gets a link to it under its h1,
 // and the pull refuses to publish a link to a file it did not produce.
 const ARTEFACTS = {
-  v1b: { label: "v1b drawing package, TM-NESB-001 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-001-revI.pdf" },
+  v1b: { label: "v1b drawing package, TM-NESB-001 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-001-revJ.pdf" },
   v2b: { label: "v2b drawing package, TM-NESB-002 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-002-revA.pdf" },
   board: { label: "v2b board, top copper (SVG)", href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
   photo: { label: "v1b as built, the checks called out on the photograph (PNG)", href: "/nes/lab/board-junctions-v1b.png" },
