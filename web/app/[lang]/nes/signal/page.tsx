@@ -22,9 +22,8 @@ import "./ntsc.css";
  * only what it measured by running that repository's scanner, suite and
  * MUTATE run at a pinned commit. No number on this page is typed.
  *
- * Structure, not identity, same as hotbits: style/projects/ntsc.css turns
- * one knob (the accent) and lists every other lever commented out for the
- * owner. The page is the house kit and changes the day that file is filled.
+ * Structure, not identity: the page wears the NES section's silo
+ * (style/projects/nes.css), like every page under /nes.
  */
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {

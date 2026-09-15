@@ -63,7 +63,7 @@ projects/
     archive/        the archival drip: tools a project owns that are not routes
 style/
   tokens.css  components.css  zoo.html         the kit, shared, never forked
-  projects/6502.css  hotbits.css  ntsc.css     the silos
+  projects/6502.css  hotbits.css  nes.css      the silos
 data/projects.json                             the manifest
 ```
 
@@ -2512,8 +2512,8 @@ pull). All five are live, plus one follow-up.
   the old addresses 308 in both languages, exactly those three paths
   so the files under /ntsc/ still serve. deploy.sh checks each redirect
   lands on its own page. The signal pages now wear the NES colours
-  (`0d6b172`); style/projects/ntsc.css is applied by nothing and stays
-  for the owner.
+  (`0d6b172`); the unused style/projects/ntsc.css was then removed at
+  the owner's word.
 - **The section speaks the reader's language** (`804f56a`). Every NES
   page in both languages, the manifest and the metadata; every document
   has a title of ours with its milestone label beside it; the reports'

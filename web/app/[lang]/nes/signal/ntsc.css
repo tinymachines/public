@@ -1,6 +1,6 @@
-/* /ntsc page pieces. Every value is a token from style/tokens.css; nothing
-   is invented here, and the project's identity lives in
-   style/projects/ntsc.css, not in this file. */
+/* The signal pages' pieces. Every value is a token from style/tokens.css;
+   nothing is invented here, and the section's identity lives in
+   style/projects/nes.css, not in this file. */
 
 /* The CRT frame wears the die-imagery treatment (components.css): panel
    content photographed into the binder, framed by the kit's bezel, never
