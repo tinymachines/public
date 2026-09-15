@@ -2488,7 +2488,10 @@ docs, and the 125 pre-existing lint warnings.
 
 ## Checkpoint, 2026-09-14, the NES section in parts
 
-Live at `0d6b172`. The owner asked to rein the site in: the NES and ntsc
+Live at `2675009` (the section at `0d6b172`, then three follow-ups:
+the B and C labels dropped, `cf72fbb`; the unused ntsc silo removed,
+`b774585`; the workstation section removed from nes-bench, `f64877e`,
+and its cut from the pull). The owner asked to rein the site in: the NES and ntsc
 work had spread across five URL roots, with a 5,000-word /nes page and
 a flat notebook of forty documents linked by file name. The plan was
 five steps, one deploy each, with the owner's four calls taken as
@@ -2532,5 +2535,8 @@ and project names are capitalised by CSS, so name checks read
 textContent; and a full suite running across a deploy's restart fails
 the pages it hits in that window (thirteen docs pages did, and passed
 when rerun). The last clean full suite before the colour change was
-793 passed, 5 skipped, 0 failed; the run after it was still going at
-this checkpoint.
+793 passed, 5 skipped, 0 failed; the run after it was 815 passed,
+5 skipped, 0 failed, one flaky (the menu-at-one-x walk over 252 pages).
+The owner's open calls from this work are all settled; the workstation
+text is still in nes-bench's git history, which only a history rewrite
+would remove.
