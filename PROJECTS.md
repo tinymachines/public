@@ -2518,13 +2518,13 @@ pull). All five are live, plus one follow-up.
   page in both languages, the manifest and the metadata; every document
   has a title of ours with its milestone label beside it; the reports'
   shorthand is explained at /docs/words, linked from every pulled
-  footer. The B0 to B3 and C0 to C4 labels are ours, not the repos'.
+  footer. The B0 to B3 and C0 to C4 labels were ours and were then
+  dropped (`cf72fbb`).
 - **Two more documents are served** (`72a3a30`): nes-bench's open items
   and ntsc-crt's performance report. The open items' "The workstation"
-  section describes the host and is cut by heading with a note in its
-  place; the pull refuses if the heading disappears. The same section
-  is still public in the nes-bench repository, which is the owner's
-  call.
+  section described the host and was cut by heading with a note; the
+  owner then had it removed from nes-bench itself (`f64877e`), and the
+  cut came out of the pull with it.
 
 Specs guarding it: e2e/nes-notebook, nes-parts, nes, menu, ntsc,
 composite and signal-move. Two traps paid for twice: the site's tags

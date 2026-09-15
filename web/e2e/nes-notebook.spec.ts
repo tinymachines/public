@@ -143,9 +143,10 @@ test("the glossary exists, and every pulled document's footer links it", async (
 /**
  * Step 5 served two documents the repositories had and the site did not:
  * the bench's open items (the house rule is to say what is not covered)
- * and the signal path's performance report. The open items carry one
- * section about the host the services run on, which this site does not
- * publish; the pull cuts it by heading and says so in its place.
+ * and the signal path's performance report. The open items once carried
+ * a section about the host the services run on; it was removed from
+ * nes-bench itself on 2026-09-14, so the page shows neither it nor the
+ * note the pull used to put in its place.
  */
 test("the open items and the performance report are served, on their shelves", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -157,13 +158,14 @@ test("the open items and the performance report are served, on their shelves", a
   expect(r?.status()).toBe(200);
 });
 
-test("the open items leave out the host's section, and say so", async ({ page }) => {
+test("the open items carry no section about the host", async ({ page }) => {
   const r = await page.goto("/docs/nes/open-items", { waitUntil: "load" });
   expect(r?.status()).toBe(200);
   const text = (await page.locator("main").innerText()).replace(/\s+/g, " ");
   // Something from the bench's sections, so this cannot pass on an empty page.
   expect(text).toContain("The grabber and its driver");
-  expect(text).toContain("does not publish details of the machines behind it");
+  await expect(page.locator("main h2", { hasText: "The workstation" })).toHaveCount(0);
+  expect(text).not.toContain("does not publish details of the machines behind it");
   expect(text).not.toContain("python3.10");
   expect(text).not.toContain("user site");
 });
