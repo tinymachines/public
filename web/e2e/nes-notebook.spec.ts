@@ -105,13 +105,29 @@ test("the notebook shows each milestone label beside its title, not in it", asyn
   const coded = rows.filter((r) => r.code);
   // Every chip, signal and console milestone has one: at least N0, A0, A3, N3 x2, P0 to P3 x5, M0 to M5, N4 to N8 x8.
   expect(coded.length, "too few milestone labels in the notebook").toBeGreaterThanOrEqual(25);
-  for (const r of coded) expect(r.code, r.href).toMatch(/^(([NAPMBC][0-9]( to [NAPMBC][0-9])? (plan|report))|Sketch v[0-9.]+|Specification v[0-9.]+)\.$/);
+  for (const r of coded) expect(r.code, r.href).toMatch(/^(([NAPM][0-9]( to [NAPM][0-9])? (plan|report))|Sketch v[0-9.]+|Specification v[0-9.]+)\.$/);
+  // The bench's plan and report carry no label: "B0 to B3" was a name of
+  // ours, not the repository's, and the owner dropped it on 2026-09-14.
+  for (const href of ["/docs/nes/bench-plan", "/docs/nes/bench-report"]) {
+    const row = rows.find((r) => r.href === href);
+    expect(row, `${href} is not in the index`).toBeTruthy();
+    expect(row!.code, href).toBe("");
+  }
 
   // The same label under the page's own title.
   const one = coded.find((r) => r.href === "/docs/nes/n3-report") ?? coded[0];
   await open(page, one.href, 300);
   await expect(page.getByRole("heading", { level: 1, name: one.title })).toHaveCount(1);
   await expect(page.locator(".prose em", { hasText: `The ${one.code.replace(/\.$/, "")},` }).first()).toBeVisible();
+
+  // No B or C label under any title, the calibration plan's included.
+  for (const href of ["/docs/nes/bench-plan", "/docs/nes/bench-report", "/docs/cart/calibration-plan"]) {
+    await open(page, href, 300);
+    await expect(page.locator("h1")).toHaveCount(1);
+    // The label line is an em of its own; the bodies still name the milestones.
+    const ems = await page.locator(".prose em").allTextContents();
+    expect(ems.filter((t) => /^The [BC][0-9] to [BC][0-9] /.test(t)), href).toEqual([]);
+  }
 });
 
 test("the glossary exists, and every pulled document's footer links it", async ({ page, request }) => {
