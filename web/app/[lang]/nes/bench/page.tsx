@@ -11,7 +11,7 @@ import { Shelf } from "../Shelf";
 
 /**
  * /nes/bench: the real console and the model under the same controller
- * presses. Moved off /nes whole on 2026-09-14, with the four bench shelves
+ * presses. Moved off /nes whole on 2026-09-14, with the five bench shelves
  * of the notebook under it. The page shares its path with the bench's
  * served files (/nes/bench/*.pdf, *.svg), which are files, not routes, so
  * the two do not collide; e2e/nes-parts.spec.ts fetches both.
@@ -53,6 +53,7 @@ export default async function NesBenchPage({ params }: { params: Promise<{ lang:
         <Shelf lang={lang} group="bench-build" />
         <Shelf lang={lang} group="bench-record" />
         <Shelf lang={lang} group="bench-experiments" />
+        <Shelf lang={lang} group="bench-exercise" />
       </div>
     </Shell>
   );

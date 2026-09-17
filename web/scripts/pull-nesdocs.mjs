@@ -56,6 +56,7 @@ const GROUPS = [
   { key: "bench-build", heading: "Building the bench", intro: "The bridge as drawn and as built: schematics, parts, the pin-by-pin cheat sheet and the build guide.", ja: { heading: "ベンチを組む", intro: "図面の上のブリッジと、組み上がったブリッジ: 回路図、部品、ピンごとの早見表、組み立てガイド。" } },
   { key: "bench-record", heading: "What happened at the bench", intro: "The build, step by step with its photographs, and the running report of what each tool has shown.", ja: { heading: "ベンチで起きたこと", intro: "写真つきで一歩ずつ進んだ組み立てと、各道具が示したことの経過報告。" } },
   { key: "bench-experiments", heading: "Experiments at the bench", intro: "The real console's picture against the model's, and the cartridge the model grew so both could run the same bytes.", ja: { heading: "ベンチでの実験", intro: "実機の絵と模型の絵の比較、そして両者が同じバイトを走らせるために模型が備えたカートリッジ。" } },
+  { key: "bench-exercise", heading: "Exercising the bench", intro: "The regime that drives both stacks harder one step at a time, and the words it teaches the automation: the model tuned to the part, games learned from the pad, and the x-ray of a game's code.", ja: { heading: "ベンチを鍛える", intro: "両方のスタックを一段ずつ厳しく動かす体制と、それが自動化に教える言葉: 実機に合わせた模型、パッドから学ぶゲーム、ゲームのコードのレントゲン。" } },
 ];
 
 const DOCS = [
@@ -107,6 +108,7 @@ const DOCS = [
   { repo: "nes-bench", file: "parts.md", slug: "parts", code: null, title: "The bench's parts list", group: "bench-build", artefacts: ["v1b", "photo", "v2b"], order: 36, description: "One table per schematic sheet, and one list of everything to gather. Generated from the file that draws the schematics, so the two cannot disagree." },
   { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", code: null, title: "The lab notebook", group: "bench-record", artefacts: ["v1b", "photo"], order: 35, description: "The bench wired one step at a time, every attempt kept including the failures, each step ending in a measurement. Generated from the build tool's log." },
   { repo: "nes-bench", file: "milestone-2026-09-15-rig-and-bridge.md", slug: "milestone-rig-and-bridge", code: null, title: "The rig locked and the bridge reading right", group: "bench-record", order: 30.5, description: "Three days on the bench: the v1b bridge passes bytes into the console and reads every one back, the trigger stops the scope, the cameras are on a frame; what the plan had wrong, what the eye cannot see, and what is next." },
+  { repo: "nes-bench", file: "exercise.md", slug: "exercise", code: null, title: "Exercising the bench", group: "bench-exercise", order: 41, description: "The two stacks as one logical diagram with every flow typed, the dialect layer by layer, a regime of six steps each with its gate, and the three programmes on top: the model's knobs measured on the part, games learned from the pad to the picture, and the x-ray behind an encyclopedia of code patterns." },
   { repo: "nes-bench", file: "open-items.md", slug: "open-items", code: null, title: "What is still open", group: "bench-record", order: 35.5, description: "Everything noticed along the way that is not finished: the calibration cart's part side, where the model's hue differs from the console's, the grabber, the bench and the cartridge reader, each with why it matters and what would close it." },
 ];
 
@@ -115,7 +117,7 @@ const DOCS = [
 // and the build document's image links pointed at them.
 const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v1b-3.svg", "bench-v2.svg",
                 "bench-v2b-1.svg", "bench-v2b-2.svg", "bench-v2b-3.svg", "bench-v2b-4.svg",
-                "breadboard-v1b.svg", "wiring-v1b.svg", "wiring-v1b-build.svg", "wiring-v1b-head.svg", "logical-timing.svg", "pad-adapter.svg"];
+                "breadboard-v1b.svg", "wiring-v1b.svg", "wiring-v1b-build.svg", "wiring-v1b-head.svg", "logical-timing.svg", "pad-adapter.svg", "exercise-stack.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
