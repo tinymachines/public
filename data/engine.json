@@ -1,14 +1,14 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-13T14:03:37+00:00",
-  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "boarded_at": "2026-09-18T13:57:24+00:00",
+  "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.342",
-    "commit": "cb11716bb818d990a5e2a88643ab08a37c71b9a6",
-    "built": "2026-09-13T14:02:08+00:00",
+    "version": "v0.343",
+    "commit": "8223a7a5e486f769a4ce27e3c6707c714c749eb2",
+    "built": "2026-09-18T13:56:48+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-13T13:54:05+00:00",
+      "ran": "2026-09-18T13:55:02+00:00",
       "cargo": {
         "command": "cargo test --workspace",
         "passed": 133,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "cb11716bb818d990a5e2a88643ab08a37c71b9a6",
+  "running": "8223a7a5e486f769a4ce27e3c6707c714c749eb2",
   "worktree": {
-    "commit": "cb11716bb818d990a5e2a88643ab08a37c71b9a6",
-    "subject": "The console around the half-cycle: the Halfshot page shows the pad, the PPU, the stack page and the picture inside a window",
-    "committed": "2026-09-13T09:48:13-04:00",
+    "commit": "8223a7a5e486f769a4ce27e3c6707c714c749eb2",
+    "subject": "Halfshot shows the PPU's own line: the window's anchor is the index from the frame's start, where the pre-render line comes first",
+    "committed": "2026-09-18T09:45:58-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "c9970efdd8c0814900dedb1960140891656ba73acd60af9e342205582824e1c7",
+    "sha256": "1c202975bf04101cb1e1492744e6960659941c8b5b0f47323dda959633e7bfe5",
     "bytes": 717416,
-    "modified": "2026-09-13T13:49:30+00:00",
-    "stated": "cb11716bb818d990a5e2a88643ab08a37c71b9a6"
+    "modified": "2026-09-18T13:52:43+00:00",
+    "stated": "8223a7a5e486f769a4ce27e3c6707c714c749eb2"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.3,
+      "seconds": 0.2,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 12.6,
+      "seconds": 7.4,
       "ok": true
     }
   ]
