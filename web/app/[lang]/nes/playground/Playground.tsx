@@ -10,6 +10,7 @@ import { SlowChip } from "./SlowChip";
 import { Die } from "./Die";
 import { Twins } from "./Twins";
 import { SoundVoices } from "./SoundVoices";
+import { Tour } from "./Tour";
 import type { Taps, Xray } from "./xray";
 import type { MarioFrame } from "./mario";
 
@@ -519,6 +520,30 @@ export function Playground({
       </section>
 
       <Station
+        id="tour"
+        eyebrow="Start here"
+        title="A guided tour"
+        words={
+          <>
+            <p>
+              This page is a workshop, not a book: the pieces are in no particular order, and any of them can be poked at
+              on its own. If you would rather be shown around, this is one path through them.
+            </p>
+            <p>
+              It starts with a picture on a television and ends inside a single chip, with a line at each stop saying what
+              to look at. A bar follows you down the page while it runs, and you can leave it whenever you like.
+            </p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes", label: "The console arc's notebook, if you would rather read the record" },
+          { href: "/nes", label: "The NES section: the chips, the signal, the console and the bench" },
+        ]}
+      >
+        <Tour />
+      </Station>
+
+      <Station
         id="wire"
         eyebrow="The wire"
         title="A picture is one long wiggle"
@@ -690,34 +715,6 @@ export function Playground({
       </Station>
 
       <Station
-        id="die"
-        eyebrow="The die"
-        title="The chip itself, lit up"
-        words={
-          <>
-            <p>
-              This is the picture chip&rsquo;s own silicon: the shapes traced from photographs of a real chip with its
-              casing removed, which is where every one of these models came from in the first place. The wires that are
-              carrying a signal right now are lit, as the transistor-level chip runs in your browser.
-            </p>
-            <p>
-              Point at anything to see which wire it is. Many of them have names, given by the people who traced the
-              photographs, and those names are what the engineers&rsquo; reports talk about when they say a signal rose or
-              a latch held.
-            </p>
-            <p>The colours are the layers: the metal on top, the silicon underneath, and the switching layer between.</p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/p0-report", label: "The 2C02 at its switches (this chip, from this die data)" },
-          { href: "/docs/nes/p1-report", label: "The 2C02's first picture" },
-          { href: "/docs/words", label: "Words the reports use" },
-        ]}
-      >
-        {slowChip ? <Die /> : <p className="pg-waiting">The die needs the slow chip&rsquo;s bundle, which is not in this build.</p>}
-      </Station>
-
-      <Station
         id="slow"
         eyebrow="The slow chip"
         title="Every transistor, switching"
@@ -751,6 +748,34 @@ export function Playground({
           <p className="pg-waiting">The slow chip is not in this build: scripts/build-playground-wasm.py makes it, from the engineers&rsquo; checkout.</p>
         )}
       </Station>
+      <Station
+        id="die"
+        eyebrow="The die"
+        title="The chip itself, lit up"
+        words={
+          <>
+            <p>
+              This is the picture chip&rsquo;s own silicon: the shapes traced from photographs of a real chip with its
+              casing removed, which is where every one of these models came from in the first place. The wires that are
+              carrying a signal right now are lit, as the transistor-level chip runs in your browser.
+            </p>
+            <p>
+              Point at anything to see which wire it is. Many of them have names, given by the people who traced the
+              photographs, and those names are what the engineers&rsquo; reports talk about when they say a signal rose or
+              a latch held.
+            </p>
+            <p>The colours are the layers: the metal on top, the silicon underneath, and the switching layer between.</p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes/p0-report", label: "The 2C02 at its switches (this chip, from this die data)" },
+          { href: "/docs/nes/p1-report", label: "The 2C02's first picture" },
+          { href: "/docs/words", label: "Words the reports use" },
+        ]}
+      >
+        {slowChip ? <Die /> : <p className="pg-waiting">The die needs the slow chip&rsquo;s bundle, which is not in this build.</p>}
+      </Station>
+
     </>
   );
 }

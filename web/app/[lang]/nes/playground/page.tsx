@@ -126,34 +126,6 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
         <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
 
         <Station
-          id="arc"
-          eyebrow="How it was built"
-          title="A fortnight of afternoons"
-          words={
-            <>
-              <p>
-                The whole console, from the first sketch to a real NES wired to the model, was built in a few weeks, and
-                every step of it was written down twice: a plan saying what would be checked, and a report saying what was
-                found. This is all of it on one rail of days.
-              </p>
-              <p>
-                The shape tells the story. The television signal was finished almost at once; the two chips took a few days
-                each, once at the level of their transistors and again as fast copies that had to agree; then the console,
-                and then two weeks of building a bench out of real hardware, which is where most of the days went.
-              </p>
-              <p>Pick any stop to see what that document is about, and follow it if you want the detail.</p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes", label: "The console arc's notebook (every document, grouped)" },
-            { href: "/docs/nes/sketch", label: "The plan for the whole console, written before the code" },
-            { href: "/docs/nes/open-items", label: "What is still open" },
-          ]}
-        >
-          <Timeline data={timeline()} />
-        </Station>
-
-        <Station
           id="patterns"
           eyebrow="The encyclopedia"
           title="Tricks every game uses"
@@ -177,32 +149,6 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
           ]}
         >
           <Encyclopedia data={encyclopedia()} />
-        </Station>
-
-        <Station
-          id="museum"
-          eyebrow="The bug museum"
-          title="Every wrong turn, kept"
-          words={
-            <>
-              <p>
-                Building a machine this carefully means being wrong a lot, and catching it. The engineers keep every mistake
-                in their reports, beside the fix, instead of tidying it away. Here are some of the best.
-              </p>
-              <p>
-                Some bugs lived in the model, some in the bench wired to the real console, some in the tools, and some in
-                the measuring itself. Each plaque says what you would have seen, why it happened and how it was caught;
-                below it are the engineers&rsquo; own words, read from their reports.
-              </p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes/cartridge", label: "A real cartridge in the model" },
-            { href: "/docs/nes/bench-report", label: "What the bench's tools have shown" },
-            { href: "/docs/nes/open-items", label: "What is still open" },
-          ]}
-        >
-          <Museum exhibits={exhibits()} />
         </Station>
 
         <Station
@@ -234,6 +180,60 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
           ]}
         >
           <RealOrModel data={realModel()} />
+        </Station>
+
+        <Station
+          id="museum"
+          eyebrow="The bug museum"
+          title="Every wrong turn, kept"
+          words={
+            <>
+              <p>
+                Building a machine this carefully means being wrong a lot, and catching it. The engineers keep every mistake
+                in their reports, beside the fix, instead of tidying it away. Here are some of the best.
+              </p>
+              <p>
+                Some bugs lived in the model, some in the bench wired to the real console, some in the tools, and some in
+                the measuring itself. Each plaque says what you would have seen, why it happened and how it was caught;
+                below it are the engineers&rsquo; own words, read from their reports.
+              </p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes/cartridge", label: "A real cartridge in the model" },
+            { href: "/docs/nes/bench-report", label: "What the bench's tools have shown" },
+            { href: "/docs/nes/open-items", label: "What is still open" },
+          ]}
+        >
+          <Museum exhibits={exhibits()} />
+        </Station>
+
+        <Station
+          id="arc"
+          eyebrow="How it was built"
+          title="A fortnight of afternoons"
+          words={
+            <>
+              <p>
+                The whole console, from the first sketch to a real NES wired to the model, was built in a few weeks, and
+                every step of it was written down twice: a plan saying what would be checked, and a report saying what was
+                found. This is all of it on one rail of days.
+              </p>
+              <p>
+                The shape tells the story. The television signal was finished almost at once; the two chips took a few days
+                each, once at the level of their transistors and again as fast copies that had to agree; then the console,
+                and then two weeks of building a bench out of real hardware, which is where most of the days went.
+              </p>
+              <p>Pick any stop to see what that document is about, and follow it if you want the detail.</p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes", label: "The console arc's notebook (every document, grouped)" },
+            { href: "/docs/nes/sketch", label: "The plan for the whole console, written before the code" },
+            { href: "/docs/nes/open-items", label: "What is still open" },
+          ]}
+        >
+          <Timeline data={timeline()} />
         </Station>
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">

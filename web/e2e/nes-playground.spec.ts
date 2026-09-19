@@ -259,6 +259,36 @@ test("the die: the chip's own shapes, lit from its levels", async ({ page }) => 
   await expect(cell("level")).toHaveText(/^(high|low)$/);
 });
 
+test("the guided tour walks the stations in order and can be left", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const tour = page.locator("#tour");
+  await tour.scrollIntoViewIfNeeded();
+  const stops = tour.locator(".pg-tour-jump");
+  const n = await stops.count();
+  expect(n).toBeGreaterThanOrEqual(10);
+  await tour.getByRole("button", { name: "Start the tour" }).click();
+  const bar = page.locator(".pg-tour-bar");
+  await expect(bar).toBeVisible();
+  // Every stop is a station on this page, and the tour only goes forward.
+  let last = -1;
+  for (let i = 0; i < n; i++) {
+    await expect(bar.locator(".pg-tour-where")).toContainText(`of ${n}`);
+    const here = await page.evaluate(() => Math.round(window.scrollY));
+    expect(here).toBeGreaterThanOrEqual(last);
+    last = here;
+    const next = bar.getByRole("button", { name: "Next", exact: true });
+    if (!(await next.isEnabled())) break;
+    await next.click();
+    await page.waitForTimeout(400);
+  }
+  // It ends at the last stop, and leaving takes the bar away.
+  await expect(bar.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
+  await bar.getByRole("button", { name: "Leave the tour" }).click();
+  await expect(bar).toHaveCount(0);
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);
