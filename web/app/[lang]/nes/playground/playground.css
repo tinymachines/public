@@ -413,6 +413,86 @@
 .pg-twin-card { display: grid; gap: calc(var(--u) * 2); align-content: start; padding: calc(var(--u) * 3); background: var(--color-panel-sunk); border-radius: var(--radius-mod); }
 .pg-twin-card .pg-eyebrow { color: var(--color-mustard); }
 
+/* The bug museum. The causes take the kit's categorical hues. */
+.pg-museum { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+.pg-museum-causes { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); align-items: center; }
+.pg-museum-causes .pg-label { color: var(--color-glass-muted); }
+[data-cause="the model"] {
+  --cause: var(--color-burnt);
+}
+[data-cause="the bench"] {
+  --cause: var(--color-ocean);
+}
+[data-cause="the tools"] {
+  --cause: var(--color-forest);
+}
+[data-cause="the measuring"] {
+  --cause: var(--color-mustard);
+}
+.pg-cause {
+  font-family: var(--font-sans);
+  font-size: var(--text-fine);
+  color: var(--color-glass);
+  background: var(--color-panel-raised);
+  border: 1px solid var(--cause);
+  border-radius: var(--radius-mod);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
+  cursor: pointer;
+}
+.pg-cause b { font-family: var(--font-mono); color: var(--cause); margin-left: calc(var(--u) * 1); }
+.pg-cause[aria-pressed="true"] { background: var(--cause); color: var(--color-panel); }
+.pg-cause[aria-pressed="true"] b { color: var(--color-panel); }
+.pg-museum-hall { display: grid; gap: calc(var(--u) * 4); }
+@media (min-width: 56rem) { .pg-museum-hall { grid-template-columns: calc(var(--u) * 64) minmax(0, 1fr); align-items: start; } }
+.pg-wall { margin: 0; padding: 0; list-style: none; display: grid; gap: calc(var(--u) * 2); }
+.pg-plaque {
+  width: 100%;
+  display: grid;
+  gap: calc(var(--u) * 1);
+  text-align: left;
+  padding: calc(var(--u) * 3);
+  background: var(--color-panel-raised);
+  color: var(--color-glass);
+  border: 1px solid var(--color-rule-panel);
+  border-left: 3px solid var(--cause);
+  border-radius: var(--radius-mod);
+  cursor: pointer;
+  transition: opacity var(--t-slide) var(--ease-travel), background var(--t-snap) var(--ease-snap);
+}
+.pg-plaque:hover { background: var(--color-panel-sunk); }
+.pg-plaque[aria-pressed="true"] { background: var(--color-panel-sunk); box-shadow: 0 0 0 1px var(--cause); }
+.pg-plaque[data-dim="true"] { opacity: 0.35; }
+.pg-plaque:focus-visible,
+.pg-cause:focus-visible { outline: 2px solid var(--color-mustard); outline-offset: 2px; }
+.pg-plaque-cause { font-size: var(--text-micro); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--cause); }
+.pg-plaque-title { font-family: var(--font-display); font-size: var(--text-body); font-weight: 700; }
+.pg-case { display: grid; min-width: 0; }
+.pg-exhibit {
+  grid-area: 1 / 1;
+  display: grid;
+  gap: calc(var(--u) * 4);
+  align-content: start;
+  min-width: 0;
+  padding: calc(var(--u) * 4);
+  background: var(--color-panel-sunk);
+  border-radius: var(--radius-mod);
+  visibility: hidden;
+}
+.pg-exhibit[data-shown="true"] { visibility: visible; }
+.pg-exhibit h3 { color: var(--color-glass); font-size: var(--text-h3); }
+.pg-exhibit .pg-eyebrow { color: var(--cause); }
+.pg-exhibit-images { display: grid; gap: calc(var(--u) * 3); }
+.pg-exhibit-images[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pg-exhibit-images figure { margin: 0; display: grid; gap: calc(var(--u) * 1.5); }
+.pg-exhibit-images img { display: block; width: 100%; height: auto; border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); image-rendering: pixelated; }
+.pg-exhibit-images figcaption { font-size: var(--text-fine); color: var(--color-glass-muted); }
+.pg-exhibit-story { margin: 0; display: grid; gap: calc(var(--u) * 3); }
+.pg-exhibit-story dt { font-size: var(--text-micro); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); margin-bottom: calc(var(--u) * 1); }
+.pg-exhibit-story dd { margin: 0; font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.5; color: var(--color-glass); }
+.pg-exhibit-words { display: grid; gap: calc(var(--u) * 2); padding-top: calc(var(--u) * 3); border-top: 1px solid var(--color-rule-panel); }
+.pg-exhibit-words a { color: var(--color-mustard); }
+.pg-exhibit-words .pg-now-record > span:first-child { color: inherit; }
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {

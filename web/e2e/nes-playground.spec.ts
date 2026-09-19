@@ -101,6 +101,22 @@ test("spot the difference: one tap in one console, apart and together again", as
   await expect(st.locator('.pg-code-line[data-here="true"]')).toContainText("$4016");
 });
 
+test("the bug museum shows every exhibit with the engineers' own words", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const m = page.locator("#museum");
+  const plaques = m.locator(".pg-plaque");
+  expect(await plaques.count()).toBeGreaterThanOrEqual(6);
+  // Every passage was found in its report; none says it could not be shown.
+  await expect(m.getByText("could not be shown")).toHaveCount(0);
+  expect(await m.locator(".pg-exhibit-words .pg-now-record").count()).toBeGreaterThanOrEqual(await plaques.count());
+  // Choosing another exhibit shows it, and the station keeps its height.
+  const before = (await m.boundingBox())!.height;
+  await plaques.last().click();
+  await expect(m.locator('.pg-exhibit[data-shown="true"] h3')).toHaveText((await plaques.last().locator(".pg-plaque-title").textContent())!);
+  expect((await m.boundingBox())!.height).toBe(before);
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);

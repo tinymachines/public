@@ -7,6 +7,9 @@ import { Playground } from "./Playground";
 import { marioFrame } from "./mario";
 import { slowChip } from "./slow";
 import { marioTaps, xray } from "./xray";
+import { exhibits } from "./museum";
+import { Museum } from "./Museum";
+import { Station } from "./Playground";
 import "./playground.css";
 
 /**
@@ -96,7 +99,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "The bug museum", about: "Each wrong turn the engineers kept: the title that read GWME, the sprites that never left, the Mario who ran the wrong way. What it looked like, why it happened, how it was caught." },
   { name: "Real or model", about: "A slider across the real console's picture and the model's, from the bench's captures, with the colour differences the engineers are still chasing marked on it." },
   { name: "The sound, voice by voice", about: "Each of the 2A03's sound channels as its own trace you can mute, with the note on the chip's pin and on the speaker." },
   { name: "The encyclopedia as pictures", about: "Each code pattern (the poll, the jump engine, the status bar split) as a small animated diagram, with the engineers' entry one click behind it." },
@@ -116,6 +118,32 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
         {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
 
         <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
+
+        <Station
+          id="museum"
+          eyebrow="The bug museum"
+          title="Every wrong turn, kept"
+          words={
+            <>
+              <p>
+                Building a machine this carefully means being wrong a lot, and catching it. The engineers keep every mistake
+                in their reports, beside the fix, instead of tidying it away. Here are some of the best.
+              </p>
+              <p>
+                Some bugs lived in the model, some in the bench wired to the real console, some in the tools, and some in
+                the measuring itself. Each plaque says what you would have seen, why it happened and how it was caught;
+                below it are the engineers&rsquo; own words, read from their reports.
+              </p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes/cartridge", label: "A real cartridge in the model" },
+            { href: "/docs/nes/bench-report", label: "What the bench's tools have shown" },
+            { href: "/docs/nes/open-items", label: "What is still open" },
+          ]}
+        >
+          <Museum exhibits={exhibits()} />
+        </Station>
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">
           <div className="pg-words">
