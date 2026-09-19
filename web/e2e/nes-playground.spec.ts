@@ -238,13 +238,17 @@ test("the die: the chip's own shapes, lit from its levels", async ({ page }) => 
   // The pointer names the wire under it, from the die data's own names.
   // A point can land between wires, so a few are tried.
   const box = (await st.locator(".pg-die-canvas").boundingBox())!;
+  // The readout is written by the station's next painting, which is a pass
+  // over every pixel, so each point is waited on rather than slept past.
   let named = false;
   for (const [fx, fy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6], [0.6, 0.5]]) {
     await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy);
-    await page.waitForTimeout(400);
-    if ((await cell("wire").textContent()) !== "·") {
+    try {
+      await expect.poll(async () => (await cell("wire").textContent()) !== "·", { timeout: 6_000 }).toBe(true);
       named = true;
       break;
+    } catch {
+      // that point was between wires, or the painting was slow: try another
     }
   }
   expect(named, "no wire was named at any of the points tried").toBe(true);
