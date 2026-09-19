@@ -73,6 +73,34 @@ test("the slow chip draws, and agrees with the fast chip on every dot it draws",
   await expect(page.locator("#slow .pg-size")).toContainText("transistors");
 });
 
+test("spot the difference: one tap in one console, apart and together again", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#difference");
+  await st.scrollIntoViewIfNeeded();
+  const cell = (k: string) => st.locator(`.pg-console dd[data-k="${k}"]`);
+  // The twins run: the frame count climbs before anything is tapped, and
+  // with no tap they never differ.
+  await expect.poll(async () => Number((await cell("frame").textContent())?.replace(/\D/g, "") || "0"), { timeout: 30_000 }).toBeGreaterThan(5);
+  await expect(cell("now")).toHaveText("0");
+  await st.locator(".pg-btn-hot").click();
+  // Apart, then together again, each at a frame the console names.
+  await expect(cell("first")).toHaveText(/^\d+$/, { timeout: 20_000 });
+  await expect(cell("again")).toHaveText(/^\d+$/, { timeout: 20_000 });
+  expect(Number((await cell("most").textContent())?.replace(/\D/g, ""))).toBeGreaterThan(0);
+  // The engineers' x-ray, read from their encyclopedia: its path has steps.
+  await expect(st.locator(".pg-xray .pg-note")).toContainText(/of \d+/);
+  // The line where the tap gets in is marked on the listing, and it is the
+  // line the x-ray names as the divergence.
+  const diverge = (await st.locator(".pg-xray > .pg-now-record").first().textContent()) ?? "";
+  const at = (await st.locator(".pg-xray .pg-now-record span").first().textContent()) ?? "";
+  expect(diverge).toContain("diverge");
+  expect(at).toMatch(/^h \d+/);
+  await expect(st.locator('.pg-code-line[data-here="true"]')).toHaveCount(1);
+  await expect(st.locator('.pg-code-line[data-here="true"]')).toContainText("$4016");
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);

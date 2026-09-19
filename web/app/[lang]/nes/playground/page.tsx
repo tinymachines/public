@@ -6,6 +6,7 @@ import { Shell } from "@/app/components/SiteFrame";
 import { Playground } from "./Playground";
 import { marioFrame } from "./mario";
 import { slowChip } from "./slow";
+import { marioTaps, xray } from "./xray";
 import "./playground.css";
 
 /**
@@ -95,8 +96,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "The slow chip itself", about: "The transistor-level picture chip, run in the page on a tiny scene: watch individual switches flip as the beam passes, beside the fast chip that must agree with it." },
-  { name: "Spot the difference", about: "The x-ray's two runs of Mario side by side: one byte different on the pad, and the path through the code that forks from it. The tap in the air that the game ignores, and the jump that changes everything." },
   { name: "The bug museum", about: "Each wrong turn the engineers kept: the title that read GWME, the sprites that never left, the Mario who ran the wrong way. What it looked like, why it happened, how it was caught." },
   { name: "Real or model", about: "A slider across the real console's picture and the model's, from the bench's captures, with the colour differences the engineers are still chasing marked on it." },
   { name: "The sound, voice by voice", about: "Each of the 2A03's sound channels as its own trace you can mute, with the note on the chip's pin and on the speaker." },
@@ -116,7 +115,7 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
       <div className="pg" data-lang={lang}>
         {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
 
-        <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} />
+        <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">
           <div className="pg-words">

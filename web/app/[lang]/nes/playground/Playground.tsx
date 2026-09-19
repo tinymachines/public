@@ -7,6 +7,8 @@ import { Colours } from "./Colours";
 import { MarioMap } from "./MarioMap";
 import { PadRegister } from "./PadRegister";
 import { SlowChip } from "./SlowChip";
+import { Twins } from "./Twins";
+import type { Taps, Xray } from "./xray";
 import type { MarioFrame } from "./mario";
 
 /**
@@ -104,7 +106,19 @@ export interface Selection {
   serial: number;
 }
 
-export function Playground({ mario, framePeriodMs, slowChip }: { mario: MarioFrame; framePeriodMs: number; slowChip: string | null }) {
+export function Playground({
+  mario,
+  framePeriodMs,
+  slowChip,
+  xray,
+  taps,
+}: {
+  mario: MarioFrame;
+  framePeriodMs: number;
+  slowChip: string | null;
+  xray: Xray;
+  taps: Taps;
+}) {
   const engine = useRef<Engine | null>(null);
   const [shape, setShape] = useState<Shape | null>(null);
   const [palette, setPalette] = useState<Palette | null>(null);
@@ -604,6 +618,40 @@ export function Playground({ mario, framePeriodMs, slowChip }: { mario: MarioFra
         ]}
       >
         <PadRegister bits={pad} onChange={setTouchPad} />
+      </Station>
+
+      <Station
+        id="difference"
+        eyebrow="Spot the difference"
+        title="One button, one frame"
+        words={
+          <>
+            <p>
+              Two consoles, the same cartridge, the same buttons, frame for frame. They are the same machine running the
+              same program, so their pictures are the same. Now tap one button, for one frame, in one of them only.
+            </p>
+            <p>
+              Whatever differs from then on is that tap&rsquo;s doing, and nothing else&rsquo;s. Sometimes the two
+              pictures come back together a moment later; sometimes they never do. This is how the engineers find out what
+              a game does with a button, with no source code at all: they run it twice and look for the difference.
+            </p>
+            <p>
+              On the calibration cartridge the buttons are printed in its strip of black and white blocks, two frames after
+              they were read. Watch for the block that lights, and how long it stays.
+            </p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes/encyclopedia", label: "The encyclopedia of code patterns (entry one, the x-ray below)" },
+          { href: "/docs/nes/mario-dissection", label: "Super Mario Bros., dissected (from the pad to the jump)" },
+          { href: "/docs/nes/exercise", label: "The exercise notebook: how the x-ray works" },
+        ]}
+      >
+        {s ? (
+          <Twins shape={s} palette={lut} framePeriodMs={framePeriodMs} xray={xray} taps={taps} />
+        ) : (
+          <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>
+        )}
       </Station>
 
       <Station
