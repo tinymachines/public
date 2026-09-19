@@ -237,12 +237,16 @@ test("the die: the chip's own shapes, lit from its levels", async ({ page }) => 
   await expect.poll(async () => Number((await cell("steps").textContent())?.replace(/\D/g, "") || "0"), { timeout: 30_000 }).toBeGreaterThan(714_000);
   // The pointer names the wire under it, from the die data's own names.
   // A point can land between wires, so a few are tried.
-  const box = (await st.locator(".pg-die-canvas").boundingBox())!;
+  // The box is read again before every move: the stations above this one
+  // settle as their pictures arrive, and a box read once goes stale.
   // The readout is written by the station's next painting, which is a pass
   // over every pixel, so each point is waited on rather than slept past.
+  const die = st.locator(".pg-die-canvas");
   let named = false;
   for (const [fx, fy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6], [0.6, 0.5]]) {
+    const box = (await die.boundingBox())!;
     await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy);
+    await page.mouse.move(box.x + box.width * fx + 1, box.y + box.height * fy + 1);
     try {
       await expect.poll(async () => (await cell("wire").textContent()) !== "·", { timeout: 6_000 }).toBe(true);
       named = true;
