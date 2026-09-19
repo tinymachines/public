@@ -592,6 +592,59 @@
 .enc-op { fill: var(--color-mustard); font-family: var(--font-mono); font-size: 11px; }
 .enc-step { fill: var(--color-glass); font-family: var(--font-mono); font-size: 11px; }
 
+/* How it was built: the arc on one rail of days. */
+.pg-time { display: grid; gap: calc(var(--u) * 3); min-width: 0; }
+/* The axis has one column a day and the labels are wider than a day, so
+   every column is allowed to be narrower than its text and only some of
+   the labels are shown. Without minmax(0, 1fr) the widest label sets the
+   column, and eighteen of those scroll a phone sideways. */
+/* overflow hidden because a label is wider than its day: the text paints
+   past the column, and painted overflow scrolls the page sideways even
+   though no box does (measured on a 390px phone). */
+.pg-time-axis { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin-left: calc(var(--u) * 42); overflow: hidden; }
+.pg-time-axis span { min-width: 0; font-family: var(--font-sans); font-size: var(--text-micro); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); white-space: nowrap; visibility: hidden; }
+.pg-time-axis span[data-show="true"] { visibility: visible; }
+.pg-time-axis span:last-child { text-align: right; }
+.pg-time-lanes { margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; background: var(--color-rule-panel); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); overflow: hidden; }
+.pg-time-lane { display: grid; grid-template-columns: calc(var(--u) * 42) minmax(0, 1fr); align-items: stretch; background: var(--color-panel-sunk); }
+.pg-time-lane[data-lane="0"] {
+  --lane: var(--color-mustard);
+}
+.pg-time-lane[data-lane="1"] {
+  --lane: var(--color-ocean);
+}
+.pg-time-lane[data-lane="2"] {
+  --lane: var(--color-forest);
+}
+.pg-time-lane[data-lane="3"] {
+  --lane: var(--color-burnt);
+}
+.pg-time-name { padding: calc(var(--u) * 2) calc(var(--u) * 3); font-family: var(--font-sans); font-size: var(--text-fine); color: var(--color-glass); border-left: 3px solid var(--lane); }
+.pg-time-rail { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1px; padding: calc(var(--u) * 1.5) 0; }
+.pg-time-day { min-height: calc(var(--u) * 6); padding: 0; background: var(--lane); border: 0; border-radius: var(--radius-hair); cursor: pointer; }
+.pg-time-day:disabled { background: var(--color-panel); cursor: default; }
+.pg-time-day:not(:disabled):hover { box-shadow: inset 0 0 0 2px var(--color-glass); }
+.pg-time-day[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--color-glass); }
+.pg-time-day:focus-visible { outline: 2px solid var(--color-mustard); outline-offset: 1px; }
+.pg-time-list { margin: 0; padding: 0; list-style: none; display: grid; gap: calc(var(--u) * 3); }
+.pg-time-list li { display: grid; gap: calc(var(--u) * 1); }
+.pg-time-list a { font-family: var(--font-display); font-size: var(--text-body); font-weight: 700; }
+.pg-time-code { font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-mustard); }
+.pg-time-panel { display: grid; gap: calc(var(--u) * 2); align-content: start; height: calc(var(--u) * 40); overflow-y: auto; padding: calc(var(--u) * 3); background: var(--color-panel-sunk); border-radius: var(--radius-mod); }
+.pg-time-panel h3 { color: var(--color-glass); font-size: var(--text-h3); }
+.pg-time-panel a { color: var(--color-mustard); }
+.pg-time-what { font-family: var(--font-serif); font-size: var(--text-body); line-height: 1.5; color: var(--color-glass); }
+@media (max-width: 40rem) {
+  .pg-time-axis { margin-left: calc(var(--u) * 26); }
+  /* On a phone only the ends are named: the rest would sit on each other. */
+  .pg-time-axis span[data-show="true"] { visibility: hidden; }
+  .pg-time-axis span:first-child,
+  .pg-time-axis span:last-child { visibility: visible; }
+  .pg-time-axis span:last-child { text-align: right; }
+  .pg-time-lane { grid-template-columns: calc(var(--u) * 26) minmax(0, 1fr); }
+  .pg-time-name { font-size: var(--text-micro); }
+}
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {

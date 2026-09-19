@@ -46,6 +46,13 @@ export function shelf(key: string): Shelf {
   return g;
 }
 
+/** Every group, in the order the pull writes them. */
+export function allShelves(): Shelf[] {
+  const gs = read().groups;
+  if (!gs.length) throw new Error("docs/nes/shelves.json has no groups");
+  return gs;
+}
+
 /** The calibration cart's documents. */
 export function cartShelf(): ShelfDoc[] {
   const docs = read().cart;

@@ -9,6 +9,8 @@ import { slowChip } from "./slow";
 import { marioTaps, xray } from "./xray";
 import { exhibits } from "./exhibits";
 import { encyclopedia } from "./encyclopedia";
+import { timeline } from "./timeline";
+import { Timeline } from "./Timeline";
 import { Encyclopedia } from "./Encyclopedia";
 import { Museum } from "./Museum";
 import { realModel } from "./realmodel";
@@ -103,7 +105,11 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "How it was built", about: "The whole arc as a timeline: every plan and report, which part of the machine it is about, and what it proved, for a reader who wants the story before the detail." },
+  { name: "The die, lit", about: "The picture chip's own photographed silicon on screen, its wires lit as the slow chip runs: the same view the people who read these chips work in, over our own running model." },
+  { name: "Write a program", about: "A few lines of the processor's own instructions, typed in the page and run on the chip, with the registers and the picture answering: the smallest possible first program for someone who has never written one." },
+  { name: "Your own game, x-rayed", about: "The twin consoles taken further: load a cartridge from your disk, tap a button, and get the frames and the dots that changed, the way the engineers' x-ray reports a run." },
+  { name: "A guided tour", about: "One path through these stations, in order, with a sentence between each: twenty minutes from a television picture to a transistor for a reader who does not know where to start." },
+  { name: "The bench, photographed", about: "The real console, the bridge and the cameras on their frame, labelled: what each piece is for, beside the engineers' own photographs from the lab notebook." },
 ] as const;
 
 export default async function Page({ params }: { params: Promise<{ lang: Lang }> }) {
@@ -119,6 +125,34 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
         {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
 
         <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
+
+        <Station
+          id="arc"
+          eyebrow="How it was built"
+          title="A fortnight of afternoons"
+          words={
+            <>
+              <p>
+                The whole console, from the first sketch to a real NES wired to the model, was built in a few weeks, and
+                every step of it was written down twice: a plan saying what would be checked, and a report saying what was
+                found. This is all of it on one rail of days.
+              </p>
+              <p>
+                The shape tells the story. The television signal was finished almost at once; the two chips took a few days
+                each, once at the level of their transistors and again as fast copies that had to agree; then the console,
+                and then two weeks of building a bench out of real hardware, which is where most of the days went.
+              </p>
+              <p>Pick any stop to see what that document is about, and follow it if you want the detail.</p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes", label: "The console arc's notebook (every document, grouped)" },
+            { href: "/docs/nes/sketch", label: "The plan for the whole console, written before the code" },
+            { href: "/docs/nes/open-items", label: "What is still open" },
+          ]}
+        >
+          <Timeline data={timeline()} />
+        </Station>
 
         <Station
           id="patterns"

@@ -200,6 +200,28 @@ test("the encyclopedia's pictures: one per entry, with the entry's own words", a
   expect((await st.boundingBox())!.height).toBe(h);
 });
 
+test("how it was built: every dated document on the rail, and its day opens it", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#arc");
+  await st.scrollIntoViewIfNeeded();
+  // A lane per group the notebook shelves, and days that hold something.
+  expect(await st.locator(".pg-time-lane").count()).toBeGreaterThanOrEqual(5);
+  const days = st.locator(".pg-time-day:not([disabled])");
+  expect(await days.count()).toBeGreaterThan(10);
+  // Every day that holds something opens it: a heading, a link into the
+  // notebook, and the station keeps its height.
+  const h = (await st.boundingBox())!.height;
+  for (const i of [0, Math.floor((await days.count()) / 2), (await days.count()) - 1]) {
+    await days.nth(i).click();
+    await expect(st.locator(".pg-time-list li").first()).toBeVisible();
+    await expect(st.locator(".pg-time-list a").first()).toHaveAttribute("href", /^\/docs\/(nes|cart)\//);
+    expect((await st.boundingBox())!.height).toBe(h);
+  }
+  // The documents with no date in their text are named, not hidden.
+  await expect(st.locator(".pg-note").last()).toContainText("no date in their");
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);
