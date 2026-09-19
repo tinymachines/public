@@ -1,0 +1,36 @@
+# The playground's sound station: the engineers' fast 2A03 sound unit
+# (v2a03-micro's APU, its tables measured out of the switch-level chip)
+# and their two DACs (v2a03-dac, authored from the nesdev wiki and
+# labelled so), behind wasm-bindgen. MIT code; the tables are recorded at
+# build time from the sibling 2a03 checkout's fetched die data (NC-SA), so
+# every build is served, never committed: scripts/build-playground-wasm.py
+# puts it in web/public/nes/voices/ (gitignored) after refusing a 2a03
+# checkout that is dirty or not at data/nes.json's commit.
+[package]
+name = "apuvoices"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+v2a03-micro = { path = "../../../2a03/crates/v2a03-micro" }
+v2a03-dac = { path = "../../../2a03/crates/v2a03-dac" }
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+
+# v2a03-micro's build script runs the switch-level chip to record its
+# tables; the same override 2a03's own workspace sets.
+[profile.release.build-override]
+opt-level = 3
+
+[profile.dev.build-override]
+opt-level = 3

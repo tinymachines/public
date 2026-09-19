@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * Whether this build carries the slow chip: scripts/build-slowppu.py
+ * Whether this build carries the slow chip: scripts/build-playground-wasm.py
  * writes data/slowppu.json when it puts the bundle in web/public/nes/slow/
  * (never committed, the netlist inside is NC-SA). The station says so
  * rather than loading a worker that would find nothing. Returns the

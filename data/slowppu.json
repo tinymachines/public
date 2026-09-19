@@ -1,5 +1,5 @@
 {
-  "note": "Written only by scripts/build-slowppu.py. The slow chip for /nes/playground: wasm/slowppu built against the 2c02 checkout at this commit, after its native suite passed. The files in web/public/nes/slow/ must hash to these values and are never committed (the netlist inside is NC-SA).",
+  "note": "Written only by scripts/build-playground-wasm.py. The slow chip for /nes/playground: wasm/slowppu built against the 2c02 checkout at this commit, after its native suite passed. The files in web/public/nes/slow/ must hash to these values and are never committed (what the chip was measured from is NC-SA).",
   "repo": "https://github.com/tinymachines/2c02",
   "commit": "0062d6584d14adaad5950c0a59c8b58493718135",
   "built_on": "2026-09-19",

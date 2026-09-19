@@ -119,7 +119,9 @@ web/public/nes/bench/*.png
 web/public/nes/bench/*.pdf
 web/public/nes/bench/fab/
 
-# The playground's slow chip, built by scripts/build-slowppu.py from the
-# 2c02 checkout: the switch-level netlist inside is NC-SA, so the bundle
-# is served and never committed (data/slowppu.json records its hashes).
+# The playground's bundles, built by scripts/build-playground-wasm.py from
+# the 2c02 and 2a03 checkouts: what the chips were measured from is NC-SA,
+# so the bundles are served and never committed (data/slowppu.json and
+# data/apuvoices.json record their hashes).
 web/public/nes/slow/
+web/public/nes/voices/

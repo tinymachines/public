@@ -8,6 +8,7 @@ import { MarioMap } from "./MarioMap";
 import { PadRegister } from "./PadRegister";
 import { SlowChip } from "./SlowChip";
 import { Twins } from "./Twins";
+import { SoundVoices } from "./SoundVoices";
 import type { Taps, Xray } from "./xray";
 import type { MarioFrame } from "./mario";
 
@@ -655,6 +656,39 @@ export function Playground({
       </Station>
 
       <Station
+        id="sound"
+        eyebrow="The sound"
+        title="Five voices, one chip"
+        words={
+          <>
+            <p>
+              All the NES&rsquo;s music comes from five voices inside the processor chip: two squares, a triangle, a
+              noise maker and a player for recorded samples. A game makes music by writing a few numbers into the chip
+              every so often: which note, how loud, what shape.
+            </p>
+            <p>
+              Here you write those numbers by pressing keys. This is the engineers&rsquo; model of the sound hardware,
+              built from measurements of the real chip&rsquo;s transistors, playing in your browser. Each voice is drawn as
+              the chip produces it, and its pitch is measured from that drawing, not assumed.
+            </p>
+            <p>
+              Mute a voice and listen to the others change slightly: the chip does not simply add its voices together.
+              That mixing is written from the NES community&rsquo;s published table, and the engineers mark it as a claim
+              they have not yet measured on their own console. The steady offset the chip&rsquo;s pins sit at is taken out
+              before your speakers.
+            </p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes/a3-report", label: "First sound from the 2A03 (the mixer, a labelled claim)" },
+          { href: "/docs/nes/n3-report", label: "The fast 2A03: the sound tables measured out of the chip" },
+          { href: "/docs/nes/n7-report", label: "The console's sound, through the board's audio stage" },
+        ]}
+      >
+        <SoundVoices halfCyclesPerFrame={shown?.halfCycles ?? null} framePeriodMs={framePeriodMs} />
+      </Station>
+
+      <Station
         id="slow"
         eyebrow="The slow chip"
         title="Every transistor, switching"
@@ -685,7 +719,7 @@ export function Playground({
         {slowChip ? (
           <SlowChip palette={lut} framePeriodMs={framePeriodMs} />
         ) : (
-          <p className="pg-waiting">The slow chip is not in this build: scripts/build-slowppu.py makes it, from the engineers&rsquo; checkout.</p>
+          <p className="pg-waiting">The slow chip is not in this build: scripts/build-playground-wasm.py makes it, from the engineers&rsquo; checkout.</p>
         )}
       </Station>
     </>

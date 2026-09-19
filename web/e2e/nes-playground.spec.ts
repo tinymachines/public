@@ -145,6 +145,31 @@ test("real or model: the panels are cut from the figure, and the model's cyan me
   }
 });
 
+test("the sound: a key pressed plays at its pitch, measured off the chip's own trace", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#sound");
+  await st.scrollIntoViewIfNeeded();
+  await st.getByRole("button", { name: "Turn the sound on" }).click({ timeout: 30_000 });
+  const pitch = (k: string) => st.locator(`dd[data-k="pitch-${k}"]`);
+  await expect(pitch("sq0")).toHaveText("silent", { timeout: 20_000 });
+  // A above middle C on the first square, and on the triangle: equal
+  // temperament's 440, played through the chip's dividers on the clock
+  // the console reports. Measured from the traces, within one percent.
+  for (const k of ["sq0", "tri"]) {
+    const name = k === "sq0" ? "Square one: A" : "Triangle: A";
+    await st.getByRole("button", { name, exact: true }).click();
+    await expect(pitch(k)).toHaveText(/^\d+\.\d Hz$/, { timeout: 20_000 });
+    const hz = Number((await pitch(k).textContent())!.split(" ")[0]);
+    expect(Math.abs(hz - 440) / 440).toBeLessThan(0.01);
+  }
+  // Muting at the DAC does not stop the voice: its trace still runs.
+  await st.locator(".pg-voice-mute").first().click();
+  await page.waitForTimeout(500);
+  await expect(pitch("sq0")).toHaveText(/Hz$/);
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);

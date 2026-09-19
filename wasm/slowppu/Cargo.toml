@@ -3,7 +3,7 @@
 # is MIT. The chip it embeds is built from the sibling 2c02 checkout's
 # fetched die data (Quietust's Visual 2C02, NC-SA), so every build of this
 # crate is NC-SA-derived and is served, never committed: the output goes
-# to web/public/nes/slow/ (gitignored) by scripts/build-slowppu.py, which
+# to web/public/nes/slow/ (gitignored) by scripts/build-playground-wasm.py, which
 # refuses a 2c02 checkout that is dirty or not at data/nes.json's commit.
 [package]
 name = "slowppu"

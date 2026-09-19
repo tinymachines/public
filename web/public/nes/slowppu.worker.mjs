@@ -1,6 +1,6 @@
 /**
  * The slow chip, on a thread of its own: the engineers' switch-level 2C02
- * (wasm/slowppu, built by scripts/build-slowppu.py into ./slow/, never
+ * (wasm/slowppu, built by scripts/build-playground-wasm.py into ./slow/, never
  * committed because the netlist inside is NC-SA) stepped for as long as
  * the page allows each time it asks.
  *

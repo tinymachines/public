@@ -101,7 +101,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "The sound, voice by voice", about: "Each of the 2A03's sound channels as its own trace you can mute, with the note on the chip's pin and on the speaker." },
   { name: "The encyclopedia as pictures", about: "Each code pattern (the poll, the jump engine, the status bar split) as a small animated diagram, with the engineers' entry one click behind it." },
   { name: "How it was built", about: "The whole arc as a timeline: every plan and report, which part of the machine it is about, and what it proved, for a reader who wants the story before the detail." },
 ] as const;
