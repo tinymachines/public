@@ -493,6 +493,19 @@
 .pg-exhibit-words a { color: var(--color-mustard); }
 .pg-exhibit-words .pg-now-record > span:first-child { color: inherit; }
 
+/* Real or model. */
+.pg-rom { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+.pg-rom-stage { position: relative; width: 100%; background: var(--color-panel-sunk); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); overflow: hidden; }
+.pg-rom-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.pg-rom-under { height: calc(var(--u) * 10); display: flex; align-items: center; }
+.pg-rom-chip { display: inline-block; width: calc(var(--u) * 2.5); height: calc(var(--u) * 2.5); margin-right: calc(var(--u) * 1.5); vertical-align: -1px; border: 1px solid var(--color-rule-panel); border-radius: var(--radius-hair); background: var(--color-panel); }
+.pg-rom-record { display: grid; gap: calc(var(--u) * 3); padding-top: calc(var(--u) * 3); border-top: 1px solid var(--color-rule-panel); }
+.pg-rom-table { display: grid; gap: 1px; background: var(--color-rule-panel); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); overflow-x: auto; }
+.pg-rom-tr { display: grid; grid-template-columns: minmax(calc(var(--u) * 40), 1.4fr) repeat(3, minmax(calc(var(--u) * 24), 1fr)); gap: 1px; }
+.pg-rom-tr span { padding: calc(var(--u) * 2) calc(var(--u) * 3); background: var(--color-panel-sunk); font-family: var(--font-mono); font-size: var(--text-fine); font-variant-numeric: tabular-nums; color: var(--color-glass); }
+.pg-rom-th span { font-family: var(--font-sans); font-size: var(--text-micro); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); }
+.pg-rom-words { color: var(--color-glass-muted); }
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {

@@ -117,6 +117,34 @@ test("the bug museum shows every exhibit with the engineers' own words", async (
   expect((await m.boundingBox())!.height).toBe(before);
 });
 
+test("real or model: the panels are cut from the figure, and the model's cyan measures apart", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#real");
+  await st.scrollIntoViewIfNeeded();
+  const c = st.locator(".pg-rom-canvas");
+  await expect(c).toHaveCount(1, { timeout: 20_000 });
+  const box = (await c.boundingBox())!;
+  // The left stroke of the D in DUCK: model on the left, the scope's
+  // record on the right, as the station opens. The engineers measured
+  // the model's cyan twelve to fourteen degrees off; the probe must see
+  // a real gap there, and none on the black beside it.
+  await page.mouse.move(box.x + box.width * 0.21, box.y + box.height * 0.58);
+  const hueCell = st.locator('.pg-console dd[data-k="hue"]');
+  await expect(hueCell).toHaveText(/^\d+ degrees$/);
+  const deg = Number((await hueCell.textContent())!.split(" ")[0]);
+  expect(deg).toBeGreaterThan(4);
+  expect(deg).toBeLessThan(40);
+  await page.mouse.move(box.x + box.width * 0.05, box.y + box.height * 0.95);
+  await expect(hueCell).toHaveText("too grey to say");
+  // Changing how the two are compared moves nothing.
+  const h = (await st.boundingBox())!.height;
+  for (const m of ["Blink", "Difference", "Wipe"]) {
+    await st.locator(".pg-segbtn", { hasText: m }).click();
+    expect((await st.boundingBox())!.height).toBe(h);
+  }
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);

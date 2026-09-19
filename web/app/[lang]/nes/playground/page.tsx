@@ -7,8 +7,10 @@ import { Playground } from "./Playground";
 import { marioFrame } from "./mario";
 import { slowChip } from "./slow";
 import { marioTaps, xray } from "./xray";
-import { exhibits } from "./museum";
+import { exhibits } from "./exhibits";
 import { Museum } from "./Museum";
+import { realModel } from "./realmodel";
+import { RealOrModel } from "./RealOrModel";
 import { Station } from "./Playground";
 import "./playground.css";
 
@@ -99,7 +101,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "Real or model", about: "A slider across the real console's picture and the model's, from the bench's captures, with the colour differences the engineers are still chasing marked on it." },
   { name: "The sound, voice by voice", about: "Each of the 2A03's sound channels as its own trace you can mute, with the note on the chip's pin and on the speaker." },
   { name: "The encyclopedia as pictures", about: "Each code pattern (the poll, the jump engine, the status bar split) as a small animated diagram, with the engineers' entry one click behind it." },
   { name: "How it was built", about: "The whole arc as a timeline: every plan and report, which part of the machine it is about, and what it proved, for a reader who wants the story before the detail." },
@@ -143,6 +144,37 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
           ]}
         >
           <Museum exhibits={exhibits()} />
+        </Station>
+
+        <Station
+          id="real"
+          eyebrow="Real or model"
+          title="The same screen, three ways"
+          words={
+            <>
+              <p>
+                The engineers put a real NES and their model side by side on the same cartridge&rsquo;s title screen, and
+                looked at the real one twice: once through a laboratory scope decoded by their own software, once through a
+                cheap USB video grabber. Two different eyes on one real signal, and the model beside them.
+              </p>
+              <p>
+                The two real pictures agree closely. The model agrees on almost everything, but some colours are off: its
+                cyan is a little bluer, its brown a little warmer. Slide, blink or subtract to see it, and point at a colour
+                to measure it yourself.
+              </p>
+              <p>
+                The engineers tracked it down. The real chip&rsquo;s output slows down on its brighter colours, and that
+                shifts their hue; the model&rsquo;s signal is too perfect to do it. Teaching the model that imperfection is
+                still on their list.
+              </p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes/eyes-vs-scope", label: "Eyes versus scope (where these pictures and figures come from)" },
+            { href: "/docs/nes/open-items", label: "What is still open (the model's hue)" },
+          ]}
+        >
+          <RealOrModel data={realModel()} />
         </Station>
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">

@@ -140,7 +140,7 @@ function pngSize(file: string): { width: number; height: number } | null {
 }
 
 /** The paragraph or list item that contains `anchor`, as one line. */
-function passage(md: string, anchor: string): string | null {
+export function passage(md: string, anchor: string): string | null {
   // The words as written, wherever the source wraps its lines.
   const words = anchor.split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
   const m = new RegExp(words.join("\\s+")).exec(md);

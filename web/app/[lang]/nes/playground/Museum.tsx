@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Cause, Exhibit } from "./museum";
+import type { Cause, Exhibit } from "./exhibits";
 
 /**
  * The bug museum: a wall of exhibits, and one case that shows the chosen
