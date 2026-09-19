@@ -323,17 +323,29 @@ done
 # one endpoint came back 000 and the deploy reported a failure that was really
 # a stopwatch. Polling makes the outcome depend on the service rather than on
 # how fast this box happens to be today.
+#
+# The limit is a deadline in seconds, not a count of tries. It was 60 tries of
+# half a second, about 30 s, and on 2026-09-19 `next start` took about 50 s to
+# answer (the process sat in disk wait with the disk 98% full): the deploy
+# failed at this stage with a healthy build and a service that came up a
+# moment later, and stages 6 to 10, the push among them, never ran.
+# TM_START_WAIT overrides the deadline. The wait prints how long it took, so
+# a slow start shows before it becomes a failed one, and it gives up at once
+# if the unit stops being active, rather than waiting out a crash.
+START_WAIT=${TM_START_WAIT:-180}
 wait_for() {
-  local name=$1 port=$2 tries=60
-  while [ "$tries" -gt 0 ]; do
+  local name=$1 port=$2 started=$SECONDS
+  while [ $((SECONDS - started)) -lt "$START_WAIT" ]; do
     if curl -sf -o /dev/null -m 2 "http://127.0.0.1:$port/" 2>/dev/null; then
-      printf '  %-20s listening on %s\n' "$name" "$port"
+      printf '  %-20s listening on %s after %ss\n' "$name" "$port" $((SECONDS - started))
       return 0
     fi
-    tries=$((tries - 1))
+    local state
+    state=$(systemctl is-active "$name" || true)
+    [ "$state" = "active" ] || fail "$name went $state while waiting for it to answer on 127.0.0.1:$port"
     sleep 0.5
   done
-  fail "$name never answered on 127.0.0.1:$port"
+  fail "$name never answered on 127.0.0.1:$port within ${START_WAIT}s (TM_START_WAIT raises it)"
 }
 
 for unit in tinymachines-web tinymachines-api; do
