@@ -149,8 +149,42 @@
 .pg-check { display: inline-flex; gap: calc(var(--u) * 2); align-items: center; font-size: var(--text-fine); color: var(--color-glass-muted); }
 .pg-check input { accent-color: var(--color-mustard); }
 .pg-scrub { width: 100%; accent-color: var(--color-mustard); }
-.pg-readout { font-family: var(--font-mono); font-size: var(--text-data); line-height: var(--leading-data); color: var(--color-glass); min-height: 3em; }
+.pg-readout { font-family: var(--font-mono); font-size: var(--text-data); line-height: var(--leading-data); color: var(--color-glass); min-height: 3lh; }
 .pg-hero .pg-label { color: var(--color-glass-muted); }
+
+/* The hero's console: fixed labels over fixed cells, so a value changing
+   never moves anything. Each cell is one line tall and clips rather than
+   wraps; the numbers are tabular so digits do not shuffle. */
+.pg-console {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--color-rule-panel);
+  border: 1px solid var(--color-rule-panel);
+  border-radius: var(--radius-mod);
+  overflow: hidden;
+}
+.pg-console > div { display: grid; gap: calc(var(--u) * 1); padding: calc(var(--u) * 2) calc(var(--u) * 3); background: var(--color-panel-sunk); min-width: 0; }
+.pg-console dt {
+  font-family: var(--font-sans);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-glass-muted);
+}
+.pg-console dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-data);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-data);
+  color: var(--color-mustard);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.pg-carts .pg-note { min-height: 3lh; }
 .pg-file { position: relative; overflow: hidden; display: inline-block; justify-self: start; font-size: var(--text-fine); }
 .pg-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
@@ -203,6 +237,7 @@
 .pg-instrument .pg-note { color: var(--color-glass-muted); }
 .pg-instr-h { font-family: var(--font-display); font-size: var(--text-lead); font-weight: 700; }
 .pg-instr-h span { font-family: var(--font-sans); font-size: var(--text-body); font-weight: 400; color: var(--color-glass-muted); }
+.pg-lens { background: var(--color-panel-sunk); }
 .pg-trace,
 .pg-lens { display: block; width: 100%; border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); cursor: crosshair; touch-action: pan-y; }
 .pg-wire,
@@ -238,7 +273,8 @@
 .pg-clock-on { stroke: var(--color-glass); stroke-width: 1.5; }
 
 /* Mario. */
-.pg-now { display: grid; gap: calc(var(--u) * 2); padding: calc(var(--u) * 3); background: var(--color-panel-sunk); border-radius: var(--radius-mod); min-height: calc(var(--u) * 32); align-content: start; }
+/* A fixed box: the caption changes as the beam moves, the box does not. */
+.pg-now { display: grid; gap: calc(var(--u) * 2); padding: calc(var(--u) * 3); background: var(--color-panel-sunk); border-radius: var(--radius-mod); height: calc(var(--u) * 44); overflow-y: auto; align-content: start; }
 .pg-now-h { font-family: var(--font-mono); font-size: var(--text-data); display: flex; gap: calc(var(--u) * 2); align-items: center; }
 .pg-now-plain { font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.5; }
 .pg-now-record { font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-glass-muted); line-height: var(--leading-data); }
@@ -294,6 +330,24 @@
 .pg-shift-wire span { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--color-rule-panel); }
 .pg-shift-wire[data-live="true"] span { background: var(--color-mustard); animation: pg-pulse 700ms var(--ease-travel) infinite; }
 @keyframes pg-pulse { 0% { opacity: 1; } 60% { opacity: 0.25; } 100% { opacity: 1; } }
+
+/* The slow chip. */
+.pg-slow { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+.pg-slow-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--u) * 3); }
+.pg-slow-fig { margin: 0; display: grid; gap: calc(var(--u) * 2); }
+.pg-slow-fig figcaption { font-size: var(--text-fine); color: var(--color-glass-muted); }
+.pg-slow-canvas { display: block; width: 100%; aspect-ratio: 256 / 240; image-rendering: pixelated; background: var(--color-panel-sunk); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); }
+.pg-size { flex: 1; min-width: 0; }
+.pg-console-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 40rem) { .pg-console-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pg-lamps { display: grid; gap: calc(var(--u) * 2); padding: calc(var(--u) * 3); background: var(--color-panel-sunk); border-radius: var(--radius-mod); }
+.pg-lamp-row { display: grid; grid-template-columns: calc(var(--u) * 28) minmax(0, 1fr) calc(var(--u) * 12); gap: calc(var(--u) * 3); align-items: center; }
+.pg-lamp-label { font-size: var(--text-micro); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-glass-muted); }
+.pg-lamp-set { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.5); align-items: center; }
+.pg-lamp { display: inline-block; width: calc(var(--u) * 3); height: calc(var(--u) * 3); border-radius: 50%; background: var(--color-panel-raised); border: 1px solid var(--color-rule-panel); }
+.pg-lamp[data-on="true"] { background: var(--color-mustard); border-color: var(--color-mustard); box-shadow: 0 0 6px var(--color-mustard); }
+.pg-lamp-named { display: inline-flex; gap: calc(var(--u) * 1); align-items: center; font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-glass-muted); margin-right: calc(var(--u) * 2); }
+.pg-lamp-value { font-family: var(--font-mono); font-size: var(--text-data); font-variant-numeric: tabular-nums; color: var(--color-glass); text-align: right; }
 
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }

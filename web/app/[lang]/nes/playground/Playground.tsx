@@ -6,6 +6,7 @@ import { Wire } from "./Wire";
 import { Colours } from "./Colours";
 import { MarioMap } from "./MarioMap";
 import { PadRegister } from "./PadRegister";
+import { SlowChip } from "./SlowChip";
 import type { MarioFrame } from "./mario";
 
 /**
@@ -88,12 +89,22 @@ function prefersStill() {
   return window.matchMedia(STILL).matches;
 }
 
+/** The hero's console: a key and a label per cell, in reading order. */
+const CONSOLE = [
+  ["line", "Line"],
+  ["dot", "Dot"],
+  ["beam", "Beam"],
+  ["time", "Into the frame"],
+  ["each", "One dot lasts"],
+  ["slower", "Slower than real"],
+] as const;
+
 export interface Selection {
   line: number;
   serial: number;
 }
 
-export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; framePeriodMs: number }) {
+export function Playground({ mario, framePeriodMs, slowChip }: { mario: MarioFrame; framePeriodMs: number; slowChip: string | null }) {
   const engine = useRef<Engine | null>(null);
   const [shape, setShape] = useState<Shape | null>(null);
   const [palette, setPalette] = useState<Palette | null>(null);
@@ -120,7 +131,7 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
   }, [pad]);
 
   const canvas = useRef<HTMLCanvasElement>(null);
-  const readout = useRef<HTMLParagraphElement>(null);
+  const readout = useRef<HTMLDListElement>(null);
   const scrub = useRef<HTMLInputElement>(null);
   const loop = useRef({
     cur: null as HTMLCanvasElement | null,
@@ -312,19 +323,25 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
         ctx.fillStyle = glow;
         ctx.fillRect(bx - 9 * k, by - 9 * k, 18 * k, 18 * k);
       }
+      // The console: fixed labels, each value written into its own cell.
+      // At real speed the beam is too fast to follow, and the cells say so
+      // with a placeholder rather than a blur of numbers.
       const r = readout.current;
       if (r) {
         const inside = dot >= s.pictureX && dot < s.pictureX + s.pictureW && line < s.pictureH;
-        const where = inside
-          ? "drawing the picture"
-          : line >= s.pictureH
-            ? "below the picture: the beam is off, climbing back to the top"
-            : "past the edge: the beam is off, flying back to the left";
+        const beam = inside ? "drawing" : line >= s.pictureH ? "off: to the top" : "off: to the left";
         const dotNs = (framePeriodMs * 1e6) / total;
         const us = (pos * dotNs) / 1000;
-        r.textContent = slow
-          ? `Line ${line}, dot ${dot}, ${where}. ${us.toFixed(1)} microseconds into the frame; each dot lasts ${dotNs.toFixed(0)} nanoseconds.`
-          : `Running at the console's own speed. Slow it down to see the beam.`;
+        const put = (k: string, v: string) => {
+          const cell = r.querySelector<HTMLElement>(`[data-k="${k}"]`);
+          if (cell && cell.textContent !== v) cell.textContent = v;
+        };
+        put("line", slow ? String(line) : "·");
+        put("dot", slow ? String(dot) : "·");
+        put("beam", slow ? beam : "too fast to see");
+        put("time", slow ? `${us.toFixed(1)} µs` : "·");
+        put("each", `${dotNs.toFixed(0)} ns`);
+        put("slower", slow ? `${Math.round(paceMs / framePeriodMs).toLocaleString("en")}×` : "1×");
       }
       const sc = scrub.current;
       if (sc && running) sc.value = String(L.beam);
@@ -372,7 +389,6 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
 
   const s = shape;
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
-  const slower = Math.round(paceMs / framePeriodMs);
   const aboutCart = CARTS.find((c) => c.url === cart)?.about;
   const lut = useMemo(() => palette?.rgb ?? null, [palette]);
 
@@ -437,23 +453,29 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
                 Through the television&rsquo;s signal
               </label>
             </div>
-            {slow ? (
-              <input
-                ref={scrub}
-                className="pg-scrub"
-                type="range"
-                min={0}
-                max={1}
-                step={0.0001}
-                aria-label="Where the beam is in the frame"
-                onChange={(e) => {
-                  setRunning(false);
-                  loop.current.beam = Number(e.target.value);
-                }}
-              />
-            ) : null}
-            <p ref={readout} className="pg-readout" aria-live="off" />
-            {slow && slower > 1 ? <p className="pg-note">That is about {slower.toLocaleString("en")} times slower than a real console.</p> : null}
+            {/* Always there, so changing the pace moves nothing; idle at real speed. */}
+            <input
+              ref={scrub}
+              className="pg-scrub"
+              type="range"
+              min={0}
+              max={1}
+              step={0.0001}
+              disabled={!slow}
+              aria-label="Where the beam is in the frame"
+              onChange={(e) => {
+                setRunning(false);
+                loop.current.beam = Number(e.target.value);
+              }}
+            />
+            <dl ref={readout} className="pg-console" aria-live="off">
+              {CONSOLE.map(([k, label]) => (
+                <div key={k}>
+                  <dt>{label}</dt>
+                  <dd data-k={k}>·</dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="pg-carts">
@@ -582,6 +604,41 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
         ]}
       >
         <PadRegister bits={pad} onChange={setTouchPad} />
+      </Station>
+
+      <Station
+        id="slow"
+        eyebrow="The slow chip"
+        title="Every transistor, switching"
+        words={
+          <>
+            <p>
+              Before the engineers wrote a fast picture chip, they built a slow one: a simulation of every transistor on
+              the real chip&rsquo;s silicon, switching on and off exactly as the photographs of the die say they are wired.
+              Here it is, running in your browser, drawing the engineers&rsquo; test scene one dot at a time.
+            </p>
+            <p>
+              Beside it is their fast chip&rsquo;s picture of the same scene. The fast one has to agree with the slow one
+              on every single dot, and this page checks it as you watch. The lamps are the chip&rsquo;s own wires: its
+              dot and line counters counting in binary, and the colour leaving the chip.
+            </p>
+            <p>
+              The bars at the bottom are how many transistors change state for each dot. The chip fetches a new tile every
+              few dots, and you can see its rhythm.
+            </p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes/p0-report", label: "The 2C02 at its switches" },
+          { href: "/docs/nes/p1-report", label: "The 2C02's first picture (this scene)" },
+          { href: "/docs/nes/p3-report", label: "The fast 2C02, dot for dot with the chip" },
+        ]}
+      >
+        {slowChip ? (
+          <SlowChip palette={lut} framePeriodMs={framePeriodMs} />
+        ) : (
+          <p className="pg-waiting">The slow chip is not in this build: scripts/build-slowppu.py makes it, from the engineers&rsquo; checkout.</p>
+        )}
       </Station>
     </>
   );

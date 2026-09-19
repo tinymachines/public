@@ -215,20 +215,20 @@ export function Wire({
         onPointerDown={onMove}
         aria-label={`Line ${ln} of the frame as a voltage trace, with the sync, the colour burst and the picture marked`}
       />
-      {hover != null ? (
-        <>
-          <canvas ref={lens} className="pg-lens" style={{ height: 160 }} aria-hidden="true" />
-          <p className="pg-readout">
-            {dotAt != null && inside && code != null
+      {/* The lens and its line are always there, so pointing at the trace
+          fills them in without moving the page. */}
+      <canvas ref={lens} className="pg-lens" style={{ height: 160 }} aria-hidden="true" />
+      <p className="pg-readout">
+            {hover == null
+              ? "Point at the trace: the lens shows the few dots under the pointer, sample by sample."
+              : dotAt != null && inside && code != null
               ? `Dot ${dotAt}: colour $${hex2(code)}, brightness step ${code >> 4}, hue ${code & 15}. Each dot is ${s.perDot} samples of the wire.`
               : parts.burst && hover >= parts.burst[0] && hover < parts.burst[1]
                 ? `The colour burst: a few cycles of the colour beat, so the television can set its clock by it. The beat takes ${parts.period ?? "?"} samples, which is ${parts.period ? (parts.period / s.perDot).toFixed(1) : "?"} dots.`
                 : hover >= parts.sync[0] && hover < parts.sync[1]
                   ? "The sync: the wire drops below black, and the television starts a new line."
                   : "Blanking: the wire rests at black while the beam is off."}
-          </p>
-        </>
-      ) : null}
+      </p>
     </div>
   );
 }

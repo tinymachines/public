@@ -35,8 +35,8 @@ test("the playground's stations are drawn from the console in the page", async (
   // The hue clock: one mark per hue whose swing was found against the burst.
   expect(await page.locator(".pg-clock circle[fill]").count()).toBeGreaterThanOrEqual(10);
 
-  // The beam's readout names a line once the field is running.
-  await expect(page.locator(".pg-hero .pg-readout")).toContainText("Line", { timeout: 20_000 });
+  // The beam's console shows a line number once the field is running.
+  await expect(page.locator('.pg-hero .pg-console dd[data-k="line"]')).toHaveText(/^\d+$/, { timeout: 20_000 });
 
   // The wire station encoded a frame and drew its line.
   await expect(page.locator("#wire .pg-instr-h")).toContainText("Line", { timeout: 20_000 });
@@ -44,6 +44,33 @@ test("the playground's stations are drawn from the console in the page", async (
   // Mario's frame: the dissection's rows, and the shares counted from them.
   expect(await page.locator("#mario .pg-rows li").count()).toBeGreaterThanOrEqual(4);
   await expect(page.locator("#mario .pg-legend")).toContainText("%");
+});
+
+test("the hero's console keeps its size while its values change", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const cons = page.locator(".pg-hero .pg-console");
+  await expect(cons.locator("dd").first()).not.toHaveText("·", { timeout: 20_000 });
+  const first = await cons.boundingBox();
+  const next = await page.locator("#wire").boundingBox();
+  const before = await cons.locator("dd").allTextContents();
+  await page.waitForTimeout(1500);
+  // The values moved (the beam ran), and nothing else did.
+  expect(await cons.locator("dd").allTextContents()).not.toEqual(before);
+  expect(await cons.boundingBox()).toEqual(first);
+  expect(await page.locator("#wire").boundingBox()).toEqual(next);
+});
+
+test("the slow chip draws, and agrees with the fast chip on every dot it draws", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  await page.locator("#slow").scrollIntoViewIfNeeded();
+  const cell = (k: string) => page.locator(`#slow .pg-console dd[data-k="${k}"]`);
+  const num = async (k: string) => Number((await cell(k).textContent())!.replace(/[^0-9]/g, "") || "0");
+  await expect.poll(() => num("agree"), { timeout: 60_000 }).toBeGreaterThan(2000);
+  expect(await num("differ")).toBe(0);
+  await expect(page.locator("#slow .pg-size")).toContainText("transistors");
 });
 
 test("the playground fits a phone", async ({ page }) => {

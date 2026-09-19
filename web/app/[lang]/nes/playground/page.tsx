@@ -5,6 +5,7 @@ import { nes } from "@/lib/nes";
 import { Shell } from "@/app/components/SiteFrame";
 import { Playground } from "./Playground";
 import { marioFrame } from "./mario";
+import { slowChip } from "./slow";
 import "./playground.css";
 
 /**
@@ -115,7 +116,7 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
       <div className="pg" data-lang={lang}>
         {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
 
-        <Playground mario={marioFrame()} framePeriodMs={periodMs} />
+        <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} />
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">
           <div className="pg-words">

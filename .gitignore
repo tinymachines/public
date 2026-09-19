@@ -118,3 +118,8 @@ web/lib/vendor/pretext.js
 web/public/nes/bench/*.png
 web/public/nes/bench/*.pdf
 web/public/nes/bench/fab/
+
+# The playground's slow chip, built by scripts/build-slowppu.py from the
+# 2c02 checkout: the switch-level netlist inside is NC-SA, so the bundle
+# is served and never committed (data/slowppu.json records its hashes).
+web/public/nes/slow/

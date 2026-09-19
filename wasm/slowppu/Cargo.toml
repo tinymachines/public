@@ -1,0 +1,50 @@
+# The playground's slow chip: the engineers' switch-level 2C02 behind
+# wasm-bindgen, beside their fast one, for /nes/playground. The code here
+# is MIT. The chip it embeds is built from the sibling 2c02 checkout's
+# fetched die data (Quietust's Visual 2C02, NC-SA), so every build of this
+# crate is NC-SA-derived and is served, never committed: the output goes
+# to web/public/nes/slow/ (gitignored) by scripts/build-slowppu.py, which
+# refuses a 2c02 checkout that is dirty or not at data/nes.json's commit.
+[package]
+name = "slowppu"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+# Its own workspace: the path dependencies below belong to 2c02's.
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+halfphi = { git = "https://github.com/tinymachines/halfphi", tag = "v0.1.6" }
+nes-bus = { git = "https://github.com/tinymachines/nes-bus", tag = "v0.1.2" }
+v2c02-sim = { path = "../../../2c02/crates/v2c02-sim" }
+v2c02-dots = { path = "../../../2c02/crates/v2c02-dots" }
+v2c02-fast = { path = "../../../2c02/crates/v2c02-fast" }
+v2c02-netlist = { path = "../../../2c02/crates/v2c02-netlist" }
+wasm-bindgen = "0.2"
+
+# build.rs runs the switch-level chip through its reset (the measured
+# 712,010-half-step gate the standard world waits out) and records the
+# state, so the page starts at the drawing. The chip at opt-level 0 would
+# take many minutes; this is the same override 2c02's own workspace sets.
+[build-dependencies]
+halfphi = { git = "https://github.com/tinymachines/halfphi", tag = "v0.1.6" }
+v2c02-sim = { path = "../../../2c02/crates/v2c02-sim" }
+v2c02-dots = { path = "../../../2c02/crates/v2c02-dots" }
+
+[profile.release]
+opt-level = 3
+lto = true
+
+[profile.release.build-override]
+opt-level = 3
+
+[profile.dev.build-override]
+opt-level = 3
+
+[dev-dependencies]
+v2c02-dots = { path = "../../../2c02/crates/v2c02-dots" }
