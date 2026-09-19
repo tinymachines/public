@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Engine, type Frame, type Palette, type Shape } from "./engine";
 import { Wire } from "./Wire";
 import { Colours } from "./Colours";
@@ -78,6 +78,16 @@ function paintField(ctx: CanvasRenderingContext2D, f: Frame, pal: Palette, tv: H
   }
 }
 
+const STILL = "(prefers-reduced-motion: reduce)";
+function subscribeMotion(fn: () => void) {
+  const m = window.matchMedia(STILL);
+  m.addEventListener("change", fn);
+  return () => m.removeEventListener("change", fn);
+}
+function prefersStill() {
+  return window.matchMedia(STILL).matches;
+}
+
 export interface Selection {
   line: number;
   serial: number;
@@ -91,15 +101,23 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
   const [own, setOwn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pace, setPace] = useState<Pace>("second");
-  const [running, setRunning] = useState(true);
+  // Reduced motion: start still, and the reader presses play. The reader's
+  // own choice, once made, wins.
+  const reduced = useSyncExternalStore(subscribeMotion, prefersStill, () => false);
+  const [runChoice, setRunning] = useState<boolean | null>(null);
+  const running = runChoice ?? !reduced;
   const [tvView, setTvView] = useState(false);
   const [touchPad, setTouchPad] = useState(0);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [shown, setShown] = useState<Frame | null>(null);
 
-  const keyPad = useRef(0);
+  const [keyPad, setKeyPad] = useState(0);
+  const pad = keyPad | touchPad;
+  // The loop asks for frames outside render, so it reads the pad from here.
   const padRef = useRef(0);
-  padRef.current = keyPad.current | touchPad;
+  useEffect(() => {
+    padRef.current = pad;
+  }, [pad]);
 
   const canvas = useRef<HTMLCanvasElement>(null);
   const readout = useRef<HTMLParagraphElement>(null);
@@ -119,11 +137,6 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
 
   const paceMs = PACES.find((p) => p.id === pace)!.ms || framePeriodMs;
   const slow = paceMs >= 250;
-
-  // Reduced motion: start still, the reader presses play.
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setRunning(false);
-  }, []);
 
   // The worker, once.
   useEffect(() => {
@@ -333,7 +346,7 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
     const bit = KEYS[e.code];
     if (!bit) return;
     e.preventDefault();
-    keyPad.current = down ? keyPad.current | bit : keyPad.current & ~bit;
+    setKeyPad((was) => (down ? was | bit : was & ~bit));
   };
 
   const pick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -413,7 +426,7 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
               ))}
             </div>
             <div className="pg-row">
-              <button className="pg-btn" onClick={() => setRunning((r) => !r)}>
+              <button className="pg-btn" onClick={() => setRunning(!running)}>
                 {running ? "Pause" : "Play"}
               </button>
               <button className="pg-btn" onClick={stepFrame} disabled={running}>
@@ -463,7 +476,7 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
             {error && s ? <p className="pg-error">{error}</p> : null}
           </div>
 
-          <MiniPad bits={padRef.current} onChange={setTouchPad} />
+          <MiniPad bits={pad} onChange={setTouchPad} />
         </div>
       </section>
 
@@ -568,7 +581,7 @@ export function Playground({ mario, framePeriodMs }: { mario: MarioFrame; frameP
           { href: "/docs/nes/encyclopedia", label: "The poll routine, entry one of the encyclopedia" },
         ]}
       >
-        <PadRegister bits={padRef.current} onChange={setTouchPad} />
+        <PadRegister bits={pad} onChange={setTouchPad} />
       </Station>
     </>
   );
