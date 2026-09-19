@@ -117,9 +117,17 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
   const write = useCallback((reg: number, value: number) => ask({ path: "write", reg, value }).catch(() => {}), [ask]);
 
   // The registers, from the voices' state: what a game would write.
+  //
+  // The enable register goes first. Writing it with a voice's bit clear
+  // zeroes that voice's length counter, and a voice whose length counter
+  // is zero is silent: enabling after loading a note wipes the note that
+  // was just loaded, which is exactly what this page did at first (it
+  // sounded only in development, where the writes happen twice).
   const program = useCallback(
     (vs: VoiceState[]) => {
       if (!cpuHz) return;
+      const wanted = vs.reduce((m, v, k) => (k < 3 ? (v.note != null ? m | (1 << (k === 2 ? 2 : k)) : m) : v.on ? m | (1 << (k + 1)) : m), 0);
+      write(0x15, wanted);
       let enable = 0;
       vs.forEach((v, k) => {
         if (k < 2) {
@@ -152,7 +160,7 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
           write(0x13, 0x02); // thirty-three bytes
         }
       });
-      write(0x15, enable);
+      if (enable !== wanted) write(0x15, enable);
     },
     [cpuHz, write],
   );

@@ -236,9 +236,18 @@ test("the die: the chip's own shapes, lit from its levels", async ({ page }) => 
   // The chip is running behind it.
   await expect.poll(async () => Number((await cell("steps").textContent())?.replace(/\D/g, "") || "0"), { timeout: 30_000 }).toBeGreaterThan(714_000);
   // The pointer names the wire under it, from the die data's own names.
+  // A point can land between wires, so a few are tried.
   const box = (await st.locator(".pg-die-canvas").boundingBox())!;
-  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
-  await expect(cell("wire")).not.toHaveText("·", { timeout: 15_000 });
+  let named = false;
+  for (const [fx, fy] of [[0.5, 0.5], [0.45, 0.55], [0.55, 0.45], [0.5, 0.6], [0.6, 0.5]]) {
+    await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy);
+    await page.waitForTimeout(400);
+    if ((await cell("wire").textContent()) !== "·") {
+      named = true;
+      break;
+    }
+  }
+  expect(named, "no wire was named at any of the points tried").toBe(true);
   await expect(cell("level")).toHaveText(/^(high|low)$/);
 });
 

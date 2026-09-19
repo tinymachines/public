@@ -45,6 +45,39 @@ fn a_square_repeats_at_its_period() {
     }
 }
 
+/// The chip's own rule, which the page had to learn from a silent
+/// square: while a voice's enable bit is clear its length counter is
+/// held at zero, and a voice whose length counter is zero is silent. So
+/// a note loaded after the page has said "nothing is playing" and before
+/// the voice is enabled again is wiped, and the same writes with the
+/// enable first sound. The page writes the enable register first for
+/// this reason (SoundVoices.tsx).
+#[test]
+fn enabling_a_voice_after_its_note_wipes_the_note() {
+    let spread = |s: &[f32]| s.iter().cloned().fold(f32::MIN, f32::max) - s.iter().cloned().fold(f32::MAX, f32::min);
+
+    let mut late = Voices::new();
+    late.write(0x15, 0x00); // nothing playing yet, as the page says on opening
+    late.write(0x00, 0xbf);
+    late.write(0x01, 0x08);
+    late.write(0x02, 0xfe);
+    late.write(0x03, 0x00);
+    late.write(0x15, 0x01); // enabled last: the length counter was just zeroed
+    let quiet = late.render(4000, 37.0, 0);
+
+    let mut early = Voices::new();
+    early.write(0x15, 0x00);
+    early.write(0x15, 0x01); // enabled first
+    early.write(0x00, 0xbf);
+    early.write(0x01, 0x08);
+    early.write(0x02, 0xfe);
+    early.write(0x03, 0x00);
+    let loud = early.render(4000, 37.0, 0);
+
+    assert!(spread(&quiet) < 0.001, "the note sounded although the voice was enabled after it");
+    assert!(spread(&loud) > 0.05, "the note did not sound with the voice enabled first");
+}
+
 #[test]
 fn muting_the_only_voice_silences_the_sound() {
     let mut a = Voices::new();
