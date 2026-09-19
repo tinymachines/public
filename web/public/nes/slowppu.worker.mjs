@@ -5,7 +5,8 @@
  * the page allows each time it asks.
  *
  *   main -> here   { id, path: 'hello' }
- *                  { id, path: 'run', budgetMs }
+ *                  { id, path: 'run', budgetMs, levels }
+ *                  { id, path: 'names' }
  *   here -> main   { id, ok: true, answer } | { id, ok: false, error }
  *
  * 'hello' restores the chip from the state recorded after its reset and
@@ -46,6 +47,11 @@ self.onmessage = async (e) => {
       );
       return;
     }
+    if (path === "names") {
+      if (!chip) chip = new SlowChip();
+      self.postMessage({ id, ok: true, answer: { names: chip.node_names() } });
+      return;
+    }
     if (path === "run") {
       if (!chip) throw new Error("no chip; say hello first");
       const budget = Math.max(5, Math.min(200, e.data.budgetMs ?? 40));
@@ -57,6 +63,8 @@ self.onmessage = async (e) => {
         steps += 256;
       }
       const ms = performance.now() - t0;
+      // The die view asks for every node's level; nothing else does.
+      const levels = e.data.levels ? chip.levels() : null;
       let n = 0;
       for (const p of parts) n += p.length;
       const dots = new Uint32Array(n);
@@ -66,8 +74,8 @@ self.onmessage = async (e) => {
         at += p.length;
       }
       self.postMessage(
-        { id, ok: true, answer: { dots, steps, ms, lamps: Array.from(chip.lamps()), halfSteps: chip.half_steps() } },
-        [dots.buffer],
+        { id, ok: true, answer: { dots, steps, ms, levels, lamps: Array.from(chip.lamps()), halfSteps: chip.half_steps() } },
+        levels ? [dots.buffer, levels.buffer] : [dots.buffer],
       );
       return;
     }

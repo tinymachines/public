@@ -7,6 +7,7 @@ import { Colours } from "./Colours";
 import { MarioMap } from "./MarioMap";
 import { PadRegister } from "./PadRegister";
 import { SlowChip } from "./SlowChip";
+import { Die } from "./Die";
 import { Twins } from "./Twins";
 import { SoundVoices } from "./SoundVoices";
 import type { Taps, Xray } from "./xray";
@@ -686,6 +687,34 @@ export function Playground({
         ]}
       >
         <SoundVoices halfCyclesPerFrame={shown?.halfCycles ?? null} framePeriodMs={framePeriodMs} />
+      </Station>
+
+      <Station
+        id="die"
+        eyebrow="The die"
+        title="The chip itself, lit up"
+        words={
+          <>
+            <p>
+              This is the picture chip&rsquo;s own silicon: the shapes traced from photographs of a real chip with its
+              casing removed, which is where every one of these models came from in the first place. The wires that are
+              carrying a signal right now are lit, as the transistor-level chip runs in your browser.
+            </p>
+            <p>
+              Point at anything to see which wire it is. Many of them have names, given by the people who traced the
+              photographs, and those names are what the engineers&rsquo; reports talk about when they say a signal rose or
+              a latch held.
+            </p>
+            <p>The colours are the layers: the metal on top, the silicon underneath, and the switching layer between.</p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes/p0-report", label: "The 2C02 at its switches (this chip, from this die data)" },
+          { href: "/docs/nes/p1-report", label: "The 2C02's first picture" },
+          { href: "/docs/words", label: "Words the reports use" },
+        ]}
+      >
+        {slowChip ? <Die /> : <p className="pg-waiting">The die needs the slow chip&rsquo;s bundle, which is not in this build.</p>}
       </Station>
 
       <Station

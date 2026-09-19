@@ -645,6 +645,17 @@
   .pg-time-name { font-size: var(--text-micro); }
 }
 
+/* The die, lit. */
+.pg-die { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+.pg-die-stage { position: relative; display: grid; place-items: center; min-height: calc(var(--u) * 60); background: var(--color-panel-sunk); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); overflow: hidden; }
+.pg-die-canvas { display: block; width: 100%; height: auto; max-width: calc(var(--u) * 180); cursor: crosshair; }
+.pg-die-stage .pg-waiting { position: absolute; }
+.pg-die-key { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2) calc(var(--u) * 4); font-size: var(--text-fine); color: var(--color-glass-muted); }
+.pg-die-key li { display: inline-flex; gap: calc(var(--u) * 2); align-items: center; }
+.pg-die-key .pg-key { flex: none; align-self: center; }
+.pg-console-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 56rem) { .pg-console-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {

@@ -165,6 +165,23 @@ impl SlowChip {
         out
     }
 
+    /// Every node's level, one byte a node, for the die view.
+    pub fn levels(&self) -> Vec<u8> {
+        let e = &self.s.h.ppu.engine;
+        let nl = e.netlist();
+        (0..nl.node_count() as NodeId).map(|n| (nl.exists(n) && e.is_high(n)) as u8).collect()
+    }
+
+    /// The names the die data gives its nodes: "id name", one a line.
+    pub fn node_names(&self) -> String {
+        let nl = self.s.h.ppu.engine.netlist();
+        let mut out = String::new();
+        for (name, id) in nl.names() {
+            out.push_str(&format!("{id} {name}\n"));
+        }
+        out
+    }
+
     /// The named nodes' levels, in `lamp_names` order.
     pub fn lamps(&self) -> Vec<u8> {
         self.lamps.iter().map(|&n| self.s.h.ppu.engine.is_high(n) as u8).collect()

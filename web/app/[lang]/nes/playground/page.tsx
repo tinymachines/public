@@ -105,7 +105,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "The die, lit", about: "The picture chip's own photographed silicon on screen, its wires lit as the slow chip runs: the same view the people who read these chips work in, over our own running model." },
   { name: "Write a program", about: "A few lines of the processor's own instructions, typed in the page and run on the chip, with the registers and the picture answering: the smallest possible first program for someone who has never written one." },
   { name: "Your own game, x-rayed", about: "The twin consoles taken further: load a cartridge from your disk, tap a button, and get the frames and the dots that changed, the way the engineers' x-ray reports a run." },
   { name: "A guided tour", about: "One path through these stations, in order, with a sentence between each: twenty minutes from a television picture to a transistor for a reader who does not know where to start." },

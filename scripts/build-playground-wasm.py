@@ -48,6 +48,9 @@ BUNDLES = {
         "dest": ROOT / "web" / "public" / "nes" / "slow",
         "record": ROOT / "data" / "slowppu.json",
         "what": "The slow chip for /nes/playground: wasm/slowppu built against the 2c02 checkout at this commit",
+        # Written by the crate's build script into OUT_DIR and served beside
+        # the bundle: the die's own shapes, for the die view.
+        "extras": ["geometry.bin"],
     },
     "apuvoices": {
         "repo": ROOT.parent / "2a03",
@@ -104,8 +107,14 @@ def build(name: str) -> None:
     dest: Path = b["dest"]
     dest.mkdir(parents=True, exist_ok=True)
     hashes = {}
-    for f in files:
-        src = out / f
+    extras = {}
+    for f in b.get("extras", ()):
+        found = sorted((crate / "target" / "release" / "build").glob(f"{name}-*/out/{f}"), key=lambda p: p.stat().st_mtime)
+        if not found:
+            fail(f"{name}: the build wrote no {f}; its build script should")
+        extras[f] = found[-1]
+    for f in (*files, *extras):
+        src = extras.get(f, out / f)
         if not src.is_file():
             fail(f"{name}: the build produced no {f}; wasm-pack's layout moved")
         shutil.copy2(src, dest / f)

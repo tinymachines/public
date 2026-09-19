@@ -6,12 +6,16 @@
   "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
   "files": {
     "slowppu.js": {
-      "sha256": "ebf31eba03e0295e045559689cdcd4e269d58aa7dac71f1cd3a5eeb451da1cce",
-      "bytes": 9529
+      "sha256": "021b03b52f6ff14978798b1bb7f53dd02857b17cec68af5538c1edceae3dd638",
+      "bytes": 10331
     },
     "slowppu_bg.wasm": {
-      "sha256": "ce1b38d98067f50b37af349cee8f76fa7cda0ec945daa1c14a8a0e2229fcada2",
-      "bytes": 467341
+      "sha256": "eb2b84d9e2acf4d96c4435c9a94daf5b3040bb565a54146abdbccf2d657f56b3",
+      "bytes": 469242
+    },
+    "geometry.bin": {
+      "sha256": "bdec92b59bffebe1f01fda8175d743867bcdc833f2700bf3b7b0025a8f56296f",
+      "bytes": 1643522
     }
   }
 }

@@ -222,6 +222,26 @@ test("how it was built: every dated document on the rail, and its day opens it",
   await expect(st.locator(".pg-note").last()).toContainText("no date in their");
 });
 
+test("the die: the chip's own shapes, lit from its levels", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#die");
+  await st.scrollIntoViewIfNeeded();
+  const cell = (k: string) => st.locator(`dd[data-k="${k}"]`);
+  // The die is drawn and lit: some wires are high, and not all of them.
+  await expect.poll(async () => Number((await cell("lit").textContent())?.replace(/\D/g, "") || "0"), { timeout: 60_000 }).toBeGreaterThan(100);
+  const lit = Number((await cell("lit").textContent())!.replace(/\D/g, ""));
+  expect(lit).toBeLessThan(10_000);
+  // The chip is running behind it.
+  await expect.poll(async () => Number((await cell("steps").textContent())?.replace(/\D/g, "") || "0"), { timeout: 30_000 }).toBeGreaterThan(714_000);
+  // The pointer names the wire under it, from the die data's own names.
+  const box = (await st.locator(".pg-die-canvas").boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+  await expect(cell("wire")).not.toHaveText("·", { timeout: 15_000 });
+  await expect(cell("level")).toHaveText(/^(high|low)$/);
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);
