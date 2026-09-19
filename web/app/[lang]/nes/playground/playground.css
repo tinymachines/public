@@ -711,6 +711,39 @@
   .pg[data-tour="on"] { padding-bottom: calc(var(--u) * 60); }
 }
 
+/* The bench, photographed. */
+.pg-bench { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+.pg-bench-hall { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+@media (min-width: 64rem) { .pg-bench-hall { grid-template-columns: calc(var(--u) * 72) minmax(0, 1fr); align-items: start; } }
+.pg-bench-list { display: grid; gap: calc(var(--u) * 2); align-content: start; max-height: calc(var(--u) * 140); overflow-y: auto; }
+.pg-bench-list ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.pg-bench-pick {
+  width: 100%;
+  text-align: left;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  font-family: var(--font-sans);
+  font-size: var(--text-fine);
+  line-height: 1.4;
+  color: var(--color-glass-muted);
+  background: var(--color-panel-raised);
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-hair);
+  cursor: pointer;
+}
+.pg-bench-pick:hover { color: var(--color-glass); }
+.pg-bench-pick[aria-pressed="true"] { color: var(--color-glass); border-left-color: var(--color-mustard); background: var(--color-panel-sunk); }
+.pg-bench-pick:focus-visible { outline: 2px solid var(--color-mustard); outline-offset: -2px; }
+.pg-bench-stage { margin: 0; display: grid; gap: calc(var(--u) * 3); min-width: 0; }
+.pg-bench-frame { width: 100%; background: var(--color-panel-sunk); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); overflow: hidden; }
+.pg-bench-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.pg-bench-caption { font-family: var(--font-serif); font-size: var(--text-prose); line-height: 1.5; color: var(--color-glass); }
+.pg-bench-parts { margin: 0; padding-left: calc(var(--u) * 6); display: grid; gap: calc(var(--u) * 1); font-size: var(--text-body); color: var(--color-glass-muted); }
+.pg-bench-eyes ul { margin: calc(var(--u) * 2) 0 0; padding: 0; list-style: none; display: grid; gap: calc(var(--u) * 3); }
+.pg-bench-eyes li { display: grid; gap: calc(var(--u) * 1); }
+.pg-bench-eyes b { font-family: var(--font-display); font-size: var(--text-body); color: var(--color-glass); }
+.pg-bench-eyes li > span:not(.pg-note) { font-family: var(--font-serif); font-size: var(--text-body); color: var(--color-glass); }
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {

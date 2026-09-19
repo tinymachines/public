@@ -10,6 +10,8 @@ import { marioTaps, xray } from "./xray";
 import { exhibits } from "./exhibits";
 import { encyclopedia } from "./encyclopedia";
 import { timeline } from "./timeline";
+import { bench } from "./bench";
+import { Bench } from "./Bench";
 import { Timeline } from "./Timeline";
 import { Encyclopedia } from "./Encyclopedia";
 import { Museum } from "./Museum";
@@ -108,7 +110,6 @@ const NEXT = [
   { name: "Write a program", about: "A few lines of the processor's own instructions, typed in the page and run on the chip, with the registers and the picture answering: the smallest possible first program for someone who has never written one." },
   { name: "Your own game, x-rayed", about: "The twin consoles taken further: load a cartridge from your disk, tap a button, and get the frames and the dots that changed, the way the engineers' x-ray reports a run." },
   { name: "A guided tour", about: "One path through these stations, in order, with a sentence between each: twenty minutes from a television picture to a transistor for a reader who does not know where to start." },
-  { name: "The bench, photographed", about: "The real console, the bridge and the cameras on their frame, labelled: what each piece is for, beside the engineers' own photographs from the lab notebook." },
 ] as const;
 
 export default async function Page({ params }: { params: Promise<{ lang: Lang }> }) {
@@ -206,6 +207,32 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
           ]}
         >
           <Museum exhibits={exhibits()} />
+        </Station>
+
+        <Station
+          id="bench"
+          eyebrow="The bench"
+          title="A real console, watched"
+          words={
+            <>
+              <p>
+                None of this would settle anything without a real NES on a table. The engineers built a bench around one: a
+                little board that presses its buttons, a laboratory scope on its video wire, and cameras on a frame
+                watching the whole thing, so a run can be repeated exactly and what happened can be looked at afterwards.
+              </p>
+              <p>
+                These are their own photographs, with their own captions. Pick one to see it; the parts listed under each
+                are what their caption names, in the order they wrote them.
+              </p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes/rig", label: "The QA rig: the cameras and boards, in inches and pixels" },
+            { href: "/docs/nes/lab-notebook", label: "The lab notebook: the bench wired one step at a time" },
+            { href: "/docs/nes/milestone-rig-and-bridge", label: "The rig locked and the bridge reading right" },
+          ]}
+        >
+          <Bench data={bench()} />
         </Station>
 
         <Station

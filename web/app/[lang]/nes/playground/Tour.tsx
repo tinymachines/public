@@ -82,6 +82,11 @@ const STOPS: Stop[] = [
     line: "Nothing this exact gets built without being wrong first. These are the mistakes the engineers kept: what you would have seen, why it happened, and how it was caught.",
   },
   {
+    id: "bench",
+    name: "The bench",
+    line: "Everything you have seen is checked against a real NES on a table, with a board pressing its buttons and cameras watching. Here is the bench itself, photographed by the people who built it.",
+  },
+  {
     id: "arc",
     name: "How it was built",
     line: "Finally, the whole thing as days: every plan and report they wrote, from the first sketch to a real console wired to the model. That is where the detail lives, if you want it.",

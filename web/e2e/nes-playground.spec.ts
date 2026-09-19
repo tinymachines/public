@@ -289,6 +289,35 @@ test("the guided tour walks the stations in order and can be left", async ({ pag
   await expect(bar).toHaveCount(0);
 });
 
+test("the bench: the engineers' photographs, one fetched at a time", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize(DESK);
+  const lab: string[] = [];
+  page.on("response", (r) => {
+    const u = r.url();
+    if (u.includes("/nes/lab/")) lab.push(u.split("/").pop()!);
+  });
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#bench");
+  await st.scrollIntoViewIfNeeded();
+  const picks = st.locator(".pg-bench-pick");
+  expect(await picks.count()).toBeGreaterThanOrEqual(8);
+  // Their caption labels the picture, and its parts are listed under it.
+  const shown = st.locator(".pg-bench-stage img");
+  expect(((await shown.getAttribute("alt")) ?? "").length).toBeGreaterThan(20);
+  expect(await st.locator(".pg-bench-parts li").count()).toBeGreaterThan(1);
+  // A wall of the lab's pictures would be megabytes: only the chosen one
+  // is fetched, and choosing another keeps the station's height.
+  const before = (await st.boundingBox())!.height;
+  const first = await shown.getAttribute("src");
+  await picks.nth(3).click();
+  await expect(shown).not.toHaveAttribute("src", first!);
+  expect((await st.boundingBox())!.height).toBe(before);
+  expect(lab.length, `fetched ${lab.join(", ")}`).toBeLessThan(await picks.count());
+  // The cameras, from the rig's own table.
+  expect(await st.locator(".pg-bench-eyes li").count()).toBeGreaterThanOrEqual(3);
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);
