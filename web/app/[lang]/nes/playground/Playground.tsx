@@ -83,12 +83,12 @@ function paintField(ctx: CanvasRenderingContext2D, f: Frame, pal: Palette, tv: H
 }
 
 const STILL = "(prefers-reduced-motion: reduce)";
-function subscribeMotion(fn: () => void) {
+export function subscribeMotion(fn: () => void) {
   const m = window.matchMedia(STILL);
   m.addEventListener("change", fn);
   return () => m.removeEventListener("change", fn);
 }
-function prefersStill() {
+export function prefersStill() {
   return window.matchMedia(STILL).matches;
 }
 

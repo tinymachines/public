@@ -170,6 +170,36 @@ test("the sound: a key pressed plays at its pitch, measured off the chip's own t
   await expect(pitch("sq0")).toHaveText(/Hz$/);
 });
 
+test("the encyclopedia's pictures: one per entry, with the entry's own words", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#patterns");
+  const cards = st.locator(".enc-card");
+  // The pictures run only while they are on screen, so put one there.
+  await cards.first().scrollIntoViewIfNeeded();
+  const n = await cards.count();
+  expect(n).toBeGreaterThanOrEqual(5);
+  // A picture for every entry shown, the entry's words under it, and a
+  // link to that entry's own heading.
+  await expect(st.locator(".enc-picture svg")).toHaveCount(n);
+  for (let i = 0; i < n; i++) {
+    const card = cards.nth(i);
+    const entry = await card.getAttribute("data-entry");
+    expect(((await card.locator(".enc-does").textContent()) ?? "").length).toBeGreaterThan(80);
+    await expect(card.locator("a")).toHaveAttribute("href", new RegExp(`^/docs/nes/encyclopedia#${entry}-`));
+  }
+  // The pictures move, and stop when asked, and the station keeps its height.
+  const label = () => cards.first().locator(".enc-step").textContent();
+  const before = await label();
+  await expect.poll(label, { timeout: 15_000 }).not.toBe(before);
+  const h = (await st.boundingBox())!.height;
+  await cards.first().getByRole("button", { name: "Pause" }).click();
+  const still = await label();
+  await page.waitForTimeout(1200);
+  expect(await label()).toBe(still);
+  expect((await st.boundingBox())!.height).toBe(h);
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);

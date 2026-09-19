@@ -8,6 +8,8 @@ import { marioFrame } from "./mario";
 import { slowChip } from "./slow";
 import { marioTaps, xray } from "./xray";
 import { exhibits } from "./exhibits";
+import { encyclopedia } from "./encyclopedia";
+import { Encyclopedia } from "./Encyclopedia";
 import { Museum } from "./Museum";
 import { realModel } from "./realmodel";
 import { RealOrModel } from "./RealOrModel";
@@ -101,7 +103,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "The encyclopedia as pictures", about: "Each code pattern (the poll, the jump engine, the status bar split) as a small animated diagram, with the engineers' entry one click behind it." },
   { name: "How it was built", about: "The whole arc as a timeline: every plan and report, which part of the machine it is about, and what it proved, for a reader who wants the story before the detail." },
 ] as const;
 
@@ -118,6 +119,32 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
         {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
 
         <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
+
+        <Station
+          id="patterns"
+          eyebrow="The encyclopedia"
+          title="Tricks every game uses"
+          words={
+            <>
+              <p>
+                Taking games apart, the engineers keep finding the same tricks: the same few ways of reading the pad,
+                switching memory, keeping time and changing the picture without tearing it. They are writing them down as an
+                encyclopedia of code patterns.
+              </p>
+              <p>
+                Each picture here is one entry&rsquo;s mechanism, drawn by us and moving. They are sketches, not
+                recordings: no address or number in them is the game&rsquo;s. The entry&rsquo;s own words are beside each,
+                and the full entry, with everything the engineers measured, is one click away.
+              </p>
+            </>
+          }
+          record={[
+            { href: "/docs/nes/encyclopedia", label: "The encyclopedia of code patterns" },
+            { href: "/docs/nes/mario-dissection", label: "Super Mario Bros., dissected (where most were found)" },
+          ]}
+        >
+          <Encyclopedia data={encyclopedia()} />
+        </Station>
 
         <Station
           id="museum"

@@ -550,6 +550,48 @@
 .pg-voice-slider input { accent-color: var(--color-mustard); width: calc(var(--u) * 28); max-width: 40vw; }
 @media (max-width: 40rem) { .pg-voice-name span { display: block; margin-left: 0; } }
 
+/* The encyclopedia as pictures. */
+.enc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--u) * 100)), 1fr)); gap: calc(var(--u) * 4); min-width: 0; }
+.enc-card { display: grid; gap: calc(var(--u) * 3); align-content: start; padding: calc(var(--u) * 4); background: var(--color-panel-raised); border: 1px solid var(--color-rule-panel); border-radius: var(--radius-mod); min-width: 0; }
+.enc-card h3 { color: var(--color-glass); font-size: var(--text-lead); }
+.enc-card .pg-eyebrow { color: var(--color-mustard); }
+.enc-card a { color: var(--color-mustard); }
+.enc-picture { background: var(--color-panel-sunk); border-radius: var(--radius-mod); }
+.enc-picture svg { display: block; width: 100%; height: auto; }
+.enc-controls { display: flex; justify-content: flex-end; padding: 0 calc(var(--u) * 2) calc(var(--u) * 2); }
+.enc-play { font-size: var(--text-micro); padding: calc(var(--u) * 1) calc(var(--u) * 3); }
+.enc-watch { font-family: var(--font-serif); font-size: var(--text-body); line-height: 1.5; color: var(--color-glass); }
+.enc-does { color: var(--color-glass-muted); }
+.enc-does-h { color: var(--color-glass); }
+.enc-box { fill: var(--color-panel-raised); stroke: var(--color-rule-panel); }
+.enc-cell { fill: var(--color-panel); stroke: var(--color-rule-panel); }
+.enc-cell-air { fill: var(--color-ocean); opacity: 0.35; }
+.enc-on { fill: var(--color-mustard); stroke: var(--color-mustard); }
+.enc-off { fill: var(--color-panel); stroke: var(--color-burnt); }
+.enc-box[data-now="true"],
+.enc-on[data-now="true"] { stroke: var(--color-glass); stroke-width: 2; }
+.enc-window { fill: none; stroke: var(--color-ocean); stroke-width: 2; stroke-dasharray: 5 4; }
+.enc-screen { fill: var(--color-panel); stroke: var(--color-rule-panel); }
+.enc-bar { fill: var(--color-panel-raised); }
+.enc-hill { fill: var(--color-forest); opacity: 0.8; }
+.enc-brick { fill: var(--color-burnt); }
+.enc-beam { stroke: var(--color-mustard); stroke-width: 1.5; }
+.enc-face { fill: var(--color-panel); stroke: var(--color-rule-panel); stroke-width: 2; }
+.enc-arc { fill: none; stroke: var(--color-ocean); stroke-width: 6; }
+.enc-hand { stroke: var(--color-mustard); stroke-width: 2.5; stroke-linecap: round; }
+.enc-wire { fill: none; stroke: var(--color-glass-muted); stroke-width: 1.5; }
+.enc-arrow { fill: var(--color-glass-muted); }
+.enc-dot { fill: var(--color-glass-muted); }
+.enc-dot-on { fill: var(--color-mustard); }
+.enc-text { fill: var(--color-glass); font-family: var(--font-sans); font-size: 11px; }
+.enc-text-on { fill: var(--color-panel); font-family: var(--font-sans); font-size: 11px; font-weight: 600; }
+.enc-dim { fill: var(--color-glass-muted); font-family: var(--font-sans); font-size: 10px; }
+.enc-cap { fill: var(--color-glass-muted); font-family: var(--font-sans); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.enc-hot { fill: var(--color-mustard); font-family: var(--font-sans); font-size: 11px; font-weight: 600; }
+.enc-warn { fill: var(--color-burnt); font-family: var(--font-sans); font-size: 11px; font-weight: 600; }
+.enc-op { fill: var(--color-mustard); font-family: var(--font-mono); font-size: 11px; }
+.enc-step { fill: var(--color-glass); font-family: var(--font-mono); font-size: 11px; }
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {
