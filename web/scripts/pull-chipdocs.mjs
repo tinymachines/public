@@ -66,6 +66,10 @@ const DOCS = [
   },
 ];
 
+// A dotted quad that is somebody's machine, as in pull-nesdocs.mjs.
+// Documentation addresses (RFC 5737) and the loopback are not.
+const HOST = /(?<![\w.])(?!127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)((?:\d{1,3}\.){3}\d{1,3})(?![\w.])/;
+
 function transform(name, md) {
   let s = md;
 
@@ -100,6 +104,18 @@ function transform(name, md) {
       throw new Error(
         `${name}:${i + 1}: raw HTML survived the transforms ("${line.slice(0, 60)}"). ` +
           "The 6502 generator changed shape; teach pull-chipdocs.mjs the new one.",
+      );
+    }
+    // The same refusal the notebook's pull makes, for the same reason: these
+    // pages are published from here, and CLAUDE.md keeps host-specific detail
+    // out of this repository. Inside a fence too, because a command's output
+    // is published exactly like its prose. See pull-nesdocs.mjs for the
+    // twelve days that earned it.
+    if (HOST.test(line)) {
+      throw new Error(
+        `${name}:${i + 1}: a host address ("${line.trim().slice(0, 60)}").\n` +
+          "    This tree publishes these pages, and CLAUDE.md keeps host-specific detail out of it.\n" +
+          "    Redact it where the line is written, in the tool that emits it, not here.",
       );
     }
   }

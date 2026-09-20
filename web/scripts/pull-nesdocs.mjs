@@ -257,6 +257,11 @@ if (fs.existsSync(LAB)) {
   }
 }
 
+// A dotted quad that is somebody's machine. Documentation addresses
+// (RFC 5737) and the loopback are not: a page may legitimately show
+// 127.0.0.1 or 198.51.100.7, and the bench's guides do.
+const HOST = /(?<![\w.])(?!127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)((?:\d{1,3}\.){3}\d{1,3})(?![\w.])/;
+
 function transform(doc, md) {
   let s = md;
   // A blockquote pointer at the top of a copy (nes-bus's sketch) is not
@@ -279,6 +284,22 @@ function transform(doc, md) {
     if (/^```/.test(line)) fenced = !fenced;
     if (!fenced && /<(p|img|sub|a|div|table)\b/i.test(line)) {
       throw new Error(`${doc.repo}/docs/${doc.file}:${i + 1}: raw HTML ("${line.slice(0, 60)}"); teach pull-nesdocs.mjs the shape.`);
+    }
+    // A host's address, published. CLAUDE.md keeps host-specific detail out
+    // of this repository, and these documents are the hole in that: they are
+    // gitignored here, so nothing of ours carries the address, and the site
+    // publishes them anyway. The bench's own lab notebook and build guide
+    // printed a LAN address for twelve days that way (found 2026-09-20 while
+    // translating, fixed upstream at the point the line is rendered). The
+    // rule was a convention on the other side of this boundary until now;
+    // this is the boundary refusing. Inside a fence too: a command's output
+    // is published exactly like its prose.
+    if (HOST.test(line)) {
+      throw new Error(
+        `${doc.repo}/docs/${doc.file}:${i + 1}: a host address ("${line.trim().slice(0, 60)}").\n` +
+          "    This tree publishes these pages, and CLAUDE.md keeps host-specific detail out of it.\n" +
+          "    Redact it where the line is written, in the tool that emits it, not here.",
+      );
     }
   }
   return s;

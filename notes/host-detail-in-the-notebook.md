@@ -90,14 +90,25 @@ the fix above lands. That is deliberate and it is the safe direction, but it
 is a disagreement between two languages about what a run printed, which is
 worth closing soon.
 
-## What this repository could do about it
+## What this repository does about it now
 
-The pull is the boundary, and `pull-nesdocs.mjs` already throws when a
-document stops matching what it expects, so that a build cannot quietly ship a
-broken page. It could refuse a document carrying a bare IPv4 address the same
-way, which would turn this rule from a convention into a check. That is a
-small change on this side, and it is not made yet: it would fail every build
-until the two lines above are fixed, so it goes in after the fix, not before.
+The pull is the boundary, and both pullers refuse a document carrying a host
+address, the way they already refuse one that has grown raw HTML. It went in
+after the upstream fix rather than before, because before it would have failed
+every build.
+
+`pull-nesdocs.mjs` and `pull-chipdocs.mjs` each carry the pattern, one copy
+each, because neither imports from the other. It is deliberately narrow: the
+loopback and the documentation ranges (RFC 5737) pass, since a guide may
+legitimately print `127.0.0.1` or `198.51.100.7`, and everything else that
+looks like somebody's machine stops the build with the file, the line and what
+to do about it. Inside a fence as well as outside: a command's output is
+published exactly like its prose.
+
+Both refusals were proved by putting an address back and watching the build
+stop, and the pattern was run against the shapes it will meet in these
+documents: version numbers, measured decimals like `0.183`, `v0.1.6`, and the
+loopback all pass.
 
 ## What happened, 2026-09-20
 
