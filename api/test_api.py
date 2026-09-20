@@ -258,9 +258,33 @@ def test_health_reports_only_itself(client):
     assert body["uptime_seconds"] >= 0
 
 
+def test_meta_reports_the_commit_this_process_started_on(client, monkeypatch):
+    """The value is frozen at import, and this proves it rather than assuming.
+
+    Read per request, it followed the checkout: the deploy's provenance stage
+    compared the API's answer with `git rev-parse HEAD` and both sides were
+    live reads of the same .git, so the stage could not fail (2026-09-20, with
+    the service up for an hour and the checkout two commits ahead of the build
+    it was serving). Moving what the reader returns must not move what /v1/meta
+    says, because this process did not restart.
+    """
+    import app as app_mod
+
+    before = client.get("/v1/meta").json()["commit"]
+    # The name the route would call if it read per request. app.py binds it at
+    # import (`from provenance import ...`), so patching provenance itself
+    # would move nothing and this test would pass against either version.
+    monkeypatch.setattr(app_mod, "commit_and_branch", lambda *a, **k: ("0" * 40, "invented"))
+    after = client.get("/v1/meta").json()
+    assert after["commit"] == before, "the commit followed the checkout instead of the process"
+    assert after["commit"] == app_mod.COMMIT
+    assert after["branch"] != "invented"
+
+
 def test_meta_reports_the_real_commit(client):
     """Provenance that is not the running tree's provenance is worse than
-    none, so this is checked against git rather than against itself."""
+    none, so this is checked against git rather than against itself. A fresh
+    process starts on HEAD, so the frozen value is HEAD here."""
     import subprocess
     body = client.get("/v1/meta").json()
     try:

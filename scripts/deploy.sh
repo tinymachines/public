@@ -552,13 +552,19 @@ elif [ "$swv" != "$head12" ] && [ -z "$ALLOW_DIRTY" ]; then
   fail "sw.js is stamped $swv but HEAD is $head12; the build ran against a different commit"
 fi
 
-# The API reads its commit out of .git, so this is the deployed tree saying
-# what it is rather than this script asserting what it deployed.
+# What the RUNNING service says it started on, against the checkout. The API
+# reads .git once at import, so this catches a service that did not restart
+# (its answer stays on the old commit) and one restarted from a different
+# tree. It used to read .git per request, which made this stage compare two
+# live reads of the same file: it agreed no matter what was being served and
+# could not fail. Found 2026-09-20, with the API reporting a commit made an
+# hour after the service last started. Stage 7 is the other half: sw.js is a
+# built artefact, so comparing it with HEAD says the build is this commit's.
 say "8. Provenance"
 running=$(curl -s -m 20 "$BASE/api/v1/meta" | python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"])')
 head=$(git -C "$ROOT" rev-parse HEAD)
 printf '  git   %s\n  api   %s\n' "$head" "$running"
-[ "$running" = "$head" ] || fail "the API reports a different commit than the checkout"
+[ "$running" = "$head" ] || fail "the API started on $running, the checkout is at $head: the service did not restart onto this commit"
 
 # The three sites this repository is a roof over. They are not deployed here
 # and nothing above touches them, which is exactly why they are checked: a

@@ -65,6 +65,15 @@ from release import VERSION
 
 STARTED_MONO = time.monotonic()
 STARTED_AT = datetime.now(timezone.utc)
+# Read once, here, rather than per request. This is provenance: the commit
+# this process was started on. Read live, it would follow the checkout, so it
+# would agree with `git rev-parse HEAD` no matter what was actually running,
+# and the deploy's provenance stage compared two reads of the same file and
+# could not fail (found 2026-09-20 by the session deploying beside this one:
+# the API reported a commit made an hour after the service last started).
+# Frozen, it goes stale on purpose when the checkout moves without a restart,
+# which is the thing worth catching.
+COMMIT, BRANCH = commit_and_branch()
 
 _cache = probe_mod.Cache()
 
@@ -311,20 +320,23 @@ def health() -> Health:
     response_model=Meta,
     summary="What is running, and what it was built from",
     description=(
-        "Provenance for the running process: the commit, the branch, how long it has "
-        "been up and the versions of the libraries that generated this document. The "
-        "commit is read out of .git directly rather than by shelling out to git, "
-        "because a service started by systemd inherits a PATH that need not have git "
-        "on it. Where it cannot tell, it reports null rather than a fabricated value."
+        "Provenance for the running process: the commit it was STARTED on, the "
+        "branch, how long it has been up and the versions of the libraries that "
+        "generated this document. The commit is read out of .git directly rather "
+        "than by shelling out to git, because a service started by systemd inherits "
+        "a PATH that need not have git on it, and it is read once at startup rather "
+        "than per request: a live read would follow the checkout and report a commit "
+        "this process has never run. So it goes stale on purpose when the tree moves "
+        "under a service that was not restarted. Where it cannot tell, it reports "
+        "null rather than a fabricated value."
     ),
 )
 def meta() -> Meta:
-    commit, branch = commit_and_branch()
     return Meta(
         service="tinymachines-api",
         version=VERSION,
-        commit=commit,
-        branch=branch,
+        commit=COMMIT,
+        branch=BRANCH,
         started_at=STARTED_AT,
         uptime_seconds=_uptime(),
         python=".".join(str(n) for n in sys.version_info[:3]),
