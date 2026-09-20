@@ -9,6 +9,7 @@ import { PadRegister } from "./PadRegister";
 import { SlowChip } from "./SlowChip";
 import { Die } from "./Die";
 import { Twins } from "./Twins";
+import { XRay } from "./XRay";
 import { SoundVoices } from "./SoundVoices";
 import { Tour } from "./Tour";
 import type { Taps, Xray } from "./xray";
@@ -676,6 +677,38 @@ export function Playground({
       >
         {s ? (
           <Twins shape={s} palette={lut} framePeriodMs={framePeriodMs} xray={xray} taps={taps} />
+        ) : (
+          <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>
+        )}
+      </Station>
+
+      <Station
+        id="xray"
+        eyebrow="Your own game"
+        title="X-ray something you own"
+        words={
+          <>
+            <p>
+              The same trick, on a cartridge of your own. Play for a while: the page writes down which buttons you held
+              on every frame, exactly as the engineers&rsquo; bench writes down a run. Then ask it to x-ray a tap at the
+              moment you stopped.
+            </p>
+            <p>
+              Both consoles replay everything you played, from the moment they were switched on, and one of them gets one
+              extra tap. Anything they differ by after that is that tap&rsquo;s doing, and the report says when the
+              pictures first parted, where on the screen, how far apart they got and whether they ever came back together.
+            </p>
+            <p>The cartridge is read in this browser and goes nowhere else.</p>
+          </>
+        }
+        record={[
+          { href: "/docs/nes/exercise", label: "The exercise notebook: the x-ray, and the recordings it works from" },
+          { href: "/docs/nes/mario-dissection", label: "What their x-ray found in Super Mario Bros." },
+          { href: "/docs/nes/bench-script", label: "The bench script: one file both the bench and the model read" },
+        ]}
+      >
+        {s ? (
+          <XRay shape={s} palette={lut} framePeriodMs={framePeriodMs} />
         ) : (
           <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>
         )}

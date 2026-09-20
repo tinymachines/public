@@ -346,6 +346,31 @@ test("write a program: the chip assembles it, runs it and answers", async ({ pag
   await expect(st.locator(".pg-prog-why")).toContainText("bad hex value", { timeout: 20_000 });
 });
 
+test("x-ray your own game: a recording replayed twice, differing by one tap", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#xray");
+  await st.scrollIntoViewIfNeeded();
+  // A cartridge from "disk": the repository's own calibration cart, which
+  // prints the pad's byte in its strip.
+  await st.locator('input[type="file"]').setInputFiles("public/nes/cal.nes");
+  const cell = (k: string) => st.locator(`dd[data-k="${k}"]`);
+  await expect.poll(async () => Number(((await st.locator(".pg-xray-play .pg-note").first().textContent()) ?? "").replace(/\D+/g, "") || "0"), { timeout: 60_000 }).toBeGreaterThan(20);
+  await st.getByRole("button", { name: "Pause" }).click();
+  await st.getByRole("button", { name: "X-ray it here" }).click();
+  // The report: the pictures part after the tap, by something, and come
+  // back together (this cartridge prints the byte for one frame).
+  await expect(cell("first")).not.toHaveText("·", { timeout: 120_000 });
+  const num = async (k: string) => Number(((await cell(k).textContent()) ?? "").replace(/\D+/g, "") || "0");
+  const gap = await num("gap");
+  expect(gap).toBeGreaterThan(0);
+  expect(gap).toBeLessThan(8);
+  expect(await num("dots")).toBeGreaterThan(0);
+  await expect(cell("rejoin")).toContainText("frame");
+  await expect(cell("tap")).toContainText("A at frame");
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);

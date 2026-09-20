@@ -800,6 +800,16 @@
   .pg-prog-gloss { grid-column: 1 / -1; }
 }
 
+/* Your own game, x-rayed. */
+.pg-xray { display: grid; gap: calc(var(--u) * 4); min-width: 0; }
+.pg-xray-top { display: grid; gap: calc(var(--u) * 5); min-width: 0; }
+@media (min-width: 64rem) { .pg-xray-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.pg-xray-play,
+.pg-xray-report { display: grid; gap: calc(var(--u) * 3); align-content: start; min-width: 0; }
+.pg-xray-note { min-height: 4lh; }
+.pg-xray-worst { margin: 0; display: grid; gap: calc(var(--u) * 2); }
+.pg-xray-worst figcaption { font-size: var(--text-fine); color: var(--color-glass-muted); min-height: 3lh; }
+
 /* The machine. */
 .pg-machine { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 64rem) {

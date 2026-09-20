@@ -52,6 +52,11 @@ const STOPS: Stop[] = [
     line: "Two identical consoles, one tap in one of them. This is the engineers' method for finding out what a game does with a button, with no source code at all: run it twice and look for the difference.",
   },
   {
+    id: "xray",
+    name: "Your own game",
+    line: "The same idea with a cartridge of your own: play for a while, then x-ray a tap. The page replays everything you played twice, differing by that one press, and reports what it changed.",
+  },
+  {
     id: "sound",
     name: "The sound",
     line: "Five voices, played by writing numbers into the chip. Turn the sound on and press a key; the pitch shown is measured from the chip's own output, not from what you asked for.",

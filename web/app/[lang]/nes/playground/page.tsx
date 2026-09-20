@@ -111,7 +111,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "Your own game, x-rayed", about: "The twin consoles taken further: load a cartridge from your disk, tap a button, and get the frames and the dots that changed, the way the engineers' x-ray reports a run." },
   { name: "A guided tour", about: "One path through these stations, in order, with a sentence between each: twenty minutes from a television picture to a transistor for a reader who does not know where to start." },
 ] as const;
 
