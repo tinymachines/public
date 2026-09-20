@@ -359,5 +359,18 @@
  "The same engine in a page or over HTTP, and a machine that moves between them.": "同じエンジンを、ページの中でも HTTP 越しでも。そしてその間を行き来する機械。",
  "The NES at human speed": "人の速さで見るファミコン",
  "The console's model slowed down until a person can watch it work: a frame drawn dot by dot, the line as volts on the wire, a real game's frame measured, and the picture chip running transistor by transistor.": "ファミコンの模型を、人の目で追えるところまで遅くしたものです。1 ドットずつ描かれるフレーム、線の上の電圧としての走査線、実際のゲームの 1 フレームの計測、そしてトランジスタ単位で動く絵のチップ。",
- "The console's model slowed down until a person can watch it: the beam drawing a frame, the line as volts on the wire, a real game's frame measured, the pad read a bit at a time, and the picture chip running transistor by transistor.": "ファミコンの模型を、人の目で追えるところまで遅くしたもの。フレームを描くビーム、線の上の電圧としての走査線、実際のゲームの 1 フレームの計測、1 ビットずつ読まれるパッド、そしてトランジスタ単位で動く絵のチップ。"
+ "The console's model slowed down until a person can watch it: the beam drawing a frame, the line as volts on the wire, a real game's frame measured, the pad read a bit at a time, and the picture chip running transistor by transistor.": "ファミコンの模型を、人の目で追えるところまで遅くしたもの。フレームを描くビーム、線の上の電圧としての走査線、実際のゲームの 1 フレームの計測、1 ビットずつ読まれるパッド、そしてトランジスタ単位で動く絵のチップ。",
+ "The entropy, drawn": "描かれた乱雑さ",
+ "Four ways of looking at the same radioactive decay. None of them is a summary statistic: they are the bytes themselves, arranged so that a flaw would be visible rather than reported.": "同じ放射性崩壊を四通りに見たものです。どれも要約した統計値ではありません。バイトそのものを、欠陥があれば報告される前に目に見えるように並べたものです。",
+ "These plots read the archive, which is the append-only record of bytes already emitted. They never draw on the fresh pool, because that refills at about 75 bytes a minute and spending it on a picture would starve the consumers it exists for.": "この図が読むのは保管記録、つまりすでに払い出されたバイトの追記専用の記録です。新しいプールには決して手を付けません。そちらは毎分 75 バイトほどしか溜まらず、絵のために使えば、本来の利用者が飢えてしまうからです。",
+ "The instrument itself": "装置そのもの",
+ "reports what it is doing right now.": "がいま何をしているかを報告します。",
+ "The field": "場",
+ "Bytes taken three at a time and read as coordinates. A biased source draws structure here: planes, lattices, a clump in one corner. A good one fills the cube with nothing to see, which is the least interesting picture a generator can produce and exactly the one it should.": "バイトを 3 個ずつ取り、座標として読んだものです。偏った線源はここに構造を描きます。平面、格子、隅の塊。良い線源は立方体を、見るべきものが何も無い状態で埋めます。生成器が出せるいちばん面白くない絵であり、まさに出すべき絵です。",
+ "The return map": "回帰図",
+ "Each byte plotted against the one after it. Any rule connecting a value to its successor shows up as a shape. This is the plot that caught RANDU, whose output falls onto fifteen planes and looked fine by every other test of its day.": "各バイトを、その次のバイトに対して打った図です。ある値と次の値を結ぶ規則があれば、それは形になって現れます。RANDU を捕まえたのがこの図で、その出力は 15 枚の平面に乗り、当時の他のどの検査では問題なく見えていました。",
+ "The raster": "ラスタ",
+ "One pixel per bit, in order. The eye is very good at finding periodicity, and a stream with any is hard to look at without seeing it.": "1 ビットを 1 画素として、順に並べたものです。目は周期性を見つけるのがとても得意で、周期のある流れは、見れば気づかずにいるほうが難しくなります。",
+ "Phase space": "位相空間",
+ "This one plots the measurements rather than the bits themselves. Each point is one window of output placed by its own bias, entropy and serial correlation, so the cloud is the source describing itself over the last day rather than a single snapshot.": "これはビットそのものではなく、測定値を打った図です。各点は出力の一区間で、その区間自身の偏り、エントロピー、系列相関で置かれます。つまりこの雲は、一枚の瞬間写真ではなく、この一日の線源が自分を語ったものです。"
 }
