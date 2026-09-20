@@ -2622,10 +2622,21 @@ blargg's `4-scanline_timing`) and carried the first of this with it.
   stays: 170 pushed commits of a public repository, which a rewrite
   would break without removing what caches and forks already hold.
 
-The 6502 documents' fixes are NOT live and a deploy will not fetch
-them: pull-chipdocs reads ../6502-served, pinned at the commit the
-served release was built from (`8223a7a5e486`, v0.343). Their release,
-then our boarding, in that order.
+The 6502 documents' fixes needed their release first: pull-chipdocs
+reads ../6502-served, pinned at the commit the served release was built
+from. They cut v0.347 the same evening, this boarded it (`9689a95`,
+42 tests run in the worktree) and the three chip pages came across with
+the grammar fixed. Only one Japanese row had to follow, `nand2` from
+two deep to two input: the translator had already written the fused
+sentence as two clauses and used brackets where the English used
+dashes, so two of the three were right in Japanese before they were
+right in English.
+
+That release also carried two rung 3 correctness fixes the previously
+boarded one was missing, so the chip API answered ENGINE 3 with them
+from the 18th. Nothing recorded here came from that path: the atlas
+counts in chip.json are derivations of the netlist and read the same
+against the rebuilt engine.
 
 Still open, all in notes/english-documents-that-look-wrong.md: the
 recorded address in nes-bench's lab-log.jsonl history, walk-snake's
