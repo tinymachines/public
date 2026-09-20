@@ -2,21 +2,65 @@
 
 Found 2026-09-20, while translating every published document into Japanese.
 Eight readers went through all 58 pages line by line, which is the most
-thorough reading these documents have had since they were written, and this is
-what they stopped at.
+thorough reading these documents have had since they were written.
 
-None of it is fixed. Almost every document here is pulled into the site from a
-sibling checkout at build time, so the repository named beside each item is
-where the fix belongs. The Japanese translates what the English says today,
-including the parts below, so a fix upstream wants a reread of the shadow in
-`docs/ja/` afterwards.
+**Most of this is now fixed.** On 2026-09-20 the owner asked for the fixes to
+be made in the repositories that own the documents, and they were: nes-bench
+`22748f5` and `692bd50`, 2c02 `ce50678`, nes `8165789`, 2a03 `6f355fa`, 6502
+`8fe3a66`. All six are local commits, none pushed. The Japanese shadows follow
+in this repository.
 
-The 14 items marked **checked** were read back against the document before
-this note was written. The rest are the readers' reports, in their words as
-far as possible: worth a look by somebody who knows what the measurement was.
+What is left below is the record: what each item turned out to be, and the
+handful that are still open because they need a measurement, a decision, or a
+change to code rather than prose. The rule the fixes were made under was that
+nothing is fixed which cannot be confirmed from the repository that owns it,
+because a plausible edit to a lab record is worse than the defect it replaces.
 
-The host address in the lab notebook and the build guide is not here. It has
-its own note: `notes/host-detail-in-the-notebook.md`.
+**Four of the forty-six were not defects**, and saying so is part of the
+record: the parts table's short note for U1 on the v1b sheet, "Rung"
+capitalised mid-sentence, the two SRAM figures, and "290 lines against 289
+changes". Each is explained where it appears below.
+
+**Still open, and each needs somebody who was there:**
+
+- `docs/lab-log.jsonl` in nes-bench still holds the bench host's real address
+  in the entry recorded on 2026-09-08. The published pages no longer show it,
+  because the redaction happens where the line is rendered, but nes-bench is
+  a public repository. Scrubbing a recorded lab entry is the owner's call.
+- `docs/walk-snake.md` in the 6502 tree says X reads a value mid-store that it
+  never held. Driving the same trace shows X reads `$02` in all eleven
+  half-cycles of that window, so the sentence is false, and the data does not
+  say which readout was meant: three or four candidates fit, and choosing one
+  would be a guess. `docs/notes/derivations.md` carries the same claim by
+  hand.
+- `tools/rig-check.py` in nes-bench computes the board verdict inside
+  `if a.baseline:` with no else, so an everyday run never reports the half a
+  hole comparison it just made. That is a lost branch in a tool, not a
+  document, and rig.md now says the check is not covered on a normal run.
+- `crates/v2c02-dots/src/lib.rs` line 10 says the video DAC has eleven level
+  legs. The netlist names twelve. The array really does hold eleven, so the
+  comment at line 371 is right about the array and the one at line 10 is
+  wrong about the die.
+- The word "halfscore" is now "case" in the nes copy of the sketch, matching
+  the gate test that quotes the sentence, and the same sentence still says
+  "halfscore" in nes-bus and in two copies in the 6502 tree.
+- rig.md says the television's picture is blurred because the site carries no
+  commercial game screenshots, and eyes-vs-scope.md embeds seven pictures of
+  that cartridge's title screen and World 1-1. A policy question, not a
+  wording one.
+- `docs/exercise.md`'s two row ranges for `$18` are both as printed, under two
+  different conventions: nes's capture-score prints a region half-open and the
+  profile inclusive. Saying so in the page rests on the other repository.
+- wiring.md and bench-build-v1-v2.md still open with "Nothing here has been
+  built". Both describe the v1 build, so that may be true as written, and it
+  reads oddly beside a bridge that is built and answering.
+
+The host address in the lab notebook and the build guide has its own note:
+`notes/host-detail-in-the-notebook.md`.
+
+The items as they were found follow, grouped by the repository that owns each
+page. The 14 marked **checked** were read back against the document when the
+note was first written.
 
 ## nes-bench
 

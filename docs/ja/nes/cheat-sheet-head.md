@@ -7,8 +7,9 @@
 読み出す。ブレイクアウトの線は立ち上げツール自身の表から来る。書き下ろしの文は
 各モジュールのピンが部品の上で何をするかだけで、それはそのツールの一箇所に
 置かれ、回路図がピンを別の名で呼んでいれば拒まれる。ブレイクアウトのどの 2 極が
-リセットの対なのかは手順 6.2 の実測であり、ここには書かない。同じ配線を直角で
-描いたもの: `wiring-v1b-head.svg`。
+リセットの対なのかは 2026-09-17 にコンソールで当たって測った。その読みが
+書いてあるのは下の J3 の表だ。同じ配線を直角で描いたもの:
+`wiring-v1b-head.svg`。
 
 シート: `bench-v1b-head`。
 
@@ -99,10 +100,11 @@ GPIO27 の HIGH でコンソールに電源が入り、LOW で切れる。だか
 ## 立ち上げツールが走らせるままの、二つの手順
 
 `tools/bringup.py` から。`docs/build-guide.md` もこれと同じ表から書かれている。
-Pi の上で:
+手順ごとに一つ、Pi の上で:
 
 ```
 cd ~/nes-bench && yes '' | python3 tools/bringup.py --step 6.2 --bridge /dev/ttyACM0 --scope SCOPE --operator NAME
+cd ~/nes-bench && yes '' | python3 tools/bringup.py --step 6.3 --bridge /dev/ttyACM0 --scope SCOPE --operator NAME
 ```
 
 **6.2 リセットのフォトカプラがコンソールにパルスを入れる**
