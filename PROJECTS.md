@@ -2540,3 +2540,97 @@ when rerun). The last clean full suite before the colour change was
 The owner's open calls from this work are all settled; the workstation
 text is still in nes-bench's git history, which only a history rewrite
 would remove.
+
+## Checkpoint, 2026-09-20, both languages and the documents' own defects
+
+Live at `620a8b7`, version 1.0.261, with `b085dc2` (a note) waiting for
+the next deploy. Four deploys in the day, three of them mine: the
+6502-00 session shipped its console work (MMC1, UxROM, CNROM, MMC2 and
+blargg's `4-scanline_timing`) and carried the first of this with it.
+
+- **The playground's controls speak Japanese** (`48d2685`, `4726087`).
+  Every label, button, fixed cell and printed readout comes from a
+  dictionary: ui.ts for the smaller stations, ui.<station>.ts beside
+  the busiest, each `EN` with `JA: typeof EN` so a key cannot exist in
+  one language only. The museum's plaques left exhibits.ts for it, and
+  exhibits.ts now holds only which bug, which document, which passage.
+  A spec asserts our chrome is Japanese at /ja and English at the
+  default path, and it fails against a build without the pass.
+- **The documents speak Japanese** (`48d2685`). Fifty-eight shadows,
+  written by eight readers from one brief, so 75 of 76 published
+  documents have a body in `docs/ja/`; the holdout is the one .mdx,
+  whose interactive parts have to be rebuilt before its prose can be.
+  `check-i18n.py --live` went from 35 of 133 pages to 93.
+- **A link into a document lands in both languages** (`48d2685`). A
+  Japanese heading slugs to a Japanese id, so six links on the live
+  site were arriving at pages with nothing by that name and quietly
+  not moving. A heading can now say its id out loud, `## タイル
+  {#tiles}`, and lib/docs-anchors.test.ts checks every link in the
+  repository against both bodies, the shadow's shape, and the pages
+  whose anchors are BUILT rather than written (the playground builds
+  one per encyclopedia entry, which no regex scan can see).
+- **A shadow knows when its English moved** (`48d2685`). Most of that
+  English is not in this repository: docs/nes, docs/cart and four chip
+  pages are pulled from the sibling checkouts on every build. So
+  data/ja-docs.json stamps each shadow with the digest of the body it
+  translated, and web/scripts/check-ja-docs.mjs reports drift right
+  after the pull. It reports rather than refuses, because the English
+  moving is normal here. On its first real deploy it named four
+  rewrites across two repositories, one of them a whole new item the
+  Japanese did not have.
+- **The deploy's provenance stage could not fail** (`ce61d9e`). Stage 8
+  compared /api/v1/meta's commit with `git rev-parse HEAD`, and the API
+  read .git per request, so both sides were live reads of one file. It
+  was caught in the act: the API reported a commit made an hour after
+  the service last started. api/app.py now reads commit and branch once
+  at import, so the answer is the process's provenance and goes stale
+  on purpose. Testing it has a trap of its own: app.py binds the reader
+  at import, so a test must patch the name on `app`, not on
+  `provenance`, or it passes against the broken version too.
+- **The atlas page states the chip's counts again** (`46170cb`). It had
+  said 135 containers with 88 nodes in more than one since August; the
+  chip says 138 and 122, and six containers exist only as containers,
+  not three. check-figures.py had only ever looked at four-digit
+  numbers, so it could not see them. The counts are recorded in
+  chip.json with the routes and date that produced them, and the scan
+  now reads both ways round (the sentence that drifted puts the noun
+  first), only in documents that name the atlas ("groups" is an
+  ordinary word elsewhere), and lets a Japanese shadow inherit its
+  English's generated exemption.
+- **The documents' own defects were fixed at source.** Translating all
+  58 pages turned up 46 things that looked wrong, written up in
+  notes/english-documents-that-look-wrong.md; the owner then asked for
+  them to be fixed where the documents live. Pushed: nes-bench
+  `d229441..f6335bd` and `098f914`, 2c02 `ce50678`, nes `8165789`,
+  2a03 `6f355fa`, 6502 `8fe3a66`. Four were not defects at all (a
+  deliberately short note, a type name, and two pairs of figures that
+  were two dates of one build), and one was refused on the evidence:
+  walk-snake.md says X reads a value mid-store it never held, and
+  driving the trace shows X reads `$02` in all eleven half-cycles, so
+  the sentence is false and the data does not say what it should be.
+  Among the real ones: a supply pin that moved from 7 to 5, idle levels
+  the wrong way round, a PC817 where the text said a 4N35, six rig
+  checks where it said four, a strip of 180 tiles where it said ninety,
+  twelve DAC legs where one sentence said eleven, and a scope trigger
+  sent to a socket the DS1054Z does not have.
+- **A LAN address stopped being published.** The bench host's address
+  was on two pages, in both languages. nes-bench redacts it where the
+  log is written and at both render sites, so the entries already
+  recorded publish `<pi>`; the redactor's own docstring had carried the
+  real address as its example and now carries a documentation one; the
+  log's line is scrubbed at the tip. The owner decided the history
+  stays: 170 pushed commits of a public repository, which a rewrite
+  would break without removing what caches and forks already hold.
+
+The 6502 documents' fixes are NOT live and a deploy will not fetch
+them: pull-chipdocs reads ../6502-served, pinned at the commit the
+served release was built from (`8223a7a5e486`, v0.343). Their release,
+then our boarding, in that order.
+
+Still open, all in notes/english-documents-that-look-wrong.md: the
+recorded address in nes-bench's lab-log.jsonl history, walk-snake's
+false sentence and the same claim in docs/notes/derivations.md, a lost
+`else` in rig-check.py that stops a board verdict printing on a normal
+run, a crate comment that says eleven DAC legs where the die has
+twelve, "halfscore" still in three other copies of the sketch, and the
+blurred-television policy.
