@@ -1,8 +1,8 @@
 {
   "note": "Written only by scripts/build-playground-wasm.py. The sound station for /nes/playground: wasm/apuvoices built against the 2a03 checkout at this commit, after its native suite passed. The files in web/public/nes/voices/ must hash to these values and are never committed (what the chip was measured from is NC-SA).",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "54295ccff9cca57b3eda8bcdf9116de23495f268",
-  "built_on": "2026-09-19",
+  "commit": "f1bced7f5c16b0db9a2e2d49d811a3de1c6cc3e9",
+  "built_on": "2026-09-20",
   "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
   "files": {
     "apuvoices.js": {
