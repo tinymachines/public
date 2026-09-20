@@ -13,7 +13,10 @@ import { abs } from "@/lib/seo";
  * from the list lib/explorer.ts builds them from. Nothing is typed twice.
  *
  * Not listed, and each for a reason:
- *   /admin, /style/zoo   noindex pages; a sitemap entry would contradict it
+ *   /admin, /style/zoo, /style/map
+ *                      noindex pages; a sitemap entry would contradict it.
+ *                      The map is about the site rather than part of it, and
+ *                      it is linked from the style guide.
  *   /6502/manage         the editor. A tool with a token in it, not a page to
  *                        arrive at from a search
  *   /6502/builders/@x    the builder pages are rendered from the registry in

@@ -1,0 +1,1267 @@
+{
+ "_": "Every page and how a reader reaches it, counted by scripts/crawl-site.py. Links are the ones a reader can see: the site's nav, header and footer come out first.",
+ "origin": "https://tinymachines.ai",
+ "crawled": "2026-09-20",
+ "pages": {
+  "/": {
+   "title": "tinymachines",
+   "section": "front",
+   "words": 729,
+   "ja": 0.677,
+   "inbound": 139,
+   "depth": 0,
+   "listed": true
+  },
+  "/6502": {
+   "title": "6502",
+   "section": "6502",
+   "words": 351,
+   "ja": 0.651,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/api": {
+   "title": "The 6502 API",
+   "section": "6502",
+   "words": 6375,
+   "ja": 0.0,
+   "inbound": 6,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/archive": {
+   "title": "The visual6502 archive",
+   "section": "6502",
+   "words": 230,
+   "ja": 0.775,
+   "inbound": 3,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/block": {
+   "title": "Functional blocks of the MOS 6502",
+   "section": "6502",
+   "words": 210,
+   "ja": 0.0,
+   "inbound": 2,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/block/article": {
+   "title": "Functional blocks of the MOS 6502: the article",
+   "section": "6502",
+   "words": 219,
+   "ja": 0.002,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/blockdiagram": {
+   "title": "The published block diagram",
+   "section": "6502",
+   "words": 839,
+   "ja": 0.003,
+   "inbound": 3,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/blockdiagram/article": {
+   "title": "The published block diagram: the article",
+   "section": "6502",
+   "words": 732,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/blueprint": {
+   "title": "Blueprint: the 6502 datapath, derived",
+   "section": "6502",
+   "words": 633,
+   "ja": 0.004,
+   "inbound": 3,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/blueprint/article": {
+   "title": "Blueprint: the 6502 datapath, derived: the article",
+   "section": "6502",
+   "words": 495,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/builders": {
+   "title": "Builders",
+   "section": "6502",
+   "words": 118,
+   "ja": 0.915,
+   "inbound": 9,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/cart": {
+   "title": "Cart",
+   "section": "6502",
+   "words": 211,
+   "ja": 0.82,
+   "inbound": 1,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/chipmap": {
+   "title": "The chip as one schematic",
+   "section": "6502",
+   "words": 2126,
+   "ja": 0.003,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/chipmap/article": {
+   "title": "The chip as one schematic: the article",
+   "section": "6502",
+   "words": 1669,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/consolev2": {
+   "title": "Console v2",
+   "section": "6502",
+   "words": 122,
+   "ja": 0.5,
+   "inbound": 0,
+   "depth": null,
+   "listed": false
+  },
+  "/6502/decode": {
+   "title": "Decode: the 6502&#x27;s PLA, measured",
+   "section": "6502",
+   "words": 981,
+   "ja": 0.004,
+   "inbound": 6,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/decode/article": {
+   "title": "Decode: the 6502&#x27;s PLA, measured: the article",
+   "section": "6502",
+   "words": 779,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/designer": {
+   "title": "What the designer remembers",
+   "section": "6502",
+   "words": 1510,
+   "ja": 0.002,
+   "inbound": 2,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/designer/article": {
+   "title": "What the designer remembers: the article",
+   "section": "6502",
+   "words": 1261,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 5,
+   "listed": true
+  },
+  "/6502/diegraph": {
+   "title": "The chip as a graph",
+   "section": "6502",
+   "words": 721,
+   "ja": 0.003,
+   "inbound": 5,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/diegraph/article": {
+   "title": "The chip as a graph: the article",
+   "section": "6502",
+   "words": 574,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/exploded": {
+   "title": "Exploded: the 6502, taken apart",
+   "section": "6502",
+   "words": 1292,
+   "ja": 0.003,
+   "inbound": 5,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/exploded/article": {
+   "title": "Exploded: the 6502, taken apart: the article",
+   "section": "6502",
+   "words": 1072,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/explorer": {
+   "title": "The explorer",
+   "section": "6502",
+   "words": 1086,
+   "ja": 0.0,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/games": {
+   "title": "Die Runner",
+   "section": "6502",
+   "words": 478,
+   "ja": 0.785,
+   "inbound": 6,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/halfshot": {
+   "title": "Halfshot: a program, one frame per half-cycle",
+   "section": "6502",
+   "words": 1123,
+   "ja": 0.003,
+   "inbound": 3,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/halfshot/article": {
+   "title": "Halfshot: a program, one frame per half-cycle: the article",
+   "section": "6502",
+   "words": 918,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/lab": {
+   "title": "Halfwave Lab",
+   "section": "6502",
+   "words": 1011,
+   "ja": 0.001,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/6502/learn": {
+   "title": "Learn",
+   "section": "6502",
+   "words": 538,
+   "ja": 0.371,
+   "inbound": 1,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/manage": {
+   "title": "The editor",
+   "section": "6502",
+   "words": 353,
+   "ja": 0.842,
+   "inbound": 9,
+   "depth": 1,
+   "listed": false
+  },
+  "/6502/pinout": {
+   "title": "The forty pins",
+   "section": "6502",
+   "words": 805,
+   "ja": 0.004,
+   "inbound": 3,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/pinout/article": {
+   "title": "The forty pins: the article",
+   "section": "6502",
+   "words": 644,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/primer": {
+   "title": "Primer: how the 6502 actually works",
+   "section": "6502",
+   "words": 1253,
+   "ja": 0.0,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/primer/article": {
+   "title": "Primer: how the 6502 actually works: the article",
+   "section": "6502",
+   "words": 1261,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/programs": {
+   "title": "Programs: assembled, explained, and run on the silicon",
+   "section": "6502",
+   "words": 527,
+   "ja": 0.002,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/programs/article": {
+   "title": "Programs: assembled, explained, and run on the silicon: the article",
+   "section": "6502",
+   "words": 467,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/schematic": {
+   "title": "Schematic: the 6502 as a circuit",
+   "section": "6502",
+   "words": 1399,
+   "ja": 0.004,
+   "inbound": 10,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/schematic/article": {
+   "title": "Schematic: the 6502 as a circuit: the article",
+   "section": "6502",
+   "words": 1155,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/swarm": {
+   "title": "Swarm: thousands of chips on your GPU",
+   "section": "6502",
+   "words": 397,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/talk": {
+   "title": "Where the die data came from",
+   "section": "6502",
+   "words": 1949,
+   "ja": 0.002,
+   "inbound": 3,
+   "depth": 5,
+   "listed": true
+  },
+  "/6502/talk/article": {
+   "title": "Where the die data came from: the article",
+   "section": "6502",
+   "words": 1823,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 6,
+   "listed": true
+  },
+  "/6502/timing": {
+   "title": "Timing: the 6502 counts nothing",
+   "section": "6502",
+   "words": 926,
+   "ja": 0.004,
+   "inbound": 5,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/timing/article": {
+   "title": "Timing: the 6502 counts nothing: the article",
+   "section": "6502",
+   "words": 758,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 4,
+   "listed": true
+  },
+  "/6502/tools": {
+   "title": "Lab and tools",
+   "section": "6502",
+   "words": 273,
+   "ja": 0.813,
+   "inbound": 1,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/trace": {
+   "title": "Trace: one instruction, half-cycle by half-cycle",
+   "section": "6502",
+   "words": 881,
+   "ja": 0.004,
+   "inbound": 6,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/trace/article": {
+   "title": "Trace: one instruction, half-cycle by half-cycle: the article",
+   "section": "6502",
+   "words": 695,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/6502/tracer": {
+   "title": "Tracer: the whole circuit, one half-cycle at a time",
+   "section": "6502",
+   "words": 6528,
+   "ja": 0.002,
+   "inbound": 7,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/tracer/article": {
+   "title": "Tracer: the whole circuit, one half-cycle at a time: the article",
+   "section": "6502",
+   "words": 5103,
+   "ja": 0.0,
+   "inbound": 1,
+   "depth": 3,
+   "listed": true
+  },
+  "/admin": {
+   "title": "Admin",
+   "section": "other",
+   "words": 72,
+   "ja": 0.006,
+   "inbound": 0,
+   "depth": null,
+   "listed": false
+  },
+  "/docs": {
+   "title": "tinymachines",
+   "section": "docs",
+   "words": 2487,
+   "ja": 0.911,
+   "inbound": 1,
+   "depth": 1,
+   "listed": true
+  },
+  "/docs/6502": {
+   "title": "The simulator",
+   "section": "docs",
+   "words": 969,
+   "ja": 0.828,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/atlas": {
+   "title": "The chip atlas: an address for every part",
+   "section": "docs",
+   "words": 2402,
+   "ja": 0.594,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/build-your-first-cart": {
+   "title": "Build your first cart",
+   "section": "docs",
+   "words": 1295,
+   "ja": 0.701,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/cartridges": {
+   "title": "Cartridges",
+   "section": "docs",
+   "words": 1326,
+   "ja": 0.84,
+   "inbound": 5,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/findings-answers": {
+   "title": "Engine-side answers to the Lab&#x27;s findings",
+   "section": "docs",
+   "words": 3067,
+   "ja": 0.785,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/idioms": {
+   "title": "How this chip is built",
+   "section": "docs",
+   "words": 2460,
+   "ja": 0.863,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/mcp": {
+   "title": "MCP",
+   "section": "docs",
+   "words": 707,
+   "ja": 0.693,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/the-api": {
+   "title": "The API",
+   "section": "docs",
+   "words": 1332,
+   "ja": 0.729,
+   "inbound": 6,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/the-atlas": {
+   "title": "The chip atlas",
+   "section": "docs",
+   "words": 776,
+   "ja": 0.743,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/the-console-contract": {
+   "title": "The console contract",
+   "section": "docs",
+   "words": 1688,
+   "ja": 0.883,
+   "inbound": 5,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/the-registry": {
+   "title": "The registry",
+   "section": "docs",
+   "words": 1299,
+   "ja": 0.762,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/two-ways-in": {
+   "title": "Two ways in",
+   "section": "docs",
+   "words": 1157,
+   "ja": 0.156,
+   "inbound": 2,
+   "depth": 3,
+   "listed": true
+  },
+  "/docs/6502/verification": {
+   "title": "Verification",
+   "section": "docs",
+   "words": 597,
+   "ja": 0.807,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/walk-snake": {
+   "title": "Snake, one instruction deep",
+   "section": "docs",
+   "words": 3530,
+   "ja": 0.859,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/6502/what-the-engine-side-needs": {
+   "title": "What the engine side needs",
+   "section": "docs",
+   "words": 1607,
+   "ja": 0.757,
+   "inbound": 2,
+   "depth": 3,
+   "listed": true
+  },
+  "/docs/cart": {
+   "title": "The calibration cart",
+   "section": "docs",
+   "words": 566,
+   "ja": 0.912,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/cart/build-the-cal-cart": {
+   "title": "Building the calibration cart",
+   "section": "docs",
+   "words": 2867,
+   "ja": 0.762,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/cart/calibration-plan": {
+   "title": "Planning the calibration cartridge",
+   "section": "docs",
+   "words": 2773,
+   "ja": 0.829,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/cart/calibration-screens": {
+   "title": "The calibration screens",
+   "section": "docs",
+   "words": 931,
+   "ja": 0.882,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/cart/cart-blanks": {
+   "title": "The blank boards and the programmer",
+   "section": "docs",
+   "words": 848,
+   "ja": 0.769,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/console-arc": {
+   "title": "The console arc, in retrospect",
+   "section": "docs",
+   "words": 1529,
+   "ja": 0.951,
+   "inbound": 3,
+   "depth": 1,
+   "listed": true
+  },
+  "/docs/hotbits": {
+   "title": "The instrument",
+   "section": "docs",
+   "words": 764,
+   "ja": 0.899,
+   "inbound": 1,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/hotbits/the-bits": {
+   "title": "The bits",
+   "section": "docs",
+   "words": 835,
+   "ja": 0.925,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/hotbits/the-gateway": {
+   "title": "The gateway",
+   "section": "docs",
+   "words": 957,
+   "ja": 0.783,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/hotbits/the-health-tests": {
+   "title": "The health tests",
+   "section": "docs",
+   "words": 936,
+   "ja": 0.885,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes": {
+   "title": "The console arc&#x27;s notebook",
+   "section": "docs",
+   "words": 2290,
+   "ja": 0.944,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/docs/nes/a0-report": {
+   "title": "The 2A03 at its switches, matching its reference exactly",
+   "section": "docs",
+   "words": 997,
+   "ja": 0.822,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/a3-report": {
+   "title": "First sound from the 2A03",
+   "section": "docs",
+   "words": 891,
+   "ja": 0.842,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/as-built": {
+   "title": "The v1b board as built",
+   "section": "docs",
+   "words": 1092,
+   "ja": 0.905,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/bench-build": {
+   "title": "The bridge&#x27;s schematics and parts",
+   "section": "docs",
+   "words": 3398,
+   "ja": 0.752,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/bench-plan": {
+   "title": "Planning the bench",
+   "section": "docs",
+   "words": 2587,
+   "ja": 0.856,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/bench-report": {
+   "title": "What the bench&#x27;s tools have shown",
+   "section": "docs",
+   "words": 4526,
+   "ja": 0.826,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/bench-script": {
+   "title": "The bench script",
+   "section": "docs",
+   "words": 918,
+   "ja": 0.722,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/bench-v1b": {
+   "title": "The v1b bridge on an Arduino UNO",
+   "section": "docs",
+   "words": 4461,
+   "ja": 0.815,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/bench-wiring": {
+   "title": "Wiring the bridge",
+   "section": "docs",
+   "words": 2902,
+   "ja": 0.815,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/build-guide": {
+   "title": "The build guide, in five sittings",
+   "section": "docs",
+   "words": 2859,
+   "ja": 0.771,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/cartridge": {
+   "title": "A real cartridge in the model",
+   "section": "docs",
+   "words": 2125,
+   "ja": 0.902,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/cheat-sheet": {
+   "title": "The bench cheat sheet",
+   "section": "docs",
+   "words": 1868,
+   "ja": 0.758,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/cheat-sheet-head": {
+   "title": "The head&#x27;s hands cheat sheet",
+   "section": "docs",
+   "words": 1358,
+   "ja": 0.729,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/encyclopedia": {
+   "title": "The encyclopedia of code patterns",
+   "section": "docs",
+   "words": 3049,
+   "ja": 0.693,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/exercise": {
+   "title": "Exercising the bench",
+   "section": "docs",
+   "words": 9007,
+   "ja": 0.83,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/eyes-vs-scope": {
+   "title": "Eyes versus scope",
+   "section": "docs",
+   "words": 2643,
+   "ja": 0.859,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/lab-notebook": {
+   "title": "The lab notebook",
+   "section": "docs",
+   "words": 1707,
+   "ja": 0.748,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/m0-report": {
+   "title": "The timing grid everything stands on",
+   "section": "docs",
+   "words": 1219,
+   "ja": 0.762,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/m1-report": {
+   "title": "The NES encoder and the first decoder",
+   "section": "docs",
+   "words": 1579,
+   "ja": 0.703,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/m2-report": {
+   "title": "The comb filters, the RGB encoder and the speed",
+   "section": "docs",
+   "words": 1638,
+   "ja": 0.828,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/m3-report": {
+   "title": "The television&#x27;s picture stages",
+   "section": "docs",
+   "words": 1057,
+   "ja": 0.824,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/m4-report": {
+   "title": "Capturing a real console",
+   "section": "docs",
+   "words": 3171,
+   "ja": 0.848,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/m5-report": {
+   "title": "Checking what the documents claim",
+   "section": "docs",
+   "words": 881,
+   "ja": 0.868,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/mario-dissection": {
+   "title": "Super Mario Bros., dissected",
+   "section": "docs",
+   "words": 3839,
+   "ja": 0.874,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/milestone-rig-and-bridge": {
+   "title": "The rig locked and the bridge reading right",
+   "section": "docs",
+   "words": 1098,
+   "ja": 0.867,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n0-report": {
+   "title": "The contract the chips share",
+   "section": "docs",
+   "words": 916,
+   "ja": 0.819,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n3-plan": {
+   "title": "Planning the fast 2A03",
+   "section": "docs",
+   "words": 1248,
+   "ja": 0.832,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n3-report": {
+   "title": "The fast 2A03, built and checked",
+   "section": "docs",
+   "words": 5259,
+   "ja": 0.829,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n4-report": {
+   "title": "The mainboard&#x27;s glue",
+   "section": "docs",
+   "words": 1169,
+   "ja": 0.829,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n5-report": {
+   "title": "Both chips on one clock",
+   "section": "docs",
+   "words": 2818,
+   "ja": 0.79,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n6-plan": {
+   "title": "Planning the console&#x27;s picture",
+   "section": "docs",
+   "words": 1033,
+   "ja": 0.8,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n6-report": {
+   "title": "The console&#x27;s picture",
+   "section": "docs",
+   "words": 2267,
+   "ja": 0.839,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n7-plan": {
+   "title": "Planning the console&#x27;s sound",
+   "section": "docs",
+   "words": 1381,
+   "ja": 0.798,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n7-report": {
+   "title": "The console&#x27;s sound",
+   "section": "docs",
+   "words": 1504,
+   "ja": 0.801,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n8-plan": {
+   "title": "Planning the console&#x27;s window",
+   "section": "docs",
+   "words": 1280,
+   "ja": 0.794,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/n8-report": {
+   "title": "The console in a window",
+   "section": "docs",
+   "words": 1579,
+   "ja": 0.813,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/ntsc-divergences": {
+   "title": "Where the signal path departs from the references",
+   "section": "docs",
+   "words": 785,
+   "ja": 0.854,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/ntsc-spec": {
+   "title": "The signal path&#x27;s specification",
+   "section": "docs",
+   "words": 3242,
+   "ja": 0.782,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/open-items": {
+   "title": "What is still open",
+   "section": "docs",
+   "words": 5057,
+   "ja": 0.837,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/p0-report": {
+   "title": "The 2C02 at its switches",
+   "section": "docs",
+   "words": 1124,
+   "ja": 0.826,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/p1-report": {
+   "title": "The 2C02&#x27;s first picture",
+   "section": "docs",
+   "words": 1498,
+   "ja": 0.864,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/p2-report": {
+   "title": "The 2C02&#x27;s hard corners",
+   "section": "docs",
+   "words": 1497,
+   "ja": 0.891,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/p3-plan": {
+   "title": "Planning the fast 2C02",
+   "section": "docs",
+   "words": 1297,
+   "ja": 0.787,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/p3-report": {
+   "title": "The fast 2C02, dot for dot with the chip",
+   "section": "docs",
+   "words": 4207,
+   "ja": 0.853,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/parts": {
+   "title": "The bench&#x27;s parts list",
+   "section": "docs",
+   "words": 1262,
+   "ja": 0.636,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/perf-report": {
+   "title": "Making the signal bench fast",
+   "section": "docs",
+   "words": 985,
+   "ja": 0.834,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/rig": {
+   "title": "The QA rig",
+   "section": "docs",
+   "words": 1978,
+   "ja": 0.739,
+   "inbound": 3,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/nes/sketch": {
+   "title": "The plan for the whole console",
+   "section": "docs",
+   "words": 2791,
+   "ja": 0.831,
+   "inbound": 4,
+   "depth": 2,
+   "listed": true
+  },
+  "/docs/words": {
+   "title": "Words the reports use",
+   "section": "docs",
+   "words": 1386,
+   "ja": 0.9,
+   "inbound": 54,
+   "depth": 2,
+   "listed": true
+  },
+  "/hotbits": {
+   "title": "hotbits",
+   "section": "hotbits",
+   "words": 223,
+   "ja": 0.734,
+   "inbound": 6,
+   "depth": 1,
+   "listed": true
+  },
+  "/hotbits/api": {
+   "title": "The hotbits API",
+   "section": "hotbits",
+   "words": 39,
+   "ja": 0.654,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/hotbits/space": {
+   "title": "The entropy, drawn",
+   "section": "hotbits",
+   "words": 288,
+   "ja": 0.832,
+   "inbound": 0,
+   "depth": null,
+   "listed": false
+  },
+  "/nes": {
+   "title": "The NES console",
+   "section": "nes",
+   "words": 550,
+   "ja": 0.825,
+   "inbound": 3,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/bench": {
+   "title": "The bench",
+   "section": "nes",
+   "words": 1820,
+   "ja": 0.39,
+   "inbound": 2,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/cart": {
+   "title": "The calibration cart",
+   "section": "nes",
+   "words": 257,
+   "ja": 0.24,
+   "inbound": 2,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/chips": {
+   "title": "The chips",
+   "section": "nes",
+   "words": 2348,
+   "ja": 0.721,
+   "inbound": 4,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/console": {
+   "title": "The console",
+   "section": "nes",
+   "words": 2426,
+   "ja": 0.74,
+   "inbound": 3,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/playground": {
+   "title": "The NES at human speed",
+   "section": "nes",
+   "words": 8248,
+   "ja": 0.547,
+   "inbound": 1,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/signal": {
+   "title": "The signal",
+   "section": "nes",
+   "words": 1884,
+   "ja": 0.672,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/signal/bench": {
+   "title": "The ntsc bench",
+   "section": "nes",
+   "words": 358,
+   "ja": 0.841,
+   "inbound": 2,
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/signal/composite": {
+   "title": "Composite, terminated",
+   "section": "nes",
+   "words": 926,
+   "ja": 0.875,
+   "inbound": 4,
+   "depth": 1,
+   "listed": true
+  },
+  "/style": {
+   "title": "Style guide",
+   "section": "style",
+   "words": 2347,
+   "ja": 0.001,
+   "inbound": 1,
+   "depth": 1,
+   "listed": true
+  },
+  "/style/zoo": {
+   "title": "Widget zoo",
+   "section": "style",
+   "words": 3786,
+   "ja": 0.0,
+   "inbound": 2,
+   "depth": 1,
+   "listed": false
+  },
+  "/visitors": {
+   "title": "Visitors",
+   "section": "other",
+   "words": 108,
+   "ja": 0.844,
+   "inbound": 0,
+   "depth": null,
+   "listed": false
+  }
+ }
+}

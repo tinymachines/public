@@ -1,0 +1,221 @@
+/* The visitor's map.
+ *
+ * A house page, so it is built from the kit's own tokens rather than a
+ * palette of its own: the bars are the ocean and the orange the rest of the
+ * site already uses for "measured" and "wants attention". Nothing here
+ * defines a colour.
+ *
+ * The surfaces are paper, not panel. --color-panel is the instrument face, a
+ * near-black for a readout, and the first version of this page put ink text
+ * on it: on the paper page the tiles and every page title in the table went
+ * invisible. A card on paper is paper with a rule around it.
+ */
+
+.map-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: calc(var(--u) * 3);
+  margin: calc(var(--u) * 6) 0;
+}
+
+.map-tile {
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-rule);
+  padding: calc(var(--u) * 3);
+}
+
+.map-n {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-h2);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.map-n.warn {
+  color: var(--color-orange-ink);
+}
+
+.map-k {
+  margin: calc(var(--u) * 1.5) 0 0;
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  line-height: 1.4;
+}
+
+.map-note {
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  max-width: 68ch;
+}
+
+.map-depth-wrap {
+  margin: calc(var(--u) * 8) 0;
+}
+
+/* The bars sit on a baseline with room above for the count and below for the
+   click number, so neither label lands on a neighbour. */
+.map-depth {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--u) * 2);
+  height: 7rem;
+  margin: calc(var(--u) * 7) 0 calc(var(--u) * 6);
+}
+
+.map-bar {
+  position: relative;
+  flex: 1;
+  min-height: 3px;
+  background: var(--color-ocean-ink);
+}
+
+.map-bar.none {
+  background: var(--color-orange-ink);
+}
+
+.map-bar span,
+.map-bar b {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  font-variant-numeric: tabular-nums;
+}
+
+.map-bar span {
+  top: calc(var(--u) * -5);
+  color: var(--color-ink-muted);
+}
+
+.map-bar b {
+  bottom: calc(var(--u) * -5);
+  font-weight: 400;
+  color: var(--color-ink-faint);
+}
+
+.map-findings {
+  margin: calc(var(--u) * 8) 0;
+  display: grid;
+  gap: calc(var(--u) * 5);
+}
+
+.map-find {
+  border-left: 2px solid var(--color-ocean-ink);
+  padding-left: calc(var(--u) * 4);
+}
+
+.map-find p {
+  margin: calc(var(--u) * 1) 0;
+  max-width: 68ch;
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+}
+
+.map-find-h {
+  font-size: var(--text-body);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.map-group {
+  margin: calc(var(--u) * 6) 0;
+}
+
+.map-group h3 {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 2);
+  margin: 0 0 calc(var(--u) * 2);
+}
+
+.map-group h3 span {
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-faint);
+}
+
+.map-rows {
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+}
+
+/* Four columns at a desk, two on a phone: the length and the depth fall away
+   first because the door count is the one this page is for. */
+.map-row {
+  display: grid;
+  grid-template-columns: 1fr 4.5rem 5rem 4.5rem 4rem;
+  gap: calc(var(--u) * 2);
+  align-items: center;
+  padding: calc(var(--u) * 2) calc(var(--u) * 3);
+  border-top: 1px solid var(--color-rule);
+}
+
+.map-row:first-child {
+  border-top: 0;
+}
+
+.map-row.thin {
+  box-shadow: inset 2px 0 0 var(--color-orange-ink);
+}
+
+.map-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 0.5);
+}
+
+.map-name a {
+  font-size: var(--text-fine);
+}
+
+.map-name code {
+  font-size: var(--text-fine);
+  color: var(--color-ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-met {
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.map-met b {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.map-ja {
+  display: block;
+  height: 5px;
+  background: var(--color-paper-sunk);
+}
+
+.map-ja i {
+  display: block;
+  height: 100%;
+  background: var(--color-forest-ink);
+}
+
+.map-ja i.low {
+  background: var(--color-orange-ink);
+}
+
+@media (max-width: 40rem) {
+  .map-row {
+    grid-template-columns: 1fr 4rem 4rem;
+  }
+
+  .map-wide {
+    display: none;
+  }
+}

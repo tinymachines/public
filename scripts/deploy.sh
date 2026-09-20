@@ -437,6 +437,12 @@ done
 # somewhere, and next.config.ts is the only place that is written down. 308
 # rather than 301: the method is preserved, which matters because these are
 # addresses the registry itself hands out.
+# The visitor's map, against the site that is now live. Informational: a page
+# added today is a page the record has not seen, and that is not a reason to
+# stop a deploy. It says which pages moved so somebody re-runs the crawl.
+say "6d. The visitor's map"
+python3 "$ROOT/scripts/crawl-site.py" --check --base "$BASE" || true
+
 say "6a. The redirect map"
 for p in /6502/b /6502/b/tinymachines /6502/b/tinymachines/die-runner; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$BASE$p" || echo 000)

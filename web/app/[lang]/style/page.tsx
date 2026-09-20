@@ -53,7 +53,10 @@ export default async function StylePage({ params }: { params: Promise<{ lang: La
             look like body copy. */}
         <p>
           This document is the why; the <Link href="/style/zoo">zoo</Link> is
-          the what, and it is the normative one of the pair.
+          the what, and it is the normative one of the pair. The{" "}
+          <Link href="/style/map">visitor&rsquo;s map</Link> is the third of
+          the house pages: every page this site serves and how many doors lead
+          to it, which is the question neither of the other two can answer.
         </p>
         <Guide />
       </div>
