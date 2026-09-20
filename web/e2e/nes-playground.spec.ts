@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { BASE, DESK, PHONE, open } from "./lib";
 
 /**
@@ -9,6 +10,27 @@ import { BASE, DESK, PHONE, open } from "./lib";
  * colour; the hue clock has a mark per hue it measured; the Mario map has
  * the dissection's rows.
  */
+
+/**
+ * Wait for the colours, which is the page's own sign that the console in it
+ * woke up: 64 swatches, one per code, measured through the model.
+ *
+ * A minute rather than thirty seconds because the first load against a
+ * just-restarted origin pays for a cold server and the engine's bundles at
+ * once, which is how this went flaky on a phone straight after a deploy
+ * (2026-09-20). If it still times out, the station says why it is empty (it
+ * prints "waking the console up", or the error it refused with), and that
+ * sentence goes in the failure rather than a bare count of zero.
+ */
+async function awaitColours(page: Page, where = "") {
+  const swatches = page.locator(".pg-swatch");
+  try {
+    await expect(swatches).toHaveCount(64, { timeout: 60_000 });
+  } catch (e) {
+    const said = (await page.locator(".pg-waiting, .pg-error").allTextContents()).join(" | ");
+    throw new Error(`${where}the colours never arrived: ${await swatches.count()} swatches. The page said: ${said || "nothing"}\n${String(e).slice(0, 400)}`);
+  }
+}
 
 test("the playground is live, hidden from the index, and out of the sitemap", async ({ page }) => {
   const res = await page.request.get(`${BASE}/nes/playground`);
@@ -28,7 +50,7 @@ test("the playground's stations are drawn from the console in the page", async (
 
   // The colours, measured: every code a swatch, and far from all one colour.
   const swatches = page.locator(".pg-swatch");
-  await expect(swatches).toHaveCount(64, { timeout: 30_000 });
+  await awaitColours(page);
   const colours = await swatches.evaluateAll((els) => els.map((e) => (e as HTMLElement).style.background));
   expect(new Set(colours).size).toBeGreaterThan(40);
 
@@ -374,7 +396,7 @@ test("x-ray your own game: a recording replayed twice, differing by one tap", as
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);
-  await expect(page.locator(".pg-swatch")).toHaveCount(64, { timeout: 30_000 });
+  await awaitColours(page, "on a phone: ");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });
 
@@ -399,7 +421,7 @@ test("the playground speaks Japanese, and still speaks English", async ({ page }
 
   await page.setViewportSize(DESK);
   await open(page, "/ja/nes/playground", 500);
-  await expect(page.locator(".pg-swatch")).toHaveCount(64, { timeout: 30_000 });
+  await awaitColours(page, "in Japanese: ");
   for (const sel of OURS) {
     const found = await page.locator(sel).allTextContents();
     expect(found.length, sel).toBeGreaterThan(0);
@@ -416,7 +438,7 @@ test("the playground speaks Japanese, and still speaks English", async ({ page }
 
   // The same chrome in English, so a translation cannot be wired the one way only.
   await open(page, "/nes/playground", 500);
-  await expect(page.locator(".pg-swatch")).toHaveCount(64, { timeout: 30_000 });
+  await awaitColours(page, "in English: ");
   for (const sel of OURS) {
     const found = await page.locator(sel).allTextContents();
     expect(found.length, sel).toBeGreaterThan(0);
