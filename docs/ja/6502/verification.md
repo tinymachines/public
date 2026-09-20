@@ -37,7 +37,7 @@ node tools/golden-trace/gen.js --steps 3000
 git submodule update --init
 ```
 
-## 状態復元が満たすべき基準
+## 状態復元が満たすべき基準 {#what-state-restoration-is-held-to}
 
 `crates/v6502-sim/tests/state.rs` が、API の中心的な主張の免許証だ。スナップショットを新品のマシンに復元した結果は、全ノード・全半サイクルでビット単位に一致することが証明されており、シリアライズと再開を三回跳んでも、一気に走らせた場合と正確に同じ場所に着地する。`test_service.py` は同じことを
 HTTP の表面越しに証明する。

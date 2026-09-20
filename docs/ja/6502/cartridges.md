@@ -25,7 +25,7 @@ curl -s 'localhost:6502/v1/cartridge?format=json' -d @cart.json ... | jq .verify
 **実際に走らせる。** アセンブルできて、ブートできて、しかしティックフラグを
 一度も上げない ROM は、このコンソールでは走らない ROM であり、走らせる以外にそれを言えるものは無い。報告には、完了したフレーム数、各フレームの費用、画面が変わったか、どのタイルが載っているかが入る。
 
-## フレーム費用は、カートリッジを無視する梯子の上で実測される
+## フレーム費用は、カートリッジを無視する梯子の上で実測される {#the-frame-cost-is-measured-on-a-ladder-that-ignores-the-cartridge}
 
 費用は絶対的な梯子の上で測られる。128 半サイクルから 16k までは 128 刻み、その先は 1024 刻みで、カートリッジが宣言するどんな値からも意図的に種を取らない。
 
@@ -48,7 +48,7 @@ curl -s 'localhost:6502/v1/cartridge?format=json' -d @cart.json ... | jq .verify
 python3 games/tools/mint.py --api https://6502.tinymachines.ai/api
 ```
 
-## カートリッジ・ゼロ
+## カートリッジ・ゼロ {#cartridge-zero}
 
 `rom/snake.rom`、351 バイト。パイプを端から端まで証明するためにいる。
 

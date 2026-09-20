@@ -1,0 +1,152 @@
+# ベンチの部品表
+
+**印刷用:** [v1b 図面一式、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf)、[v1b の実装状態、写真の上に検査点を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png)、[v2b 図面一式、TM-NESB-002 (PDF)](/nes/bench/nes-bench-TM-NESB-002-revA.pdf)。
+
+`tools/draw-schematics.py` から `tools/parts.py` が生成する。回路図を描くのと
+同じファイルだ。ここで手で打たれているのは状態の列だけ。図面には引き出しの
+中身が分からない。
+
+コンソール、Pi、スコープ、リレーの接点、ポートのコネクタはシートの上で
+`conn=True` で描かれている。これは買う部品ではなく、ベンチが**接続する先**だと
+いう印で、この一覧はそのためにそれらを飛ばす。だから以下はすべて、シートを
+組む前に引き出しの中に存在していなければならないものだ。
+
+## 集めるもの
+
+全シートにわたる部品の種類すべてと、それがどこにあるか。
+
+| 部品 | 状態 | 備考 |
+|---|---|---|
+| 74HCT04 | 手元にある | SN74HCT04N、2026-09-09 に届いた一本 |
+| 74HC165 | 手元にある | TI の袋。v2b にはもう一つ要る |
+| 100nF | 手元にある | v2b では七つ使う |
+| 1k | 手元にある | R2、クロックピンの直列素子、2026-09-15 に配置 |
+| 100pF | 手元にある | C4、クロックピンのフィルタ、2026-09-15 に配置 |
+| Arduino UNO R3 (ATmega328P) | 手元にある | 山の中 |
+| 74HC595 | 手元にある | 30 個入りの箱 |
+| 100R | 手元にある | トリガ用 |
+| PC817 module | 手元にある | モジュール、リセットのパッド用 |
+| relay module, 5 V coil | 手元にある | 5 V コイル、オプト入力 |
+| LM1881N | 要発注 | 本当に発注が要るのはこれ一つ。古い National の部品で、いまはほぼ再販業者しかない: 二つ買う |
+| 680k | 確認 | LM1881 の RSET。抵抗 1 本 |
+| 74HCT165 | 手元にある | C6 のシートのレジスタ。あちらが HCT なのは、C6 が 3.3 V で駆動するからだ |
+| 74LVC245 | 手元にある | C6 のシート専用。UNO のシートはもうどれも使わない |
+| ESP32-C6-DevKitC-1 v1.2 | 手元にある | DevKitC-1 v1.2、代替の組み方 |
+| 10k | 確認 | パッドアダプタ専用。よくある値なので、発注の前に引き出しを見る |
+| ESP32-S3-DevKitC-1 (or C6) | 発注予定 | パッドアダプタを作る場合だけ |
+| TP4056 + protection | 発注予定 | パッドアダプタ専用 |
+| MCP1700-3302 LDO | 発注予定 | パッドアダプタ専用 |
+| slide | 発注予定 | パッドアダプタ専用、電源スイッチ |
+| power | 発注予定 | パッドアダプタ専用、電池 |
+| +330R | 確認 | パッドアダプタ専用、LED |
+
+## bench-v1b
+
+**まずこれを作る。** UNO のブリッジ、ポート一つ、すべて 5 V。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| U1 | 74HCT04  at +5V | しきい値 2.0 V: NMOS の OUT0 で安全 |
+| U2 | 74HC165  at +5V (TI の袋) | H が最初に出る |
+| C1 | 100nF | +5V から GND へ |
+| C2 | 100nF | +5V から GND へ |
+| C3 | 100nF | +5V から GND へ |
+| R2 | 1k | CON_CLK から CP へ |
+| C4 | 100pF | CP から GND へ |
+| A1 | Arduino UNO R3 (ATmega328P) | 5 V ロジック、16 MHz |
+| U3 | 74HC595  at +5V | RCLK の 1 エッジ = 1 バイト |
+| R1 | 100R | TRIG から EXT_TRIG へ |
+
+## bench-v1b-head
+
+v1b のシート 3: ヘッド (ベンチを駆動する側) の手、Pi からのリセットと電源
+(立ち上げの 6.2 と 6.3)。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| OK1 | PC817 module | リセットボタンに並列のオープンコレクタ |
+| K1 | relay module, 5 V coil | 実測: GPIO27 を高にするとコンソールに電源が入る |
+
+## bench-v2b
+
+**次にこれを作る。** 一本の SPI チェーンにポート二つ、シンクも数え、UNO は
+一つのまま。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| U1 | 74HCT04  at +5V | 余った入力 4 本を GND へ |
+| U2 | 74HC165  at +5V | H が最初に出る |
+| U6 | 74HC165  at +5V | H が最初に出る |
+| C1 | 100nF | +5V から GND へ |
+| C2 | 100nF | +5V から GND へ |
+| C3 | 100nF | +5V から GND へ |
+| C4 | 100nF | +5V から GND へ |
+| C5 | 100nF | +5V から GND へ |
+| C6 | 100nF | +5V から GND へ |
+| A1 | Arduino UNO R3 (ATmega328P) | Pi へのシリアル 115200 |
+| U5 | 74HC595  at +5V | ポート 1 のバイト、2 番目に送り込まれる |
+| U7 | 74HC595  at +5V | ポート 2 のバイト、U5 から数珠つなぎ |
+| U8 | LM1881N  at +5V | 出力が 5 V: 245 は要らない |
+| C7 | 100nF | VIDEO から VID_AC へ |
+| R2 | 680k | RSET から GND へ |
+| C8 | 100nF | RSET から GND へ |
+| R1 | 100R | TRIG から EXT_TRIG へ |
+
+## bench-v1
+
+v1b の ESP32-C6 版。作るのはこれではない。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| U1 | 74HCT04  at +5V | 余った入力 5 本を GND へ |
+| U2 | 74HCT165  at +5V | H が最初に出る |
+| C1 | 100nF | +5V から GND へ |
+| C2 | 100nF | +5V から GND へ |
+| U3 | 74LVC245  at 3V3 | 入力は 5V トレラント、A から B へ |
+| C3 | 100nF | 3V3 から GND へ |
+| U4 | ESP32-C6-DevKitC-1 v1.2 | RISC-V、BLE 5、Wi-Fi 6 |
+| R1 | 100R | TRIG から EXT_TRIG へ |
+| OK1 | PC817 module | リセットに並列のオープンコレクタ |
+| K1 | relay module, 5 V coil | オプト入力、アクティブ低 |
+
+## bench-v2
+
+v2b の C6 版。作るのはこれではない。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| U1 | 74HCT04  at +5V | 余った入力 4 本を GND へ |
+| U2 | 74HCT165  at +5V | H が最初に出る |
+| U6 | 74HCT165  at +5V | H が最初に出る |
+| U5 | 74HC595  at 3V3 | ポート 1 のバイト |
+| U7 | 74HC595  at 3V3 | ポート 2 のバイト、数珠つなぎ |
+| C1 | 100nF | +5V から GND へ |
+| C2 | 100nF | +5V から GND へ |
+| C3 | 100nF | 3V3 から GND へ |
+| C4 | 100nF | 3V3 から GND へ |
+| U8 | LM1881N  at +5V | コンポジットシンクの出力 |
+| C6 | 100nF | VIDEO から VID_AC へ |
+| R2 | 680k | RSET から GND へ |
+| C7 | 100nF | RSET から GND へ |
+| U3 | 74LVC245  at 3V3 | 6 本の線を 3V3 へ落とす |
+| U4 | ESP32-C6-DevKitC-1 v1.2 | RISC-V、BLE 5、Wi-Fi 6 |
+| R1 | 100R | TRIG から EXT_TRIG へ |
+
+## pad-adapter
+
+純正のパッドを無線 HID デバイスにする。別のプロジェクトだ。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| R1 | 10k | PAD1_D0 から 3V3 へ |
+| R2 | 10k | PAD1_D0 から 3V3 へ |
+| U1 | ESP32-S3-DevKitC-1 (or C6) | TinyUSB HID + NimBLE HID |
+| U2 | TP4056 + protection | LiPo 充電モジュール |
+| U3 | MCP1700-3302 LDO | または devkit 自身の VBUS からの 3V3 |
+| SW1 | slide | MODE_SW から GND へ |
+| SW2 | power | VBAT から VBAT_SW へ |
+| LED1 | +330R | LED から GND へ |
+
+
+
+*ビルド時に [nes-bench/docs/parts.md](https://github.com/tinymachines/nes-bench/blob/main/docs/parts.md) から取り込まれる。リポジトリが唯一の写しだ。報告書は独自の作業用語をいくつか使っている: [報告書で使われる言葉](/ja/docs/words)。*
