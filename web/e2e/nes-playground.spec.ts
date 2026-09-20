@@ -377,3 +377,46 @@ test("the playground fits a phone", async ({ page }) => {
   await expect(page.locator(".pg-swatch")).toHaveCount(64, { timeout: 30_000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 });
+
+/**
+ * Both languages. The stations' own controls and readouts are ours, so
+ * they are translated; anything read from the engineers' documents stays
+ * in their words, which is why this test looks at our chrome by name
+ * rather than scanning the page for Latin letters.
+ */
+test("the playground speaks Japanese, and still speaks English", async ({ page }) => {
+  const OURS = [
+    ".pg-hero .pg-console dt",
+    ".pg-seg .pg-segbtn",
+    ".pg-tour-jump b",
+    "#pad .pg-shift-h",
+    "#museum .pg-museum-causes .pg-label",
+    "#arc .pg-time-panel .pg-eyebrow",
+  ];
+  const res = await page.request.get(`${BASE}/ja/nes/playground`);
+  expect(res.status()).toBe(200);
+  expect(await res.text()).toMatch(/<meta name="robots" content="noindex, nofollow"/);
+
+  await page.setViewportSize(DESK);
+  await open(page, "/ja/nes/playground", 500);
+  await expect(page.locator(".pg-swatch")).toHaveCount(64, { timeout: 30_000 });
+  for (const sel of OURS) {
+    const found = await page.locator(sel).allTextContents();
+    expect(found.length, sel).toBeGreaterThan(0);
+    for (const text of found) expect(text, sel).toMatch(/[ぁ-んァ-ヶ一-龠]/);
+  }
+  // The page before the pass said so at the top; it must not any more.
+  expect(await page.locator(".pg").innerText()).not.toContain("まだ英語だけ");
+
+  // The same chrome in English, so a translation cannot be wired the one way only.
+  await open(page, "/nes/playground", 500);
+  await expect(page.locator(".pg-swatch")).toHaveCount(64, { timeout: 30_000 });
+  for (const sel of OURS) {
+    const found = await page.locator(sel).allTextContents();
+    expect(found.length, sel).toBeGreaterThan(0);
+    for (const text of found) {
+      expect(text, sel).toMatch(/[A-Za-z]/);
+      expect(text, sel).not.toMatch(/[ぁ-んァ-ヶ一-龠]/);
+    }
+  }
+});

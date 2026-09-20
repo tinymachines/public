@@ -2,12 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { token } from "./Playground";
+import { soundWords } from "./ui.sound";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The sound, voice by voice: the engineers' fast 2A03 sound unit in a
  * worker (public/nes/voices.worker.mjs), played by writing its registers
  * from the page as a game would, heard through their DACs, each voice
  * drawn as its own trace and muted at the DAC on its own.
+ *
+ * The voices' names and what each one is usually for are ours, in
+ * ui.sound.ts, both languages; the readings beside them are measured
+ * here.
  *
  * The clock is the console's: the CPU half-cycles in one frame, which
  * the playground's console reports each frame, over the frame period
@@ -40,12 +46,14 @@ const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B", 
   hz: 440 * Math.pow(2, (i - 9) / 12),
 }));
 
+/** The five voices, in the order the chip's registers put them; what
+ *  each one is called is in ui.sound.ts. */
 const VOICES = [
-  { key: "sq0", name: "Square one", role: "the melody, usually", max: 15 },
-  { key: "sq1", name: "Square two", role: "harmony, or a second melody", max: 15 },
-  { key: "tri", name: "Triangle", role: "the bass line", max: 15 },
-  { key: "noi", name: "Noise", role: "drums, wind, explosions", max: 15 },
-  { key: "dmc", name: "Samples", role: "recorded sounds, played from memory", max: 127 },
+  { key: "sq0", max: 15 },
+  { key: "sq1", max: 15 },
+  { key: "tri", max: 15 },
+  { key: "noi", max: 15 },
+  { key: "dmc", max: 127 },
 ] as const;
 
 /** The squares' four shapes: how much of each cycle is high, in eighths. */
@@ -73,7 +81,8 @@ function dutyPath(eighths: number) {
   return `M0,14 L0,2 L${x},2 L${x},14 L40,14`;
 }
 
-export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesPerFrame: number | null; framePeriodMs: number }) {
+export function SoundVoices({ lang, halfCyclesPerFrame, framePeriodMs }: { lang: Lang; halfCyclesPerFrame: number | null; framePeriodMs: number }) {
+  const U = soundWords(lang);
   const [on, setOn] = useState(false);
   const [voices, setVoices] = useState<VoiceState[]>(INITIAL);
   const [mute, setMute] = useState(0);
@@ -186,15 +195,15 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
       // The pitch, measured: rises through the middle of the trace, per second.
       const cell = pitch.current[k];
       if (cell) {
-        let text = "silent";
+        let text = U.silent;
         if (hi - lo >= 1) {
-          if (v.key === "noi") text = "no pitch: noise";
-          else if (v.key === "dmc") text = "no pitch: a sample";
+          if (v.key === "noi") text = U.noPitchNoise;
+          else if (v.key === "dmc") text = U.noPitchSample;
           else {
             const mid = (lo + hi) / 2;
             const rises: number[] = [];
             for (let i = 1; i < n; i++) if (codes[i - 1] < mid && codes[i] >= mid) rises.push(i);
-            text = rises.length >= 3 ? `${((RATE * (rises.length - 1)) / (rises[rises.length - 1] - rises[0])).toFixed(1)} Hz` : "too low to count";
+            text = rises.length >= 3 ? `${((RATE * (rises.length - 1)) / (rises[rises.length - 1] - rises[0])).toFixed(1)} Hz` : U.tooLow;
           }
         }
         if (cell.textContent !== text) cell.textContent = text;
@@ -224,7 +233,7 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
       }
       ctx.stroke();
     });
-  }, []);
+  }, [U]);
 
   // The sound loop: keep a little ahead of the speakers.
   useEffect(() => {
@@ -290,57 +299,56 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
     await audio.current?.ctx.suspend();
   };
 
-  if (!cpuHz) return <p className="pg-waiting">Waiting for the console to report its clock...</p>;
+  if (!cpuHz) return <p className="pg-waiting">{U.waiting}</p>;
 
   return (
     <div className="pg-voices">
       <div className="pg-row">
         <button className="pg-btn pg-btn-hot" onClick={on ? stop : start}>
-          {on ? "Turn the sound off" : "Turn the sound on"}
+          {on ? U.off : U.on}
         </button>
-        <p className="pg-note pg-voices-clock">
-          The chip&rsquo;s clock, from the console&rsquo;s own count: {(cpuHz / 1e6).toFixed(4)} million cycles a second.
-        </p>
+        <p className="pg-note pg-voices-clock">{U.clock((cpuHz / 1e6).toFixed(4))}</p>
       </div>
       {error ? <p className="pg-error">{error}</p> : null}
 
       {VOICES.map((v, k) => {
         const s = voices[k];
         const muted = (mute & (1 << k)) !== 0;
+        const name = U.voices[v.key].name;
         return (
-          <section key={v.key} className="pg-voice" data-muted={muted} aria-label={v.name}>
+          <section key={v.key} className="pg-voice" data-muted={muted} aria-label={name}>
             <div className="pg-voice-head">
               <p className="pg-voice-name">
-                {v.name}
-                <span>{v.role}</span>
+                {name}
+                <span>{U.voices[v.key].role}</span>
               </p>
               <button className="pg-btn pg-voice-mute" aria-pressed={muted} onClick={() => setMute((m) => m ^ (1 << k))}>
-                {muted ? "Muted" : "Mute"}
+                {muted ? U.muted : U.mute}
               </button>
             </div>
-            <canvas ref={(el) => void (traces.current[k] = el)} className="pg-trace pg-voice-trace" style={{ height: 44 }} aria-label={`${v.name}'s output, as the chip produces it`} />
+            <canvas ref={(el) => void (traces.current[k] = el)} className="pg-trace pg-voice-trace" style={{ height: 44 }} aria-label={U.trace(name)} />
             <dl className="pg-console pg-voice-cells">
               <div>
-                <dt>Pitch, measured</dt>
+                <dt>{U.pitchMeasured}</dt>
                 <dd ref={(el) => void (pitch.current[k] = el)} data-k={`pitch-${v.key}`}>
                   ·
                 </dd>
               </div>
               <div>
-                <dt>{k < 3 ? "Note asked for" : "Playing"}</dt>
-                <dd>{k < 3 ? (s.note == null ? "none" : `${NOTES[s.note].name} (${NOTES[s.note].hz.toFixed(1)} Hz)`) : s.on ? "yes" : "no"}</dd>
+                <dt>{k < 3 ? U.noteAsked : U.playing}</dt>
+                <dd>{k < 3 ? (s.note == null ? U.none : U.note(NOTES[s.note].name, NOTES[s.note].hz.toFixed(1))) : s.on ? U.yes : U.no}</dd>
               </div>
             </dl>
             <div className="pg-voice-controls">
               {k < 3 ? (
-                <div className="pg-keys" role="group" aria-label={`${v.name}'s keyboard`}>
+                <div className="pg-keys" role="group" aria-label={U.keyboard(name)}>
                   {NOTES.map((n, i) => (
                     <button
                       key={i}
                       className="pg-key"
                       data-sharp={n.sharp}
                       aria-pressed={s.note === i}
-                      aria-label={`${v.name}: ${n.name}`}
+                      aria-label={U.keyOf(name, n.name)}
                       onClick={() => change(k, { note: s.note === i ? null : i })}
                     >
                       {n.sharp ? "" : n.name}
@@ -349,13 +357,13 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
                 </div>
               ) : (
                 <button className="pg-btn" aria-pressed={s.on} onClick={() => change(k, { on: !s.on })}>
-                  {s.on ? "Stop" : "Play"}
+                  {s.on ? U.stop : U.play}
                 </button>
               )}
               {k < 2 ? (
-                <div className="pg-duties" role="radiogroup" aria-label={`${v.name}'s shape`}>
+                <div className="pg-duties" role="radiogroup" aria-label={U.shape(name)}>
                   {DUTIES.map((d, i) => (
-                    <button key={d} role="radio" aria-checked={s.duty === i} className="pg-duty" onClick={() => change(k, { duty: i })} aria-label={`high for ${d} eighths of each cycle`}>
+                    <button key={d} role="radio" aria-checked={s.duty === i} className="pg-duty" onClick={() => change(k, { duty: i })} aria-label={U.duty(d)}>
                       <svg viewBox="0 0 40 16" aria-hidden="true">
                         <path d={dutyPath(d)} />
                       </svg>
@@ -365,23 +373,23 @@ export function SoundVoices({ halfCyclesPerFrame, framePeriodMs }: { halfCyclesP
               ) : null}
               {k !== 2 && k !== 4 ? (
                 <label className="pg-voice-slider">
-                  Volume
+                  {U.volume}
                   <input type="range" min={0} max={15} value={s.volume} onChange={(e) => change(k, { volume: Number(e.target.value) })} />
                 </label>
               ) : null}
               {k >= 3 ? (
                 <label className="pg-voice-slider">
-                  {k === 3 ? "Pitch" : "Rate"}
+                  {k === 3 ? U.pitch : U.rate}
                   <input type="range" min={0} max={15} value={s.noiseRate} onChange={(e) => change(k, { noiseRate: Number(e.target.value) })} />
                 </label>
               ) : null}
               {k === 3 ? (
                 <label className="pg-check">
                   <input type="checkbox" checked={s.noiseLoop} onChange={(e) => change(k, { noiseLoop: e.target.checked })} />
-                  Metallic (the short loop)
+                  {U.metallic}
                 </label>
               ) : null}
-              {k === 2 ? <p className="pg-note">The triangle has no volume control: it is always this loud.</p> : null}
+              {k === 2 ? <p className="pg-note">{U.triangle}</p> : null}
             </div>
           </section>
         );

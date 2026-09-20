@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Palette, Shape } from "./engine";
 import { anatomy, beat } from "./signal";
 import { token } from "./Playground";
+import { ui } from "./ui";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The console's colours, every code, as the worker measured them through
@@ -24,7 +26,8 @@ interface Reading {
   mean: number;
 }
 
-export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) {
+export function Colours({ lang, palette, shape }: { lang: Lang; palette: Palette; shape: Shape }) {
+  const U = ui(lang).colours;
   const rows = palette.waves.length;
   const [picked, setPicked] = useState(0x16);
   const wave = useRef<HTMLCanvasElement>(null);
@@ -87,7 +90,7 @@ export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) 
       hi = Math.max(hi, v);
     }
     const y = (v: number) => H - 14 - ((v - lo) / (hi - lo)) * (H - 28);
-    const draw = (from: number, colour: string, label: string) => {
+    const draw = (from: number, colour: string, label: string, top: boolean) => {
       ctx.strokeStyle = colour;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -102,12 +105,12 @@ export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) 
       ctx.stroke();
       ctx.fillStyle = colour;
       ctx.font = `600 11px ${token("--font-sans")}`;
-      ctx.fillText(label, 6, label === "the burst" ? 14 : 28);
+      ctx.fillText(label, 6, top ? 14 : 28);
     };
-    if (burstStart != null) draw(burstStart, token("--color-ocean"), "the burst");
+    if (burstStart != null) draw(burstStart, token("--color-ocean"), U.burstLabel, true);
     const [r, g, b] = palette.rgb[picked];
-    draw(colStart, `rgb(${r},${g},${b})`, `colour $${hex2(picked)}`);
-  }, [picked, palette, shape, row, col]);
+    draw(colStart, `rgb(${r},${g},${b})`, U.colourLabel(hex2(picked)), false);
+  }, [picked, palette, shape, row, col, U]);
 
   const [r, g, b] = palette.rgb[picked];
   const hand = (deg: number, len: number) => {
@@ -118,7 +121,7 @@ export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) 
 
   return (
     <div className="pg-colours">
-      <div className="pg-swatches" role="listbox" aria-label="The console's colours, by brightness step and hue">
+      <div className="pg-swatches" role="listbox" aria-label={U.swatches}>
         {Array.from({ length: rows }, (_, rr) => (
           <div key={rr} className="pg-swatch-row">
             {Array.from({ length: 16 }, (_, cc) => {
@@ -129,7 +132,7 @@ export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) 
                   key={cc}
                   role="option"
                   aria-selected={picked === code}
-                  aria-label={`colour $${hex2(code)}`}
+                  aria-label={U.swatch(hex2(code))}
                   className="pg-swatch"
                   style={{ background: `rgb(${R},${G},${B})` }}
                   onClick={() => setPicked(code)}
@@ -146,18 +149,16 @@ export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) 
         <div>
           <p className="pg-code">${hex2(picked)}</p>
           <p className="pg-readout">
-            Brightness step {row}, hue {col}.{" "}
-            {reading.angle == null
-              ? "No swing at all: a grey, or black. Only the height of the wire matters."
-              : `Its swing sits ${Math.round(reading.angle)} degrees round the clock from the burst.`}{" "}
-            The wire sits at {reading.mean.toFixed(2)} volts on average and swings {(reading.swing / 2).toFixed(2)} either side.
+            {U.reading(row, col)}{" "}
+            {reading.angle == null ? U.grey : U.angle(Math.round(reading.angle))}{" "}
+            {U.volts(reading.mean.toFixed(2), (reading.swing / 2).toFixed(2))}
           </p>
         </div>
       </div>
 
       <div className="pg-colour-plots">
-        <canvas ref={wave} className="pg-trace" style={{ height: 150 }} aria-label="Four beats of the burst above four beats of the picked colour" />
-        <svg className="pg-clock" viewBox="0 0 120 120" role="img" aria-label="The hue clock: each hue's swing measured against the burst">
+        <canvas ref={wave} className="pg-trace" style={{ height: 150 }} aria-label={U.plot} />
+        <svg className="pg-clock" viewBox="0 0 120 120" role="img" aria-label={U.clock}>
           <circle cx="60" cy="60" r="54" className="pg-clock-face" />
           {[...hueAngles.entries()].map(([hue, deg]) => {
             const rad = ((deg - 90) * Math.PI) / 180;
@@ -182,10 +183,7 @@ export function Colours({ palette, shape }: { palette: Palette; shape: Shape }) 
           <circle cx="60" cy="60" r="3" className="pg-clock-hub" />
         </svg>
       </div>
-      <p className="pg-note">
-        The teal hand is the burst, the television&rsquo;s reference. The coloured hand is the colour picked: its angle is
-        the hue, its length how strongly the wire swings. The dots round the rim are every hue we measured on this row.
-      </p>
+      <p className="pg-note">{U.note}</p>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { token } from "./Playground";
+import { dieWords } from "./ui.die";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The die, lit: the picture chip's own shapes, from the photographs of
@@ -24,31 +26,28 @@ interface Run {
   ms: number;
 }
 
-/** The die data's layers, in its own order. */
-const LAYERS: { name: string; token: string }[] = [
-  { name: "metal", token: "--color-chrome-lo" },
-  { name: "diffusion", token: "--color-ocean-ink" },
-  { name: "diffusion", token: "--color-ocean-ink" },
-  { name: "diffusion, to ground", token: "--color-forest-ink" },
-  { name: "diffusion, to the supply", token: "--color-burnt-ink" },
-  { name: "polysilicon", token: "--color-mustard-ink" },
+/** The die data's layers, in its own order; their names are in ui.die.ts. */
+const LAYERS: { key: "metal" | "diffusion" | "ground" | "supply" | "poly"; token: string }[] = [
+  { key: "metal", token: "--color-chrome-lo" },
+  { key: "diffusion", token: "--color-ocean-ink" },
+  { key: "diffusion", token: "--color-ocean-ink" },
+  { key: "ground", token: "--color-forest-ink" },
+  { key: "supply", token: "--color-burnt-ink" },
+  { key: "poly", token: "--color-mustard-ink" },
 ];
 
 const SIZE = 820;
 
-const CELLS = [
-  ["wire", "The wire under the pointer"],
-  ["level", "Its level"],
-  ["lit", "Wires high now"],
-  ["steps", "Half-steps run"],
-] as const;
+/** The cells, in the order they are shown; their labels are in ui.die.ts. */
+const CELLS = ["wire", "level", "lit", "steps"] as const;
 
 function rgbOf(css: string): [number, number, number] {
   const n = parseInt(css.replace("#", ""), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-export function Die() {
+export function Die({ lang }: { lang: Lang }) {
+  const U = dieWords(lang);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -81,10 +80,10 @@ export function Die() {
   /** The two pictures, drawn once from the die's shapes. */
   const draw = useCallback(async () => {
     const res = await fetch("/nes/slow/geometry.bin");
-    if (!res.ok) throw new Error(`the die's shapes answered ${res.status}`);
+    if (!res.ok) throw new Error(U.answered(res.status));
     const buf = new Uint8Array(await res.arrayBuffer());
     const view = new DataView(buf.buffer);
-    if (String.fromCharCode(...buf.subarray(0, 4)) !== "DIE1") throw new Error("the die's shapes are not in the shape this page reads");
+    if (String.fromCharCode(...buf.subarray(0, 4)) !== "DIE1") throw new Error(U.badShape);
     const count = view.getUint32(4, true);
     const dieW = view.getUint16(8, true);
     const dieH = view.getUint16(10, true);
@@ -133,7 +132,7 @@ export function Die() {
       if (raw[i * 4 + 2] > 128) nodes[i] = raw[i * 4] | (raw[i * 4 + 1] << 8);
     }
     art.current = { base, nodes, w, h };
-  }, []);
+  }, [U]);
 
   /** One painting: the dim die, with every high node's pixels lit. */
   const paint = useCallback(() => {
@@ -179,10 +178,10 @@ export function Die() {
         if (el && el.textContent !== v) el.textContent = v;
       };
       put("lit", lv ? lit.toLocaleString("en") : "·");
-      put("wire", pinned ? (names.current.get(pinned) ?? `${pinned}, unnamed`) : "·");
-      put("level", pinned && lv ? (lv[pinned] === 1 ? "high" : "low") : "·");
+      put("wire", pinned ? (names.current.get(pinned) ?? U.unnamed(pinned)) : "·");
+      put("level", pinned && lv ? (lv[pinned] === 1 ? U.levelHigh : U.levelLow) : "·");
     }
-  }, []);
+  }, [U]);
 
   // The die's shapes, the chip's names, and its worker, once the station nears.
   useEffect(() => {
@@ -265,30 +264,30 @@ export function Die() {
   return (
     <div className="pg-die" ref={root}>
       <div className="pg-die-stage">
-        <canvas ref={canvas} className="pg-die-canvas" onPointerMove={probe} aria-label="The picture chip's die, its wires lit as the chip runs" />
-        {!ready ? <p className="pg-waiting">{error ? `The die could not be drawn: ${error}.` : "Drawing the die's shapes..."}</p> : null}
+        <canvas ref={canvas} className="pg-die-canvas" onPointerMove={probe} aria-label={U.picture} />
+        {!ready ? <p className="pg-waiting">{error ? U.failed(error) : U.drawing}</p> : null}
       </div>
       <div className="pg-row">
         <button className="pg-btn" onClick={() => setPlaying((p) => !p)} disabled={!ready}>
-          {playing ? "Pause the chip" : "Run the chip"}
+          {playing ? U.pause : U.run}
         </button>
         <ul className="pg-die-key">
-          {LAYERS.filter((l, i) => LAYERS.findIndex((o) => o.name === l.name) === i).map((l) => (
-            <li key={l.name}>
+          {LAYERS.filter((l, i) => LAYERS.findIndex((o) => o.key === l.key) === i).map((l) => (
+            <li key={l.key}>
               <span className="pg-key" style={{ background: `var(${l.token})` }} aria-hidden="true" />
-              {l.name}
+              {U.layers[l.key]}
             </li>
           ))}
           <li>
             <span className="pg-key" style={{ background: "var(--color-mustard)" }} aria-hidden="true" />
-            high right now
+            {U.high}
           </li>
         </ul>
       </div>
       <dl ref={cells} className="pg-console pg-console-4">
-        {CELLS.map(([k, label]) => (
+        {CELLS.map((k) => (
           <div key={k}>
-            <dt>{label}</dt>
+            <dt>{U.cells[k]}</dt>
             <dd data-k={k}>·</dd>
           </div>
         ))}

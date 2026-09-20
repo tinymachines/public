@@ -14,6 +14,7 @@ import { bench } from "./bench";
 import { chipApi } from "@/lib/projects";
 import { ProgramChip } from "./ProgramChip";
 import { words, type StationKey } from "./words";
+import { ui } from "./ui";
 import { Bench } from "./Bench";
 import { Timeline } from "./Timeline";
 import { Encyclopedia } from "./Encyclopedia";
@@ -40,12 +41,10 @@ import "./playground.css";
 
 const CHIP_API = chipApi();
 
-const TITLE = "The NES at human speed";
-const DESCRIPTION = "A playground: the NES console's model slowed down until a person can watch it draw a frame, send it down the wire, and read a pad.";
-
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
-  return pageMeta(lang, "/nes/playground", { title: TITLE, description: DESCRIPTION, noindex: true });
+  const W = words(lang as Lang);
+  return pageMeta(lang, "/nes/playground", { title: W.hero.title, description: W.hero.description, noindex: true });
 }
 
 /** The machine's parts: the key the prose is keyed by, and where each one is written up. */
@@ -60,54 +59,59 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
     throw new Error(`data/nes.json's frame period reads ${JSON.stringify(r.c2c02.p3.frame_period_ms)}`);
   }
   const W = words(lang);
+  const U = ui(lang);
   const say = (key: StationKey) => ({ eyebrow: W.stations[key].eyebrow, title: W.stations[key].title, words: W.stations[key].body, record: W.stations[key].record });
   return (
-    <Shell lang={lang} die="NES" title={TITLE} titleIsHeading={false} pageHead={false}>
+    <Shell lang={lang} die="NES" title={W.hero.title} titleIsHeading={false} pageHead={false}>
       <div className="pg" data-lang={lang}>
-        {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
-
         <Playground lang={lang} mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
 
         <Station
+          lang={lang}
           id="patterns"
           {...say("patterns")}
         >
-          <Encyclopedia data={encyclopedia()} />
+          <Encyclopedia lang={lang} data={encyclopedia()} />
         </Station>
 
         <Station
+          lang={lang}
           id="real"
           {...say("real")}
         >
-          <RealOrModel data={realModel()} />
+          <RealOrModel lang={lang} data={realModel()} />
         </Station>
 
         <Station
+          lang={lang}
           id="museum"
           {...say("museum")}
         >
-          <Museum exhibits={exhibits()} />
+          <Museum lang={lang} exhibits={exhibits()} />
         </Station>
 
         <Station
+          lang={lang}
           id="program"
           {...say("program")}
         >
-          <ProgramChip api={CHIP_API} />
+          <ProgramChip lang={lang} api={CHIP_API} />
         </Station>
 
         <Station
+          lang={lang}
           id="bench"
           {...say("bench")}
         >
-          <Bench data={bench()} />
+          <Bench lang={lang} data={bench()} />
         </Station>
 
         <Station
+          lang={lang}
           id="arc"
           {...say("arc")}
         >
-          <Timeline data={timeline()} />
+          <Timeline lang={lang} data={timeline()} />
         </Station>
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">
@@ -132,20 +136,20 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
                 <rect x="610" y="115" width="130" height="70" />
               </g>
               <g className="pg-dg-name">
-                <text x="75" y="47">Pad</text>
-                <text x="75" y="147">Crystal</text>
+                <text x="75" y="47">{U.machine.names.pad}</text>
+                <text x="75" y="147">{U.machine.names.crystal}</text>
                 <text x="275" y="72">2A03</text>
                 <text x="275" y="222">2C02</text>
-                <text x="485" y="146">Cartridge</text>
-                <text x="675" y="146">Television</text>
+                <text x="485" y="146">{U.machine.names.cart}</text>
+                <text x="675" y="146">{U.machine.names.tv}</text>
               </g>
               <g className="pg-dg-role">
-                <text x="75" y="65">eight buttons</text>
-                <text x="75" y="165">keeps time</text>
-                <text x="275" y="92">the brain and the sound</text>
-                <text x="275" y="242">the picture chip</text>
-                <text x="485" y="164">program and tiles</text>
-                <text x="675" y="164">light, from one wire</text>
+                <text x="75" y="65">{U.machine.roles.pad}</text>
+                <text x="75" y="165">{U.machine.roles.crystal}</text>
+                <text x="275" y="92">{U.machine.roles.cpu}</text>
+                <text x="275" y="242">{U.machine.roles.ppu}</text>
+                <text x="485" y="164">{U.machine.roles.cart}</text>
+                <text x="675" y="164">{U.machine.roles.tv}</text>
               </g>
               <g className="pg-dg-wire" markerEnd="url(#pg-arrow)">
                 <path d="M130,50 L198,62" />
@@ -158,14 +162,14 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
                 <path d="M350,255 C500,285 580,240 608,172" />
               </g>
               <g className="pg-dg-label">
-                <text x="140" y="44">buttons</text>
-                <text x="140" y="112">ticks</text>
-                <text x="140" y="196">ticks</text>
-                <text x="282" y="158">notes</text>
-                <text x="366" y="124">program</text>
-                <text x="372" y="192">tiles</text>
-                <text x="480" y="40">sound</text>
-                <text x="480" y="284">picture</text>
+                <text x="140" y="44">{U.machine.wires.buttons}</text>
+                <text x="140" y="112">{U.machine.wires.ticks}</text>
+                <text x="140" y="196">{U.machine.wires.ticks}</text>
+                <text x="282" y="158">{U.machine.wires.notes}</text>
+                <text x="366" y="124">{U.machine.wires.program}</text>
+                <text x="372" y="192">{U.machine.wires.tiles}</text>
+                <text x="480" y="40">{U.machine.wires.sound}</text>
+                <text x="480" y="284">{U.machine.wires.picture}</text>
               </g>
             </svg>
             <figcaption className="pg-note">{W.machine.caption}</figcaption>

@@ -42,6 +42,8 @@ export interface Hero {
   kicker: string;
   title: string;
   lead: (ms: string) => ReactNode;
+  /** What the tab and a link to the page say, which is not the heading. */
+  description: string;
 }
 
 export interface Machine {
@@ -61,6 +63,8 @@ const EN: { hero: Hero; stations: Record<StationKey, StationWords>; machine: Mac
   hero: {
     kicker: "A playground, not yet a page",
     title: "The NES at human speed",
+    description:
+      "A playground: the NES console's model slowed down until a person can watch it draw a frame, send it down the wire, and read a pad.",
     lead: (ms) => (
       <>
         Everything a Nintendo does to put one picture on a television happens in {ms} thousandths of a second. Here is
@@ -536,6 +540,7 @@ const JA: { hero: Hero; stations: Record<StationKey, StationWords>; machine: Mac
   hero: {
     kicker: "まだページではなく、実験場",
     title: "人の速さで見るファミコン",
+    description: "実験場です。ファミコンの模型を、フレームを描き、線に送り出し、パッドを読むところが人の目で追えるまで遅くしてあります。",
     lead: (ms) => (
       <>
         テレビに絵を一枚映すために、ファミコンがすることの全部が{ms}ミリ秒で終わります。ここで動いているのは、

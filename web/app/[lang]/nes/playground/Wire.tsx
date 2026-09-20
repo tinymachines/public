@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Engine, Wire as WireData } from "./engine";
 import { anatomy, type Anatomy } from "./signal";
 import { token } from "./Playground";
+import { ui } from "./ui";
+import type { Lang } from "@/lib/lang";
 
 /**
  * One line of the frame as the volts on the wire: the model's encode of a
@@ -20,16 +22,19 @@ function hex2(n: number) {
 }
 
 export function Wire({
+  lang,
   engine,
   line,
   serial,
   palette,
 }: {
+  lang: Lang;
   engine: React.RefObject<Engine | null>;
   line: number | null;
   serial: number | null;
   palette: [number, number, number][] | null;
 }) {
+  const U = ui(lang).wire;
   const [data, setData] = useState<WireData | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const trace = useRef<HTMLCanvasElement>(null);
@@ -95,9 +100,9 @@ export function Wire({
       ctx.font = `600 11px ${token("--font-sans")}`;
       ctx.fillText(label, x(a) + 4, 14);
     };
-    band(pic[0], pic[1], token("--color-mustard"), "picture");
-    band(parts.sync[0], parts.sync[1], token("--color-burnt"), "sync");
-    if (parts.burst) band(parts.burst[0], parts.burst[1], token("--color-ocean"), "burst");
+    band(pic[0], pic[1], token("--color-mustard"), U.bands.picture);
+    band(parts.sync[0], parts.sync[1], token("--color-burnt"), U.bands.sync);
+    if (parts.burst) band(parts.burst[0], parts.burst[1], token("--color-ocean"), U.bands.burst);
     // The dots' colours, a ribbon under the trace.
     if (palette && data) {
       for (let d = 0; d < s.pictureW; d++) {
@@ -191,7 +196,7 @@ export function Wire({
     }
   });
 
-  if (!data || !s || !samples || !parts) return <p className="pg-waiting">Encoding the frame...</p>;
+  if (!data || !s || !samples || !parts) return <p className="pg-waiting">{U.encoding}</p>;
 
   const onMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -204,8 +209,8 @@ export function Wire({
   return (
     <div className="pg-wire">
       <p className="pg-instr-h">
-        Line {ln}
-        <span> of the frame, as volts on the wire. Point at it to magnify.</span>
+        {U.line(ln)}
+        <span>{U.ofFrame}</span>
       </p>
       <canvas
         ref={trace}
@@ -213,21 +218,21 @@ export function Wire({
         style={{ height: H }}
         onPointerMove={onMove}
         onPointerDown={onMove}
-        aria-label={`Line ${ln} of the frame as a voltage trace, with the sync, the colour burst and the picture marked`}
+        aria-label={U.trace(ln)}
       />
       {/* The lens and its line are always there, so pointing at the trace
           fills them in without moving the page. */}
       <canvas ref={lens} className="pg-lens" style={{ height: 160 }} aria-hidden="true" />
       <p className="pg-readout">
             {hover == null
-              ? "Point at the trace: the lens shows the few dots under the pointer, sample by sample."
+              ? U.hint
               : dotAt != null && inside && code != null
-              ? `Dot ${dotAt}: colour $${hex2(code)}, brightness step ${code >> 4}, hue ${code & 15}. Each dot is ${s.perDot} samples of the wire.`
+              ? U.dot(dotAt, hex2(code), code >> 4, code & 15, s.perDot)
               : parts.burst && hover >= parts.burst[0] && hover < parts.burst[1]
-                ? `The colour burst: a few cycles of the colour beat, so the television can set its clock by it. The beat takes ${parts.period ?? "?"} samples, which is ${parts.period ? (parts.period / s.perDot).toFixed(1) : "?"} dots.`
+                ? U.burst(String(parts.period ?? "?"), parts.period ? (parts.period / s.perDot).toFixed(1) : "?")
                 : hover >= parts.sync[0] && hover < parts.sync[1]
-                  ? "The sync: the wire drops below black, and the television starts a new line."
-                  : "Blanking: the wire rests at black while the beam is off."}
+                  ? U.sync
+                  : U.blanking}
       </p>
     </div>
   );

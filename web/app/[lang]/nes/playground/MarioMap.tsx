@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Shape } from "./engine";
 import type { Kind, MarioFrame, Row } from "./mario";
 import { token } from "./Playground";
+import { ui } from "./ui";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The dissection's frame painted onto the frame: every dot the beam
@@ -14,12 +16,13 @@ import { token } from "./Playground";
  * stretches, dot by dot, and say so.
  */
 
-const KINDS: Record<Kind, { label: string; token: string }> = {
-  wait: { label: "waiting for the beam", token: "--color-mustard" },
-  logic: { label: "the game's own work", token: "--color-forest" },
-  busy: { label: "talking to the picture chip, the sound and the pad", token: "--color-burnt" },
-  copy: { label: "copying the sprites across (the processor is frozen)", token: "--color-ocean" },
-  idle: { label: "nothing at all: done, and waiting for the next frame", token: "--color-chrome-lo" },
+/** Each kind's colour; what each kind is called is in the dictionary. */
+const KINDS: Record<Kind, string> = {
+  wait: "--color-mustard",
+  logic: "--color-forest",
+  busy: "--color-burnt",
+  copy: "--color-ocean",
+  idle: "--color-chrome-lo",
 };
 const ORDER: Kind[] = ["logic", "wait", "busy", "copy", "idle"];
 
@@ -60,7 +63,8 @@ function Record({ text }: { text: string }) {
   );
 }
 
-export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; shape: Shape; framePeriodMs: number }) {
+export function MarioMap({ lang, mario, shape, framePeriodMs }: { lang: Lang; mario: MarioFrame; shape: Shape; framePeriodMs: number }) {
+  const U = ui(lang).mario;
   const canvas = useRef<HTMLCanvasElement>(null);
   const [beam, setBeam] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -86,7 +90,7 @@ export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; s
       const n = parseInt(token(t).slice(1), 16);
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     };
-    const colours = Object.fromEntries(ORDER.map((k) => [k, rgb(KINDS[k].token)])) as Record<Kind, number[]>;
+    const colours = Object.fromEntries(ORDER.map((k) => [k, rgb(KINDS[k])])) as Record<Kind, number[]>;
     for (const p of parts) {
       for (let q = p.from; q < p.to; q++) {
         const i = q % total;
@@ -162,10 +166,7 @@ export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; s
 
   if (!mario.ok) {
     return (
-      <p className="pg-waiting">
-        The map is drawn from the dissection&rsquo;s table, and this build could not read it: {mario.reason}. Nothing is
-        drawn in its place.
-      </p>
+      <p className="pg-waiting">{U.missing(mario.reason)}</p>
     );
   }
 
@@ -186,11 +187,11 @@ export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; s
   return (
     <div className="pg-mario">
       <div className="pg-field" style={{ aspectRatio: `${shape.dots} / ${shape.lines}` }}>
-        <canvas ref={canvas} className="pg-canvas" onClick={pick} aria-label={`Frame ${mario.frame} of Super Mario Bros., coloured by what the processor was doing at each point of the beam`} />
+        <canvas ref={canvas} className="pg-canvas" onClick={pick} aria-label={U.map(String(mario.frame))} />
       </div>
       <div className="pg-row">
         <button className="pg-btn" onClick={() => { setFocus(null); setPlaying((p) => !p); }}>
-          {playing ? "Pause" : "Sweep the beam"}
+          {playing ? ui(lang).common.pause : U.sweep}
         </button>
         <input
           className="pg-scrub"
@@ -199,7 +200,7 @@ export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; s
           max={1}
           step={0.0005}
           value={beam}
-          aria-label="Where the beam is in Mario's frame"
+          aria-label={U.scrub}
           onChange={(e) => {
             setPlaying(false);
             setFocus(null);
@@ -209,37 +210,35 @@ export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; s
       </div>
       <div className="pg-now" data-kind={kind}>
         <p className="pg-now-h">
-          <span className="pg-key" style={{ background: `var(${KINDS[kind].token})` }} aria-hidden="true" />
-          Line {line}: {KINDS[kind].label}. {((at * dotNs) / 1e6).toFixed(2)} ms into the frame.
+          <span className="pg-key" style={{ background: `var(${KINDS[kind]})` }} aria-hidden="true" />
+          {U.now(line, U.kinds[kind], ((at * dotNs) / 1e6).toFixed(2))}
         </p>
         {row ? (
           <>
-            <p className="pg-now-plain">{row.plain || "The engineers' words are below."}</p>
+            <p className="pg-now-plain">{row.plain || U.fallback}</p>
             <p className="pg-now-record">
-              <span>line {row.lineTo != null ? `${row.line} to ${row.lineTo}` : row.line}{row.dot != null ? `, dot ${row.dot}` : ""}</span> <Record text={row.what} />
-              {row.where ? <> at <Record text={row.where} /></> : null}
+              <span>{U.rowPos(row.lineTo != null ? `${row.line}-${row.lineTo}` : String(row.line), row.dot)}</span>{" "}
+              <Record text={row.what} />
+              {row.where ? <>{U.at}<Record text={row.where} /></> : null}
             </p>
           </>
         ) : null}
       </div>
-      <div className="pg-shares" aria-label="Share of the frame, counted dot by dot from the table's stretches">
+      <div className="pg-shares" aria-label={U.shares}>
         {ORDER.map((k) => {
           const n = shares.get(k) ?? 0;
-          return n ? <span key={k} style={{ flexGrow: n, background: `var(${KINDS[k].token})` }} title={KINDS[k].label} /> : null;
+          return n ? <span key={k} style={{ flexGrow: n, background: `var(${KINDS[k]})` }} title={U.kinds[k]} /> : null;
         })}
       </div>
       <ul className="pg-legend">
         {ORDER.map((k) => (
           <li key={k}>
-            <span className="pg-key" style={{ background: `var(${KINDS[k].token})` }} aria-hidden="true" />
-            {KINDS[k].label} <b>{Math.round(((shares.get(k) ?? 0) / total) * 100)}%</b>
+            <span className="pg-key" style={{ background: `var(${KINDS[k]})` }} aria-hidden="true" />
+            {U.kinds[k]} <b>{Math.round(((shares.get(k) ?? 0) / total) * 100)}%</b>
           </li>
         ))}
       </ul>
-      <p className="pg-note">
-        The shares are counted dot by dot from the table&rsquo;s own lines and dots, so they are the table&rsquo;s clock,
-        not a stopwatch. The dissection&rsquo;s profiler has its own figure for the idle time.
-      </p>
+      <p className="pg-note">{U.note}</p>
       <ol className="pg-rows">
         {mario.rows.map((r, i) => (
           <li key={i}>
@@ -248,7 +247,7 @@ export function MarioMap({ mario, shape, framePeriodMs }: { mario: MarioFrame; s
               setFocus(i);
               setBeam(((r.line * shape.dots + (r.dot ?? 0)) % total) / total);
             }}>
-              <span className="pg-key" style={{ background: `var(${KINDS[r.kind].token})` }} aria-hidden="true" />
+              <span className="pg-key" style={{ background: `var(${KINDS[r.kind]})` }} aria-hidden="true" />
               <span className="pg-rowpos">{r.line}{r.dot != null ? `.${r.dot}` : ""}</span>
               <span>{r.plain || <Record text={r.what} />}</span>
             </button>

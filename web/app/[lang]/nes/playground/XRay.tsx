@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Shape } from "./engine";
 import { BIT, BUTTONS, token } from "./Playground";
+import { xrayWords } from "./ui.xray";
+import type { Lang } from "@/lib/lang";
 
 /**
  * Your own game, x-rayed: the reader plays their own cartridge while the
@@ -39,16 +41,11 @@ interface Report {
 const MOST = 1800;
 const TAIL = 150;
 
-const CELLS = [
-  ["tap", "The tap"],
-  ["first", "First frame apart"],
-  ["gap", "Frames after the tap"],
-  ["dots", "Dots apart then"],
-  ["worst", "Worst frame"],
-  ["rejoin", "Together again"],
-] as const;
+/** The report's cells: the keys it writes by, in their order. */
+const CELLS = ["tap", "first", "gap", "dots", "worst", "rejoin"] as const;
 
-export function XRay({ shape, palette, framePeriodMs }: { shape: Shape; palette: [number, number, number][] | null; framePeriodMs: number }) {
+export function XRay({ lang, shape, palette, framePeriodMs }: { lang: Lang; shape: Shape; palette: [number, number, number][] | null; framePeriodMs: number }) {
+  const U = xrayWords(lang);
   const [name, setName] = useState<string | null>(null);
   const [frames, setFrames] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -184,14 +181,14 @@ export function XRay({ shape, palette, framePeriodMs }: { shape: Shape; palette:
         if (el && el.textContent !== v) el.textContent = v;
       };
       const apart = r.apart;
-      put("tap", `${button.toUpperCase()} at frame ${at.toLocaleString("en")}`);
-      put("first", r.firstAt >= 0 ? r.firstAt.toLocaleString("en") : "never");
-      put("gap", r.firstAt >= 0 ? String(r.firstAt - at) : "·");
-      put("dots", r.firstAt >= 0 ? apart[r.firstAt].toLocaleString("en") : "·");
-      put("worst", r.worstAt >= 0 ? `${apart[r.worstAt].toLocaleString("en")} dots, frame ${r.worstAt.toLocaleString("en")}` : "·");
+      put("tap", U.tapAt(button.toUpperCase(), at.toLocaleString("en")));
+      put("first", r.firstAt >= 0 ? r.firstAt.toLocaleString("en") : U.never);
+      put("gap", r.firstAt >= 0 ? String(r.firstAt - at) : U.none);
+      put("dots", r.firstAt >= 0 ? apart[r.firstAt].toLocaleString("en") : U.none);
+      put("worst", r.worstAt >= 0 ? U.worstAt(apart[r.worstAt].toLocaleString("en"), r.worstAt.toLocaleString("en")) : U.none);
       put(
         "rejoin",
-        r.firstAt < 0 ? "they never differed" : r.lastAt >= full.length - 1 ? "not in these frames" : `frame ${(r.lastAt + 1).toLocaleString("en")}`,
+        r.firstAt < 0 ? U.neverDiffered : r.lastAt >= full.length - 1 ? U.notInThese : U.atFrame((r.lastAt + 1).toLocaleString("en")),
       );
       if (r.left && r.right) paint(worst.current, r.right, r.left);
       // The frames, as bars: what differed, frame by frame.
@@ -231,19 +228,19 @@ export function XRay({ shape, palette, framePeriodMs }: { shape: Shape; palette:
       <div className="pg-xray-top">
         <div className="pg-xray-play">
           <div className="pg-field" style={{ aspectRatio: `${shape.pictureW} / ${shape.pictureH}` }}>
-            <canvas ref={screen} className="pg-canvas" aria-label="Your cartridge, playing" />
-            {!ready ? <p className="pg-waiting">Choose a .nes file from your own disk.</p> : null}
+            <canvas ref={screen} className="pg-canvas" aria-label={U.playing} />
+            {!ready ? <p className="pg-waiting">{U.choose}</p> : null}
           </div>
           <div className="pg-row">
             <label className="pg-btn pg-file">
-              Your own .nes
+              {U.yourOwn}
               <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && load(e.target.files[0])} />
             </label>
             <button className="pg-btn" onClick={() => setPlaying((p) => !p)} disabled={!ready || busy}>
-              {playing ? "Pause" : "Play"}
+              {playing ? U.pause : U.play}
             </button>
             <span className="pg-note">
-              {name ? `${name}: ${frames.toLocaleString("en")} frames recorded` : "Only the simplest cartridge boards load."}
+              {name ? U.recorded(name, frames.toLocaleString("en")) : U.onlySimple}
             </span>
           </div>
           <div className="pg-minipad">
@@ -254,52 +251,46 @@ export function XRay({ shape, palette, framePeriodMs }: { shape: Shape; palette:
             ))}
           </div>
           <div className="pg-row">
-            <label className="pg-label" htmlFor="pg-xray-button">X-ray a tap of</label>
+            <label className="pg-label" htmlFor="pg-xray-button">{U.xrayOf}</label>
             <select id="pg-xray-button" className="pg-select" value={button} onChange={(e) => setButton(e.target.value as (typeof BUTTONS)[number])}>
               {BUTTONS.map((b) => (
                 <option key={b} value={b}>{b.toUpperCase()}</option>
               ))}
             </select>
             <button className="pg-btn pg-btn-hot" onClick={xray} disabled={!ready || busy || frames < 2}>
-              {busy ? "Running both..." : "X-ray it here"}
+              {busy ? U.running : U.doIt}
             </button>
           </div>
           <p className="pg-note pg-xray-note">
             {error ? (
               <span className="pg-error">{error}</span>
             ) : (
-              "Play to the moment you are interested in, then x-ray a tap there. Both consoles then replay everything you played, from power on, and are left running a while afterwards."
+              U.how
             )}
           </p>
         </div>
 
         <div className="pg-xray-report">
-          <p className="pg-record-h">The report</p>
+          <p className="pg-record-h">{U.report}</p>
           <dl ref={cells} className="pg-console pg-console-3">
-            {CELLS.map(([k, label]) => (
+            {CELLS.map((k) => (
               <div key={k}>
-                <dt>{label}</dt>
+                <dt>{U.cells[k]}</dt>
                 <dd data-k={k}>·</dd>
               </div>
             ))}
           </dl>
-          <p className="pg-shift-h">Dots apart, frame by frame (the red mark is the tap)</p>
-          <canvas ref={bars} className="pg-trace" style={{ height: 70 }} aria-label="How far apart the two runs were on each frame" />
+          <p className="pg-shift-h">{U.apartHeading}</p>
+          <canvas ref={bars} className="pg-trace" style={{ height: 70 }} aria-label={U.apartTrace} />
           <figure className="pg-xray-worst">
             <div className="pg-field" style={{ aspectRatio: `${shape.pictureW} / ${shape.pictureH}` }}>
-              <canvas ref={worst} className="pg-canvas" aria-label="The frame the two runs differed on most, with the differing dots lit" />
+              <canvas ref={worst} className="pg-canvas" aria-label={U.worstPicture} />
             </div>
             <figcaption>
-              {report && report.worstAt >= 0
-                ? "The frame they differed on most: the run with the tap, with every dot the other run had differently lit."
-                : "The frame they differ on most appears here."}
+              {report && report.worstAt >= 0 ? U.worstCaption : U.worstEmpty}
             </figcaption>
           </figure>
-          <p className="pg-note">
-            This is what the bench can see: pictures. The engineers&rsquo; own x-ray also names the instruction the two runs
-            first parted at and the path through the code that followed, which it reads from the model&rsquo;s bus; that is
-            not in the bundle this page runs.
-          </p>
+          <p className="pg-note">{U.limits}</p>
         </div>
       </div>
     </div>

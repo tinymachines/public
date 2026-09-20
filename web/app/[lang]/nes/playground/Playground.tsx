@@ -15,6 +15,7 @@ import { Tour } from "./Tour";
 import type { Taps, Xray } from "./xray";
 import type { MarioFrame } from "./mario";
 import { words, type StationKey } from "./words";
+import { ui } from "./ui";
 import type { Lang } from "@/lib/lang";
 
 /**
@@ -27,9 +28,9 @@ import type { Lang } from "@/lib/lang";
  */
 
 const CARTS = [
-  { url: "/nes/bars.nes", name: "Colour bars", about: "Every hue at one brightness, the brightness stepping every few seconds. Nobody's game: we wrote it to test the picture." },
-  { url: "/nes/cal.nes", name: "The calibration cartridge", about: "The screens we show a real console and the model, so the two pictures can be compared." },
-  { url: "/nes/pad.nes", name: "The pad tester", about: "Press buttons below and watch the console notice." },
+  { url: "/nes/bars.nes", key: "bars" },
+  { url: "/nes/cal.nes", key: "cal" },
+  { url: "/nes/pad.nes", key: "pad" },
 ] as const;
 
 export const BIT = { a: 1, b: 2, select: 4, start: 8, up: 16, down: 32, left: 64, right: 128 } as const;
@@ -41,10 +42,10 @@ const KEYS: Record<string, number> = {
 
 /** Frame lengths a person can watch, as a multiple of nothing: a length in ms. */
 const PACES = [
-  { id: "real", label: "Real speed", ms: 0 },
-  { id: "second", label: "A frame a second", ms: 1000 },
-  { id: "ten", label: "A frame in ten seconds", ms: 10_000 },
-  { id: "minute", label: "A frame a minute", ms: 60_000 },
+  { id: "real", ms: 0 },
+  { id: "second", ms: 1000 },
+  { id: "ten", ms: 10_000 },
+  { id: "minute", ms: 60_000 },
 ] as const;
 type Pace = (typeof PACES)[number]["id"];
 
@@ -98,14 +99,7 @@ export function prefersStill() {
 }
 
 /** The hero's console: a key and a label per cell, in reading order. */
-const CONSOLE = [
-  ["line", "Line"],
-  ["dot", "Dot"],
-  ["beam", "Beam"],
-  ["time", "Into the frame"],
-  ["each", "One dot lasts"],
-  ["slower", "Slower than real"],
-] as const;
+const CONSOLE = ["line", "dot", "beam", "time", "each", "slower"] as const;
 
 export interface Selection {
   line: number;
@@ -128,6 +122,7 @@ export function Playground({
   taps: Taps;
 }) {
   const W = words(lang);
+  const U = ui(lang);
   const say = (key: StationKey) => ({ eyebrow: W.stations[key].eyebrow, title: W.stations[key].title, words: W.stations[key].body, record: W.stations[key].record });
   const engine = useRef<Engine | null>(null);
   const [shape, setShape] = useState<Shape | null>(null);
@@ -353,17 +348,17 @@ export function Playground({
       const r = readout.current;
       if (r) {
         const inside = dot >= s.pictureX && dot < s.pictureX + s.pictureW && line < s.pictureH;
-        const beam = inside ? "drawing" : line >= s.pictureH ? "off: to the top" : "off: to the left";
+        const beam = inside ? U.hero.beamDrawing : line >= s.pictureH ? U.hero.beamTop : U.hero.beamLeft;
         const dotNs = (framePeriodMs * 1e6) / total;
         const us = (pos * dotNs) / 1000;
         const put = (k: string, v: string) => {
           const cell = r.querySelector<HTMLElement>(`[data-k="${k}"]`);
           if (cell && cell.textContent !== v) cell.textContent = v;
         };
-        put("line", slow ? String(line) : "·");
-        put("dot", slow ? String(dot) : "·");
-        put("beam", slow ? beam : "too fast to see");
-        put("time", slow ? `${us.toFixed(1)} µs` : "·");
+        put("line", slow ? String(line) : U.common.none);
+        put("dot", slow ? String(dot) : U.common.none);
+        put("beam", slow ? beam : U.hero.beamFast);
+        put("time", slow ? `${us.toFixed(1)} µs` : U.common.none);
         put("each", `${dotNs.toFixed(0)} ns`);
         put("slower", slow ? `${Math.round(paceMs / framePeriodMs).toLocaleString("en")}×` : "1×");
       }
@@ -372,7 +367,7 @@ export function Playground({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [running, paceMs, slow, palette, present, request, framePeriodMs]);
+  }, [running, paceMs, slow, palette, present, request, framePeriodMs, U]);
 
   // A new view throws the frame in hand away, so the next one is drawn the new way.
   useEffect(() => {
@@ -413,7 +408,7 @@ export function Playground({
 
   const s = shape;
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
-  const aboutCart = CARTS.find((c) => c.url === cart)?.about;
+  const aboutCart = CARTS.find((c) => c.url === cart)?.key ?? "bars";
   const lut = useMemo(() => palette?.rgb ?? null, [palette]);
 
   return (
@@ -430,46 +425,46 @@ export function Playground({
           tabIndex={0}
           onKeyDown={onKey(true)}
           onKeyUp={onKey(false)}
-          aria-label="The console's frame. Focus it to play with the keyboard: arrows, X for A, Z for B, Enter for Start."
+          aria-label={U.hero.stage}
         >
           <div className="pg-field" style={s ? { aspectRatio: `${s.dots} / ${s.lines}` } : undefined}>
-            <canvas ref={canvas} onClick={pick} className="pg-canvas" aria-label="The whole frame the beam walks, picture and blanking" />
+            <canvas ref={canvas} onClick={pick} className="pg-canvas" aria-label={U.hero.field} />
             {s ? (
               <>
                 <div className="pg-zone pg-zone-picture" style={{ left: pct(s.pictureX, s.dots), width: pct(s.pictureW, s.dots), height: pct(s.pictureH, s.lines) }}>
-                  <span>the picture you see</span>
+                  <span>{U.hero.zonePicture}</span>
                 </div>
                 <div className="pg-zone pg-zone-right" style={{ left: pct(s.pictureX + s.pictureW, s.dots), height: pct(s.pictureH, s.lines) }}>
-                  <span>the beam flies back</span>
+                  <span>{U.hero.zoneRight}</span>
                 </div>
                 <div className="pg-zone pg-zone-bottom" style={{ top: pct(s.pictureH, s.lines) }}>
-                  <span>the beam climbs back to the top: a game&rsquo;s quiet moment to change the picture</span>
+                  <span>{U.hero.zoneBottom}</span>
                 </div>
                 {selection ? <div className="pg-picked" style={{ top: pct(selection.line + 0.5, s.lines) }} aria-hidden="true" /> : null}
               </>
             ) : (
-              <p className="pg-waiting">{error ?? "Waking the console up..."}</p>
+              <p className="pg-waiting">{error ?? U.common.waiting}</p>
             )}
           </div>
 
           <div className="pg-controls">
-            <div className="pg-seg" role="radiogroup" aria-label="How fast">
+            <div className="pg-seg" role="radiogroup" aria-label={U.hero.howFast}>
               {PACES.map((p) => (
                 <button key={p.id} role="radio" aria-checked={pace === p.id} className="pg-segbtn" onClick={() => setPace(p.id)}>
-                  {p.label}
+                  {U.hero.paces[p.id]}
                 </button>
               ))}
             </div>
             <div className="pg-row">
               <button className="pg-btn" onClick={() => setRunning(!running)}>
-                {running ? "Pause" : "Play"}
+                {running ? U.common.pause : U.common.play}
               </button>
               <button className="pg-btn" onClick={stepFrame} disabled={running}>
-                Next frame
+                {U.common.nextFrame}
               </button>
               <label className="pg-check">
                 <input type="checkbox" checked={tvView} onChange={(e) => setTvView(e.target.checked)} />
-                Through the television&rsquo;s signal
+                {U.hero.throughTv}
               </label>
             </div>
             {/* Always there, so changing the pace moves nothing; idle at real speed. */}
@@ -481,16 +476,16 @@ export function Playground({
               max={1}
               step={0.0001}
               disabled={!slow}
-              aria-label="Where the beam is in the frame"
+              aria-label={U.hero.scrub}
               onChange={(e) => {
                 setRunning(false);
                 loop.current.beam = Number(e.target.value);
               }}
             />
             <dl ref={readout} className="pg-console" aria-live="off">
-              {CONSOLE.map(([k, label]) => (
+              {CONSOLE.map((k) => (
                 <div key={k}>
-                  <dt>{label}</dt>
+                  <dt>{U.hero.cells[k]}</dt>
                   <dd data-k={k}>·</dd>
                 </div>
               ))}
@@ -498,41 +493,44 @@ export function Playground({
           </div>
 
           <div className="pg-carts">
-            <label className="pg-label" htmlFor="pg-cart">Cartridge</label>
+            <label className="pg-label" htmlFor="pg-cart">{U.common.cartridge}</label>
             <select id="pg-cart" className="pg-select" value={cart} onChange={(e) => setCart(e.target.value)}>
               {CARTS.map((c) => (
-                <option key={c.url} value={c.url}>{c.name}</option>
+                <option key={c.url} value={c.url}>{U.hero.carts[c.key].name}</option>
               ))}
               {own ? <option value="own">{own}</option> : null}
             </select>
             <label className="pg-btn pg-file">
-              Your own .nes
+              {U.common.yourOwn}
               <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && loadOwn(e.target.files[0])} />
             </label>
             <p className="pg-note">
               {cart === "own"
-                ? "Read from your disk into this browser, and nowhere else. Only the simplest cartridge boards load; anything else is refused by name."
-                : aboutCart}
+                ? U.hero.carts.own
+                : U.hero.carts[aboutCart].about}
             </p>
             {error && s ? <p className="pg-error">{error}</p> : null}
           </div>
 
-          <MiniPad bits={pad} onChange={setTouchPad} />
+          <MiniPad bits={pad} onChange={setTouchPad} pad={U.hero.pad} names={U.padStation.names} />
         </div>
       </section>
 
       <Station
+        lang={lang}
         id="tour"
         {...say("tour")}
       >
-        <Tour />
+        <Tour lang={lang} />
       </Station>
 
       <Station
+        lang={lang}
         id="wire"
         {...say("wire")}
       >
         <Wire
+          lang={lang}
           engine={engine}
           line={selection?.line ?? (shown ? Math.floor((shown.shape.pictureH * 2) / 5) : null)}
           serial={selection?.serial ?? shown?.serial ?? null}
@@ -541,70 +539,78 @@ export function Playground({
       </Station>
 
       <Station
+        lang={lang}
         id="colours"
         {...say("colours")}
       >
-        {palette && s ? <Colours palette={palette} shape={s} /> : <p className="pg-waiting">Measuring the colours...</p>}
+        {palette && s ? <Colours lang={lang} palette={palette} shape={s} /> : <p className="pg-waiting">{U.colours.measuring}</p>}
       </Station>
 
       <Station
+        lang={lang}
         id="mario"
         {...say("mario")}
       >
-        {s ? <MarioMap mario={mario} shape={s} framePeriodMs={framePeriodMs} /> : <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>}
+        {s ? <MarioMap lang={lang} mario={mario} shape={s} framePeriodMs={framePeriodMs} /> : <p className="pg-waiting">{U.mario.waiting}</p>}
       </Station>
 
       <Station
+        lang={lang}
         id="pad"
         {...say("pad")}
       >
-        <PadRegister bits={pad} onChange={setTouchPad} />
+        <PadRegister lang={lang} bits={pad} onChange={setTouchPad} />
       </Station>
 
       <Station
+        lang={lang}
         id="difference"
         {...say("difference")}
       >
         {s ? (
-          <Twins shape={s} palette={lut} framePeriodMs={framePeriodMs} xray={xray} taps={taps} />
+          <Twins lang={lang} shape={s} palette={lut} framePeriodMs={framePeriodMs} xray={xray} taps={taps} />
         ) : (
-          <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>
+          <p className="pg-waiting">{U.mario.waiting}</p>
         )}
       </Station>
 
       <Station
+        lang={lang}
         id="xray"
         {...say("xray")}
       >
         {s ? (
-          <XRay shape={s} palette={lut} framePeriodMs={framePeriodMs} />
+          <XRay lang={lang} shape={s} palette={lut} framePeriodMs={framePeriodMs} />
         ) : (
-          <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>
+          <p className="pg-waiting">{U.mario.waiting}</p>
         )}
       </Station>
 
       <Station
+        lang={lang}
         id="sound"
         {...say("sound")}
       >
-        <SoundVoices halfCyclesPerFrame={shown?.halfCycles ?? null} framePeriodMs={framePeriodMs} />
+        <SoundVoices lang={lang} halfCyclesPerFrame={shown?.halfCycles ?? null} framePeriodMs={framePeriodMs} />
       </Station>
 
       <Station
+        lang={lang}
         id="slow"
         {...say("slow")}
       >
         {slowChip ? (
-          <SlowChip palette={lut} framePeriodMs={framePeriodMs} />
+          <SlowChip lang={lang} palette={lut} framePeriodMs={framePeriodMs} />
         ) : (
-          <p className="pg-waiting">The slow chip is not in this build: scripts/build-playground-wasm.py makes it, from the engineers&rsquo; checkout.</p>
+          <p className="pg-waiting">{U.common.noSlow}</p>
         )}
       </Station>
       <Station
+        lang={lang}
         id="die"
         {...say("die")}
       >
-        {slowChip ? <Die /> : <p className="pg-waiting">The die needs the slow chip&rsquo;s bundle, which is not in this build.</p>}
+        {slowChip ? <Die lang={lang} /> : <p className="pg-waiting">{U.common.noDie}</p>}
       </Station>
 
     </>
@@ -613,10 +619,10 @@ export function Playground({
 
 type SetBits = React.Dispatch<React.SetStateAction<number>>;
 
-function MiniPad({ bits, onChange }: { bits: number; onChange: SetBits }) {
+function MiniPad({ bits, onChange, pad, names }: { bits: number; onChange: SetBits; pad: string; names: Record<(typeof BUTTONS)[number], string> }) {
   const hold = (b: number, on: boolean) => onChange((was) => (on ? was | b : was & ~b));
   return (
-    <div className="pg-minipad" aria-label="The controller">
+    <div className="pg-minipad" aria-label={pad}>
       {BUTTONS.map((name) => (
         <button
           key={name}
@@ -629,7 +635,7 @@ function MiniPad({ bits, onChange }: { bits: number; onChange: SetBits }) {
           onPointerUp={() => hold(BIT[name], false)}
           onPointerCancel={() => hold(BIT[name], false)}
         >
-          {name}
+          {names[name]}
         </button>
       ))}
     </div>
@@ -637,6 +643,7 @@ function MiniPad({ bits, onChange }: { bits: number; onChange: SetBits }) {
 }
 
 export function Station({
+  lang,
   id,
   eyebrow,
   title,
@@ -644,6 +651,7 @@ export function Station({
   record,
   children,
 }: {
+  lang: Lang;
   id: string;
   eyebrow: string;
   title: string;
@@ -658,7 +666,7 @@ export function Station({
         <h2 id={`${id}-h`}>{title}</h2>
         {words}
         <div className="pg-record">
-          <p className="pg-record-h">Go deeper: the engineers&rsquo; record</p>
+          <p className="pg-record-h">{ui(lang).station.deeper}</p>
           <ul>
             {record.map((r) => (
               <li key={r.href}>

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { RealModel } from "./realmodel";
 import { token } from "./Playground";
+import { realModelWords } from "./ui.realmodel";
+import type { Lang } from "@/lib/lang";
 
 /**
  * Real or model: the engineers' three-way picture of one title screen,
@@ -11,16 +13,17 @@ import { token } from "./Playground";
  * one over the other: wipe, blink or difference. A probe reads the same
  * point in both and prints the two colours and how far apart their hues
  * are, so a reader can find the engineers' twelve degrees themselves.
+ *
+ * What the three pictures are called, and every label here, are ours and
+ * are in ui.realmodel.ts, both languages; the table's cells and the
+ * passages under it are the report's own.
  */
 
 type Rect = { x: number; y: number; w: number; h: number };
-const EYES = ["The model", "The real console, recorded by the scope", "The real console, through a USB grabber"] as const;
-const MODES = [
-  { id: "wipe", label: "Wipe" },
-  { id: "blink", label: "Blink" },
-  { id: "diff", label: "Difference" },
-] as const;
-type Mode = (typeof MODES)[number]["id"];
+/** The three panels, in the order the report's caption names them. */
+const PANELS = 3;
+const MODES = ["wipe", "blink", "diff"] as const;
+type Mode = (typeof MODES)[number];
 
 const white = (d: Uint8ClampedArray, i: number) => d[i] > 245 && d[i + 1] > 245 && d[i + 2] > 245;
 
@@ -62,14 +65,10 @@ function hue(r: number, g: number, b: number): number | null {
   return (h * 60 + 360) % 360;
 }
 
-const CELLS = [
-  ["a", "Left picture here"],
-  ["b", "Right picture here"],
-  ["hue", "Hues apart"],
-  ["light", "Brightness apart"],
-] as const;
+const CELLS = ["a", "b", "hue", "light"] as const;
 
-export function RealOrModel({ data }: { data: RealModel }) {
+export function RealOrModel({ lang, data }: { lang: Lang; data: RealModel }) {
+  const U = realModelWords(lang);
   const [panels, setPanels] = useState<ImageData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [left, setLeft] = useState(0);
@@ -93,16 +92,16 @@ export function RealOrModel({ data }: { data: RealModel }) {
       const ctx = c.getContext("2d")!;
       ctx.drawImage(im, 0, 0);
       const found = findPanels(ctx.getImageData(0, 0, c.width, c.height));
-      const same = found.length === EYES.length && found.every((p) => p.w === found[0].w && p.h === found[0].h);
+      const same = found.length === PANELS && found.every((p) => p.w === found[0].w && p.h === found[0].h);
       if (!same) {
-        setError(`the picture shows ${found.length} panels of ${new Set(found.map((p) => `${p.w}x${p.h}`)).size} sizes, not ${EYES.length} alike`);
+        setError(U.panels(found.length, new Set(found.map((p) => `${p.w}x${p.h}`)).size, PANELS));
         return;
       }
       setPanels(found.map((p) => ctx.getImageData(p.x, p.y, p.w, p.h)));
     };
-    im.onerror = () => setError("the three-way picture did not load");
+    im.onerror = () => setError(U.noPicture);
     im.src = data.src;
-  }, [data]);
+  }, [data, U]);
 
   // Blink: the two pictures in turn.
   useEffect(() => {
@@ -139,7 +138,7 @@ export function RealOrModel({ data }: { data: RealModel }) {
     ctx.fillRect(x - 1, 0, 2, A.height);
   }, [panels, left, right, mode, split, blinkOn]);
 
-  if (!data.ok) return <p className="pg-waiting">The pictures are the engineers&rsquo; report&rsquo;s, and this build could not read it: {data.reason}.</p>;
+  if (!data.ok) return <p className="pg-waiting">{U.missing(data.reason)}</p>;
 
   const probe = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!panels) return;
@@ -156,10 +155,10 @@ export function RealOrModel({ data }: { data: RealModel }) {
     const b = [B.data[i], B.data[i + 1], B.data[i + 2]];
     const ha = hue(a[0], a[1], a[2]);
     const hb = hue(b[0], b[1], b[2]);
-    let apart = "too grey to say";
+    let apart = U.tooGrey;
     if (ha != null && hb != null) {
       const d = Math.abs(((hb - ha + 540) % 360) - 180);
-      apart = `${d.toFixed(0)} degrees`;
+      apart = U.degrees(d.toFixed(0));
     }
     const la = 0.299 * a[0] + 0.587 * a[1] + 0.114 * a[2];
     const lb = 0.299 * b[0] + 0.587 * b[1] + 0.114 * b[2];
@@ -172,7 +171,7 @@ export function RealOrModel({ data }: { data: RealModel }) {
     put("a", `(${a.join(", ")})`);
     put("b", `(${b.join(", ")})`);
     put("hue", apart);
-    put("light", `${Math.abs(la - lb).toFixed(0)} of 255`);
+    put("light", U.outOf(Math.abs(la - lb).toFixed(0)));
     if (chipA.current) chipA.current.style.background = `rgb(${a.join(",")})`;
     if (chipB.current) chipB.current.style.background = `rgb(${b.join(",")})`;
   };
@@ -180,23 +179,23 @@ export function RealOrModel({ data }: { data: RealModel }) {
   return (
     <div className="pg-rom">
       <div className="pg-row">
-        <label className="pg-label" htmlFor="pg-rom-left">Left</label>
+        <label className="pg-label" htmlFor="pg-rom-left">{U.left}</label>
         <select id="pg-rom-left" className="pg-select" value={left} onChange={(e) => setLeft(Number(e.target.value))}>
-          {EYES.map((n, i) => (
+          {U.eyes.map((n, i) => (
             <option key={n} value={i}>{n}</option>
           ))}
         </select>
-        <label className="pg-label" htmlFor="pg-rom-right">Right</label>
+        <label className="pg-label" htmlFor="pg-rom-right">{U.right}</label>
         <select id="pg-rom-right" className="pg-select" value={right} onChange={(e) => setRight(Number(e.target.value))}>
-          {EYES.map((n, i) => (
+          {U.eyes.map((n, i) => (
             <option key={n} value={i}>{n}</option>
           ))}
         </select>
       </div>
-      <div className="pg-seg pg-seg-3" role="radiogroup" aria-label="How to compare">
+      <div className="pg-seg pg-seg-3" role="radiogroup" aria-label={U.how}>
         {MODES.map((m) => (
-          <button key={m.id} role="radio" aria-checked={mode === m.id} className="pg-segbtn" onClick={() => setMode(m.id)}>
-            {m.label}
+          <button key={m} role="radio" aria-checked={mode === m} className="pg-segbtn" onClick={() => setMode(m)}>
+            {U.modes[m]}
           </button>
         ))}
       </div>
@@ -208,45 +207,45 @@ export function RealOrModel({ data }: { data: RealModel }) {
             className="pg-rom-canvas"
             onPointerMove={probe}
             onPointerDown={probe}
-            aria-label={`${EYES[left]} and ${EYES[right]}, compared by ${mode}`}
+            aria-label={U.compared(U.eyes[left], U.eyes[right], U.modes[mode])}
           />
         ) : (
-          <p className="pg-waiting">{error ? `The picture could not be cut into its panels: ${error}.` : "Loading the pictures..."}</p>
+          <p className="pg-waiting">{error ? U.notCut(error) : U.loading}</p>
         )}
       </div>
       {/* One slot, one height, whichever mode fills it. */}
       <div className="pg-rom-under">
         {mode === "wipe" ? (
-          <input className="pg-scrub" type="range" min={0} max={1} step={0.001} value={split} onChange={(e) => setSplit(Number(e.target.value))} aria-label="Where the wipe sits" />
+          <input className="pg-scrub" type="range" min={0} max={1} step={0.001} value={split} onChange={(e) => setSplit(Number(e.target.value))} aria-label={U.whereWipe} />
         ) : (
           <p className="pg-note">
-            {mode === "blink" ? `Now showing: ${blinkOn ? EYES[right] : EYES[left]}.` : "Black where the two agree; the brighter, the further apart (four times the difference)."}
+            {mode === "blink" ? U.showing(blinkOn ? U.eyes[right] : U.eyes[left]) : U.diffNote}
           </p>
         )}
       </div>
 
       <dl ref={cells} className="pg-console">
-        {CELLS.map(([k, label]) => (
+        {CELLS.map((k) => (
           <div key={k}>
             <dt>
               {k === "a" ? <span ref={chipA} className="pg-rom-chip" aria-hidden="true" /> : null}
               {k === "b" ? <span ref={chipB} className="pg-rom-chip" aria-hidden="true" /> : null}
-              {label}
+              {U.cells[k]}
             </dt>
             <dd data-k={k}>·</dd>
           </div>
         ))}
       </dl>
-      <p className="pg-note">Point at the cyan letters, then the brown sign, with the model on one side and a real console on the other.</p>
+      <p className="pg-note">{U.probe}</p>
 
       <div className="pg-rom-record">
-        <p className="pg-record-h">What the engineers measured on these pictures</p>
-        <div className="pg-rom-table" role="table" aria-label="The report's table">
+        <p className="pg-record-h">{U.measured}</p>
+        <div className="pg-rom-table" role="table" aria-label={U.tableAria}>
           <div role="row" className="pg-rom-tr pg-rom-th">
-            <span role="columnheader">Compared</span>
-            <span role="columnheader">Flat blocks, mean difference</span>
-            <span role="columnheader">Hue, middle value</span>
-            <span role="columnheader">Brightness pattern alike</span>
+            <span role="columnheader">{U.columns.compared}</span>
+            <span role="columnheader">{U.columns.flat}</span>
+            <span role="columnheader">{U.columns.hue}</span>
+            <span role="columnheader">{U.columns.light}</span>
           </div>
           {data.rows.map((r) => (
             <div role="row" key={r[0]} className="pg-rom-tr">

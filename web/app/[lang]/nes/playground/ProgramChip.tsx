@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { programWords } from "./ui.program";
+import type { Lang } from "@/lib/lang";
 
 /**
  * Write a program: a few lines of the processor's own instructions, typed
@@ -10,7 +12,9 @@ import { useCallback, useRef, useState } from "react";
  *
  * Nothing is simulated in this file: the assembling, the chip and every
  * figure shown are the service's, and its refusals are shown as it words
- * them. The plain line beside each instruction is ours.
+ * them. The plain line beside each instruction is ours, and it is in
+ * ui.program.ts, both languages; so are the examples' names and why they
+ * are worth a look. Their source is code, so it stays as typed.
  */
 
 interface Observe {
@@ -42,74 +46,28 @@ interface Machine {
 const ORG = 0x0200;
 const LIMIT = 200;
 
+/** The examples: their source here, their words in the dictionary. */
 const EXAMPLES = [
-  {
-    name: "Keep a number",
-    why: "The smallest program there is: put a number in the processor, then put it somewhere in memory.",
-    source: "  LDA #$2A\n  STA $10\n  BRK\n",
-  },
-  {
-    name: "Add two numbers",
-    why: "The processor adds with whatever it is carrying from the last sum, so the first thing to do is clear that.",
-    source: "  CLC\n  LDA #$07\n  ADC #$23\n  STA $11\n  BRK\n",
-  },
-  {
-    name: "Count to ten",
-    why: "A loop: count up, compare, and go back if you are not there yet. Every game's main loop is this shape.",
-    source: "  LDX #$00\nloop:\n  INX\n  CPX #$0A\n  BNE loop\n  STX $12\n  BRK\n",
-  },
-  {
-    name: "Fill a row of memory",
-    why: "The same loop, writing as it goes: eight bytes of memory filled with the same value.",
-    source: "  LDX #$00\n  LDA #$FF\nfill:\n  STA $20,X\n  INX\n  CPX #$08\n  BNE fill\n  BRK\n",
-  },
+  { key: "keep", source: "  LDA #$2A\n  STA $10\n  BRK\n" },
+  { key: "add", source: "  CLC\n  LDA #$07\n  ADC #$23\n  STA $11\n  BRK\n" },
+  { key: "count", source: "  LDX #$00\nloop:\n  INX\n  CPX #$0A\n  BNE loop\n  STX $12\n  BRK\n" },
+  { key: "fill", source: "  LDX #$00\n  LDA #$FF\nfill:\n  STA $20,X\n  INX\n  CPX #$08\n  BNE fill\n  BRK\n" },
 ] as const;
 
 /** What an instruction does, in the reader's words. Ours, not the chip's. */
-const GLOSS: [RegExp, string][] = [
-  [/^LDA/, "put this number into A, the main working register"],
-  [/^LDX/, "put this number into X, a counting register"],
-  [/^LDY/, "put this number into Y, the other counting register"],
-  [/^STA/, "copy A into memory here"],
-  [/^STX/, "copy X into memory here"],
-  [/^STY/, "copy Y into memory here"],
-  [/^INX/, "add one to X"],
-  [/^INY/, "add one to Y"],
-  [/^DEX/, "take one away from X"],
-  [/^DEY/, "take one away from Y"],
-  [/^CLC/, "clear the carry: start an addition cleanly"],
-  [/^ADC/, "add this number to A"],
-  [/^SBC/, "subtract this number from A"],
-  [/^CMP/, "compare A with this number"],
-  [/^CPX/, "compare X with this number"],
-  [/^CPY/, "compare Y with this number"],
-  [/^BNE/, "if that comparison was not equal, go back to the label"],
-  [/^BEQ/, "if that comparison was equal, jump to the label"],
-  [/^JMP/, "go to this place and carry on from there"],
-  [/^BRK/, "stop"],
-  [/^NOP/, "do nothing for a moment"],
-];
-
-function gloss(text: string): string {
-  const t = text.trim().toUpperCase();
-  for (const [re, words] of GLOSS) if (re.test(t)) return words;
-  return "";
+function gloss(text: string, words: Record<string, string>): string {
+  const m = text.trim().toUpperCase().match(/^[A-Z]{3}\b/);
+  return (m && words[m[0]]) ?? "";
 }
 
 const hex = (n: number, w = 2) => n.toString(16).toUpperCase().padStart(w, "0");
 
-const CELLS = [
-  ["a", "A, the working register"],
-  ["x", "X"],
-  ["y", "Y"],
-  ["pc", "Where it is"],
-  ["flags", "Flags"],
-  ["ran", "Instructions run"],
-] as const;
+const CELLS = ["a", "x", "y", "pc", "flags", "ran"] as const;
 
-export function ProgramChip({ api }: { api: string }) {
+export function ProgramChip({ lang, api }: { lang: Lang; api: string }) {
+  const U = programWords(lang);
   const [source, setSource] = useState<string>(EXAMPLES[0].source);
-  const [why, setWhy] = useState<string>(EXAMPLES[0].why);
+  const [example, setExample] = useState<(typeof EXAMPLES)[number]["key"]>(EXAMPLES[0].key);
   const [assembled, setAssembled] = useState<Assembled | null>(null);
   const [machine, setMachine] = useState<Machine | null>(null);
   const [observe, setObserve] = useState<Observe | null>(null);
@@ -130,11 +88,11 @@ export function ProgramChip({ api }: { api: string }) {
       const out = await res.json().catch(() => null);
       if (!res.ok) {
         const detail = out?.detail;
-        throw new Error(typeof detail === "string" ? detail : (detail?.error ?? `the chip answered ${res.status}`));
+        throw new Error(typeof detail === "string" ? detail : (detail?.error ?? U.answered(res.status)));
       }
       return out;
     },
-    [api],
+    [api, U],
   );
 
   const assemble = useCallback(async () => {
@@ -240,7 +198,7 @@ export function ProgramChip({ api }: { api: string }) {
     <div className="pg-prog">
       <div className="pg-prog-top">
         <div className="pg-prog-write">
-          <label className="pg-label" htmlFor="pg-prog-src">Your program</label>
+          <label className="pg-label" htmlFor="pg-prog-src">{U.yourProgram}</label>
           <textarea
             id="pg-prog-src"
             className="pg-prog-src"
@@ -251,10 +209,10 @@ export function ProgramChip({ api }: { api: string }) {
           />
           <div className="pg-row">
             <button className="pg-btn pg-btn-hot" onClick={assemble} disabled={busy}>
-              Put it on the chip
+              {U.put}
             </button>
             <button className="pg-btn" onClick={step} disabled={!machine || busy || running}>
-              One instruction
+              {U.oneInstruction}
             </button>
             <button
               className="pg-btn"
@@ -266,21 +224,21 @@ export function ProgramChip({ api }: { api: string }) {
               }}
               disabled={!machine || busy}
             >
-              {running ? "Stop" : "Run it"}
+              {running ? U.stop : U.run}
             </button>
           </div>
-          <p className="pg-note pg-prog-why">{error ? <span className="pg-error">{error}</span> : why}</p>
+          <p className="pg-note pg-prog-why">{error ? <span className="pg-error">{error}</span> : U.examples[example].why}</p>
           <div className="pg-row">
-            <span className="pg-label">Try one</span>
+            <span className="pg-label">{U.tryOne}</span>
             {EXAMPLES.map((e) => (
               <button
-                key={e.name}
+                key={e.key}
                 className="pg-btn pg-prog-example"
                 onClick={() => {
                   stop.current = true;
                   setRunning(false);
                   setSource(e.source);
-                  setWhy(e.why);
+                  setExample(e.key);
                   setAssembled(null);
                   setMachine(null);
                   setObserve(null);
@@ -289,14 +247,14 @@ export function ProgramChip({ api }: { api: string }) {
                   setTouched(new Set());
                 }}
               >
-                {e.name}
+                {U.examples[e.key].name}
               </button>
             ))}
           </div>
         </div>
 
         <div className="pg-prog-listing">
-          <p className="pg-record-h">What the chip was given</p>
+          <p className="pg-record-h">{U.given}</p>
           {assembled ? (
             <ol>
               {assembled.listing
@@ -306,20 +264,20 @@ export function ProgramChip({ api }: { api: string }) {
                     <span className="pg-prog-addr">{l.addr != null ? `$${hex(l.addr, 4)}` : ""}</span>
                     <span className="pg-prog-bytes">{l.bytes}</span>
                     <span className="pg-prog-text">{l.text.trim()}</span>
-                    <span className="pg-prog-gloss">{gloss(l.text)}</span>
+                    <span className="pg-prog-gloss">{gloss(l.text, U.gloss)}</span>
                   </li>
                 ))}
             </ol>
           ) : (
-            <p className="pg-note">Press &ldquo;Put it on the chip&rdquo; and the assembled program appears here, with what each line does.</p>
+            <p className="pg-note">{U.pressPut}</p>
           )}
         </div>
       </div>
 
       <dl className="pg-console pg-console-3">
-        {CELLS.map(([k, label]) => (
+        {CELLS.map((k) => (
           <div key={k}>
-            <dt>{label}</dt>
+            <dt>{U.cells[k]}</dt>
             <dd data-k={k}>
               {!observe
                 ? "·"
@@ -340,8 +298,8 @@ export function ProgramChip({ api }: { api: string }) {
       </dl>
 
       <div>
-        <p className="pg-record-h">The first page of memory, as the program leaves it</p>
-        <div className="pg-prog-mem" aria-label="The first 256 bytes of memory">
+        <p className="pg-record-h">{U.page}</p>
+        <div className="pg-prog-mem" aria-label={U.pageAria}>
           {Array.from({ length: 256 }, (_, i) => (
             <span key={i} className="pg-prog-cell" data-set={byte(i) !== "00"} data-touched={touched.has(i)} title={`$${hex(i)}`}>
               {byte(i) || "··"}

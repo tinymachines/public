@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { Lane, Stop, Timeline as Data } from "./timeline";
+import { ui } from "./ui";
+import type { Lang } from "@/lib/lang";
 
 /**
  * How it was built: every document the notebook shelves, in the
@@ -17,16 +19,15 @@ import type { Lane, Stop, Timeline as Data } from "./timeline";
 const DAY = 86_400_000;
 const at = (d: string) => Date.parse(`${d}T00:00:00Z`) / DAY;
 
-function short(d: string) {
-  const [, m, day] = d.split("-");
-  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  return `${Number(day)} ${months[Number(m) - 1]}`;
-}
-
-export function Timeline({ data }: { data: Data }) {
+export function Timeline({ lang, data }: { lang: Lang; data: Data }) {
+  const U = ui(lang).time;
+  const short = (d: string) => {
+    const [, m, day] = d.split("-");
+    return U.date(Number(m), Number(day));
+  };
   const [chosen, setChosen] = useState<{ lane: string; date: string } | null>(null);
   if (!data.ok) {
-    return <p className="pg-waiting">The timeline is drawn from the notebook&rsquo;s own shelves, and this build could not: {data.reason}.</p>;
+    return <p className="pg-waiting">{U.missing(data.reason)}</p>;
   }
   const { lanes, undated, first, last, days } = data;
   const dates = Array.from({ length: days }, (_, i) => new Date((at(first) + i) * DAY).toISOString().slice(0, 10));
@@ -62,7 +63,7 @@ export function Timeline({ data }: { data: Data }) {
                     aria-pressed={on}
                     disabled={!here.length}
                     style={{ opacity: here.length ? 0.35 + (0.65 * Math.min(here.length, busiest)) / busiest : undefined }}
-                    aria-label={here.length ? `${l.heading}, ${short(d)}: ${here.map((s) => s.code ?? s.title).join(", ")}` : `${l.heading}, ${short(d)}: nothing`}
+                    aria-label={U.day(l.heading, short(d), here.length ? here.map((s) => s.code ?? s.title).join(", ") : U.nothing)}
                     onClick={() => setChosen({ lane: l.key, date: d })}
                   />
                 );
@@ -90,22 +91,15 @@ export function Timeline({ data }: { data: Data }) {
           </>
         ) : (
           <>
-            <p className="pg-eyebrow">The whole arc</p>
-            <h3>
-              {short(first)} to {short(last)}
-            </h3>
-            <p className="pg-time-what">
-              Every plan and report the engineers wrote, in their own groups, day by day. A darker day is a day with more
-              of them. Pick one to see what was written.
-            </p>
+            <p className="pg-eyebrow">{U.whole}</p>
+            <h3>{U.span(short(first), short(last))}</h3>
+            <p className="pg-time-what">{U.intro}</p>
           </>
         )}
       </div>
 
       <p className="pg-note">
-        A document sits on the first date its own text mentions, which is usually the day the work was done. The{" "}
-        {undated.length === 1 ? "one document that carries" : `${undated.length} documents that carry`} no date in their
-        text are listed here instead:{" "}
+        {undated.length === 1 ? U.noteOne : U.noteMany(undated.length)}
         {undated.map((u, i) => (
           <span key={u.route}>
             {i ? ", " : ""}

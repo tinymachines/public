@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { BIT, BUTTONS } from "./Playground";
+import { ui } from "./ui";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The pad's shift register, acted out. On "read", the latch takes a
@@ -13,11 +15,9 @@ import { BIT, BUTTONS } from "./Playground";
 
 type SetBits = React.Dispatch<React.SetStateAction<number>>;
 
-const LABEL: Record<(typeof BUTTONS)[number], string> = {
-  a: "A", b: "B", select: "Select", start: "Start", up: "Up", down: "Down", left: "Left", right: "Right",
-};
-
-export function PadRegister({ bits, onChange }: { bits: number; onChange: SetBits }) {
+export function PadRegister({ lang, bits, onChange }: { lang: Lang; bits: number; onChange: SetBits }) {
+  const U = ui(lang).padStation;
+  const LABEL = U.names;
   // -1: idle; 0: latched; 1..n: that many bits clocked out.
   const [step, setStep] = useState(-1);
   const [snap, setSnap] = useState(0);
@@ -38,7 +38,7 @@ export function PadRegister({ bits, onChange }: { bits: number; onChange: SetBit
 
   return (
     <div className="pg-pad">
-      <div className="pg-pad-buttons" aria-label="The pad's buttons">
+      <div className="pg-pad-buttons" aria-label={U.buttons}>
         {BUTTONS.map((name) => (
           <button
             key={name}
@@ -50,11 +50,11 @@ export function PadRegister({ bits, onChange }: { bits: number; onChange: SetBit
           </button>
         ))}
       </div>
-      <p className="pg-note">Tap to hold a button down; tap again to let go.</p>
+      <p className="pg-note">{U.hold}</p>
 
       <div className="pg-shift" aria-live="polite">
         <div className="pg-shift-chip">
-          <p className="pg-shift-h">Inside the pad: the snapshot</p>
+          <p className="pg-shift-h">{U.snapshot}</p>
           <ol className="pg-cells">
             {BUTTONS.map((name, i) => {
               const pressed = (held & BIT[name]) !== 0;
@@ -62,7 +62,7 @@ export function PadRegister({ bits, onChange }: { bits: number; onChange: SetBit
               return (
                 <li key={name} className="pg-cell" data-pressed={pressed} data-gone={gone} data-next={reading && step > 0 && i === out}>
                   <span className="pg-cell-name">{LABEL[name]}</span>
-                  <span className="pg-cell-bit">{reading ? (pressed ? "0" : "1") : pressed ? "held" : ""}</span>
+                  <span className="pg-cell-bit">{reading ? (pressed ? "0" : "1") : pressed ? U.held : ""}</span>
                 </li>
               );
             })}
@@ -72,7 +72,7 @@ export function PadRegister({ bits, onChange }: { bits: number; onChange: SetBit
           <span />
         </div>
         <div className="pg-shift-chip">
-          <p className="pg-shift-h">Inside the console: the byte</p>
+          <p className="pg-shift-h">{U.byte}</p>
           <ol className="pg-cells">
             {BUTTONS.map((name, i) => {
               const arrived = reading && i < out;
@@ -90,16 +90,16 @@ export function PadRegister({ bits, onChange }: { bits: number; onChange: SetBit
 
       <div className="pg-row">
         <button className="pg-btn" onClick={read} disabled={reading}>
-          Watch the console read the pad
+          {U.watch}
         </button>
         <p className="pg-readout">
           {step < 0
-            ? "Ready."
+            ? U.ready
             : step === 0
-              ? "The console pulses the latch: the pad freezes a snapshot of all its buttons."
+              ? U.latch
               : step < BUTTONS.length
-                ? `Tick ${step}: ${LABEL[BUTTONS[step - 1]]} goes down the wire, ${(snap & BIT[BUTTONS[step - 1]]) !== 0 ? "low, because it is pressed" : "high, because it is not"}.`
-                : "Done: the whole byte, one bit per tick. A real game does this every frame, faster than you can blink."}
+                ? U.tick(step, LABEL[BUTTONS[step - 1]], (snap & BIT[BUTTONS[step - 1]]) !== 0)
+                : U.done}
         </p>
       </div>
     </div>

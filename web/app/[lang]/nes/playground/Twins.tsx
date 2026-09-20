@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Shape } from "./engine";
 import type { Step, Taps, Xray } from "./xray";
 import { BIT, BUTTONS, token } from "./Playground";
+import { twinsWords } from "./ui.twins";
+import type { Lang } from "@/lib/lang";
 
 /**
  * Spot the difference: two consoles (public/nes/twin.worker.mjs) built
@@ -26,31 +28,23 @@ interface StepAnswer {
 }
 
 const CARTS = [
-  { url: "/nes/cal.nes", name: "The calibration cartridge" },
-  { url: "/nes/bars.nes", name: "Colour bars" },
-  { url: "/nes/pad.nes", name: "The pad tester" },
+  { url: "/nes/cal.nes", key: "cal" },
+  { url: "/nes/bars.nes", key: "bars" },
+  { url: "/nes/pad.nes", key: "pad" },
 ] as const;
 
 const PACES = [
-  { id: "two", label: "Two frames a second", ms: 500 },
-  { id: "ten", label: "Ten frames a second", ms: 100 },
-  { id: "real", label: "Real speed", ms: 0 },
+  { id: "two", ms: 500 },
+  { id: "ten", ms: 100 },
+  { id: "real", ms: 0 },
 ] as const;
 
-const CELLS = [
-  ["frame", "Frame"],
-  ["since", "Frames since the tap"],
-  ["now", "Dots apart now"],
-  ["most", "Most dots apart"],
-  ["first", "First apart at frame"],
-  ["again", "Together again at frame"],
-] as const;
+/** The console's cells: the keys the readout writes by, in their order. */
+const CELLS = ["frame", "since", "now", "most", "first", "again"] as const;
 
-/** The calibration strip's fields a tap reaches, in the reader's words. */
-const FIELD_WORDS: Record<string, string> = {
-  pad: "the buttons",
-  parity: "check bit",
-};
+/** The calibration strip's fields a tap reaches, the rest unnamed. */
+const FIELDS = ["pad", "parity"] as const;
+type FieldName = (typeof FIELDS)[number];
 
 interface Field {
   row: number;
@@ -139,7 +133,7 @@ function drawTimeline(c: HTMLCanvasElement | null, s: Tally) {
 }
 
 /** The console's cells, each written in place. */
-function writeCells(cl: HTMLDListElement | null, s: Tally, now: number) {
+function writeCells(cl: HTMLDListElement | null, s: Tally, now: number, notYet: string) {
   if (!cl) return;
   const put = (key: string, v: string) => {
     const el = cl.querySelector<HTMLElement>(`[data-k="${key}"]`);
@@ -149,23 +143,26 @@ function writeCells(cl: HTMLDListElement | null, s: Tally, now: number) {
   put("since", s.tapAt >= 0 ? String(s.frame - s.tapAt) : "·");
   put("now", now.toLocaleString("en"));
   put("most", s.tapAt >= 0 ? s.most.toLocaleString("en") : "·");
-  put("first", s.firstApart >= 0 ? s.firstApart.toLocaleString("en") : s.tapAt >= 0 ? "not yet" : "·");
-  put("again", s.againAt >= 0 ? s.againAt.toLocaleString("en") : s.firstApart >= 0 ? "not yet" : "·");
+  put("first", s.firstApart >= 0 ? s.firstApart.toLocaleString("en") : s.tapAt >= 0 ? notYet : "·");
+  put("again", s.againAt >= 0 ? s.againAt.toLocaleString("en") : s.firstApart >= 0 ? notYet : "·");
 }
 
 export function Twins({
+  lang,
   shape,
   palette,
   framePeriodMs,
   xray,
   taps,
 }: {
+  lang: Lang;
   shape: Shape;
   palette: [number, number, number][] | null;
   framePeriodMs: number;
   xray: Xray;
   taps: Taps;
 }) {
+  const U = twinsWords(lang);
   const [cart, setCart] = useState<string>(CARTS[0].url);
   const [own, setOwn] = useState<string | null>(null);
   const [pace, setPace] = useState<(typeof PACES)[number]["id"]>("ten");
@@ -345,14 +342,14 @@ export function Twins({
         ctx.putImageData(img, 0, 0);
       }
       drawTimeline(timeline.current, s);
-      writeCells(cells.current, s, a.differ);
+      writeCells(cells.current, s, a.differ, U.notYet);
     } catch (e) {
       setError(String((e as Error).message ?? e));
       setRunning(false);
     } finally {
       s.busy = false;
     }
-  }, [ask, held, palette, shape, pace, framePeriodMs, view]);
+  }, [ask, held, palette, shape, pace, framePeriodMs, view, U.notYet]);
 
   // The pace: a frame pair every so often, or as fast as they come.
   useEffect(() => {
@@ -386,7 +383,9 @@ export function Twins({
       height: `${(strip.block / view.rows) * 100}%`,
     };
   };
-  const labelled = onStrip && strip ? strip.fields.filter((f) => FIELD_WORDS[f.name]) : [];
+  const named = (f: Field): FieldName | null =>
+    (FIELDS as readonly string[]).includes(f.name) ? (f.name as FieldName) : null;
+  const labelled = onStrip && strip ? strip.fields.filter((f) => named(f)) : [];
 
   const panel = (ref: React.RefObject<HTMLCanvasElement | null>, caption: string, label: string, marks: boolean) => (
     <figure className="pg-twin-fig">
@@ -395,7 +394,7 @@ export function Twins({
         {marks
           ? labelled.map((f) => (
               <span key={`${f.row}-${f.col}`} className="pg-twin-field" data-above={f.row === 0} style={fieldBox(f) ?? undefined}>
-                <span>{FIELD_WORDS[f.name]}</span>
+                <span>{U.fields[named(f)!]}</span>
               </span>
             ))
           : null}
@@ -407,66 +406,66 @@ export function Twins({
   return (
     <div className="pg-twins" ref={root}>
       <div className="pg-twin-trio">
-        {panel(left, "Left: no tap", "The left console's picture", true)}
-        {panel(right, "Right: the same, plus one tap", "The right console's picture", true)}
-        {panel(where, "Where they differ, fading", "Every dot on which the two pictures differ, lit, fading over a second", false)}
+        {panel(left, U.panels.left, U.panels.leftPicture, true)}
+        {panel(right, U.panels.right, U.panels.rightPicture, true)}
+        {panel(where, U.panels.where, U.panels.wherePicture, false)}
       </div>
 
       <div className="pg-row">
-        <label className="pg-label" htmlFor="pg-twin-button">Tap</label>
+        <label className="pg-label" htmlFor="pg-twin-button">{U.tapLabel}</label>
         <select id="pg-twin-button" className="pg-select" value={button} onChange={(e) => setButton(e.target.value as (typeof BUTTONS)[number])}>
           {BUTTONS.map((b) => (
             <option key={b} value={b}>{b.toUpperCase()}</option>
           ))}
         </select>
         <button className="pg-btn pg-btn-hot" onClick={tap} disabled={!ready}>
-          Tap it in the right console only
+          {U.tapIt}
         </button>
         <button className="pg-btn" onClick={() => setRunning((r) => !r)} disabled={!ready}>
-          {running ? "Pause" : "Play"}
+          {running ? U.pause : U.play}
         </button>
         <button className="pg-btn" onClick={() => step()} disabled={!ready || running}>
-          Next frame
+          {U.nextFrame}
         </button>
       </div>
 
-      <div className="pg-seg pg-seg-3" role="radiogroup" aria-label="How fast">
+      <div className="pg-seg pg-seg-3" role="radiogroup" aria-label={U.howFast}>
         {PACES.map((p) => (
           <button key={p.id} role="radio" aria-checked={pace === p.id} className="pg-segbtn" onClick={() => setPace(p.id)}>
-            {p.label}
+            {U.paces[p.id]}
           </button>
         ))}
       </div>
 
       <dl ref={cells} className="pg-console pg-console-3">
-        {CELLS.map(([k, label]) => (
+        {CELLS.map((k) => (
           <div key={k}>
-            <dt>{label}</dt>
+            <dt>{U.cells[k]}</dt>
             <dd data-k={k}>·</dd>
           </div>
         ))}
       </dl>
 
       <div>
-        <p className="pg-shift-h">Dots apart, frame by frame (the red mark is the tap)</p>
-        <canvas ref={timeline} className="pg-trace" style={{ height: 56 }} aria-label="How many dots the two pictures differ by on each of the last frames" />
+        <p className="pg-shift-h">{U.apartHeading}</p>
+        <canvas ref={timeline} className="pg-trace" style={{ height: 56 }} aria-label={U.apartTrace} />
       </div>
 
       <div className="pg-row">
-        <label className="pg-label" htmlFor="pg-twin-cart">Cartridge</label>
+        <label className="pg-label" htmlFor="pg-twin-cart">{U.cartridge}</label>
         <select id="pg-twin-cart" className="pg-select" value={cart} onChange={(e) => setCart(e.target.value)}>
           {CARTS.map((c) => (
-            <option key={c.url} value={c.url}>{c.name}</option>
+            <option key={c.url} value={c.url}>{U.carts[c.key]}</option>
           ))}
           {own ? <option value="own">{own}</option> : null}
         </select>
         <label className="pg-btn pg-file">
-          Your own .nes
+          {U.yourOwn}
           <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && loadOwn(e.target.files[0])} />
         </label>
       </div>
       <div className="pg-row">
-        <span className="pg-label">Hold for both</span>
+        <span className="pg-label">{U.holdBoth}</span>
         <div className="pg-minipad">
           {BUTTONS.map((name) => (
             <button key={name} className="pg-padkey" aria-pressed={(held & BIT[name]) !== 0} onClick={() => setHeld((h) => h ^ BIT[name])}>
@@ -476,24 +475,23 @@ export function Twins({
         </div>
       </div>
       <p className="pg-note pg-fixed-note">
-        {error ??
-          "Buttons held here go to both consoles. With your own game, hold Right to walk, then tap A in mid-air, and again on the ground, and watch how long the difference lasts."}
+        {error ?? U.note}
       </p>
 
-      <FollowTheBit xray={xray} />
-      <MarioTaps taps={taps} />
+      <FollowTheBit lang={lang} xray={xray} />
+      <MarioTaps lang={lang} taps={taps} />
     </div>
   );
 }
 
-/** A step's words for the reader, from the instruction the report names. */
-function plainStep(s: Step): string {
-  if (s.echo) return "An echo, a frame later: the next read of the controller rotates the old bit out of the byte.";
-  if (/^LDA \$4016/.test(s.instruction)) return "The processor reads the controller. This read is where the tap gets in: the only door a button has.";
-  if (/^ROR /.test(s.instruction)) return "The bit moves one place along a byte of memory, as each button is read in turn.";
-  if (/^LDA /.test(s.instruction)) return "The processor reads the finished byte back out of memory.";
-  if (/^STA \$2007/.test(s.instruction)) return "And writes it into the picture chip, as a colour: the tap is on the screen.";
-  return "";
+/** Which plain sentence a step gets, from the instruction the report names. */
+function stepKind(s: Step): "echo" | "read" | "rotate" | "load" | "store" | null {
+  if (s.echo) return "echo";
+  if (/^LDA \$4016/.test(s.instruction)) return "read";
+  if (/^ROR /.test(s.instruction)) return "rotate";
+  if (/^LDA /.test(s.instruction)) return "load";
+  if (/^STA \$2007/.test(s.instruction)) return "store";
+  return null;
 }
 
 /** The byte's value after a step, read from the step's own effects: the last value written, else read. */
@@ -504,10 +502,11 @@ function byteAfter(s: Step): string | null {
   return r ? r[1] : null;
 }
 
-function FollowTheBit({ xray }: { xray: Xray }) {
+function FollowTheBit({ lang, xray }: { lang: Lang; xray: Xray }) {
+  const U = twinsWords(lang).bit;
   const [at, setAt] = useState(0);
   if (!xray.ok) {
-    return <p className="pg-waiting">The engineers&rsquo; x-ray is read from their encyclopedia, and this build could not: {xray.reason}.</p>;
+    return <p className="pg-waiting">{U.missing(xray.reason)}</p>;
   }
   // The path, with the report's abridgement kept where it stood (after the
   // first rotations), so nothing it left out is filled in here.
@@ -525,26 +524,26 @@ function FollowTheBit({ xray }: { xray: Xray }) {
   const value = row.kind === "step" ? (row.s.instruction.startsWith("LDA $4016") ? null : byteAfter(row.s)) : null;
   const bits = value ? parseInt(value, 16) : null;
   const onPath = new Set(xray.steps.map((s) => s.at.slice(1).toUpperCase()));
+  const kind = row.kind === "step" ? stepKind(row.s) : null;
 
   return (
     <div className="pg-xray">
       <p className="pg-instr-h">
-        Follow the bit<span> through the engineers&rsquo; x-ray of one tap on their pad cartridge</span>
+        {U.heading}
+        <span>{U.headingRest}</span>
       </p>
       <div className="pg-xray-grid">
         <div className="pg-xray-now">
           <div className="pg-row">
             <button className="pg-btn" onClick={() => setAt((a) => Math.max(0, a - 1))} disabled={at === 0}>
-              Back
+              {U.back}
             </button>
             <button className="pg-btn" onClick={() => setAt((a) => Math.min(rows.length - 1, a + 1))} disabled={at >= rows.length - 1}>
-              Next step
+              {U.next}
             </button>
-            <span className="pg-note">
-              Step {Math.min(at, rows.length - 1) + 1} of {rows.length}
-            </span>
+            <span className="pg-note">{U.step(Math.min(at, rows.length - 1) + 1, rows.length)}</span>
           </div>
-          <div className="pg-byte" aria-label="The byte in memory the bit walks through">
+          <div className="pg-byte" aria-label={U.byte}>
             {Array.from({ length: 8 }, (_, i) => 7 - i).map((b) => (
               <span key={b} className="pg-byte-bit" data-on={bits != null && ((bits >> b) & 1) === 1}>
                 {bits == null ? "·" : (bits >> b) & 1}
@@ -555,20 +554,22 @@ function FollowTheBit({ xray }: { xray: Xray }) {
           <div className="pg-now pg-xray-caption">
             {row.kind === "step" ? (
               <>
-                <p className="pg-now-plain">{plainStep(row.s)}</p>
+                <p className="pg-now-plain">{kind ? U.steps[kind] : ""}</p>
                 <p className="pg-now-record">
-                  <span>{row.s.echo ? "(echo) " : ""}{row.s.when}</span> {row.s.instruction} at {row.s.at}: {row.s.effects}
+                  <span>{row.s.echo ? U.echoMark : ""}{row.s.when}</span> {row.s.instruction}
+                  {U.at}
+                  {row.s.at}: {row.s.effects}
                 </p>
               </>
             ) : (
               <>
-                <p className="pg-now-plain">The report shortens the middle of the walk here, in its own words:</p>
+                <p className="pg-now-plain">{U.elided}</p>
                 <p className="pg-now-record">{row.text}</p>
               </>
             )}
           </div>
         </div>
-        <pre className="pg-code" aria-label="The cartridge's poll routine, the lines on the tap's path marked">
+        <pre className="pg-code" aria-label={U.code}>
           {xray.code.map((l) => {
             const addr = l.slice(0, 4).toUpperCase();
             const here = row.kind === "step" && row.s.at.slice(1).toUpperCase() === addr;
@@ -590,28 +591,30 @@ function Code({ text }: { text: string }) {
   return <>{text.split("`").map((part, i) => (i % 2 ? <code key={i}>{part}</code> : <span key={i}>{part}</span>))}</>;
 }
 
-function MarioTaps({ taps }: { taps: Taps }) {
+function MarioTaps({ lang, taps }: { lang: Lang; taps: Taps }) {
+  const U = twinsWords(lang).mario;
   if (!taps.ok) {
-    return <p className="pg-waiting">The Mario taps are read from the dissection, and this build could not: {taps.reason}.</p>;
+    return <p className="pg-waiting">{U.missing(taps.reason)}</p>;
   }
   const again = /agree again/.test(taps.air);
   const never = /never rejoin/.test(taps.jump);
   return (
     <div className="pg-mario-taps">
       <p className="pg-instr-h">
-        The same experiment on Super Mario Bros.<span> the engineers&rsquo; two taps, from their dissection</span>
+        {U.heading}
+        <span>{U.headingRest}</span>
       </p>
       <div className="pg-twin-cards">
         <article className="pg-twin-card">
-          <p className="pg-eyebrow">A tap in mid-air</p>
-          <p className="pg-now-plain">{again ? "The game ignored it. After a few frames the two runs were the same again." : "Read the engineers' account."}</p>
+          <p className="pg-eyebrow">{U.air}</p>
+          <p className="pg-now-plain">{again ? U.airPlain : U.fallback}</p>
           <p className="pg-now-record">
             <Code text={taps.air} />
           </p>
         </article>
         <article className="pg-twin-card">
-          <p className="pg-eyebrow">A tap on the ground</p>
-          <p className="pg-now-plain">{never ? "Mario jumped, and the two runs never came back together: one button, one frame, a different game from then on." : "Read the engineers' account."}</p>
+          <p className="pg-eyebrow">{U.ground}</p>
+          <p className="pg-now-plain">{never ? U.groundPlain : U.fallback}</p>
           <p className="pg-now-record">
             <Code text={taps.jump} />
           </p>

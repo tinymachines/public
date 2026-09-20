@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { Bench as Data, Photo } from "./bench";
+import { ui } from "./ui";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The bench, photographed: the engineers' own photographs of the lab,
@@ -14,10 +16,11 @@ import type { Bench as Data, Photo } from "./bench";
  * size, so choosing another moves nothing.
  */
 
-export function Bench({ data }: { data: Data }) {
+export function Bench({ lang, data }: { lang: Lang; data: Data }) {
+  const U = ui(lang).bench;
   const [at, setAt] = useState(0);
   if (!data.ok) {
-    return <p className="pg-waiting">The photographs are the engineers&rsquo;, and this build could not read them: {data.reason}.</p>;
+    return <p className="pg-waiting">{U.missing(data.reason)}</p>;
   }
   const { photos, eyes, note } = data;
   const shown: Photo = photos[Math.min(at, photos.length - 1)];
@@ -35,9 +38,9 @@ export function Bench({ data }: { data: Data }) {
     <div className="pg-bench">
       <div className="pg-bench-hall">
         <div className="pg-bench-list">
-          <p className="pg-record-h">The whole rig</p>
+          <p className="pg-record-h">{U.rig}</p>
           <ol>{rig.map(item)}</ol>
-          <p className="pg-record-h">Close up</p>
+          <p className="pg-record-h">{U.close}</p>
           <ol>{rest.map(item)}</ol>
         </div>
 
@@ -48,21 +51,21 @@ export function Bench({ data }: { data: Data }) {
           </div>
           <figcaption>
             <p className="pg-bench-caption">{shown.caption}</p>
-            {shown.parts.length ? <p className="pg-record-h">In this picture</p> : null}
+            {shown.parts.length ? <p className="pg-record-h">{U.inPicture}</p> : null}
             <ol className="pg-bench-parts">
               {shown.parts.map((part, i) => (
                 <li key={i}>{part}</li>
               ))}
             </ol>
             <p className="pg-note">
-              From <a href={shown.doc}>{shown.docName}</a>.
+              {U.from}<a href={shown.doc}>{shown.docName}</a>.
             </p>
           </figcaption>
         </figure>
       </div>
 
       <div className="pg-bench-eyes">
-        <p className="pg-record-h">What is watching, and what it watches</p>
+        <p className="pg-record-h">{U.eyes}</p>
         <ul>
           {eyes.map((e) => (
             <li key={e.name}>

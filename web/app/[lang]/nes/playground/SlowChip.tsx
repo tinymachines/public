@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { token } from "./Playground";
+import { slowWords } from "./ui.slow";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The slow chip: the engineers' switch-level 2C02 running in a worker
@@ -13,7 +15,7 @@ import { token } from "./Playground";
  * from a fit), and the counts are printed as they grow.
  *
  * The console's cells are fixed: labels never move, values change in
- * place. The lamps are the chip's own nodes; the counters' values are
+ * place, and what they are called is in ui.slow.ts, both languages. The lamps are the chip's own nodes; the counters' values are
  * read off their lamps, bit by bit.
  */
 
@@ -34,23 +36,15 @@ interface Run {
   halfSteps: number;
 }
 
-const CELLS = [
-  ["line", "Line"],
-  ["dot", "Dot"],
-  ["drawn", "Dots drawn"],
-  ["agree", "Agree with the fast chip"],
-  ["differ", "Differ"],
-  ["align", "Alignment"],
-  ["rate", "Dots a second, here"],
-  ["slower", "Slower than the real chip"],
-  ["switched", "Transistors switched, this dot"],
-] as const;
+/** The cells, in the order they are shown; their labels are in ui.slow.ts. */
+const CELLS = ["line", "dot", "drawn", "agree", "differ", "align", "rate", "slower", "switched"] as const;
 
 /** Offsets the fit tries: how many dots later the slow chip presents a pixel. */
 const OFFSETS = 8;
 const HEART = 682;
 
-export function SlowChip({ palette, framePeriodMs }: { palette: [number, number, number][] | null; framePeriodMs: number }) {
+export function SlowChip({ lang, palette, framePeriodMs }: { lang: Lang; palette: [number, number, number][] | null; framePeriodMs: number }) {
+  const U = slowWords(lang);
   const [hello, setHello] = useState<Hello | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -99,7 +93,7 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
         setLamps(h.lamps);
         if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setPlaying(true);
       };
-      w.onerror = () => setError("the slow chip's bundle did not load");
+      w.onerror = () => setError(U.noBundle);
       w.postMessage({ id: 0, path: "hello" });
     }, { rootMargin: "400px" });
     io.observe(el);
@@ -108,7 +102,7 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
       worker.current?.terminate();
       worker.current = null;
     };
-  }, []);
+  }, [U]);
 
   // The fast chip's frame, painted once the colours are known.
   useEffect(() => {
@@ -249,7 +243,7 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
         put("drawn", S.drawn.toLocaleString("en"));
         put("agree", S.agree[k].toLocaleString("en"));
         put("differ", (S.compared[k] - S.agree[k]).toLocaleString("en"));
-        put("align", S.compared[k] ? `${k} dots` : "·");
+        put("align", S.compared[k] ? U.dots(k) : "·");
         put("rate", perSecond ? Math.round(perSecond).toLocaleString("en") : "·");
         put("slower", perSecond ? `${Math.round(realPerSecond / perSecond).toLocaleString("en")}×` : "·");
         put("switched", S.lastSwitched.toLocaleString("en"));
@@ -261,7 +255,7 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
       live = false;
       w.removeEventListener("message", onRun as EventListener);
     };
-  }, [playing, hello, palette, framePeriodMs]);
+  }, [playing, hello, palette, framePeriodMs, U]);
 
   const named = (prefix: string) =>
     hello ? hello.lampNames.map((n, i) => [n, i] as const).filter(([n]) => n.startsWith(prefix)) : [];
@@ -269,43 +263,41 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
 
   return (
     <div className="pg-slow" ref={root}>
-      {error ? <p className="pg-error">The slow chip could not start here: {error}.</p> : null}
+      {error ? <p className="pg-error">{U.failed(error)}</p> : null}
       <div className="pg-slow-pair">
         <figure className="pg-slow-fig">
-          <canvas ref={slowCanvas} className="pg-slow-canvas" aria-label="The slow chip's picture, drawn dot by dot by its transistors" />
-          <figcaption>The slow chip: every transistor, simulated</figcaption>
+          <canvas ref={slowCanvas} className="pg-slow-canvas" aria-label={U.slowPicture} />
+          <figcaption>{U.slowCaption}</figcaption>
         </figure>
         <figure className="pg-slow-fig">
-          <canvas ref={fastCanvas} className="pg-slow-canvas" aria-label="The fast chip's frame of the same scene" />
-          <figcaption>The fast chip: the same frame, all at once</figcaption>
+          <canvas ref={fastCanvas} className="pg-slow-canvas" aria-label={U.fastPicture} />
+          <figcaption>{U.fastCaption}</figcaption>
         </figure>
       </div>
 
       <div className="pg-row">
         <button className="pg-btn" onClick={() => setPlaying((p) => !p)} disabled={!hello}>
-          {playing ? "Pause the chip" : "Run the chip"}
+          {playing ? U.pause : U.run}
         </button>
         <p className="pg-note pg-size">
-          {hello
-            ? `${hello.size[0].toLocaleString("en")} transistors, ${hello.size[1].toLocaleString("en")} wires, read from the chip's own netlist.`
-            : "Waking the chip..."}
+          {hello ? U.size(hello.size[0].toLocaleString("en"), hello.size[1].toLocaleString("en")) : U.waking}
         </p>
       </div>
 
       <dl ref={cells} className="pg-console pg-console-3">
-        {CELLS.map(([k, label]) => (
+        {CELLS.map((k) => (
           <div key={k}>
-            <dt>{label}</dt>
+            <dt>{U.cells[k]}</dt>
             <dd data-k={k}>·</dd>
           </div>
         ))}
       </dl>
 
-      <div className="pg-lamps" aria-label="The chip's own nodes, lit when high">
+      <div className="pg-lamps" aria-label={U.lamps}>
         {[
-          ["hpos", "Dot counter"],
-          ["vpos", "Line counter"],
-          ["pal_d", "Colour out"],
+          ["hpos", U.hpos],
+          ["vpos", U.vpos],
+          ["pal_d", U.palD],
         ].map(([prefix, label]) => (
           <div key={prefix} className="pg-lamp-row">
             <span className="pg-lamp-label">{label}</span>
@@ -323,7 +315,7 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
           </div>
         ))}
         <div className="pg-lamp-row">
-          <span className="pg-lamp-label">Clocks and bus</span>
+          <span className="pg-lamp-label">{U.clocks}</span>
           <span className="pg-lamp-set">
             {hello
               ? hello.lampNames.map((n, i) =>
@@ -341,8 +333,8 @@ export function SlowChip({ palette, framePeriodMs }: { palette: [number, number,
       </div>
 
       <div>
-        <p className="pg-shift-h">Transistors switched per dot, the last two lines</p>
-        <canvas ref={heart} className="pg-trace" style={{ height: 64 }} aria-label="How many transistors changed state on each of the last two lines' dots" />
+        <p className="pg-shift-h">{U.heart}</p>
+        <canvas ref={heart} className="pg-trace" style={{ height: 64 }} aria-label={U.heartPicture} />
       </div>
     </div>
   );
