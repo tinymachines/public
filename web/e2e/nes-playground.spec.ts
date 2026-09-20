@@ -407,6 +407,12 @@ test("the playground speaks Japanese, and still speaks English", async ({ page }
   }
   // The page before the pass said so at the top; it must not any more.
   expect(await page.locator(".pg").innerText()).not.toContain("まだ英語だけ");
+  // Every pad on the page names its keys the same way, the reader's way.
+  for (const pad of ["#pad .pg-pad-buttons", ".pg-stage .pg-minipad", "#difference .pg-minipad", "#xray .pg-minipad"]) {
+    const keys = await page.locator(`${pad} button`).allTextContents();
+    expect(keys.length, pad).toBe(8);
+    expect(keys, pad).toContain("セレクト");
+  }
 
   // The same chrome in English, so a translation cannot be wired the one way only.
   await open(page, "/nes/playground", 500);
@@ -418,5 +424,10 @@ test("the playground speaks Japanese, and still speaks English", async ({ page }
       expect(text, sel).toMatch(/[A-Za-z]/);
       expect(text, sel).not.toMatch(/[ぁ-んァ-ヶ一-龠]/);
     }
+  }
+  for (const pad of ["#pad .pg-pad-buttons", ".pg-stage .pg-minipad", "#difference .pg-minipad", "#xray .pg-minipad"]) {
+    const keys = await page.locator(`${pad} button`).allTextContents();
+    expect(keys.length, pad).toBe(8);
+    expect(keys, pad).toContain("Select");
   }
 });

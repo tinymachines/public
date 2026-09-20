@@ -5,6 +5,7 @@ import type { Shape } from "./engine";
 import type { Step, Taps, Xray } from "./xray";
 import { BIT, BUTTONS, token } from "./Playground";
 import { twinsWords } from "./ui.twins";
+import { ui } from "./ui";
 import type { Lang } from "@/lib/lang";
 
 /**
@@ -163,6 +164,7 @@ export function Twins({
   taps: Taps;
 }) {
   const U = twinsWords(lang);
+  const KEYS = ui(lang).padStation.names;
   const [cart, setCart] = useState<string>(CARTS[0].url);
   const [own, setOwn] = useState<string | null>(null);
   const [pace, setPace] = useState<(typeof PACES)[number]["id"]>("ten");
@@ -415,7 +417,7 @@ export function Twins({
         <label className="pg-label" htmlFor="pg-twin-button">{U.tapLabel}</label>
         <select id="pg-twin-button" className="pg-select" value={button} onChange={(e) => setButton(e.target.value as (typeof BUTTONS)[number])}>
           {BUTTONS.map((b) => (
-            <option key={b} value={b}>{b.toUpperCase()}</option>
+            <option key={b} value={b}>{KEYS[b]}</option>
           ))}
         </select>
         <button className="pg-btn pg-btn-hot" onClick={tap} disabled={!ready}>
@@ -469,7 +471,7 @@ export function Twins({
         <div className="pg-minipad">
           {BUTTONS.map((name) => (
             <button key={name} className="pg-padkey" aria-pressed={(held & BIT[name]) !== 0} onClick={() => setHeld((h) => h ^ BIT[name])}>
-              {name}
+              {KEYS[name]}
             </button>
           ))}
         </div>

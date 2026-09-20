@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Shape } from "./engine";
 import { BIT, BUTTONS, token } from "./Playground";
 import { xrayWords } from "./ui.xray";
+import { ui } from "./ui";
 import type { Lang } from "@/lib/lang";
 
 /**
@@ -46,6 +47,7 @@ const CELLS = ["tap", "first", "gap", "dots", "worst", "rejoin"] as const;
 
 export function XRay({ lang, shape, palette, framePeriodMs }: { lang: Lang; shape: Shape; palette: [number, number, number][] | null; framePeriodMs: number }) {
   const U = xrayWords(lang);
+  const KEYS = ui(lang).padStation.names;
   const [name, setName] = useState<string | null>(null);
   const [frames, setFrames] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -246,7 +248,7 @@ export function XRay({ lang, shape, palette, framePeriodMs }: { lang: Lang; shap
           <div className="pg-minipad">
             {BUTTONS.map((b) => (
               <button key={b} className="pg-padkey" aria-pressed={(held & BIT[b]) !== 0} onClick={() => setHeld((h) => h ^ BIT[b])}>
-                {b}
+                {KEYS[b]}
               </button>
             ))}
           </div>
@@ -254,7 +256,7 @@ export function XRay({ lang, shape, palette, framePeriodMs }: { lang: Lang; shap
             <label className="pg-label" htmlFor="pg-xray-button">{U.xrayOf}</label>
             <select id="pg-xray-button" className="pg-select" value={button} onChange={(e) => setButton(e.target.value as (typeof BUTTONS)[number])}>
               {BUTTONS.map((b) => (
-                <option key={b} value={b}>{b.toUpperCase()}</option>
+                <option key={b} value={b}>{KEYS[b]}</option>
               ))}
             </select>
             <button className="pg-btn pg-btn-hot" onClick={xray} disabled={!ready || busy || frames < 2}>
