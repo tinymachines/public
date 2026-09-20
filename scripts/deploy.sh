@@ -211,6 +211,15 @@ python3 style/check-silo.py || fail "check-silo"
 say "2e. The engine"
 python3 scripts/board-engine.py --check || fail "board-engine: not the boarded engine; python3 scripts/board-engine.py --board tests and records the current one"
 
+# The playground's two chip bundles are built from the sibling checkouts,
+# not from anything in this tree, so they go stale silently when a chip is
+# re-recorded: on 2026-09-19 the slow chip was served a 2C02 behind
+# data/nes.json's own record, and nothing said so. Absent bundles are
+# fine (a fresh clone has none and the stations say so); a stale one is
+# not, because it is served as though it were the boarded chip.
+say "2f. The playground's chips"
+python3 scripts/build-playground-wasm.py --check || fail "the playground's bundles are not what the records say"
+
 # On the interpreter the service unit runs, not whichever python3 the
 # shell finds first. On 2026-09-11 the tests passed on a pyenv python
 # while /usr/bin/python3 had lost uvicorn (its user site-packages had

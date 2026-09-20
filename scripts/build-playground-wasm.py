@@ -22,6 +22,15 @@ Run it:
 
     python3 scripts/build-playground-wasm.py            # both
     python3 scripts/build-playground-wasm.py apuvoices  # one
+    python3 scripts/build-playground-wasm.py --check    # what is served, checked
+
+--check builds nothing. It holds what is in web/public to what the
+records say: the commit each bundle was built from must be the commit
+data/nes.json records for that chip, and every file must still hash to
+what was recorded. A bundle that is not in the tree at all is not a
+failure (a fresh clone has none, and the stations say so on the page);
+a bundle that is there and stale is, because it would be served as
+though it were the boarded chip. The deploy runs it.
 """
 
 from __future__ import annotations
@@ -135,11 +144,52 @@ def build(name: str) -> None:
     print(f"build-playground-wasm: {name}: recorded " + ", ".join(f"{n} ({v['bytes']} bytes)" for n, v in hashes.items()))
 
 
+def check(name: str) -> list[str]:
+    """What is wrong with the bundle that is in the tree, if anything."""
+    b = BUNDLES[name]
+    dest: Path = b["dest"]
+    record: Path = b["record"]
+    files = (f"{name}.js", f"{name}_bg.wasm", *b.get("extras", ()))
+    here = [f for f in files if (dest / f).is_file()]
+    if not record.is_file() and not here:
+        print(f"build-playground-wasm: {name}: not in this build (the page says so)")
+        return []
+    bad = []
+    if not record.is_file():
+        return [f"{name}: {dest.relative_to(ROOT)}/ is served but {record.relative_to(ROOT)} does not exist"]
+    r = json.loads(record.read_text())
+    if r.get("commit") != b["commit"]:
+        bad.append(
+            f"{name}: built from {str(r.get('commit'))[:7]}, but data/nes.json records "
+            f"{b['commit'][:7]} for that chip; rebuild it with "
+            f"python3 scripts/build-playground-wasm.py {name}"
+        )
+    for f in files:
+        want = r.get("files", {}).get(f)
+        path = dest / f
+        if not want:
+            bad.append(f"{name}: {record.relative_to(ROOT)} records no {f}")
+        elif not path.is_file():
+            bad.append(f"{name}: {path.relative_to(ROOT)} is recorded but not in this build")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != want["sha256"]:
+            bad.append(f"{name}: {path.relative_to(ROOT)} is not the file that was recorded")
+    if not bad:
+        print(f"build-playground-wasm: {name}: {b['repo'].name} {b['commit'][:7]}, {len(files)} files as recorded")
+    return bad
+
+
 def main() -> int:
-    names = sys.argv[1:] or list(BUNDLES)
+    args = sys.argv[1:]
+    checking = "--check" in args
+    names = [a for a in args if a != "--check"] or list(BUNDLES)
     for n in names:
         if n not in BUNDLES:
             fail(f"no bundle {n!r}; there are {', '.join(BUNDLES)}")
+    if checking:
+        bad = [msg for n in names for msg in check(n)]
+        for msg in bad:
+            print(f"build-playground-wasm: {msg}", file=sys.stderr)
+        return 1 if bad else 0
     for n in names:
         build(n)
     return 0
