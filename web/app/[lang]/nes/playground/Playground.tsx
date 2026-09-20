@@ -14,6 +14,8 @@ import { SoundVoices } from "./SoundVoices";
 import { Tour } from "./Tour";
 import type { Taps, Xray } from "./xray";
 import type { MarioFrame } from "./mario";
+import { words, type StationKey } from "./words";
+import type { Lang } from "@/lib/lang";
 
 /**
  * The playground's live half: one console in a worker, and the stations
@@ -111,18 +113,22 @@ export interface Selection {
 }
 
 export function Playground({
+  lang,
   mario,
   framePeriodMs,
   slowChip,
   xray,
   taps,
 }: {
+  lang: Lang;
   mario: MarioFrame;
   framePeriodMs: number;
   slowChip: string | null;
   xray: Xray;
   taps: Taps;
 }) {
+  const W = words(lang);
+  const say = (key: StationKey) => ({ eyebrow: W.stations[key].eyebrow, title: W.stations[key].title, words: W.stations[key].body, record: W.stations[key].record });
   const engine = useRef<Engine | null>(null);
   const [shape, setShape] = useState<Shape | null>(null);
   const [palette, setPalette] = useState<Palette | null>(null);
@@ -414,14 +420,9 @@ export function Playground({
     <>
       <section className="pg-hero" aria-labelledby="pg-title">
         <div className="pg-hero-words">
-          <p className="pg-kicker">A playground, not yet a page</p>
-          <h1 id="pg-title">The NES at human speed</h1>
-          <p className="pg-lead">
-            Everything a Nintendo does to put one picture on a television happens in{" "}
-            {framePeriodMs.toLocaleString("en", { maximumFractionDigits: 1 })} thousandths of a second.
-            Here is the console the engineers rebuilt from the chips&rsquo; own transistors, running in this page,
-            slowed down until you can watch it think.
-          </p>
+          <p className="pg-kicker">{W.hero.kicker}</p>
+          <h1 id="pg-title">{W.hero.title}</h1>
+          <p className="pg-lead">{W.hero.lead(framePeriodMs.toLocaleString("en", { maximumFractionDigits: 1 }))}</p>
         </div>
 
         <div
@@ -522,50 +523,14 @@ export function Playground({
 
       <Station
         id="tour"
-        eyebrow="Start here"
-        title="A guided tour"
-        words={
-          <>
-            <p>
-              This page is a workshop, not a book: the pieces are in no particular order, and any of them can be poked at
-              on its own. If you would rather be shown around, this is one path through them.
-            </p>
-            <p>
-              It starts with a picture on a television and ends inside a single chip, with a line at each stop saying what
-              to look at. A bar follows you down the page while it runs, and you can leave it whenever you like.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes", label: "The console arc's notebook, if you would rather read the record" },
-          { href: "/nes", label: "The NES section: the chips, the signal, the console and the bench" },
-        ]}
+        {...say("tour")}
       >
         <Tour />
       </Station>
 
       <Station
         id="wire"
-        eyebrow="The wire"
-        title="A picture is one long wiggle"
-        words={
-          <>
-            <p>
-              The NES never sends a picture to the television. It sends one wire&rsquo;s worth of voltage that rises and
-              falls, line after line, and the television rebuilds the picture from it. Click any line of the frame above and
-              this is that line, exactly as the console&rsquo;s model encodes it.
-            </p>
-            <p>
-              The deep dip is the <b>sync</b>: the television&rsquo;s cue to start a new line. The little wave after it is
-              the <b>colour burst</b>, a metronome the television tunes to. Then the picture: how high the wire sits is how
-              bright a dot is, and the fast wiggle on top carries its colour.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/ntsc-spec", label: "The signal path's specification" },
-          { href: "/docs/nes/m1-report", label: "The NES encoder, checked against its reference" },
-        ]}
+        {...say("wire")}
       >
         <Wire
           engine={engine}
@@ -577,103 +542,28 @@ export function Playground({
 
       <Station
         id="colours"
-        eyebrow="The colours"
-        title="Every colour is a timing"
-        words={
-          <>
-            <p>
-              The NES has a fixed set of colours: a handful of brightnesses, each crossed with every hue. Each colour here was made by
-              the console&rsquo;s model and decoded by our model of a television, just now, in your browser. None of them
-              came from a chart.
-            </p>
-            <p>
-              Pick one. The wire swings up and down at the colour burst&rsquo;s own beat, and the only thing that
-              changes the hue is <i>when</i> it swings. The clock face shows how far each colour&rsquo;s swing runs ahead of
-              the burst: every hue has its own hour on the clock.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/p1-report", label: "The picture chip's colour output, checked against the table" },
-          { href: "/docs/nes/eyes-vs-scope", label: "Where our colours and a real console's still differ" },
-        ]}
+        {...say("colours")}
       >
         {palette && s ? <Colours palette={palette} shape={s} /> : <p className="pg-waiting">Measuring the colours...</p>}
       </Station>
 
       <Station
         id="mario"
-        eyebrow="A real game"
-        title="Where Super Mario Bros. spends a frame"
-        words={
-          <>
-            <p>
-              The engineers ran Super Mario Bros. on the model and wrote down, for one ordinary frame, what the processor
-              was doing while the beam was at each point on the screen. This map is their table, painted onto the frame.
-            </p>
-            <p>
-              The surprise is the grey: most of the time, the game is doing nothing at all. It finishes its work early and
-              waits. The top of the picture is spent waiting for the beam to pass the status bar, so the score can stay
-              still while the level scrolls underneath.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/mario-dissection", label: "Super Mario Bros., dissected (the table this map is drawn from)" },
-          { href: "/docs/nes/encyclopedia", label: "The encyclopedia of code patterns" },
-        ]}
+        {...say("mario")}
       >
         {s ? <MarioMap mario={mario} shape={s} framePeriodMs={framePeriodMs} /> : <p className="pg-waiting">Waiting for the console to report the frame&rsquo;s shape...</p>}
       </Station>
 
       <Station
         id="pad"
-        eyebrow="The controller"
-        title="Eight buttons down one wire"
-        words={
-          <>
-            <p>
-              Inside the pad is one small chip that takes a snapshot of all eight buttons when the console asks, then hands
-              them over one at a time, a bit per tick, down a single wire. Hold some buttons, on screen or on your keyboard
-              with the frame above focused, and watch a read.
-            </p>
-            <p>A pressed button reads as a zero on the wire. The console flips it back.</p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/bench-v1b", label: "How a console reads a pad, and the bridge that pretends to be one" },
-          { href: "/docs/nes/encyclopedia", label: "The poll routine, entry one of the encyclopedia" },
-        ]}
+        {...say("pad")}
       >
         <PadRegister bits={pad} onChange={setTouchPad} />
       </Station>
 
       <Station
         id="difference"
-        eyebrow="Spot the difference"
-        title="One button, one frame"
-        words={
-          <>
-            <p>
-              Two consoles, the same cartridge, the same buttons, frame for frame. They are the same machine running the
-              same program, so their pictures are the same. Now tap one button, for one frame, in one of them only.
-            </p>
-            <p>
-              Whatever differs from then on is that tap&rsquo;s doing, and nothing else&rsquo;s. Sometimes the two
-              pictures come back together a moment later; sometimes they never do. This is how the engineers find out what
-              a game does with a button, with no source code at all: they run it twice and look for the difference.
-            </p>
-            <p>
-              On the calibration cartridge the buttons are printed in its strip of black and white blocks, two frames after
-              they were read. Watch for the block that lights, and how long it stays.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/encyclopedia", label: "The encyclopedia of code patterns (entry one, the x-ray below)" },
-          { href: "/docs/nes/mario-dissection", label: "Super Mario Bros., dissected (from the pad to the jump)" },
-          { href: "/docs/nes/exercise", label: "The exercise notebook: how the x-ray works" },
-        ]}
+        {...say("difference")}
       >
         {s ? (
           <Twins shape={s} palette={lut} framePeriodMs={framePeriodMs} xray={xray} taps={taps} />
@@ -684,28 +574,7 @@ export function Playground({
 
       <Station
         id="xray"
-        eyebrow="Your own game"
-        title="X-ray something you own"
-        words={
-          <>
-            <p>
-              The same trick, on a cartridge of your own. Play for a while: the page writes down which buttons you held
-              on every frame, exactly as the engineers&rsquo; bench writes down a run. Then ask it to x-ray a tap at the
-              moment you stopped.
-            </p>
-            <p>
-              Both consoles replay everything you played, from the moment they were switched on, and one of them gets one
-              extra tap. Anything they differ by after that is that tap&rsquo;s doing, and the report says when the
-              pictures first parted, where on the screen, how far apart they got and whether they ever came back together.
-            </p>
-            <p>The cartridge is read in this browser and goes nowhere else.</p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/exercise", label: "The exercise notebook: the x-ray, and the recordings it works from" },
-          { href: "/docs/nes/mario-dissection", label: "What their x-ray found in Super Mario Bros." },
-          { href: "/docs/nes/bench-script", label: "The bench script: one file both the bench and the model read" },
-        ]}
+        {...say("xray")}
       >
         {s ? (
           <XRay shape={s} palette={lut} framePeriodMs={framePeriodMs} />
@@ -716,64 +585,14 @@ export function Playground({
 
       <Station
         id="sound"
-        eyebrow="The sound"
-        title="Five voices, one chip"
-        words={
-          <>
-            <p>
-              All the NES&rsquo;s music comes from five voices inside the processor chip: two squares, a triangle, a
-              noise maker and a player for recorded samples. A game makes music by writing a few numbers into the chip
-              every so often: which note, how loud, what shape.
-            </p>
-            <p>
-              Here you write those numbers by pressing keys. This is the engineers&rsquo; model of the sound hardware,
-              built from measurements of the real chip&rsquo;s transistors, playing in your browser. Each voice is drawn as
-              the chip produces it, and its pitch is measured from that drawing, not assumed.
-            </p>
-            <p>
-              Mute a voice and listen to the others change slightly: the chip does not simply add its voices together.
-              That mixing is written from the NES community&rsquo;s published table, and the engineers mark it as a claim
-              they have not yet measured on their own console. The steady offset the chip&rsquo;s pins sit at is taken out
-              before your speakers.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/a3-report", label: "First sound from the 2A03 (the mixer, a labelled claim)" },
-          { href: "/docs/nes/n3-report", label: "The fast 2A03: the sound tables measured out of the chip" },
-          { href: "/docs/nes/n7-report", label: "The console's sound, through the board's audio stage" },
-        ]}
+        {...say("sound")}
       >
         <SoundVoices halfCyclesPerFrame={shown?.halfCycles ?? null} framePeriodMs={framePeriodMs} />
       </Station>
 
       <Station
         id="slow"
-        eyebrow="The slow chip"
-        title="Every transistor, switching"
-        words={
-          <>
-            <p>
-              Before the engineers wrote a fast picture chip, they built a slow one: a simulation of every transistor on
-              the real chip&rsquo;s silicon, switching on and off exactly as the photographs of the die say they are wired.
-              Here it is, running in your browser, drawing the engineers&rsquo; test scene one dot at a time.
-            </p>
-            <p>
-              Beside it is their fast chip&rsquo;s picture of the same scene. The fast one has to agree with the slow one
-              on every single dot, and this page checks it as you watch. The lamps are the chip&rsquo;s own wires: its
-              dot and line counters counting in binary, and the colour leaving the chip.
-            </p>
-            <p>
-              The bars at the bottom are how many transistors change state for each dot. The chip fetches a new tile every
-              few dots, and you can see its rhythm.
-            </p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/p0-report", label: "The 2C02 at its switches" },
-          { href: "/docs/nes/p1-report", label: "The 2C02's first picture (this scene)" },
-          { href: "/docs/nes/p3-report", label: "The fast 2C02, dot for dot with the chip" },
-        ]}
+        {...say("slow")}
       >
         {slowChip ? (
           <SlowChip palette={lut} framePeriodMs={framePeriodMs} />
@@ -783,28 +602,7 @@ export function Playground({
       </Station>
       <Station
         id="die"
-        eyebrow="The die"
-        title="The chip itself, lit up"
-        words={
-          <>
-            <p>
-              This is the picture chip&rsquo;s own silicon: the shapes traced from photographs of a real chip with its
-              casing removed, which is where every one of these models came from in the first place. The wires that are
-              carrying a signal right now are lit, as the transistor-level chip runs in your browser.
-            </p>
-            <p>
-              Point at anything to see which wire it is. Many of them have names, given by the people who traced the
-              photographs, and those names are what the engineers&rsquo; reports talk about when they say a signal rose or
-              a latch held.
-            </p>
-            <p>The colours are the layers: the metal on top, the silicon underneath, and the switching layer between.</p>
-          </>
-        }
-        record={[
-          { href: "/docs/nes/p0-report", label: "The 2C02 at its switches (this chip, from this die data)" },
-          { href: "/docs/nes/p1-report", label: "The 2C02's first picture" },
-          { href: "/docs/words", label: "Words the reports use" },
-        ]}
+        {...say("die")}
       >
         {slowChip ? <Die /> : <p className="pg-waiting">The die needs the slow chip&rsquo;s bundle, which is not in this build.</p>}
       </Station>

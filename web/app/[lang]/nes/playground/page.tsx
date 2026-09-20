@@ -13,6 +13,7 @@ import { timeline } from "./timeline";
 import { bench } from "./bench";
 import { chipApi } from "@/lib/projects";
 import { ProgramChip } from "./ProgramChip";
+import { words, type StationKey } from "./words";
 import { Bench } from "./Bench";
 import { Timeline } from "./Timeline";
 import { Encyclopedia } from "./Encyclopedia";
@@ -47,72 +48,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return pageMeta(lang, "/nes/playground", { title: TITLE, description: DESCRIPTION, noindex: true });
 }
 
-/** Where each part of the machine is written up, by the engineers. */
-const PARTS = [
-  {
-    key: "cpu",
-    name: "The 2A03",
-    role: "the brain, and the sound",
-    words: (t: string) =>
-      `A 6502 processor, the same family as the Apple II's, with the sound hardware on the same piece of silicon. The engineers simulated all ${t} of its working transistors, switch by switch, and then built a fast copy that has to agree with the slow one.`,
-    record: [
-      { href: "/docs/nes/a0-report", label: "The 2A03 at its switches" },
-      { href: "/docs/nes/n3-report", label: "The fast 2A03, built and checked" },
-      { href: "/docs/nes/a3-report", label: "First sound from the 2A03" },
-    ],
-  },
-  {
-    key: "ppu",
-    name: "The 2C02",
-    role: "the picture chip",
-    words: () =>
-      "It walks the beam across the screen dot by dot, fetching the background and the sprites just in time for each one. The processor never draws anything: it only leaves notes for this chip.",
-    record: [
-      { href: "/docs/nes/p0-report", label: "The 2C02 at its switches" },
-      { href: "/docs/nes/p2-report", label: "The 2C02's hard corners" },
-      { href: "/docs/nes/p3-report", label: "The fast 2C02, dot for dot with the chip" },
-    ],
-  },
-  {
-    key: "cart",
-    name: "The cartridge",
-    role: "the game, and its pictures",
-    words: () =>
-      "Two memory chips on a board: one holds the program the processor runs, the other the little tiles the picture chip draws with. Bigger games add a chip that swaps banks of memory in and out.",
-    record: [
-      { href: "/docs/nes/cartridge", label: "A real cartridge in the model" },
-      { href: "/docs/nes/n0-report", label: "The contract the chips share, the cartridge edge included" },
-    ],
-  },
-  {
-    key: "glue",
-    name: "The board",
-    role: "the glue between them",
-    words: () =>
-      "A crystal that keeps time for everyone, a little working memory, and a handful of simple chips that decide who is talking on the shared wires at any moment.",
-    record: [
-      { href: "/docs/nes/n4-report", label: "The mainboard's glue" },
-      { href: "/docs/nes/n5-report", label: "Both chips on one clock" },
-    ],
-  },
-  {
-    key: "tv",
-    name: "The television",
-    role: "where it all ends up",
-    words: () =>
-      "An analogue signal on one wire, and a tube that paints it back into light. The engineers modelled that too, because the picture you remember was made as much by the television as by the console.",
-    record: [
-      { href: "/docs/nes/ntsc-spec", label: "The signal path's specification" },
-      { href: "/docs/nes/m3-report", label: "The television's picture stages" },
-      { href: "/docs/nes/eyes-vs-scope", label: "Eyes versus scope: the real console against the model" },
-    ],
-  },
-] as const;
+/** The machine's parts: the key the prose is keyed by, and where each one is written up. */
+const PARTS = [{ key: "cpu" }, { key: "ppu" }, { key: "cart" }, { key: "glue" }, { key: "tv" }] as const;
 
-/** What the playground could grow next: proposals, for the owner to pick from. */
-const NEXT = [
-  { name: "A guided tour", about: "One path through these stations, in order, with a sentence between each: twenty minutes from a television picture to a transistor for a reader who does not know where to start." },
-] as const;
 
 export default async function Page({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
@@ -121,193 +59,65 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
   if (!Number.isFinite(periodMs) || periodMs <= 0) {
     throw new Error(`data/nes.json's frame period reads ${JSON.stringify(r.c2c02.p3.frame_period_ms)}`);
   }
+  const W = words(lang);
+  const say = (key: StationKey) => ({ eyebrow: W.stations[key].eyebrow, title: W.stations[key].title, words: W.stations[key].body, record: W.stations[key].record });
   return (
     <Shell lang={lang} die="NES" title={TITLE} titleIsHeading={false} pageHead={false}>
       <div className="pg" data-lang={lang}>
         {lang === "ja" ? <p className="pg-note">この実験ページは、まだ英語だけです。</p> : null}
 
-        <Playground mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
+        <Playground lang={lang} mario={marioFrame()} framePeriodMs={periodMs} slowChip={slowChip()} xray={xray()} taps={marioTaps()} />
 
         <Station
           id="patterns"
-          eyebrow="The encyclopedia"
-          title="Tricks every game uses"
-          words={
-            <>
-              <p>
-                Taking games apart, the engineers keep finding the same tricks: the same few ways of reading the pad,
-                switching memory, keeping time and changing the picture without tearing it. They are writing them down as an
-                encyclopedia of code patterns.
-              </p>
-              <p>
-                Each picture here is one entry&rsquo;s mechanism, drawn by us and moving. They are sketches, not
-                recordings: no address or number in them is the game&rsquo;s. The entry&rsquo;s own words are beside each,
-                and the full entry, with everything the engineers measured, is one click away.
-              </p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes/encyclopedia", label: "The encyclopedia of code patterns" },
-            { href: "/docs/nes/mario-dissection", label: "Super Mario Bros., dissected (where most were found)" },
-          ]}
+          {...say("patterns")}
         >
           <Encyclopedia data={encyclopedia()} />
         </Station>
 
         <Station
           id="real"
-          eyebrow="Real or model"
-          title="The same screen, three ways"
-          words={
-            <>
-              <p>
-                The engineers put a real NES and their model side by side on the same cartridge&rsquo;s title screen, and
-                looked at the real one twice: once through a laboratory scope decoded by their own software, once through a
-                cheap USB video grabber. Two different eyes on one real signal, and the model beside them.
-              </p>
-              <p>
-                The two real pictures agree closely. The model agrees on almost everything, but some colours are off: its
-                cyan is a little bluer, its brown a little warmer. Slide, blink or subtract to see it, and point at a colour
-                to measure it yourself.
-              </p>
-              <p>
-                The engineers tracked it down. The real chip&rsquo;s output slows down on its brighter colours, and that
-                shifts their hue; the model&rsquo;s signal is too perfect to do it. Teaching the model that imperfection is
-                still on their list.
-              </p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes/eyes-vs-scope", label: "Eyes versus scope (where these pictures and figures come from)" },
-            { href: "/docs/nes/open-items", label: "What is still open (the model's hue)" },
-          ]}
+          {...say("real")}
         >
           <RealOrModel data={realModel()} />
         </Station>
 
         <Station
           id="museum"
-          eyebrow="The bug museum"
-          title="Every wrong turn, kept"
-          words={
-            <>
-              <p>
-                Building a machine this carefully means being wrong a lot, and catching it. The engineers keep every mistake
-                in their reports, beside the fix, instead of tidying it away. Here are some of the best.
-              </p>
-              <p>
-                Some bugs lived in the model, some in the bench wired to the real console, some in the tools, and some in
-                the measuring itself. Each plaque says what you would have seen, why it happened and how it was caught;
-                below it are the engineers&rsquo; own words, read from their reports.
-              </p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes/cartridge", label: "A real cartridge in the model" },
-            { href: "/docs/nes/bench-report", label: "What the bench's tools have shown" },
-            { href: "/docs/nes/open-items", label: "What is still open" },
-          ]}
+          {...say("museum")}
         >
           <Museum exhibits={exhibits()} />
         </Station>
 
         <Station
           id="program"
-          eyebrow="Write a program"
-          title="Tell the chip what to do"
-          words={
-            <>
-              <p>
-                A processor knows a few dozen instructions, and each one is tiny: put a number here, add one to it,
-                compare it with something, go back a line. Games are made of nothing else. Here are a few lines you can
-                change and run.
-              </p>
-              <p>
-                It runs on the 6502 itself, the transistor-level one this shop serves over its own interface, an
-                instruction at a time. A, X and Y are the three places the chip can hold a number while it works; the
-                grid at the bottom is the first page of its memory, and you can watch your program change it.
-              </p>
-              <p>
-                It is the same processor as the one inside the NES, which is where all of this started: the console&rsquo;s
-                chip is this one with its sound hardware beside it on the same piece of silicon.
-              </p>
-            </>
-          }
-          record={[
-            { href: "/6502/api", label: "The 6502 API: the chip over HTTP, a half-cycle at a time" },
-            { href: "/6502/primer", label: "The primer: the chip explained properly" },
-            { href: "/docs/nes/n3-report", label: "The NES's own 6502, checked against the die" },
-          ]}
+          {...say("program")}
         >
           <ProgramChip api={CHIP_API} />
         </Station>
 
         <Station
           id="bench"
-          eyebrow="The bench"
-          title="A real console, watched"
-          words={
-            <>
-              <p>
-                None of this would settle anything without a real NES on a table. The engineers built a bench around one: a
-                little board that presses its buttons, a laboratory scope on its video wire, and cameras on a frame
-                watching the whole thing, so a run can be repeated exactly and what happened can be looked at afterwards.
-              </p>
-              <p>
-                These are their own photographs, with their own captions. Pick one to see it; the parts listed under each
-                are what their caption names, in the order they wrote them.
-              </p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes/rig", label: "The QA rig: the cameras and boards, in inches and pixels" },
-            { href: "/docs/nes/lab-notebook", label: "The lab notebook: the bench wired one step at a time" },
-            { href: "/docs/nes/milestone-rig-and-bridge", label: "The rig locked and the bridge reading right" },
-          ]}
+          {...say("bench")}
         >
           <Bench data={bench()} />
         </Station>
 
         <Station
           id="arc"
-          eyebrow="How it was built"
-          title="A fortnight of afternoons"
-          words={
-            <>
-              <p>
-                The whole console, from the first sketch to a real NES wired to the model, was built in a few weeks, and
-                every step of it was written down twice: a plan saying what would be checked, and a report saying what was
-                found. This is all of it on one rail of days.
-              </p>
-              <p>
-                The shape tells the story. The television signal was finished almost at once; the two chips took a few days
-                each, once at the level of their transistors and again as fast copies that had to agree; then the console,
-                and then two weeks of building a bench out of real hardware, which is where most of the days went.
-              </p>
-              <p>Pick any stop to see what that document is about, and follow it if you want the detail.</p>
-            </>
-          }
-          record={[
-            { href: "/docs/nes", label: "The console arc's notebook (every document, grouped)" },
-            { href: "/docs/nes/sketch", label: "The plan for the whole console, written before the code" },
-            { href: "/docs/nes/open-items", label: "What is still open" },
-          ]}
+          {...say("arc")}
         >
           <Timeline data={timeline()} />
         </Station>
 
         <section className="pg-station pg-machine" id="machine" aria-labelledby="machine-h">
           <div className="pg-words">
-            <p className="pg-eyebrow">The machine</p>
-            <h2 id="machine-h">A handful of parts, one clock</h2>
-            <p>
-              Everything above is these parts talking. The processor runs the game and leaves notes for the picture chip;
-              the picture chip reads the cartridge&rsquo;s tiles and walks the beam; the television turns the wire back
-              into light. Each part below links to where the engineers took it apart.
-            </p>
+            <p className="pg-eyebrow">{W.machine.eyebrow}</p>
+            <h2 id="machine-h">{W.machine.title}</h2>
+            <p>{W.machine.intro}</p>
           </div>
           <figure className="pg-instrument pg-diagram">
-            <svg viewBox="0 0 760 300" role="img" aria-label="The NES as a diagram: the crystal clocks both chips; the processor reads the pad and the cartridge's program and leaves notes for the picture chip; the picture chip reads the cartridge's tiles; the picture and the sound go to the television.">
+            <svg viewBox="0 0 760 300" role="img" aria-label={W.machine.diagram}>
               <defs>
                 <marker id="pg-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                   <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
@@ -358,19 +168,16 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
                 <text x="480" y="284">picture</text>
               </g>
             </svg>
-            <figcaption className="pg-note">
-              The processor and the picture chip never share a clock tick by accident: both count off the same crystal, and
-              the engineers checked every way the two can line up at power on.
-            </figcaption>
+            <figcaption className="pg-note">{W.machine.caption}</figcaption>
           </figure>
           <div className="pg-parts">
             {PARTS.map((p) => (
               <article key={p.key} className="pg-part">
-                <p className="pg-eyebrow">{p.role}</p>
-                <h3>{p.name}</h3>
-                <p>{p.words(r.a0.transistors)}</p>
+                <p className="pg-eyebrow">{W.machine.parts[p.key].role}</p>
+                <h3>{W.machine.parts[p.key].name}</h3>
+                <p>{W.machine.parts[p.key].words(r.a0.transistors)}</p>
                 <ul>
-                  {p.record.map((l) => (
+                  {W.machine.parts[p.key].links.map((l) => (
                     <li key={l.href}>
                       <a href={l.href}>{l.label}</a>
                     </li>
@@ -383,12 +190,12 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
 
         <section className="pg-station pg-next" id="next" aria-labelledby="next-h">
           <div className="pg-words">
-            <p className="pg-eyebrow">On the bench next</p>
-            <h2 id="next-h">Ideas this playground could grow</h2>
-            <p>Proposals, not promises. Each would draw on something the engineers have already measured or built.</p>
+            <p className="pg-eyebrow">{W.machine.nextEyebrow}</p>
+            <h2 id="next-h">{W.machine.nextTitle}</h2>
+            <p>{W.machine.nextIntro}</p>
           </div>
           <ul className="pg-ideas">
-            {NEXT.map((n) => (
+            {W.machine.next.map((n) => (
               <li key={n.name}>
                 <h3>{n.name}</h3>
                 <p>{n.about}</p>
