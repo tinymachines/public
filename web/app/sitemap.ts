@@ -41,6 +41,7 @@ const STATIC = [
   "/hotbits",
   "/hotbits/api",
   "/nes",
+  "/nes/playground",
   "/nes/chips",
   "/nes/console",
   "/nes/signal",

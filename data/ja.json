@@ -356,5 +356,8 @@
  "Words the reports use": "報告書で使われる言葉",
  "The working words inside the NES reports, in plain sentences: recorded reference runs, checks, fast chips and filters, sabotage runs, what we measured and what we wrote, and the milestone letters.": "NES の報告書の中で使われている現場の言葉を、平たい文章で。記録された参照走行、検査、速いチップと絞り込み、妨害を入れた走行、測ったものと書き下ろしたもの、そしてマイルストーンの記号。",
  "What the sketch asked for, how each milestone was checked, what the chips and the ROMs taught, and what stays for a bench.": "下書きが求めたもの、各マイルストーンがどう確かめられたか、チップと ROM が教えたこと、そしてベンチに残っていること。",
- "The same engine in a page or over HTTP, and a machine that moves between them.": "同じエンジンを、ページの中でも HTTP 越しでも。そしてその間を行き来する機械。"
+ "The same engine in a page or over HTTP, and a machine that moves between them.": "同じエンジンを、ページの中でも HTTP 越しでも。そしてその間を行き来する機械。",
+ "The NES at human speed": "人の速さで見るファミコン",
+ "The console's model slowed down until a person can watch it work: a frame drawn dot by dot, the line as volts on the wire, a real game's frame measured, and the picture chip running transistor by transistor.": "ファミコンの模型を、人の目で追えるところまで遅くしたものです。1 ドットずつ描かれるフレーム、線の上の電圧としての走査線、実際のゲームの 1 フレームの計測、そしてトランジスタ単位で動く絵のチップ。",
+ "The console's model slowed down until a person can watch it: the beam drawing a frame, the line as volts on the wire, a real game's frame measured, the pad read a bit at a time, and the picture chip running transistor by transistor.": "ファミコンの模型を、人の目で追えるところまで遅くしたもの。フレームを描くビーム、線の上の電圧としての走査線、実際のゲームの 1 フレームの計測、1 ビットずつ読まれるパッド、そしてトランジスタ単位で動く絵のチップ。"
 }

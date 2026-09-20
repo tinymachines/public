@@ -248,6 +248,19 @@
      "prerendered": true
     },
     {
+     "key": "playground",
+     "name": "The NES at human speed",
+     "what": "The console's model slowed down until a person can watch it: the beam drawing a frame, the line as volts on the wire, a real game's frame measured, the pad read a bit at a time, and the picture chip running transistor by transistor.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/nes/playground",
+     "lands_at": "/nes/playground",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
      "key": "chips",
      "name": "The chips",
      "what": "The contract every chip speaks, the 2A03 and the 2C02 at their switches, and the fast chips built from them. Every figure comes from re-running the chip repositories' own tests.",

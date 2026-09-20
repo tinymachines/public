@@ -104,6 +104,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "A working NES built from our own parts: both chips simulated switch by switch, every connection between them checked against recorded reference runs, and a picture path already tested on a real console.",
   },
+  "/nes/playground": {
+    title: "The NES at human speed",
+    description:
+      "The console's model slowed down until a person can watch it work: a frame drawn dot by dot, the line as volts on the wire, a real game's frame measured, and the picture chip running transistor by transistor.",
+  },
   "/nes/chips": {
     title: "The chips",
     description:

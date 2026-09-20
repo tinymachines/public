@@ -32,15 +32,25 @@ async function awaitColours(page: Page, where = "") {
   }
 }
 
-test("the playground is live, hidden from the index, and out of the sitemap", async ({ page }) => {
+test("the playground is published: indexed, in the sitemap, and in the section's menu", async ({ page }) => {
+  // It was noindex and unlisted while it was an experiment (2026-09-18 to
+  // 2026-09-20). Publishing it was one entry in data/projects.json, which is
+  // what the menu, the sitemap and this check all read, so a page that
+  // arrives cannot be listed in one of those and missing from another.
   const res = await page.request.get(`${BASE}/nes/playground`);
   expect(res.status()).toBe(200);
   const html = await res.text();
-  expect(html).toMatch(/<meta name="robots" content="noindex, nofollow"/);
+  expect(html).not.toMatch(/<meta name="robots" content="noindex/);
+  expect(html).toMatch(/<link rel="canonical" href="[^"]*\/nes\/playground"/);
   const sitemap = await (await page.request.get(`${BASE}/sitemap.xml`)).text();
-  // The sitemap is the real one (it lists the NES section's pages), and the playground is not in it.
   expect(sitemap).toContain("/nes/console</loc>");
-  expect(sitemap).not.toContain("/nes/playground");
+  expect(sitemap).toContain("/nes/playground</loc>");
+  expect(sitemap).toContain("/ja/nes/playground</loc>");
+  // And a reader can get there: the NES menu group carries it.
+  await page.setViewportSize(DESK);
+  await open(page, "/nes", 300);
+  await page.getByRole("button", { name: /menu/i }).first().click();
+  await expect(page.locator('a[href="/nes/playground"]').first()).toBeVisible({ timeout: 10_000 });
 });
 
 test("the playground's stations are drawn from the console in the page", async ({ page }) => {
@@ -417,7 +427,8 @@ test("the playground speaks Japanese, and still speaks English", async ({ page }
   ];
   const res = await page.request.get(`${BASE}/ja/nes/playground`);
   expect(res.status()).toBe(200);
-  expect(await res.text()).toMatch(/<meta name="robots" content="noindex, nofollow"/);
+  // Whether the page is indexed is the publication test's business, above.
+  expect(await res.text()).toContain('hrefLang="ja"');
 
   await page.setViewportSize(DESK);
   await open(page, "/ja/nes/playground", 500);

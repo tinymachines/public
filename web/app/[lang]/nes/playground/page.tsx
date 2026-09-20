@@ -25,10 +25,12 @@ import { Station } from "./Playground";
 import "./playground.css";
 
 /**
- * /nes/playground: a hidden bench for trying ways to make the console arc
- * readable by anyone, without touching the engineers' pages. Not in the
- * sitemap, the menus, projects.json or pages.ts, and `noindex`, like
- * /6502/consolev2: an experiment until the owner says otherwise.
+ * /nes/playground: the console arc made readable by anyone, without
+ * touching the engineers' pages. Built hidden and `noindex` while it was an
+ * experiment; published 2026-09-20 once it had seventeen stations, both
+ * languages and a spec, and it is listed the way every other page is: a
+ * surface in data/projects.json, which is what puts it in the menu, the
+ * sitemap and the section's own listing. Nothing about it is special-cased.
  *
  * The rule it tries out: keep every grain of the engineers' detail, but
  * lead with something to look at and a plain sentence, and put the record
@@ -44,7 +46,7 @@ const CHIP_API = chipApi();
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   const W = words(lang as Lang);
-  return pageMeta(lang, "/nes/playground", { title: W.hero.title, description: W.hero.description, noindex: true });
+  return pageMeta(lang, "/nes/playground", { title: W.hero.title, description: W.hero.description });
 }
 
 /** The machine's parts: the key the prose is keyed by, and where each one is written up. */
