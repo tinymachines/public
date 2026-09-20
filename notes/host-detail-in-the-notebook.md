@@ -98,3 +98,23 @@ broken page. It could refuse a document carrying a bare IPv4 address the same
 way, which would turn this rule from a convention into a check. That is a
 small change on this side, and it is not made yet: it would fail every build
 until the two lines above are fixed, so it goes in after the fix, not before.
+
+## What happened, 2026-09-20
+
+Fixed at the source and live. `tools/bringup.py` gained `redact_host()`, which
+keeps the scheme and the port and replaces the host with `<pi>`; it is applied
+where the log is written, so no future run records an address, and at both
+render sites (`tools/lab-notebook.py`, `tools/build-guide.py`), so the entries
+already recorded publish redacted (nes-bench `22748f5`). The published pages
+were checked in both languages afterwards and print no address.
+
+Two things followed. The redactor's own docstring used the real address as its
+worked example, so the function that keeps the address off the pages would
+have carried it in source: it is an RFC 5737 documentation address now
+(`f6335bd`). And the raw log's own line was scrubbed at the tip (`098f914`).
+
+**The history stays as it is, by the owner's decision.** The address is in 170
+pushed commits of a public repository, from `5672195` on 2026-09-08. Rewriting
+them would change every hash from that day on, break existing clones, and
+still not remove what GitHub's caches and any fork already hold. The tip is
+clean, every future run redacts, and no published page shows it.
