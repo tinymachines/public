@@ -34,7 +34,14 @@ export function t(lang: Lang, text: string): string {
 // data/check-i18n.py counts the served page with: a body of identifiers and
 // code reads as untranslated by a raw kana count, so the share is against the
 // letters actually beside it.
-const KANA_CJK = /[぀-ヿ㐀-鿿]/g;
+//
+// Written as escapes rather than as the characters themselves, because the
+// card's font check reads this directory looking for Japanese it has to draw,
+// and a range's endpoints are not copy: U+3040 and U+9FFF are unassigned or
+// unused, they are in no sentence, and the subset has no glyph for them. As
+// literals they failed that check (2026-09-20) and would have had somebody
+// widen a font subset to satisfy a regex.
+const KANA_CJK = /[\u3040-\u30FF\u3400-\u9FFF]/g;
 const LATIN = /[A-Za-z]/g;
 
 /**
