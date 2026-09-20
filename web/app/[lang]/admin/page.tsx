@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import { AdminConsole } from "@/app/components/AdminConsole";
 import { Shell } from "@/app/components/SiteFrame";
+import { Untranslated } from "@/app/components/Untranslated";
 
 /**
  * /admin: dev keys, and the people they belong to.
@@ -38,6 +39,11 @@ export default async function AdminPage({ params }: { params: Promise<{ lang: La
   const { lang } = await params;
   return (
     <Shell lang={lang} die="ADM" title="Admin">
+      {/* The console's own labels are English and nothing translates them: it
+          is an operator's tool, not a page a reader arrives at. The crumb and
+          the menu around it ARE translated under /ja, so the page says which
+          of the two the reader is looking at. */}
+      <Untranslated lang={lang} />
       <AdminConsole />
     </Shell>
   );

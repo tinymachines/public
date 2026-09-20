@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
-import { t } from "@/lib/i18n";
+import { bodyLang, t } from "@/lib/i18n";
 import { isLang, type Lang } from "@/lib/lang";
 import Link from "next/link";
 import { Shell } from "@/app/components/SiteFrame";
+import { Untranslated } from "@/app/components/Untranslated";
 import { Space } from "./Space";
 import "./space.css";
 
@@ -57,22 +58,38 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
     ),
   };
 
+  // The page's own prose, in one place so the measurement below can see all
+  // of it: everything a reader of this page reads, the plot captions
+  // included, and nothing of the chrome, which is translated everywhere.
+  const copy = {
+    lede: t(
+      lang,
+      "Four ways of looking at the same radioactive decay. None of them is a summary statistic: they are the bytes themselves, arranged so that a flaw would be visible rather than reported.",
+    ),
+    archive: t(
+      lang,
+      "These plots read the archive, which is the append-only record of bytes already emitted. They never draw on the fresh pool, because that refills at about 75 bytes a minute and spending it on a picture would starve the consumers it exists for.",
+    ),
+    instrument: t(lang, "The instrument itself"),
+    now: t(lang, "reports what it is doing right now."),
+  };
+
+  // What language that actually came out in. Every sentence here goes through
+  // the overlay, and data/ja.json has none of them, so under /ja this page
+  // renders in English inside translated chrome. It says so, and it says so
+  // from the measurement rather than from a flag somebody has to remember to
+  // clear: the day the overlay learns these sentences the notice withdraws
+  // itself. lib/i18n.ts bodyLang.
+  const body = bodyLang(lang, [...Object.values(copy), ...Object.values(labels)]);
+
   return (
     <Shell lang={lang} die="ENT" title={t(lang, "The entropy, drawn")}>
-      <div className="prose" lang={lang}>
-        <p className="lede">
-          {t(
-            lang,
-            "Four ways of looking at the same radioactive decay. None of them is a summary statistic: they are the bytes themselves, arranged so that a flaw would be visible rather than reported.",
-          )}
-        </p>
+      {body === "en" ? <Untranslated lang={lang} /> : null}
+      <div className="prose" lang={body}>
+        <p className="lede">{copy.lede}</p>
         <p>
-          {t(
-            lang,
-            "These plots read the archive, which is the append-only record of bytes already emitted. They never draw on the fresh pool, because that refills at about 75 bytes a minute and spending it on a picture would starve the consumers it exists for.",
-          )}{" "}
-          <Link href={`/hotbits`}>{t(lang, "The instrument itself")}</Link>{" "}
-          {t(lang, "reports what it is doing right now.")}
+          {copy.archive}{" "}
+          <Link href={`/hotbits`}>{copy.instrument}</Link> {copy.now}
         </p>
       </div>
 

@@ -12,9 +12,10 @@ nobody ships. Reported as a warning with the orphaned key, never silently
 dropped, because the fix is a human rereading a sentence.
 
 --live adds the third number, and it is the one a reader feels: for every page
-in the published sitemap, how much of the JAPANESE page's own body is actually
-Japanese. The tree cannot answer that. A page can be fully wired for the
-overlay, carry a translated menu, a translated title and a translated
+this site serves, the published sitemap plus the static routes the tree has
+that the sitemap leaves out, how much of the JAPANESE page's own body is
+actually Japanese. The tree cannot answer that. A page can be fully wired for
+the overlay, carry a translated menu, a translated title and a translated
 breadcrumb, and still open with an English document under it, which is exactly
 what /ja/6502/tracer does and what the owner reported on 2026-08-28 as "the
 menu changes and the page does not". Counted on the served HTML, per page, so
@@ -30,6 +31,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -138,15 +140,62 @@ def fetch(url: str) -> str:
         return r.read().decode("utf8", "replace")
 
 
+def routes() -> list[str]:
+    """Every static page this tree serves, read off web/app/[lang].
+
+    The sitemap is not the site. It lists what we want found, and
+    app/sitemap.ts says out loud what it leaves out: the noindex pages, the
+    editor, the builder pages. Those are still addresses a reader can be
+    handed, in both spellings, and a check that cannot see a page cannot
+    report it missing. /hotbits/space served an English body under Japanese
+    chrome from the day it arrived and appeared in no count, because the only
+    counter walked the sitemap (measured 2026-09-20). So the denominator is
+    the sitemap plus the tree.
+
+    Dynamic segments are skipped. Their pages reach this list through the
+    sitemap (the explorer's [page], the docs' [[...slug]]) or come from a live
+    registry ([handle]), and a path with a bracket in it is not an address.
+    """
+    root = ROOT / "web" / "app" / "[lang]"
+    out = []
+    for p in root.rglob("page.tsx"):
+        rel = p.parent.relative_to(root).as_posix()
+        if "[" in rel:
+            continue
+        out.append("/" if rel == "." else f"/{rel}")
+    return sorted(out)
+
+
+# Pages that serve one English document at both spellings on purpose, and so
+# have nothing to tell the reader: no part of them claims to be Japanese.
+# Named here, and printed, rather than dropped from the denominator, because a
+# page missing from a count reads the same as a page that passed it.
+EXEMPT = {
+    # The specimen sheet for the kit. It ignores `lang`, brings its own
+    # full-page chrome and is the same English document at /style/zoo and
+    # /ja/style/zoo, so there is no translated menu to contradict and no house
+    # frame to hang a notice on (app/[lang]/style/page.tsx records that call).
+    "/style/zoo": "one English document at both spellings, no localized chrome",
+}
+
+
 def live(base: str) -> int:
-    """Every published page, against its own Japanese twin."""
+    """Every page this site serves, against its own Japanese twin."""
     xml = fetch(f"{base}/sitemap.xml")
-    paths = sorted({re.sub(r"/$", "", u.split(base, 1)[-1]) or "/" for u in re.findall(r"<loc>([^<]+)</loc>", xml)})
-    english = [p for p in paths if p != "/ja" and not p.startswith("/ja/")]
+    # The PATH of each entry, not the entry minus the base. The sitemap is
+    # generated from the site's own origin (lib/seo.ts reads it off the
+    # manifest), so against a preview on 127.0.0.1 every URL in it still says
+    # tinymachines.ai: splitting on the base left the whole URL, the check then
+    # asked for "http://127.0.0.1:6538https://tinymachines.ai/6502", and a
+    # preview measured as 133 unreachable pages.
+    paths = sorted({re.sub(r"/$", "", urllib.parse.urlparse(u).path) or "/" for u in re.findall(r"<loc>([^<]+)</loc>", xml)})
+    listed = [p for p in paths if p != "/ja" and not p.startswith("/ja/")]
     sentence = notice()
-    if len(english) < 50:
-        print(f"check-i18n: the sitemap lists {len(english)} English pages; that is not this site", file=sys.stderr)
+    if len(listed) < 50:
+        print(f"check-i18n: the sitemap lists {len(listed)} English pages; that is not this site", file=sys.stderr)
         return 1
+    unlisted = [p for p in routes() if p not in set(listed)]
+    english = listed + unlisted
 
     def one(p: str):
         twin = "/ja" if p == "/" else f"/ja{p}"
@@ -159,6 +208,8 @@ def live(base: str) -> int:
         # and would report nothing forever.
         same = body_of(en_html) == body_of(ja_html)
         note = "byte for byte the English page" if same else ""
+        if p in unlisted:
+            note = f"{note}, not in the sitemap" if note else "not in the sitemap"
         return (p, ja_share(body_of(ja_html)), note, sentence in ja_html)
 
     with concurrent.futures.ThreadPoolExecutor(8) as pool:
@@ -168,7 +219,7 @@ def live(base: str) -> int:
     # The threshold is a floor, not a grade: below it, the page opens in
     # English however much of its chrome flipped.
     FLOOR = 0.2
-    print(f"check-i18n: {len(rows)} published pages, measured at {base}")
+    print(f"check-i18n: {len(rows)} pages, measured at {base}: {len(listed)} in the sitemap and {len(unlisted)} it leaves out")
     for p, share, note, said in rows:
         english = share is None or share < FLOOR
         mark = "EN" if english else "  "
@@ -181,8 +232,11 @@ def live(base: str) -> int:
     # that says it is untranslated when it is not is the same fault inverted,
     # and it is the one that arrives later, when somebody translates a page
     # and leaves the notice on it.
-    silent = [p for p, s, _, said in rows if (s is None or s < FLOOR) and not said]
+    silent = [p for p, s, _, said in rows if (s is None or s < FLOOR) and not said and p not in EXEMPT]
     stale = [p for p, s, _, said in rows if s is not None and s >= FLOOR and said]
+    for p, why in EXEMPT.items():
+        if any(r[0] == p for r in rows):
+            print(f"  EXEMPT: {p} tells the reader nothing because it claims nothing: {why}")
     for p in silent:
         print(f"  SILENT: {p} serves an English body under /ja and does not say so")
     for p in stale:

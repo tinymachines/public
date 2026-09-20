@@ -29,3 +29,39 @@ export function t(lang: Lang, text: string): string {
   if (lang === "en") return text;
   return ja()[text] ?? text;
 }
+
+// Kana and CJK, and the Latin letters competing with them. The same pair
+// data/check-i18n.py counts the served page with: a body of identifiers and
+// code reads as untranslated by a raw kana count, so the share is against the
+// letters actually beside it.
+const KANA_CJK = /[぀-ヿ㐀-鿿]/g;
+const LATIN = /[A-Za-z]/g;
+
+/**
+ * The language a page's copy came out in, measured rather than assumed.
+ *
+ * `t()` hands back the English when the overlay has no answer, which is the
+ * right behaviour and the quiet one: a page whose every sentence goes through
+ * the overlay can render entirely in English under /ja and look merely
+ * unfinished. /hotbits/space did that from the day it arrived, and no check
+ * saw it, because it is not in the sitemap and the counter only walks the
+ * sitemap (measured 2026-09-20: 0% Japanese, no notice).
+ *
+ * So a page that builds its copy through `t()` asks this what it ended up
+ * with, and decides the notice and its `lang` from the answer rather than
+ * from the route. The day the overlay learns those sentences, the same
+ * measurement withdraws the notice: nothing has to be remembered.
+ *
+ * The floor is 0.2, which is the floor data/check-i18n.py measures the served
+ * page against. Below it the page opens in English however much of its chrome
+ * flipped. Copy with no letters at all makes no claim either way, so the
+ * route's language stands.
+ */
+export function bodyLang(lang: Lang, copy: string[]): Lang {
+  if (lang === "en") return "en";
+  const text = copy.join(" ");
+  const kana = (text.match(KANA_CJK) ?? []).length;
+  const latin = (text.match(LATIN) ?? []).length;
+  if (kana + latin === 0) return lang;
+  return kana / (kana + latin) >= 0.2 ? "ja" : "en";
+}

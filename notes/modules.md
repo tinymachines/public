@@ -92,8 +92,8 @@ die-trace data), then `check-build.mjs` after it (output checks on the HTML
 that was generated). `shell-sheets.ts` draws the console's paper sheets and is
 not part of the build.
 
-`web/e2e/` is 21 Playwright specs, 474 tests, run against the live site
-(`bun run e2e`, or `deploy.sh --e2e`).
+`web/e2e/` is 32 Playwright specs, 876 tests (`bun run e2e -- --list` counts
+them), run against the live site (`bun run e2e`, or `deploy.sh --e2e`).
 
 ### `api/`: the modules
 

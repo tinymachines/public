@@ -18,6 +18,7 @@ e2e` runs it against a preview (the chip pages only boot on production, so
 | `footer` | the footer states the API's version and is never clipped |
 | `api` | openapi.json is generated, the brief carries no token, strangers get 401 |
 | `shell` | the console shell on /6502/games: octagon mask, integer scale, 88px touch floor, coin and LED, pages, rotation without reload, no Nintendo mark |
+| `untranslated` | every page's notice agrees with the body it serves: English under /ja says so, Japanese does not, and a document's `inLanguage` is its body's language |
 
 The page list is fetched from `/sitemap.xml` in `global-setup.ts`; nothing
 is listed by hand. Each spec asserts a count before it asserts a property, so

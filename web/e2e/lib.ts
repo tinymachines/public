@@ -17,6 +17,59 @@ export function pages(): string[] {
 }
 export const isJa = (p: string) => p === "/ja" || p.startsWith("/ja/");
 export const en = () => pages().filter((p) => !isJa(p));
+export const twinOf = (p: string) => (isJa(p) ? p.slice(3) || "/" : p === "/" ? "/ja" : `/ja${p}`);
+
+/** The untranslated notice's own sentence, read out of the component that prints it.
+ *
+ * Not retyped here, for the reason data/check-i18n.py gives for not retyping
+ * it either: the page prints it and these checks look for it, so the two agree
+ * by construction and a rewording carries to both. A miss throws, because a
+ * scan that quietly matches nothing is not a scan.
+ */
+export function noticeSentence(): string {
+  const src = fs.readFileSync(path.join(__dirname, "..", "app", "components", "Untranslated.tsx"), "utf8");
+  const m = src.match(/className="notice untranslated"[^>]*>\s*([^<]+?)\s*<\/p>/);
+  if (!m) throw new Error("no notice sentence in app/components/Untranslated.tsx");
+  return m[1].split(/\s+/).join(" ");
+}
+
+// Kana and CJK, and the Latin letters competing with them: the same pair
+// data/check-i18n.py counts, because a body of identifiers and code fences
+// would read as untranslated by a raw kana count.
+const KANA_CJK = /[぀-ヿ㐀-鿿]/g;
+const LATIN = /[A-Za-z]/g;
+
+/** Below this share a page opens in English however much of its chrome flipped. */
+export const JA_FLOOR = 0.2;
+
+/** The share of the letters in this text that are Japanese. */
+export function jaShare(text: string): number {
+  const ja = (text.match(KANA_CJK) ?? []).length;
+  const la = (text.match(LATIN) ?? []).length;
+  return ja + la === 0 ? 0 : ja / (ja + la);
+}
+
+/**
+ * The page's own document, as text. <main> where there is one, the whole
+ * document where there is not: the Lab is a full-bleed instrument and ships no
+ * <main>, and a locator waiting for one there is a four minute hang, which is
+ * how lang.spec.ts failed the first time it ran.
+ *
+ * The untranslated notice comes out before anything is counted. It is Japanese
+ * text a page prints BECAUSE its body is English, so leaving it in raises the
+ * share of exactly the pages it reports on: /6502/block/article has a 133
+ * character body and the notice alone carried it from 0% to 24%.
+ */
+export function servedBody(html: string): string {
+  const stripped = html.replace(/<p[^>]*class="[^"]*untranslated[^"]*"[^>]*>[\s\S]*?<\/p>/g, " ");
+  const m = stripped.match(/<main\b[^>]*>([\s\S]*?)<\/main>/);
+  return (m ? m[1] : stripped)
+    .replace(/<(script|style|template|noscript)\b[\s\S]*?<\/\1>/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z]+;|&#\d+;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 /** The explorer sub-pages: everything under /6502/ that is a ported page. */
 export const TOOL_PAGES = [

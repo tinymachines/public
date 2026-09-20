@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { BASE, DESK, open } from "./lib";
+import { BASE, DESK, jaShare as share, open, servedBody, twinOf } from "./lib";
 
 /**
  * The flag lands on the twin, and the twin arrives in its own language.
@@ -19,31 +19,11 @@ import { BASE, DESK, open } from "./lib";
  * tomorrow, and a page with no translation is not asserted to have one.
  */
 
-const KANA_CJK = /[぀-ヿ㐀-鿿]/g;
-const LATIN = /[A-Za-z]/g;
-
-/** The share of the letters here that are Japanese. */
-function share(text: string): number {
-  const ja = (text.match(KANA_CJK) ?? []).length;
-  const la = (text.match(LATIN) ?? []).length;
-  return ja + la === 0 ? 0 : ja / (ja + la);
-}
-
-/**
- * The page's own document. <main> where there is one, the whole document
- * where there is not: the Lab is a full-bleed instrument and ships no <main>,
- * and a locator waiting for one there is a four minute hang, which is how
- * this spec failed the first time it ran.
- */
-function servedBody(html: string): string {
-  const m = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/);
-  return (m ? m[1] : html)
-    .replace(/<(script|style|template|noscript)\b[\s\S]*?<\/\1>/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&[a-z]+;|&#\d+;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+// share() and servedBody() are lib.ts now: untranslated.spec.ts measures the
+// same thing, and servedBody there takes the untranslated notice out before
+// counting, which this spec wants too. The notice is Japanese text a page
+// prints because its body is English, so counting it here would have read as a
+// partial flip on exactly the pages that do not flip.
 
 async function arrivedBody(page: Page): Promise<string> {
   const main = page.locator("main");
@@ -52,7 +32,6 @@ async function arrivedBody(page: Page): Promise<string> {
 
 /** An ordinary page, a track, a docs page, and both module pages. */
 const SAMPLE = ["/", "/6502", "/6502/tools", "/docs/6502/the-api", "/6502/games", "/6502/lab"];
-const twinOf = (p: string) => (p.startsWith("/ja") ? p.slice(3) || "/" : p === "/" ? "/ja" : `/ja${p}`);
 
 for (const dir of ["English to Japanese", "Japanese to English"] as const) {
   test(`the flag lands on the twin, ${dir}`, async ({ page, request }) => {
