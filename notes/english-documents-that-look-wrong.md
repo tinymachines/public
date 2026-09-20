@@ -21,7 +21,27 @@ record: the parts table's short note for U1 on the v1b sheet, "Rung"
 capitalised mid-sentence, the two SRAM figures, and "290 lines against 289
 changes". Each is explained where it appears below.
 
-**Still open, and each needs somebody who was there:**
+**Still open, and each is now a GitHub issue** (filed 2026-09-20), so this
+note is the account and the issues are the queue:
+
+| where | what |
+|---|---|
+| public#1 | the tool pages claim Japanese in hreflang and og:locale while serving an English body |
+| public#2 | three pages sit just above the translation floor and say nothing |
+| public#3 | two-ways-in.mdx, the last document with no Japanese body |
+| nes-bench#1 | the reason given for blurring the television is not what the documents do |
+| nes-bench#2 | exercise.md's two row ranges use two conventions |
+| nes-bench#3 | two documents still open with "Nothing here has been built" |
+| 2c02#1 | leg_voltage's comment calls luma3_h the eleventh leg |
+| nes-bus#1 | Cargo.lock at 0.1.5 against Cargo.toml at 0.1.6 |
+| 6502#13 | two untracked drafts still say "halfscore" |
+
+Not filed, because the owner decided it on 2026-09-20: the bench host's
+address stays in nes-bench's history. The tip is clean, every future run
+redacts, both pullers now refuse a page carrying one, and no published page
+shows it.
+
+**The state of each, in the owner's words where it was decided:**
 
 - `docs/lab-log.jsonl` in nes-bench still holds the bench host's real address
   in the entry recorded on 2026-09-08. The published pages no longer show it,
