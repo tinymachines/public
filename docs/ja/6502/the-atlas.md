@@ -11,7 +11,7 @@ curl -s localhost:6502/v1/atlas/full                  # 全部を一つのファ
 curl -s localhost:6502/v1/atlas                       # 種類とブロックと数だけ
 curl -s 'localhost:6502/v1/groups?kind=alu'           # ALU を 17 個のコンテナとして
 curl -s 'localhost:6502/v1/groups/regs:a'             # 一つを、その配線ごと
-curl -s 'localhost:6502/v1/tags?multi=true'           # 複数に属する 88 ノード
+curl -s 'localhost:6502/v1/tags?multi=true'           # 複数に属する 122 ノード
 curl -s 'localhost:6502/v1/node/pipeUNK39'            # 一つのノードの全タグ
 curl -s 'localhost:6502/v1/neighbors?node=a0&via=switch'
 ```
@@ -21,8 +21,9 @@ curl -s 'localhost:6502/v1/neighbors?node=a0&via=switch'
 **分割 (partition)** は 132 のグループで、1547 ノードのすべてがちょうど
 一つに属する。描画には互いに素な箱が要るからだ。
 
-**コンテナ**は同じ導出を無濾過にしたものだ: 135 個、重なり合い、88 ノードが
-複数に属し、三つ (`sdp:sd1`、`sdp:sd2`、`sbus:link`) はこちらにしか存在しない。
+**コンテナ**は同じ導出を無濾過にしたものだ: 138 個、重なり合い、122 ノードが
+複数に属し、六つ (`dpc:both`、`dpc:phi1`、`dpc:unreached`、`sbus:link`、
+`sdp:sd1`、`sdp:sd2`) はこちらにしか存在しない。
 
 グループへの `?layer=containers` は、箱の代わりに導出そのものの集合を求める。
 `intr:nmi` は歩けば 20 ノード、箱にすれば 18 ノードで、失われる二つの中には
