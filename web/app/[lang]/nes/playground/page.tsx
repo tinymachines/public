@@ -11,6 +11,8 @@ import { exhibits } from "./exhibits";
 import { encyclopedia } from "./encyclopedia";
 import { timeline } from "./timeline";
 import { bench } from "./bench";
+import { chipApi } from "@/lib/projects";
+import { ProgramChip } from "./ProgramChip";
 import { Bench } from "./Bench";
 import { Timeline } from "./Timeline";
 import { Encyclopedia } from "./Encyclopedia";
@@ -34,6 +36,8 @@ import "./playground.css";
  * an engineers' document read at build time (mario.ts). The figures in
  * the machine map are slots from data/nes.json.
  */
+
+const CHIP_API = chipApi();
 
 const TITLE = "The NES at human speed";
 const DESCRIPTION = "A playground: the NES console's model slowed down until a person can watch it draw a frame, send it down the wire, and read a pad.";
@@ -107,7 +111,6 @@ const PARTS = [
 
 /** What the playground could grow next: proposals, for the owner to pick from. */
 const NEXT = [
-  { name: "Write a program", about: "A few lines of the processor's own instructions, typed in the page and run on the chip, with the registers and the picture answering: the smallest possible first program for someone who has never written one." },
   { name: "Your own game, x-rayed", about: "The twin consoles taken further: load a cartridge from your disk, tap a button, and get the frames and the dots that changed, the way the engineers' x-ray reports a run." },
   { name: "A guided tour", about: "One path through these stations, in order, with a sentence between each: twenty minutes from a television picture to a transistor for a reader who does not know where to start." },
 ] as const;
@@ -207,6 +210,37 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
           ]}
         >
           <Museum exhibits={exhibits()} />
+        </Station>
+
+        <Station
+          id="program"
+          eyebrow="Write a program"
+          title="Tell the chip what to do"
+          words={
+            <>
+              <p>
+                A processor knows a few dozen instructions, and each one is tiny: put a number here, add one to it,
+                compare it with something, go back a line. Games are made of nothing else. Here are a few lines you can
+                change and run.
+              </p>
+              <p>
+                It runs on the 6502 itself, the transistor-level one this shop serves over its own interface, an
+                instruction at a time. A, X and Y are the three places the chip can hold a number while it works; the
+                grid at the bottom is the first page of its memory, and you can watch your program change it.
+              </p>
+              <p>
+                It is the same processor as the one inside the NES, which is where all of this started: the console&rsquo;s
+                chip is this one with its sound hardware beside it on the same piece of silicon.
+              </p>
+            </>
+          }
+          record={[
+            { href: "/6502/api", label: "The 6502 API: the chip over HTTP, a half-cycle at a time" },
+            { href: "/6502/primer", label: "The primer: the chip explained properly" },
+            { href: "/docs/nes/n3-report", label: "The NES's own 6502, checked against the die" },
+          ]}
+        >
+          <ProgramChip api={CHIP_API} />
         </Station>
 
         <Station

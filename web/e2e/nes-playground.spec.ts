@@ -318,6 +318,34 @@ test("the bench: the engineers' photographs, one fetched at a time", async ({ pa
   expect(await st.locator(".pg-bench-eyes li").count()).toBeGreaterThanOrEqual(3);
 });
 
+test("write a program: the chip assembles it, runs it and answers", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/playground", 500);
+  const st = page.locator("#program");
+  await st.scrollIntoViewIfNeeded();
+  const cell = (k: string) => st.locator(`dd[data-k="${k}"]`);
+  // The first example: a number into A, then into memory.
+  await st.getByRole("button", { name: "Put it on the chip" }).click();
+  await expect(st.locator(".pg-prog-listing li").first()).toBeVisible({ timeout: 20_000 });
+  expect(await st.locator(".pg-prog-listing li").count()).toBeGreaterThanOrEqual(3);
+  await st.getByRole("button", { name: "One instruction" }).click();
+  await expect(cell("a")).toHaveText("42 ($2A)", { timeout: 20_000 });
+  await st.getByRole("button", { name: "Run it" }).click();
+  // It stops itself, and exactly the byte it stored is marked.
+  await expect.poll(async () => Number((await cell("ran").textContent()) || "0"), { timeout: 30_000 }).toBeGreaterThan(1);
+  await expect(st.locator('.pg-prog-cell[data-touched="true"]')).toHaveCount(1, { timeout: 20_000 });
+  // A loop, run to its end: X counts to ten.
+  await st.getByRole("button", { name: "Count to ten" }).click();
+  await st.getByRole("button", { name: "Put it on the chip" }).click();
+  await st.getByRole("button", { name: "Run it" }).click();
+  await expect(cell("x")).toHaveText("10 ($0A)", { timeout: 60_000 });
+  // A program the chip refuses is refused in the chip's own words.
+  await st.locator("#pg-prog-src").fill("  LDA #$ZZ\n");
+  await st.getByRole("button", { name: "Put it on the chip" }).click();
+  await expect(st.locator(".pg-prog-why")).toContainText("bad hex value", { timeout: 20_000 });
+});
+
 test("the playground fits a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/playground", 500);
