@@ -95,21 +95,48 @@ export async function open(page: Page, p: string, settle = 2500) {
   await page.waitForTimeout(settle);
 }
 
-/** Sideways overflow, and the elements outside any scroll container that cause it. */
+/** Sideways overflow, and the elements outside any scroll container that cause it.
+ *
+ * Two passes, because an overflow has two shapes and only one of them is a
+ * box. A box that sticks out is found by its rect. A box the right width
+ * whose CONTENT is wider is not: on /ja/docs/nes/p3-report at 390px the
+ * paragraph measured 350 and held 407, because a run of "$2000、$2001、"
+ * offers Chrome no break, and the rect pass named only the footer, which was
+ * as wide as the document had by then become. A report that names the
+ * footer sends the reader to the wrong file, so the second pass names the
+ * element that is actually too full, and quotes what did not fit.
+ */
 export async function overflow(page: Page) {
   return page.evaluate(() => {
     const d = document.documentElement;
     const px = d.scrollWidth - d.clientWidth;
     const out: string[] = [];
+    const name = (el: HTMLElement) =>
+      `${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""}${typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""}`;
+    const scrolled = (el: HTMLElement) => {
+      for (let a = el.parentElement; a; a = a.parentElement) {
+        if (/(auto|scroll|hidden)/.test(getComputedStyle(a).overflowX)) return true;
+      }
+      return false;
+    };
     if (px > 0) {
       for (const el of document.querySelectorAll<HTMLElement>("body *")) {
         const r = el.getBoundingClientRect();
         if (r.right <= d.clientWidth + 1 || r.width === 0) continue;
-        let inScroller = false;
-        for (let a = el.parentElement; a; a = a.parentElement) {
-          if (/(auto|scroll|hidden)/.test(getComputedStyle(a).overflowX)) { inScroller = true; break; }
-        }
-        if (!inScroller) out.push(`${el.tagName.toLowerCase()}${el.id ? "#" + el.id : ""}${typeof el.className === "string" && el.className ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : ""} right=${Math.round(r.right)}`);
+        if (!scrolled(el)) out.push(`${name(el)} right=${Math.round(r.right)}`);
+      }
+      const full = [...document.querySelectorAll<HTMLElement>("body *")].filter(
+        (el) =>
+          el.clientWidth > 0 &&
+          el.scrollWidth - el.clientWidth >= 4 &&
+          !/(auto|scroll)/.test(getComputedStyle(el).overflowX),
+      );
+      // Only the innermost. Every ancestor of a too-full element is too full
+      // as well, and naming the shell first is how the first version of this
+      // report buried the paragraph under three wrappers.
+      for (const el of full.filter((el) => !full.some((o) => o !== el && el.contains(o)))) {
+        const text = (el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
+        out.push(`${name(el)} holds ${el.scrollWidth} in ${el.clientWidth}: "${text}"`);
       }
     }
     return { px, out: out.slice(0, 8) };

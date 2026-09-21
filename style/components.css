@@ -1044,6 +1044,27 @@ h2.display { font-size: var(--text-h2); }
 .prose li > ul,
 .prose li > ol { margin: calc(var(--u) * 2) 0 0; }
 
+/* A run of text with no break in it takes the whole document sideways, not
+   just itself. The paragraph's box stays the width of the column and its
+   CONTENT is wider, so a scan of element boxes finds nothing over-wide while
+   the page scrolls anyway: that is why this went unnoticed until the e2e
+   overflow check named the footer, which was merely as wide as the document
+   had become.
+
+   Measured 2026-09-21 on /ja/docs/nes/p3-report at 390px, 37px out, from
+   "$2000、$2001、$2003、$2004、$2005、$2006、": Chrome offers no break
+   between an ideographic comma and a following dollar sign, and the English
+   page wraps fine because its commas are followed by spaces. So this is not
+   one document's typo. It is every Japanese body that lists registers, an
+   identifier or an address.
+
+   break-word is a last resort by definition, so a line that can wrap the
+   ordinary way still does and English is untouched. .prose > h1 already
+   carries a phone-width version of the same guarantee, for the same reason.
+   A pre does not wrap at all and scrolls instead, which is what a code block
+   should do. */
+.prose > :is(p, ul, ol, blockquote, table) { overflow-wrap: break-word; }
+
 .prose a {
   color: var(--color-ink);
   text-decoration: underline;

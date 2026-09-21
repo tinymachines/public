@@ -54,6 +54,35 @@ const KINDS = {
   record: { key: "record", name: "Records", what: "What happened, kept as it happened, including the attempts that failed." },
 };
 
+// What the letter in front of a milestone number means. The scheme is the
+// sketch's own ("N1: 2A03 rung 0, the 2a03 repo, milestones A0 to A3"), and
+// until now it was written only in that prose: /docs/kinds put "A0 report"
+// and "M2 report" beside each other with nothing on the page saying what A
+// and M were. Read cold on 2026-09-21, that is a code with no key.
+// codeLetter() refuses a code filed under a letter this does not name, so a
+// new family arrives with its meaning or it does not arrive.
+// Kept to a phrase each: read cold on a phone, a key with a sentence in
+// every row pushed the documents it is a key to off the bottom of the screen.
+const CODES = [
+  { letter: "N", what: "the console itself" },
+  { letter: "A", what: "the 2A03, its CPU and sound chip" },
+  { letter: "P", what: "the 2C02, its picture chip" },
+  { letter: "M", what: "the signal to the television" },
+];
+
+/** The letter a code is filed under, or null for a code that names itself. */
+function codeLetter(code) {
+  const m = /^([A-Z])\d/.exec(code ?? "");
+  if (!m) return null;
+  if (!CODES.some((c) => c.letter === m[1])) {
+    throw new Error(
+      `pull-nesdocs: the code "${code}" is filed under ${m[1]}, and CODES does not say what ${m[1]} is. ` +
+        "Add it there: a letter with no meaning on the page is a code with no key.",
+    );
+  }
+  return m[1];
+}
+
 function kindOf(d) {
   if (d.kind) return d.kind;
   if (d.code) {
@@ -139,6 +168,7 @@ const DOCS = [
   { repo: "nes-bench", section: "cart", file: "calibration-screens.md", slug: "calibration-screens", code: null, kind: "reference", title: "The calibration screens", order: 4, description: "The cartridge's screens as our own decoder sees them, the strip that names each frame, and what each screen is for; the grabber's frames join them once the cart is in a console." },
   { repo: "nes-bench", section: "cart", file: "cart-blanks.md", slug: "cart-blanks", code: null, kind: "reference", title: "The blank boards and the programmer", order: 5, description: "Photographed and read: which board takes the calibration ROM's two chips, what the EPROM adapter is for, and what stays unknown until the chips arrive." },
   { repo: "nes-bench", file: "cartridge.md", slug: "cartridge", code: null, kind: "report", title: "A real cartridge in the model", group: "bench-experiments", order: 40, description: "Why the reader guessed the wrong game, the verified dump, and the mapper-66 board the model grew so the same bytes could run on both sides for a picture comparison." },
+  { repo: "nes", file: "boards-report.md", slug: "boards", code: null, kind: "report", title: "Every cartridge on the desk has a board", group: "bench-experiments", order: 40.5, description: "The seven cartridge boards the model grew, the two that could only be tested with a console around them, the screen split that needed an interrupt to become a line, and the one cartridge that still does not draw." },
   { repo: "nes-bench", file: "eyes-vs-scope.md", slug: "eyes-vs-scope", code: null, kind: "report", title: "Eyes versus scope", group: "bench-experiments", order: 39, description: "The console's video split to the scope and to a USB grabber, getting the grabber to work, and the grabber's picture scored against our own decode of the scope's recording." },
   { repo: "nes-bench", file: "cheat-sheet.md", slug: "cheat-sheet", code: null, kind: "reference", title: "The bench cheat sheet", group: "bench-build", artefacts: ["v1b", "photo"], order: 37, description: "Both breakouts pin by pin with the harness colours, the four jumpers, and every pin of every chip with what it does and where it goes. Generated from the schematic and the lab log." },
   { repo: "nes-bench", file: "cheat-sheet-head.md", slug: "cheat-sheet-head", code: null, kind: "reference", title: "The head's hands cheat sheet", group: "bench-build", artefacts: ["v1b"], order: 37.5, description: "Sheet 3 of the v1b package as tables: the Pi's four jumpers by header position, the power and reset breakout, every wire, and each pin of the PC817 and relay modules with what it does and where it goes. Generated from the schematic." },
@@ -490,7 +520,7 @@ ${cartRows}
 // with them) because the docs tree allows no frontmatter but title,
 // description and order, so a document cannot carry its group itself;
 // lib/nes-shelves.ts reads this and refuses a build without it.
-const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, code: d.code, kind: kindOf(d), description: d.description });
+const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, code: d.code, letter: codeLetter(d.code), kind: kindOf(d), description: d.description });
 fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
   groups: GROUPS.map((g) => ({
     key: g.key, heading: g.heading, intro: g.intro, ja: g.ja,
@@ -501,6 +531,9 @@ fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
   // says what it IS, which is the question a reader who has not read any of
   // them is actually asking.
   kinds: Object.values(KINDS),
+  // And the key to the codes those documents are filed under, so a page can
+  // print what N, A, P and M mean beside the documents that carry them.
+  codes: CODES,
 }, null, 1) + "\n");
 
 // Every page this wrote parses as the docs tree will parse it. An unquoted

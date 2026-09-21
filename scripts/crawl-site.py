@@ -20,8 +20,8 @@ instrument, which is the only door its article has.
 
 It records rather than asserts: data/site-map.json carries the origin, the
 date, and for each page its title, section, how many pages link to it, how
-many clicks it sits from the front page, its length, and how much of its
-Japanese twin is Japanese. /style/map renders that file. Re-run it after a
+many clicks it sits from the front page, its length, how many links it hands
+the reader, and how much of its Japanese twin is Japanese. /style/map renders that file. Re-run it after a
 deploy that adds or links a page; --check fails when the record names a page
 the sitemap no longer serves, or misses one it does.
 """
@@ -70,13 +70,22 @@ def strip_chrome(html: str) -> str:
     return html
 
 
-def body_text(html: str) -> str:
+def body_html(html: str) -> str:
+    """The page's own body: what <main> holds, without its scripts."""
     html = re.sub(r"<(script|style)\b.*?</\1>", " ", html, flags=re.S | re.I)
     # The notice is Japanese text a page prints BECAUSE its body is English,
     # so counting it raises the share of exactly the pages it reports on.
     html = re.sub(r'<p[^>]*class="[^"]*untranslated[^"]*"[^>]*>.*?</p>', " ", html, flags=re.S)
     m = re.search(r"<main\b[^>]*>(.*?)</main>", html, re.S)
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", m.group(1) if m else html))
+    return m.group(1) if m else html
+
+
+def text_of(fragment: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", fragment))
+
+
+def body_text(html: str) -> str:
+    return text_of(body_html(html))
 
 
 def ja_share(text: str) -> float | None:
@@ -109,7 +118,12 @@ def crawl(base: str) -> dict:
             share = ja_share(body_text(twin))
         except Exception:
             share = None
-        return path, {"title": title, "words": len(body_text(html).split()), "ja": share, "links": sorted(links)}
+        return path, {
+            "title": title,
+            "words": len(body_text(html).split()),
+            "ja": share,
+            "links": sorted(links),
+        }
 
     pages: dict[str, dict] = {}
     with concurrent.futures.ThreadPoolExecutor(8) as pool:
@@ -149,6 +163,7 @@ def crawl(base: str) -> dict:
             "title": row["title"] or path,
             "section": section(path),
             "words": row["words"],
+            "out": len(row["links"]),
             "ja": row["ja"],
             "inbound": inbound[path],
             "from": sorted(who[path])[:3] if inbound[path] <= 3 else [],
@@ -157,7 +172,8 @@ def crawl(base: str) -> dict:
         }
     return {
         "_": "Every page and how a reader reaches it, counted by scripts/crawl-site.py. "
-             "Links are the ones a reader can see: the site's nav, header and footer come out first.",
+             "Links are the ones a reader can see: the site's nav, header and footer come out first. "
+             "out is how many of those links the page itself offers, which is what tells a list from a read.",
         "origin": base,
         "crawled": date.today().isoformat(),
         "pages": out,

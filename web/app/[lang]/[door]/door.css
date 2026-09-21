@@ -1,10 +1,34 @@
-/* A door's page: a list of ways in, each a name, a line and its address.
-   Not cards. A card says "separate object", and these are one list of one
-   kind of thing; the rule between them is the kit's own. */
+/* A door's page: groups of ways in, each entry a name, a line, and what the
+   crawl measured about it. Not cards. A card says "separate object", and
+   these are one list of one kind of thing; the rule between them is the
+   kit's own. The column stays a reading column: a door is a contents page,
+   and a contents page in two columns is one nobody reads in order. */
+
+.door-group {
+  margin-top: calc(var(--u) * 10);
+}
+
+.door-group:first-of-type {
+  margin-top: calc(var(--u) * 8);
+}
+
+.door-h {
+  margin: 0;
+  padding-top: calc(var(--u) * 4);
+  border-top: 2px solid var(--color-rule);
+  font-size: var(--text-h2);
+  font-weight: 700;
+}
+
+.door-what {
+  margin: calc(var(--u) * 2) 0 0;
+  max-width: 68ch;
+  color: var(--color-ink-muted);
+}
 
 .door-list {
   list-style: none;
-  margin: calc(var(--u) * 6) 0 0;
+  margin: calc(var(--u) * 4) 0 0;
   padding: 0;
 }
 
@@ -17,7 +41,8 @@
   border-top: 0;
 }
 
-.door-item h2 {
+.door-item h2,
+.door-item h3 {
   margin: 0 0 calc(var(--u) * 1.5);
   font-size: var(--text-h3);
 }
@@ -28,15 +53,26 @@
   color: var(--color-ink-muted);
 }
 
-.door-where {
-  margin-top: calc(var(--u) * 1.5) !important;
+/* The address and the two measurements on one line: read cold, the address
+   sat on a line of its own and took a third of every entry's height for the
+   thing a reader needed least. */
+.door-met {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 3);
+  margin-top: calc(var(--u) * 2) !important;
   font-family: var(--font-mono);
   font-size: var(--text-fine);
   color: var(--color-ink-faint);
 }
 
+.door-met code {
+  font-size: inherit;
+  color: inherit;
+}
+
 .door-note {
-  margin-top: calc(var(--u) * 6);
+  margin-top: calc(var(--u) * 8);
   font-size: var(--text-fine);
   color: var(--color-ink-muted);
 }
