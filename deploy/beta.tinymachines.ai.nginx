@@ -86,14 +86,91 @@ server {
         proxy_read_timeout 120s;
     }
 
-    location /6502/api/ {
-        proxy_pass http://127.0.0.1:6502/;
+    # The reference page, and the service under it. The exact match is what
+    # keeps the page: a proxied prefix location makes nginx answer the
+    # slash-less form with an automatic 301 onto the prefix, so without this
+    # /6502/api landed on the service's own page instead of this site's
+    # reference. Measured here on 2026-09-21, the same way the apex measured
+    # it: the e2e suite reported no language flag on the page, because the
+    # page it got was not the page.
+    #
+    # This location deliberately declares no add_header (one here would
+    # discard the three above).
+    location = /6502/api {
+        proxy_hide_header Cache-Control;
+        proxy_pass http://127.0.0.1:6541;
         proxy_set_header Host               $host;
         proxy_set_header X-Real-IP          $remote_addr;
         proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto  $scheme;
         proxy_http_version 1.1;
         proxy_read_timeout 120s;
+    }
+
+    location /6502/api/ {
+        proxy_pass http://127.0.0.1:6502/;
+        proxy_set_header Host               $host;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_set_header X-Forwarded-Prefix /6502/api;
+        proxy_http_version 1.1;
+        proxy_read_timeout 120s;
+    }
+
+    # ---------------------------------------------------------------------
+    # The chip's own files, from where they already live.
+    #
+    # Copied from the apex vhost, which explains at length why these are an
+    # alias and not a copy: the explorer's data is die geometry and the
+    # tables built from it, all CC BY-NC-SA 3.0, and one publisher serving
+    # one set of bytes at a second address it also owns is not redistribution.
+    # That reasoning applies here unchanged, and this origin is one more
+    # address the same publisher owns.
+    #
+    # Without these, every instrument on this host boots with nothing to run.
+    # It looked like a working page: the shell renders, the prose renders, and
+    # only the thing the page is for is missing. The e2e suite is what noticed,
+    # on 2026-09-21, and only because its kit check refuses to run on a page
+    # with too few elements to measure. Ten tool pages, failing identically,
+    # while the same pages passed on the live site.
+    #
+    # ^~ so this prefix wins over the regex below, which would otherwise
+    # swallow chip/pkg/ as path segments and alias the wasm without its pkg/.
+    location ^~ /6502/chip/ {
+        alias /var/www/6502.tinymachines.ai/current/;
+        gzip_static on;
+    }
+
+    # The data files at the paths the explorer's own code asks for, which are
+    # document-relative: from /6502/tracer it fetches schematic.<hash>.json,
+    # from /6502/tracer/article one segment deeper, and from /ja/6502/tracer
+    # one deeper again. Same files, every address they answer at. Narrow on
+    # purpose: only these extensions, no slash in the asset name, and neither
+    # pkg/ nor api/ taken as a path segment, so it cannot shadow the service
+    # above or a page like /6502/games.
+    location ~ "^/(?:ja/)?6502/(?:(?!pkg/|api/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm|window))$" {
+        alias /var/www/6502.tinymachines.ai/current/$chipasset;
+    }
+
+    # The visual6502 archive: somebody else's site, preserved. The overview is
+    # ours and is a page here; everything under it comes off disk, with its
+    # absolute navigation rewritten on the way out rather than in the files.
+    # gzip_static off because sub_filter cannot rewrite a response nginx did
+    # not build, and a precompressed .gz is handed back untouched.
+    location = /6502/archive/ {
+        return 301 /6502/archive;
+    }
+
+    location /6502/archive/ {
+        alias /var/www/6502.tinymachines.ai/archive/;
+        gzip_static off;
+        sub_filter_once off;
+        sub_filter 'href="/programs"'  'href="/6502/programs"';
+        sub_filter 'href="/primer"'    'href="/6502/primer"';
+        sub_filter 'href="/trace"'     'href="/6502/trace"';
+        sub_filter 'href="/schematic"' 'href="/6502/schematic"';
+        sub_filter 'class="nav-cta" href="/"' 'class="nav-cta" href="/6502/explorer"';
     }
 
     location / {
