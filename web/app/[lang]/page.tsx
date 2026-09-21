@@ -5,6 +5,7 @@ import { chip } from "@/lib/chip";
 import { pieces } from "@/lib/pieces";
 import { engine } from "@/lib/engine";
 import { arrivedSurfaces, projects } from "@/lib/projects";
+import { doors } from "@/lib/doors";
 import { isHardRoute, whereToRead } from "@/lib/nav";
 import { Shell } from "@/app/components/SiteFrame";
 import type { Metadata } from "next";
@@ -82,6 +83,8 @@ const PROSE = {
     specimens: (n: number) => `${n} specimens`,
     fromZoo: "counted from the widget zoo at build",
     theProjects: "The projects",
+    theDoors: "Three ways in",
+    openDoor: "Start here",
     projectsProse: (n: number, m: number) => (
       <>
         {n} projects live under this roof, with {m} working parts between
@@ -153,6 +156,8 @@ const PROSE = {
     specimens: (n: number) => `見本 ${n} 点`,
     fromZoo: "ビルド時にウィジェット動物園から集計",
     theProjects: "プロジェクト",
+    theDoors: "三つの入口",
+    openDoor: "ここから",
     projectsProse: (n: number, m: number) => (
       <>
         この屋根の下には {n} 件のプロジェクトがあり、合わせて {m}{" "}
@@ -254,6 +259,26 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
         </div>
 
       </section>
+
+      {/* The three doors. The section below lists the PROJECTS, which is
+          where each thing came from; this one lists what a visitor came to
+          do. Both are true and only one of them is a reason to click.
+          data/doors.json holds membership and nothing else: every name here
+          is read from wherever that page is already named. */}
+      <h2 className="eyebrow">{S.theDoors}</h2>
+      <div className="door-grid">
+        {doors().map((d) => (
+          <article key={d.key} className="door-card">
+            <h3>
+              <Link href={localize(lang, d.path)}>{t(lang, d.name)}</Link>
+            </h3>
+            <p>{t(lang, d.what)}</p>
+            <p className="door-open">
+              <Link href={localize(lang, d.opens)}>{S.openDoor}</Link>
+            </p>
+          </article>
+        ))}
+      </div>
 
       <h2 className="eyebrow">{S.theProjects}</h2>
 

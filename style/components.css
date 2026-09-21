@@ -2696,3 +2696,37 @@ html.has-fullscreen .wb-strip { top: 0; }
   color: var(--color-paper);
   text-decoration: underline;
 }
+
+/* The three doors on the front page. Three of one kind of thing, so one
+   shape repeated: a name, a line, and the page it opens with. They are cards
+   because they ARE separate objects, unlike the lists behind them. */
+.door-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: calc(var(--u) * 4);
+  margin: calc(var(--u) * 4) 0 calc(var(--u) * 8);
+}
+
+.door-card {
+  border: 1px solid var(--color-rule);
+  padding: calc(var(--u) * 4);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+}
+
+.door-card h3 {
+  margin: 0;
+  font-size: var(--text-h3);
+}
+
+.door-card p {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
+.door-open {
+  margin-top: auto !important;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+}

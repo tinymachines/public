@@ -46,7 +46,10 @@ LATIN = re.compile(r"[A-Za-z]")
 
 def corpus() -> str:
     parts = []
-    for f in ("data/projects.json", "data/pieces.json"):
+    # data/doors.json holds the three doors' own words (the site by what a
+    # visitor came to do). They go through the overlay like the manifest's,
+    # so they belong in the corpus or their translations read as orphaned.
+    for f in ("data/projects.json", "data/pieces.json", "data/doors.json"):
         parts.append((ROOT / f).read_text())
     # The landing item's label is the literal "Overview" now (the group
     # heading already names the project), which the tsx scan sees on its own;

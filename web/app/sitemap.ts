@@ -31,6 +31,10 @@ import { abs } from "@/lib/seo";
 
 const STATIC = [
   "/",
+  // The three doors: the site by what a visitor came to do (data/doors.json).
+  "/watch",
+  "/read",
+  "/build",
   "/6502",
   "/6502/learn",
   "/6502/cart",

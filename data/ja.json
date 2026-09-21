@@ -375,5 +375,16 @@
  "This one plots the measurements rather than the bits themselves. Each point is one window of output placed by its own bias, entropy and serial correlation, so the cloud is the source describing itself over the last day rather than a single snapshot.": "これはビットそのものではなく、測定値を打った図です。各点は出力の一区間で、その区間自身の偏り、エントロピー、系列相関で置かれます。つまりこの雲は、一枚の瞬間写真ではなく、この一日の線源が自分を語ったものです。",
  "The long reads": "長めの読みもの",
  "Every tool's prose as an article: what the instrument above it is doing, written to be read end to end.": "各ツールの文章を記事として。上にある計器が何をしているのかを、通して読めるように書いたものです。",
- "Every tool's prose as an article, listed longest first: what each instrument is doing, written to be read end to end rather than operated.": "各ツールの文章を記事にして、長いものから並べたもの。計器を操作するためではなく、通して読むために書かれた説明です。"
+ "Every tool's prose as an article, listed longest first: what each instrument is doing, written to be read end to end rather than operated.": "各ツールの文章を記事にして、長いものから並べたもの。計器を操作するためではなく、通して読むために書かれた説明です。",
+ "Watch it run": "動いているところを見る",
+ "Read how it was done": "どうやったのかを読む",
+ "Build on it": "これを使って作る",
+ "The machines, running in the page: a console slowed down until you can see it draw, a chip a half-cycle at a time, and bytes from a Geiger tube.": "ページの中で動いている機械たち。描いていく様子が見えるまで遅くしたコンソール、半サイクルずつ進むチップ、そしてガイガー管から出たバイト。",
+ "The story and the record: the arc of the work, the long reads, and every plan written before it with every report written after.": "物語と記録。仕事の流れ、長めの読みもの、そして作業の前に書かれた計画と、後に書かれた報告のすべて。",
+ "The parts you can use: a chip that answers over HTTP, a cartridge format, a registry that re-runs what it publishes, and true random bytes.": "使える部品。HTTP で答えるチップ、カートリッジの形式、公開するものを毎回走らせ直すレジストリ、そして本物の乱数バイト。",
+ "The machines, running in the page. Nothing here is a recording: every frame, every trace and every byte is computed while you look at it, on models built from the chips' own transistors.": "ページの中で動いている機械たちです。録画は一つもありません。フレームも波形もバイトも、見ているあいだに計算されています。動かしているのは、チップ自身のトランジスタから組んだ模型です。",
+ "The story and the record. The arc first, then the long reads, then the notebook: every plan written before the work and every report written after it, with the figures they were written from.": "物語と記録です。まず全体の流れ、次に長めの読みもの、そしてノート。作業の前に書かれた計画と、後に書かれた報告が、その根拠になった数字とともに並んでいます。",
+ "The parts you can use: a chip that answers over HTTP, a cartridge format, a registry that re-runs what it publishes, and the bytes from a real Geiger tube.": "使える部品です。HTTP で答えるチップ、カートリッジの形式、公開するものを自分で走らせ直すレジストリ、そして本物のガイガー管から出たバイト。",
+ "A page can be behind two doors: an instrument is a thing to watch and a thing to build on. Every address here is the one it has always had.": "一つのページが二つの入口の奥にあることもあります。計器は見るものでもあり、それを使って作るものでもあるからです。ここにある住所はどれも、これまでと同じものです。",
+ "Three ways in": "三つの入口"
 }

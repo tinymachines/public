@@ -1,0 +1,65 @@
+{
+ "_": "The three doors: the site arranged by what a visitor came to do, rather than by which repository a page came from. Membership only; every title and description is read from lib/pages.ts, the manifest or the docs tree, so a page is named in one place. A path may sit behind two doors (a tool is both a thing to watch and a thing to build on) and that is the point: a door is a way in, not a folder.",
+ "measured": "Which pages exist, and how many doors lead to each, is measured by scripts/crawl-site.py and shown at /style/map.",
+ "doors": [
+  {
+   "key": "watch",
+   "path": "/watch",
+   "name": "Watch it run",
+   "short": "Watch",
+   "what": "The machines, running in the page. Nothing here is a recording: every frame, every trace and every byte is computed while you look at it, on models built from the chips' own transistors.",
+   "opens": "/nes/playground",
+   "paths": [
+    "/nes/playground",
+    "/nes/play",
+    "/6502/explorer",
+    "/6502/tracer",
+    "/6502/lab",
+    "/6502/games",
+    "/nes/signal/bench",
+    "/nes/signal/composite",
+    "/hotbits",
+    "/hotbits/space"
+   ]
+  },
+  {
+   "key": "read",
+   "path": "/read",
+   "name": "Read how it was done",
+   "short": "Read",
+   "what": "The story and the record. The arc first, then the long reads, then the notebook: every plan written before the work and every report written after it, with the figures they were written from.",
+   "opens": "/docs/console-arc",
+   "paths": [
+    "/docs/console-arc",
+    "/6502/reading",
+    "/nes",
+    "/6502",
+    "/docs/nes",
+    "/docs",
+    "/docs/words",
+    "/6502/learn",
+    "/6502/archive"
+   ]
+  },
+  {
+   "key": "build",
+   "path": "/build",
+   "name": "Build on it",
+   "short": "Build",
+   "what": "The parts you can use: a chip that answers over HTTP, a cartridge format, a registry that re-runs what it publishes, and the bytes from a real Geiger tube.",
+   "opens": "/6502/api",
+   "paths": [
+    "/6502/api",
+    "/6502/cart",
+    "/6502/builders",
+    "/6502/programs",
+    "/hotbits/api",
+    "/docs/6502/mcp",
+    "/docs/6502/cartridges",
+    "/docs/6502/the-registry",
+    "/nes/cart",
+    "/style"
+   ]
+  }
+ ]
+}

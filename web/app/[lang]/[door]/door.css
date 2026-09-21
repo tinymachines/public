@@ -1,0 +1,42 @@
+/* A door's page: a list of ways in, each a name, a line and its address.
+   Not cards. A card says "separate object", and these are one list of one
+   kind of thing; the rule between them is the kit's own. */
+
+.door-list {
+  list-style: none;
+  margin: calc(var(--u) * 6) 0 0;
+  padding: 0;
+}
+
+.door-item {
+  padding: calc(var(--u) * 4) 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+.door-item:first-child {
+  border-top: 0;
+}
+
+.door-item h2 {
+  margin: 0 0 calc(var(--u) * 1.5);
+  font-size: var(--text-h3);
+}
+
+.door-item p {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--color-ink-muted);
+}
+
+.door-where {
+  margin-top: calc(var(--u) * 1.5) !important;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-faint);
+}
+
+.door-note {
+  margin-top: calc(var(--u) * 6);
+  font-size: var(--text-fine);
+  color: var(--color-ink-muted);
+}

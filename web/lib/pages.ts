@@ -17,6 +17,21 @@ export interface FixedPage {
 }
 
 export const PAGES: Record<string, FixedPage> = {
+  "/watch": {
+    title: "Watch it run",
+    description:
+      "The machines, running in the page: a console slowed down until you can see it draw, a chip a half-cycle at a time, and bytes from a Geiger tube.",
+  },
+  "/read": {
+    title: "Read how it was done",
+    description:
+      "The story and the record: the arc of the work, the long reads, and every plan written before it with every report written after.",
+  },
+  "/build": {
+    title: "Build on it",
+    description:
+      "The parts you can use: a chip that answers over HTTP, a cartridge format, a registry that re-runs what it publishes, and true random bytes.",
+  },
   "/6502": {
     title: "6502",
     description:
