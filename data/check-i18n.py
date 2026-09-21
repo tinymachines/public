@@ -49,11 +49,24 @@ def corpus() -> str:
     # data/doors.json holds the three doors' own words (the site by what a
     # visitor came to do). They go through the overlay like the manifest's,
     # so they belong in the corpus or their translations read as orphaned.
-    # docs/nes/shelves.json is written by the pull and holds shipped strings
-    # of its own: the shelf headings and, since the second axis, what each
-    # KIND of document is. They go through the overlay like the rest.
-    for f in ("data/projects.json", "data/pieces.json", "data/doors.json", "docs/nes/shelves.json"):
+    for f in ("data/projects.json", "data/pieces.json", "data/doors.json"):
         parts.append((ROOT / f).read_text())
+    # The pull scripts, because the strings they SHIP are written there: a
+    # document's title and line, the shelf headings, what each kind of
+    # document is, and what a milestone letter means. docs/nes/shelves.json
+    # carries the same words, and carrying them is all it does: the pull
+    # copies them out of these tables. Reading the tables rather than the
+    # copy is what lets this run in a tree that has not been pulled yet,
+    # which is every fresh clone and, because the deploy checks before it
+    # builds, every deploy that adds one. A new document's translation read
+    # as dead on 2026-09-21 for exactly that reason.
+    for f in ("web/scripts/pull-nesdocs.mjs", "web/scripts/pull-chipdocs.mjs"):
+        parts.append((ROOT / f).read_text())
+    # And the pulled copy where it exists, for anything the tables do not
+    # spell out. Absent in a fresh checkout, which is not an error.
+    shelves = ROOT / "docs" / "nes" / "shelves.json"
+    if shelves.is_file():
+        parts.append(shelves.read_text())
     # The landing item's label is the literal "Overview" now (the group
     # heading already names the project), which the tsx scan sees on its own;
     # the synthesizer that built "<name> overview" strings retired with the
