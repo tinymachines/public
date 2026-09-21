@@ -3,7 +3,7 @@ import { labels, menuGroups, type MenuGroup } from "@/lib/nav";
 import { localize, t, type Lang } from "@/lib/i18n";
 import { Crumbs } from "./Crumbs";
 import { JsonLd, breadcrumbs } from "./JsonLd";
-import { abs, ORIGIN } from "@/lib/seo";
+import { abs, BETA, ORIGIN } from "@/lib/seo";
 import { LangSwitch } from "./LangSwitch";
 import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
@@ -301,6 +301,19 @@ export function Shell({
       <header className="app-head">
         <Topbar lang={lang} die={die} />
       </header>
+      {/* The beta origin says so on every page, above everything else. It is
+          the same tree arranged differently (deploy/beta.tinymachines.ai.nginx),
+          and a reader who arrives by a shared link should not have to guess
+          why the site looks unfamiliar or whether what they are reading is
+          live. The header and the robots.txt keep crawlers out; this line is
+          for people. */}
+      {BETA ? (
+        <p className="beta-bar">
+          This is the beta: the same site, arranged differently, and nothing
+          here is indexed. The live site is{" "}
+          <a href="https://tinymachines.ai">tinymachines.ai</a>.
+        </p>
+      ) : null}
 
       {/* No site-wide "translation in progress" banner here any more. It was
           honest when most bodies were English; once they were translated it

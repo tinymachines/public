@@ -2676,3 +2676,23 @@ html.has-fullscreen .workbench .app-head { display: none; }
 html.has-fullscreen .wb-strip { top: 0; }
 /* A section reached through the strip lands under it, not beneath it. */
 .workbench .explorer-shell :is(section[id], h2[id]) { scroll-margin-top: calc(var(--u) * 24); }
+
+/* The beta origin's own line, above the page. It is not a notice component:
+   a notice is about the page you are on, and this is about the origin the
+   page is being served from. One rule at the top, in the orange the kit uses
+   for "wants attention", and it is the only thing on this site that is
+   allowed to be sticky above the masthead. */
+.beta-bar {
+  margin: 0;
+  padding: calc(var(--u) * 2) calc(var(--u) * 4);
+  background: var(--color-orange-ink);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  text-align: center;
+}
+
+.beta-bar a {
+  color: var(--color-paper);
+  text-decoration: underline;
+}

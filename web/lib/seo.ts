@@ -58,6 +58,19 @@ export interface PageMeta {
  * The metadata for one page in one language. `path` is the English path
  * (`/6502/games`), which is the canonical shape of every address here.
  */
+/**
+ * The beta origin, which serves this same tree arranged differently.
+ *
+ * Set at build time (TM_BETA=1, see deploy/tinymachines-beta-web.service).
+ * Every page it serves is noindex, whatever the page itself asked for, and
+ * the canonical below still names tinymachines.ai: a crawler that ignored
+ * both the header and the robots.txt the vhost serves would still be told
+ * where the real page is. Three refusals for one rule, because an origin
+ * nobody meant to publish is the one thing here that must not be found by
+ * accident.
+ */
+export const BETA = process.env.TM_BETA === "1";
+
 export function pageMeta(langIn: string, path: string, given?: PageMeta): Metadata {
   const lang: Lang = isLang(langIn) ? langIn : "en";
   const fixed: FixedPage | undefined = PAGES[path];
@@ -72,7 +85,7 @@ export function pageMeta(langIn: string, path: string, given?: PageMeta): Metada
   // The card at /og/<path>, drawn from these same words (lib/card.tsx). A
   // page that asks to stay out of the index draws no card and shows the
   // site's icon instead, which is a real file.
-  const card = !m.noindex;
+  const card = !m.noindex && !BETA;
   const image = m.image ?? (card ? `/og${localize(lang, path) === "/" ? "" : localize(lang, path)}` : "/icons/icon-512.png");
   const size = card || m.image ? { width: 1200, height: 630 } : { width: 512, height: 512 };
   return {
@@ -90,6 +103,6 @@ export function pageMeta(langIn: string, path: string, given?: PageMeta): Metada
       images: [{ url: abs(image), ...size, alt: title }],
     },
     twitter: { card: card || m.image ? "summary_large_image" : "summary", title, description, images: [abs(image)] },
-    ...(m.noindex ? { robots: { index: false, follow: false } } : {}),
+    ...(m.noindex || BETA ? { robots: { index: false, follow: false } } : {}),
   };
 }

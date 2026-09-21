@@ -1,0 +1,50 @@
+# beta.tinymachines.ai: the same site, arranged differently.
+#
+# One `next start` on 127.0.0.1:6541, from a worktree of the `beta` branch at
+# ../public-beta. Same repository, same build, different structure: the beta
+# exists to move pages around without moving the paths people already have.
+#
+# A worktree rather than a second clone, deliberately. A clone would have its
+# own docs/ and its own data/, which is two copies of every fact, and this
+# project's oldest rule is that a fact lives in one place. A worktree shares
+# the git objects and differs only by what the branch changes.
+#
+# It builds from the same siblings as the live site (../2c02, ../nes-bench and
+# the rest are resolved through ../ from the worktree, which sits beside the
+# main checkout for exactly that reason), so the documents it serves are the
+# same pulled documents.
+#
+# The PATH is load-bearing here for the same reason it is in the live unit:
+# systemd's PATH has no bun on it, and /usr/bin/node is v12 and cannot parse
+# `??`. Both are named absolutely rather than discovered.
+#
+# Install:
+#   git worktree add ../public-beta beta
+#   cd ../public-beta/web && bun install && TM_BETA=1 bun run build
+#   sudo cp deploy/tinymachines-beta-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now tinymachines-beta-web
+#
+# TM_BETA is read at build time: it puts the banner on every page and makes
+# every page noindex. The vhost says the same thing twice more (a header and
+# a robots.txt), because an origin nobody meant to publish is the one thing
+# here that must not be found by accident.
+
+[Unit]
+Description=beta.tinymachines.ai (Next 16, the site rearranged)
+After=network.target
+
+[Service]
+Type=simple
+User=bisenbek
+WorkingDirectory=/home/bisenbek/projects/tinymachines/public-beta/web
+Environment=NODE_ENV=production
+Environment=TM_BETA=1
+Environment=PORT=6541
+Environment=PATH=/home/bisenbek/.bun/bin:/home/bisenbek/.nvm/versions/node/v24.0.1/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/bisenbek/.bun/bin/bun run start -- -p 6541
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
