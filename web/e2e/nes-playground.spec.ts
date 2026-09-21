@@ -350,32 +350,74 @@ test("the bench: the engineers' photographs, one fetched at a time", async ({ pa
   expect(await st.locator(".pg-bench-eyes li").count()).toBeGreaterThanOrEqual(3);
 });
 
+/**
+ * How long one boot takes on the chip right now, and a budget built from it.
+ *
+ * The station does its work by asking the 6502 project's service, which is a
+ * real chip simulated switch by switch and is shared with the rest of the
+ * site. This test failed once in a batch of five spec files and passed in
+ * seven seconds on its own (2026-09-21): the assertions carried fixed
+ * timeouts, so under load they reported "expected 42 ($2A), got ·", which
+ * blames the page for the chip being busy.
+ *
+ * So the test asks the chip first, in the same shape the station asks it, and
+ * scales its patience by what it measures. A chip that does not answer at all
+ * fails here, saying so, rather than fifteen seconds later as a missing
+ * readout.
+ */
+async function chipBudget(page: Page): Promise<number> {
+  const api = `${BASE}/6502/api/v1/boot`;
+  const body = { rom: { source: "  LDA #$2A\n  BRK\n", org: 0x0200 } };
+  const began = Date.now();
+  let res;
+  try {
+    res = await page.request.post(api, { data: body, timeout: 60_000 });
+  } catch (e) {
+    throw new Error(`the chip at ${api} did not answer: ${String(e).slice(0, 200)}\n` +
+      "    This test says nothing about the page until the chip answers.");
+  }
+  if (!res.ok()) {
+    throw new Error(`the chip at ${api} answered ${res.status()}; this test needs it to boot a program.`);
+  }
+  const took = Date.now() - began;
+  // Eight boots' worth, and never less than the old fixed timeout: the
+  // slowest step below runs a loop to ten, which is many more calls than one.
+  const budget = Math.max(20_000, took * 8);
+  console.log(`  the chip booted in ${took} ms; this test waits up to ${Math.round(budget / 1000)} s per step`);
+  return budget;
+}
+
 test("write a program: the chip assembles it, runs it and answers", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
+  const budget = await chipBudget(page);
   await page.setViewportSize(DESK);
   await open(page, "/nes/playground", 500);
   const st = page.locator("#program");
   await st.scrollIntoViewIfNeeded();
   const cell = (k: string) => st.locator(`dd[data-k="${k}"]`);
+  // What the station says when it is unhappy, so a failure below names the
+  // chip's own refusal rather than an empty readout.
+  const said = async () => (await st.locator(".pg-prog-why").allTextContents()).join(" | ") || "nothing";
   // The first example: a number into A, then into memory.
   await st.getByRole("button", { name: "Put it on the chip" }).click();
-  await expect(st.locator(".pg-prog-listing li").first()).toBeVisible({ timeout: 20_000 });
+  await expect(st.locator(".pg-prog-listing li").first(), `the chip said: ${await said()}`).toBeVisible({ timeout: budget });
   expect(await st.locator(".pg-prog-listing li").count()).toBeGreaterThanOrEqual(3);
   await st.getByRole("button", { name: "One instruction" }).click();
-  await expect(cell("a")).toHaveText("42 ($2A)", { timeout: 20_000 });
+  await expect(cell("a")).toHaveText("42 ($2A)", { timeout: budget });
   await st.getByRole("button", { name: "Run it" }).click();
   // It stops itself, and exactly the byte it stored is marked.
-  await expect.poll(async () => Number((await cell("ran").textContent()) || "0"), { timeout: 30_000 }).toBeGreaterThan(1);
-  await expect(st.locator('.pg-prog-cell[data-touched="true"]')).toHaveCount(1, { timeout: 20_000 });
-  // A loop, run to its end: X counts to ten.
+  await expect.poll(async () => Number((await cell("ran").textContent()) || "0"), { timeout: budget }).toBeGreaterThan(1);
+  await expect(st.locator('.pg-prog-cell[data-touched="true"]')).toHaveCount(1, { timeout: budget });
+  // A loop, run to its end: X counts to ten. Every instruction of it is a
+  // round trip, so this one gets the whole budget over again.
   await st.getByRole("button", { name: "Count to ten" }).click();
   await st.getByRole("button", { name: "Put it on the chip" }).click();
   await st.getByRole("button", { name: "Run it" }).click();
-  await expect(cell("x")).toHaveText("10 ($0A)", { timeout: 60_000 });
+  await expect(cell("x"), `the chip said: ${await said()}`).toHaveText("10 ($0A)", { timeout: budget * 3 });
   // A program the chip refuses is refused in the chip's own words.
   await st.locator("#pg-prog-src").fill("  LDA #$ZZ\n");
   await st.getByRole("button", { name: "Put it on the chip" }).click();
-  await expect(st.locator(".pg-prog-why")).toContainText("bad hex value", { timeout: 20_000 });
+  await expect(st.locator(".pg-prog-why")).toContainText("bad hex value", { timeout: budget });
 });
 
 test("x-ray your own game: a recording replayed twice, differing by one tap", async ({ page }) => {
