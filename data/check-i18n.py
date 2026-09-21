@@ -49,7 +49,10 @@ def corpus() -> str:
     # data/doors.json holds the three doors' own words (the site by what a
     # visitor came to do). They go through the overlay like the manifest's,
     # so they belong in the corpus or their translations read as orphaned.
-    for f in ("data/projects.json", "data/pieces.json", "data/doors.json"):
+    # docs/nes/shelves.json is written by the pull and holds shipped strings
+    # of its own: the shelf headings and, since the second axis, what each
+    # KIND of document is. They go through the overlay like the rest.
+    for f in ("data/projects.json", "data/pieces.json", "data/doors.json", "docs/nes/shelves.json"):
         parts.append((ROOT / f).read_text())
     # The landing item's label is the literal "Overview" now (the group
     # heading already names the project), which the tsx scan sees on its own;

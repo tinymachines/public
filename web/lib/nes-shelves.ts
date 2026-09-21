@@ -15,7 +15,10 @@ import { DOCS_DIR } from "./docs";
  */
 
 /** `code` is the milestone label ("N3 report"), or null for a document without one. */
-export type ShelfDoc = { route: string; title: string; code: string | null; description: string };
+export type ShelfDoc = { route: string; title: string; code: string | null; kind: string; description: string };
+
+/** What a document IS: the notebook's second axis (pull-nesdocs.mjs KINDS). */
+export type Kind = { key: string; name: string; what: string };
 export type Shelf = {
   key: string;
   heading: string;
@@ -24,7 +27,7 @@ export type Shelf = {
   docs: ShelfDoc[];
 };
 
-type File = { groups: Shelf[]; cart: ShelfDoc[] };
+type File = { groups: Shelf[]; cart: ShelfDoc[]; kinds: Kind[] };
 
 let cache: File | null = null;
 
@@ -36,6 +39,26 @@ function read(): File {
   }
   cache = JSON.parse(fs.readFileSync(file, "utf8")) as File;
   return cache;
+}
+
+/**
+ * The documents by what they ARE, in the order the pull declares the kinds:
+ * plans before reports, because that is the order they were written in, then
+ * the things you follow, look up and keep.
+ *
+ * Every document appears exactly once. A document in two kinds would be a
+ * second opinion about what it is, and the pull refuses to write one without
+ * a kind at all.
+ */
+export function byKind(): { kind: Kind; docs: ShelfDoc[] }[] {
+  const f = read();
+  const all = [...f.groups.flatMap((g) => g.docs), ...f.cart];
+  const out = f.kinds.map((kind) => ({ kind, docs: all.filter((d) => d.kind === kind.key) }));
+  const placed = out.reduce((n, k) => n + k.docs.length, 0);
+  if (placed !== all.length) {
+    throw new Error(`docs/nes/shelves.json: ${all.length - placed} documents carry a kind nothing declares`);
+  }
+  return out;
 }
 
 /** One group, by key; throws on a key the pull does not write. */

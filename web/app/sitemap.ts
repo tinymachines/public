@@ -41,6 +41,7 @@ const STATIC = [
   "/6502/tools",
   "/6502/explorer",
   "/6502/reading",
+  "/docs/kinds",
   "/6502/lab",
   "/6502/games",
   "/6502/builders",

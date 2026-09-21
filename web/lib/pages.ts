@@ -67,6 +67,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "A console on a transistor-level MOS 6502. Every frame is run on the real die.",
   },
+  "/docs/kinds": {
+    title: "The notebook by kind",
+    description:
+      "The same documents, sorted by what each one is: plans written before the work, reports written after, procedures, references and records.",
+  },
   "/6502/reading": {
     title: "The long reads",
     description:

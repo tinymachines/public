@@ -32,6 +32,43 @@ const OUT = path.join(ROOT, "docs", "nes");
 // The printable artefacts the pull builds and serves from /nes/bench/.
 // A document that names one of these gets a link to it under its h1,
 // and the pull refuses to publish a link to a file it did not produce.
+// What each document IS, as against what it is about.
+//
+// The notebook groups by part of the console, which answers "where does this
+// belong" and not "should I read this first". A plan was written before the
+// work and says what will be checked; a report was written after and every
+// figure in it is a measurement; a procedure is a thing to follow with the
+// machine in front of you; a reference is a thing to look something up in;
+// a record is what happened, kept as it happened.
+//
+// Derived from the milestone code where there is one ("N3 plan", "P3
+// report"), because that fact is already written down. A document without a
+// code names its kind below, in the same table that already names its group,
+// and a document that names neither stops the build rather than defaulting
+// to a bucket: a wrong shelf is worse than no shelf.
+const KINDS = {
+  plan: { key: "plan", name: "Plans", what: "Written before the work, saying what would be checked and how closely." },
+  report: { key: "report", name: "Reports", what: "Written after it, where every figure is a measurement with the run that printed it." },
+  procedure: { key: "procedure", name: "Procedures", what: "Things to follow with the machine in front of you: wiring, sittings, scripts, sheets." },
+  reference: { key: "reference", name: "References", what: "Things to look something up in: parts, patterns, words, specifications." },
+  record: { key: "record", name: "Records", what: "What happened, kept as it happened, including the attempts that failed." },
+};
+
+function kindOf(d) {
+  if (d.kind) return d.kind;
+  if (d.code) {
+    const c = d.code.toLowerCase();
+    if (/\bplan\b/.test(c)) return "plan";
+    if (/\breport\b/.test(c)) return "report";
+    if (/\bsketch\b/.test(c)) return "plan";
+    if (/\bspecification\b/.test(c)) return "reference";
+  }
+  throw new Error(
+    `pull-nesdocs: ${d.slug} has no kind and no code to derive one from. ` +
+      `Give it kind: one of ${Object.keys(KINDS).join(", ")} in the DOCS table.`,
+  );
+}
+
 const ARTEFACTS = {
   v1b: { label: "v1b drawing package, TM-NESB-001 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-001-revN.pdf" },
   v2b: { label: "v2b drawing package, TM-NESB-002 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-002-revA.pdf" },
@@ -75,11 +112,11 @@ const DOCS = [
   { repo: "ntsc-crt", file: "m0-report.md", slug: "m0-report", code: "M0 report", title: "The timing grid everything stands on", group: "signal", order: 13, description: "The sample grid, the leftover phase at every step, and the data every later stage depends on." },
   { repo: "ntsc-crt", file: "m1-report.md", slug: "m1-report", code: "M1 report", title: "The NES encoder and the first decoder", group: "signal", order: 14, description: "The encoders checked against their reference, and the first decoding filter checked against blargg's." },
   { repo: "ntsc-crt", file: "m2-report.md", slug: "m2-report", code: "M2 report", title: "The comb filters, the RGB encoder and the speed", group: "signal", order: 15, description: "The decoder's notch and comb filters checked against their reference and against each other, and how fast they run." },
-  { repo: "ntsc-crt", file: "perf-report.md", slug: "perf-report", code: null, title: "Making the signal bench fast", group: "signal", order: 15.5, description: "How the signal path got several times faster, fast enough to run live in the browser: three changes named before they were built, a filter shortcut the comb tests caught being wrong, and the speeds before and after." },
+  { repo: "ntsc-crt", file: "perf-report.md", slug: "perf-report", code: null, kind: "report", title: "Making the signal bench fast", group: "signal", order: 15.5, description: "How the signal path got several times faster, fast enough to run live in the browser: three changes named before they were built, a filter shortcut the comb tests caught being wrong, and the speeds before and after." },
   { repo: "ntsc-crt", file: "m3-report.md", slug: "m3-report", code: "M3 report", title: "The television's picture stages", group: "signal", order: 16, description: "The stages between a decoded signal and a picture on a tube, with every setting we chose labelled as a choice." },
   { repo: "ntsc-crt", file: "m4-report.md", slug: "m4-report", code: "M4 report", title: "Capturing a real console", group: "signal", order: 17, description: "The capture source, the round trip through our own model, and the first recordings of a real console scored against our own synthesis." },
   { repo: "ntsc-crt", file: "m5-report.md", slug: "m5-report", code: "M5 report", title: "Checking what the documents claim", group: "signal", order: 18, description: "A scanner that finds every number the documents state and re-checks it, the known departures from the references, and the specification agreed." },
-  { repo: "ntsc-crt", file: "divergences.md", slug: "ntsc-divergences", code: null, title: "Where the signal path departs from the references", group: "signal", order: 19, description: "Each place the signal path knowingly differs from the published references, with the reason." },
+  { repo: "ntsc-crt", file: "divergences.md", slug: "ntsc-divergences", code: null, kind: "report", title: "Where the signal path departs from the references", group: "signal", order: 19, description: "Each place the signal path knowingly differs from the published references, with the reason." },
   { repo: "nes", file: "n4-report.md", slug: "n4-report", code: "N4 report", title: "The mainboard's glue", group: "console", order: 20, description: "The handful of parts on the NES-001 board between the chips, each checked against its datasheet and labelled as written by us." },
   { repo: "nes", file: "n5-report.md", slug: "n5-report", code: "N5 report", title: "Both chips on one clock", group: "console", order: 21, description: "The console running: the two fast chips on one clock, the timing between them checked against the transistor-level chips, and blargg's test ROMs run end to end." },
   { repo: "nes", file: "n6-plan.md", slug: "n6-plan", code: "N6 plan", title: "Planning the console's picture", group: "console", order: 22, description: "The picture through the signal path, and how a captured frame will be compared, with the tolerances written down first." },
@@ -88,30 +125,30 @@ const DOCS = [
   { repo: "nes", file: "n7-report.md", slug: "n7-report", code: "N7 report", title: "The console's sound", group: "console", order: 25, description: "The sound through the board's audio stage, blargg's mixer test ROMs cancelling, and his recordings of real hardware beside ours." },
   { repo: "nes", file: "n8-plan.md", slug: "n8-plan", code: "N8 plan", title: "Planning the console's window", group: "console", order: 26, description: "The window the console plays in, the picture on the GPU, the pacing, and a second target in the browser." },
   { repo: "nes", file: "n8-report.md", slug: "n8-report", code: "N8 report", title: "The console in a window", group: "console", order: 27, description: "The window built and checked without a screen, the GPU picture matching the CPU's, and the browser build measured." },
-  { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", code: null, title: "Planning the bench", group: "bench-plan", order: 28, description: "A real console and the model under the same controller presses: a bridge on the controller port, relays and a scope under one script, and the checks for each step." },
-  { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", code: null, title: "Wiring the bridge", group: "bench-plan", order: 29, description: "The shift register that stands in for the pad, the level shifter, the microcontroller's pins, the relays, and the meter checks to do before power." },
-  { repo: "nes-bench", file: "script.md", slug: "bench-script", code: null, title: "The bench script", group: "bench-plan", order: 30, description: "One file both the bench and the model read: the pad's bytes by poll, the arm, the trigger and the capture." },
-  { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", code: null, title: "What the bench's tools have shown", group: "bench-record", order: 31, description: "Each tool working on a synthetic run, each with a sabotage run that must fail; the chip answered the first question before the real console could, and the model changed for it." },
-  { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", code: null, title: "The bridge's schematics and parts", group: "bench-build", artefacts: ["v1b", "photo", "v2b"], order: 32, description: "The bridge as schematics (v1 and v1b), the extended bridge (v2), one controller poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
-  { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", code: null, title: "The v1b bridge on an Arduino UNO", group: "bench-build", artefacts: ["v1b", "photo", "v2b", "board"], order: 33, description: "The version built first, everything at five volts: why the level shifters go away, the pin table, and four things writing the firmware showed the plan had wrong." },
-  { repo: "nes-bench", file: "build-guide.md", slug: "build-guide", code: null, title: "The build guide, in five sittings", group: "bench-build", artefacts: ["v1b", "photo"], order: 34, description: "What to wire pin by pin, what the command then measures, which photographs to take, and where each sitting stands. Generated from the tool that runs the build." },
-  { repo: "nes-bench", file: "rig.md", slug: "rig", code: null, title: "The QA rig", group: "bench-build", order: 39, description: "The cameras and the boards on the frame, in inches and pixels: each camera's job, mount and scale, the backing board and breadboard dimensions, the bench photographed, and what to run when something moves." },
-  { repo: "nes-bench", file: "as-built-v1b.md", slug: "as-built", code: null, title: "The v1b board as built", group: "bench-build", order: 38, artefacts: ["v1b", "photo"], description: "Read off its photographs: where the chips sit and which way they face, the rails, the UNO ribbon, and where the headers should move to keep the jumpers short." },
-  { repo: "nes-bench", section: "cart", file: "calibration-plan.md", slug: "calibration-plan", code: null, title: "Planning the calibration cartridge", order: 2, description: "One cartridge whose every screen is built to be measured off the real console and the model through the same reader, each frame naming itself; colour, resolution, filtering and the pad." },
-  { repo: "nes-bench", section: "cart", file: "build-the-cal-cart.md", slug: "build-the-cal-cart", code: null, title: "Building the calibration cart", order: 3, description: "From the idea of a frame that names itself, through a cartridge written with a sixty-line assembler, to the ROM in the model, its checksums, and the cartridge in a console." },
-  { repo: "nes-bench", section: "cart", file: "calibration-screens.md", slug: "calibration-screens", code: null, title: "The calibration screens", order: 4, description: "The cartridge's screens as our own decoder sees them, the strip that names each frame, and what each screen is for; the grabber's frames join them once the cart is in a console." },
-  { repo: "nes-bench", section: "cart", file: "cart-blanks.md", slug: "cart-blanks", code: null, title: "The blank boards and the programmer", order: 5, description: "Photographed and read: which board takes the calibration ROM's two chips, what the EPROM adapter is for, and what stays unknown until the chips arrive." },
-  { repo: "nes-bench", file: "cartridge.md", slug: "cartridge", code: null, title: "A real cartridge in the model", group: "bench-experiments", order: 40, description: "Why the reader guessed the wrong game, the verified dump, and the mapper-66 board the model grew so the same bytes could run on both sides for a picture comparison." },
-  { repo: "nes-bench", file: "eyes-vs-scope.md", slug: "eyes-vs-scope", code: null, title: "Eyes versus scope", group: "bench-experiments", order: 39, description: "The console's video split to the scope and to a USB grabber, getting the grabber to work, and the grabber's picture scored against our own decode of the scope's recording." },
-  { repo: "nes-bench", file: "cheat-sheet.md", slug: "cheat-sheet", code: null, title: "The bench cheat sheet", group: "bench-build", artefacts: ["v1b", "photo"], order: 37, description: "Both breakouts pin by pin with the harness colours, the four jumpers, and every pin of every chip with what it does and where it goes. Generated from the schematic and the lab log." },
-  { repo: "nes-bench", file: "cheat-sheet-head.md", slug: "cheat-sheet-head", code: null, title: "The head's hands cheat sheet", group: "bench-build", artefacts: ["v1b"], order: 37.5, description: "Sheet 3 of the v1b package as tables: the Pi's four jumpers by header position, the power and reset breakout, every wire, and each pin of the PC817 and relay modules with what it does and where it goes. Generated from the schematic." },
-  { repo: "nes-bench", file: "parts.md", slug: "parts", code: null, title: "The bench's parts list", group: "bench-build", artefacts: ["v1b", "photo", "v2b"], order: 36, description: "One table per schematic sheet, and one list of everything to gather. Generated from the file that draws the schematics, so the two cannot disagree." },
-  { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", code: null, title: "The lab notebook", group: "bench-record", artefacts: ["v1b", "photo"], order: 35, description: "The bench wired one step at a time, every attempt kept including the failures, each step ending in a measurement. Generated from the build tool's log." },
-  { repo: "nes-bench", file: "milestone-2026-09-15-rig-and-bridge.md", slug: "milestone-rig-and-bridge", code: null, title: "The rig locked and the bridge reading right", group: "bench-record", order: 30.5, description: "Three days on the bench: the v1b bridge passes bytes into the console and reads every one back, the trigger stops the scope, the cameras are on a frame; what the plan had wrong, what the eye cannot see, and what is next." },
-  { repo: "nes-bench", file: "exercise.md", slug: "exercise", code: null, title: "Exercising the bench", group: "bench-exercise", order: 41, description: "The two stacks as one logical diagram with every flow typed, the dialect layer by layer, a regime of six steps each with its gate, and the three programmes on top: the model's knobs measured on the part, games learned from the pad to the picture, and the x-ray behind an encyclopedia of code patterns." },
-    { repo: "nes-bench", file: "encyclopedia.md", slug: "encyclopedia", code: null, title: "The encyclopedia of code patterns", group: "bench-exercise", order: 42, description: "What the x-rays add up to: each NES code pattern with its signature as measured on the model, a window on the die's pages, and the mechanism it teaches; code only from cartridges whose source is ours" },
-    { repo: "nes-bench", file: "mario-dissection.md", slug: "mario-dissection", code: null, title: "Super Mario Bros., dissected", group: "bench-exercise", order: 43, description: "The first game taken apart on the model: the loop inside the interrupt, the frame scanline by scanline, the routine tree through the jump engine, the VRAM pipeline, and the pad's byte on its way to a jump; shape only, never the code" },
-  { repo: "nes-bench", file: "open-items.md", slug: "open-items", code: null, title: "What is still open", group: "bench-record", order: 35.5, description: "Everything noticed along the way that is not finished: the calibration cart's part side, where the model's hue differs from the console's, the grabber, the bench and the cartridge reader, each with why it matters and what would close it." },
+  { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", code: null, kind: "plan", title: "Planning the bench", group: "bench-plan", order: 28, description: "A real console and the model under the same controller presses: a bridge on the controller port, relays and a scope under one script, and the checks for each step." },
+  { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", code: null, kind: "procedure", title: "Wiring the bridge", group: "bench-plan", order: 29, description: "The shift register that stands in for the pad, the level shifter, the microcontroller's pins, the relays, and the meter checks to do before power." },
+  { repo: "nes-bench", file: "script.md", slug: "bench-script", code: null, kind: "reference", title: "The bench script", group: "bench-plan", order: 30, description: "One file both the bench and the model read: the pad's bytes by poll, the arm, the trigger and the capture." },
+  { repo: "nes-bench", file: "bench-report.md", slug: "bench-report", code: null, kind: "report", title: "What the bench's tools have shown", group: "bench-record", order: 31, description: "Each tool working on a synthetic run, each with a sabotage run that must fail; the chip answered the first question before the real console could, and the model changed for it." },
+  { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", code: null, kind: "procedure", title: "The bridge's schematics and parts", group: "bench-build", artefacts: ["v1b", "photo", "v2b"], order: 32, description: "The bridge as schematics (v1 and v1b), the extended bridge (v2), one controller poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
+  { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", code: null, kind: "procedure", title: "The v1b bridge on an Arduino UNO", group: "bench-build", artefacts: ["v1b", "photo", "v2b", "board"], order: 33, description: "The version built first, everything at five volts: why the level shifters go away, the pin table, and four things writing the firmware showed the plan had wrong." },
+  { repo: "nes-bench", file: "build-guide.md", slug: "build-guide", code: null, kind: "procedure", title: "The build guide, in five sittings", group: "bench-build", artefacts: ["v1b", "photo"], order: 34, description: "What to wire pin by pin, what the command then measures, which photographs to take, and where each sitting stands. Generated from the tool that runs the build." },
+  { repo: "nes-bench", file: "rig.md", slug: "rig", code: null, kind: "reference", title: "The QA rig", group: "bench-build", order: 39, description: "The cameras and the boards on the frame, in inches and pixels: each camera's job, mount and scale, the backing board and breadboard dimensions, the bench photographed, and what to run when something moves." },
+  { repo: "nes-bench", file: "as-built-v1b.md", slug: "as-built", code: null, kind: "record", title: "The v1b board as built", group: "bench-build", order: 38, artefacts: ["v1b", "photo"], description: "Read off its photographs: where the chips sit and which way they face, the rails, the UNO ribbon, and where the headers should move to keep the jumpers short." },
+  { repo: "nes-bench", section: "cart", file: "calibration-plan.md", slug: "calibration-plan", code: null, kind: "plan", title: "Planning the calibration cartridge", order: 2, description: "One cartridge whose every screen is built to be measured off the real console and the model through the same reader, each frame naming itself; colour, resolution, filtering and the pad." },
+  { repo: "nes-bench", section: "cart", file: "build-the-cal-cart.md", slug: "build-the-cal-cart", code: null, kind: "procedure", title: "Building the calibration cart", order: 3, description: "From the idea of a frame that names itself, through a cartridge written with a sixty-line assembler, to the ROM in the model, its checksums, and the cartridge in a console." },
+  { repo: "nes-bench", section: "cart", file: "calibration-screens.md", slug: "calibration-screens", code: null, kind: "reference", title: "The calibration screens", order: 4, description: "The cartridge's screens as our own decoder sees them, the strip that names each frame, and what each screen is for; the grabber's frames join them once the cart is in a console." },
+  { repo: "nes-bench", section: "cart", file: "cart-blanks.md", slug: "cart-blanks", code: null, kind: "reference", title: "The blank boards and the programmer", order: 5, description: "Photographed and read: which board takes the calibration ROM's two chips, what the EPROM adapter is for, and what stays unknown until the chips arrive." },
+  { repo: "nes-bench", file: "cartridge.md", slug: "cartridge", code: null, kind: "report", title: "A real cartridge in the model", group: "bench-experiments", order: 40, description: "Why the reader guessed the wrong game, the verified dump, and the mapper-66 board the model grew so the same bytes could run on both sides for a picture comparison." },
+  { repo: "nes-bench", file: "eyes-vs-scope.md", slug: "eyes-vs-scope", code: null, kind: "report", title: "Eyes versus scope", group: "bench-experiments", order: 39, description: "The console's video split to the scope and to a USB grabber, getting the grabber to work, and the grabber's picture scored against our own decode of the scope's recording." },
+  { repo: "nes-bench", file: "cheat-sheet.md", slug: "cheat-sheet", code: null, kind: "reference", title: "The bench cheat sheet", group: "bench-build", artefacts: ["v1b", "photo"], order: 37, description: "Both breakouts pin by pin with the harness colours, the four jumpers, and every pin of every chip with what it does and where it goes. Generated from the schematic and the lab log." },
+  { repo: "nes-bench", file: "cheat-sheet-head.md", slug: "cheat-sheet-head", code: null, kind: "reference", title: "The head's hands cheat sheet", group: "bench-build", artefacts: ["v1b"], order: 37.5, description: "Sheet 3 of the v1b package as tables: the Pi's four jumpers by header position, the power and reset breakout, every wire, and each pin of the PC817 and relay modules with what it does and where it goes. Generated from the schematic." },
+  { repo: "nes-bench", file: "parts.md", slug: "parts", code: null, kind: "reference", title: "The bench's parts list", group: "bench-build", artefacts: ["v1b", "photo", "v2b"], order: 36, description: "One table per schematic sheet, and one list of everything to gather. Generated from the file that draws the schematics, so the two cannot disagree." },
+  { repo: "nes-bench", file: "lab-notebook.md", slug: "lab-notebook", code: null, kind: "record", title: "The lab notebook", group: "bench-record", artefacts: ["v1b", "photo"], order: 35, description: "The bench wired one step at a time, every attempt kept including the failures, each step ending in a measurement. Generated from the build tool's log." },
+  { repo: "nes-bench", file: "milestone-2026-09-15-rig-and-bridge.md", slug: "milestone-rig-and-bridge", code: null, kind: "record", title: "The rig locked and the bridge reading right", group: "bench-record", order: 30.5, description: "Three days on the bench: the v1b bridge passes bytes into the console and reads every one back, the trigger stops the scope, the cameras are on a frame; what the plan had wrong, what the eye cannot see, and what is next." },
+  { repo: "nes-bench", file: "exercise.md", slug: "exercise", code: null, kind: "record", title: "Exercising the bench", group: "bench-exercise", order: 41, description: "The two stacks as one logical diagram with every flow typed, the dialect layer by layer, a regime of six steps each with its gate, and the three programmes on top: the model's knobs measured on the part, games learned from the pad to the picture, and the x-ray behind an encyclopedia of code patterns." },
+    { repo: "nes-bench", file: "encyclopedia.md", slug: "encyclopedia", code: null, kind: "reference", title: "The encyclopedia of code patterns", group: "bench-exercise", order: 42, description: "What the x-rays add up to: each NES code pattern with its signature as measured on the model, a window on the die's pages, and the mechanism it teaches; code only from cartridges whose source is ours" },
+    { repo: "nes-bench", file: "mario-dissection.md", slug: "mario-dissection", code: null, kind: "report", title: "Super Mario Bros., dissected", group: "bench-exercise", order: 43, description: "The first game taken apart on the model: the loop inside the interrupt, the frame scanline by scanline, the routine tree through the jump engine, the VRAM pipeline, and the pad's byte on its way to a jump; shape only, never the code" },
+  { repo: "nes-bench", file: "open-items.md", slug: "open-items", code: null, kind: "record", title: "What is still open", group: "bench-record", order: 35.5, description: "Everything noticed along the way that is not finished: the calibration cart's part side, where the model's hue differs from the console's, the grabber, the bench and the cartridge reader, each with why it matters and what would close it." },
 ];
 
 // The bench's schematics, drawn by its generator and held to its wiring
@@ -405,6 +442,12 @@ reports keep the working words we use among ourselves, and
 [Words the reports use](/docs/words) explains them. The calibration
 cartridge has [a section of its own](/docs/cart).
 
+Grouped here by the part of the console each one is about. The same
+documents sorted by what they ARE, which is the question to ask
+first, are at [the notebook by kind](/docs/kinds): plans before the
+work, reports after it, and the procedures, references and records
+between them.
+
 ${grouped}
 ## Printable
 
@@ -447,13 +490,17 @@ ${cartRows}
 // with them) because the docs tree allows no frontmatter but title,
 // description and order, so a document cannot carry its group itself;
 // lib/nes-shelves.ts reads this and refuses a build without it.
-const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, code: d.code, description: d.description });
+const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, code: d.code, kind: kindOf(d), description: d.description });
 fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
   groups: GROUPS.map((g) => ({
     key: g.key, heading: g.heading, intro: g.intro, ja: g.ja,
     docs: DOCS.filter((d) => !d.section && d.group === g.key).sort((a, b) => a.order - b.order).map(shelf),
   })),
   cart: DOCS.filter((d) => d.section === "cart").sort((a, b) => a.order - b.order).map(shelf),
+  // The second axis. The groups above say what each document is ABOUT; this
+  // says what it IS, which is the question a reader who has not read any of
+  // them is actually asking.
+  kinds: Object.values(KINDS),
 }, null, 1) + "\n");
 
 // Every page this wrote parses as the docs tree will parse it. An unquoted

@@ -386,5 +386,20 @@
  "The story and the record. The arc first, then the long reads, then the notebook: every plan written before the work and every report written after it, with the figures they were written from.": "物語と記録です。まず全体の流れ、次に長めの読みもの、そしてノート。作業の前に書かれた計画と、後に書かれた報告が、その根拠になった数字とともに並んでいます。",
  "The parts you can use: a chip that answers over HTTP, a cartridge format, a registry that re-runs what it publishes, and the bytes from a real Geiger tube.": "使える部品です。HTTP で答えるチップ、カートリッジの形式、公開するものを自分で走らせ直すレジストリ、そして本物のガイガー管から出たバイト。",
  "A page can be behind two doors: an instrument is a thing to watch and a thing to build on. Every address here is the one it has always had.": "一つのページが二つの入口の奥にあることもあります。計器は見るものでもあり、それを使って作るものでもあるからです。ここにある住所はどれも、これまでと同じものです。",
- "Three ways in": "三つの入口"
+ "Three ways in": "三つの入口",
+ "The notebook by kind": "ノートを種類で見る",
+ "The same documents, sorted by what each one is: plans written before the work, reports written after, procedures, references and records.": "同じ文書を、それが何であるかで並べ直したもの。作業の前に書かれた計画、後に書かれた報告、手順、参照、そして記録。",
+ "The notebook is grouped by the part of the console each document is about. This is the other question: what is this document, and should I open it first. Every one of them appears here exactly once.": "ノートは、各文書がコンソールのどの部分についてのものかで束ねてあります。こちらはもう一つの問いです。この文書は何なのか、最初に開くべきなのか。どの文書もここにちょうど一度だけ現れます。",
+ "documents, each carrying the kind its own entry declares": "件。種類は、各文書自身の登録が名乗っているものです",
+ "Plans": "計画",
+ "Reports": "報告",
+ "Procedures": "手順",
+ "References": "参照",
+ "Records": "記録",
+ "Written before the work, saying what would be checked and how closely.": "作業の前に書かれ、何をどこまで確かめるかを述べたもの。",
+ "Written after it, where every figure is a measurement with the run that printed it.": "作業の後に書かれ、どの数字も、それを印字した走行つきの実測であるもの。",
+ "Things to follow with the machine in front of you: wiring, sittings, scripts, sheets.": "機械を前にして辿るもの。配線、作業の回、台本、早見表。",
+ "Things to look something up in: parts, patterns, words, specifications.": "何かを引くためのもの。部品、模様、言葉、仕様。",
+ "What happened, kept as it happened, including the attempts that failed.": "何が起きたかを、起きたまま残したもの。失敗した試みも含めて。",
+ "The same documents by the part they are about:": "同じ文書を、扱っている部分で見るなら:"
 }
