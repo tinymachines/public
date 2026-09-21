@@ -2645,3 +2645,101 @@ false sentence and the same claim in docs/notes/derivations.md, a lost
 run, a crate comment that says eleven DAC legs where the die has
 twelve, "halfscore" still in three other copies of the sketch, and the
 blurred-television policy.
+
+## Checkpoint, 2026-09-21, the doors group what they open
+
+Live at `ec7ffd4`, version 1.0.262, after four deploys: two refusals
+that never reached the build, the merge itself, and a second pass to
+make the doors tell the truth about the site the first one had just
+changed. Everything below was tried on beta.tinymachines.ai first.
+
+- **The doors carry groups, and every page behind one says how long it
+  is** (`8928062`). Read cold, `/read` named three groups in its
+  opening sentence and then showed ten entries in one undifferentiated
+  column, eight of which opened another list, with nothing saying
+  which. It has four named groups now, and each entry prints what the
+  crawl measured: the words the page shows and the links it hands you.
+  Those two numbers are the whole answer to "is this a read or another
+  menu": the arc is 1,537 words behind 9 links, the tracer's article
+  5,103 behind 16, and `/docs/kinds` 2,298 behind 61. The address moved
+  onto that line, where it costs a line rather than a third of the
+  entry, and the long reads group names the longest article outright
+  instead of only its index. data/doors.json stays membership plus a
+  group's own name, which is the one fact that exists nowhere else.
+- **The crawler records the links a page offers** (`8928062`). It had
+  them in memory to compute inbound and threw them away. A first
+  attempt recorded prose instead, the words outside link text, and it
+  was dropped before it shipped: an index carries a line of prose per
+  entry, so `/docs` still measured 2,040 and the number did not
+  separate a read from a menu. Links out does.
+- **`/docs/kinds` says whose order it is in, and what its letters
+  mean** (`8928062`). Twenty-six reports in the notebook's own order
+  with nothing on the page saying the order meant anything, and codes
+  ("A0 report", "M2 report") whose letters were explained only in the
+  sketch's prose. The key is in pull-nesdocs.mjs beside where codes are
+  attached, and the pull refuses a code filed under a letter it cannot
+  explain, proved by removing M and watching it stop. Naming the first
+  document of each kind was tried and taken out: it sat directly above
+  the row it named.
+- **A Japanese line that cannot break no longer takes the page with
+  it** (`f69d58a`). `/ja/docs/nes/p3-report` scrolled 37px sideways at
+  390px, from "$2000、$2001、$2003、$2004、$2005、$2006、": Chrome
+  offers no break between an ideographic comma and a dollar sign, so
+  the run is one 407px word in a 350px column. The fix is the rule
+  `.prose > h1` already carried at phone width, applied to the body,
+  and it is general because the bug is: three of the translated
+  documents carry such a run. Measured across 139 Japanese pages, one
+  overflow before and none after. The check that found it could not say
+  what it had found, because the box stays the column's width while its
+  CONTENT overflows, so `overflow()` now makes a second pass for
+  elements holding more than they can show, names the innermost, and
+  quotes the text.
+- **The notebook carries the mapper story** (`9a12f3f`, nes
+  `259e3b6`). The console model grew six cartridge boards between the
+  twelfth and the twentieth and the site said none of it: the cartridge
+  document still read as "the model knew one board, NROM". The work had
+  gone into that repository's code, tests and README, and a README is
+  not a document this site pulls. So the report was written where the
+  work is and pulled from there, with its Japanese body written here so
+  a new page would not widen the one gap the site reports. Its figures
+  are the code's rather than the README's, and running the tests to
+  count them caught the drift: tests/mmc3.rs said the cartridge
+  interrupt is held sixteen master half-steps behind the board and the
+  constant beside it is seventeen.
+- **Two deploy checks were reading files the build writes.** The deploy
+  checks at stage 1b and builds at stage 4, and docs/nes only exists
+  after the pull, so the first deploy of a pulled document that has a
+  Japanese body always failed. docs-anchors.test.ts called the shadow
+  an orphan (`44e6509`): a missing English file now fails only when
+  nothing declares the document, read out of the pull scripts' own slug
+  tables, and the test counts what it compared so a loop that skipped
+  everything cannot pass in silence. check-i18n.py then called six
+  translations dead (`b85f3cb`) because docs/nes/shelves.json was the
+  last deploy's copy: the corpus reads pull-nesdocs.mjs and
+  pull-chipdocs.mjs now, and the copy only where it exists, which also
+  made the check runnable in a fresh clone for the first time.
+- **The beta origin had no chip.** Its vhost aliased nothing, so every
+  instrument there booted with no data: the shell rendered, the prose
+  rendered, and only the thing the page is for was missing. kit.spec is
+  what noticed, and only because it refuses to measure a page with too
+  few elements on it. Ten tool pages failing there while the same pages
+  passed on the live site. `/6502/api` had the other half: a proxied
+  prefix location answers the slash-less form with a 301 onto the
+  prefix, so the reference page was the service's own. Both fixed in
+  deploy/beta.tinymachines.ai.nginx, chip files aliased and never
+  copied, for the licensing reason the apex vhost sets out.
+
+Two things this left open, both about the deploy rather than the site.
+
+**The doors print a measurement the deploy invalidates.** They bake in
+numbers from data/site-map.json, and the deploy that ships a page
+behind a door changes that page's numbers: nine moved on the day, every
+document gaining the eight words of the new report's row in the tree
+beside it. So a deploy of this kind wants `crawl-site.py` and a second
+deploy to be exactly true, which is what 1.0.262 is. Whether the deploy
+should do that itself is undecided.
+
+**A clean tree does not bump the version.** Merging a branch and
+deploying leaves the semver where it was, because the rule was written
+to stop a redeploy of the same code moving it. The service worker keys
+off the commit, so caches still purge; only the footer stands still.
