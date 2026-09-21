@@ -621,8 +621,13 @@ if (manifest) {
     console.error("check-build: no surface is marked as arrived; this check would pass on nothing.");
     process.exit(2);
   }
+  // The beta origin's own line links to the live site on every page, which is
+  // the one place that is right rather than wrong: it is a different origin
+  // telling the reader where the real one is. The line comes out before this
+  // rule reads the page, so the rule stays strict about everything else.
+  const betaBar = /<p class="beta-bar">[\s\S]*?<\/p>/g;
   for (const file of files) {
-    const body = await readFile(file, "utf8");
+    const body = (await readFile(file, "utf8")).replace(betaBar, " ");
     for (const m of moved) {
       // An <a href> only. The console and the lab legitimately FETCH their
       // chip from the other origin, and prose may name a subdomain as a fact.
