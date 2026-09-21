@@ -1,0 +1,108 @@
+# beta.tinymachines.ai -- the same tree, a different arrangement.
+#
+# INSTALLED 2026-09-20. This file is the source of truth; the copy under
+# /etc/nginx is a copy. Change it here, then reinstall, `nginx -t`, reload.
+#
+# What this is for. The site is organised by where things came from (a section
+# per repository) rather than by what a visitor came to do, and the map at
+# /style/map measured what that costs: four pages nobody links to, twenty-five
+# with one door, and eighty of a hundred and forty sitting exactly two clicks
+# out. Rearranging that on the live site means moving paths people have, so it
+# happens here first, and arrives there as additions plus redirects.
+#
+# The rule that makes this safe: ONE COPY OF EVERY FACT. This origin serves a
+# build of the same repository from the `beta` branch. No document, figure or
+# translation is copied here. What differs is structure: routes, hubs, the
+# front page, the order of things. If a page's prose needs changing, it
+# changes on the branch and lands on the live site by merge, never by being
+# written twice.
+#
+# One process behind it, on loopback, built from a worktree of that branch:
+#   127.0.0.1:6541  Next 16, the whole site
+#
+# The API is NOT duplicated. /api here proxies to the same uvicorn the live
+# site uses (127.0.0.1:6510), because the API is a published contract and a
+# second copy of it would be a second thing to keep true. The beta is about
+# arrangement, not about the machine underneath.
+#
+# Nothing here may be indexed, and it is enforced in three places rather than
+# one: X-Robots-Tag on every response, a robots.txt served from this file, and
+# the build's own noindex (TM_BETA=1). The site's canonical links still point
+# at tinymachines.ai, so even a crawler that ignored all three would be told
+# where the real page is.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name beta.tinymachines.ai;
+
+    location /.well-known/acme-challenge/ { root /var/www/html; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name beta.tinymachines.ai;
+
+    ssl_certificate     /etc/letsencrypt/live/beta.tinymachines.ai/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/beta.tinymachines.ai/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    access_log /var/log/nginx/beta.tinymachines.ai.access.log;
+    error_log  /var/log/nginx/beta.tinymachines.ai.error.log;
+
+    # Every header the origin sets is declared once, here, for the same reason
+    # the apex does it: one add_header inside a location discards every
+    # inherited one, and the 6502 vhost lost its CSP that way once.
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    # No HSTS on purpose: this host is temporary, and pinning a browser to
+    # HTTPS for a name that may stop existing is a promise about the future.
+
+    # Served from here rather than from the build, so it cannot be forgotten
+    # when the branch is rebuilt.
+    location = /robots.txt {
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        add_header Content-Type "text/plain" always;
+        return 200 "User-agent: *\nDisallow: /\n";
+    }
+
+    location /.well-known/acme-challenge/ { root /var/www/html; }
+
+    # The API is the live one. A beta of the arrangement is not a beta of the
+    # contract, and two uvicorns answering the same routes is two things to
+    # keep true.
+    location /api/ {
+        proxy_pass http://127.0.0.1:6510/;
+        proxy_set_header Host               $host;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 120s;
+    }
+
+    location /6502/api/ {
+        proxy_pass http://127.0.0.1:6502/;
+        proxy_set_header Host               $host;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 120s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:6541;
+        proxy_set_header Host               $host;
+        proxy_set_header X-Real-IP          $remote_addr;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto  $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 120s;
+    }
+}
