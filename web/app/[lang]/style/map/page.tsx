@@ -33,6 +33,8 @@ interface Page {
   words: number;
   ja: number | null;
   inbound: number;
+  /** Which pages link to it, where there are few enough to name. */
+  from?: string[];
   depth: number | null;
   listed: boolean;
   error?: string;
@@ -97,13 +99,6 @@ export default async function MapPage({ params }: { params: Promise<{ lang: Lang
   const most = Math.max(...depths.map(([, n]) => n), 1);
   const unreachable = byDepth.get(null) ?? 0;
   const docs = pages.filter(([, p]) => p.section === "docs");
-  // The one-door set is mostly the tool pages' articles, and how long they
-  // are is a fact this record holds: the first version of this page called
-  // them the longest prose on the site, which the record itself disproves
-  // (the playground's own page is longer than any of them). A superlative
-  // nobody checked, on a page whose whole subject is checking.
-  const articles = oneDoor.filter(([href]) => href.endsWith("/article"));
-  const articleWords = articles.reduce((n, [, p]) => n + p.words, 0);
   const longest = [...pages].sort((a, b) => b[1].words - a[1].words)[0];
 
   return (
@@ -175,10 +170,19 @@ export default async function MapPage({ params }: { params: Promise<{ lang: Lang
         <div className="map-find">
           <p className="map-find-h">Pages with one door: {oneDoor.length}</p>
           <p>
-            One link away from nobody finding them. {articles.length} of them are the tool
-            pages&rsquo; articles, each reachable only from the strip under its own instrument, and
-            they carry {articleWords.toLocaleString("en")} words between them. The longest single
-            page on the site is <code>{longest[0]}</code>, at {longest[1].words.toLocaleString("en")}.
+            One link away from nobody finding them, and the record names the door, which is where a
+            second one would have to go.
+          </p>
+          <ul className="map-ones">
+            {oneDoor.map(([href, p]) => (
+              <li key={href}>
+                <code>{href}</code> <span>from</span> <code>{p.from?.[0] ?? "somewhere"}</code>
+              </li>
+            ))}
+          </ul>
+          <p>
+            The longest single page on the site is <code>{longest[0]}</code>, at{" "}
+            {longest[1].words.toLocaleString("en")} words.
           </p>
         </div>
         <div className="map-find">

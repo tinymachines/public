@@ -117,10 +117,16 @@ def crawl(base: str) -> dict:
             pages[path] = row
 
     inbound: collections.Counter[str] = collections.Counter()
+    # Who links to a page, not just how many: for a page with one door, the
+    # useful fact is WHICH page that is, because that is where a second door
+    # has to go. Kept only where it is short enough to be a fact rather than
+    # a graph.
+    who: dict[str, list[str]] = collections.defaultdict(list)
     for path, row in pages.items():
         for target in row.get("links", []):
             if target in pages and target != path:
                 inbound[target] += 1
+                who[target].append(path)
 
     # Clicks from the front page, through those same visible links.
     depth = {"/": 0}
@@ -145,6 +151,7 @@ def crawl(base: str) -> dict:
             "words": row["words"],
             "ja": row["ja"],
             "inbound": inbound[path],
+            "from": sorted(who[path])[:3] if inbound[path] <= 3 else [],
             "depth": depth.get(path),
             "listed": path in listed,
         }

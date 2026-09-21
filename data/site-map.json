@@ -9,6 +9,7 @@
    "words": 848,
    "ja": 0.715,
    "inbound": 144,
+   "from": [],
    "depth": 0,
    "listed": true
   },
@@ -18,6 +19,7 @@
    "words": 381,
    "ja": 0.654,
    "inbound": 6,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -27,6 +29,7 @@
    "words": 6375,
    "ja": 0.0,
    "inbound": 7,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -36,6 +39,7 @@
    "words": 230,
    "ja": 0.775,
    "inbound": 4,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -45,6 +49,11 @@
    "words": 210,
    "ja": 0.0,
    "inbound": 3,
+   "from": [
+    "/6502/block/article",
+    "/6502/reading",
+    "/6502/tools"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -54,6 +63,10 @@
    "words": 219,
    "ja": 0.002,
    "inbound": 2,
+   "from": [
+    "/6502/block",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -63,6 +76,7 @@
    "words": 839,
    "ja": 0.003,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -72,6 +86,10 @@
    "words": 732,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/blockdiagram",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -81,6 +99,7 @@
    "words": 633,
    "ja": 0.004,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -90,6 +109,10 @@
    "words": 495,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/blueprint",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -99,6 +122,7 @@
    "words": 118,
    "ja": 0.915,
    "inbound": 10,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -108,6 +132,10 @@
    "words": 211,
    "ja": 0.82,
    "inbound": 2,
+   "from": [
+    "/6502",
+    "/build"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -117,6 +145,7 @@
    "words": 2126,
    "ja": 0.003,
    "inbound": 5,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -126,6 +155,10 @@
    "words": 1669,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/chipmap",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -135,6 +168,7 @@
    "words": 122,
    "ja": 0.5,
    "inbound": 0,
+   "from": [],
    "depth": null,
    "listed": false
   },
@@ -144,6 +178,7 @@
    "words": 981,
    "ja": 0.004,
    "inbound": 7,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -153,6 +188,10 @@
    "words": 779,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/decode",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -162,6 +201,11 @@
    "words": 1510,
    "ja": 0.002,
    "inbound": 3,
+   "from": [
+    "/6502/designer/article",
+    "/6502/reading",
+    "/6502/tracer/article"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -171,6 +215,10 @@
    "words": 1261,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/designer",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -180,6 +228,7 @@
    "words": 721,
    "ja": 0.003,
    "inbound": 6,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -189,6 +238,10 @@
    "words": 574,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/diegraph",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -198,6 +251,7 @@
    "words": 1292,
    "ja": 0.003,
    "inbound": 6,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -207,6 +261,10 @@
    "words": 1072,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/exploded",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -216,6 +274,7 @@
    "words": 1086,
    "ja": 0.0,
    "inbound": 6,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -225,6 +284,7 @@
    "words": 478,
    "ja": 0.785,
    "inbound": 7,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -234,6 +294,7 @@
    "words": 1123,
    "ja": 0.003,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -243,6 +304,10 @@
    "words": 918,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/halfshot",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -252,6 +317,7 @@
    "words": 1011,
    "ja": 0.001,
    "inbound": 6,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -261,6 +327,10 @@
    "words": 538,
    "ja": 0.371,
    "inbound": 2,
+   "from": [
+    "/6502",
+    "/read"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -270,6 +340,7 @@
    "words": 353,
    "ja": 0.842,
    "inbound": 9,
+   "from": [],
    "depth": 1,
    "listed": false
   },
@@ -279,6 +350,7 @@
    "words": 805,
    "ja": 0.004,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -288,6 +360,10 @@
    "words": 644,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/pinout",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -297,6 +373,7 @@
    "words": 1253,
    "ja": 0.0,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -306,6 +383,10 @@
    "words": 1261,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/primer",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -315,6 +396,7 @@
    "words": 527,
    "ja": 0.002,
    "inbound": 5,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -324,6 +406,10 @@
    "words": 467,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/programs",
+    "/6502/reading"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -333,6 +419,10 @@
    "words": 797,
    "ja": 0.004,
    "inbound": 2,
+   "from": [
+    "/",
+    "/read"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -342,6 +432,7 @@
    "words": 1399,
    "ja": 0.004,
    "inbound": 11,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -351,6 +442,10 @@
    "words": 1155,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/reading",
+    "/6502/schematic"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -360,6 +455,9 @@
    "words": 397,
    "ja": 0.0,
    "inbound": 1,
+   "from": [
+    "/6502/tools"
+   ],
    "depth": 3,
    "listed": true
   },
@@ -369,6 +467,7 @@
    "words": 1949,
    "ja": 0.002,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -378,6 +477,10 @@
    "words": 1823,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/reading",
+    "/6502/talk"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -387,6 +490,7 @@
    "words": 926,
    "ja": 0.004,
    "inbound": 6,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -396,6 +500,10 @@
    "words": 758,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/reading",
+    "/6502/timing"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -405,6 +513,9 @@
    "words": 273,
    "ja": 0.813,
    "inbound": 1,
+   "from": [
+    "/6502"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -414,6 +525,7 @@
    "words": 881,
    "ja": 0.004,
    "inbound": 7,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -423,6 +535,10 @@
    "words": 695,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/6502/reading",
+    "/6502/trace"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -432,6 +548,7 @@
    "words": 6528,
    "ja": 0.002,
    "inbound": 9,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -441,6 +558,10 @@
    "words": 5103,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/6502/reading",
+    "/6502/tracer"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -450,6 +571,7 @@
    "words": 72,
    "ja": 0.006,
    "inbound": 0,
+   "from": [],
    "depth": null,
    "listed": false
   },
@@ -459,6 +581,9 @@
    "words": 280,
    "ja": 0.791,
    "inbound": 1,
+   "from": [
+    "/"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -468,6 +593,10 @@
    "words": 2487,
    "ja": 0.911,
    "inbound": 2,
+   "from": [
+    "/",
+    "/read"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -477,6 +606,11 @@
    "words": 969,
    "ja": 0.828,
    "inbound": 3,
+   "from": [
+    "/6502",
+    "/docs",
+    "/docs/6502/verification"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -486,6 +620,10 @@
    "words": 2402,
    "ja": 0.594,
    "inbound": 2,
+   "from": [
+    "/6502/learn",
+    "/docs"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -495,6 +633,11 @@
    "words": 1295,
    "ja": 0.701,
    "inbound": 3,
+   "from": [
+    "/6502",
+    "/6502/cart",
+    "/6502/learn"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -504,6 +647,7 @@
    "words": 1326,
    "ja": 0.84,
    "inbound": 6,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -513,6 +657,10 @@
    "words": 3067,
    "ja": 0.785,
    "inbound": 2,
+   "from": [
+    "/6502/learn",
+    "/docs"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -522,6 +670,10 @@
    "words": 2460,
    "ja": 0.863,
    "inbound": 2,
+   "from": [
+    "/6502/learn",
+    "/docs"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -531,6 +683,11 @@
    "words": 707,
    "ja": 0.693,
    "inbound": 3,
+   "from": [
+    "/6502/learn",
+    "/build",
+    "/docs"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -540,6 +697,7 @@
    "words": 1332,
    "ja": 0.729,
    "inbound": 6,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -549,6 +707,7 @@
    "words": 776,
    "ja": 0.743,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -558,6 +717,7 @@
    "words": 1688,
    "ja": 0.883,
    "inbound": 5,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -567,6 +727,11 @@
    "words": 1299,
    "ja": 0.762,
    "inbound": 3,
+   "from": [
+    "/6502/learn",
+    "/build",
+    "/docs"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -576,6 +741,10 @@
    "words": 1157,
    "ja": 0.156,
    "inbound": 2,
+   "from": [
+    "/6502/learn",
+    "/docs/6502/what-the-engine-side-needs"
+   ],
    "depth": 3,
    "listed": true
   },
@@ -585,6 +754,11 @@
    "words": 597,
    "ja": 0.807,
    "inbound": 3,
+   "from": [
+    "/6502/learn",
+    "/docs",
+    "/docs/6502/the-api"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -594,6 +768,7 @@
    "words": 3530,
    "ja": 0.859,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -603,6 +778,10 @@
    "words": 1607,
    "ja": 0.757,
    "inbound": 2,
+   "from": [
+    "/6502/learn",
+    "/docs/6502/two-ways-in"
+   ],
    "depth": 3,
    "listed": true
   },
@@ -612,6 +791,11 @@
    "words": 566,
    "ja": 0.912,
    "inbound": 3,
+   "from": [
+    "/docs",
+    "/docs/nes",
+    "/docs/words"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -621,6 +805,11 @@
    "words": 2867,
    "ja": 0.762,
    "inbound": 3,
+   "from": [
+    "/docs/cart",
+    "/docs/kinds",
+    "/nes/cart"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -630,6 +819,11 @@
    "words": 2773,
    "ja": 0.829,
    "inbound": 3,
+   "from": [
+    "/docs/cart",
+    "/docs/kinds",
+    "/nes/cart"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -639,6 +833,11 @@
    "words": 931,
    "ja": 0.882,
    "inbound": 3,
+   "from": [
+    "/docs/cart",
+    "/docs/kinds",
+    "/nes/cart"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -648,6 +847,11 @@
    "words": 848,
    "ja": 0.769,
    "inbound": 3,
+   "from": [
+    "/docs/cart",
+    "/docs/kinds",
+    "/nes/cart"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -657,6 +861,7 @@
    "words": 1529,
    "ja": 0.951,
    "inbound": 4,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -666,6 +871,9 @@
    "words": 764,
    "ja": 0.899,
    "inbound": 1,
+   "from": [
+    "/docs"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -675,6 +883,7 @@
    "words": 835,
    "ja": 0.925,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -684,6 +893,10 @@
    "words": 957,
    "ja": 0.783,
    "inbound": 2,
+   "from": [
+    "/docs",
+    "/docs/hotbits"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -693,6 +906,10 @@
    "words": 936,
    "ja": 0.885,
    "inbound": 2,
+   "from": [
+    "/docs",
+    "/docs/hotbits"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -702,6 +919,10 @@
    "words": 2158,
    "ja": 0.917,
    "inbound": 2,
+   "from": [
+    "/docs/nes",
+    "/read"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -711,6 +932,7 @@
    "words": 2339,
    "ja": 0.944,
    "inbound": 7,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -720,6 +942,7 @@
    "words": 997,
    "ja": 0.822,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -729,6 +952,7 @@
    "words": 891,
    "ja": 0.842,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -738,6 +962,11 @@
    "words": 1092,
    "ja": 0.905,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -747,6 +976,11 @@
    "words": 3398,
    "ja": 0.752,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -756,6 +990,11 @@
    "words": 2587,
    "ja": 0.856,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -765,6 +1004,7 @@
    "words": 4526,
    "ja": 0.826,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -774,6 +1014,7 @@
    "words": 918,
    "ja": 0.722,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -783,6 +1024,7 @@
    "words": 4461,
    "ja": 0.815,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -792,6 +1034,11 @@
    "words": 2902,
    "ja": 0.815,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -801,6 +1048,11 @@
    "words": 2859,
    "ja": 0.771,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -810,6 +1062,7 @@
    "words": 2125,
    "ja": 0.902,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -819,6 +1072,11 @@
    "words": 1868,
    "ja": 0.758,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -828,6 +1086,11 @@
    "words": 1358,
    "ja": 0.729,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -837,6 +1100,7 @@
    "words": 3049,
    "ja": 0.693,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -846,6 +1110,7 @@
    "words": 9007,
    "ja": 0.83,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -855,6 +1120,7 @@
    "words": 2643,
    "ja": 0.859,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -864,6 +1130,7 @@
    "words": 1707,
    "ja": 0.748,
    "inbound": 5,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -873,6 +1140,11 @@
    "words": 1219,
    "ja": 0.762,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/signal"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -882,6 +1154,7 @@
    "words": 1579,
    "ja": 0.703,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -891,6 +1164,11 @@
    "words": 1638,
    "ja": 0.828,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/signal"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -900,6 +1178,7 @@
    "words": 1057,
    "ja": 0.824,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -909,6 +1188,7 @@
    "words": 3171,
    "ja": 0.848,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -918,6 +1198,11 @@
    "words": 881,
    "ja": 0.868,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/signal"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -927,6 +1212,7 @@
    "words": 3839,
    "ja": 0.874,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -936,6 +1222,7 @@
    "words": 1098,
    "ja": 0.867,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -945,6 +1232,7 @@
    "words": 916,
    "ja": 0.819,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -954,6 +1242,7 @@
    "words": 1248,
    "ja": 0.832,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -963,6 +1252,7 @@
    "words": 5259,
    "ja": 0.829,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -972,6 +1262,7 @@
    "words": 1169,
    "ja": 0.829,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -981,6 +1272,7 @@
    "words": 2818,
    "ja": 0.79,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -990,6 +1282,11 @@
    "words": 1033,
    "ja": 0.8,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/console"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -999,6 +1296,11 @@
    "words": 2267,
    "ja": 0.839,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/console"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1008,6 +1310,11 @@
    "words": 1381,
    "ja": 0.798,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/console"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1017,6 +1324,7 @@
    "words": 1504,
    "ja": 0.801,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1026,6 +1334,11 @@
    "words": 1280,
    "ja": 0.794,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/console"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1035,6 +1348,11 @@
    "words": 1579,
    "ja": 0.813,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/console"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1044,6 +1362,7 @@
    "words": 785,
    "ja": 0.854,
    "inbound": 5,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1053,6 +1372,7 @@
    "words": 3242,
    "ja": 0.782,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1062,6 +1382,7 @@
    "words": 5057,
    "ja": 0.837,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1071,6 +1392,7 @@
    "words": 1124,
    "ja": 0.826,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1080,6 +1402,7 @@
    "words": 1498,
    "ja": 0.864,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1089,6 +1412,7 @@
    "words": 1497,
    "ja": 0.891,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1098,6 +1422,11 @@
    "words": 1297,
    "ja": 0.787,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/chips"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1107,6 +1436,7 @@
    "words": 4207,
    "ja": 0.853,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1116,6 +1446,11 @@
    "words": 1262,
    "ja": 0.636,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/bench"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1125,6 +1460,11 @@
    "words": 985,
    "ja": 0.834,
    "inbound": 3,
+   "from": [
+    "/docs/kinds",
+    "/docs/nes",
+    "/nes/signal"
+   ],
    "depth": 2,
    "listed": true
   },
@@ -1134,6 +1474,7 @@
    "words": 1978,
    "ja": 0.739,
    "inbound": 4,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1143,6 +1484,7 @@
    "words": 2791,
    "ja": 0.831,
    "inbound": 5,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1152,6 +1494,7 @@
    "words": 1386,
    "ja": 0.9,
    "inbound": 55,
+   "from": [],
    "depth": 2,
    "listed": true
   },
@@ -1161,6 +1504,7 @@
    "words": 270,
    "ja": 0.772,
    "inbound": 7,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1170,6 +1514,7 @@
    "words": 39,
    "ja": 0.654,
    "inbound": 6,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1179,6 +1524,10 @@
    "words": 288,
    "ja": 0.832,
    "inbound": 2,
+   "from": [
+    "/hotbits",
+    "/watch"
+   ],
    "depth": 2,
    "listed": false
   },
@@ -1188,6 +1537,7 @@
    "words": 578,
    "ja": 0.832,
    "inbound": 4,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1197,6 +1547,10 @@
    "words": 1820,
    "ja": 0.39,
    "inbound": 2,
+   "from": [
+    "/",
+    "/nes"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1206,6 +1560,11 @@
    "words": 257,
    "ja": 0.24,
    "inbound": 3,
+   "from": [
+    "/",
+    "/build",
+    "/nes"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1215,6 +1574,7 @@
    "words": 2348,
    "ja": 0.721,
    "inbound": 4,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1224,6 +1584,11 @@
    "words": 2426,
    "ja": 0.74,
    "inbound": 3,
+   "from": [
+    "/",
+    "/docs/console-arc",
+    "/nes"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1233,6 +1598,11 @@
    "words": 8248,
    "ja": 0.547,
    "inbound": 3,
+   "from": [
+    "/",
+    "/nes",
+    "/watch"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1242,6 +1612,7 @@
    "words": 1884,
    "ja": 0.672,
    "inbound": 5,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1251,6 +1622,11 @@
    "words": 358,
    "ja": 0.841,
    "inbound": 3,
+   "from": [
+    "/",
+    "/nes/signal",
+    "/watch"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1260,6 +1636,7 @@
    "words": 926,
    "ja": 0.875,
    "inbound": 5,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1269,6 +1646,9 @@
    "words": 327,
    "ja": 0.744,
    "inbound": 1,
+   "from": [
+    "/"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1278,6 +1658,10 @@
    "words": 2380,
    "ja": 0.001,
    "inbound": 2,
+   "from": [
+    "/",
+    "/build"
+   ],
    "depth": 1,
    "listed": true
   },
@@ -1287,6 +1671,10 @@
    "words": 3786,
    "ja": 0.0,
    "inbound": 2,
+   "from": [
+    "/",
+    "/style"
+   ],
    "depth": 1,
    "listed": false
   },
@@ -1296,6 +1684,7 @@
    "words": 108,
    "ja": 0.844,
    "inbound": 0,
+   "from": [],
    "depth": null,
    "listed": false
   },
@@ -1305,6 +1694,9 @@
    "words": 372,
    "ja": 0.504,
    "inbound": 1,
+   "from": [
+    "/"
+   ],
    "depth": 1,
    "listed": true
   }

@@ -219,3 +219,20 @@
     display: none;
   }
 }
+
+/* The one-door pages, each with the page that is its only door. A list of
+   pairs, so it is a list: the arrow is the word "from" rather than a glyph,
+   because this is read aloud more often than it is scanned. */
+.map-ones {
+  list-style: none;
+  margin: calc(var(--u) * 2) 0 calc(var(--u) * 3);
+  padding: 0;
+  display: grid;
+  gap: calc(var(--u) * 1);
+  font-size: var(--text-fine);
+}
+
+.map-ones span {
+  color: var(--color-ink-faint);
+  font-family: var(--font-sans);
+}
