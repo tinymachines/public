@@ -36,30 +36,42 @@ const OUT = path.join(import.meta.dirname, "..", "public", "sw.js");
  * .git/HEAD then fails, so the worker was stamped 'unversioned' in the beta
  * worktree and would have shipped a service worker no deploy could replace.
  * Same shape the API's provenance reader has to handle. */
-async function gitDir() {
+async function gitDirs() {
   const dot = path.join(ROOT, ".git");
   try {
     const stat = await lstat(dot);
-    if (stat.isDirectory()) return dot;
+    if (stat.isDirectory()) return { head: dot, refs: dot };
     const said = (await readFile(dot, "utf8")).trim();
     const m = /^gitdir:\s*(.+)$/.exec(said);
-    return m ? path.resolve(ROOT, m[1]) : dot;
+    if (!m) return { head: dot, refs: dot };
+    const head = path.resolve(ROOT, m[1]);
+    // A worktree keeps its own HEAD and shares everything else. refs/heads
+    // lives in the COMMON directory, which the worktree names in a file
+    // beside its HEAD; reading the ref from the worktree's own folder finds
+    // nothing, which is how the first version of this still came out
+    // unversioned after it learned to follow the gitdir line.
+    try {
+      const common = (await readFile(path.join(head, "commondir"), "utf8")).trim();
+      return { head, refs: path.resolve(head, common) };
+    } catch {
+      return { head, refs: head };
+    }
   } catch {
-    return dot;
+    return { head: dot, refs: dot };
   }
 }
 
 async function commit() {
   try {
-    const git = await gitDir();
-    const head = (await readFile(path.join(git, "HEAD"), "utf8")).trim();
+    const git = await gitDirs();
+    const head = (await readFile(path.join(git.head, "HEAD"), "utf8")).trim();
     if (!head.startsWith("ref:")) return head.slice(0, 12);
     const ref = head.slice(4).trim();
     try {
-      return (await readFile(path.join(await gitDir(), ref), "utf8")).trim().slice(0, 12);
+      return (await readFile(path.join(git.refs, ref), "utf8")).trim().slice(0, 12);
     } catch {
       // A packed ref: the loose file does not exist after `git gc`.
-      const packed = await readFile(path.join(await gitDir(), "packed-refs"), "utf8");
+      const packed = await readFile(path.join(git.refs, "packed-refs"), "utf8");
       const line = packed.split("\n").find((l) => l.endsWith(" " + ref));
       return line ? line.slice(0, 12) : null;
     }
