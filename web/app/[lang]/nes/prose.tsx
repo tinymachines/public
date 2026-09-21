@@ -26,6 +26,7 @@ export const PROSE = {
     partsH: "Every part of the console has its own shelf",
     parts: [
       { href: "/nes/play", name: "Play", what: "the console running in your browser, on a cartridge from your own disk" },
+      { href: "/nes/playground", name: "The NES at human speed", what: "the same console slowed down until you can watch it draw a frame, send it down the wire and read a pad" },
       { href: "/nes/chips", name: "The chips", what: "the contract, the 2A03 and the 2C02 at their switches, and the fast chips built from them" },
       { href: "/nes/signal", name: "The signal", what: "the composite video between the console and the television, with a live bench and a real console read off the scope" },
       { href: "/nes/console", name: "The console", what: "both chips on one board, then its picture, its sound and the window it plays in" },
@@ -706,6 +707,7 @@ export const PROSE = {
     partsH: "コンソールの各部分には、それぞれの棚がある",
     parts: [
       { href: "/ja/nes/play", name: "遊ぶ", what: "ブラウザの中で動くコンソール。カートリッジはあなた自身のディスクから" },
+      { href: "/ja/nes/playground", name: "人の速さで見るファミコン", what: "同じコンソールを、フレームを描き、線に送り出し、パッドを読むところが目で追えるまで遅くしたもの" },
       { href: "/ja/nes/chips", name: "チップ", what: "規約、スイッチのレベルの 2A03 と 2C02、そしてそこから組んだ高速チップ" },
       { href: "/ja/nes/signal", name: "信号", what: "コンソールとテレビの間のコンポジット映像。動くベンチと、スコープで読んだ実機つき" },
       { href: "/ja/nes/console", name: "コンソール", what: "一枚の基板に載った二つのチップ、そしてその絵、音、遊ぶための窓" },

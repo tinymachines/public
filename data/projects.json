@@ -98,6 +98,19 @@
      "prerendered": true
     },
     {
+     "key": "reading",
+     "name": "The long reads",
+     "what": "Every tool's prose as an article, listed longest first: what each instrument is doing, written to be read end to end rather than operated.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/6502/reading",
+     "lands_at": "/6502/reading",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
      "key": "api",
      "name": "The 6502 API",
      "what": "A transistor-level MOS 6502 over HTTP, one half-cycle at a time. The reference checks itself against the running service.",

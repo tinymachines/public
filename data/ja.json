@@ -372,5 +372,8 @@
  "The raster": "ラスタ",
  "One pixel per bit, in order. The eye is very good at finding periodicity, and a stream with any is hard to look at without seeing it.": "1 ビットを 1 画素として、順に並べたものです。目は周期性を見つけるのがとても得意で、周期のある流れは、見れば気づかずにいるほうが難しくなります。",
  "Phase space": "位相空間",
- "This one plots the measurements rather than the bits themselves. Each point is one window of output placed by its own bias, entropy and serial correlation, so the cloud is the source describing itself over the last day rather than a single snapshot.": "これはビットそのものではなく、測定値を打った図です。各点は出力の一区間で、その区間自身の偏り、エントロピー、系列相関で置かれます。つまりこの雲は、一枚の瞬間写真ではなく、この一日の線源が自分を語ったものです。"
+ "This one plots the measurements rather than the bits themselves. Each point is one window of output placed by its own bias, entropy and serial correlation, so the cloud is the source describing itself over the last day rather than a single snapshot.": "これはビットそのものではなく、測定値を打った図です。各点は出力の一区間で、その区間自身の偏り、エントロピー、系列相関で置かれます。つまりこの雲は、一枚の瞬間写真ではなく、この一日の線源が自分を語ったものです。",
+ "The long reads": "長めの読みもの",
+ "Every tool's prose as an article: what the instrument above it is doing, written to be read end to end.": "各ツールの文章を記事として。上にある計器が何をしているのかを、通して読めるように書いたものです。",
+ "Every tool's prose as an article, listed longest first: what each instrument is doing, written to be read end to end rather than operated.": "各ツールの文章を記事にして、長いものから並べたもの。計器を操作するためではなく、通して読むために書かれた説明です。"
 }

@@ -61,6 +61,15 @@ const PROSE = {
         documented route is asked whether it still answers.
       </>
     ),
+    seeTitle: "The bytes, drawn",
+    see: (href: string) => (
+      <>
+        <Link href={href}>Four ways of looking at the same decay</Link>: the
+        bytes as a field, as a return map, as a raster and as their own
+        measurements. None of them is a summary. A flaw in this source would
+        be visible there rather than reported.
+      </>
+    ),
   },
   ja: {
     how: (
@@ -81,6 +90,12 @@ const PROSE = {
     ref: (href: string) => (
       <>
         <Link href={href}>API リファレンス</Link>は、ページを開くたびに装置のスキーマから読まれ、文書化されたルートはどれも、まだ応答するかを尋ねられる。
+      </>
+    ),
+    seeTitle: "描かれたバイト",
+    see: (href: string) => (
+      <>
+        <Link href={href}>同じ崩壊を四通りに見たもの</Link>。バイトを場として、回帰図として、ラスタとして、そしてバイト自身の測定値として見ます。どれも要約ではありません。この線源に欠陥があれば、報告される前に目に見えます。
       </>
     ),
   },
@@ -143,6 +158,13 @@ export default async function HotbitsPage({ params }: { params: Promise<{ lang: 
 
         <h2>{S.refTitle}</h2>
         <p>{S.ref(localize(lang, "/hotbits/api"))}</p>
+
+        {/* The plots had no door at all until 2026-09-21: finished, public,
+            and reachable only by typing the address (/style/map found it).
+            They belong here, beside the reference, because this page is where
+            a reader asks what the instrument is doing. */}
+        <h2>{S.seeTitle}</h2>
+        <p>{S.see(localize(lang, "/hotbits/space"))}</p>
       </div>
     </Shell>
   );

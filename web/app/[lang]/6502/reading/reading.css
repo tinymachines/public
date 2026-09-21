@@ -1,0 +1,48 @@
+/* The long reads. A list of articles is a list, not a grid of cards: each
+   one is a title with its lede under it, the way a contents page sets them,
+   and the rule between them is the kit's own. */
+
+.reads {
+  list-style: none;
+  margin: calc(var(--u) * 6) 0 0;
+  padding: 0;
+}
+
+.read {
+  padding: calc(var(--u) * 4) 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+.read:first-child {
+  border-top: 0;
+}
+
+.read h2 {
+  margin: calc(var(--u) * 1) 0 calc(var(--u) * 1.5);
+  font-size: var(--text-h3);
+}
+
+.read-eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+.read-lede {
+  margin: 0 0 calc(var(--u) * 2);
+  max-width: 68ch;
+  color: var(--color-ink-muted);
+}
+
+.read-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 3);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  color: var(--color-ink-faint);
+}

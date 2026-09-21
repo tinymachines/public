@@ -36,6 +36,7 @@ const STATIC = [
   "/6502/cart",
   "/6502/tools",
   "/6502/explorer",
+  "/6502/reading",
   "/6502/lab",
   "/6502/games",
   "/6502/builders",
