@@ -17,7 +17,7 @@
  * when Next copies it.
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { lstat, readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = path.join(import.meta.dirname, "..", "..");
@@ -30,16 +30,36 @@ const OUT = path.join(import.meta.dirname, "..", "public", "sw.js");
  * which need not have git on it. api/provenance.py reads it the same way for
  * the same reason.
  */
+/** The .git for this checkout, which is a FILE in a worktree, not a folder.
+ *
+ * `git worktree add` writes a .git file holding "gitdir: <path>", and reading
+ * .git/HEAD then fails, so the worker was stamped 'unversioned' in the beta
+ * worktree and would have shipped a service worker no deploy could replace.
+ * Same shape the API's provenance reader has to handle. */
+async function gitDir() {
+  const dot = path.join(ROOT, ".git");
+  try {
+    const stat = await lstat(dot);
+    if (stat.isDirectory()) return dot;
+    const said = (await readFile(dot, "utf8")).trim();
+    const m = /^gitdir:\s*(.+)$/.exec(said);
+    return m ? path.resolve(ROOT, m[1]) : dot;
+  } catch {
+    return dot;
+  }
+}
+
 async function commit() {
   try {
-    const head = (await readFile(path.join(ROOT, ".git", "HEAD"), "utf8")).trim();
+    const git = await gitDir();
+    const head = (await readFile(path.join(git, "HEAD"), "utf8")).trim();
     if (!head.startsWith("ref:")) return head.slice(0, 12);
     const ref = head.slice(4).trim();
     try {
-      return (await readFile(path.join(ROOT, ".git", ref), "utf8")).trim().slice(0, 12);
+      return (await readFile(path.join(await gitDir(), ref), "utf8")).trim().slice(0, 12);
     } catch {
       // A packed ref: the loose file does not exist after `git gc`.
-      const packed = await readFile(path.join(ROOT, ".git", "packed-refs"), "utf8");
+      const packed = await readFile(path.join(await gitDir(), "packed-refs"), "utf8");
       const line = packed.split("\n").find((l) => l.endsWith(" " + ref));
       return line ? line.slice(0, 12) : null;
     }
