@@ -97,6 +97,14 @@ export default async function MapPage({ params }: { params: Promise<{ lang: Lang
   const most = Math.max(...depths.map(([, n]) => n), 1);
   const unreachable = byDepth.get(null) ?? 0;
   const docs = pages.filter(([, p]) => p.section === "docs");
+  // The one-door set is mostly the tool pages' articles, and how long they
+  // are is a fact this record holds: the first version of this page called
+  // them the longest prose on the site, which the record itself disproves
+  // (the playground's own page is longer than any of them). A superlative
+  // nobody checked, on a page whose whole subject is checking.
+  const articles = oneDoor.filter(([href]) => href.endsWith("/article"));
+  const articleWords = articles.reduce((n, [, p]) => n + p.words, 0);
+  const longest = [...pages].sort((a, b) => b[1].words - a[1].words)[0];
 
   return (
     <Shell lang={lang} die="MAP" title="The visitor's map">
@@ -167,9 +175,10 @@ export default async function MapPage({ params }: { params: Promise<{ lang: Lang
         <div className="map-find">
           <p className="map-find-h">Pages with one door: {oneDoor.length}</p>
           <p>
-            One link away from nobody finding them. The tool pages&rsquo; articles are most of this
-            list, each reachable only from the strip under its own instrument, and they are the
-            longest prose the site carries.
+            One link away from nobody finding them. {articles.length} of them are the tool
+            pages&rsquo; articles, each reachable only from the strip under its own instrument, and
+            they carry {articleWords.toLocaleString("en")} words between them. The longest single
+            page on the site is <code>{longest[0]}</code>, at {longest[1].words.toLocaleString("en")}.
           </p>
         </div>
         <div className="map-find">
