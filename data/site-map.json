@@ -1,23 +1,23 @@
 {
  "_": "Every page and how a reader reaches it, counted by scripts/crawl-site.py. Links are the ones a reader can see: the site's nav, header and footer come out first.",
  "origin": "https://tinymachines.ai",
- "crawled": "2026-09-20",
+ "crawled": "2026-09-21",
  "pages": {
   "/": {
    "title": "tinymachines",
    "section": "front",
-   "words": 729,
-   "ja": 0.677,
-   "inbound": 139,
+   "words": 848,
+   "ja": 0.715,
+   "inbound": 144,
    "depth": 0,
    "listed": true
   },
   "/6502": {
    "title": "6502",
    "section": "6502",
-   "words": 351,
-   "ja": 0.651,
-   "inbound": 5,
+   "words": 381,
+   "ja": 0.654,
+   "inbound": 6,
    "depth": 1,
    "listed": true
   },
@@ -26,7 +26,7 @@
    "section": "6502",
    "words": 6375,
    "ja": 0.0,
-   "inbound": 6,
+   "inbound": 7,
    "depth": 1,
    "listed": true
   },
@@ -35,7 +35,7 @@
    "section": "6502",
    "words": 230,
    "ja": 0.775,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 1,
    "listed": true
   },
@@ -44,8 +44,8 @@
    "section": "6502",
    "words": 210,
    "ja": 0.0,
-   "inbound": 2,
-   "depth": 3,
+   "inbound": 3,
+   "depth": 2,
    "listed": true
   },
   "/6502/block/article": {
@@ -53,8 +53,8 @@
    "section": "6502",
    "words": 219,
    "ja": 0.002,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/blockdiagram": {
@@ -62,8 +62,8 @@
    "section": "6502",
    "words": 839,
    "ja": 0.003,
-   "inbound": 3,
-   "depth": 3,
+   "inbound": 4,
+   "depth": 2,
    "listed": true
   },
   "/6502/blockdiagram/article": {
@@ -71,8 +71,8 @@
    "section": "6502",
    "words": 732,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/blueprint": {
@@ -80,8 +80,8 @@
    "section": "6502",
    "words": 633,
    "ja": 0.004,
-   "inbound": 3,
-   "depth": 3,
+   "inbound": 4,
+   "depth": 2,
    "listed": true
   },
   "/6502/blueprint/article": {
@@ -89,8 +89,8 @@
    "section": "6502",
    "words": 495,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/builders": {
@@ -98,7 +98,7 @@
    "section": "6502",
    "words": 118,
    "ja": 0.915,
-   "inbound": 9,
+   "inbound": 10,
    "depth": 1,
    "listed": true
   },
@@ -107,7 +107,7 @@
    "section": "6502",
    "words": 211,
    "ja": 0.82,
-   "inbound": 1,
+   "inbound": 2,
    "depth": 2,
    "listed": true
   },
@@ -116,7 +116,7 @@
    "section": "6502",
    "words": 2126,
    "ja": 0.003,
-   "inbound": 4,
+   "inbound": 5,
    "depth": 2,
    "listed": true
   },
@@ -125,8 +125,8 @@
    "section": "6502",
    "words": 1669,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 3,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/consolev2": {
@@ -143,8 +143,8 @@
    "section": "6502",
    "words": 981,
    "ja": 0.004,
-   "inbound": 6,
-   "depth": 3,
+   "inbound": 7,
+   "depth": 2,
    "listed": true
   },
   "/6502/decode/article": {
@@ -152,8 +152,8 @@
    "section": "6502",
    "words": 779,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/designer": {
@@ -161,8 +161,8 @@
    "section": "6502",
    "words": 1510,
    "ja": 0.002,
-   "inbound": 2,
-   "depth": 4,
+   "inbound": 3,
+   "depth": 2,
    "listed": true
   },
   "/6502/designer/article": {
@@ -170,8 +170,8 @@
    "section": "6502",
    "words": 1261,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 5,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/diegraph": {
@@ -179,8 +179,8 @@
    "section": "6502",
    "words": 721,
    "ja": 0.003,
-   "inbound": 5,
-   "depth": 3,
+   "inbound": 6,
+   "depth": 2,
    "listed": true
   },
   "/6502/diegraph/article": {
@@ -188,8 +188,8 @@
    "section": "6502",
    "words": 574,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/exploded": {
@@ -197,7 +197,7 @@
    "section": "6502",
    "words": 1292,
    "ja": 0.003,
-   "inbound": 5,
+   "inbound": 6,
    "depth": 2,
    "listed": true
   },
@@ -206,8 +206,8 @@
    "section": "6502",
    "words": 1072,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 3,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/explorer": {
@@ -215,7 +215,7 @@
    "section": "6502",
    "words": 1086,
    "ja": 0.0,
-   "inbound": 5,
+   "inbound": 6,
    "depth": 1,
    "listed": true
   },
@@ -224,7 +224,7 @@
    "section": "6502",
    "words": 478,
    "ja": 0.785,
-   "inbound": 6,
+   "inbound": 7,
    "depth": 1,
    "listed": true
   },
@@ -233,8 +233,8 @@
    "section": "6502",
    "words": 1123,
    "ja": 0.003,
-   "inbound": 3,
-   "depth": 3,
+   "inbound": 4,
+   "depth": 2,
    "listed": true
   },
   "/6502/halfshot/article": {
@@ -242,8 +242,8 @@
    "section": "6502",
    "words": 918,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/lab": {
@@ -251,7 +251,7 @@
    "section": "6502",
    "words": 1011,
    "ja": 0.001,
-   "inbound": 5,
+   "inbound": 6,
    "depth": 1,
    "listed": true
   },
@@ -260,7 +260,7 @@
    "section": "6502",
    "words": 538,
    "ja": 0.371,
-   "inbound": 1,
+   "inbound": 2,
    "depth": 2,
    "listed": true
   },
@@ -278,8 +278,8 @@
    "section": "6502",
    "words": 805,
    "ja": 0.004,
-   "inbound": 3,
-   "depth": 3,
+   "inbound": 4,
+   "depth": 2,
    "listed": true
   },
   "/6502/pinout/article": {
@@ -287,8 +287,8 @@
    "section": "6502",
    "words": 644,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/primer": {
@@ -296,7 +296,7 @@
    "section": "6502",
    "words": 1253,
    "ja": 0.0,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -305,8 +305,8 @@
    "section": "6502",
    "words": 1261,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 3,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/programs": {
@@ -314,7 +314,7 @@
    "section": "6502",
    "words": 527,
    "ja": 0.002,
-   "inbound": 3,
+   "inbound": 5,
    "depth": 2,
    "listed": true
   },
@@ -323,8 +323,17 @@
    "section": "6502",
    "words": 467,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 3,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
+  "/6502/reading": {
+   "title": "The long reads",
+   "section": "6502",
+   "words": 797,
+   "ja": 0.004,
+   "inbound": 2,
+   "depth": 1,
    "listed": true
   },
   "/6502/schematic": {
@@ -332,8 +341,8 @@
    "section": "6502",
    "words": 1399,
    "ja": 0.004,
-   "inbound": 10,
-   "depth": 3,
+   "inbound": 11,
+   "depth": 2,
    "listed": true
   },
   "/6502/schematic/article": {
@@ -341,8 +350,8 @@
    "section": "6502",
    "words": 1155,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/swarm": {
@@ -359,8 +368,8 @@
    "section": "6502",
    "words": 1949,
    "ja": 0.002,
-   "inbound": 3,
-   "depth": 5,
+   "inbound": 4,
+   "depth": 2,
    "listed": true
   },
   "/6502/talk/article": {
@@ -368,8 +377,8 @@
    "section": "6502",
    "words": 1823,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 6,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/timing": {
@@ -377,8 +386,8 @@
    "section": "6502",
    "words": 926,
    "ja": 0.004,
-   "inbound": 5,
-   "depth": 3,
+   "inbound": 6,
+   "depth": 2,
    "listed": true
   },
   "/6502/timing/article": {
@@ -386,8 +395,8 @@
    "section": "6502",
    "words": 758,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 4,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/tools": {
@@ -404,7 +413,7 @@
    "section": "6502",
    "words": 881,
    "ja": 0.004,
-   "inbound": 6,
+   "inbound": 7,
    "depth": 2,
    "listed": true
   },
@@ -413,8 +422,8 @@
    "section": "6502",
    "words": 695,
    "ja": 0.001,
-   "inbound": 1,
-   "depth": 3,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/6502/tracer": {
@@ -422,7 +431,7 @@
    "section": "6502",
    "words": 6528,
    "ja": 0.002,
-   "inbound": 7,
+   "inbound": 9,
    "depth": 2,
    "listed": true
   },
@@ -431,8 +440,8 @@
    "section": "6502",
    "words": 5103,
    "ja": 0.0,
-   "inbound": 1,
-   "depth": 3,
+   "inbound": 2,
+   "depth": 2,
    "listed": true
   },
   "/admin": {
@@ -444,12 +453,21 @@
    "depth": null,
    "listed": false
   },
+  "/build": {
+   "title": "Build on it",
+   "section": "other",
+   "words": 280,
+   "ja": 0.791,
+   "inbound": 1,
+   "depth": 1,
+   "listed": true
+  },
   "/docs": {
    "title": "tinymachines",
    "section": "docs",
    "words": 2487,
    "ja": 0.911,
-   "inbound": 1,
+   "inbound": 2,
    "depth": 1,
    "listed": true
   },
@@ -485,7 +503,7 @@
    "section": "docs",
    "words": 1326,
    "ja": 0.84,
-   "inbound": 5,
+   "inbound": 6,
    "depth": 2,
    "listed": true
   },
@@ -512,7 +530,7 @@
    "section": "docs",
    "words": 707,
    "ja": 0.693,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -548,7 +566,7 @@
    "section": "docs",
    "words": 1299,
    "ja": 0.762,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -602,7 +620,7 @@
    "section": "docs",
    "words": 2867,
    "ja": 0.762,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -611,7 +629,7 @@
    "section": "docs",
    "words": 2773,
    "ja": 0.829,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -620,7 +638,7 @@
    "section": "docs",
    "words": 931,
    "ja": 0.882,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -629,7 +647,7 @@
    "section": "docs",
    "words": 848,
    "ja": 0.769,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -638,7 +656,7 @@
    "section": "docs",
    "words": 1529,
    "ja": 0.951,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 1,
    "listed": true
   },
@@ -678,12 +696,21 @@
    "depth": 2,
    "listed": true
   },
+  "/docs/kinds": {
+   "title": "The notebook by kind",
+   "section": "docs",
+   "words": 2158,
+   "ja": 0.917,
+   "inbound": 2,
+   "depth": 2,
+   "listed": true
+  },
   "/docs/nes": {
    "title": "The console arc&#x27;s notebook",
    "section": "docs",
-   "words": 2290,
+   "words": 2339,
    "ja": 0.944,
-   "inbound": 5,
+   "inbound": 7,
    "depth": 1,
    "listed": true
   },
@@ -692,7 +719,7 @@
    "section": "docs",
    "words": 997,
    "ja": 0.822,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -701,7 +728,7 @@
    "section": "docs",
    "words": 891,
    "ja": 0.842,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -710,7 +737,7 @@
    "section": "docs",
    "words": 1092,
    "ja": 0.905,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -719,7 +746,7 @@
    "section": "docs",
    "words": 3398,
    "ja": 0.752,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -728,7 +755,7 @@
    "section": "docs",
    "words": 2587,
    "ja": 0.856,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -737,7 +764,7 @@
    "section": "docs",
    "words": 4526,
    "ja": 0.826,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -746,7 +773,7 @@
    "section": "docs",
    "words": 918,
    "ja": 0.722,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -755,7 +782,7 @@
    "section": "docs",
    "words": 4461,
    "ja": 0.815,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -764,7 +791,7 @@
    "section": "docs",
    "words": 2902,
    "ja": 0.815,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -773,7 +800,7 @@
    "section": "docs",
    "words": 2859,
    "ja": 0.771,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -782,7 +809,7 @@
    "section": "docs",
    "words": 2125,
    "ja": 0.902,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -791,7 +818,7 @@
    "section": "docs",
    "words": 1868,
    "ja": 0.758,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -800,7 +827,7 @@
    "section": "docs",
    "words": 1358,
    "ja": 0.729,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -809,7 +836,7 @@
    "section": "docs",
    "words": 3049,
    "ja": 0.693,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -818,7 +845,7 @@
    "section": "docs",
    "words": 9007,
    "ja": 0.83,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -827,7 +854,7 @@
    "section": "docs",
    "words": 2643,
    "ja": 0.859,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -836,7 +863,7 @@
    "section": "docs",
    "words": 1707,
    "ja": 0.748,
-   "inbound": 4,
+   "inbound": 5,
    "depth": 2,
    "listed": true
   },
@@ -845,7 +872,7 @@
    "section": "docs",
    "words": 1219,
    "ja": 0.762,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -854,7 +881,7 @@
    "section": "docs",
    "words": 1579,
    "ja": 0.703,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -863,7 +890,7 @@
    "section": "docs",
    "words": 1638,
    "ja": 0.828,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -872,7 +899,7 @@
    "section": "docs",
    "words": 1057,
    "ja": 0.824,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -881,7 +908,7 @@
    "section": "docs",
    "words": 3171,
    "ja": 0.848,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -890,7 +917,7 @@
    "section": "docs",
    "words": 881,
    "ja": 0.868,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -899,7 +926,7 @@
    "section": "docs",
    "words": 3839,
    "ja": 0.874,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -908,7 +935,7 @@
    "section": "docs",
    "words": 1098,
    "ja": 0.867,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -917,7 +944,7 @@
    "section": "docs",
    "words": 916,
    "ja": 0.819,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -926,7 +953,7 @@
    "section": "docs",
    "words": 1248,
    "ja": 0.832,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -935,7 +962,7 @@
    "section": "docs",
    "words": 5259,
    "ja": 0.829,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -944,7 +971,7 @@
    "section": "docs",
    "words": 1169,
    "ja": 0.829,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -953,7 +980,7 @@
    "section": "docs",
    "words": 2818,
    "ja": 0.79,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -962,7 +989,7 @@
    "section": "docs",
    "words": 1033,
    "ja": 0.8,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -971,7 +998,7 @@
    "section": "docs",
    "words": 2267,
    "ja": 0.839,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -980,7 +1007,7 @@
    "section": "docs",
    "words": 1381,
    "ja": 0.798,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -989,7 +1016,7 @@
    "section": "docs",
    "words": 1504,
    "ja": 0.801,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -998,7 +1025,7 @@
    "section": "docs",
    "words": 1280,
    "ja": 0.794,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -1007,7 +1034,7 @@
    "section": "docs",
    "words": 1579,
    "ja": 0.813,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -1016,7 +1043,7 @@
    "section": "docs",
    "words": 785,
    "ja": 0.854,
-   "inbound": 4,
+   "inbound": 5,
    "depth": 2,
    "listed": true
   },
@@ -1025,7 +1052,7 @@
    "section": "docs",
    "words": 3242,
    "ja": 0.782,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1034,7 +1061,7 @@
    "section": "docs",
    "words": 5057,
    "ja": 0.837,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1043,7 +1070,7 @@
    "section": "docs",
    "words": 1124,
    "ja": 0.826,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1052,7 +1079,7 @@
    "section": "docs",
    "words": 1498,
    "ja": 0.864,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1061,7 +1088,7 @@
    "section": "docs",
    "words": 1497,
    "ja": 0.891,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1070,7 +1097,7 @@
    "section": "docs",
    "words": 1297,
    "ja": 0.787,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -1079,7 +1106,7 @@
    "section": "docs",
    "words": 4207,
    "ja": 0.853,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1088,7 +1115,7 @@
    "section": "docs",
    "words": 1262,
    "ja": 0.636,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -1097,7 +1124,7 @@
    "section": "docs",
    "words": 985,
    "ja": 0.834,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 2,
    "listed": true
   },
@@ -1106,7 +1133,7 @@
    "section": "docs",
    "words": 1978,
    "ja": 0.739,
-   "inbound": 3,
+   "inbound": 4,
    "depth": 2,
    "listed": true
   },
@@ -1115,7 +1142,7 @@
    "section": "docs",
    "words": 2791,
    "ja": 0.831,
-   "inbound": 4,
+   "inbound": 5,
    "depth": 2,
    "listed": true
   },
@@ -1124,16 +1151,16 @@
    "section": "docs",
    "words": 1386,
    "ja": 0.9,
-   "inbound": 54,
+   "inbound": 55,
    "depth": 2,
    "listed": true
   },
   "/hotbits": {
    "title": "hotbits",
    "section": "hotbits",
-   "words": 223,
-   "ja": 0.734,
-   "inbound": 6,
+   "words": 270,
+   "ja": 0.772,
+   "inbound": 7,
    "depth": 1,
    "listed": true
   },
@@ -1142,7 +1169,7 @@
    "section": "hotbits",
    "words": 39,
    "ja": 0.654,
-   "inbound": 5,
+   "inbound": 6,
    "depth": 1,
    "listed": true
   },
@@ -1151,16 +1178,16 @@
    "section": "hotbits",
    "words": 288,
    "ja": 0.832,
-   "inbound": 0,
-   "depth": null,
+   "inbound": 2,
+   "depth": 2,
    "listed": false
   },
   "/nes": {
    "title": "The NES console",
    "section": "nes",
-   "words": 550,
-   "ja": 0.825,
-   "inbound": 3,
+   "words": 578,
+   "ja": 0.832,
+   "inbound": 4,
    "depth": 1,
    "listed": true
   },
@@ -1178,7 +1205,7 @@
    "section": "nes",
    "words": 257,
    "ja": 0.24,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 1,
    "listed": true
   },
@@ -1205,7 +1232,7 @@
    "section": "nes",
    "words": 8248,
    "ja": 0.547,
-   "inbound": 1,
+   "inbound": 3,
    "depth": 1,
    "listed": true
   },
@@ -1223,7 +1250,7 @@
    "section": "nes",
    "words": 358,
    "ja": 0.841,
-   "inbound": 2,
+   "inbound": 3,
    "depth": 1,
    "listed": true
   },
@@ -1232,16 +1259,25 @@
    "section": "nes",
    "words": 926,
    "ja": 0.875,
-   "inbound": 4,
+   "inbound": 5,
+   "depth": 1,
+   "listed": true
+  },
+  "/read": {
+   "title": "Read how it was done",
+   "section": "other",
+   "words": 327,
+   "ja": 0.744,
+   "inbound": 1,
    "depth": 1,
    "listed": true
   },
   "/style": {
    "title": "Style guide",
    "section": "style",
-   "words": 2347,
+   "words": 2380,
    "ja": 0.001,
-   "inbound": 1,
+   "inbound": 2,
    "depth": 1,
    "listed": true
   },
@@ -1262,6 +1298,15 @@
    "inbound": 0,
    "depth": null,
    "listed": false
+  },
+  "/watch": {
+   "title": "Watch it run",
+   "section": "other",
+   "words": 372,
+   "ja": 0.504,
+   "inbound": 1,
+   "depth": 1,
+   "listed": true
   }
  }
 }
