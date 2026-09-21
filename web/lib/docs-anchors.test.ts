@@ -168,6 +168,27 @@ describe("documents whose anchors are generated", () => {
   });
 });
 
+/**
+ * The slugs the pull scripts declare.
+ *
+ * docs/nes and docs/6502 are generated and gitignored: their English side
+ * exists only after a pull has run. A shadow committed in the same change as
+ * the document it translates therefore has nothing beside it in a fresh
+ * checkout, and the deploy runs these tests BEFORE the build that pulls. So
+ * a missing English file is a failure only when nothing declares the
+ * document, which is the case this was written for: a shadow of a page the
+ * site does not have.
+ */
+function declaredByThePull(): Set<string> {
+  const out = new Set<string>();
+  for (const f of ["pull-nesdocs.mjs", "pull-chipdocs.mjs"]) {
+    const src = fs.readFileSync(path.join(ROOT, "web", "scripts", f), "utf8");
+    for (const m of src.matchAll(/slug:\s*"([^"]+)"/g)) out.add(m[1]);
+  }
+  if (out.size < 10) throw new Error(`the pull scripts declare ${out.size} documents; they have moved and this cannot tell a pending shadow from an orphan`);
+  return out;
+}
+
 describe("docs/ja is a shadow of the English documents", () => {
   const shadows: string[] = [];
   const walk = (dir: string, base: string) => {
@@ -181,9 +202,17 @@ describe("docs/ja is a shadow of the English documents", () => {
 
   test("every shadow translates a document that exists, with its shape", () => {
     expect(shadows.length, "Japanese bodies").toBeGreaterThan(10);
+    const pulled = declaredByThePull();
+    let compared = 0;
     for (const rel of shadows) {
       const en = path.join(DOCS, rel);
-      expect(fs.existsSync(en), `docs/ja/${rel} translates docs/${rel}`).toBe(true);
+      if (!fs.existsSync(en)) {
+        // Not pulled into this checkout yet. Declared is enough; the build
+        // pulls it, and a document the pull cannot find stops the build there.
+        expect(pulled.has(path.basename(rel, ".md")), `docs/ja/${rel} shadows a document nothing pulls or ships`).toBe(true);
+        continue;
+      }
+      compared += 1;
       const ja = fs.readFileSync(path.join(DOCS, "ja", rel), "utf8");
       const enText = fs.readFileSync(en, "utf8");
       expect(ja.startsWith("---"), `docs/ja/${rel} carries no frontmatter`).toBe(false);
@@ -194,5 +223,8 @@ describe("docs/ja is a shadow of the English documents", () => {
       // Nothing shipped carries an em dash, in either language.
       expect(ja.includes("—"), `docs/ja/${rel} has no em dash`).toBe(false);
     }
+    // A check that can pass on nothing is not a check: if every shadow were
+    // waiting on a pull, the loop above would compare nothing and say so.
+    expect(compared, "shadows compared against their English").toBeGreaterThan(10);
   });
 });
