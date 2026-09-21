@@ -15,10 +15,21 @@ import { DOCS_DIR } from "./docs";
  */
 
 /** `code` is the milestone label ("N3 report"), or null for a document without one. */
-export type ShelfDoc = { route: string; title: string; code: string | null; kind: string; description: string };
+export type ShelfDoc = {
+  route: string;
+  title: string;
+  code: string | null;
+  /** The family the code is filed under ("N"), or null where there is no code. */
+  letter: string | null;
+  kind: string;
+  description: string;
+};
 
 /** What a document IS: the notebook's second axis (pull-nesdocs.mjs KINDS). */
 export type Kind = { key: string; name: string; what: string };
+
+/** What a code's letter means (pull-nesdocs.mjs CODES). */
+export type Code = { letter: string; what: string };
 export type Shelf = {
   key: string;
   heading: string;
@@ -27,7 +38,7 @@ export type Shelf = {
   docs: ShelfDoc[];
 };
 
-type File = { groups: Shelf[]; cart: ShelfDoc[]; kinds: Kind[] };
+type File = { groups: Shelf[]; cart: ShelfDoc[]; kinds: Kind[]; codes: Code[] };
 
 let cache: File | null = null;
 
@@ -57,6 +68,27 @@ export function byKind(): { kind: Kind; docs: ShelfDoc[] }[] {
   const placed = out.reduce((n, k) => n + k.docs.length, 0);
   if (placed !== all.length) {
     throw new Error(`docs/nes/shelves.json: ${all.length - placed} documents carry a kind nothing declares`);
+  }
+  return out;
+}
+
+/**
+ * The key to the milestone codes, and the check that it is a key to
+ * something. A page prints "A0 report" beside "M2 report", so it has to be
+ * able to say what A and M are. The pull refuses a code whose letter it
+ * cannot explain; this refuses the other direction, a key with no codes
+ * under it, because a key that explains nothing would pass quietly.
+ */
+export function codes(): { code: Code; docs: ShelfDoc[] }[] {
+  const f = read();
+  const all = [...f.groups.flatMap((g) => g.docs), ...f.cart];
+  if (!f.codes?.length) throw new Error("docs/nes/shelves.json carries no key to the milestone codes");
+  const out = f.codes.map((code) => ({ code, docs: all.filter((d) => d.letter === code.letter) }));
+  const filed = all.filter((d) => d.letter);
+  if (!filed.length) throw new Error("docs/nes/shelves.json: no document carries a milestone code, so its key explains nothing");
+  const placed = out.reduce((n, c) => n + c.docs.length, 0);
+  if (placed !== filed.length) {
+    throw new Error(`docs/nes/shelves.json: ${filed.length - placed} documents are filed under a letter the key does not name`);
   }
   return out;
 }

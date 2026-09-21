@@ -54,6 +54,35 @@ const KINDS = {
   record: { key: "record", name: "Records", what: "What happened, kept as it happened, including the attempts that failed." },
 };
 
+// What the letter in front of a milestone number means. The scheme is the
+// sketch's own ("N1: 2A03 rung 0, the 2a03 repo, milestones A0 to A3"), and
+// until now it was written only in that prose: /docs/kinds put "A0 report"
+// and "M2 report" beside each other with nothing on the page saying what A
+// and M were. Read cold on 2026-09-21, that is a code with no key.
+// codeLetter() refuses a code filed under a letter this does not name, so a
+// new family arrives with its meaning or it does not arrive.
+// Kept to a phrase each: read cold on a phone, a key with a sentence in
+// every row pushed the documents it is a key to off the bottom of the screen.
+const CODES = [
+  { letter: "N", what: "the console itself" },
+  { letter: "A", what: "the 2A03, its CPU and sound chip" },
+  { letter: "P", what: "the 2C02, its picture chip" },
+  { letter: "M", what: "the signal to the television" },
+];
+
+/** The letter a code is filed under, or null for a code that names itself. */
+function codeLetter(code) {
+  const m = /^([A-Z])\d/.exec(code ?? "");
+  if (!m) return null;
+  if (!CODES.some((c) => c.letter === m[1])) {
+    throw new Error(
+      `pull-nesdocs: the code "${code}" is filed under ${m[1]}, and CODES does not say what ${m[1]} is. ` +
+        "Add it there: a letter with no meaning on the page is a code with no key.",
+    );
+  }
+  return m[1];
+}
+
 function kindOf(d) {
   if (d.kind) return d.kind;
   if (d.code) {
@@ -490,7 +519,7 @@ ${cartRows}
 // with them) because the docs tree allows no frontmatter but title,
 // description and order, so a document cannot carry its group itself;
 // lib/nes-shelves.ts reads this and refuses a build without it.
-const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, code: d.code, kind: kindOf(d), description: d.description });
+const shelf = (d) => ({ route: `/docs/${d.section ?? "nes"}/${d.slug}`, title: d.shownTitle, code: d.code, letter: codeLetter(d.code), kind: kindOf(d), description: d.description });
 fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
   groups: GROUPS.map((g) => ({
     key: g.key, heading: g.heading, intro: g.intro, ja: g.ja,
@@ -501,6 +530,9 @@ fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
   // says what it IS, which is the question a reader who has not read any of
   // them is actually asking.
   kinds: Object.values(KINDS),
+  // And the key to the codes those documents are filed under, so a page can
+  // print what N, A, P and M mean beside the documents that carry them.
+  codes: CODES,
 }, null, 1) + "\n");
 
 // Every page this wrote parses as the docs tree will parse it. An unquoted

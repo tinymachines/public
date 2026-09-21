@@ -56,6 +56,55 @@
   font-size: var(--text-fine);
 }
 
+/* The order the lists run in, and the key to the codes. Read cold, twenty-five
+   reports in a meaningful order looked like twenty-five reports in no order,
+   and the letters in front of the numbers meant nothing on the page. */
+.kind-order {
+  margin: 0 0 calc(var(--u) * 6);
+  max-width: 68ch;
+  color: var(--color-ink-muted);
+}
+
+.kind-key {
+  margin: calc(var(--u) * 8) 0;
+}
+
+.kind-key h2 {
+  margin: 0 0 calc(var(--u) * 1);
+}
+
+.kind-key dl {
+  display: grid;
+  gap: calc(var(--u) * 1);
+  margin: 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+.kind-key dl > div {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  gap: calc(var(--u) * 2);
+  align-items: baseline;
+  padding: calc(var(--u) * 1.5) 0;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.kind-key dt {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.kind-key dd,
+.kind-key dt {
+  font-size: var(--text-fine);
+}
+
+.kind-key dd {
+  margin: 0;
+  color: var(--color-ink-muted);
+}
+
 .kind-note {
   margin-top: calc(var(--u) * 6);
   font-size: var(--text-fine);
