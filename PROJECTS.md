@@ -2817,3 +2817,32 @@ The live database was backed up beside itself before migration 4 ran
 previous checkpoint stand: a deploy that touches a page behind a door
 still wants a re-crawl and a second deploy, and a clean tree still does
 not bump the version.
+
+### Later the same evening, still 1.0.264, live at `b7ea684`
+
+- **Sign-in from beta could never finish** (`272af93`, in the API). The
+  owner signed in from beta.tinymachines.ai and the callback said the
+  sign-in did not start here. It had, on the other host: one GitHub app
+  has one callback host. A start on a subdomain of the site now redirects
+  to the apex's start, and the person lands there signed in.
+- **Zelda registers a name; the chip is there.** The owner could not get
+  past REGISTER YOUR NAME. Driven headless through the console model with
+  a throwaway probe crate (nothing in `nes` touched): title, Start, file
+  select, Start, a letter with A, then Start does nothing, on the model
+  and on the cartridge alike. Zelda's rule is Select down to REGISTER END,
+  then Start; done so, the name is on the file select with three hearts.
+  The 8K RAM at $6000 is the console's "test cartridge" RAM, fitted in the
+  browser build and answering before the MMC1's own gated one; it has no
+  battery, so a name lasts until the page reloads. Nobody has built saves,
+  on any side.
+- **The shelf menu fits a phone and shows what is running** (`b7ea684`).
+  A native select is as wide as its longest option and the owner's
+  longest name is forty characters; the picker takes its row and cuts the
+  name with an ellipsis. The playground's row was an auto grid column and
+  overflowed 13px at 390 even so; it is minmax(0, 1fr). The menu shows
+  the cartridge the page is running, learned from the page, so a disk pick
+  clears it. The playground's two "only the simplest boards" sentences
+  went the way of the play page's.
+- **A deploy refused on nes-bench's parts sheet**, which that project was
+  mid-commit on at the moment the build read it; current a minute later.
+  The gate did its job and the live site was untouched in between.
