@@ -2978,5 +2978,5 @@ picker there drew as it does for a stranger.
   following. It had said "arranged differently" for a day after that
   stopped being true.
 
-Main is one commit ahead of live (the bar, beta-only); beta serves it.
-Nothing is waiting on the owner.
+Deployed clean afterwards, so live, main and beta are all at `9664ec7`
+and the version stays 1.0.266. Nothing is waiting on the owner.
