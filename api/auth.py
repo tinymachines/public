@@ -240,8 +240,8 @@ def upsert_github_user(conn: sqlite3.Connection, gh: dict) -> str:
         if conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
             email = f"{pid}+{login}@users.noreply.github.com"
         conn.execute(
-            "INSERT INTO users (id, email, handle, first_name, pic, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (uid, email, handle, first, avatar, now, now),
+            "INSERT INTO users (id, email, handle, first_name, pic, carts_max, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (uid, email, handle, first, avatar, db.SHELF_DEFAULT, now, now),
         )
         conn.execute(
             "INSERT INTO logins (provider, provider_id, user_id, login, avatar, created_at, last_at) VALUES ('github', ?, ?, ?, ?, ?, ?)",

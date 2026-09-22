@@ -56,18 +56,18 @@ exists at all and why GitHub is the first way in.
 An account can also keep a shelf of its own cartridges, so that every menu on
 the site that asks for a `.nes` can offer them by name. A cartridge answers
 only to the session that put it there: somebody else's id is a 404, the same as
-one that never existed. **An account has no shelf until an admin gives it one**
-(`carts_max` on the user, zero by default), because what goes on a shelf is a
-dump of a cartridge somebody owns, and this service cannot know that they do.
+one that never existed. **Every sign-in has a shelf** (opened 2026-09-22; they
+were granted by hand before that), of `db.SHELF_DEFAULT` places; an admin can
+resize one through `carts_max` on the user, and zero closes it.
 The bytes live on disk beside the database (`$STATE/carts`, or `TM_CARTS`),
 never in it and never in this repository. `carts.py` has the whole argument;
-`python3 carts.py grant <handle> <how-many>` makes the first grant on the box, and
+`python3 carts.py grant <handle> <how-many>` resizes a shelf on the box (zero closes it), and
 `python3 carts.py add <handle> <file.nes>` puts a dump that is already on the box
 on a shelf, held to every rule an upload is.
 
 | | |
 |---|---|
-| `GET /v1/me/carts` | The account's shelf, by name, and what it may hold. Empty for an account with no shelf |
+| `GET /v1/me/carts` | The account's shelf, by name, and what it may hold. Empty for a shelf an admin closed |
 | `POST /v1/me/carts` | Add one. The body is the `.nes`; the header is read here and held to the file's length |
 | `GET /v1/me/carts/{cart_id}/rom` | The bytes, `private, no-store`, checked against their digest on the way out |
 | `PATCH /v1/me/carts/{cart_id}` | Rename it or change its note. Touches only what it names |

@@ -10,7 +10,7 @@ import { BASE, OUT, PHONE, overflow } from "./lib";
  * can hold one.
  *
  * SIGNED OUT runs against any origin, production included: the page says what
- * it is, no cartridge menu appears for a reader who has no shelf, and the API
+ * it is, no cartridge menu appears for a reader who is signed out, and the API
  * answers 401.
  *
  * SIGNED IN needs e2e/shelf-rig.py running: this tree's real API on a spare
@@ -99,7 +99,7 @@ test.describe("the shelf, signed out", () => {
     });
   }
 
-  test("a reader with no shelf sees no cartridge menu on the console", async ({ page }) => {
+  test("a signed-out reader sees no cartridge menu on the console", async ({ page }) => {
     const asked = page.waitForResponse((r) => r.url().includes("/api/v1/me/carts"));
     await page.goto("/nes/play");
     // The page's own file button is there, so the menu's absence below is
@@ -307,7 +307,7 @@ test.describe("the shelf, signed in", () => {
     await expect(page.locator("[data-shelf-picker=empty]")).toHaveAttribute("href", "/nes/shelf");
   });
 
-  test("an account with no shelf is told so, and is offered no menu", async ({ page }) => {
+  test("an account whose shelf was closed is told so, and is offered no menu", async ({ page }) => {
     await as(page, "noshelf");
     await page.goto("/nes/shelf");
     await expect(page.locator("[data-shelf-state]")).toHaveAttribute("data-shelf-state", "no-shelf");

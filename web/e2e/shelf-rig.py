@@ -33,7 +33,8 @@ API = HERE.parent.parent / "api"
 PORT = int(os.environ.get("SHELF_RIG_PORT", "6532"))
 OUT = HERE / "out" / "shelf-rig.json"
 
-# Who is on the rig, and how many cartridges each may keep.
+# Who is on the rig, and how many cartridges each may keep; zero is a shelf
+# an admin closed, which every account otherwise has.
 PEOPLE = {"owner": 3, "stranger": 3, "noshelf": 0}
 
 
@@ -60,8 +61,7 @@ def main() -> int:
     for n, (who, shelf) in enumerate(PEOPLE.items(), start=1):
         uid = auth.upsert_github_user(conn, {"id": n, "login": who, "name": who.title(), "avatar_url": None, "email": None})
         sessions[who], _ = auth.open_session(conn, uid)
-        if shelf:
-            assert carts.grant(who, shelf) == who
+        assert carts.grant(who, shelf) == who
     conn.close()
 
     proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", str(PORT), "--log-level", "warning"], cwd=API, env=env)

@@ -145,9 +145,9 @@ def create(
     try:
         with conn:
             conn.execute(
-                "INSERT INTO users (id, email, handle, first_name, pic, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (uid, email, handle, first_name, pic, stamp, stamp),
+                "INSERT INTO users (id, email, handle, first_name, pic, carts_max, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (uid, email, handle, first_name, pic, db.SHELF_DEFAULT, stamp, stamp),
             )
     except sqlite3.IntegrityError as e:
         raise Taken(_which_is_taken(conn, email, handle)) from e

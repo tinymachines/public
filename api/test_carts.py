@@ -79,14 +79,37 @@ def test_nothing_here_answers_without_a_session():
     assert c.delete("/v1/me/carts/ct_x").status_code == 401
 
 
-def test_an_account_has_no_shelf_until_it_is_given_one(shelf_dir):
+def test_every_sign_in_has_a_shelf_and_an_admin_can_close_it(shelf_dir):
     c = signed_in("ada")
     j = c.get("/v1/me/carts").json()
-    assert j["carts"] == [] and j["limits"]["max"] == 0 and j["limits"]["remaining"] == 0
-    r = put(c, BARS.read_bytes())
+    assert j["carts"] == [] and j["limits"]["max"] == db.SHELF_DEFAULT > 0 and j["limits"]["remaining"] == db.SHELF_DEFAULT
+    assert c.get("/v1/me").json()["user"]["handle"] == "ada"
+    assert put(c, BARS.read_bytes()).status_code == 201, "a fresh account could not add"
+
+    assert carts.grant("ada", 0) == "ada"
+    j = c.get("/v1/me/carts").json()
+    assert j["limits"]["max"] == 0 and len(j["carts"]) == 1, "closing the shelf lost what was on it"
+    r = put(c, ines(1, 1))
     assert r.status_code == 403, r.text
-    assert "granted" in r.json()["detail"]
-    assert not shelf_dir.exists(), "a refused upload wrote something to disk"
+    assert "closed" in r.json()["detail"]
+    assert len(list(shelf_dir.rglob("*.nes"))) == 1, "a refused upload wrote something to disk"
+
+
+def test_the_migration_opened_the_shelves_that_were_closed_by_default():
+    """Accounts from before 2026-09-22 sat at zero because zero was the
+    default, not because anybody closed them. Migration 5 gives those the
+    day's default; an account already set by hand keeps its own number."""
+    conn = db.connect()
+    with conn:
+        conn.execute("PRAGMA user_version = 4")
+        stamp = db.now()
+        conn.execute("INSERT INTO users (id, email, handle, first_name, carts_max, created_at, updated_at) VALUES ('u_old', 'old@example.org', 'old', 'Old', 0, ?, ?)", (stamp, stamp))
+        conn.execute("INSERT INTO users (id, email, handle, first_name, carts_max, created_at, updated_at) VALUES ('u_set', 'set@example.org', 'set', 'Set', 64, ?, ?)", (stamp, stamp))
+    ran = db.migrate(conn)
+    assert ran == 1, "the fixture did not roll the file back to before migration 5"
+    rows = dict(conn.execute("SELECT handle, carts_max FROM users"))
+    conn.close()
+    assert rows == {"old": 32, "set": 64}
 
 
 def test_an_admin_gives_a_shelf_through_the_user():

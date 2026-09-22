@@ -17,15 +17,17 @@ never existed. There is no listing across accounts, no admin route that reads
 a shelf, and no public address for the bytes. The ROM is sent `private,
 no-store`, and the site's service worker never caches anything under `/api/`.
 
-## Why a shelf is granted, not given
+## Every sign-in has a shelf
 
-These are dumps of commercial cartridges. Keeping a copy of one you own, for
-yourself, is one thing; a public site that takes them from anybody with a
-GitHub account is another, and this service cannot tell the two apart. So an
-account has no shelf until an admin gives it one (`carts_max` on the user,
-zero by default). An account without a shelf gets an empty list rather than an
-error, so a menu can ask without caring, and a 403 with the reason if it tries
-to add.
+These are dumps of commercial cartridges, and this service cannot tell a
+person keeping their own from a person keeping somebody else's. It shipped
+with shelves granted by hand for that reason, and the owner opened them to
+every sign-in the next day (2026-09-22): a shelf is private to its account,
+nothing on it is served to anybody else, and the site is not a place to
+find a game. Every account gets `db.SHELF_DEFAULT` places; an admin can
+resize a shelf, and zero closes it. A closed shelf gets an empty list
+rather than an error, so a menu can ask without caring, and a 403 with the
+reason if it tries to add.
 
 ## The save
 
@@ -245,7 +247,7 @@ def store(conn: sqlite3.Connection, user: sqlite3.Row, data: bytes, name: str, n
     """
     limits = _limits(conn, user)
     if limits.max == 0:
-        raise Refused(403, "This account has not been given a cartridge shelf. They are granted by hand, because what goes on one is a dump of a cartridge you own.")
+        raise Refused(403, "This account's cartridge shelf is closed. An admin can open it.")
     if len(data) > limits.bytes_max:
         raise Refused(413, f"{len(data)} bytes; the shelf takes {limits.bytes_max} at most.")
     name, note = clean_name(name), clean_note(note)
@@ -307,7 +309,7 @@ def store(conn: sqlite3.Connection, user: sqlite3.Row, data: bytes, name: str, n
     response_model=Carts,
     summary="The cartridges this account keeps",
     description="The signed-in account's own shelf, by name, with what the shelf may hold. An account "
-                "that has not been given a shelf gets an empty list and a limit of zero, so a cartridge "
+                "whose shelf an admin closed gets an empty list and a limit of zero, so a cartridge "
                 "menu can ask this of anybody who is signed in.",
     responses=_SIGNED_OUT,
 )
@@ -327,7 +329,7 @@ def list_carts(user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connecti
                 "is kept except its name and note.",
     responses={
         **_SIGNED_OUT,
-        403: {"description": "This account has not been given a shelf."},
+        403: {"description": "This account's shelf is closed."},
         409: {"description": "The shelf is full, or this exact file is already on it (the answer names which)."},
         413: {"description": "Larger than the shelf takes."},
         422: {"description": "Not an iNES file, or its header and its length disagree. The message gives the numbers."},
@@ -478,10 +480,9 @@ def delete_save(cart_id: str, request: Request, user: sqlite3.Row = Depends(requ
 
 
 def grant(handle: str, most: int) -> Optional[str]:
-    """Give an account a shelf from the command line, for the box this runs on.
-
-    The admin API does the same through `PATCH /v1/admin/users/{id}`; this is
-    for the first grant, before anybody has an admin key to hand.
+    """Resize an account's shelf from the command line, for the box this runs
+    on; zero closes it. The admin API does the same through
+    `PATCH /v1/admin/users/{id}`; this is for when nobody has an admin key to hand.
     """
     conn = db.connect()
     try:
@@ -513,7 +514,7 @@ def _main(argv: list[str]) -> int:
 
     ap = argparse.ArgumentParser(prog="carts.py", description="The cartridge shelf, from the box it runs on.")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    g = sub.add_parser("grant", help="give an account a shelf, or resize it")
+    g = sub.add_parser("grant", help="resize an account's shelf; zero closes it")
     g.add_argument("handle")
     g.add_argument("how_many", type=int)
     a = sub.add_parser("add", help="put a .nes file on an account's shelf, held to every rule an upload is")

@@ -77,7 +77,7 @@ export function Menu({
         if (!a.github) { if (live) setWho({ enabled: false, login: null }); return; }
         const m = await fetch("/api/v1/me", { cache: "no-store" });
         const login = m.ok ? ((await m.json()).user?.login ?? null) : null;
-        // The shelf is granted to an account, not given to every one, so its
+        // A shelf an admin closed is not offered; every other account has one, so its
         // link is shown only to an account that has one (lib/shelf.ts).
         const shelf = login ? await listShelf().then((x) => x.state === "open" && x.limits.max > 0).catch(() => false) : false;
         if (live) setWho({ enabled: true, login, shelf });

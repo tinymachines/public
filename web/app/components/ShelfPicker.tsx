@@ -16,7 +16,7 @@ import "./shelf-picker.css";
  *
  * It hands `onPick` a File, the same thing the input does, so the page's
  * loading code is untouched. It renders NOTHING for a reader who is signed
- * out or whose account has no shelf, which is almost every reader: the menu
+ * out or whose shelf is empty or closed, which is almost every reader: the menu
  * is for the person whose cartridges they are, and nobody else should see a
  * control that does nothing for them.
  *

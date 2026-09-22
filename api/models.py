@@ -331,10 +331,10 @@ class User(BaseModel):
     carts_max: int = Field(
         default=0,
         description="How many cartridges this account may keep on its own shelf "
-                    "(`/v1/me/carts`). Zero, the default, means it has no shelf: one is "
-                    "granted to a person by an admin, because what goes on it is a dump "
-                    "of a cartridge somebody owns.",
-        examples=[0],
+                    "(`/v1/me/carts`). Every account starts with the deployment's default "
+                    "(32 unless `TM_SHELF_DEFAULT` says otherwise); an admin can resize it, "
+                    "and zero closes the shelf.",
+        examples=[32],
     )
     created_at: datetime = Field(description="When the row was created, UTC.")
     updated_at: datetime = Field(description="When any field last changed, UTC.")
@@ -417,7 +417,7 @@ class UserPatch(BaseModel):
         ge=0,
         le=1000,
         description="How many cartridges the account may keep. Omit to leave it alone; "
-                    "zero takes the shelf away without deleting what is on it, so the "
+                    "zero closes the shelf without deleting what is on it, so the "
                     "account can still list, fetch and delete but not add.",
     )
 
@@ -846,7 +846,7 @@ class Cart(BaseModel):
 
 
 class CartLimits(BaseModel):
-    max: int = Field(description="How many cartridges this account may keep. Zero means it has not been given a shelf.")
+    max: int = Field(description="How many cartridges this account may keep. Zero means an admin closed the shelf.")
     held: int = Field(description="How many it keeps now.")
     remaining: int = Field(description="How many more it may add. Never negative: a shelf that was shrunk under its contents reports zero.")
     bytes_max: int = Field(description="The largest single file the shelf takes, in bytes.")

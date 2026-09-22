@@ -37,6 +37,8 @@ const PROSE = {
         and the benches in the playground. If you have dumped cartridges you
         own, this is where you keep them, so that every one of those menus
         offers them by name and you stop picking the same file off your disk.
+        Every account has one, and the console keeps a game&rsquo;s saves
+        beside its cartridge here, so a name you register stays registered.
       </>
     ),
     whose: (
@@ -66,7 +68,7 @@ const PROSE = {
   ja: {
     what: (
       <>
-        ここにはカートリッジを求めるページがいくつかある。遊べるコンソールと、プレイグラウンドの各ベンチだ。自分が持っているカートリッジをダンプしてあるなら、ここに置いておける。そうすればどのメニューにも名前で並び、同じファイルをディスクから何度も選ばずに済む。
+        ここにはカートリッジを求めるページがいくつかある。遊べるコンソールと、プレイグラウンドの各ベンチだ。自分が持っているカートリッジをダンプしてあるなら、ここに置いておける。そうすればどのメニューにも名前で並び、同じファイルをディスクから何度も選ばずに済む。棚はどのアカウントにもあり、コンソールはゲームのセーブをここのカートリッジの隣に置くので、登録した名前はそのまま残る。
       </>
     ),
     whose: (

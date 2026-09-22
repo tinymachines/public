@@ -60,6 +60,13 @@ def path() -> Path:
     return Path.home() / ".local" / "state" / "tinymachines" / "roof.db"
 
 
+# How many cartridges an account may keep unless an admin says otherwise.
+# Every sign-in gets a shelf (owner, 2026-09-22; they were granted by hand
+# before that). TM_SHELF_DEFAULT overrides for a deployment; a row's own
+# carts_max, once an admin sets it, is what counts, and zero closes it.
+SHELF_DEFAULT = int(os.environ.get("TM_SHELF_DEFAULT", "32"))
+
+
 def now() -> str:
     """UTC, ISO 8601, with the offset on it.
 
@@ -199,6 +206,14 @@ MIGRATIONS: list[str] = [
     -- One copy of a cartridge per shelf. The same dump on two shelves is two
     -- rows and two files, because a shelf is private to its account.
     CREATE UNIQUE INDEX carts_user_sha ON carts(user_id, sha256);
+    """,
+    # 5: shelves for everybody. Until now an account's shelf was zero until
+    #    an admin set it; the owner opened them (2026-09-22). The accounts
+    #    still at zero get the day's default, which is frozen here at 32 the
+    #    way a shipped migration is: db.SHELF_DEFAULT is what a NEW account
+    #    gets, and may move without this line moving.
+    """
+    UPDATE users SET carts_max = 32 WHERE carts_max = 0;
     """,
 ]
 
