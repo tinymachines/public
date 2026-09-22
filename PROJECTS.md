@@ -3059,5 +3059,6 @@ projects."
   heading check compares `textContent`, not `innerText` (the e2e-css-capitals
   note already said so).
 
-Beta serves `d8afb9f`; main is there too, both pushed. Live is still
-`b67f736` (1.0.266). Deploying is the owner's call.
+Deployed clean afterwards at the owner's word, so live, main and beta are
+all at `2b01bdc` and the version stays 1.0.266; the menu, scrolled-open
+and notebook specs pass against live. Nothing is waiting on the owner.
