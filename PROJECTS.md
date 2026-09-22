@@ -3034,3 +3034,30 @@ menu items to make sense of."
 Deployed clean afterwards at the owner's word, so live, main and beta are
 all at `b67f736` and the version stays 1.0.266; the menu specs pass
 against live. Nothing is waiting on the owner.
+
+## Later that night, 2026-09-22: the menu is the site and the projects
+
+The owner's second step: "Drop the section group too, just site and
+projects."
+
+- **The panel is the same seven lines on every page** (`d8afb9f`): Home,
+  Documentation, Style guide, API; 6502, hotbits, the NES console. What
+  is inside a section is its landing's job: /docs opens with the tree,
+  /nes with its parts, /6502 with its tracks and its parts ledger.
+- **Two landings had gaps** once the menu stopped covering for them, and
+  the spec found both: the 6502's parts ledger printed each part's path
+  as text (the long reads and the 6502 API were reachable from nowhere
+  but the old menu), and the NES parts list lacked the notebook. The
+  ledger links every arrived part now, and the notebook is a part, in
+  both languages.
+- **The spec holds both halves.** The panel is two groups and nothing
+  twice; each project's landing, or the surface one segment above, links
+  every arrived surface; every English page in the sitemap is reached
+  from the menu by walking the pages it lists. The first two fail on the
+  build before; the walk passes on both, as a guard should.
+- **A lesson re-learned:** the group headings are CSS-uppercased, so a
+  heading check compares `textContent`, not `innerText` (the e2e-css-capitals
+  note already said so).
+
+Beta serves `d8afb9f`; main is there too, both pushed. Live is still
+`b67f736` (1.0.266). Deploying is the owner's call.
