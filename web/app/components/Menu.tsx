@@ -112,14 +112,12 @@ export function Menu({
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onDown);
-    // The page under the panel holds still. Without this a finger that
-    // overshoots the sheet scrolls the page behind it, and the panel, which
-    // is positioned against the header, drifts with it.
-    document.documentElement.classList.add("menu-open");
+    // Nothing locks the page's scroll here any more. A class on <html> used
+    // to, and the overflow: hidden it switched on took the sticky bar out
+    // from under the panel: see .menu-scrim in style/components.css.
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("mousedown", onDown);
-      document.documentElement.classList.remove("menu-open");
     };
   }, [open]);
 
@@ -130,11 +128,11 @@ export function Menu({
   const { path: section, lang } = delocalize(here);
   const editor = `${localize(lang, "/6502/manage")}#account`;
   const inSection = (g: MenuGroup) =>
-    g.only ? g.only.includes(section) : g.when !== null && (section === g.when || section.startsWith(g.when + "/"));
+    g.when !== null && (section === g.when || section.startsWith(g.when + "/"));
   // The section you are standing in comes FIRST, then the site. A reader who
   // opens the menu inside 6502 wants 6502 under their thumb; the way out is
   // still there, below, and it is the same on every page.
-  const shown = [...groups.filter(inSection), ...groups.filter((g) => g.when === null && !g.only)];
+  const shown = [...groups.filter(inSection), ...groups.filter((g) => g.when === null)];
 
   return (
     <div className="menu-wrap" ref={wrap}>
@@ -151,7 +149,13 @@ export function Menu({
           <i />
           <i />
         </span>
-        {open ? close : label}
+        {/* Both words, one cell: the button keeps the wider word's width
+            whichever it shows, so nothing beside it moves as it opens. The
+            hidden one is out of the accessible name as well as invisible. */}
+        <span className="word">
+          <span aria-hidden={open}>{label}</span>
+          <span aria-hidden={!open}>{close}</span>
+        </span>
       </button>
 
       {/* Rendered only when open. A hidden panel that is still in the tree is

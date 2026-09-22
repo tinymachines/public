@@ -2292,10 +2292,32 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
 .menu-item { padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5); }
 /* The scrim is the page, as far as the panel is concerned: a click on it
    closes the menu at every width. It paints nothing above a phone; below,
-   the wash in the block further down. */
-.menu-scrim { position: fixed; inset: 0; z-index: 29; background: transparent; }
-/* The page holds still while the panel is up. The panel scrolls itself. */
-html.menu-open, html.menu-open body { overflow: hidden; }
+   the wash in the block further down.
+
+   THE PAGE IS NOT LOCKED while the panel is up. It was, from 2026-08-25 to
+   2026-09-22, with overflow: hidden on html and body both, and that pair
+   made body the scroll container: the sticky bar's scrollport became a box
+   scrolled to zero, so opening the menu anywhere but the top of a page put
+   the bar, the button and the panel a page-height above the viewport, in
+   Chrome and WebKit alike, on a desk and on a phone. On a desk the lock also
+   took the document's scrollbar away, and the whole page reflowed wider
+   under the reader's pointer as the panel opened. The reason the lock
+   existed, a finger overshooting the sheet and scrolling the page behind
+   it, is answered where the finger lands instead: the scrim takes no touch
+   scrolling, and the panel already keeps its own scroll from chaining. A
+   wheel over the scrim still scrolls the page, under the bar, and the
+   panel, hung from the bar, stays where it is. */
+.menu-scrim { position: fixed; inset: 0; z-index: 29; background: transparent; touch-action: none; }
+
+/* The word on the button is MENU or CLOSE, and the button is as wide as the
+   wider of the two whichever it says: both are drawn into one grid cell and
+   the one not showing is only invisible. Before this the button grew by the
+   difference as it opened, and the flag beside it moved (the owner's
+   "clicking Menu reformats the page", 2026-09-22, the other half of which
+   was the scrollbar above). */
+.menu-btn .word { display: grid; text-align: left; }
+.menu-btn .word > span { grid-area: 1 / 1; }
+.menu-btn .word > span[aria-hidden="true"] { visibility: hidden; }
 
 /* On a phone the card floats over a faint wash of paper, centred, still a
    card: the wash is what stops it reading as a page. */

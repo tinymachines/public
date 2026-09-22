@@ -1,5 +1,4 @@
 import { allPages } from "./docs";
-import { explorerMenu } from "./explorer-menu";
 import { delocalize } from "./lang";
 import { explorerPages } from "./explorer";
 import { TRACKS } from "./tracks";
@@ -67,17 +66,22 @@ export interface MenuGroup {
    * is what makes each subsection's menu its own without any page passing it.
    */
   when: string | null;
-  /**
-   * An exact list of routes the group belongs to, for a section whose pages
-   * are flat rather than nested. The explorer's eighteen pages live at
-   * /6502/<slug>, beside the landing and the console, so a prefix cannot
-   * pick them out; this can. When present it replaces the prefix test.
-   */
-  only?: string[];
   items: MenuItem[];
 }
 
-/** Every group, in the order they should appear. */
+/**
+ * Every group, in the order they should appear.
+ *
+ * THE MENU LISTS INDEX PAGES, AND AN INDEX PAGE LISTS WHAT IS UNDER IT.
+ * Owner's call, 2026-09-22: the panel had become eighty-four lines on a
+ * documentation page and thirty-seven inside the explorer, too many to make
+ * sense of. So a group carries a section's first level, and a page a level
+ * deeper is found on the page above it: the signal's two pages on /nes/signal,
+ * the explorer's eighteen on /6502/tools, a report on its documentation
+ * root. The rule is written once, in `listedAbove` below, and the e2e suite
+ * holds the other half of the bargain: every page in the sitemap is at most
+ * one click from something the menu lists (e2e/menu.spec.ts).
+ */
 export function menuGroups(): MenuGroup[] {
   // Every entry carries a line of what it is, which is the part a list of
   // nouns cannot do. On the 6502 site the example was that "Blueprint",
@@ -144,6 +148,27 @@ export function menuGroups(): MenuGroup[] {
     if (p.key === "roof" || !p.landing) continue;
     const here = arrivedSurfaces(p);
     if (!here.length) continue;
+    // A surface is in the group unless a page above it already lists it.
+    // Two pages count as above: a track's page, for whatever its headline
+    // names (the track's own path names nothing but itself, so the archive
+    // track is its own surface and stays); and, for a surface a level deeper
+    // than the project's first level, the surface one segment up, provided
+    // that page is one of this project's own. A deeper page with no index
+    // of its own stays in the menu rather than vanishing: a page nothing
+    // lists is a page nobody finds, and a menu that hides it looks exactly
+    // like a menu.
+    const onTrack = new Set(
+      p.key === "6502"
+        ? TRACKS.flatMap((tr) => tr.headline.map((h) => h.href.replace(/#.*$/, "")).filter((h) => h !== tr.path))
+        : [],
+    );
+    const routes = new Set(here.map((s) => s.lands_at));
+    const listedAbove = (href: string): boolean => {
+      if (onTrack.has(href)) return true;
+      if (!href.startsWith(p.landing + "/")) return false;
+      const above = href.replace(/\/[^/]+$/, "");
+      return above !== p.landing && routes.has(above);
+    };
     groups.push({
       title: p.name,
       when: p.landing,
@@ -161,7 +186,7 @@ export function menuGroups(): MenuGroup[] {
         // again gave the group two labels for one destination, which is
         // the reader's job to reconcile and was the panel's job not to
         // ask; the front page's doors already skip it the same way.
-        ...here.filter((s) => s.lands_at !== p.landing).map((s) => ({
+        ...here.filter((s) => s.lands_at !== p.landing && !listedAbove(s.lands_at)).map((s) => ({
           href: s.lands_at,
           // The one answer, not a second set: this had its own copy of the
           // explorer's routes, and a copy of a rule is a copy that misses
@@ -180,12 +205,12 @@ export function menuGroups(): MenuGroup[] {
     });
   }
 
-  // The section-local detail, after the map rather than instead of it.
-  //
-  // The documentation tree, flattened. Its shape is already rendered as a tree
-  // in the docs sidebar; here it is a list, because a menu that reproduces a
-  // hierarchy inside a panel is two navigations for one set of pages.
-  const docs = allPages().filter((p) => p.route !== "/docs");
+  // The documentation's roots, and only the roots. The tree is already
+  // rendered as a tree in the sidebar of every documentation page, and the
+  // index at /docs lists every document; the panel listing all seventy-odd
+  // of them as well was the longest menu on the site. A root's own page
+  // opens with what is under it.
+  const docs = allPages().filter((p) => p.route !== "/docs" && p.route.split("/").length === 3);
   if (docs.length) {
     groups.push({
       title: "Documentation",
@@ -198,11 +223,9 @@ export function menuGroups(): MenuGroup[] {
     });
   }
 
-  // The explorer's eighteen pages, in the clusters and words their own menu
-  // gives them, read from their site-menu.js rather than restated. Scoped to
-  // /6502 because eighteen entries belong to the reader who is in that
-  // section; everyone else gets "The explorer" in the 6502 group above.
-  groups.push(...explorerMenu());
+  // The explorer's eighteen pages are not here. They were, in their own
+  // clusters, on the explorer's pages only; now they are the map on the Lab
+  // and tools page, which renders the same clusters (lib/explorer-menu.ts).
 
   return groups;
 }

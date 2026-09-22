@@ -61,7 +61,7 @@ app/[lang]/style, style/zoo ───── style/STYLE.md, lib/zoo ── style
 app/[lang]/admin ──────────────── components/AdminConsole (talks to /api in the browser)
 app/og/[[...path]] ────────────── lib/card ── lib/registry, public/6502/games/chr.js
 app/sitemap, robots, manifest ─── lib/docs, lib/explorer, lib/seo, lib/tokens
-components/SiteFrame ──────────── lib/nav ── lib/docs, lib/explorer-menu, lib/explorer, lib/tracks, lib/projects
+components/SiteFrame ──────────── lib/nav ── lib/docs, lib/explorer, lib/tracks, lib/projects
 components/SiteLink ───────────── lib/nav (isHardRoute: a module page is arrived at with a fresh document)
 components/Untranslated ───────── nothing; the one copy of the sentence a Japanese page prints over an English body
 components/Halfphi ────────────── lib/pieces ── data/pieces.json

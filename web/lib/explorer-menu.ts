@@ -62,7 +62,6 @@ function readTheirMenu(): TheirGroup[] {
 export function explorerMenu(): MenuGroup[] {
   const theirs = readTheirMenu();
   const real = new Set(explorerPages().map((p) => p.slug));
-  const explorerRoutes = explorerPages().map((p) => `/6502/${p.slug}`);
 
   const groups: MenuGroup[] = [];
   for (const g of theirs) {
@@ -100,11 +99,13 @@ export function explorerMenu(): MenuGroup[] {
         hint: it.hint,
       });
     }
-    // Shown on the explorer's own pages and nowhere else. On the 6502
-    // landing, the console or the editor these eight clusters were a
-    // directory of eighteen pages under a recipe card, which is the
-    // pollution the owner named. Inside the explorer they are the map.
-    if (items.length) groups.push({ title: g.title, when: "/6502", only: explorerRoutes, items });
+    // Not in the site's menu at all any more. These clusters were shown on
+    // the explorer's own pages and nowhere else, and even there they were
+    // eighteen lines under the 6502 group's twelve (owner, 2026-09-22: too
+    // many to make sense of). The Lab and tools page (/6502/tools) is the
+    // map now, and it renders these same groups; the explorer's own bar
+    // carries its own menu besides.
+    if (items.length) groups.push({ title: g.title, when: "/6502", items });
   }
 
   // The checks that make the extraction trustworthy rather than hopeful. The
