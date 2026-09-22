@@ -2918,3 +2918,33 @@ refused saying so. The live database was backed up beside itself first.
   line somebody drew, not crossed on a peer's say-so.
 
 Nothing is waiting on the owner. The deploy's two open questions stand.
+
+### Evening, 2026-09-22: the beta follows
+
+The owner opened beta.tinymachines.ai and got an error. The beta's service
+had been running since the afternoon before, against a build rewritten
+that evening, and neither knew the pages added since: every one of them
+was a NoFallbackError. The beta branch had been fast-forwarded by hand
+after each deploy and rebuilt never; nothing held the running beta to the
+commit its worktree was at.
+
+- **`scripts/beta.sh` is the one way the beta moves** (`a646277`). It
+  builds the worktree with `TM_BETA=1`, restarts the unit, and verifies
+  through nginx that the served worker's stamp is the worktree's commit,
+  that the beta bar is on the page, and that the noindex header is there.
+  `--follow` first fast-forwards the worktree to main's commit and
+  refuses if beta ends up anywhere else. `--check` only builds.
+- **`deploy.sh` stage 11, "The beta follows"**, runs it after the push,
+  warning rather than failing: the deploy stands whatever the beta does.
+  The e2e stage is 12 now. The hand step is gone.
+- **Two checks earned their place.** The bar check failed on what beta
+  was serving, since a hand rebuild without `TM_BETA=1` had put the live
+  site's build in the beta's chair. The first follow refusal did not
+  fire: with beta a commit ahead, git's fast-forward to main returns zero
+  and moves nothing, and the script built and served the scratch commit.
+  It holds where beta lands now (`3fd5013`), and refused before building
+  on the retry.
+
+Main and beta are level at `3fd5013`, pushed; beta serves it with its
+bar. Live is unchanged at 1.0.265; the next deploy carries the new stage.
+Nothing is waiting on the owner.
