@@ -141,10 +141,30 @@ def open_session(conn: sqlite3.Connection, user_id: str) -> tuple[str, str]:
     return raw, exp
 
 
+def _domain(request: Request) -> Optional[str]:
+    """The apex, for a request that came to it or to a host beneath it.
+
+    beta.tinymachines.ai shares this API, and a sign-in started there finishes
+    on the apex (github_start says why). A cookie the apex sets with no Domain
+    is host-only: the browser never sends it to beta, so beta was signed out
+    for everyone, and every shelf picker there drew nothing (2026-09-22). With
+    Domain=apex the one session reaches every host under it. A host that is
+    not ours (a test client, a local run) gets a host-only cookie as before.
+    """
+    host = request.headers.get("host", "").split(":", 1)[0]
+    apex = SITE.split("//", 1)[1]
+    return apex if host == apex or host.endswith("." + apex) else None
+
+
 def _set_session(resp: Response, request: Request, raw: str) -> None:
+    domain = _domain(request)
+    if domain:
+        # The host-only cookie a sign-in before 2026-09-22 left, or the
+        # browser sends two of the same name and the parser keeps one.
+        resp.delete_cookie(SESSION_COOKIE, path="/")
     resp.set_cookie(
         SESSION_COOKIE, raw, max_age=SESSION_DAYS * 86400, httponly=True,
-        secure=_secure(request), samesite="lax", path="/",
+        secure=_secure(request), samesite="lax", path="/", domain=domain,
     )
 
 
@@ -206,9 +226,21 @@ def github_user(access: str) -> dict:
 
 
 def _safe_next(v: Optional[str]) -> str:
-    if not v or not v.startswith("/") or v.startswith("//") or "\\" in v:
+    """Where to send the browser after the sign-in: a path on this host, or
+    an https URL on the apex or a host beneath it (a sign-in started on beta
+    goes back to beta). Anything else is /6502/manage, not a redirect to
+    wherever a link said."""
+    if not v or "\\" in v:
         return "/6502/manage"
-    return v
+    if v.startswith("/") and not v.startswith("//"):
+        return v
+    apex = SITE.split("//", 1)[1]
+    if v.startswith("https://"):
+        host, _, rest = v[len("https://"):].partition("/")
+        host = host.split(":", 1)[0]
+        if host and (host == apex or host.endswith("." + apex)) and "@" not in host:
+            return v
+    return "/6502/manage"
 
 
 def upsert_github_user(conn: sqlite3.Connection, gh: dict) -> str:
@@ -286,7 +318,12 @@ def github_start(request: Request, next: Optional[str] = None) -> Response:
     host = request.headers.get("host", "")
     apex = SITE.split("//", 1)[1]
     if host != apex and host.endswith("." + apex):
-        return RedirectResponse(f"{SITE}/api/v1/auth/github" + (f"?{request.url.query}" if request.url.query else ""), status_code=302)
+        # `next` is a path on the host the person is on, so it goes across
+        # as that host's URL, and the callback sends them back there.
+        dest = _safe_next(next)
+        if dest.startswith("/"):
+            dest = f"https://{host}{dest}"
+        return RedirectResponse(f"{SITE}/api/v1/auth/github?{urlencode({'next': dest})}", status_code=302)
     state = secrets.token_urlsafe(24)
     dest = _safe_next(next)
     payload = f"{state}|{dest}"
@@ -338,7 +375,12 @@ def logout(request: Request, conn: sqlite3.Connection = Depends(connection)) -> 
         with conn:
             conn.execute("DELETE FROM sessions WHERE sha256 = ?", (_sha(raw),))
     resp = Response(status_code=204)
+    # Both shapes: the one set with the domain and the host-only one from
+    # before it, so a sign-out leaves nothing that still names a session.
     resp.delete_cookie(SESSION_COOKIE, path="/")
+    domain = _domain(request)
+    if domain:
+        resp.delete_cookie(SESSION_COOKIE, path="/", domain=domain)
     return resp
 
 

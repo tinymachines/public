@@ -250,9 +250,49 @@ def test_a_sign_in_started_on_a_subdomain_is_sent_to_the_apex(client, github):
     apex = auth.SITE.split("//", 1)[1]
     r = client.get("/v1/auth/github", params={"next": "/nes/shelf"}, headers={"host": f"beta.{apex}"})
     assert r.status_code == 302
-    assert r.headers["location"] == f"{auth.SITE}/api/v1/auth/github?next=%2Fnes%2Fshelf"
+    # And the person goes back to beta afterwards, signed in there, rather
+    # than landing on the apex and finding their own way.
+    assert r.headers["location"] == f"{auth.SITE}/api/v1/auth/github?next=https%3A%2F%2Fbeta.{apex}%2Fnes%2Fshelf"
+    r = client.get("/v1/auth/github", params={"next": f"https://beta.{apex}/nes/shelf"}, headers={"host": apex})
+    state = r.headers["location"].split("state=")[1].split("&")[0]
+    r = client.get("/v1/auth/github/callback", params={"code": "c0de", "state": state}, headers={"host": apex})
+    assert r.headers["location"] == f"https://beta.{apex}/nes/shelf"
+    # A next that names a host that is not ours goes nowhere near it.
+    for bad in ("https://evil.example/", f"https://{apex}.evil.example/x", f"//beta.{apex}/x", f"http://beta.{apex}/x"):
+        r = client.get("/v1/auth/github", params={"next": bad})
+        state = r.headers["location"].split("state=")[1].split("&")[0]
+        r = client.get("/v1/auth/github/callback", params={"code": "c0de", "state": state})
+        assert r.headers["location"] == "/6502/manage", bad
     assert auth.STATE_COOKIE not in r.cookies, "a state cookie was set on the wrong host"
     # The apex itself, and a host that is not ours, start the sign-in as before.
     for host in (apex, "testserver"):
         r = client.get("/v1/auth/github", headers={"host": host})
         assert r.headers["location"].startswith("https://github.com/"), host
+
+
+def test_the_session_reaches_the_subdomains(client, github):
+    """beta.tinymachines.ai shares the API and the sign-in finishes on the
+    apex, so the cookie the apex sets has to be one the browser also sends to
+    beta: Domain=apex. A host that is not ours (a test client, a local run)
+    gets a host-only cookie as before."""
+    apex = auth.SITE.split("//", 1)[1]
+    r = client.get("/v1/auth/github", headers={"host": apex})
+    state = r.headers["location"].split("state=")[1].split("&")[0]
+    r = client.get("/v1/auth/github/callback", params={"code": "c0de", "state": state}, headers={"host": apex})
+    assert r.status_code == 302, r.text
+    set_cookies = r.headers.get_list("set-cookie")
+    session = [c for c in set_cookies if c.startswith(f"{auth.SESSION_COOKIE}=") and "Max-Age=0" not in c]
+    assert len(session) == 1, set_cookies
+    assert f"domain={apex}" in session[0].lower(), session[0]
+    # Signing out has to name the same domain, or the cookie it clears is a
+    # different one from the cookie it set.
+    r = client.post("/v1/auth/logout", headers={"host": apex})
+    assert r.status_code == 204
+    cleared = [c for c in r.headers.get_list("set-cookie") if c.startswith(f"{auth.SESSION_COOKIE}=")]
+    assert any(f"domain={apex}" in c.lower() for c in cleared), cleared
+
+    r = client.get("/v1/auth/github")
+    state = r.headers["location"].split("state=")[1].split("&")[0]
+    r = client.get("/v1/auth/github/callback", params={"code": "c0de", "state": state})
+    session = [c for c in r.headers.get_list("set-cookie") if c.startswith(f"{auth.SESSION_COOKIE}=") and "Max-Age=0" not in c]
+    assert len(session) == 1 and "domain=" not in session[0].lower(), session
