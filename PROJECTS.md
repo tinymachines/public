@@ -2894,5 +2894,27 @@ apart. Zero now means an admin closed the shelf: it still lists, the
 ROMs and saves stay the account's to fetch and delete, and adding is
 refused saying so. The live database was backed up beside itself first.
 
-Still open: PRG+CHR pairs are refused with the reason, since a pair has
-no header saying which board it sat on.
+### Later on 2026-09-22: raw dumps, a corrected shadow, and pad-ble
+
+- **The shelf takes a raw dump** (`8ed1253`). A chip reader writes what
+  the PRG and CHR hold and nothing about the board, so the board comes
+  from the person (mapper, mirroring, battery, in the query) and the
+  sizes from the bytes: `with_header()` writes iNES 1.0 from the body's
+  own lengths, and banks that do not divide are refused with the
+  numbers. The header it writes is the OSCR's, byte for byte, so a pair
+  and its .nes are one file and the shelf says so (409). `/nes/shelf`
+  has the form; `carts.py add --mapper --chr` on the box. Nothing
+  multipart: the browser appends the CHR.
+- **The parts list's shadow followed nes-bench** (`0b8cd18`): the deploy
+  refused at the shadow test because nes-bench had corrected the pad
+  adapter's R2 net and devkit, and added pad-ble.
+- **pad-ble is in the notebook** (`/docs/nes/pad-ble`), on the nes-bench
+  session's alert: a procedure in the bench-build block after the rig,
+  its three drawings served as sheets. Boarded twice, because reading it
+  for the shadow found the document contradicting itself on the lead
+  colours; sent back rather than fixed here, the other session found
+  three more of the kind, and the second deploy carries their `8aaaecb`.
+  `probe-plan.md` stays unboarded with every other nes-bench plan: a
+  line somebody drew, not crossed on a peer's say-so.
+
+Nothing is waiting on the owner. The deploy's two open questions stand.
