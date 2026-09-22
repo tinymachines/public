@@ -2878,3 +2878,21 @@ not bump the version.
 - The `nes` checkout's untracked `NES/` (the owner's extraction) is in
   its local `.git/info/exclude`, so the board's clean check passes over
   it. Nothing committed, nothing deleted.
+
+### 2026-09-22: every sign-in has a shelf
+
+Live at `d0387e2`, still 1.0.265 (a clean tree does not bump). The
+shelves shipped granted by hand, because the service cannot tell a
+person keeping dumps of their own cartridges from a person keeping
+somebody else's; the owner opened them. `db.SHELF_DEFAULT` (32,
+`TM_SHELF_DEFAULT` overrides) is written by both places that insert a
+user row; migration 5 gave the same to every account still at zero,
+since zero was the default and not a decision, and an account an admin
+had set keeps its number (the owner's 64 did). The test rolls a file
+back to version 4 with one of each and watches the migration tell them
+apart. Zero now means an admin closed the shelf: it still lists, the
+ROMs and saves stay the account's to fetch and delete, and adding is
+refused saying so. The live database was backed up beside itself first.
+
+Still open: PRG+CHR pairs are refused with the reason, since a pair has
+no header saying which board it sat on.
