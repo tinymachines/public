@@ -59,6 +59,16 @@ def commit_and_branch(start: Path | None = None) -> tuple[str | None, str | None
     ref = m.group("ref")
     branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else None
 
+    # A linked worktree has a HEAD of its own and keeps its branches in the
+    # repository it was made from, which a `commondir` file names. Without
+    # this the beta worktree answered "I do not know" about a commit that was
+    # one file away.
+    common = git / "commondir"
+    if common.is_file():
+        shared = (git / common.read_text(errors="replace").strip()).resolve()
+        if shared.is_dir():
+            git = shared
+
     loose = git / ref
     if loose.is_file():
         sha = loose.read_text(errors="replace").strip()
