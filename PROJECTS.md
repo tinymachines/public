@@ -2948,3 +2948,35 @@ commit its worktree was at.
 Main and beta are level at `3fd5013`, pushed; beta serves it with its
 bar. Live is unchanged at 1.0.265; the next deploy carries the new stage.
 Nothing is waiting on the owner.
+
+### Later that evening, 2026-09-22: beta is signed in, and says what it is
+
+The owner asked for the shelf picker on the x-ray bench of beta's
+playground. It had been there since the shelf shipped; what they saw was
+beta signed out. The sign-in finishes on the apex and set a host-only
+cookie, which a browser never sends to beta.tinymachines.ai, so every
+picker there drew as it does for a stranger.
+
+- **The session reaches the subdomains** (`665eaae`, 1.0.266). The
+  cookie carries the apex as its domain for a request that came to it or
+  to a host beneath it; a test client keeps a host-only cookie. A sign-in
+  started on beta carries beta across as its return and the callback
+  sends the person back there, signed in; any other host in `next` still
+  goes to the manage page. Signing out clears both cookie shapes. Each
+  of those has a test that failed before the change. One fresh sign-in
+  is needed: the old cookie is the host-only one.
+- **That deploy was the first to run stage 11.** Beta followed from
+  `d376ec0` to `665eaae`, rebuilt, restarted, and the served worker
+  matched.
+- **Nothing is left to flip.** The owner asked whether beta should
+  become prod; the diff between the branches is empty, both hosts serve
+  the same worker, and the rearranged site went live on 2026-09-21 as
+  1.0.262. Beta is prod with a bar on it, kept level after every deploy,
+  where a change is tried before the deploy carries it live.
+- **The bar says so now** (`3cf716b`): "what goes live next, tried here
+  first", in both languages, with the unit and the SEO module's comment
+  following. It had said "arranged differently" for a day after that
+  stopped being true.
+
+Main is one commit ahead of live (the bar, beta-only); beta serves it.
+Nothing is waiting on the owner.
