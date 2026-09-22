@@ -2980,3 +2980,56 @@ picker there drew as it does for a stranger.
 
 Deployed clean afterwards, so live, main and beta are all at `9664ec7`
 and the version stays 1.0.266. Nothing is waiting on the owner.
+
+## Night, 2026-09-22: the menu opens where the reader is, and lists index pages
+
+The owner, on the beta: "Clicking on Menu causes a reformat on the page.
+Menu does not show unless you are scrolled all the way up. We'd be better
+served with an index page on the top-level menu choices; way too many
+menu items to make sense of."
+
+- **The first two were one rule** (`e12a244`). Opening the panel set
+  `overflow: hidden` on html and body, and that pair makes body the
+  scroll container, so the sticky bar stopped sticking. The probes that
+  only checked stickiness found nothing: the bar stuck on all 282 sitemap
+  pages, at both widths, in Chrome and WebKit. Scrolling first and then
+  opening the menu found it at once: button and panel 1487px above the
+  viewport, on a desk and a phone, in both engines. On a desk the lock
+  also took the scrollbar away, so the page grew 15px and everything
+  centred moved 7.5px as the panel opened; and the button grew from 80px
+  to 87px as its word changed (98 to 86 in Japanese), moving the flag.
+  The lock is gone, the scrim takes no touch scrolling instead, and the
+  button draws both words in one cell. `e2e/menu-open.spec.ts` guards it
+  with real scrollbars (Playwright hides them, and refuses launch options
+  inside a describe, so it is its own file); it fails on the build before.
+- **The menu lists index pages, and an index page lists what is under
+  it.** One rule in `lib/nav.ts` (`listedAbove`): a project's group is its
+  first level, minus what a track's page already names; the documentation
+  group is the tree's roots; the explorer's clusters are on the Lab and
+  tools page, not in the panel. Measured on the beta, desk width:
+
+  | page | before | after |
+  |---|---|---|
+  | `/` | 7 | 7 |
+  | `/nes` and its parts | 19 | 17 |
+  | `/docs` and every document | 84 | 13 |
+  | `/6502` | 19 | 14 |
+  | an explorer page | 43 | 14 |
+  | `/hotbits` | 9 | 9 |
+
+  The NES barely moved because its first level is its parts. If that is
+  still too many, the next cut is the section group itself, leaving the
+  site and the projects (7 everywhere) with each landing as the index;
+  that is the owner's call and a one-line change.
+- **The other half is a guard**, not a list: every English page in the
+  sitemap is at most one click from something the menu lists (the menu
+  over the five landings, then every listed page's body links). It passes
+  on the old build and the new one, and went red under a mutation that
+  dropped first-level pages, naming the explorer's article pages.
+- **Not changed:** the 6502 landing still prints its parts' paths as text
+  rather than links, and the NES landing's parts list is hand-written
+  beside the manifest's surfaces. Both are older than this and outside
+  what was asked.
+
+Live is still `9664ec7` (1.0.266). Main and beta are at this commit, beta
+serving it. Deploying is the owner's call.

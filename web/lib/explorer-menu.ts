@@ -101,7 +101,7 @@ export function explorerMenu(): MenuGroup[] {
     }
     // Not in the site's menu at all any more. These clusters were shown on
     // the explorer's own pages and nowhere else, and even there they were
-    // eighteen lines under the 6502 group's twelve (owner, 2026-09-22: too
+    // twenty-four lines under the 6502 group's twelve (owner, 2026-09-22: too
     // many to make sense of). The Lab and tools page (/6502/tools) is the
     // map now, and it renders these same groups; the explorer's own bar
     // carries its own menu besides.

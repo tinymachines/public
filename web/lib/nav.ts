@@ -74,7 +74,7 @@ export interface MenuGroup {
  *
  * THE MENU LISTS INDEX PAGES, AND AN INDEX PAGE LISTS WHAT IS UNDER IT.
  * Owner's call, 2026-09-22: the panel had become eighty-four lines on a
- * documentation page and thirty-seven inside the explorer, too many to make
+ * documentation page and forty-three inside the explorer, too many to make
  * sense of. So a group carries a section's first level, and a page a level
  * deeper is found on the page above it: the signal's two pages on /nes/signal,
  * the explorer's eighteen on /6502/tools, a report on its documentation
