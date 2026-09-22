@@ -183,12 +183,20 @@ def listing(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return list(conn.execute("SELECT * FROM users ORDER BY created_at DESC, id DESC"))
 
 
+def _clean_carts_max(n) -> int:
+    # bool is an int in Python, and `true` is not a number of cartridges.
+    if isinstance(n, bool) or not isinstance(n, int) or not 0 <= n <= 1000:
+        raise Invalid("carts_max: a whole number from 0 to 1000")
+    return n
+
+
 # The fields a PATCH may name, and the function that cleans each one.
 PATCHABLE = {
     "email": _clean_email,
     "handle": _clean_handle,
     "first_name": _clean_first_name,
     "pic": _clean_pic,
+    "carts_max": _clean_carts_max,
 }
 
 

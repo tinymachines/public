@@ -154,6 +154,7 @@ function accountWords(lang: Lang) {
     signIn: t(lang, "Sign in with GitHub"),
     signedIn: t(lang, "Signed in as"),
     tokens: t(lang, "your tokens"),
+    carts: t(lang, "your cartridges"),
     signOut: t(lang, "sign out"),
   };
 }

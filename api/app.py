@@ -40,6 +40,7 @@ from fastapi.routing import APIRoute
 
 import admin
 import auth
+import carts
 import mint as mint_mod
 import db
 import mcp_server
@@ -188,6 +189,7 @@ app.add_middleware(HeadAsGet)
 # "anyone may ask" and "a key may ask" should be visible in the file listing.
 app.include_router(admin.router)
 app.include_router(auth.router)
+app.include_router(carts.router)
 
 
 def _caller_ip(request: Request) -> str:

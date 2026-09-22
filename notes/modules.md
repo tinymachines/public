@@ -107,13 +107,17 @@ them), run against the live site (`bun run e2e`, or `deploy.sh --e2e`).
 | `db.py` | one SQLite file, migrations by `PRAGMA user_version`, refuses a newer file | `$STATE_DIRECTORY` or `TM_DB` |
 | `keys.py`, `admin.py`, `users.py` | dev keys (shown once, digest stored), the administered surface, the person table | `db` |
 | `auth.py` | sign in with GitHub; the registry tokens an account holds | `admin.connection`, `mint`, GitHub OAuth (secret in the unit's environment, never here) |
+| `carts.py` | an account's own shelf of cartridges: granted per account (`carts_max`), private to it, every figure read off the bytes here | `auth.require_user`, `db`, files under `$STATE_DIRECTORY/carts` or `TM_CARTS`, never the repository |
 | `mint.py` | the public token mint: imports the registry's own `mint_token` from the 6502 checkout | `TM_REGISTRY_SERVICE` (a directory on `sys.path`), `TM_REGISTRY_DB` (a file), `chip` |
 | `chip.py` | three loopback calls to the chip API: claim a page, publish the starter | `TM_CHIP_API` (`127.0.0.1:6502`) |
 | `provenance.py`, `release.py` | the commit, read out of `.git`; the version, read out of `VERSION` | the filesystem, never a subprocess |
 
-Tests: `test_api.py` 39, `test_admin.py` 32, `test_mint.py` 12,
-`test_auth.py` 10; `projects/6502/archive/test_drip.py` 13. `conftest.py`
-points `TM_DB` at a temp file and refuses to run otherwise.
+Tests: `test_api.py`, `test_admin.py`, `test_mint.py`, `test_auth.py`,
+`test_carts.py`; `projects/6502/archive/test_drip.py`. `conftest.py` points
+`TM_DB` at a temp file and refuses to run otherwise. How many each holds is
+`python3 -m pytest --collect-only -q`'s to say: the counts were typed here
+once, and three of the four had drifted by the time anybody compared them
+(2026-09-21).
 
 ### Third-party dependencies, the complete list
 

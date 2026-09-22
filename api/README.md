@@ -41,7 +41,7 @@ declares them.
 | `POST /mcp` | The same surface, spoken to a language model |
 | `GET /mcp` | 405 with `Allow: POST`. There is no stream to open |
 
-Everything above is public. The next four need a session, which is the
+Everything above is public. The routes in the next two tables need a session, which is the
 cookie a GitHub sign-in leaves: an account holds the digests of the registry
 tokens it minted, so it can replace one it lost. `auth.py` says why an account
 exists at all and why GitHub is the first way in.
@@ -52,6 +52,24 @@ exists at all and why GitHub is the first way in.
 | `POST /v1/me/tokens` | Mint a registry token held by this account, counted against the account rather than the address |
 | `POST /v1/me/tokens/{token_id}/reissue` | Revoke a lost token in the registry and move its page to a new one, returned once |
 | `DELETE /v1/me/tokens/{token_id}` | Revoke. The page stays |
+
+An account can also keep a shelf of its own cartridges, so that every menu on
+the site that asks for a `.nes` can offer them by name. A cartridge answers
+only to the session that put it there: somebody else's id is a 404, the same as
+one that never existed. **An account has no shelf until an admin gives it one**
+(`carts_max` on the user, zero by default), because what goes on a shelf is a
+dump of a cartridge somebody owns, and this service cannot know that they do.
+The bytes live on disk beside the database (`$STATE/carts`, or `TM_CARTS`),
+never in it and never in this repository. `carts.py` has the whole argument;
+`python3 carts.py grant <handle> <how-many>` makes the first grant on the box.
+
+| | |
+|---|---|
+| `GET /v1/me/carts` | The account's shelf, by name, and what it may hold. Empty for an account with no shelf |
+| `POST /v1/me/carts` | Add one. The body is the `.nes`; the header is read here and held to the file's length |
+| `GET /v1/me/carts/{cart_id}/rom` | The bytes, `private, no-store`, checked against their digest on the way out |
+| `PATCH /v1/me/carts/{cart_id}` | Rename it or change its note. Touches only what it names |
+| `DELETE /v1/me/carts/{cart_id}` | Remove the entry and the file |
 
 Everything below needs a dev key.
 

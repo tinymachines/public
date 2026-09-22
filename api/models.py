@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 
 class Piece(BaseModel):
@@ -328,6 +328,14 @@ class User(BaseModel):
                     "image. Widening the policy is a decision about the policy.",
         examples=["/pics/ada.png"],
     )
+    carts_max: int = Field(
+        default=0,
+        description="How many cartridges this account may keep on its own shelf "
+                    "(`/v1/me/carts`). Zero, the default, means it has no shelf: one is "
+                    "granted to a person by an admin, because what goes on it is a dump "
+                    "of a cartridge somebody owns.",
+        examples=[0],
+    )
     created_at: datetime = Field(description="When the row was created, UTC.")
     updated_at: datetime = Field(description="When any field last changed, UTC.")
     disabled_at: Optional[datetime] = Field(
@@ -401,6 +409,16 @@ class UserPatch(BaseModel):
     pic: Optional[str] = Field(
         default=None,
         description="New picture reference. Omit to leave it alone; send null to remove it.",
+    )
+    # Strict, because Pydantic's lax mode reads `true` as 1 and "3" as 3, and
+    # a shelf of one cartridge is not what somebody sending `true` meant.
+    carts_max: Optional[StrictInt] = Field(
+        default=None,
+        ge=0,
+        le=1000,
+        description="How many cartridges the account may keep. Omit to leave it alone; "
+                    "zero takes the shelf away without deleting what is on it, so the "
+                    "account can still list, fetch and delete but not add.",
     )
 
 
@@ -793,6 +811,53 @@ class Me(BaseModel):
     user: MeUser = Field(description="The account.")
     tokens: list[MeToken] = Field(description="Newest first, revoked ones included.")
     limits: MeLimits = Field(description="How many tokens the account may hold and holds.")
+
+
+class Cart(BaseModel):
+    """One cartridge on an account's own shelf, as what this service measured about it.
+
+    Everything here except `name` and `note` was read off the bytes when they
+    arrived: the header's claims were checked against the file's length before
+    a row was written, and a file that failed that was refused rather than
+    kept. The bytes themselves are at `rom`, and only the account that put
+    them there can fetch them.
+    """
+
+    id: str = Field(description="The cartridge's id on this shelf.", examples=["ct_3f9a1b3c7d2e4f01"])
+    name: str = Field(description="What the owner calls it. Shown in every cartridge menu on the site.", examples=["Blaster Master"])
+    note: str = Field(description="Anything the owner wants to remember about this dump.", examples=["second read, contacts cleaned"])
+    sha256: str = Field(description="SHA-256 of the whole file, header included.")
+    crc32: str = Field(description="CRC-32 of everything after the sixteen-byte header (and the trainer, if there is one), eight hex digits. This is the figure cartridge databases key on, because two dumps of one cartridge can differ in the header.", examples=["1d6a1b1c"])
+    size: int = Field(description="The file's length in bytes.", examples=[262160])
+    mapper: int = Field(description="The board the header names, as its iNES mapper number. Whether the console model has that board is the console's to say when the cartridge is loaded.", examples=[1])
+    prg_bytes: int = Field(description="Program ROM, in bytes, as the header declares and the length confirms.", examples=[131072])
+    chr_bytes: int = Field(description="Picture ROM, in bytes. Zero means the board carries picture RAM instead.", examples=[131072])
+    rom: str = Field(description="Where the bytes are, relative to the API's root. Answers only to the session that owns the shelf.", examples=["/v1/me/carts/ct_3f9a1b3c7d2e4f01/rom"])
+    created_at: datetime = Field(description="When it was put on the shelf, UTC.")
+    updated_at: datetime = Field(description="When its name or note last changed, UTC.")
+
+
+class CartLimits(BaseModel):
+    max: int = Field(description="How many cartridges this account may keep. Zero means it has not been given a shelf.")
+    held: int = Field(description="How many it keeps now.")
+    remaining: int = Field(description="How many more it may add. Never negative: a shelf that was shrunk under its contents reports zero.")
+    bytes_max: int = Field(description="The largest single file the shelf takes, in bytes.")
+
+
+class Carts(BaseModel):
+    """An account's own shelf of cartridges."""
+
+    carts: list[Cart] = Field(description="By name. Empty for an account with no shelf, which is an answer rather than an error so that a cartridge menu can ask without caring.")
+    limits: CartLimits = Field(description="What the shelf holds and may hold.")
+
+
+class CartPatch(BaseModel):
+    """Rename a cartridge or change its note. The bytes cannot be edited: delete it and add the new dump."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = Field(default=None, description="New name. Omit to leave it alone.", examples=["Blaster Master"])
+    note: Optional[str] = Field(default=None, description="New note. Omit to leave it alone; an empty string clears it.")
 
 
 class VisitorsSource(BaseModel):

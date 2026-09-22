@@ -159,6 +159,12 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The console from the repository running in the page: both fast chips, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
   },
+  "/nes/shelf": {
+    title: "Your cartridges",
+    description:
+      "A private shelf for dumps of the cartridges you own, kept beside your account so that every cartridge menu on the site offers them by name.",
+    noindex: true,
+  },
   "/nes/signal": {
     title: "The signal",
     description:

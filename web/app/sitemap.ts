@@ -19,6 +19,8 @@ import { abs } from "@/lib/seo";
  *                      it is linked from the style guide.
  *   /6502/manage         the editor. A tool with a token in it, not a page to
  *                        arrive at from a search
+ *   /nes/shelf           your own cartridges. It belongs to an account, and
+ *                        a signed-out reader finds only what it is
  *   /6502/builders/@x    the builder pages are rendered from the registry in
  *                        the browser, and listing them here would make the
  *                        build depend on a live service answering. They are

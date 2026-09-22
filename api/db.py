@@ -168,6 +168,38 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX builder_tokens_user ON builder_tokens(user_id, revoked_at);
     """,
+    # 4: the cartridges an account keeps for itself. See carts.py.
+    """
+    -- How many cartridges this account may keep. Zero is the default and means
+    -- none: a shelf is granted to a person, not handed to everybody who signs
+    -- in, because what goes on it is a dump of a cartridge somebody owns and
+    -- this service has no way to know that they do.
+    ALTER TABLE users ADD COLUMN carts_max INTEGER NOT NULL DEFAULT 0;
+
+    -- The row is what we measured about the file; the bytes are on disk beside
+    -- the database, never in it and never in the repository. Nothing here is
+    -- taken from what the uploader said except the name and the note.
+    CREATE TABLE carts (
+        id         TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name       TEXT NOT NULL,
+        note       TEXT NOT NULL DEFAULT '',
+        -- Of the whole file, header included: it names the file on disk.
+        sha256     TEXT NOT NULL,
+        -- Of everything after the header, which is what cartridge databases
+        -- key on, because two dumps of one cartridge can differ in the header.
+        crc32      TEXT NOT NULL,
+        size       INTEGER NOT NULL,
+        mapper     INTEGER NOT NULL,
+        prg_bytes  INTEGER NOT NULL,
+        chr_bytes  INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    -- One copy of a cartridge per shelf. The same dump on two shelves is two
+    -- rows and two files, because a shelf is private to its account.
+    CREATE UNIQUE INDEX carts_user_sha ON carts(user_id, sha256);
+    """,
 ]
 
 

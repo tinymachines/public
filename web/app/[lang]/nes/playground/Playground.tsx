@@ -17,6 +17,7 @@ import type { MarioFrame } from "./mario";
 import { words, type StationKey } from "./words";
 import { ui } from "./ui";
 import type { Lang } from "@/lib/lang";
+import { ShelfPicker } from "@/app/components/ShelfPicker";
 
 /**
  * The playground's live half: one console in a worker, and the stations
@@ -504,6 +505,7 @@ export function Playground({
               {U.common.yourOwn}
               <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && loadOwn(e.target.files[0])} />
             </label>
+            <ShelfPicker lang={lang} onPick={loadOwn} selectClass="pg-select" />
             <p className="pg-note">
               {cart === "own"
                 ? U.hero.carts.own

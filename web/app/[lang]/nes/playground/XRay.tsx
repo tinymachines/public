@@ -6,6 +6,7 @@ import { BIT, BUTTONS, token } from "./Playground";
 import { xrayWords } from "./ui.xray";
 import { ui } from "./ui";
 import type { Lang } from "@/lib/lang";
+import { ShelfPicker } from "@/app/components/ShelfPicker";
 
 /**
  * Your own game, x-rayed: the reader plays their own cartridge while the
@@ -238,6 +239,7 @@ export function XRay({ lang, shape, palette, framePeriodMs }: { lang: Lang; shap
               {U.yourOwn}
               <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && load(e.target.files[0])} />
             </label>
+            <ShelfPicker lang={lang} onPick={load} selectClass="pg-select" />
             <button className="pg-btn" onClick={() => setPlaying((p) => !p)} disabled={!ready || busy}>
               {playing ? U.pause : U.play}
             </button>

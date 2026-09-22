@@ -7,6 +7,7 @@ import { BIT, BUTTONS, token } from "./Playground";
 import { twinsWords } from "./ui.twins";
 import { ui } from "./ui";
 import type { Lang } from "@/lib/lang";
+import { ShelfPicker } from "@/app/components/ShelfPicker";
 
 /**
  * Spot the difference: two consoles (public/nes/twin.worker.mjs) built
@@ -465,6 +466,7 @@ export function Twins({
           {U.yourOwn}
           <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && loadOwn(e.target.files[0])} />
         </label>
+        <ShelfPicker lang={lang} onPick={loadOwn} selectClass="pg-select" />
       </div>
       <div className="pg-row">
         <span className="pg-label">{U.holdBoth}</span>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import type { Lang } from "@/lib/lang";
 import { Gamepad } from "./Gamepad";
 import { attach, detach, load, toggleRun, subscribe, snapshot, serverSnapshot, type DriftStats } from "./playEngine";
+import { ShelfPicker } from "@/app/components/ShelfPicker";
 
 /**
  * The console in the page: a follower of playEngine's announcements. The
@@ -14,7 +15,7 @@ import { attach, detach, load, toggleRun, subscribe, snapshot, serverSnapshot, t
 
 const S = {
   en: {
-    pick: "Cartridge (.nes, NROM)",
+    pick: "Cartridge (.nes)",
     run: "Run",
     pause: "Pause",
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
@@ -47,7 +48,7 @@ const S = {
     canvasLabel: "The console's picture through the three-line comb: 2048 samples by 240 lines",
   },
   ja: {
-    pick: "カートリッジ（.nes、NROM）",
+    pick: "カートリッジ（.nes）",
     run: "走らせる",
     pause: "停止",
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
@@ -166,6 +167,7 @@ export function Play({ lang }: { lang: Lang }) {
               }}
             />
           </label>
+          <ShelfPicker lang={lang} onPick={(f) => void load(f)} />
           <button type="button" className="btn btn-primary" onClick={toggleRun} disabled={!s.loaded} data-play-run>
             {s.running ? T.pause : T.run}
           </button>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { delocalize, localize } from "@/lib/lang";
 import type { MenuGroup } from "@/lib/nav";
+import { listShelf } from "@/lib/shelf";
 
 /**
  * The menu: one control on every page, opening the section you are in.
@@ -36,7 +37,7 @@ export function Menu({
   groups,
   label = "Menu",
   close = "Close",
-  account = { signIn: "Sign in with GitHub", signedIn: "Signed in as", tokens: "your tokens", signOut: "sign out" },
+  account = { signIn: "Sign in with GitHub", signedIn: "Signed in as", tokens: "your tokens", carts: "your cartridges", signOut: "sign out" },
   hard = false,
 }: {
   groups: MenuGroup[];
@@ -44,7 +45,7 @@ export function Menu({
   /** What the same button says while the panel is open: it closes it. */
   close?: string;
   /** The account row's words, translated by the caller. */
-  account?: { signIn: string; signedIn: string; tokens: string; signOut: string };
+  account?: { signIn: string; signedIn: string; tokens: string; carts: string; signOut: string };
   /** Every link a full navigation: set by a page whose module must not survive the leave. */
   hard?: boolean;
 }) {
@@ -66,7 +67,7 @@ export function Menu({
   // The account row at the foot of the panel. Asked once per opening, so a
   // sign-in on another tab shows the next time the menu opens; null until
   // answered, and absent where GitHub sign-in is not configured.
-  const [who, setWho] = useState<{ enabled: boolean; login: string | null } | null>(null);
+  const [who, setWho] = useState<{ enabled: boolean; login: string | null; shelf?: boolean } | null>(null);
   useEffect(() => {
     if (!open) return;
     let live = true;
@@ -76,7 +77,10 @@ export function Menu({
         if (!a.github) { if (live) setWho({ enabled: false, login: null }); return; }
         const m = await fetch("/api/v1/me", { cache: "no-store" });
         const login = m.ok ? ((await m.json()).user?.login ?? null) : null;
-        if (live) setWho({ enabled: true, login });
+        // The shelf is granted to an account, not given to every one, so its
+        // link is shown only to an account that has one (lib/shelf.ts).
+        const shelf = login ? await listShelf().then((x) => x.state === "open" && x.limits.max > 0).catch(() => false) : false;
+        if (live) setWho({ enabled: true, login, shelf });
       } catch { if (live) setWho({ enabled: false, login: null }); }
     })();
     return () => { live = false; };
@@ -208,6 +212,10 @@ export function Menu({
                   ) : (
                     <Link href={editor}>{account.tokens}</Link>
                   )}
+                  {who.shelf ? (
+                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                    <a href={localize(lang, "/nes/shelf")} data-menu-shelf>{account.carts}</a>
+                  ) : null}
                   <button type="button" className="linkish" onClick={signOut}>{account.signOut}</button>
                 </>
               ) : (

@@ -43,8 +43,11 @@ const PROSE = {
       <>
         There is no cartridge here. Choose a .nes file from your own disk;
         it is read into a worker in this browser and goes nowhere else.
-        Only NROM loads, the mapper the console has, and anything else
-        is refused by name. The repository&rsquo;s own test cartridge is
+        The console loads the boards it has, which{" "}
+        <Link href="/docs/nes/boards">the boards report</Link> lists, and
+        refuses any other by name. If you are signed in and keep{" "}
+        <Link href="/nes/shelf">a shelf of your own cartridges</Link>, they
+        are offered beside the file button. The repository&rsquo;s own test cartridge is
         what the site&rsquo;s checks run, and its{" "}
         <a href="/nes/bars.nes">colour-bars cartridge</a> is here to
         download: nobody&rsquo;s game, the twelve hues in thirty-two-dot
@@ -101,7 +104,7 @@ const PROSE = {
     ),
     rom: (
       <>
-        ここにカートリッジは無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザ内のワーカーに読まれ、他のどこへも行かない。読み込めるのはコンソールが持つマッパーである NROM だけで、それ以外は名指しで拒む。サイトの検査が走らせるのはリポジトリ自身のテストカートリッジで、その<a href="/nes/bars.nes">カラーバーのカートリッジ</a>はここからダウンロードできる: 誰のゲームでもなく、十二の色相を三十二ドットのセルに一つの輝度行で並べ、行は二秒ごとに進む。捕捉比較とベンチが使うのと同じファイルだ。
+        ここにカートリッジは無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザ内のワーカーに読まれ、他のどこへも行かない。コンソールは自分が持っている基板を読み込み (どれがあるかは<Link href="/ja/docs/nes/boards">基板の報告</Link>にある)、それ以外は名指しで拒む。サインインしていて<Link href="/ja/nes/shelf">自分のカートリッジの棚</Link>を持っていれば、ファイルのボタンの隣に並ぶ。サイトの検査が走らせるのはリポジトリ自身のテストカートリッジで、その<a href="/nes/bars.nes">カラーバーのカートリッジ</a>はここからダウンロードできる: 誰のゲームでもなく、十二の色相を三十二ドットのセルに一つの輝度行で並べ、行は二秒ごとに進む。捕捉比較とベンチが使うのと同じファイルだ。
       </>
     ),
     rate: (fps: string, x: string, stamp: string) => (

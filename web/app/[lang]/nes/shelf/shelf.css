@@ -1,0 +1,33 @@
+/*
+ * /nes/shelf. Structure only, in the kit's tokens:
+ * the controls are the kit's own (.btn, .input, .measured, .notice), and this
+ * file says where they sit. One column, because a row is a form.
+ */
+.shelf-list,
+.shelf-outcomes { list-style: none; padding: 0; margin: 0; display: grid; gap: calc(var(--u) * 4); }
+.shelf-outcomes { gap: var(--u); font-size: var(--text-fine); }
+.shelf-outcomes .bad { color: var(--color-red-ink); }
+.shelf-outcomes code { overflow-wrap: anywhere; }
+
+.shelf-row {
+  display: grid;
+  gap: calc(var(--u) * 2);
+  padding-top: calc(var(--u) * 4);
+  border-top: 1px solid var(--color-rule);
+}
+.shelf-row-edit { display: grid; gap: calc(var(--u) * 2); grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; }
+.shelf-row-facts,
+.shelf-row-acts { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); margin: 0; }
+.shelf-row-facts code { overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .shelf-row-edit { grid-template-columns: minmax(0, 1fr); }
+}
+
+.btn.is-disabled { opacity: 0.45; cursor: default; }
+
+/* The manager is its own prose column between the page's two; the kit spaces
+   headings as direct children, which is why its parts are not wrapped. */
+.prose.shelf { margin-block: calc(var(--u) * 8); }
+.prose.shelf > .shelf-list,
+.prose.shelf > .shelf-outcomes { padding-left: 0; }
