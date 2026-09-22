@@ -25,6 +25,13 @@
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now tinymachines-beta-web
 #
+# After that, `scripts/beta.sh` is the one way to move it: it builds the
+# worktree with TM_BETA=1, restarts this unit and verifies the served worker
+# names the worktree's commit. deploy.sh runs it last with --follow, so the
+# beta is level with the live site after every deploy. A hand `bun run build`
+# here followed by a restart, or a fast-forward followed by neither, is how
+# the beta came to serve a stale build under a staler process (2026-09-22).
+#
 # TM_BETA is read at build time: it puts the banner on every page and makes
 # every page noindex. The vhost says the same thing twice more (a header and
 # a robots.txt), because an origin nobody meant to publish is the one thing

@@ -47,7 +47,9 @@
 #
 # ## The order, which is not obvious anywhere else
 #
-# Bump, commit, build, restart, verify, THEN push. The build stamps
+# Bump, commit, build, restart, verify, THEN push, and last the beta follows
+# (scripts/beta.sh --follow: its worktree fast-forwarded to this commit, built
+# with TM_BETA=1, restarted, verified). The build stamps
 # public/sw.js with the current commit, because a browser installs a new
 # service worker only when the file's bytes change, so committing has to come
 # first. And the push comes last so that origin only ever receives a commit
@@ -612,6 +614,25 @@ else
   fi
 fi
 
+# The beta follows what just went live: fast-forward its worktree to this
+# commit, build it with TM_BETA=1, restart its service, verify it serves this
+# commit. scripts/beta.sh is the whole of it. Here because the beta used to
+# be fast-forwarded by hand and rebuilt never: on 2026-09-22 it was serving a
+# build from the evening before under a process older still, and every page
+# added since was a NoFallbackError. After the push and not gating it: the
+# deploy stands whatever the beta does, and a beta that refuses to follow is
+# a warning to read, not a live site to roll back.
+say "11. The beta follows"
+if [ -n "$NO_PUSH" ]; then
+  printf '  skipped (--no-push: the beta follows a deploy origin has)\n'
+elif [ ! -e "$ROOT/../public-beta/.git" ]; then
+  printf '  no beta worktree beside this checkout; nothing to follow\n'
+elif [ "$(cd "$ROOT/../public-beta" && pwd -P)" = "$(pwd -P)" ]; then
+  printf '  this checkout is the beta worktree; nothing follows it\n'
+elif ! "$ROOT/scripts/beta.sh" --follow; then
+  warn "the beta did not follow; the deploy stands. scripts/beta.sh --follow by hand, once whatever it named is settled."
+fi
+
 if [ -n "$BUMPED" ]; then
   say "Deployed $(tr -d '[:space:]' < "$ROOT/VERSION")."
 else
@@ -622,6 +643,6 @@ fi
 # purpose: the deploy stood on its own gates, and this is the site being held
 # to its rules afterwards. A failure here is a finding, not a rollback.
 if [ -n "$E2E" ]; then
-  say "11. The e2e suite, against the live site"
+  say "12. The e2e suite, against the live site"
   (cd "$ROOT/web" && bun run e2e) || fail "e2e: the site is live and a rule is broken; web/e2e/out/report has the detail"
 fi

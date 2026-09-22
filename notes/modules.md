@@ -34,7 +34,7 @@ sub-projects, along the licence line. Where each one is right now:
 | `docs/` | the documentation tree, markdown; `web/lib/docs.ts` walks it | prerendered at `/docs` |
 | `projects/6502/` | the Wayback drip (`drip.py`). The Lab's HTML was here as a copy until 2026-08-26; it is read from the 6502 checkout now | drip by hand or a timer |
 | `deploy/` | the nginx server block and two systemd units, source of truth for the copies under `/etc` | installed by hand |
-| `scripts/` | `deploy.sh`, the one command between a change and it being live; `board-engine.py`, the engine gate | by hand |
+| `scripts/` | `deploy.sh`, the one command between a change and it being live; `beta.sh`, the one way the beta worktree moves (deploy.sh runs it last); `board-engine.py`, the engine gate | by hand |
 | `notes/` | the survey, the plans, the console pack's issues, this file | read by people |
 | `assets/` | the halfphi mark | `web/app/components/Halfphi.tsx` |
 
