@@ -303,15 +303,17 @@ export function Shell({
         <Topbar lang={lang} die={die} />
       </header>
       {/* The beta origin says so on every page, above everything else. It is
-          the same tree arranged differently (deploy/beta.tinymachines.ai.nginx),
-          and a reader who arrives by a shared link should not have to guess
-          why the site looks unfamiliar or whether what they are reading is
-          live. The header and the robots.txt keep crawlers out; this line is
-          for people. */}
+          where a change is tried before the deploy carries it live
+          (deploy/beta.tinymachines.ai.nginx, scripts/beta.sh), and a reader
+          who arrives by a shared link should not have to guess whether what
+          they are reading is live. The header and the robots.txt keep
+          crawlers out; this line is for people. It said "the same site,
+          arranged differently" while that was true (2026-09-21); the
+          rearranged site went live and the line did not follow until
+          2026-09-22. */}
       {BETA ? (
         <p className="beta-bar">
-          This is the beta: the same site, arranged differently, and nothing
-          here is indexed. The live site is{" "}
+          {t(lang, "This is the beta: what goes live next, tried here first. Nothing here is indexed. The live site is")}{" "}
           <a href="https://tinymachines.ai">tinymachines.ai</a>.
         </p>
       ) : null}

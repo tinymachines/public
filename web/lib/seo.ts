@@ -59,7 +59,7 @@ export interface PageMeta {
  * (`/6502/games`), which is the canonical shape of every address here.
  */
 /**
- * The beta origin, which serves this same tree arranged differently.
+ * The beta origin, where a change is tried before the deploy carries it live.
  *
  * Set at build time (TM_BETA=1, see deploy/tinymachines-beta-web.service).
  * Every page it serves is noindex, whatever the page itself asked for, and

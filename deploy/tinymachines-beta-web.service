@@ -1,8 +1,11 @@
-# beta.tinymachines.ai: the same site, arranged differently.
+# beta.tinymachines.ai: what goes live next, tried here first.
 #
 # One `next start` on 127.0.0.1:6541, from a worktree of the `beta` branch at
-# ../public-beta. Same repository, same build, different structure: the beta
-# exists to move pages around without moving the paths people already have.
+# ../public-beta. Same repository, same build. It began as the site arranged
+# differently, to move pages around without moving the paths people already
+# had; that arrangement went live on 2026-09-21 (1.0.262), and since then the
+# beta is where a change is tried before the deploy carries it live, kept
+# level with main by deploy.sh's last stage.
 #
 # A worktree rather than a second clone, deliberately. A clone would have its
 # own docs/ and its own data/, which is two copies of every fact, and this
@@ -38,7 +41,7 @@
 # here that must not be found by accident.
 
 [Unit]
-Description=beta.tinymachines.ai (Next 16, the site rearranged)
+Description=beta.tinymachines.ai (Next 16, what goes live next)
 After=network.target
 
 [Service]
