@@ -298,3 +298,41 @@ def test_a_write_from_another_site_is_refused():
     cart = put(c, ines(1, 1)).json()
     assert c.delete(f"/v1/me/carts/{cart['id']}", headers={"origin": "https://evil.example"}).status_code == 403
     assert len(c.get("/v1/me/carts").json()["carts"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# From the box: the same rules, without a browser
+# ---------------------------------------------------------------------------
+
+
+def test_the_command_line_adds_under_the_same_rules_as_an_upload(shelf_dir, tmp_path, capsys):
+    c = signed_in("ada", shelf=2)
+    f = tmp_path / "Colour Bars (Ours).nes"
+    f.write_bytes(BARS.read_bytes())
+
+    assert carts._main(["add", "nobody", str(f)]) == 1
+    assert "no account" in capsys.readouterr().err
+
+    assert carts._main(["add", "ada", str(f), "--note", "from the box"]) == 0
+    said = capsys.readouterr().out
+    listed = c.get("/v1/me/carts").json()["carts"]
+    assert [x["name"] for x in listed] == ["Colour Bars (Ours)"]
+    assert listed[0]["note"] == "from the box" and listed[0]["crc32"] in said
+    # It is the same file the route would have taken, at the same address.
+    assert c.get(listed[0]["rom"]).content == BARS.read_bytes()
+
+    # And the same refusals: a twin, a bad file, then a full shelf.
+    assert carts._main(["add", "ada", str(f)]) == 1
+    assert "already on the shelf" in capsys.readouterr().err
+    bad = tmp_path / "bad.nes"
+    bad.write_bytes(b"NES\x1a" + bytes(12) + b"x")
+    assert carts._main(["add", "ada", str(bad)]) == 1
+    assert "declares no program ROM" in capsys.readouterr().err
+    two = tmp_path / "two.nes"
+    two.write_bytes(ines(1, 1, fill=0x01))
+    assert carts._main(["add", "ada", str(two), "--name", "two"]) == 0
+    three = tmp_path / "three.nes"
+    three.write_bytes(ines(1, 1, fill=0x02))
+    assert carts._main(["add", "ada", str(three)]) == 1
+    assert "limit of 2" in capsys.readouterr().err
+    assert len(c.get("/v1/me/carts").json()["carts"]) == 2

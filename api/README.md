@@ -61,7 +61,9 @@ one that never existed. **An account has no shelf until an admin gives it one**
 dump of a cartridge somebody owns, and this service cannot know that they do.
 The bytes live on disk beside the database (`$STATE/carts`, or `TM_CARTS`),
 never in it and never in this repository. `carts.py` has the whole argument;
-`python3 carts.py grant <handle> <how-many>` makes the first grant on the box.
+`python3 carts.py grant <handle> <how-many>` makes the first grant on the box, and
+`python3 carts.py add <handle> <file.nes>` puts a dump that is already on the box
+on a shelf, held to every rule an upload is.
 
 | | |
 |---|---|

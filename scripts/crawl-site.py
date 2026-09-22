@@ -45,7 +45,7 @@ OUT = ROOT / "data" / "site-map.json"
 # it leaves them out (app/sitemap.ts holds the same list with its reasons).
 # They are counted because a page nobody links to is exactly what this looks
 # for, and the sitemap's omissions are where those collect.
-UNLISTED = ["/admin", "/hotbits/space", "/visitors", "/style/zoo", "/6502/manage", "/6502/consolev2"]
+UNLISTED = ["/admin", "/hotbits/space", "/visitors", "/style/zoo", "/6502/manage", "/6502/consolev2", "/nes/shelf"]
 
 KANA_CJK = re.compile(r"[぀-ヿ㐀-鿿]")
 LATIN = re.compile(r"[A-Za-z]")

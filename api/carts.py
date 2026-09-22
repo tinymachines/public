@@ -94,6 +94,14 @@ class NotACartridge(ValueError):
     """The bytes are not an iNES file this service can vouch for. The message says why."""
 
 
+class Refused(Exception):
+    """A cartridge was not put on the shelf. `status` is the HTTP answer; `detail` the reason, written to be shown."""
+
+    def __init__(self, status: int, detail: str):
+        super().__init__(detail)
+        self.status, self.detail = status, detail
+
+
 @dataclass(frozen=True)
 class Header:
     mapper: int
@@ -154,16 +162,16 @@ def clean_name(name: str) -> str:
     if n.lower().endswith(".nes"):
         n = n[:-4].rstrip()
     if not n:
-        raise HTTPException(status_code=422, detail="name: a cartridge needs one.")
+        raise Refused(422, "name: a cartridge needs one.")
     if len(n) > NAME_MAX:
-        raise HTTPException(status_code=422, detail=f"name: {NAME_MAX} characters at most.")
+        raise Refused(422, f"name: {NAME_MAX} characters at most.")
     return n
 
 
 def clean_note(note: str) -> str:
     n = " ".join("".join(ch for ch in note if ch.isprintable()).split())
     if len(n) > NOTE_MAX:
-        raise HTTPException(status_code=422, detail=f"note: {NOTE_MAX} characters at most.")
+        raise Refused(422, f"note: {NOTE_MAX} characters at most.")
     return n
 
 
@@ -200,6 +208,60 @@ def _owned(conn: sqlite3.Connection, uid: str, cid: str) -> sqlite3.Row:
 
 _SIGNED_OUT = {401: {"description": "Not signed in."}}
 _NOT_YOURS = {**_SIGNED_OUT, 404: {"description": "No such cartridge on this account's shelf. Somebody else's id gets this answer too."}}
+
+
+def store(conn: sqlite3.Connection, user: sqlite3.Row, data: bytes, name: str, note: str = "") -> sqlite3.Row:
+    """Put a cartridge on an account's shelf, or refuse it with the reason.
+
+    The one place the rules live: the route and the command at the foot of
+    this file both call it, so a cartridge added on the box is held to the
+    same header check, the same limits and the same digest as one uploaded.
+    """
+    limits = _limits(conn, user)
+    if limits.max == 0:
+        raise Refused(403, "This account has not been given a cartridge shelf. They are granted by hand, because what goes on one is a dump of a cartridge you own.")
+    if len(data) > limits.bytes_max:
+        raise Refused(413, f"{len(data)} bytes; the shelf takes {limits.bytes_max} at most.")
+    name, note = clean_name(name), clean_note(note)
+    try:
+        h = read_header(data)
+    except NotACartridge as e:
+        raise Refused(422, str(e)) from e
+
+    sha = hashlib.sha256(data).hexdigest()
+    twin = conn.execute("SELECT name FROM carts WHERE user_id = ? AND sha256 = ?", (user["id"], sha)).fetchone()
+    if twin is not None:
+        raise Refused(409, f"This exact file is already on the shelf, as {twin['name']!r}.")
+    if limits.remaining == 0:
+        raise Refused(409, f"The shelf holds {limits.held} cartridges, which is its limit of {limits.max}. Delete one to add another.")
+
+    # File first, then the row: a row is the claim that the bytes are there, so
+    # it is never written before they are. Written beside its final name and
+    # moved into place, so a reader never sees half a file.
+    path = _file(user["id"], sha)
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    tmp = path.with_suffix(f".{secrets.token_hex(4)}.part")
+    try:
+        with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+    cid, now = f"ct_{secrets.token_hex(8)}", db.now()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO carts (id, user_id, name, note, sha256, crc32, size, mapper, prg_bytes, chr_bytes, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (cid, user["id"], name, note, sha, f"{zlib.crc32(data[h.payload_at:]):08x}", len(data),
+                 h.mapper, h.prg_bytes, h.chr_bytes, now, now),
+            )
+    except sqlite3.IntegrityError:
+        # Two uploads of one file raced and the other won. Its file is ours too
+        # (same digest, same bytes), so there is nothing to clean up.
+        raise Refused(409, "This exact file is already on the shelf.")
+    return _owned(conn, user["id"], cid)
 
 
 # ---------------------------------------------------------------------------
@@ -246,51 +308,10 @@ def add_cart(
     user: sqlite3.Row = Depends(require_user),
     conn: sqlite3.Connection = Depends(connection),
 ) -> Cart:
-    limits = _limits(conn, user)
-    if limits.max == 0:
-        raise HTTPException(status_code=403, detail="This account has not been given a cartridge shelf. They are granted by hand, because what goes on one is a dump of a cartridge you own.")
-    if len(data) > limits.bytes_max:
-        raise HTTPException(status_code=413, detail=f"{len(data)} bytes; the shelf takes {limits.bytes_max} at most.")
-    name, note = clean_name(name), clean_note(note)
     try:
-        h = read_header(data)
-    except NotACartridge as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
-
-    sha = hashlib.sha256(data).hexdigest()
-    twin = conn.execute("SELECT name FROM carts WHERE user_id = ? AND sha256 = ?", (user["id"], sha)).fetchone()
-    if twin is not None:
-        raise HTTPException(status_code=409, detail=f"This exact file is already on the shelf, as {twin['name']!r}.")
-    if limits.remaining == 0:
-        raise HTTPException(status_code=409, detail=f"The shelf holds {limits.held} cartridges, which is its limit of {limits.max}. Delete one to add another.")
-
-    # File first, then the row: a row is the claim that the bytes are there, so
-    # it is never written before they are. Written beside its final name and
-    # moved into place, so a reader never sees half a file.
-    path = _file(user["id"], sha)
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    tmp = path.with_suffix(f".{secrets.token_hex(4)}.part")
-    try:
-        with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
-            f.write(data)
-        os.replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
-
-    cid, now = f"ct_{secrets.token_hex(8)}", db.now()
-    try:
-        with conn:
-            conn.execute(
-                "INSERT INTO carts (id, user_id, name, note, sha256, crc32, size, mapper, prg_bytes, chr_bytes, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (cid, user["id"], name, note, sha, f"{zlib.crc32(data[h.payload_at:]):08x}", len(data),
-                 h.mapper, h.prg_bytes, h.chr_bytes, now, now),
-            )
-    except sqlite3.IntegrityError:
-        # Two uploads of one file raced and the other won. Its file is ours too
-        # (same digest, same bytes), so there is nothing to clean up.
-        raise HTTPException(status_code=409, detail="This exact file is already on the shelf.")
-    return _cart(_owned(conn, user["id"], cid))
+        return _cart(store(conn, user, data, name, note))
+    except Refused as e:
+        raise HTTPException(status_code=e.status, detail=e.detail) from e
 
 
 @router.get(
@@ -329,12 +350,13 @@ def patch_cart(cart_id: str, body: CartPatch, request: Request, user: sqlite3.Ro
     _owned(conn, user["id"], cart_id)
     changes = body.model_dump(exclude_unset=True)
     cleaned: dict[str, str] = {}
-    if "name" in changes:
-        if changes["name"] is None:
-            raise HTTPException(status_code=422, detail="name: a cartridge needs one.")
-        cleaned["name"] = clean_name(changes["name"])
-    if "note" in changes:
-        cleaned["note"] = clean_note(changes["note"] or "")
+    try:
+        if "name" in changes:
+            cleaned["name"] = clean_name(changes["name"] or "")
+        if "note" in changes:
+            cleaned["note"] = clean_note(changes["note"] or "")
+    except Refused as e:
+        raise HTTPException(status_code=e.status, detail=e.detail) from e
     if cleaned:
         # Column names come from the two literals above; every value is bound.
         sets = ", ".join(f"{k} = ?" for k in cleaned)
@@ -375,10 +397,51 @@ def grant(handle: str, most: int) -> Optional[str]:
         conn.close()
 
 
+def add(handle: str, file: Path, name: Optional[str], note: str) -> str:
+    """Put a file on an account's shelf from the command line, held to every
+    rule an upload is. For dumps that are already on the box: they should not
+    have to go out through a browser to come back in."""
+    conn = db.connect()
+    try:
+        user = conn.execute("SELECT * FROM users WHERE handle = ?", (handle.lower(),)).fetchone()
+        if user is None:
+            raise Refused(404, f"no account with the handle {handle!r}")
+        row = store(conn, user, file.read_bytes(), name or file.name, note)
+        return f"{row['name']}: mapper {row['mapper']}, {row['prg_bytes'] // 1024}K program, {row['chr_bytes'] // 1024}K pictures, crc32 {row['crc32']}, {row['id']}"
+    finally:
+        conn.close()
+
+
+def _main(argv: list[str]) -> int:
+    import argparse
+    import sys
+
+    ap = argparse.ArgumentParser(prog="carts.py", description="The cartridge shelf, from the box it runs on.")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    g = sub.add_parser("grant", help="give an account a shelf, or resize it")
+    g.add_argument("handle")
+    g.add_argument("how_many", type=int)
+    a = sub.add_parser("add", help="put a .nes file on an account's shelf, held to every rule an upload is")
+    a.add_argument("handle")
+    a.add_argument("file", type=Path)
+    a.add_argument("--name", help="what to call it; the filename without .nes otherwise")
+    a.add_argument("--note", default="")
+    ns = ap.parse_args(argv)
+    try:
+        if ns.cmd == "grant":
+            who = grant(ns.handle, ns.how_many)
+            if who is None:
+                raise Refused(404, f"no account with the handle {ns.handle!r}")
+            print(f"{who} may keep {ns.how_many} cartridges")
+        else:
+            print(add(ns.handle, ns.file, ns.name, ns.note))
+    except Refused as e:
+        print(f"refused ({e.status}): {e.detail}", file=sys.stderr)
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) != 4 or sys.argv[1] != "grant" or not sys.argv[3].isdigit():
-        sys.exit("usage: carts.py grant <handle> <how-many>")
-    who = grant(sys.argv[2], int(sys.argv[3]))
-    sys.exit(f"no account with the handle {sys.argv[2]!r}" if who is None else print(f"{who} may keep {sys.argv[3]} cartridges"))
+    sys.exit(_main(sys.argv[1:]))
