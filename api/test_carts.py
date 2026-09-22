@@ -137,6 +137,8 @@ def test_a_cartridge_goes_on_and_comes_back_byte_for_byte(shelf_dir):
     on_disk = list(shelf_dir.rglob("*.nes"))
     assert len(on_disk) == 1 and on_disk[0].read_bytes() == data
     assert on_disk[0].stat().st_mode & 0o077 == 0, "the file is readable by somebody other than the service"
+    for d in (shelf_dir, on_disk[0].parent):
+        assert d.stat().st_mode & 0o077 == 0, f"{d} is open to somebody other than the service"
     assert not list(shelf_dir.rglob("*.part")), "a temporary file was left behind"
 
 

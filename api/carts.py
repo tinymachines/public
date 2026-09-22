@@ -239,7 +239,14 @@ def store(conn: sqlite3.Connection, user: sqlite3.Row, data: bytes, name: str, n
     # it is never written before they are. Written beside its final name and
     # moved into place, so a reader never sees half a file.
     path = _file(user["id"], sha)
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # Both directories are made 0700 explicitly rather than through mkdir's
+    # mode, which the umask edits and which parents=True does not apply to
+    # the parent at all: run from a shell with the usual umask, the top
+    # directory came out 0775 (2026-09-21). The service's own umask is 0077
+    # and hid it.
+    for d in (path.parent.parent, path.parent):
+        d.mkdir(exist_ok=True)
+        d.chmod(0o700)
     tmp = path.with_suffix(f".{secrets.token_hex(4)}.part")
     try:
         with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
