@@ -241,3 +241,18 @@ def test_state_change_from_another_origin_is_refused(client, github):
     sign_in(client)
     r = client.post("/v1/me/tokens", json={}, headers={"origin": "https://evil.example"})
     assert r.status_code == 403
+
+
+def test_a_sign_in_started_on_a_subdomain_is_sent_to_the_apex(client, github):
+    """beta.tinymachines.ai shares the API, but GitHub sends the browser back
+    to the apex, where a cookie set on beta does not exist. So the start
+    itself moves to the apex."""
+    apex = auth.SITE.split("//", 1)[1]
+    r = client.get("/v1/auth/github", params={"next": "/nes/shelf"}, headers={"host": f"beta.{apex}"})
+    assert r.status_code == 302
+    assert r.headers["location"] == f"{auth.SITE}/api/v1/auth/github?next=%2Fnes%2Fshelf"
+    assert auth.STATE_COOKIE not in r.cookies, "a state cookie was set on the wrong host"
+    # The apex itself, and a host that is not ours, start the sign-in as before.
+    for host in (apex, "testserver"):
+        r = client.get("/v1/auth/github", headers={"host": host})
+        assert r.headers["location"].startswith("https://github.com/"), host

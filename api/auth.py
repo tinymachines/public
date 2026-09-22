@@ -277,6 +277,16 @@ def github_start(request: Request, next: Optional[str] = None) -> Response:
     creds = credentials()
     if not creds:
         raise HTTPException(status_code=503, detail="GitHub sign-in is not configured on this deployment.")
+    # A sign-in started on a subdomain (beta.tinymachines.ai) has to finish
+    # on the apex: the GitHub app sends the browser back to SITE's callback,
+    # and the state cookie set here would be on the other host. The first
+    # try from beta failed exactly so (2026-09-21), with the callback saying
+    # the sign-in did not start here. So it starts on the apex instead, and
+    # the person lands signed in there.
+    host = request.headers.get("host", "")
+    apex = SITE.split("//", 1)[1]
+    if host != apex and host.endswith("." + apex):
+        return RedirectResponse(f"{SITE}/api/v1/auth/github" + (f"?{request.url.query}" if request.url.query else ""), status_code=302)
     state = secrets.token_urlsafe(24)
     dest = _safe_next(next)
     payload = f"{state}|{dest}"
