@@ -421,3 +421,76 @@ def test_deleting_the_cartridge_takes_its_save(shelf_dir):
     assert len(list(shelf_dir.rglob("*.sav"))) == 1
     assert c.delete(f"/v1/me/carts/{cart['id']}").status_code == 204
     assert list(shelf_dir.rglob("*.sav")) == [], "the save outlived its cartridge"
+
+
+# ---------------------------------------------------------------------------
+# A raw dump: the chips' contents, and the board from the person
+# ---------------------------------------------------------------------------
+
+
+def test_a_raw_dump_gets_a_header_written_from_its_own_lengths(shelf_dir):
+    """The same cartridge, as the .nes and as the raw PRG+CHR: one header the
+    reader wrote and one written here from the bytes and the board named.
+    The CRC-32 is over the payload and must agree; the header need not."""
+    nes = BARS.read_bytes()
+    prg_len, chr_len = nes[4] * 16384, nes[5] * 8192
+    raw = nes[16:]
+    assert len(raw) == prg_len + chr_len
+    mapper = (nes[6] >> 4) | (nes[7] & 0xF0)
+    board = dict(mapper=mapper, chr_kib=chr_len // 1024, mirroring="v" if nes[6] & 1 else "h", battery=bool(nes[6] & 2))
+    # The reader's header and the one written here from the bytes and the
+    # board are the same sixteen bytes, so the same cartridge is the same file.
+    assert carts.with_header(raw, **board) == nes
+    ada = signed_in("ada", shelf=5)
+    as_nes = put(ada, nes, name="as .nes").json()
+    twin = put(ada, raw, name="as raw", **{**board, "battery": str(board["battery"]).lower()})
+    assert twin.status_code == 409 and "'as'" in twin.json()["detail"]
+
+    c = signed_in("bob", shelf=5)
+    as_raw = put(c, raw, name="as raw", **{**board, "battery": str(board["battery"]).lower()})
+    assert as_raw.status_code == 201, as_raw.text
+    as_raw = as_raw.json()
+    assert as_raw["crc32"] == as_nes["crc32"], "the payload's CRC-32 is the reader's, whichever header is on it"
+    assert (as_raw["mapper"], as_raw["prg_bytes"], as_raw["chr_bytes"]) == (mapper, prg_len, chr_len)
+    assert as_raw["size"] == 16 + len(raw)
+    back = c.get(as_raw["rom"]).content
+    assert back[:4] == b"NES\x1a" and back[16:] == raw
+    assert back[4] == prg_len // 16384 and back[5] == chr_len // 8192
+
+    # Header bits as named: mapper's two halves, mirroring, battery.
+    stored = put(c, ines(2, 0)[16:], name="mmc1 vertical battery", mapper=0x41, chr_kib=0, mirroring="v", battery="true").json()
+    got = c.get(stored["rom"]).content
+    assert (got[6], got[7]) == (0x10 | 0x02 | 0x01, 0x40)
+    assert (stored["mapper"], stored["chr_bytes"]) == (0x41, 0), "a CHR of zero is CHR RAM"
+
+
+def test_a_raw_dump_whose_banks_do_not_divide_is_refused(shelf_dir):
+    c = signed_in("ada", shelf=5)
+    for body, params, says in [
+        (bytes(16384 + 100), {"mapper": 0}, "not a whole number of 16 KiB banks"),
+        (bytes(16384 + 4096), {"mapper": 0, "chr_kib": 4}, "not a whole number of 8 KiB banks"),
+        (bytes(16384), {"mapper": 0, "chr_kib": 32}, "more than the 16384 bytes"),
+        (bytes(8192), {"mapper": 0, "chr_kib": 8}, "The PRG is 0 bytes"),
+        (bytes(16384), {"mapper": 300}, None),  # the query refuses it before the body is read
+        (bytes(16384), {"mapper": 0, "mirroring": "x"}, None),
+    ]:
+        r = put(c, body, name="raw", **params)
+        assert r.status_code == 422, (params, r.text)
+        if says:
+            assert says in r.json()["detail"], r.json()["detail"]
+    assert c.get("/v1/me/carts").json()["carts"] == []
+    assert not list(shelf_dir.rglob("*.nes"))
+
+
+def test_the_command_line_takes_a_pair_of_files(tmp_path, capsys):
+    c = signed_in("ada", shelf=5)
+    nes = BARS.read_bytes()
+    prg_len = nes[4] * 16384
+    prg, chr_ = tmp_path / "bars.prg", tmp_path / "bars.chr"
+    prg.write_bytes(nes[16:16 + prg_len])
+    chr_.write_bytes(nes[16 + prg_len:])
+    assert carts._main(["add", "ada", str(prg), "--name", "pair", "--mapper", "0", "--chr", str(chr_), "--mirroring", "v" if nes[6] & 1 else "h"]) == 0
+    assert "pair:" in capsys.readouterr().out
+    listed = c.get("/v1/me/carts").json()["carts"]
+    assert len(listed) == 1 and listed[0]["chr_bytes"] == len(nes) - 16 - prg_len
+    assert c.get(listed[0]["rom"]).content[16:] == nes[16:]

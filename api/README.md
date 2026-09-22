@@ -68,7 +68,7 @@ on a shelf, held to every rule an upload is.
 | | |
 |---|---|
 | `GET /v1/me/carts` | The account's shelf, by name, and what it may hold. Empty for a shelf an admin closed |
-| `POST /v1/me/carts` | Add one. The body is the `.nes`; the header is read here and held to the file's length |
+| `POST /v1/me/carts` | Add one. The body is the `.nes`; the header is read here and held to the file's length. With `mapper` in the query the body is a raw dump (PRG, then CHR) and the header is written here from the bytes' lengths and the board named |
 | `GET /v1/me/carts/{cart_id}/rom` | The bytes, `private, no-store`, checked against their digest on the way out |
 | `PATCH /v1/me/carts/{cart_id}` | Rename it or change its note. Touches only what it names |
 | `DELETE /v1/me/carts/{cart_id}` | Remove the entry and the file |

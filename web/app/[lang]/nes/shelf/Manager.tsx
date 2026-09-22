@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/lang";
 import { localize } from "@/lib/lang";
-import { addCart, announceChange, deleteCart, deleteSave, fetchCart, kib, listShelf, patchCart, type Cart, type Shelf } from "@/lib/shelf";
+import { addCart, addRaw, announceChange, deleteCart, deleteSave, fetchCart, kib, listShelf, patchCart, type Board, type Cart, type Shelf } from "@/lib/shelf";
 
 /**
  * The shelf's manager: add, rename, annotate, download, delete.
@@ -26,6 +26,18 @@ const L = {
     addH: "Add cartridges",
     add: "Choose .nes files",
     addHint: (max: string) => `As many at once as you like, ${max} each at most. Each file's header is read and checked against its length before it is kept.`,
+    rawH: "Or a raw dump",
+    rawWhat: "A reader that dumps the chips writes what they hold and nothing about the board, so say which board it was and the header is written here from the bytes themselves.",
+    rawPrg: "PRG file",
+    rawChr: "CHR file",
+    rawChrHint: "Leave the CHR out for a board with CHR RAM.",
+    rawMapper: "mapper",
+    mirroring: "mirroring",
+    horizontal: "horizontal",
+    vertical: "vertical",
+    rawBattery: "the board has a battery",
+    rawName: "name",
+    addRaw: "Add the dump",
     full: "The shelf is full. Delete one to add another.",
     held: (held: number, max: number) => `${held} of ${max} places used.`,
     added: "added",
@@ -63,6 +75,18 @@ const L = {
     addH: "カートリッジを追加する",
     add: ".nes ファイルを選ぶ",
     addHint: (max: string) => `一度にいくつでも。一つあたり ${max} まで。どのファイルも、保存する前にヘッダを読み、長さと突き合わせる。`,
+    rawH: "または生のダンプ",
+    rawWhat: "チップを吸い出すリーダーはチップの中身だけを書き、基板のことは何も書かない。だからどの基板だったかを言えば、ヘッダはここでバイト列そのものから書かれる。",
+    rawPrg: "PRG ファイル",
+    rawChr: "CHR ファイル",
+    rawChrHint: "CHR RAM の基板なら CHR は空のままでよい。",
+    rawMapper: "マッパー",
+    mirroring: "ミラーリング",
+    horizontal: "水平",
+    vertical: "垂直",
+    rawBattery: "基板に電池がある",
+    rawName: "名前",
+    addRaw: "ダンプを追加",
     full: "棚がいっぱいだ。一つ消せば追加できる。",
     held: (held: number, max: number) => `${max} 枠のうち ${held} 枠を使用中。`,
     added: "追加した",
@@ -192,6 +216,28 @@ export function Manager({ lang }: { lang: Lang }) {
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [raw, setRaw] = useState<{ prg: File | null; chr: File | null; name: string; mapper: string; mirroring: "h" | "v"; battery: boolean }>({ prg: null, chr: null, name: "", mapper: "", mirroring: "h", battery: false });
+  const rawForm = useRef<HTMLFormElement>(null);
+
+  async function addRawDump(e: React.FormEvent) {
+    e.preventDefault();
+    if (!raw.prg) return;
+    setBusy(true);
+    setError(null);
+    const board: Board = { mapper: Number(raw.mapper), mirroring: raw.mirroring, battery: raw.battery };
+    const label = raw.name.trim() || raw.prg.name.replace(/\.[a-z0-9]+$/i, "");
+    try {
+      const cart = await addRaw(raw.prg, raw.chr, board, label);
+      setOutcomes([{ file: raw.prg.name + (raw.chr ? ` + ${raw.chr.name}` : ""), ok: true, say: `${S.added}: ${cart.name}` }]);
+      rawForm.current?.reset();
+      setRaw({ prg: null, chr: null, name: "", mapper: "", mirroring: "h", battery: false });
+      await refresh();
+    } catch (err) {
+      setOutcomes([{ file: raw.prg.name, ok: false, say: String((err as Error).message ?? err) }]);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const refresh = useCallback(async () => {
     setShelf(await listShelf());
@@ -270,6 +316,28 @@ export function Manager({ lang }: { lang: Lang }) {
             <span className="measured" data-shelf-held>{S.held(limits.held, limits.max)}</span>
           </p>
           <p className="quiet">{limits.remaining === 0 ? S.full : S.addHint(kib(limits.bytes_max))}</p>
+          <h3>{S.rawH}</h3>
+          <p className="quiet">{S.rawWhat} {S.rawChrHint}</p>
+          <form ref={rawForm} className="shelf-raw" onSubmit={(e) => void addRawDump(e)} data-shelf-raw>
+            <label className="btn">
+              {raw.prg ? raw.prg.name : S.rawPrg}
+              <input type="file" hidden required onChange={(e) => setRaw({ ...raw, prg: e.target.files?.[0] ?? null })} data-raw-prg />
+            </label>
+            <label className="btn btn-ghost">
+              {raw.chr ? raw.chr.name : S.rawChr}
+              <input type="file" hidden onChange={(e) => setRaw({ ...raw, chr: e.target.files?.[0] ?? null })} data-raw-chr />
+            </label>
+            <input className="input" type="number" min={0} max={255} required inputMode="numeric" aria-label={S.rawMapper} placeholder={S.rawMapper} value={raw.mapper} onChange={(e) => setRaw({ ...raw, mapper: e.target.value })} data-raw-mapper />
+            <select className="input" aria-label={S.mirroring} value={raw.mirroring} onChange={(e) => setRaw({ ...raw, mirroring: e.target.value as "h" | "v" })} data-raw-mirroring>
+              <option value="h">{S.horizontal}</option>
+              <option value="v">{S.vertical}</option>
+            </select>
+            <label className="shelf-raw-check">
+              <input type="checkbox" checked={raw.battery} onChange={(e) => setRaw({ ...raw, battery: e.target.checked })} data-raw-battery /> {S.rawBattery}
+            </label>
+            <input className="input" aria-label={S.rawName} placeholder={S.rawName} maxLength={80} value={raw.name} onChange={(e) => setRaw({ ...raw, name: e.target.value })} data-raw-name />
+            <button type="submit" className="btn btn-primary" disabled={busy || !raw.prg || raw.mapper === "" || limits.remaining === 0} data-raw-add>{S.addRaw}</button>
+          </form>
           {outcomes.length ? (
             <ul className="shelf-outcomes" data-shelf-outcomes>
               {outcomes.map((o, i) => (

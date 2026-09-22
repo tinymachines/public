@@ -31,3 +31,10 @@
 .prose.shelf { margin-block: calc(var(--u) * 8); }
 .prose.shelf > .shelf-list,
 .prose.shelf > .shelf-outcomes { padding-left: 0; }
+
+/* The raw dump's form: the kit's controls in a wrapping row, the name and
+   the button on a row of their own. */
+.shelf-raw { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); align-items: center; }
+.shelf-raw .input[type="number"] { width: 7rem; }
+.shelf-raw select.input { width: auto; }
+.shelf-raw-check { display: inline-flex; gap: var(--u); align-items: center; font-size: var(--text-fine); }

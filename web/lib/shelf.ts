@@ -107,6 +107,25 @@ export async function addCart(file: File, name?: string, note = ""): Promise<Car
   return (await r.json()) as Cart;
 }
 
+/** The board a raw dump sat on, which the chips cannot say and the person can. */
+export interface Board {
+  mapper: number;
+  mirroring: "h" | "v";
+  battery: boolean;
+}
+
+/**
+ * A raw dump: the PRG chip's contents and, for a board with CHR ROM, the
+ * CHR chip's, with no header. The two go up as one body, CHR last, and the
+ * header is written at the server from the bytes' own lengths and `board`.
+ */
+export async function addRaw(prg: File, chr: File | null, board: Board, name: string, note = ""): Promise<Cart> {
+  const q = new URLSearchParams({ name, note, mapper: String(board.mapper), chr_kib: String(chr ? Math.floor(chr.size / 1024) : 0), mirroring: board.mirroring, battery: String(board.battery) });
+  const r = await fetch(`${API}?${q}`, { method: "POST", headers: { "content-type": "application/octet-stream" }, body: chr ? new Blob([prg, chr]) : prg });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as Cart;
+}
+
 export async function patchCart(id: string, changes: { name?: string; note?: string }): Promise<Cart> {
   const r = await fetch(`${API}/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(changes) });
   if (!r.ok) return refuse(r);

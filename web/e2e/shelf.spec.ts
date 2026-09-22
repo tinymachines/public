@@ -291,6 +291,56 @@ test.describe("the shelf, signed in", () => {
     expect((await page.request.delete(`${rig!.api}/v1/me/carts/${cart.id}`, { headers: H })).status()).toBe(204);
   });
 
+  test("a raw PRG and CHR pair goes on through the form and is the same cartridge", async ({ page }) => {
+    // bars.nes taken apart: the header off, the PRG and the CHR as two files,
+    // which is what a chip reader leaves. The shelf's row for the pair must
+    // carry the CRC-32 the .nes upload carries, since that is over the payload.
+    const nes = fs.readFileSync(BARS);
+    const prgLen = nes[4] * 16384;
+    const prg = path.join(OUT, "bars.prg");
+    const chr = path.join(OUT, "bars.chr");
+    fs.writeFileSync(prg, nes.subarray(16, 16 + prgLen));
+    fs.writeFileSync(chr, nes.subarray(16 + prgLen));
+    const H = { cookie: `${rig!.cookie}=${rig!.sessions.stranger}` };
+    await emptyTheShelf(page, "stranger");
+    const asNes = await (await page.request.post(`${rig!.api}/v1/me/carts?name=whole`, { headers: { ...H, "content-type": "application/octet-stream" }, data: nes })).json();
+
+    await as(page, "stranger");
+    await page.goto("/nes/shelf");
+    const form = page.locator("[data-shelf-raw]");
+    await form.locator("[data-raw-prg]").setInputFiles(prg);
+    await form.locator("[data-raw-chr]").setInputFiles(chr);
+    await form.locator("[data-raw-mapper]").fill(String((nes[6] >> 4) | (nes[7] & 0xf0)));
+    await form.locator("[data-raw-mirroring]").selectOption(nes[6] & 1 ? "v" : "h");
+    await form.locator("[data-raw-name]").fill("in two pieces");
+    await form.locator("[data-raw-add]").click();
+    // The header written from the pair is the one the reader wrote, byte for
+    // byte, so the shelf sees the file it already holds and says so.
+    const first = page.locator("[data-shelf-outcomes] li").first();
+    await expect(first).toHaveAttribute("data-ok", "false");
+    await expect(first).toContainText("already on the shelf, as 'whole'");
+
+    // Without the .nes there, the pair goes on, and its row carries the .nes's figures.
+    expect((await page.request.delete(`${rig!.api}/v1/me/carts/${asNes.id}`, { headers: H })).status()).toBe(204);
+    await form.locator("[data-raw-add]").click();
+    await expect(first).toHaveAttribute("data-ok", "true");
+    await expect(page.locator("[data-shelf-list] > li")).toHaveCount(1);
+    const rows = (await shelfOf(page, "stranger")).carts;
+    const pair = rows.find((c) => c.name === "in two pieces")!;
+    expect(pair.crc32).toBe(asNes.crc32);
+    expect(pair.mapper).toBe(asNes.mapper);
+    await expect(page.locator(`[data-cart="${pair.id}"] [data-cart-facts]`)).toContainText(pair.crc32);
+    // The form empties itself, and a pair whose PRG is not whole banks is refused in words.
+    await expect(form.locator("[data-raw-add]")).toBeDisabled();
+    fs.writeFileSync(prg, nes.subarray(16, 16 + prgLen - 100));
+    await form.locator("[data-raw-prg]").setInputFiles(prg);
+    await form.locator("[data-raw-mapper]").fill("0");
+    await form.locator("[data-raw-add]").click();
+    await expect(page.locator("[data-shelf-outcomes] li").first()).toHaveAttribute("data-ok", "false");
+    await expect(page.locator("[data-shelf-outcomes] li").first()).toContainText("16 KiB banks");
+    for (const c of rows) expect((await page.request.delete(`${rig!.api}/v1/me/carts/${c.id}`, { headers: H })).status()).toBe(204);
+  });
+
   test("somebody else's cartridge does not exist, in the page or under it", async ({ page }) => {
     const owners = await shelfOf(page, "owner");
     expect(owners.carts.length).toBe(1);

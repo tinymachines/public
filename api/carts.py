@@ -47,9 +47,12 @@ else's game least of all.
 
 ## What is believed
 
-Only the name and the note. Everything else in a row was read off the bytes
-here: the header is parsed, its sizes are checked against the file's length,
-and a file that does not add up is refused with the numbers rather than kept.
+Only the name and the note, and for a raw dump the board (the mapper number,
+the mirroring and the battery), which a chip reader cannot know and a person
+can. Everything else in a row was read off the bytes here: the header is
+parsed, or for a raw dump written from the bytes' own lengths, its sizes are
+checked against the file's length, and a file that does not add up is
+refused with the numbers rather than kept.
 Whether the console model has the board a header names is *not* decided here:
 the list of boards lives in the console, and the console says so when the
 cartridge is loaded.
@@ -170,6 +173,34 @@ def read_header(data: bytes) -> Header:
                             f"which with the header makes {want}; the file is {len(data)}. "
                             f"There are {len(data) - want} bytes after the end that the header does not account for.")
     return h
+
+
+def with_header(data: bytes, mapper: int, chr_kib: int, mirroring: str, battery: bool) -> bytes:
+    """A raw dump (PRG, then CHR, no header) as an iNES file.
+
+    A reader that dumps a cartridge's chips writes what the chips hold and
+    nothing about the board, so the board comes from the person, and the
+    sizes come from the bytes: the CHR is the last `chr_kib` of the body
+    (zero for a board with CHR RAM) and the PRG is the rest. Sizes that are
+    not whole banks are refused with the numbers, because a header that
+    rounds them would name a cartridge that does not exist. Written as iNES
+    1.0, so a mapper above 255 is refused rather than half-written.
+    """
+    if not 0 <= mapper <= 255:
+        raise NotACartridge(f"mapper {mapper}: this writes an iNES 1.0 header, which holds mappers 0 to 255.")
+    chr_len = chr_kib * 1024
+    if chr_len > len(data):
+        raise NotACartridge(f"{chr_kib} KiB of CHR is more than the {len(data)} bytes that arrived.")
+    prg_len = len(data) - chr_len
+    if prg_len == 0 or prg_len % 16384:
+        raise NotACartridge(f"The PRG is {prg_len} bytes, which is not a whole number of 16 KiB banks.")
+    if chr_len % 8192:
+        raise NotACartridge(f"The CHR is {chr_len} bytes, which is not a whole number of 8 KiB banks.")
+    if prg_len // 16384 > 255 or chr_len // 8192 > 255:
+        raise NotACartridge("More banks than an iNES 1.0 header can count.")
+    f6 = ((mapper & 0x0F) << 4) | (0x02 if battery else 0) | (1 if mirroring == "v" else 0)
+    f7 = mapper & 0xF0
+    return b"NES\x1a" + bytes([prg_len // 16384, chr_len // 8192, f6, f7]) + bytes(8) + data
 
 
 def clean_name(name: str) -> str:
@@ -326,24 +357,37 @@ def list_carts(user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connecti
     description="The body is the `.nes` file itself, as `application/octet-stream`; the name travels in "
                 "the query. The header is read here and held to the file's length, and a file that does "
                 "not add up is refused with the numbers. Nothing the uploader says about the cartridge "
-                "is kept except its name and note.",
+                "is kept except its name and note.\n\n"
+                "A raw dump, the chips' contents with no header, goes in the same way with `mapper` "
+                "given: the body is the PRG followed by the CHR, `chr_kib` says how much of the end is "
+                "CHR (zero for a board with CHR RAM), and the header is written here from the bytes' "
+                "own lengths and the board named. A pair of files is one body with the CHR appended.",
     responses={
         **_SIGNED_OUT,
         403: {"description": "This account's shelf is closed."},
         409: {"description": "The shelf is full, or this exact file is already on it (the answer names which)."},
         413: {"description": "Larger than the shelf takes."},
-        422: {"description": "Not an iNES file, or its header and its length disagree. The message gives the numbers."},
+        422: {"description": "Not an iNES file, or its header and its length disagree; or a raw dump whose banks do not divide. The message gives the numbers."},
     },
 )
 def add_cart(
     request: Request,
     name: str = Query(description="What to call it. A trailing `.nes` is dropped, so a filename will do.", examples=["Blaster Master"]),
     note: str = Query(default="", description="Anything worth remembering about this dump."),
-    data: bytes = Body(media_type="application/octet-stream", description="The `.nes` file."),
+    mapper: Optional[int] = Query(default=None, ge=0, le=255, description="For a raw dump: the board, as its iNES mapper number. Absent, the body is a `.nes` with its own header."),
+    chr_kib: int = Query(default=0, ge=0, description="For a raw dump: how many KiB at the end of the body are CHR. Zero means the board carries CHR RAM."),
+    mirroring: str = Query(default="h", pattern="^[hv]$", description="For a raw dump: `h` (horizontal) or `v` (vertical) nametable mirroring, as the board is wired."),
+    battery: bool = Query(default=False, description="For a raw dump: whether the board has a battery behind its RAM, so the console keeps its saves."),
+    data: bytes = Body(media_type="application/octet-stream", description="The `.nes` file, or a raw dump's PRG followed by its CHR."),
     user: sqlite3.Row = Depends(require_user),
     conn: sqlite3.Connection = Depends(connection),
 ) -> Cart:
     try:
+        if mapper is not None:
+            try:
+                data = with_header(data, mapper, chr_kib, mirroring, battery)
+            except NotACartridge as e:
+                raise Refused(422, str(e)) from e
         return _cart(store(conn, user, data, name, note))
     except Refused as e:
         raise HTTPException(status_code=e.status, detail=e.detail) from e
@@ -493,16 +537,26 @@ def grant(handle: str, most: int) -> Optional[str]:
         conn.close()
 
 
-def add(handle: str, file: Path, name: Optional[str], note: str) -> str:
+def add(handle: str, file: Path, name: Optional[str], note: str, mapper: Optional[int] = None, chr_kib: int = 0, mirroring: str = "h", battery: bool = False, chr_file: Optional[Path] = None) -> str:
     """Put a file on an account's shelf from the command line, held to every
     rule an upload is. For dumps that are already on the box: they should not
-    have to go out through a browser to come back in."""
+    have to go out through a browser to come back in. With `mapper` the file
+    is a raw dump (and `chr_file`, if given, is appended as its CHR)."""
     conn = db.connect()
     try:
         user = conn.execute("SELECT * FROM users WHERE handle = ?", (handle.lower(),)).fetchone()
         if user is None:
             raise Refused(404, f"no account with the handle {handle!r}")
-        row = store(conn, user, file.read_bytes(), name or file.name, note)
+        data = file.read_bytes()
+        if mapper is not None:
+            if chr_file is not None:
+                chr_bytes = chr_file.read_bytes()
+                data, chr_kib = data + chr_bytes, len(chr_bytes) // 1024
+            try:
+                data = with_header(data, mapper, chr_kib, mirroring, battery)
+            except NotACartridge as e:
+                raise Refused(422, str(e)) from e
+        row = store(conn, user, data, name or file.name, note)
         return f"{row['name']}: mapper {row['mapper']}, {row['prg_bytes'] // 1024}K program, {row['chr_bytes'] // 1024}K pictures, crc32 {row['crc32']}, {row['id']}"
     finally:
         conn.close()
@@ -522,6 +576,11 @@ def _main(argv: list[str]) -> int:
     a.add_argument("file", type=Path)
     a.add_argument("--name", help="what to call it; the filename without .nes otherwise")
     a.add_argument("--note", default="")
+    a.add_argument("--mapper", type=int, help="the file is a raw dump (PRG, then CHR) on this board; the header is written here")
+    a.add_argument("--chr", type=Path, help="raw dump: a separate CHR file to append")
+    a.add_argument("--chr-kib", type=int, default=0, help="raw dump: KiB of CHR at the end of the file (0: CHR RAM)")
+    a.add_argument("--mirroring", choices=["h", "v"], default="h")
+    a.add_argument("--battery", action="store_true")
     ns = ap.parse_args(argv)
     try:
         if ns.cmd == "grant":
@@ -530,7 +589,7 @@ def _main(argv: list[str]) -> int:
                 raise Refused(404, f"no account with the handle {ns.handle!r}")
             print(f"{who} may keep {ns.how_many} cartridges")
         else:
-            print(add(ns.handle, ns.file, ns.name, ns.note))
+            print(add(ns.handle, ns.file, ns.name, ns.note, ns.mapper, ns.chr_kib, ns.mirroring, ns.battery, ns.chr))
     except Refused as e:
         print(f"refused ({e.status}): {e.detail}", file=sys.stderr)
         return 1
