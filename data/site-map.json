@@ -9,7 +9,7 @@
    "words": 844,
    "out": 36,
    "ja": 0.714,
-   "inbound": 145,
+   "inbound": 147,
    "from": [],
    "depth": 0,
    "listed": true
@@ -1137,7 +1137,7 @@
    "words": 2062,
    "out": 8,
    "ja": 0.868,
-   "inbound": 4,
+   "inbound": 6,
    "from": [],
    "depth": 2,
    "listed": true
@@ -1508,7 +1508,7 @@
   "/docs/nes/open-items": {
    "title": "What is still open",
    "section": "docs",
-   "words": 5065,
+   "words": 5290,
    "out": 7,
    "ja": 0.837,
    "inbound": 4,
@@ -1680,7 +1680,7 @@
    "words": 578,
    "out": 18,
    "ja": 0.832,
-   "inbound": 4,
+   "inbound": 6,
    "from": [],
    "depth": 1,
    "listed": true
@@ -1731,12 +1731,19 @@
    "words": 2426,
    "out": 16,
    "ja": 0.74,
-   "inbound": 3,
-   "from": [
-    "/",
-    "/docs/console-arc",
-    "/nes"
-   ],
+   "inbound": 4,
+   "from": [],
+   "depth": 1,
+   "listed": true
+  },
+  "/nes/play": {
+   "title": "Play",
+   "section": "nes",
+   "words": 565,
+   "out": 14,
+   "ja": 0.911,
+   "inbound": 4,
+   "from": [],
    "depth": 1,
    "listed": true
   },
@@ -1754,6 +1761,19 @@
    ],
    "depth": 1,
    "listed": true
+  },
+  "/nes/shelf": {
+   "title": "Your cartridges",
+   "section": "nes",
+   "words": 241,
+   "out": 10,
+   "ja": 0.95,
+   "inbound": 1,
+   "from": [
+    "/nes/play"
+   ],
+   "depth": 2,
+   "listed": false
   },
   "/nes/signal": {
    "title": "The signal",
