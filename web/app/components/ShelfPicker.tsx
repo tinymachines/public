@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Lang } from "@/lib/lang";
 import { localize } from "@/lib/lang";
-import { fetchCart, listShelf, onChange, type Cart } from "@/lib/shelf";
+import { fetchCart, fileNameOf, listShelf, onChange, type Cart } from "@/lib/shelf";
 import "./shelf-picker.css";
 
 /**
@@ -20,10 +20,10 @@ import "./shelf-picker.css";
  * is for the person whose cartridges they are, and nobody else should see a
  * control that does nothing for them.
  *
- * It works as a menu, not as a field: choosing a cartridge loads it and the
- * control goes back to its label, because the page already says what is
- * loaded and a second place saying it would go stale the moment a file is
- * picked off the disk instead.
+ * It shows the cartridge the page has loaded, and it learns that from the
+ * page (`loaded`, the file name the page is running) rather than from its
+ * own last click, so a file picked off the disk instead clears it and the
+ * menu never claims a cartridge the console is not running.
  */
 
 const L = {
@@ -32,14 +32,12 @@ const L = {
     loading: (name: string) => `Fetching ${name}`,
     manage: "manage",
     empty: "Your shelf is empty: add your cartridges",
-    board: (n: number) => `mapper ${n}`,
   },
   ja: {
     label: "あなたのカートリッジ",
     loading: (name: string) => `${name} を取得中`,
     manage: "管理",
     empty: "棚は空です: カートリッジを追加する",
-    board: (n: number) => `マッパー ${n}`,
   },
 } as const;
 
@@ -48,11 +46,14 @@ export const SHELF_PATH = "/nes/shelf";
 export function ShelfPicker({
   lang,
   onPick,
+  loaded = null,
   selectClass = "input",
   className = "shelf-picker",
 }: {
   lang: Lang;
   onPick: (file: File) => void;
+  /** The file name the page is running, if any: the menu shows it when it is one of the shelf's. */
+  loaded?: string | null;
   selectClass?: string;
   className?: string;
 }) {
@@ -105,15 +106,16 @@ export function ShelfPicker({
     }
   }
 
+  const current = busy ? "" : (carts.find((c) => fileNameOf(c) === loaded)?.id ?? "");
   return (
     <span className={className} data-shelf-picker="open">
-      <select className={selectClass} aria-label={S.label} value="" disabled={busy !== null} onChange={(e) => void pick(e.target.value)}>
+      <select className={selectClass} aria-label={S.label} value={current} disabled={busy !== null} onChange={(e) => void pick(e.target.value)} data-shelf-select>
         <option value="" disabled>
           {busy ? S.loading(busy) : S.label}
         </option>
         {carts.map((c) => (
           <option key={c.id} value={c.id}>
-            {c.name} ({S.board(c.mapper)})
+            {c.name}
           </option>
         ))}
       </select>{" "}

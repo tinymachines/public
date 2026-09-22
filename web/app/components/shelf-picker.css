@@ -2,9 +2,15 @@
  * The shelf picker: where its three parts sit, and nothing about how they
  * look. The select takes the class its page hands it (the kit's .input, or
  * the playground's .pg-select), so it matches the controls it sits beside.
+ *
+ * A native select is as wide as its longest option unless told otherwise,
+ * and a cartridge's name can be forty characters: on a phone that pushed the
+ * page sideways (owner, 2026-09-21). So the picker takes the row it is in,
+ * the select takes the picker, and a name that does not fit is cut with an
+ * ellipsis rather than the page.
  */
-.shelf-picker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 2); max-width: 100%; }
-.shelf-picker select { width: auto; min-width: 0; max-width: 100%; flex: 0 1 auto; }
+.shelf-picker { display: flex; flex: 1 1 16rem; flex-wrap: wrap; align-items: center; gap: calc(var(--u) * 2); min-width: 0; max-width: 100%; }
+.shelf-picker select { flex: 1 1 10rem; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shelf-picker-manage,
 .shelf-picker-empty { font-size: var(--text-fine); }
 .shelf-picker-error { flex-basis: 100%; font-size: var(--text-fine); color: var(--color-red-ink); }

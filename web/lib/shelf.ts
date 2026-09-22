@@ -75,6 +75,9 @@ export async function listShelf(): Promise<Shelf> {
   return { state: "open", carts: j.carts, limits: j.limits };
 }
 
+/** The file name a shelf cartridge is handed to a page as; the picker matches on it. */
+export const fileNameOf = (c: Pick<Cart, "name">) => `${c.name}.nes`;
+
 /**
  * The cartridge's bytes as a File, named the way a file on disk would be.
  *
@@ -87,7 +90,7 @@ export async function fetchCart(cart: Cart): Promise<File> {
   const bytes = await r.arrayBuffer();
   const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   if (digest !== cart.sha256) throw new ShelfError(0, `${cart.name} arrived with a different digest from the one the shelf recorded, so it was not loaded.`);
-  return new File([bytes], `${cart.name}.nes`, { type: "application/octet-stream" });
+  return new File([bytes], fileNameOf(cart), { type: "application/octet-stream" });
 }
 
 export async function addCart(file: File, name?: string, note = ""): Promise<Cart> {

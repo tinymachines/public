@@ -466,7 +466,7 @@ export function Twins({
           {U.yourOwn}
           <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && loadOwn(e.target.files[0])} />
         </label>
-        <ShelfPicker lang={lang} onPick={loadOwn} selectClass="pg-select" />
+        <ShelfPicker lang={lang} onPick={loadOwn} loaded={cart === "own" ? own : null} selectClass="pg-select" />
       </div>
       <div className="pg-row">
         <span className="pg-label">{U.holdBoth}</span>

@@ -167,7 +167,7 @@ export function Play({ lang }: { lang: Lang }) {
               }}
             />
           </label>
-          <ShelfPicker lang={lang} onPick={(f) => void load(f)} />
+          <ShelfPicker lang={lang} onPick={(f) => void load(f)} loaded={s.loaded} />
           <button type="button" className="btn btn-primary" onClick={toggleRun} disabled={!s.loaded} data-play-run>
             {s.running ? T.pause : T.run}
           </button>

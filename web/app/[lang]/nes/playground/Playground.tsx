@@ -505,7 +505,7 @@ export function Playground({
               {U.common.yourOwn}
               <input type="file" accept=".nes" onChange={(e) => e.target.files?.[0] && loadOwn(e.target.files[0])} />
             </label>
-            <ShelfPicker lang={lang} onPick={loadOwn} selectClass="pg-select" />
+            <ShelfPicker lang={lang} onPick={loadOwn} loaded={cart === "own" ? own : null} selectClass="pg-select" />
             <p className="pg-note">
               {cart === "own"
                 ? U.hero.carts.own

@@ -188,12 +188,29 @@ test.describe("the shelf, signed in", () => {
     // The page's own readout names what it loaded: the bytes reached the console.
     await expect(page.locator("[data-play-stats]")).toContainText("Colour bars.nes");
     await expect(page.locator("[data-play-why]")).toHaveCount(0);
-    // A menu, not a field: it goes back to its label.
+    // The menu shows what the page is running, learned from the page.
+    await expect(menu).toHaveValue(held.carts[0].id);
+    await expect(page.locator("[data-play-run]")).toBeEnabled();
+    // And nothing about it pushes a phone's page sideways.
+    await page.setViewportSize(PHONE);
+    const o = await overflow(page);
+    expect(o.out, `${o.px}px sideways with the picker showing a cartridge`).toEqual([]);
+    expect(o.px).toBe(0);
+    // A file from the disk clears it: the menu never claims a cartridge the console is not running.
+    await page.locator("[data-play-rom]").setInputFiles(CAL);
+    await expect(page.locator("[data-play-stats]")).toContainText("cal.nes");
     await expect(menu).toHaveValue("");
   });
 
   test("every bench in the playground that takes a file offers the shelf", async ({ page }) => {
+    // Under the longest name on the owner's real shelf, forty characters,
+    // which is what pushed the playground's row past a phone.
+    const long = "Mike Tyson's Punch-Out!! (Japan, USA) (En)";
+    const one = (await shelfOf(page, "owner")).carts[0];
+    const r = await page.request.patch(`${rig!.api}/v1/me/carts/${one.id}`, { headers: { cookie: `${rig!.cookie}=${rig!.sessions.owner}` }, data: { name: long } });
+    expect(r.status()).toBe(200);
     const held = await shelfOf(page, "owner");
+    expect(held.carts[0].name).toBe(long);
     await as(page, "owner");
     await page.goto("/nes/playground");
     // One file input per bench that asks for a cartridge, and a menu beside each.
@@ -205,7 +222,12 @@ test.describe("the shelf, signed in", () => {
     // The first bench: choosing from the shelf does what choosing a file does.
     await menus.first().locator("select").selectOption(held.carts[0].id);
     await expect(page.locator("#pg-cart")).toHaveValue("own");
-    await expect(page.locator('#pg-cart option[value="own"]')).toHaveText("Colour bars.nes");
+    await expect(page.locator('#pg-cart option[value="own"]')).toHaveText(`${long}.nes`);
+    await expect(menus.first().locator("select")).toHaveValue(held.carts[0].id);
+    // With a cartridge showing, the bench's row still fits a phone.
+    await page.setViewportSize(PHONE);
+    const o = await overflow(page);
+    expect(o.out.filter((x) => /pg-carts|shelf-picker|pg-cart/.test(x)), `${o.px}px sideways`).toEqual([]);
   });
 
   test("somebody else's cartridge does not exist, in the page or under it", async ({ page }) => {
@@ -215,7 +237,7 @@ test.describe("the shelf, signed in", () => {
     await page.goto("/nes/shelf");
     await expect(page.locator("[data-shelf-state]")).toHaveAttribute("data-shelf-state", "open");
     await expect(page.locator("[data-shelf-list]")).toHaveCount(0);
-    await expect(page.locator("body")).not.toContainText("Colour bars");
+    await expect(page.locator("body")).not.toContainText(owners.carts[0].name);
     // Asked for by its exact address, with a real session that is not the owner's.
     const stolen = await page.evaluate(async (rom) => (await fetch(`/api${rom}`)).status, owners.carts[0].rom);
     expect(stolen).toBe(404);
