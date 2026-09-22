@@ -2743,3 +2743,77 @@ should do that itself is undecided.
 deploying leaves the semver where it was, because the rule was written
 to stop a redeploy of the same code moving it. The service worker keys
 off the commit, so caches still purge; only the footer stands still.
+
+## Checkpoint, 2026-09-21, the owner's cartridges have a shelf
+
+Live at `586b5f6`, version 1.0.264, after four deploys on top of
+1.0.262: the shelf, its re-crawl, the play page's listing with the
+add command, and the directory-mode fix. Built on beta, merged by
+fast-forward each time.
+
+- **An account can keep its own cartridges** (`8d83ea3`). Four pages
+  ask for a `.nes` file (the console at `/nes/play`, and the
+  playground's main bench, X-ray and Twins), and each took one off the
+  disk every visit. `api/carts.py` is five routes under `/v1/me/carts`;
+  `web/lib/shelf.ts` is the only place the site talks to them, and
+  `ShelfPicker` is the one menu. Every asker already loaded a `File`,
+  so the picker hands its page a `File` and no loading code changed.
+  The manager is `/nes/shelf`, both languages, noindex.
+- **"Wherever" is held by a test, not a list.** `web/lib/shelf.test.ts`
+  finds every `.nes` file input in the tree and fails if one does not
+  render the picker. Removing the picker from one bench turns the e2e
+  spec red as well (3 expected, 2 found).
+- **A shelf is granted, not given.** `carts_max` on the user is zero by
+  default and an admin sets it (`PATCH /v1/admin/users/{id}`, or
+  `carts.py grant` on the box). These are dumps of commercial
+  cartridges on a public site, and the service cannot know who owns
+  what. Whether to open it to every sign-in is the owner's call and is
+  still open. So is whether PRG+CHR pairs should be taken: today only a
+  headered `.nes` is, and a pair is refused with the reason.
+- **What is believed is the name and the note.** The header is parsed
+  here and held to the file's length; a short file, a long one, a bare
+  PRG dump and NES 2.0's exponent sizes are each refused with the
+  numbers. The digest is checked on the way out at the server and again
+  in the browser. A cartridge answers only to the session that put it
+  there; somebody else's id is a 404 in the same words as one that never
+  existed, and that test was checked by sabotage.
+- **Signed-in testing has a rig.** No suite can hold a GitHub session,
+  so `web/e2e/shelf-rig.py` starts this tree's API on a spare port with
+  a throwaway database and three planted sessions, and `shelf.spec.ts`
+  passes the page's `/api` calls through to it. The web and the API are
+  both the real ones; only GitHub is missing. Without the rig the
+  signed-in half is skipped by name. `next dev` fell over when
+  `bun run test` regenerated files under it; use `next start` on the
+  build.
+- **The owner's twenty dumps are on the live shelf** (`7bfe68a`,
+  `342fb23`). They live in `../6502/NES.zip`, untracked there: OSCR HW5
+  reads of twenty games, raw and headered, with the reader's logs. All
+  twenty `.nes` pass the header check, and the shelf's CRC-32 agrees
+  with the reader's in every case. Two files are 0 bytes (aborted
+  reads) and two are byte-identical repeats; those were skipped, and
+  nothing from the zip touched a repository. `carts.py add` loaded
+  them, held to the same `store()` the route calls. Super Mario Bros. is
+  the dump the reader could not match (CRC 6FB2BD5A) and is on the shelf
+  saying so.
+- **Two things the load found.** The `carts` directory came out 0775:
+  `mkdir`'s mode is edited by the umask and, with `parents=True`, not
+  applied to the parent at all; the service's own 0077 had hidden it.
+  Both directories are chmod'ed explicitly now and the test holds them
+  to 0700. And `/nes/play` was in no list, so the crawl never measured
+  it and `/watch` printed no count for it; it is in the sitemap now and
+  prints 565 words, 14 links out. `/nes/shelf` is on the crawl's
+  unlisted list instead.
+- **Also found:** `/nes/play` said "Only NROM loads" in its prose and on
+  its button, while the served console bundle was built after all three
+  board commits. It points at the boards report now and states no
+  number. Pydantic's lax mode read `true` as a shelf of one cartridge;
+  `carts_max` is a StrictInt. `notes/modules.md` typed the API's test
+  counts and three of four had drifted; the collector is named instead.
+  `provenance.py` could not find the commit from a linked worktree
+  (`5f54066`).
+
+The live database was backed up beside itself before migration 4 ran
+(`roof.before-carts-*.db`). The deploy's two open questions from the
+previous checkpoint stand: a deploy that touches a page behind a door
+still wants a re-crawl and a second deploy, and a clean tree still does
+not bump the version.
