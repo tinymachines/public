@@ -3031,5 +3031,6 @@ menu items to make sense of."
   beside the manifest's surfaces. Both are older than this and outside
   what was asked.
 
-Live is still `9664ec7` (1.0.266). Main and beta are at this commit, beta
-serving it. Deploying is the owner's call.
+Deployed clean afterwards at the owner's word, so live, main and beta are
+all at `b67f736` and the version stays 1.0.266; the menu specs pass
+against live. Nothing is waiting on the owner.
