@@ -27,6 +27,15 @@ zero by default). An account without a shelf gets an empty list rather than an
 error, so a menu can ask without caring, and a 403 with the reason if it tries
 to add.
 
+## The save
+
+A cartridge with a battery keeps what the game writes to its RAM. Here the
+play page is the battery: it writes the console's cartridge RAM to
+`PUT .../save` while such a cartridge runs and when it stops, and reads it
+back before the game starts. The save is a file beside the ROM
+(`<sha256>.sav`), and that file is the one copy of the fact that a save
+exists: a listing reports it by looking, and nothing is written in the row.
+
 ## Where the bytes live
 
 On disk beside the database (`$STATE/carts/<user>/<sha256>.nes`, or under
@@ -52,6 +61,7 @@ import secrets
 import sqlite3
 import zlib
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -60,7 +70,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Res
 import db
 from admin import connection
 from auth import require_user
-from models import Cart, CartLimits, CartPatch, Carts
+from models import Cart, CartLimits, CartPatch, CartSave, Carts
 
 router = APIRouter(prefix="/v1/me/carts", tags=["account"])
 
@@ -68,6 +78,9 @@ HEADER = 16
 TRAINER = 512
 NAME_MAX = 80
 NOTE_MAX = 240
+# The console's cartridge RAM is 8 KiB; a save is that or nothing. Room for
+# four times it, for a board that fits more, and no more than that.
+SAVE_MAX = 32 * 1024
 
 
 def bytes_max() -> int:
@@ -186,10 +199,23 @@ def _file(uid: str, sha256: str) -> Path:
     return root() / uid / f"{sha256}.nes"
 
 
+def _save_file(uid: str, sha256: str) -> Path:
+    return _file(uid, sha256).with_suffix(".sav")
+
+
+def _save_of(uid: str, sha256: str) -> Optional[CartSave]:
+    """The save as the file on disk says: the file is the one copy of that fact."""
+    try:
+        st = _save_file(uid, sha256).stat()
+    except FileNotFoundError:
+        return None
+    return CartSave(bytes=st.st_size, saved_at=datetime.fromtimestamp(st.st_mtime, timezone.utc))
+
+
 def _cart(row: sqlite3.Row) -> Cart:
     d = dict(row)
     d.pop("user_id")
-    return Cart(**d, rom=f"/v1/me/carts/{row['id']}/rom")
+    return Cart(**d, rom=f"/v1/me/carts/{row['id']}/rom", save=_save_of(row["user_id"], row["sha256"]))
 
 
 def _limits(conn: sqlite3.Connection, user: sqlite3.Row) -> CartLimits:
@@ -386,6 +412,68 @@ def delete_cart(cart_id: str, request: Request, user: sqlite3.Row = Depends(requ
     with conn:
         conn.execute("DELETE FROM carts WHERE id = ?", (row["id"],))
     _file(user["id"], row["sha256"]).unlink(missing_ok=True)
+    _save_file(user["id"], row["sha256"]).unlink(missing_ok=True)
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------------------
+# The save: what the cartridge's battery would have kept
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{cart_id}/save",
+    summary="The cartridge's saved RAM, for the account that owns it",
+    description="The bytes the play page last wrote for this cartridge, to put back into the console "
+                "before the game starts. `private, no-store`, like the ROM.",
+    response_class=Response,
+    responses={200: {"content": {"application/octet-stream": {}}, "description": "The saved RAM."}, **_NOT_YOURS, 404: {"description": "No such cartridge on this shelf, or it has never saved."}},
+)
+def cart_save(cart_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    row = _owned(conn, user["id"], cart_id)
+    try:
+        data = _save_file(user["id"], row["sha256"]).read_bytes()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="This cartridge has never saved.")
+    return Response(content=data, media_type="application/octet-stream", headers={"Cache-Control": "private, no-store"})
+
+
+@router.put(
+    "/{cart_id}/save",
+    status_code=204,
+    summary="Write the cartridge's saved RAM",
+    description="The body is the cartridge RAM as the console holds it, whole, as `application/octet-stream`. "
+                "Replaces what was there. The play page does this while a cartridge with a battery runs and when it stops.",
+    responses={**_NOT_YOURS, 413: {"description": "Larger than a cartridge's RAM could be."}, 422: {"description": "Empty."}},
+)
+def put_save(cart_id: str, request: Request, data: bytes = Body(media_type="application/octet-stream", description="The cartridge RAM."),
+             user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    row = _owned(conn, user["id"], cart_id)
+    if not data:
+        raise HTTPException(status_code=422, detail="An empty save is not a save; DELETE it instead.")
+    if len(data) > SAVE_MAX:
+        raise HTTPException(status_code=413, detail=f"{len(data)} bytes; a cartridge's RAM is {SAVE_MAX} at most.")
+    path = _save_file(user["id"], row["sha256"])
+    tmp = path.with_suffix(f".{secrets.token_hex(4)}.part")
+    try:
+        with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+    return Response(status_code=204)
+
+
+@router.delete(
+    "/{cart_id}/save",
+    status_code=204,
+    summary="Forget the cartridge's saved RAM",
+    description="The next start is a cartridge whose battery was never written. The ROM stays.",
+    responses=_NOT_YOURS,
+)
+def delete_save(cart_id: str, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    row = _owned(conn, user["id"], cart_id)
+    _save_file(user["id"], row["sha256"]).unlink(missing_ok=True)
     return Response(status_code=204)
 
 

@@ -338,3 +338,63 @@ def test_the_command_line_adds_under_the_same_rules_as_an_upload(shelf_dir, tmp_
     assert carts._main(["add", "ada", str(three)]) == 1
     assert "limit of 2" in capsys.readouterr().err
     assert len(c.get("/v1/me/carts").json()["carts"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# The save: the page is the battery
+# ---------------------------------------------------------------------------
+
+
+def test_a_save_goes_beside_the_cartridge_and_comes_back(shelf_dir):
+    c = signed_in("ada", shelf=5)
+    cart = put(c, ines(1, 1)).json()
+    assert cart["save"] is None
+    url = f"/v1/me/carts/{cart['id']}/save"
+    assert c.get(url).status_code == 404
+
+    ram = bytes(range(256)) * 32
+    assert len(ram) == 8192
+    r = c.put(url, content=ram, headers={"content-type": "application/octet-stream"})
+    assert r.status_code == 204, r.text
+    back = c.get(url)
+    assert back.status_code == 200 and back.content == ram
+    assert back.headers["cache-control"] == "private, no-store"
+    listed = c.get("/v1/me/carts").json()["carts"][0]
+    assert listed["save"]["bytes"] == 8192 and listed["save"]["saved_at"]
+    (sav,) = shelf_dir.rglob("*.sav")
+    assert sav.stat().st_mode & 0o077 == 0
+    assert not list(shelf_dir.rglob("*.part"))
+
+    # Replaced whole, not appended.
+    ram2 = bytes([0x5a]) * 8192
+    assert c.put(url, content=ram2, headers={"content-type": "application/octet-stream"}).status_code == 204
+    assert c.get(url).content == ram2
+
+    assert c.delete(url).status_code == 204
+    assert c.get(url).status_code == 404
+    assert c.get("/v1/me/carts").json()["carts"][0]["save"] is None
+    assert c.get(cart["rom"]).status_code == 200, "forgetting the save took the ROM with it"
+
+
+def test_a_save_is_bounded_and_is_the_owners_alone():
+    ada, bob = signed_in("ada", shelf=5), signed_in("bob", shelf=5)
+    cart = put(ada, ines(1, 1)).json()
+    url = f"/v1/me/carts/{cart['id']}/save"
+    hdr = {"content-type": "application/octet-stream"}
+    assert ada.put(url, content=b"", headers=hdr).status_code == 422
+    assert ada.put(url, content=bytes(32 * 1024 + 1), headers=hdr).status_code == 413
+    assert ada.put(url, content=bytes(8192), headers=hdr).status_code == 204
+    assert bob.get(url).status_code == 404
+    assert bob.put(url, content=bytes(8192), headers=hdr).status_code == 404
+    assert bob.delete(url).status_code == 404
+    assert ada.get(url).status_code == 200, "somebody else's delete took it"
+    assert ada.put(url, content=bytes(8192), headers={**hdr, "origin": "https://evil.example"}).status_code == 403
+
+
+def test_deleting_the_cartridge_takes_its_save(shelf_dir):
+    c = signed_in("ada", shelf=5)
+    cart = put(c, ines(1, 1)).json()
+    assert c.put(f"/v1/me/carts/{cart['id']}/save", content=bytes(8192), headers={"content-type": "application/octet-stream"}).status_code == 204
+    assert len(list(shelf_dir.rglob("*.sav"))) == 1
+    assert c.delete(f"/v1/me/carts/{cart['id']}").status_code == 204
+    assert list(shelf_dir.rglob("*.sav")) == [], "the save outlived its cartridge"

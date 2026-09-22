@@ -51,7 +51,8 @@ export function ShelfPicker({
   className = "shelf-picker",
 }: {
   lang: Lang;
-  onPick: (file: File) => void;
+  /** The File, as a disk pick would hand it, and the shelf entry it came from for a page that keeps its save. */
+  onPick: (file: File, cart: Cart) => void;
   /** The file name the page is running, if any: the menu shows it when it is one of the shelf's. */
   loaded?: string | null;
   selectClass?: string;
@@ -98,7 +99,7 @@ export function ShelfPicker({
     setBusy(cart.name);
     setError(null);
     try {
-      onPick(await fetchCart(cart));
+      onPick(await fetchCart(cart), cart);
     } catch (e) {
       setError(String((e as Error).message ?? e));
     } finally {

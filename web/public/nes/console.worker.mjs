@@ -45,6 +45,21 @@ self.onmessage = async (e) => {
       self.postMessage({ id, ok: true, answer: { bytes: bytes.length } });
       return;
     }
+    // The cartridge RAM at $6000, out and back: what a battery keeps. The
+    // page is the battery (playEngine's keeper); the worker only hands the
+    // bytes across. `has` is the header's battery bit, so the page knows
+    // whether a save is worth keeping at all.
+    if (path === "battery") {
+      if (!nes) throw new Error("no cartridge loaded");
+      if (e.data.ram) {
+        nes.set_battery_ram(new Uint8Array(e.data.ram));
+        self.postMessage({ id, ok: true, answer: { restored: true } });
+        return;
+      }
+      const ram = nes.battery_ram();
+      self.postMessage({ id, ok: true, answer: { has: nes.has_battery(), ram } }, [ram.buffer]);
+      return;
+    }
     if (path === "tick") {
       if (!nes || !pacer) throw new Error("no cartridge loaded");
       const { dtNs, pad } = e.data;

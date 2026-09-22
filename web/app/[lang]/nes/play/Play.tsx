@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { Gamepad } from "./Gamepad";
-import { attach, detach, load, toggleRun, subscribe, snapshot, serverSnapshot, type DriftStats } from "./playEngine";
+import { attach, detach, load, toggleRun, subscribe, snapshot, serverSnapshot, type DriftStats, type PlayState } from "./playEngine";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
 
 /**
@@ -20,6 +20,12 @@ const S = {
     pause: "Pause",
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
+    battery: (b: NonNullable<PlayState["battery"]>) =>
+      !b.has ? <>no battery on this board: nothing to save</> :
+      b.why ? <>save: <b>{b.why}</b></> :
+      b.saving ? <>save: <b>writing</b></> :
+      b.savedAt ? <>save: <b>kept on your shelf</b>, written {new Date(b.savedAt).toLocaleTimeString("en")}{b.restored ? ", restored on load" : ""}</> :
+      <>save: <b>nothing yet</b>; the RAM goes to your shelf when it changes</>,
     frames: (n: number, u: number) => <>frames shown: <b>{n}</b>, run but not decoded: <b>{u}</b></>,
     cost: (c: number, e: number, p: number, gpu: boolean) =>
       gpu ? (
@@ -53,6 +59,12 @@ const S = {
     pause: "停止",
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
+    battery: (b: NonNullable<PlayState["battery"]>) =>
+      !b.has ? <>この基板に電池はない: 保存するものはない</> :
+      b.why ? <>セーブ: <b>{b.why}</b></> :
+      b.saving ? <>セーブ: <b>書き込み中</b></> :
+      b.savedAt ? <>セーブ: <b>棚に保存済み</b>、{new Date(b.savedAt).toLocaleTimeString("ja")} に書き込み{b.restored ? "、読み込み時に復元" : ""}</> :
+      <>セーブ: <b>まだない</b>。RAM が変わると棚へ送られる</>,
     frames: (n: number, u: number) => <>表示したフレーム: <b>{n}</b>、走ったが復号されなかったもの: <b>{u}</b></>,
     cost: (c: number, e: number, p: number, gpu: boolean) =>
       gpu ? (
@@ -167,7 +179,7 @@ export function Play({ lang }: { lang: Lang }) {
               }}
             />
           </label>
-          <ShelfPicker lang={lang} onPick={(f) => void load(f)} loaded={s.loaded} />
+          <ShelfPicker lang={lang} onPick={(f, cart) => void load(f, cart)} loaded={s.loaded} />
           <button type="button" className="btn btn-primary" onClick={toggleRun} disabled={!s.loaded} data-play-run>
             {s.running ? T.pause : T.run}
           </button>
@@ -189,6 +201,7 @@ export function Play({ lang }: { lang: Lang }) {
             {s.fps !== null ? <span className="measured">{T.fps(s.fps)}</span> : null}
             {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
             {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}
+            {s.battery ? <span className="measured" data-play-battery={s.battery.has ? (s.battery.savedAt ? "kept" : "none") : "no-battery"}>{T.battery(s.battery)}</span> : null}
           </>
         )}
       </p>

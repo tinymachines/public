@@ -230,6 +230,67 @@ test.describe("the shelf, signed in", () => {
     expect(o.out.filter((x) => /pg-carts|shelf-picker|pg-cart/.test(x)), `${o.px}px sideways`).toEqual([]);
   });
 
+  test("a cartridge with a battery keeps its RAM on the shelf, and gets it back", async ({ page }) => {
+    // A cartridge of our own: NROM, battery bit set, and a program that adds
+    // one to $6000 at every power-on and then stops. So the RAM says how many
+    // times the game has started with its save intact: 1 the first time, 2
+    // after a restore, and 1 again if the restore did not happen.
+    const prg = new Uint8Array(0x8000);
+    prg.set([0xad, 0x00, 0x60, 0x18, 0x69, 0x01, 0x8d, 0x00, 0x60, 0x4c, 0x09, 0xc1], 0x4100); // at $C100
+    prg.set([0x00, 0xc1], 0x7ffc); // reset vector
+    const rom = new Uint8Array([0x4e, 0x45, 0x53, 0x1a, 2, 1, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...prg, ...new Uint8Array(0x2000)]);
+    const H = { cookie: `${rig!.cookie}=${rig!.sessions.owner}` };
+    const made = await page.request.post(`${rig!.api}/v1/me/carts?name=Counter`, { headers: { ...H, "content-type": "application/octet-stream" }, data: Buffer.from(rom) });
+    expect(made.status(), await made.text()).toBe(201);
+    const cart = await made.json();
+    expect(cart.save).toBeNull();
+    const saveOf = async () => {
+      const r = await page.request.get(`${rig!.api}/v1/me/carts/${cart.id}/save`, { headers: H });
+      return r.status() === 404 ? null : new Uint8Array(await r.body());
+    };
+
+    await as(page, "owner");
+    await page.goto("/nes/play");
+    await page.locator("[data-shelf-select]").selectOption(cart.id);
+    await expect(page.locator("[data-play-stats]")).toContainText("Counter.nes");
+    await expect(page.locator("[data-play-battery]")).toHaveAttribute("data-play-battery", "none");
+    expect(await saveOf(), "nothing is written before the game runs").toBeNull();
+
+    // Run, then pause: the pause writes the RAM, which the program changed.
+    await page.locator("[data-play-run]").click();
+    await expect.poll(async () => (await page.locator("[data-play-stats]").textContent()) ?? "").toMatch(/frames shown: [1-9]/);
+    await page.locator("[data-play-run]").click();
+    await expect(page.locator("[data-play-battery]")).toHaveAttribute("data-play-battery", "kept");
+    const first = await saveOf();
+    expect(first?.length).toBe(8192);
+    expect(first![0], "one power-on so far").toBe(1);
+
+    // A new page: the save comes back before the game starts, and the
+    // program counts a second start on top of it.
+    await page.reload();
+    await page.locator("[data-shelf-select]").selectOption(cart.id);
+    await expect(page.locator("[data-play-battery]")).toContainText("restored on load");
+    await page.locator("[data-play-run]").click();
+    await expect.poll(async () => (await page.locator("[data-play-stats]").textContent()) ?? "").toMatch(/frames shown: [1-9]/);
+    await page.locator("[data-play-run]").click();
+    await expect.poll(async () => (await saveOf())?.[0]).toBe(2);
+
+    // The shelf shows it, and can forget it.
+    await page.goto("/nes/shelf");
+    const row = page.locator(`[data-cart="${cart.id}"]`);
+    await expect(row.locator("[data-cart-kept]")).toHaveAttribute("data-cart-kept", "kept");
+    page.once("dialog", (d) => void d.accept());
+    await row.locator("[data-cart-forget]").click();
+    await expect(page.locator(`[data-cart="${cart.id}"] [data-cart-kept]`)).toHaveAttribute("data-cart-kept", "none");
+    expect(await saveOf()).toBeNull();
+    // A file off the disk has no shelf entry, so nothing is kept for it.
+    await page.goto("/nes/play");
+    await page.locator("[data-play-rom]").setInputFiles({ name: "counter-from-disk.nes", mimeType: "application/octet-stream", buffer: Buffer.from(rom) });
+    await expect(page.locator("[data-play-stats]")).toContainText("counter-from-disk.nes");
+    await expect(page.locator("[data-play-battery]")).toHaveCount(0);
+    expect((await page.request.delete(`${rig!.api}/v1/me/carts/${cart.id}`, { headers: H })).status()).toBe(204);
+  });
+
   test("somebody else's cartridge does not exist, in the page or under it", async ({ page }) => {
     const owners = await shelfOf(page, "owner");
     expect(owners.carts.length).toBe(1);

@@ -20,6 +20,8 @@
  * reset.
  */
 
+import { getSave, putSave, type Cart } from "@/lib/shelf";
+
 export interface DriftStats {
   presented: number;
   duplicated: number;
@@ -53,6 +55,8 @@ export interface PlayState {
   underruns: number;
   audio: boolean;
   why: string | null;
+  /** The save, for a shelf cartridge with a battery: when it was last written, and whether one came back on load. */
+  battery: { has: boolean; restored: boolean; savedAt: number | null; saving: boolean; why: string | null } | null;
 }
 
 interface ConsoleAnswer {
@@ -63,6 +67,10 @@ interface ConsoleAnswer {
   stats: DriftStats;
   advanced: number;
   consoleMs: number;
+  /** The "battery" path's answer: the header's bit and the RAM, or `restored` when one was put back. */
+  has?: boolean;
+  ram?: Uint8Array;
+  restored?: boolean;
 }
 interface PictureAnswer {
   bitmap: ImageBitmap;
@@ -108,6 +116,7 @@ const INITIAL: PlayState = {
   underruns: 0,
   audio: false,
   why: null,
+  battery: null,
 };
 
 let state: PlayState = INITIAL;
@@ -214,6 +223,9 @@ export function attach(c: HTMLCanvasElement) {
 }
 
 export function detach() {
+  void saveNow(true);
+  stopWatching();
+  keeper = null;
   window.removeEventListener("keydown", onKey);
   window.removeEventListener("keyup", onKey);
   consoleW.stop();
@@ -227,10 +239,72 @@ export function detach() {
   state = INITIAL;
 }
 
-/** A ROM from the reader's disk. It goes to the console worker and nowhere else. */
-export async function load(file: File) {
+// ---------------------------------------------------------------------------
+// The battery. A cartridge with one keeps what the game writes to its RAM;
+// here the page keeps it, beside the cartridge on the account's shelf, and
+// only for a cartridge that came from the shelf: a file off the disk has
+// nowhere for its save to go. The RAM goes up when it has changed, every
+// SAVE_EVERY_MS while the game runs, when it pauses, when the page is
+// hidden, and before another cartridge loads. Nothing is written for a
+// header without the battery bit.
+// ---------------------------------------------------------------------------
+
+const SAVE_EVERY_MS = 10_000;
+
+/** The shelf cartridge that is loaded, if one is; the disk's files have none. */
+let keeper: { cart: Cart; lastSent: string | null } | null = null;
+let saveTimer: ReturnType<typeof setInterval> | null = null;
+
+async function digest(bytes: Uint8Array): Promise<string> {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes.slice().buffer))].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Write the cartridge RAM to the shelf if it has changed since it was last written. */
+export async function saveNow(keepalive = false): Promise<void> {
+  const k = keeper;
+  if (!k || !state.battery?.has || state.battery.saving) return;
+  const r = await consoleW.call({ path: "battery" });
+  if (!r.ok) return;
+  const ram = r.answer.ram;
+  if (!ram) return;
+  const d = await digest(ram);
+  if (d === k.lastSent) return;
+  set({ battery: { ...state.battery, saving: true } });
+  try {
+    await putSave(k.cart.id, ram, keepalive);
+    k.lastSent = d;
+    if (keeper === k && state.battery) set({ battery: { ...state.battery, saving: false, savedAt: Date.now(), why: null } });
+  } catch (e) {
+    if (keeper === k && state.battery) set({ battery: { ...state.battery, saving: false, why: String((e as Error).message ?? e) } });
+  }
+}
+
+function watchForSaves() {
+  if (saveTimer !== null) return;
+  saveTimer = setInterval(() => void saveNow(), SAVE_EVERY_MS);
+  document.addEventListener("visibilitychange", onHide);
+  window.addEventListener("pagehide", onHide);
+}
+function onHide() {
+  if (document.visibilityState === "hidden") void saveNow(true);
+}
+function stopWatching() {
+  if (saveTimer !== null) clearInterval(saveTimer);
+  saveTimer = null;
+  document.removeEventListener("visibilitychange", onHide);
+  window.removeEventListener("pagehide", onHide);
+}
+
+/**
+ * A ROM, from the reader's disk or their shelf. It goes to the console
+ * worker and nowhere else. With `cart` (the shelf's entry it came from) the
+ * save comes back before the game starts and is kept from then on.
+ */
+export async function load(file: File, cart: Cart | null = null) {
+  await saveNow();
+  keeper = null;
   const bytes = await file.arrayBuffer();
-  set({ running: false, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null });
+  set({ running: false, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null });
   latest = null;
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);
@@ -239,6 +313,36 @@ export async function load(file: File) {
     return;
   }
   await pictureW.call({ path: "reset" });
+  if (cart) {
+    const b = await consoleW.call({ path: "battery" });
+    if (b.ok && b.answer.has) {
+      let restored = false;
+      let why: string | null = null;
+      let lastSent: string | null = null;
+      try {
+        const saved = cart.save ? await getSave(cart.id) : null;
+        if (saved) {
+          // The digest first: the buffer is handed to the worker and gone.
+          lastSent = await digest(saved);
+          const put = await consoleW.call({ path: "battery", ram: saved.buffer }, [saved.buffer]);
+          if (!put.ok) throw new Error(put.error);
+          restored = true;
+        } else if (b.answer.ram) {
+          // No save yet: the fresh RAM is the baseline, so a game that never
+          // writes its RAM never makes one.
+          lastSent = await digest(b.answer.ram);
+        }
+      } catch (e) {
+        why = String((e as Error).message ?? e);
+        lastSent = null;
+      }
+      keeper = { cart, lastSent };
+      set({ battery: { has: true, restored, savedAt: cart.save ? Date.parse(cart.save.saved_at) : null, saving: false, why } });
+      watchForSaves();
+    } else {
+      set({ battery: { has: false, restored: false, savedAt: null, saving: false, why: null } });
+    }
+  }
   set({ loaded: file.name });
 }
 
@@ -340,6 +444,7 @@ export function toggleRun() {
   if (!state.loaded) return;
   if (state.running) {
     set({ running: false });
+    void saveNow();
     return;
   }
   if (!audio) {

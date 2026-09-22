@@ -72,6 +72,9 @@ on a shelf, held to every rule an upload is.
 | `GET /v1/me/carts/{cart_id}/rom` | The bytes, `private, no-store`, checked against their digest on the way out |
 | `PATCH /v1/me/carts/{cart_id}` | Rename it or change its note. Touches only what it names |
 | `DELETE /v1/me/carts/{cart_id}` | Remove the entry and the file |
+| `GET /v1/me/carts/{cart_id}/save` | The cartridge's saved RAM, what its battery would have kept; 404 until the game has saved |
+| `PUT /v1/me/carts/{cart_id}/save` | Write it, whole. The play page is the battery: it writes while a cartridge with one runs, and when it stops |
+| `DELETE /v1/me/carts/{cart_id}/save` | Forget it. The ROM stays |
 
 Everything below needs a dev key.
 

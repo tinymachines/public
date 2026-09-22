@@ -1,8 +1,8 @@
 {
   "note": "Written only by scripts/board-nes.py --board. The suite and the MUTATE=1 run were executed at this commit with the netlist and goldens required; every figure is an anchored extraction from the repository's own reports, or recomputed here and held to them.",
-  "boarded_on": "2026-09-20",
+  "boarded_on": "2026-09-21",
   "repo": "https://github.com/tinymachines/2a03",
-  "commit": "f1bced7f5c16b0db9a2e2d49d811a3de1c6cc3e9",
+  "commit": "6f355faa51fe932ca067ed59986b783fdfb8e709",
   "tests_green": 15,
   "mutate_red": 13,
   "halfphi": "0.1.6",
@@ -16,7 +16,7 @@
   },
   "c2c02": {
     "repo": "https://github.com/tinymachines/2c02",
-    "commit": "172264ae0597f341f8cb0bed1b05bf0209283120",
+    "commit": "8104740d38a8f929b5389a8579b75897a72b1fa2",
     "halfphi": "0.1.6",
     "tests_green": 17,
     "mutate_red": 11,
@@ -35,10 +35,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.005",
-      "mean_inside_x": "16.6",
-      "worst_ms": "1.128",
-      "worst_inside_x": "14.7",
+      "mean_ms": "1.060",
+      "mean_inside_x": "15.7",
+      "worst_ms": "1.874",
+      "worst_inside_x": "8.9",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -72,8 +72,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "9339a79f97631c461d0ae8afa28d0cbf0b52425e",
-    "tests_green": 62,
+    "commit": "069e1d81fbc716b645ba74c7d9e0ff24832808e1",
+    "tests_green": 66,
     "pin_6502": "3805107",
     "alignment": {
       "cpu_phase": 4,
@@ -317,14 +317,14 @@
           "worst": 4.77e-07,
           "mean": 1.24e-08,
           "components": 1658880,
-          "ms_per_frame": "0.87"
+          "ms_per_frame": "0.88"
         },
         "mask_and_geometry_on": {
           "adapter": "NVIDIA GeForce RTX 3070",
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "0.85"
+          "ms_per_frame": "0.86"
         }
       },
       "gpu_tolerance": {
@@ -353,9 +353,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "3.78",
-        "frames_per_s": "79.4",
-        "real_time_x": "1.32",
+        "seconds": "3.95",
+        "frames_per_s": "75.9",
+        "real_time_x": "1.26",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -373,17 +373,17 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "9339a79f97631c461d0ae8afa28d0cbf0b52425e",
-      "built_on": "2026-09-20",
+      "commit": "069e1d81fbc716b645ba74c7d9e0ff24832808e1",
+      "built_on": "2026-09-21",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
         "nes_wasm.js": {
-          "sha256": "aa38014e8ba6c5e481d8548c229886588e5180ce2b1b3d9ccd9c304ce46b1fb3",
-          "bytes": 8367
+          "sha256": "21006c65c277ddc30e2dac03a8fdc18f862c9867f6e8ae67b0a2e48a22fde3d2",
+          "bytes": 9132
         },
         "nes_wasm_bg.wasm": {
-          "sha256": "23f5f51cf347ccdbce2696f37cf03e00308039200973f23446fefeaec6e2a178",
-          "bytes": 307072
+          "sha256": "55a9f7206bc88fbf57c2f86769de66581bb96670c672380db773983633d054fd",
+          "bytes": 308447
         }
       }
     }

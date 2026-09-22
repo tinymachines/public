@@ -813,6 +813,13 @@ class Me(BaseModel):
     limits: MeLimits = Field(description="How many tokens the account may hold and holds.")
 
 
+class CartSave(BaseModel):
+    """The cartridge's saved RAM: what its battery would have kept."""
+
+    bytes: int = Field(description="The save's length. The console's cartridge RAM is 8192 bytes.", examples=[8192])
+    saved_at: datetime = Field(description="When it was last written, UTC.")
+
+
 class Cart(BaseModel):
     """One cartridge on an account's own shelf, as what this service measured about it.
 
@@ -833,6 +840,7 @@ class Cart(BaseModel):
     prg_bytes: int = Field(description="Program ROM, in bytes, as the header declares and the length confirms.", examples=[131072])
     chr_bytes: int = Field(description="Picture ROM, in bytes. Zero means the board carries picture RAM instead.", examples=[131072])
     rom: str = Field(description="Where the bytes are, relative to the API's root. Answers only to the session that owns the shelf.", examples=["/v1/me/carts/ct_3f9a1b3c7d2e4f01/rom"])
+    save: Optional[CartSave] = Field(default=None, description="The saved cartridge RAM at `{rom}`'s sibling `/save`, or null while the game has never saved. The play page writes it while a cartridge with a battery runs, and reads it back before the game starts.")
     created_at: datetime = Field(description="When it was put on the shelf, UTC.")
     updated_at: datetime = Field(description="When its name or note last changed, UTC.")
 

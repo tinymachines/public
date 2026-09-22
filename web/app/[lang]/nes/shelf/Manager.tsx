@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "@/lib/lang";
 import { localize } from "@/lib/lang";
-import { addCart, announceChange, deleteCart, fetchCart, kib, listShelf, patchCart, type Cart, type Shelf } from "@/lib/shelf";
+import { addCart, announceChange, deleteCart, deleteSave, fetchCart, kib, listShelf, patchCart, type Cart, type Shelf } from "@/lib/shelf";
 
 /**
  * The shelf's manager: add, rename, annotate, download, delete.
@@ -42,6 +42,10 @@ const L = {
     save: "save",
     download: "download",
     remove: "delete",
+    saved: (bytes: string, when: string) => `save: ${bytes}, written ${when}`,
+    noSave: "no save yet",
+    forget: "forget the save",
+    forgetSure: (name: string) => `Forget ${name}'s save? The next start is a cartridge whose battery was never written. The ROM stays.`,
     sure: (name: string) => `Delete ${name} from your shelf? The file is removed from the server. Your own copy is not touched.`,
     useH: "Where they turn up",
     use: "Every cartridge menu on the site offers these by name once you are signed in:",
@@ -75,6 +79,10 @@ const L = {
     save: "保存",
     download: "ダウンロード",
     remove: "削除",
+    saved: (bytes: string, when: string) => `セーブ: ${bytes}、${when} に書き込み`,
+    noSave: "セーブはまだない",
+    forget: "セーブを忘れる",
+    forgetSure: (name: string) => `${name} のセーブを忘れる? 次に起動するときは電池に何も書かれていないカートリッジになる。ROM は残る。`,
     sure: (name: string) => `${name} を棚から消す? サーバ上のファイルは削除される。手元のコピーには触れない。`,
     useH: "どこに現れるか",
     use: "サインインしていれば、サイト内のカートリッジを選ぶメニューすべてに名前で並ぶ:",
@@ -121,6 +129,17 @@ function Row({ lang, cart, busy, onChanged, onError }: { lang: Lang; cart: Cart;
     }
   }
 
+  async function forget() {
+    if (!window.confirm(S.forgetSure(cart.name))) return;
+    onError(null);
+    try {
+      await deleteSave(cart.id);
+      await onChanged();
+    } catch (e) {
+      onError(String((e as Error).message ?? e));
+    }
+  }
+
   async function remove() {
     if (!window.confirm(S.sure(cart.name))) return;
     onError(null);
@@ -152,10 +171,14 @@ function Row({ lang, cart, busy, onChanged, onError }: { lang: Lang; cart: Cart;
         <span className="measured">{S.prg} {kib(cart.prg_bytes)}</span>
         <span className="measured">{cart.chr_bytes ? `${S.chr} ${kib(cart.chr_bytes)}` : S.chrRam}</span>
         <span className="measured">{S.crc} <code>{cart.crc32}</code></span>
+        <span className="measured" data-cart-kept={cart.save ? "kept" : "none"}>
+          {cart.save ? S.saved(kib(cart.save.bytes), new Date(cart.save.saved_at).toLocaleString(lang === "ja" ? "ja" : "en")) : S.noSave}
+        </span>
       </p>
       <p className="shelf-row-acts">
         <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void download()} data-cart-download>{S.download}</button>
         <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void remove()} data-cart-delete>{S.remove}</button>
+        {cart.save ? <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void forget()} data-cart-forget>{S.forget}</button> : null}
       </p>
     </li>
   );
@@ -269,7 +292,7 @@ export function Manager({ lang }: { lang: Lang }) {
               {carts.map((c) => (
                 // Keyed by what the row shows as well as which it is, so a
                 // saved rename re-seeds the fields from the server's answer.
-                <Row key={`${c.id}:${c.updated_at}`} lang={lang} cart={c} busy={busy} onChanged={refresh} onError={setError} />
+                <Row key={`${c.id}:${c.updated_at}:${c.save?.saved_at ?? ""}`} lang={lang} cart={c} busy={busy} onChanged={refresh} onError={setError} />
               ))}
             </ul>
           ) : (

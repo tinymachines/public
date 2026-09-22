@@ -16,6 +16,11 @@
  * treat it as a failure.
  */
 
+export interface CartSave {
+  bytes: number;
+  saved_at: string;
+}
+
 export interface Cart {
   id: string;
   name: string;
@@ -27,6 +32,8 @@ export interface Cart {
   prg_bytes: number;
   chr_bytes: number;
   rom: string;
+  /** The saved cartridge RAM, or null while the game has never saved. */
+  save: CartSave | null;
   created_at: string;
   updated_at: string;
 }
@@ -108,6 +115,25 @@ export async function patchCart(id: string, changes: { name?: string; note?: str
 
 export async function deleteCart(id: string): Promise<void> {
   const r = await fetch(`${API}/${id}`, { method: "DELETE" });
+  if (!r.ok) return refuse(r);
+}
+
+/** The saved cartridge RAM, or null when there is none. */
+export async function getSave(id: string): Promise<Uint8Array | null> {
+  const r = await fetch(`${API}/${id}/save`, { cache: "no-store" });
+  if (r.status === 404) return null;
+  if (!r.ok) return refuse(r);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+/** Write the cartridge RAM, whole. `keepalive` lets it finish after the page is hidden. */
+export async function putSave(id: string, ram: Uint8Array, keepalive = false): Promise<void> {
+  const r = await fetch(`${API}/${id}/save`, { method: "PUT", headers: { "content-type": "application/octet-stream" }, body: ram.slice().buffer, keepalive });
+  if (!r.ok) return refuse(r);
+}
+
+export async function deleteSave(id: string): Promise<void> {
+  const r = await fetch(`${API}/${id}/save`, { method: "DELETE" });
   if (!r.ok) return refuse(r);
 }
 
