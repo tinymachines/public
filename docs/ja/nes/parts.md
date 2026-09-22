@@ -139,13 +139,24 @@ v2b の C6 版。作るのはこれではない。
 | 記号 | 部品 | シートの上では |
 |---|---|---|
 | R1 | 10k | PAD1_D0 から 3V3 へ |
-| R2 | 10k | PAD1_D0 から 3V3 へ |
-| U1 | ESP32-S3-DevKitC-1 (or C6) | TinyUSB HID + NimBLE HID |
+| R2 | 10k | PAD2_D0 から 3V3 へ |
+| U1 | ESP32-C6-DevKitC-1 v1.2 | NimBLE HID。USB デバイスは無し |
 | U2 | TP4056 + protection | LiPo 充電モジュール |
 | U3 | MCP1700-3302 LDO | または devkit 自身の VBUS からの 3V3 |
 | SW1 | slide | MODE_SW から GND へ |
 | SW2 | power | VBAT から VBAT_SW へ |
 | LED1 | +330R | LED から GND へ |
+
+## pad-ble
+
+**いま組める。** アダプタのうち部品がすべて手元にある部分: パッド二つ、プルアップ二つ、USB 電源上の C6。
+
+| 記号 | 部品 | シートの上では |
+|---|---|---|
+| R1 | 10k | PAD1_D0 から 3V3 へ |
+| R2 | 10k | PAD2_D0 から 3V3 へ |
+| U1 | ESP32-C6-DevKitC-1 v1.2 | NimBLE HID キーボード。USB デバイスコントローラは無し |
+| C1 | 100nF | 3V3 から GND へ |
 
 
 
