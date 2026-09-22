@@ -105,7 +105,7 @@ export function explorerMenu(): MenuGroup[] {
     // many to make sense of). The Lab and tools page (/6502/tools) is the
     // map now, and it renders these same groups; the explorer's own bar
     // carries its own menu besides.
-    if (items.length) groups.push({ title: g.title, when: "/6502", items });
+    if (items.length) groups.push({ title: g.title, items });
   }
 
   // The checks that make the extraction trustworthy rather than hopeful. The

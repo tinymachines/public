@@ -8,13 +8,10 @@ import type { MenuGroup } from "@/lib/nav";
 import { listShelf } from "@/lib/shelf";
 
 /**
- * The menu: one control on every page, opening the section you are in.
- *
- * The groups arrive from the server already derived, and this picks the ones
- * whose `when` prefix matches the current path. That is what makes each
- * subsection's menu its own without any page passing anything: /docs sees the
- * documentation, /6502/lab sees the 6502 surfaces, and the site's own sections
- * are in both because that group matches everywhere.
+ * The menu: one control on every page, opening the same panel everywhere:
+ * the site's sections and the projects, nothing deeper (owner, 2026-09-22).
+ * What is inside a section is its landing page's to list. The groups arrive
+ * from the server already derived and localized.
  *
  * ## What a menu owes a keyboard
  *
@@ -121,18 +118,10 @@ export function Menu({
     };
   }, [open]);
 
-  // The `when` prefixes are unprefixed paths; under /ja the pathname is not.
-  // Scoping compares the stripped path, so a Japanese docs page still gets
-  // the documentation group; aria-current below compares the RAW path,
-  // because the item hrefs arrive already localized.
-  const { path: section, lang } = delocalize(here);
+  // aria-current below compares the RAW path, because the item hrefs arrive
+  // already localized; the language is for the account row's own links.
+  const { lang } = delocalize(here);
   const editor = `${localize(lang, "/6502/manage")}#account`;
-  const inSection = (g: MenuGroup) =>
-    g.when !== null && (section === g.when || section.startsWith(g.when + "/"));
-  // The section you are standing in comes FIRST, then the site. A reader who
-  // opens the menu inside 6502 wants 6502 under their thumb; the way out is
-  // still there, below, and it is the same on every page.
-  const shown = [...groups.filter(inSection), ...groups.filter((g) => g.when === null)];
 
   return (
     <div className="menu-wrap" ref={wrap}>
@@ -171,7 +160,7 @@ export function Menu({
               measure, so the columns line up with the masthead above and the
               content below. */}
           <div className="menu-sheet">
-          {shown.map((group) => (
+          {groups.map((group) => (
             <nav className="menu-group" key={group.title} aria-label={group.title}>
               <h2>{group.title}</h2>
               {group.items.map((item) => {

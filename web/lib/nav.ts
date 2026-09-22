@@ -59,38 +59,30 @@ export interface MenuItem {
 
 export interface MenuGroup {
   title: string;
-  /**
-   * The path prefix this group belongs to, or null for the group shown
-   * everywhere. The menu picks groups by matching the current path, so a
-   * section's own contents appear when you are in it and not otherwise. That
-   * is what makes each subsection's menu its own without any page passing it.
-   */
-  when: string | null;
   items: MenuItem[];
 }
 
 /**
- * Every group, in the order they should appear.
+ * Every group, in the order they should appear: the site, then the projects.
  *
- * THE MENU LISTS INDEX PAGES, AND AN INDEX PAGE LISTS WHAT IS UNDER IT.
- * Owner's call, 2026-09-22: the panel had become eighty-four lines on a
- * documentation page and forty-three inside the explorer, too many to make
- * sense of. So a group carries a section's first level, and a page a level
- * deeper is found on the page above it: the signal's two pages on /nes/signal,
- * the explorer's eighteen on /6502/tools, a report on its documentation
- * root. The rule is written once, in `listedAbove` below, and the e2e suite
- * holds the other half of the bargain: every page in the sitemap is at most
- * one click from something the menu lists (e2e/menu.spec.ts).
+ * THE MENU IS THE TOP LEVEL, AND EACH CHOICE OPENS AN INDEX PAGE. Owner's
+ * call, 2026-09-22, in two steps: first the panel lost everything below a
+ * section's first level (it had been eighty-four lines on a documentation
+ * page and forty-three inside the explorer), then the section group itself
+ * ("just site and projects"). So the panel is the same seven-odd lines on
+ * every page, and what is inside a section is that section's landing's job:
+ * /docs opens with the tree, /nes with its parts, /6502 with its tracks and
+ * its parts ledger. The e2e suite holds the other half of the bargain: each
+ * project's landing links every surface that has arrived, and every page in
+ * the sitemap is reached from the menu by walking the pages it lists
+ * (e2e/menu.spec.ts).
  */
 export function menuGroups(): MenuGroup[] {
   // Every entry carries a line of what it is, which is the part a list of
-  // nouns cannot do. On the 6502 site the example was that "Blueprint",
-  // "Schematic" and "Exploded" are three drawings of the same silicon and the
-  // bare list gave a reader no way to choose between them.
-  //
-  // The lines come from the manifest's own `what`, first sentence, rather than
-  // being written here: a menu that described a surface differently from the
-  // page describing itself would be a second description to keep in step.
+  // nouns cannot do. The lines come from the manifest's own `what`, first
+  // sentence, rather than being written here: a menu that described a
+  // surface differently from the page describing itself would be a second
+  // description to keep in step.
   const roof = read().projects.find((p) => p.key === "roof");
   const hintFor = (href: string): string | undefined => {
     const s = roof?.surfaces.find((x) => x.lands_at === href);
@@ -101,9 +93,9 @@ export function menuGroups(): MenuGroup[] {
     return p ? firstSentence(p.what) : undefined;
   };
 
-  // The landings are their own groups below, shown on every page, so the site
-  // group does not also list them: the same destination twice in one panel is
-  // the reader's job to reconcile, and it was the panel's job not to ask.
+  // The landings are their own group below, so the site group does not also
+  // list them: the same destination twice in one panel is the reader's job
+  // to reconcile, and it was the panel's job not to ask.
   const landings = new Set(
     projects()
       .filter((p) => p.key !== "roof" && p.landing)
@@ -113,7 +105,6 @@ export function menuGroups(): MenuGroup[] {
   const groups: MenuGroup[] = [
     {
       title: "The site",
-      when: null,
       items: [
         { href: "/", label: "Home", hint: "the front door" },
         ...siteNav()
@@ -123,109 +114,16 @@ export function menuGroups(): MenuGroup[] {
     },
   ];
 
-  // The projects, as a list of doors: one line each, shown everywhere. This
-  // is what the front page's menu is FOR, and it is all the front page needs
-  // to say about a project: its name and what it is. The parts inside a
-  // project are that project's own business, below.
+  // The projects, as a list of doors: one line each. This is all the panel
+  // says about a project: its name and what it is. The parts inside are the
+  // project's landing's business.
   const doors = projects().filter((p) => p.key !== "roof" && p.landing && arrivedSurfaces(p).length);
   if (doors.length) {
     groups.push({
       title: "Projects",
-      when: null,
       items: doors.map((p) => ({ href: p.landing as string, label: p.name, hint: firstSentence(p.what) })),
     });
   }
-
-  // Each project's surfaces, but only the ones that have actually arrived,
-  // and only INSIDE that project. This went back and forth: scoped first,
-  // then shown everywhere because the front page could not tell you the 6502
-  // section had seven surfaces, and that turned the front page's menu into
-  // a directory of every sub-page on the site. The doors list above answers
-  // the first complaint; scoping answers the second. Inside a project the
-  // menu opens on that project, which is the recipe card the owner asked
-  // for: the thing under your hand, not the whole cookbook.
-  for (const p of projects()) {
-    if (p.key === "roof" || !p.landing) continue;
-    const here = arrivedSurfaces(p);
-    if (!here.length) continue;
-    // A surface is in the group unless a page above it already lists it.
-    // Two pages count as above: a track's page, for whatever its headline
-    // names (the track's own path names nothing but itself, so the archive
-    // track is its own surface and stays); and, for a surface a level deeper
-    // than the project's first level, the surface one segment up, provided
-    // that page is one of this project's own. A deeper page with no index
-    // of its own stays in the menu rather than vanishing: a page nothing
-    // lists is a page nobody finds, and a menu that hides it looks exactly
-    // like a menu.
-    const onTrack = new Set(
-      p.key === "6502"
-        ? TRACKS.flatMap((tr) => tr.headline.map((h) => h.href.replace(/#.*$/, "")).filter((h) => h !== tr.path))
-        : [],
-    );
-    const routes = new Set(here.map((s) => s.lands_at));
-    const listedAbove = (href: string): boolean => {
-      if (onTrack.has(href)) return true;
-      if (!href.startsWith(p.landing + "/")) return false;
-      const above = href.replace(/\/[^/]+$/, "");
-      return above !== p.landing && routes.has(above);
-    };
-    groups.push({
-      title: p.name,
-      when: p.landing,
-      items: [
-        // "Overview", not "<name> overview": the item sits under a group
-        // heading that already says whose overview it is, and a label that
-        // repeats its own heading reads as noise, not navigation.
-        { href: p.landing, label: "Overview", hint: "what this project is, and where each surface lives" },
-        // The four tracks, for the 6502 only: the owner's shape for the
-        // project, each a sub-landing. Named in lib/tracks.ts, once.
-        ...(p.key === "6502"
-          ? TRACKS.filter((tr) => tr.path !== "/6502/archive").map((tr) => ({ href: tr.path, label: tr.name.en, hint: firstSentence(tr.what.en) }))
-          : []),
-        // The landing's own surface IS the Overview above. Listing it
-        // again gave the group two labels for one destination, which is
-        // the reader's job to reconcile and was the panel's job not to
-        // ask; the front page's doors already skip it the same way.
-        ...here.filter((s) => s.lands_at !== p.landing && !listedAbove(s.lands_at)).map((s) => ({
-          href: s.lands_at,
-          // The one answer, not a second set: this had its own copy of the
-          // explorer's routes, and a copy of a rule is a copy that misses
-          // the Lab and the console when they join it.
-          hard: isHardRoute(s.lands_at),
-          // The same expression labels() uses. This file's whole claim is that
-          // a crumb cannot call a page something the menu does not, and the
-          // two had drifted the moment a surface was given a shorter name for
-          // a path: the crumb read "The hotbits API" and the menu still said
-          // "The entropy gateway" for the same link.
-          label: s.nav_label ?? s.name,
-          hint: firstSentence(s.what),
-          prerendered: s.prerendered,
-        })),
-      ],
-    });
-  }
-
-  // The documentation's roots, and only the roots. The tree is already
-  // rendered as a tree in the sidebar of every documentation page, and the
-  // index at /docs lists every document; the panel listing all seventy-odd
-  // of them as well was the longest menu on the site. A root's own page
-  // opens with what is under it.
-  const docs = allPages().filter((p) => p.route !== "/docs" && p.route.split("/").length === 3);
-  if (docs.length) {
-    groups.push({
-      title: "Documentation",
-      when: "/docs",
-      items: docs.map((p) => ({
-        href: p.route,
-        label: p.title,
-        hint: p.description?.replace(/\.$/, ""),
-      })),
-    });
-  }
-
-  // The explorer's eighteen pages are not here. They were, in their own
-  // clusters, on the explorer's pages only; now they are the map on the Lab
-  // and tools page, which renders the same clusters (lib/explorer-menu.ts).
 
   return groups;
 }

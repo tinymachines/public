@@ -2,7 +2,8 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import { localize, t } from "@/lib/i18n";
-import { project } from "@/lib/projects";
+import { arrivedSurfaces, project } from "@/lib/projects";
+import { SiteLink } from "@/app/components/SiteLink";
 import { LESSON } from "./lesson";
 import { TrackGrid } from "./Tracks";
 import Link from "next/link";
@@ -100,6 +101,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
   const S = PROSE[lang];
   const T = LESSON[lang];
   const p = project("6502");
+  const arrived = new Set(arrivedSurfaces(p).map((s) => s.lands_at));
 
   return (
     <Shell lang={lang} die="6502" title={p.name}>
@@ -137,7 +139,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ lang: 
                     <a data-address href={s.serves_today}>{s.serves_today.replace("https://", "")}</a>
                   </td>
                   <td>
-                    {s.lands_at}{" "}
+                    {/* A part that has arrived is linked by its path: with
+                        the menu down to the site and the projects (owner,
+                        2026-09-22) this ledger is the index of the 6502's
+                        parts, and an index that prints a path as text is a
+                        list, not a way there. e2e/menu.spec.ts checks every
+                        arrived surface is linked from here. */}
+                    {arrived.has(s.lands_at) ? (
+                      <SiteLink lang={lang} href={s.lands_at} hard={s.prerendered === false}>{s.lands_at}</SiteLink>
+                    ) : (
+                      s.lands_at
+                    )}{" "}
                     {s.lands_at_settled ? null : <span className="tag warn">{T.proposed}</span>}
                   </td>
                   <td>

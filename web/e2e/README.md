@@ -11,7 +11,7 @@ e2e` runs it against a preview (the chip pages only boot on production, so
 | `mobile` | nothing scrolls sideways at 390 (all pages) or 360 (English) |
 | `manage` | the editor holds on a phone with the account card and every hidden section open |
 | `header` | one bar; die tile, page name, one flag; the menu at one x on every page |
-| `menu` | a section's group carries its first level and nothing twice; the docs group is the roots; every sitemap page is one click from something the menu lists |
+| `menu` | the panel is the site and the projects, the same on every page; each project's landing links every arrived surface; every sitemap page is reached from the menu by walking the pages it lists |
 | `menu-open` | opened after a scroll, the bar, the button and the panel are on screen and nothing moves (real scrollbars, so its own file) |
 | `strip` | the Lab's set in order, disabled where a page cannot honour it, full screen last and at the edge, two rows on a phone |
 | `fullscreen` | full screen is the document: the bar leaves and comes back |
