@@ -66,10 +66,16 @@ if [ -n "$FOLLOW" ]; then
   [ -z "$dirty" ] || fail "the beta worktree has uncommitted changes; it is somebody's work in flight, not a thing to fast-forward over"
   from=$(git -C "$BETA" rev-parse --short=12 HEAD)
   to=$(git -C "$ROOT" rev-parse HEAD)
-  if git -C "$BETA" merge --ff-only -q "$to" 2>/dev/null; then
+  # A fast-forward that lands somewhere else is not a refusal. With beta AHEAD
+  # of main, `merge --ff-only main` returns zero and moves nothing, because
+  # main is already an ancestor; the first version of this stage took that
+  # zero as success and went on to build and serve beta's scratch commit
+  # (2026-09-22). The fact to hold is where beta ends up, not what git said.
+  git -C "$BETA" merge --ff-only -q "$to" 2>/dev/null || true
+  if [ "$(git -C "$BETA" rev-parse HEAD)" = "$to" ]; then
     printf '  %s -> %s\n' "$from" "$(git -C "$BETA" rev-parse --short=12 HEAD)"
   else
-    fail "beta at $from is not behind $(git -C "$ROOT" rev-parse --short=12 "$to"): it has commits this checkout does not. Merge beta into main first (git merge --ff-only beta), then deploy."
+    fail "beta at $from did not fast-forward to $(git -C "$ROOT" rev-parse --short=12 "$to"): it has commits this checkout does not. Merge beta into main first (git merge --ff-only beta), then deploy."
   fi
 fi
 HEAD=$(git -C "$BETA" rev-parse --short=12 HEAD)
