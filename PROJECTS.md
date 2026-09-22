@@ -2846,3 +2846,35 @@ not bump the version.
 - **A deploy refused on nes-bench's parts sheet**, which that project was
   mid-commit on at the moment the build read it; current a minute later.
   The gate did its job and the live site was untouched in between.
+
+### Later still, 1.0.265, live at `62ace98`: the shelf is the battery
+
+- **A cartridge's RAM is kept beside it and comes back on load**
+  (`b03bbcc` here, `069e1d8` in nes). Three routes on the shelf
+  (`GET`, `PUT`, `DELETE .../save`); the `.sav` beside the ROM is the one
+  copy of the fact, and a listing looks rather than records. The play
+  page is the keeper: it restores before the game starts and writes the
+  RAM when its digest has changed, every ten seconds while running, on
+  pause, when the page is hidden (keepalive), and before another load.
+  Nothing for a header without the battery bit, for a file off the disk,
+  or for a game that never touches its RAM (the fresh RAM is the
+  baseline). The readout says which.
+- **The proof is a counter.** A cartridge of our own adds one to $6000
+  at every power-on and stops, so the RAM counts starts with the save
+  intact: first save 1, restored run 2; with the restore removed, 1.
+  Run against the real bundle through the rig.
+- **It reached into nes**: `Console::battery_ram`, `set_battery_ram`,
+  `Ines::battery`, and the three on the wasm shell, with a test that
+  runs a program on the die. Pushed, since a boarded commit is linked
+  from the site. The comment says plainly that the RAM saved is the
+  console's own 8K at $6000, which answers before the MMC1's gated one;
+  whether that shadowing should end is the nes group's question.
+- **The re-board moved three chips.** Boarding at `069e1d8` recorded
+  newer 2a03 (`6f355fa`) and 2c02 (`8104740`) commits, and the deploy
+  refused until the playground's slow chips were rebuilt at them
+  (`build-playground-wasm.py slowppu` and `apuvoices`). That is the gate
+  working: a bundle built from one commit under a record naming another
+  is what it exists to stop.
+- The `nes` checkout's untracked `NES/` (the owner's extraction) is in
+  its local `.git/info/exclude`, so the board's clean check passes over
+  it. Nothing committed, nothing deleted.
