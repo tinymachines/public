@@ -3395,5 +3395,6 @@ pause; and a sister play button beside the cartridge.
 - **The sister play key** sits beside the cartridge, the same engine and
   state as the strip's, so the two never disagree.
 
-Beta serves `85f794c`; main is there too, both pushed. Live is at
-`ffc6b45` (1.0.266). Deploying is the owner's call.
+Deployed at the owner's word, so live, main and beta are all at
+`63ec414` and the version stays 1.0.266; the play specs pass against
+live.
