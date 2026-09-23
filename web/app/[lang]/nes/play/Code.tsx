@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { snapshot, serverSnapshot, subscribe } from "./playEngine";
 // The 6502 site's disassembler, the one table of the documented opcodes,
@@ -15,6 +15,12 @@ import { disassemble } from "../../../../public/6502/games/disasm.js";
  * transport moves it. Disassembling forward from the PC is the one honest
  * direction: backwards is ambiguous on a 6502, where the same bytes read
  * differently depending on where you start.
+ *
+ * The listing is a box of fixed height that scrolls itself, and the
+ * selection line under it keeps its height whether or not there is a
+ * selection: every step redraws the listing, and a box that grew or shrank
+ * with it moved everything below (owner, 2026-09-23: "violent redraws").
+ * The lit line is kept in view inside the box, never by scrolling the page.
  *
  * A block is a run of that listing the reader selected (a click, then a
  * click further down), given a label and a note, and kept here in the
@@ -159,6 +165,14 @@ export function Code({ lang }: { lang: Lang }) {
     setEnd(null);
   };
   const stem = (s.loaded ?? "cartridge").replace(/\.nes$/i, "");
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    const lit = el?.querySelector<HTMLElement>("tr[aria-current]");
+    if (!el || !lit) return;
+    const top = lit.offsetTop - el.clientHeight / 3;
+    if (Math.abs(el.scrollTop - top) > el.clientHeight / 3) el.scrollTop = Math.max(0, top);
+  }, [lines]);
 
   return (
     <section className="wb-page play-section" id="code" data-code data-code-blocks={blocks.length}>
@@ -168,7 +182,7 @@ export function Code({ lang }: { lang: Lang }) {
       ) : (
         <>
           <p className="quiet">{T.from(m!.codeAt)} {T.select}</p>
-          <div className="panel"><div className="panel-face">
+          <div className="panel"><div className="panel-face code-box" ref={box}>
             <table className="readout code-list" data-code-list={hex4(m!.codeAt)}>
               <thead><tr>{T.cols.map((c) => <th key={c}>{c}</th>)}</tr></thead>
               <tbody>
@@ -186,8 +200,8 @@ export function Code({ lang }: { lang: Lang }) {
               </tbody>
             </table>
           </div></div>
-          <div className="chips">
-            <span className="quiet" data-code-selection={sel ? selectedLines.length : 0}>{sel ? T.selected(sel.from, sel.to, selectedLines.length) : null}</span>
+          <div className="chips code-sel">
+            <span className="quiet" data-code-selection={sel ? selectedLines.length : 0}>{sel ? T.selected(sel.from, sel.to, selectedLines.length) : T.select}</span>
             <button type="button" className="btn btn-primary" disabled={!sel || selectedLines.length === 0} onClick={capture} data-code-capture>{T.capture}</button>
             <button type="button" className="btn btn-ghost" disabled={anchor === null} onClick={() => { setAnchor(null); setEnd(null); }} data-code-clear>{T.clear}</button>
           </div>

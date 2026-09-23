@@ -532,3 +532,45 @@ test("control and the code panel: the steps by the machine's units, the reset, a
   await page.locator("[data-code-remove]").click();
   await expect(page.locator("[data-code]")).toHaveAttribute("data-code-blocks", "0");
 });
+
+test("the machine's panels hold their height: nothing below them moves as the console steps, selects or paints", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
+  const heights = () => page.evaluate(() => Object.fromEntries(["cpu", "memory", "palettes", "oam", "code", "sprites"].map((id) => [id, Math.round(document.getElementById(id)!.getBoundingClientRect().height)])));
+  const h0 = await heights();
+  // Steps of every size, and frames.
+  for (const key of ["[data-play-half]", "[data-play-cycle]", "[data-play-op]", "[data-play-op]", "[data-play-line]", "[data-play-frame]", "[data-play-frame]"]) {
+    await page.locator(key).click();
+    await page.waitForTimeout(150);
+  }
+  expect(await heights(), "after steps and frames").toEqual(h0);
+  // A selection in the listing, then a capture.
+  const rows = page.locator("[data-code-list] tbody tr");
+  await rows.nth(2).click();
+  await rows.nth(4).click();
+  await expect(page.locator("[data-code-selection]")).toHaveAttribute("data-code-selection", "3");
+  const h1 = await heights();
+  expect(h1.code, "the code section with a selection").toBe(h0.code);
+  // A tile picked and painted: the sprites section keeps its height.
+  const sheet = page.locator("[data-spr-sheet]");
+  const cell = (await sheet.boundingBox())!.width / 16;
+  await sheet.click({ position: { x: cell * 1.5, y: cell * 0.5 } });
+  await page.locator('[data-spr-slot="3"]').click();
+  const edit = page.locator("[data-spr-edit]");
+  const ecell = (await edit.boundingBox())!.width / 8;
+  await edit.click({ position: { x: ecell / 2, y: ecell / 2 } });
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "1");
+  expect((await heights()).sprites, "the sprites section with a tile open and edited").toBe(h0.sprites);
+  // The listing scrolls itself: the lit line is inside its box, and the box is not the page.
+  const r = await page.evaluate(() => {
+    const box = document.querySelector(".code-box")!.getBoundingClientRect();
+    const lit = document.querySelector("[data-code-list] tr[aria-current]")!.getBoundingClientRect();
+    return { inside: lit.top >= box.top - 1 && lit.bottom <= box.bottom + 1, boxH: Math.round(box.height), listH: Math.round(document.querySelector("[data-code-list]")!.getBoundingClientRect().height) };
+  });
+  expect(r.inside, "the lit line is in view inside the box").toBe(true);
+  expect(r.listH, "the listing is taller than its box, which scrolls").toBeGreaterThan(r.boxH);
+});

@@ -230,8 +230,10 @@ function Oam({ m, T, onTile }: { m: Machine; T: Words; onTile?: (tile: number) =
       </tr>,
     );
   }
+  // A box of fixed height: sprites come and go every frame, and a table
+  // that grew with them moved every section below (owner, 2026-09-23).
   return (
-    <div className="panel"><div className="panel-face">
+    <div className="panel"><div className="panel-face state-oam">
       {rows.length === 0 ? (
         <p className="quiet" data-oam-none>{T.oamNone}</p>
       ) : (

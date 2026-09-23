@@ -104,8 +104,19 @@
 .state-swatch:hover { color: var(--color-glass); text-shadow: 0 0 2px #000; }
 /* The code listing: a readout whose rows are instructions, the next one
    lit, a selection marked; the captured blocks as code on paper. */
-.code-list { width: auto; }
-.code-list td.num, .code-list th { text-align: left; }
+/* Boxes of fixed height that scroll themselves, and lines that keep their
+   height empty: every step redraws the listing and the sprites on screen,
+   and a box that grew with its content moved every section below it
+   (owner, 2026-09-23: "violent redraws"). */
+.code-box { height: calc(var(--u) * 110); overflow: auto; }
+.code-sel { min-height: calc(var(--u) * 12); }
+.state-oam { height: calc(var(--u) * 70); overflow: auto; }
+.spr-picked { min-height: 1.5em; margin: 0; }
+.spr-note { min-height: 3em; }
+/* The kit's readout spans its panel; a listing reads left to right. Scoped
+   as the kit scopes it, so the override outranks it. */
+.panel-face .code-list { width: auto; }
+.panel-face .code-list td.num, .panel-face .code-list th { text-align: left; }
 .code-list tbody tr { cursor: pointer; }
 .code-list tbody tr.lit td { color: var(--color-mustard); }
 .code-list tbody tr.picked td { background: color-mix(in srgb, var(--color-blue) 25%, transparent); }

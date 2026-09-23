@@ -386,16 +386,16 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
                   onPointerCancel={() => setDown(false)}
                 />
               </div></div>
-              {live ? (
-                <label className="field">
-                  <span>{T.colours}</span>
-                  <select className="input" value={String(source)} onChange={(e) => setSource(e.target.value === "mine" ? "mine" : Number(e.target.value))} data-spr-source>
-                    <option value="mine">{T.mine}</option>
-                    {[0, 1, 2, 3].map((i) => <option key={`bg${i}`} value={i}>{T.bgPal(i)}</option>)}
-                    {[0, 1, 2, 3].map((i) => <option key={`sp${i}`} value={4 + i}>{T.sprPal(i)}</option>)}
-                  </select>
-                </label>
-              ) : null}
+              {/* Always in the flow, disabled until the console's palettes
+                  are read: a select that appeared moved everything under it. */}
+              <label className="field">
+                <span>{T.colours}</span>
+                <select className="input" value={String(source)} disabled={!live} onChange={(e) => setSource(e.target.value === "mine" ? "mine" : Number(e.target.value))} data-spr-source>
+                  <option value="mine">{T.mine}</option>
+                  {[0, 1, 2, 3].map((i) => <option key={`bg${i}`} value={i}>{T.bgPal(i)}</option>)}
+                  {[0, 1, 2, 3].map((i) => <option key={`sp${i}`} value={4 + i}>{T.sprPal(i)}</option>)}
+                </select>
+              </label>
               <div className="spr-brush" role="radiogroup" aria-label={T.brush}>
                 {shown.map((code, i) => (
                   <button
@@ -411,9 +411,8 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
                     <span>{code.toString(16).toUpperCase().padStart(2, "0")}</span>
                   </button>
                 ))}
-                {picked !== null && edits.has(picked) ? (
-                  <button type="button" className="btn btn-ghost" onClick={() => setEdits((m) => { const n = new Map(m); n.delete(picked); return n; })} data-spr-revert-tile>{T.revertTile}</button>
-                ) : null}
+                {/* Always in the flow, invisible until the tile has an edit. */}
+                <button type="button" className="btn btn-ghost" style={{ visibility: picked !== null && edits.has(picked) ? "visible" : "hidden" }} disabled={picked === null || !edits.has(picked)} onClick={() => { if (picked !== null) setEdits((m) => { const n = new Map(m); n.delete(picked); return n; }); }} data-spr-revert-tile>{T.revertTile}</button>
               </div>
               <div className="spr-swatches" role="listbox" aria-label={T.swatches} data-spr-swatches={s.palette ? "measured" : "greys"}>
                 {Array.from({ length: 64 }, (_, code) => (
@@ -428,7 +427,8 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
                   />
                 ))}
               </div>
-              <p className="quiet">{s.palette ? T.measured : T.unmeasured}</p>
+              {/* Two lines reserved: the note before the colours are measured is the longer one. */}
+              <p className="quiet spr-note">{s.palette ? T.measured : T.unmeasured}</p>
             </div>
           </div>
           <div className="chips">
