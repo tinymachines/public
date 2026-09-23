@@ -322,19 +322,27 @@ const pkg = spawnSync("python3", [path.join(BENCH, "tools", "make-package.py")],
 if (pkg.status !== 0) {
   console.warn(`pull-nesdocs: the drawing package was not built: ${pkg.stdout}${pkg.stderr}`);
 } else {
-  // One directory per package now (v1b is TM-NESB-001, v2b is -002),
-  // so the PDFs are a level down. They are served flat: the file name
-  // already carries the drawing number.
-  const pkgDir = path.join(BENCH, "docs", "package");
-  for (const d of fs.readdirSync(pkgDir, { withFileTypes: true })) {
-    const dir = d.isDirectory() ? path.join(pkgDir, d.name) : pkgDir;
-    for (const f of fs.readdirSync(dir)) {
-      if (f.endsWith(".pdf")) {
-        fs.copyFileSync(path.join(dir, f), path.join(ROOT, "web", "public", "nes", "bench", f));
-        console.log(`pull-nesdocs: ${f}`);
-      }
+  // Exactly the drawing packages the manifests name, one file each, and
+  // nothing else: the pull copied whatever the package directories held
+  // until 2026-09-23, and the bench's build directory had kept every
+  // revision since A, so fourteen superseded drawings of TM-NESB-001 were
+  // served beside the current one, each looking as authoritative as the
+  // right one (the bench side found it; nes-bench 7752d23 cleans its
+  // directories, and this side stops trusting a directory listing). A
+  // PDF in the served directory that no manifest names is withdrawn, so a
+  // pull after a rev bump leaves the old revision nowhere.
+  const benchOut = path.join(ROOT, "web", "public", "nes", "bench");
+  const wanted = new Set([PKG_V1B, PKG_V2B, PKG_PADBLE].map((p) => path.basename(p.href)));
+  for (const p of [PKG_V1B, PKG_V2B, PKG_PADBLE]) {
+    const f = path.basename(p.href);
+    fs.copyFileSync(path.join(BENCH, "docs", "package", p.docno.toLowerCase(), f), path.join(benchOut, f));
+    console.log(`pull-nesdocs: ${f}`);
+  }
+  for (const f of fs.readdirSync(benchOut)) {
+    if (f.endsWith(".pdf") && !wanted.has(f)) {
+      fs.unlinkSync(path.join(benchOut, f));
+      console.log(`pull-nesdocs: withdrew ${f}, which no manifest names`);
     }
-    if (!d.isDirectory()) break;
   }
 }
 

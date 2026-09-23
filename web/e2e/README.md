@@ -12,6 +12,7 @@ e2e` runs it against a preview (the chip pages only boot on production, so
 | `manage` | the editor holds on a phone with the account card and every hidden section open |
 | `header` | one bar; die tile, page name, one flag; the menu at one x on every page |
 | `menu` | the panel is the site and the projects, the same on every page; each project's landing links every arrived surface; every sitemap page is reached from the menu by walking the pages it lists |
+| `bench` | the bench's drawing packages served are exactly the ones its manifests name; every superseded revision answers 404 |
 | `parts` | the section's parts as a strip under the bar on every page inside a project, its first level from the manifest, the current part marked; none on the site's own pages |
 | `menu-open` | opened after a scroll, the bar, the button and the panel are on screen and nothing moves (real scrollbars, so its own file) |
 | `strip` | the Lab's set in order, disabled where a page cannot honour it, full screen last and at the edge, two rows on a phone |
