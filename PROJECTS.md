@@ -3193,6 +3193,8 @@ against the file as it arrived, not whole images.
   the preview and against beta, and the header, mobile, pages, menu and
   language suites on the preview.
 
-Beta serves `9fb5f22`; main is there too, both pushed. Live is still
-`34cf5c0` (1.0.266), and the API routes reach it with the next deploy.
-Next on the note's order: reads out of the engine, which is the seam.
+Deployed clean afterwards at the owner's word, with the live database
+backed up beside itself first (the deploy habit for a migration), so
+live, main and beta are all at `acb3a1f`, the database is at version 6
+with its revisions table, and the version stays 1.0.266. Next on the
+note's order: reads out of the engine, which is the seam.
