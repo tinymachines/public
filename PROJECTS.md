@@ -3342,3 +3342,28 @@ version stays 1.0.266; the play, sprites, reads, control and bench specs
 pass against live. The console repository is pushed at `482e1f4`. Next
 on the note's order: breakpoints and the trace ring, or blocks kept on
 the shelf; the owner's pick.
+
+## Evening, 2026-09-23: the panels hold their height
+
+The owner, on the play workbench: "Sprites and Code need to be
+fixed-sized panels. Any change in content height causes violent
+redraws." The sprites on screen came and went every frame and their
+table grew with them; the listing redrew every step and its selection
+line appeared and vanished; the sprites section gained a select when the
+palettes were read, a revert button when a tile had an edit, and lost a
+line of its note when the colours became measured. Each moved every
+section below it.
+
+- **Boxes of fixed height that scroll themselves** (`7bc5658`): the
+  listing and the sprites on screen, the lit line kept in view inside
+  the box and never by scrolling the page. The selection line, the
+  picked-tile line and the note keep their height empty; the select and
+  the revert button stay in the flow, disabled or invisible rather than
+  absent.
+- **Held by** the play spec, which measures every machine section before
+  and after steps of every size, frames, a selection and a painted tile,
+  and requires the same heights; it caught the note's lost line before
+  the commit.
+
+Beta serves `7bc5658`; main is there too, both pushed. Live is at
+`4a2caca` (1.0.266). Deploying is the owner's call.
