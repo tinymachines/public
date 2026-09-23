@@ -3368,3 +3368,32 @@ section below it.
 Deployed at the owner's word, so live, main and beta are all at
 `ffc6b45` and the version stays 1.0.266; the play specs, the height
 check among them, pass against live.
+
+## Night, 2026-09-23: the phone's three
+
+The owner, on a phone: side-scroll slop on the sprites on screen, lots of
+blinking in the refreshing lists, and lockups shuffling power, play and
+pause; and a sister play button beside the cartridge.
+
+- **The width is locked** (`85f794c`): the sprites-on-screen box scrolled
+  sideways by the thirteen pixels its table overhung, which wobbled under
+  a vertical swipe. The tables fit their box now (fixed layout, the box's
+  width, the rest clipped) and the boxes never scroll sideways; a table
+  wider than a phone injected into them fits.
+- **The panels are buffered**: the worker's state goes through
+  `lib/latest.ts`, the newest value published a few times a second while
+  the console runs, at once when paused, stepping or resetting. Its unit
+  test fails on a buffer that publishes every push. A count of DOM bursts
+  on the headless box could not tell the two apart, because the box runs
+  too few frames a second; that assertion was written, found not to
+  discriminate under a mutation, and taken out.
+- **The transitions are guarded**: a step still in flight made the run
+  loop give up rather than retry, which left the key reading pause over a
+  console that never ran again; an off that overtook a tick answered it
+  "no cartridge", shown as a refusal. Every change of the console's life
+  waits for the tick in flight now, and the loop retries.
+- **The sister play key** sits beside the cartridge, the same engine and
+  state as the strip's, so the two never disagree.
+
+Beta serves `85f794c`; main is there too, both pushed. Live is at
+`ffc6b45` (1.0.266). Deploying is the owner's call.
