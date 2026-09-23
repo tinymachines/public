@@ -3158,6 +3158,7 @@ The owner's word on the inventory's second step.
 - **On beta,** everything passes but the playground's "published" check,
   which asserts no noindex and cannot pass where every page is noindex.
 
-Beta serves `9f44216`; main is there too, both pushed. Live is still
-`56ac59d` (1.0.266). Deploying is the owner's call. Next on the note's
-order: versions on the shelf, and the NOTICE line first.
+Deployed clean afterwards at the owner's word (2026-09-23), so live, main
+and beta are all at `34cf5c0` and the version stays 1.0.266; the play and
+sprites specs pass against live. Next on the note's order: versions on
+the shelf, and the NOTICE line first.
