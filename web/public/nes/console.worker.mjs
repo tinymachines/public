@@ -38,7 +38,24 @@ let watch = { at: 0, len: 256 };
  */
 function state() {
   if (!nes || !nes.cpu_state) return null;
-  return { cpu: nes.cpu_state(), ppu: nes.ppu_state(), palette: nes.palette(), oam: nes.oam(), watched: nes.peek(watch.at, watch.len), watchAt: watch.at };
+  const cpu = nes.cpu_state();
+  const pc = cpu[5] | (cpu[6] << 8);
+  // The bytes from the program counter, for the code panel's listing: a
+  // page is more than a screen of instructions.
+  return { cpu, ppu: nes.ppu_state(), palette: nes.palette(), oam: nes.oam(), watched: nes.peek(watch.at, watch.len), watchAt: watch.at, code: nes.peek(pc, 256), codeAt: pc };
+}
+
+/** The planes and the sound after a step, if a frame completed inside it. */
+function afterStep(id, took) {
+  const sound = nes.sound();
+  if (nes.has_frame && nes.has_frame()) {
+    const colour = nes.colour();
+    const emphasis = nes.emphasis();
+    const parity = nes.parity();
+    self.postMessage({ id, ok: true, answer: { colour, emphasis, parity, sound, took, advanced: 1, halfCycles: nes.cpu_half_cycles(), state: state() } }, [colour.buffer, emphasis.buffer, sound.buffer]);
+  } else {
+    self.postMessage({ id, ok: true, answer: { colour: null, emphasis: null, parity: 0, sound, took, advanced: 0, halfCycles: nes.cpu_half_cycles(), state: state() } }, [sound.buffer]);
+  }
 }
 
 self.onmessage = async (e) => {
@@ -78,6 +95,31 @@ self.onmessage = async (e) => {
       self.postMessage({ id, ok: true, answer: { ciram: nes.ciram(), chrRam: nes.chr_ram() } });
       return;
     }
+    // The steps: the machine moved by one of its own units, with the pads
+    // as they stand. The bundle keeps the newest completed frame where the
+    // planes are read, so a step that finishes a frame paints it.
+    if (path === "step") {
+      if (!nes || !nes.step_instruction) throw new Error("this bundle cannot step");
+      nes.set_pad(e.data.pad & 0xff);
+      if (nes.set_pad2) nes.set_pad2(e.data.pad2 & 0xff);
+      const kind = e.data.kind;
+      let took = 0;
+      if (kind === "half") took = nes.step_half_cycles(1);
+      else if (kind === "cycle") took = nes.step_half_cycles(2);
+      else if (kind === "op") took = nes.step_instruction();
+      else if (kind === "line") took = nes.step_scanline();
+      else throw new Error(`unknown step ${JSON.stringify(kind)}`);
+      afterStep(id, took);
+      return;
+    }
+    // The front panel's reset button: the CPU restarts at its vector,
+    // everything else keeps what it holds.
+    if (path === "reset") {
+      if (!nes || !nes.reset) throw new Error("this bundle has no reset button");
+      nes.reset();
+      afterStep(id, 0);
+      return;
+    }
     if (path === "off") {
       if (nes) nes.free();
       nes = null;
@@ -91,6 +133,7 @@ self.onmessage = async (e) => {
     if (path === "frame") {
       if (!nes || !pacer) throw new Error("no cartridge loaded");
       nes.set_pad(e.data.pad & 0xff);
+      if (nes.set_pad2) nes.set_pad2((e.data.pad2 ?? 0) & 0xff);
       const t0 = performance.now();
       nes.run_frames(1);
       const colour = nes.colour();
@@ -132,6 +175,7 @@ self.onmessage = async (e) => {
         return;
       }
       nes.set_pad(pad & 0xff);
+      if (nes.set_pad2) nes.set_pad2((e.data.pad2 ?? 0) & 0xff);
       const t0 = performance.now();
       nes.run_frames(advanced);
       const colour = nes.colour();

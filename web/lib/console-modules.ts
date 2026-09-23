@@ -83,7 +83,15 @@ export const FILES = [
   "rom/dierunner.rom",
   "rom/snake.rom",
   "art/tiles.chr",
+  // Not the console's: the 6502 site's disassembler (web/disasm.js, the
+  // one table of the 151 documented opcodes, which every tool there and
+  // nes-bench's x-ray read). Served beside the console's modules for the
+  // NES workbench's code panel, byte for byte from the boarded tree.
+  "disasm.js",
 ] as const;
+
+/** Files that live in the 6502 tree's web/ rather than games/. */
+const FROM_WEB = new Set<(typeof FILES)[number]>(["disasm.js"]);
 
 export interface Patch {
   file: (typeof FILES)[number];
@@ -168,7 +176,7 @@ export function consoleModules(src = SRC): ConsoleFile[] {
     );
   }
   return FILES.map((rel) => {
-    const raw = fs.readFileSync(path.join(src, rel));
+    const raw = fs.readFileSync(path.join(FROM_WEB.has(rel) ? path.join(src, "..", "web") : src, rel));
     const patched = PATCHES.some((p) => p.file === rel);
     return { rel, bytes: patched ? Buffer.from(patch(rel, raw.toString("utf8"))) : raw, patched };
   });

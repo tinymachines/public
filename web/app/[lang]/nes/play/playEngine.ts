@@ -100,10 +100,13 @@ export interface Machine {
   /** The bus range the memory panel watches, and where it starts. */
   watched: Uint8Array;
   watchAt: number;
+  /** A page of the bus from the program counter, for the code panel. */
+  code: Uint8Array;
+  codeAt: number;
 }
 
 interface RawState {
-  cpu: Uint8Array; ppu: Uint8Array; palette: Uint8Array; oam: Uint8Array; watched: Uint8Array; watchAt: number;
+  cpu: Uint8Array; ppu: Uint8Array; palette: Uint8Array; oam: Uint8Array; watched: Uint8Array; watchAt: number; code: Uint8Array; codeAt: number;
 }
 
 function parseMachine(r: RawState | null | undefined): Machine | null {
@@ -120,6 +123,8 @@ function parseMachine(r: RawState | null | undefined): Machine | null {
     oam: r.oam,
     watched: r.watched,
     watchAt: r.watchAt,
+    code: r.code,
+    codeAt: r.codeAt,
   };
 }
 
@@ -271,13 +276,40 @@ const KEYS: Record<string, number> = {
   ArrowLeft: 64,
   ArrowRight: 128,
 };
+/** Controller 2, on the left hand: W A S D for the cross, G is A, F is B, R Select, T Start. */
+const KEYS2: Record<string, number> = {
+  KeyG: 1,
+  KeyF: 2,
+  KeyR: 4,
+  KeyT: 8,
+  KeyW: 16,
+  KeyS: 32,
+  KeyA: 64,
+  KeyD: 128,
+};
+let pad2 = 0;
 
 function onKey(e: KeyboardEvent) {
   const bit = KEYS[e.code];
-  if (bit === undefined) return;
-  if (e.type === "keydown") pad |= bit;
-  else pad &= ~bit;
+  const bit2 = KEYS2[e.code];
+  if (bit === undefined && bit2 === undefined) return;
+  // A key typed into a field is typing, not a button.
+  const t = e.target as HTMLElement | null;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  if (bit !== undefined) {
+    if (e.type === "keydown") pad |= bit;
+    else pad &= ~bit;
+  }
+  if (bit2 !== undefined) {
+    if (e.type === "keydown") pad2 |= bit2;
+    else pad2 &= ~bit2;
+  }
   e.preventDefault();
+}
+
+/** Controller 2's byte. */
+export function pad2Byte(): number {
+  return pad2 & 0xff;
 }
 
 /** The on-screen pad's buttons, ORed with the keyboard's: bits in the register's order. */
@@ -508,11 +540,54 @@ function askPalette() {
   });
 }
 
+/**
+ * One step of the machine's own unit, while paused: a CPU half-cycle, a
+ * cycle, an instruction, or a scanline. A frame that completes inside the
+ * step is painted; the state comes back with every step.
+ */
+export async function step(kind: "half" | "cycle" | "op" | "line") {
+  if (!state.loaded || !state.powered || state.running || tickInFlight) return;
+  tickInFlight = true;
+  const r = await consoleW.call({ path: "step", kind, pad: padByte(), pad2: pad2Byte() });
+  tickInFlight = false;
+  if (!r.ok) {
+    set({ why: r.error });
+    return;
+  }
+  const a = r.answer;
+  if (a.colour && a.emphasis) {
+    if (latest) set({ undecoded: state.undecoded + 1 });
+    latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
+    kick();
+  }
+  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles, machine: a.state ? parseMachine(a.state) : state.machine });
+}
+
+/** The front panel's reset button: the CPU restarts at its vector; RAM and the save keep what they hold. */
+export async function reset() {
+  if (!state.loaded || !state.powered) return;
+  const wasRunning = state.running;
+  if (wasRunning) set({ running: false });
+  while (tickInFlight) await new Promise((r) => setTimeout(r, 10));
+  const r = await consoleW.call({ path: "reset" });
+  if (!r.ok) {
+    set({ why: r.error });
+    return;
+  }
+  const a = r.answer;
+  if (a.colour && a.emphasis) {
+    latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
+    kick();
+  }
+  set({ halfCycles: a.halfCycles ?? state.halfCycles, machine: a.state ? parseMachine(a.state) : state.machine });
+  if (wasRunning) toggleRun();
+}
+
 /** One frame, while paused: the way to watch a game a frame at a time. */
 export async function stepFrame() {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
   tickInFlight = true;
-  const r = await consoleW.call({ path: "frame", pad: padByte() });
+  const r = await consoleW.call({ path: "frame", pad: padByte(), pad2: pad2Byte() });
   tickInFlight = false;
   if (!r.ok) {
     set({ why: r.error });
@@ -605,7 +680,7 @@ async function loop() {
   const now = performance.now();
   const dtNs = lastT === null ? 0 : (now - lastT) * 1e6;
   lastT = now;
-  const r = await consoleW.call({ path: "tick", dtNs, pad: padByte() });
+  const r = await consoleW.call({ path: "tick", dtNs, pad: padByte(), pad2: pad2Byte() });
   tickInFlight = false;
   if (!r.ok) {
     set({ running: false, why: r.error });

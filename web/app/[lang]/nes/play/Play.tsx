@@ -7,6 +7,7 @@ import { attach, detach, load, subscribe, snapshot, serverSnapshot, type DriftSt
 import { ShelfPicker } from "@/app/components/ShelfPicker";
 import { Sprites } from "./Sprites";
 import { State } from "./State";
+import { Code } from "./Code";
 import { useState } from "react";
 
 /**
@@ -62,7 +63,7 @@ const S = {
       <>display callbacks: <b>{s.presented}</b>, duplicated: <b>{s.duplicated}</b>, dropped: <b>{s.dropped}</b></>
     ),
     underruns: (n: number, audio: boolean) => (audio ? <>audio underruns: <b>{n}</b></> : <>audio: <b>none</b> (this browser gave no output)</>),
-    keys: "Keys: arrows, Z and X for B and A, Enter for Start, right Shift for Select; or the pad under the screen, a thumb on each side. The strip on the floor has power, start, play and one frame at a time.",
+    keys: "Keys: arrows, Z and X for B and A, Enter for Start, right Shift for Select; or the pad under the screen, a thumb on each side. Controller 2 on the left hand: W A S D, F and G for B and A, T for Start, R for Select. The strip on the floor has power, reset, play, and the steps: a half-cycle, a cycle, an instruction, a scanline, a frame.",
     select: "select",
     start: "start",
     canvasLabel: "The console's picture through the three-line comb: 2048 samples by 240 lines",
@@ -102,7 +103,7 @@ const S = {
       <>表示コールバック: <b>{s.presented}</b>、重複: <b>{s.duplicated}</b>、欠落: <b>{s.dropped}</b></>
     ),
     underruns: (n: number, audio: boolean) => (audio ? <>音声のアンダーラン: <b>{n}</b></> : <>音声: <b>なし</b>（このブラウザは出力を与えなかった）</>),
-    keys: "キー: 矢印、Z と X が B と A、Enter が Start、右 Shift が Select。または画面の下のパッドを両手の親指で。床の帯には電源、スタート、実行、1 フレームずつ進めるキーがある。",
+    keys: "キー: 矢印、Z と X が B と A、Enter が Start、右 Shift が Select。または画面の下のパッドを両手の親指で。コントローラ 2 は左手に: W A S D、F と G が B と A、T が Start、R が Select。床の帯には電源、リセット、実行、そしてステップ: 半サイクル、1 サイクル、1 命令、1 走査線、1 フレーム。",
     select: "select",
     start: "start",
     canvasLabel: "3 ラインコムを通したコンソールの絵: 2048 サンプル x 240 ライン",
@@ -167,6 +168,8 @@ export function Play({ lang }: { lang: Lang }) {
       </section>
 
       <State lang={lang} onTile={(tile) => setOpenTile((o) => ({ tile, n: (o?.n ?? 0) + 1 }))} />
+
+      <Code lang={lang} />
 
       <Sprites lang={lang} open={openTile} />
 

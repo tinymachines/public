@@ -298,13 +298,12 @@ test("the play page is a workbench: the bar, the strip of its sections, the tran
   }));
   expect(r.bar, "one workbench bar").toBe(1);
   expect(r.name).toBe("Play");
-  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this console"]);
+  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "CPU", "Memory", "Palettes", "Sprites on screen", "Code", "Sprites", "Readouts", "About this console"]);
   expect(r.foot, "the footer on the floor").toBe("fixed");
-  // The keys, in the chip transport's order; every one grey before a
-  // cartridge, and the ones the bundle cannot honour say why.
-  expect(r.keys.map((k) => k.word)).toEqual(["power", "start", "play", "frame", "op"]);
+  // The keys, in the chip transport's order; every one grey before a cartridge.
+  expect(r.keys.map((k) => k.word)).toEqual(["power", "reset", "play", "½", "cyc", "op", "line", "frame"]);
   expect(r.keys.every((k) => k.disabled)).toBe(true);
-  expect(r.keys[4].title).toContain("steps by the frame");
+  expect(r.keys[5].title).toContain("opcode fetch");
   expect(r.seek && r.rate, "rate and seek are grey, not gone").toBe(true);
   expect(r.pos).toBe("no cartridge");
 
@@ -468,4 +467,68 @@ test("reads out of the engine: the CPU, the memory monitor, the palettes and the
   await expect(page.locator("[data-state-why]")).toContainText("Power is off");
   await page.locator("[data-play-power]").click();
   await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 20_000 });
+});
+
+test("control and the code panel: the steps by the machine's units, the reset, and a block captured off the listing", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
+  const cyc = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/cyc\s+(\d+)/)?.[1] ?? -1);
+  const pc = async () => parseInt(((await page.locator('[data-reg="PC"]').textContent()) ?? "").replace("$", ""), 16);
+  const line = async () => Number(((await page.locator("[data-ppu-beam]").textContent()) ?? "").match(/line (\d+)/)?.[1] ?? -1);
+  // The position shows cycles, which are half-cycles halved: two half
+  // steps are one cycle on it, and a cycle step is one more.
+  await expect(page.locator("[data-play-half]")).toBeEnabled();
+  const c0 = await cyc();
+  await page.locator("[data-play-half]").click();
+  await page.locator("[data-play-half]").click();
+  await expect.poll(cyc).toBe(c0 + 1);
+  await page.locator("[data-play-cycle]").click();
+  await expect.poll(cyc).toBe(c0 + 2);
+  // An instruction step moves the program counter, and the listing's lit
+  // line is the instruction at the new counter.
+  const p0 = await pc();
+  await page.locator("[data-play-op]").click();
+  await expect.poll(pc).not.toBe(p0);
+  const lit = page.locator("[data-code-list] tr[aria-current]");
+  await expect(lit).toHaveCount(1);
+  expect(parseInt((await lit.getAttribute("data-code-line"))!, 16)).toBe(await pc());
+  // A scanline step moves the beam one line.
+  const l0 = await line();
+  await page.locator("[data-play-line]").click();
+  await expect.poll(line).toBe((l0 + 1) % 262);
+  // Reset: the CPU restarts; zero page keeps what it holds. The counter
+  // moved on (the button is held for a frame), and the PC is in the
+  // cartridge again.
+  const cBefore = await cyc();
+  await page.locator("[data-play-start]").click();
+  // The button is held for a frame, which is 29,780 CPU cycles (89,342
+  // dots of eight master half-steps, twelve to a CPU half-cycle).
+  await expect.poll(cyc, { timeout: 15_000 }).toBeGreaterThanOrEqual(cBefore + 29_780);
+  expect(await pc()).toBeGreaterThanOrEqual(0x8000);
+  // A block: the lit line and the next, captured, labelled, and exported
+  // in the encyclopedia's shape with the addresses in it.
+  await expect(page.locator("[data-code-list] tbody tr")).not.toHaveCount(0);
+  const rows = page.locator("[data-code-list] tbody tr");
+  const a = (await rows.nth(0).getAttribute("data-code-line"))!;
+  const b = (await rows.nth(1).getAttribute("data-code-line"))!;
+  await rows.nth(0).click();
+  await rows.nth(1).click();
+  await expect(page.locator("[data-code-selection]")).toHaveAttribute("data-code-selection", "2");
+  await page.locator("[data-code-capture]").click();
+  await expect(page.locator("[data-code]")).toHaveAttribute("data-code-blocks", "1");
+  await page.locator("[data-code-label]").fill("the loop");
+  await page.locator("[data-code-note]").fill("two instructions off the listing");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("[data-code-export-md]").click()]);
+  expect(dl.suggestedFilename()).toBe("cal.blocks.md");
+  const md = fs.readFileSync((await dl.path())!, "utf8");
+  expect(md).toContain("## 1. the loop");
+  expect(md).toContain("**What it does.** two instructions off the listing");
+  expect(md).toContain(`${a}  `);
+  expect(md).toContain(`${b}  `);
+  await page.locator("[data-code-remove]").click();
+  await expect(page.locator("[data-code]")).toHaveAttribute("data-code-blocks", "0");
 });

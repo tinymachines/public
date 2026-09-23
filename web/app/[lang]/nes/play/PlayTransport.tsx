@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { FullscreenButton } from "@/app/components/Fullscreen";
-import { powerCycle, setPower, snapshot, serverSnapshot, stepFrame, subscribe, toggleRun } from "./playEngine";
+import { reset, setPower, snapshot, serverSnapshot, step, stepFrame, subscribe, toggleRun } from "./playEngine";
 
 /**
  * The console's transport, on the floor, in the chip transport's shape
@@ -12,14 +12,15 @@ import { powerCycle, setPower, snapshot, serverSnapshot, stepFrame, subscribe, t
  * two strips read as one control; its own keys, because a console steps by
  * the frame and the bundle it runs offers nothing finer.
  *
- * The keys the console honours today: power (the console is dropped and
- * the cartridge kept; on loads it again), start (a power cycle, the only
- * reset the bundle has), play/pause, and frame (one frame while paused).
- * The instruction step, the rate and the seek are here and grey, with the
- * reason in their title, by the strip's own rule: a key the machine cannot
- * honour is disabled, never hidden, so the row is the same on every
- * instrument and a reader learns it once. They light when the bundle
- * exports what they need (notes/workbench.md, the engine seam).
+ * The keys: power (the console is dropped and the cartridge kept; on loads
+ * it again), start (the front panel's reset button since the fifth step:
+ * the CPU restarts at its vector, RAM and the save keep what they hold),
+ * play/pause, and the steps by the machine's own units: a CPU half-cycle,
+ * a cycle, an instruction (to the next opcode fetch), a scanline, a
+ * frame. The rate and the seek are here and grey, with the reason in
+ * their title, by the strip's own rule: a key the machine cannot honour is
+ * disabled, never hidden, so the row is the same on every instrument and
+ * a reader learns it once. A bundle without the steps greys them too.
  *
  * The position is frames run and the CPU's half-cycles, the bundle's one
  * counter, read from every tick's answer: nothing here polls the worker.
@@ -30,30 +31,38 @@ const L = {
     powerOn: "Power off. The console stops; the cartridge and the last picture stay.",
     powerOff: "Power on. Loads the cartridge again, the state it powered on into.",
     powerNone: "Power. No cartridge is loaded.",
-    start: "Back to power on: the same cartridge, loaded again",
+    start: "Reset: the front panel's button. The CPU restarts at its vector; RAM and the save keep what they hold.",
     play: "Play",
     pause: "Pause",
+    half: "Forward one CPU half-cycle",
+    cycle: "Next full CPU cycle",
+    op: "Next instruction: to the next opcode fetch",
+    line: "Next scanline",
     frame: "Run one frame",
-    op: "Next instruction. This console's bundle steps by the frame; the instruction step waits on the engine seam.",
+    stepNone: "This bundle cannot step below a frame.",
     rate: "Rate. The console keeps the source's rate against the wall clock; there is no other.",
     seek: "Position in the run. This console cannot seek: nothing here can be rewound yet.",
     none: "no cartridge",
-    wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wFrame: "frame", wOp: "op",
+    wPower: "power", wStart: "reset", wPlay: "play", wPause: "pause", wFrame: "frame", wOp: "op", wHalf: "½", wCyc: "cyc", wLine: "line",
     frames: "frame", cyc: "cyc",
   },
   ja: {
     powerOn: "電源を切る。コンソールは止まり、カートリッジと最後の絵は残る。",
     powerOff: "電源を入れる。カートリッジを読み込み直す。電源投入で入った状態だ。",
     powerNone: "電源。カートリッジが読み込まれていない。",
-    start: "電源投入へ戻る: 同じカートリッジを読み込み直す",
+    start: "リセット: 前面パネルのボタン。CPU はベクタから再開し、RAM とセーブはそのまま。",
     play: "実行",
     pause: "一時停止",
+    half: "CPU 半サイクル進む",
+    cycle: "次の CPU 1 サイクルへ",
+    op: "次の命令へ: 次のオペコード取得まで",
+    line: "次の走査線へ",
     frame: "1 フレーム進める",
-    op: "次の命令へ。このコンソールのバンドルはフレーム単位で進む。命令ステップはエンジンの継ぎ目待ち。",
+    stepNone: "このバンドルはフレームより細かく進めない。",
     rate: "レート。コンソールは壁時計に対してソースのレートを保つ。他のレートはない。",
     seek: "実行中の位置。このコンソールはシークできない。まだ何も巻き戻せない。",
     none: "カートリッジなし",
-    wPower: "power", wStart: "start", wPlay: "play", wPause: "pause", wFrame: "frame", wOp: "op",
+    wPower: "power", wStart: "reset", wPlay: "play", wPause: "pause", wFrame: "frame", wOp: "op", wHalf: "½", wCyc: "cyc", wLine: "line",
     frames: "frame", cyc: "cyc",
   },
 } as const;
@@ -65,7 +74,9 @@ const IC = {
   play: "M8 5l11 7-11 7z",
   pause: "M8 5v14M16 5v14",
   next: "M9 6l6 6-6 6",
+  cycle: "M6 6l6 6-6 6M13 6l6 6-6 6",
   op: "M6 6l6 6-6 6M17 6v12",
+  line: "M4 12h16M14 8l4 4-4 4",
   power: "M12 3v8M6.4 6.4a8 8 0 1 0 11.2 0",
 };
 function Ic({ d }: { d: string }) {
@@ -100,6 +111,10 @@ export function PlayTransport({ lang }: { lang: Lang }) {
   const loaded = s.loaded !== null;
   const on = loaded && s.powered;
   const powerTitle = !loaded ? S.powerNone : s.powered ? S.powerOn : S.powerOff;
+  // The steps below a frame need the bundle's control (the fifth step);
+  // a bundle without it leaves them grey with the reason.
+  const canStep = on && !s.running && s.machine !== null;
+  const stepTitle = (t: string) => (s.machine === null && on ? S.stepNone : t);
   return (
     <div className="chip-transport" role="toolbar" aria-label="Console transport" data-powered={on ? "1" : "0"} data-play-transport>
       <div className="ct-row">
@@ -115,7 +130,7 @@ export function PlayTransport({ lang }: { lang: Lang }) {
         >
           <Ic d={IC.power} /><span className="lb">{S.wPower}</span>
         </button>
-        <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!on} onClick={() => void powerCycle()} data-play-start>
+        <button type="button" className="tbtn" title={S.start} aria-label={S.start} disabled={!on || s.machine === null} onClick={() => void reset()} data-play-start>
           <Ic d={IC.start} /><span className="lb">{S.wStart}</span>
         </button>
         <button
@@ -130,11 +145,20 @@ export function PlayTransport({ lang }: { lang: Lang }) {
         >
           <Ic d={s.running ? IC.pause : IC.play} /><span className="lb">{s.running ? S.wPause : S.wPlay}</span>
         </button>
+        <button type="button" className="tbtn" title={stepTitle(S.half)} aria-label={stepTitle(S.half)} disabled={!canStep} onClick={() => void step("half")} data-play-half>
+          <Ic d={IC.next} /><span className="lb">{S.wHalf}</span>
+        </button>
+        <button type="button" className="tbtn" title={stepTitle(S.cycle)} aria-label={stepTitle(S.cycle)} disabled={!canStep} onClick={() => void step("cycle")} data-play-cycle>
+          <Ic d={IC.cycle} /><span className="lb">{S.wCyc}</span>
+        </button>
+        <button type="button" className="tbtn" title={stepTitle(S.op)} aria-label={stepTitle(S.op)} disabled={!canStep} onClick={() => void step("op")} data-play-op>
+          <Ic d={IC.op} /><span className="lb">{S.wOp}</span>
+        </button>
+        <button type="button" className="tbtn" title={stepTitle(S.line)} aria-label={stepTitle(S.line)} disabled={!canStep} onClick={() => void step("line")} data-play-line>
+          <Ic d={IC.line} /><span className="lb">{S.wLine}</span>
+        </button>
         <button type="button" className="tbtn" title={S.frame} aria-label={S.frame} disabled={!on || s.running} onClick={() => void stepFrame()} data-play-frame>
           <Ic d={IC.next} /><span className="lb">{S.wFrame}</span>
-        </button>
-        <button type="button" className="tbtn" title={S.op} aria-label={S.op} disabled>
-          <Ic d={IC.op} /><span className="lb">{S.wOp}</span>
         </button>
         <label className="ct-rate" title={S.rate}>
           <input type="range" min={0} max={0} step={1} value={0} disabled aria-label={S.rate} readOnly />
