@@ -3198,3 +3198,29 @@ backed up beside itself first (the deploy habit for a migration), so
 live, main and beta are all at `acb3a1f`, the database is at version 6
 with its revisions table, and the version stays 1.0.266. Next on the
 note's order: reads out of the engine, which is the seam.
+
+## Morning, 2026-09-23: the section's parts under the bar
+
+The owner, on a phone: "I have no second level menu." That was the cut
+to the site and the projects, and on a phone it meant two taps to reach
+a part. The owner chose the strip.
+
+- **Every reading page inside a project carries its section's parts as a
+  strip under the bar** (`7722bb3`), in the shape the workbench pages
+  already carry for their own sections: sticky under the bar, sideways
+  on a phone, the part you are on lit and brought into view on arrival.
+  The site's own pages and the workbenches have none. The list is the
+  first level by the rule the old menu group had, derived from the
+  manifest in `lib/nav.ts` and localized where the menu's items are.
+- **A column flex item without a width shrinks to its content.** The
+  strip did, to 1120px at 390, and scrolled the whole page sideways; the
+  spec caught it before the commit, and the fix is a stated width.
+- **Held by** `parts.spec.ts`: the first level on the strip or on a page
+  the strip reaches, the marking, none on the site's pages or the
+  workbenches, the sideways scroll inside the strip, the current part in
+  view. The header, mobile, pages, menu, language, NES and docs suites
+  pass on the preview.
+
+Deployed clean at the owner's word, so live, main and beta are all at
+`7722bb3` and the version stays 1.0.266; the parts spec passes against
+live.
