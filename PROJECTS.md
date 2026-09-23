@@ -3128,3 +3128,36 @@ around the play page."
 Deployed clean afterwards at the owner's word, so live, main and beta are
 all at `56ac59d` and the version stays 1.0.266; the play specs pass
 against live. Next on the note's order: sprites from the bytes.
+
+## Night, 2026-09-22: sprites from the bytes
+
+The owner's word on the inventory's second step.
+
+- **The Sprites section on the play workbench** (`9f44216`): the loaded
+  image's CHR decoded with the console's own tile codec, one pattern
+  table at a time, painted with four colours the reader picks from the
+  sixty-four as the picture worker measures them. The measurement moved
+  out of the playground's worker into `public/nes/palette.mjs`, one copy
+  for both workers; the sheet paints in greys until the console has
+  drawn a frame and says so. A CHR-RAM board says it carries no tiles.
+- **A tile opens large and a brush paints it.** Each edit is the tile's
+  new bytes against the base the reader loaded. The set goes into the
+  console (the engine loads the patched image as the cartridge and keeps
+  the base as the base, so the change is seen at once and survives a
+  power cycle), out as an IPS patch carrying only the changed bytes, or
+  out as the patched image. Nothing goes to the server: that is the third
+  step. `lib/ines.ts` reads the header the shelf's way and makes the
+  ranges and the records, with unit tests.
+- **Held by** the play spec: the calibration cartridge loads, a pixel is
+  painted and read back off the sheet, the IPS record sits inside the
+  tile with the changed bytes' length, the patch goes into the console
+  and survives start, and revert brings the file back. Two things the
+  first runs taught: a raw mouse click does not scroll to a sheet below
+  the fold (a locator does), and "patched" is a fact decided once at
+  load, not a reference comparison that a reload defeats.
+- **On beta,** everything passes but the playground's "published" check,
+  which asserts no noindex and cannot pass where every page is noindex.
+
+Beta serves `9f44216`; main is there too, both pushed. Live is still
+`56ac59d` (1.0.266). Deploying is the owner's call. Next on the note's
+order: versions on the shelf, and the NOTICE line first.
