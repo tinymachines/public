@@ -3162,3 +3162,37 @@ Deployed clean afterwards at the owner's word (2026-09-23), so live, main
 and beta are all at `34cf5c0` and the version stays 1.0.266; the play and
 sprites specs pass against live. Next on the note's order: versions on
 the shelf, and the NOTICE line first.
+
+## Morning, 2026-09-23: versions on the shelf
+
+The owner's word on the inventory's third step, and the first of its
+open decisions taken the way the note recommended: revisions are patches
+against the file as it arrived, not whole images.
+
+- **The licensing line first** (`9fb5f22`, `NOTICE.md`, "Somebody else's
+  game"): a dump and everything taken from it are private to the account
+  that put it there; shape is not bytes; a patch is the reader's own
+  bytes and nothing of the base's, and the shelf keeps it as private as
+  the dump all the same; our own ROMs are the examples.
+- **A revision is an IPS patch beside the ROM** and a row of what the
+  server measured applying it: the patched image's digest, the records,
+  the bytes changed. A patch that changes nothing, grows the file or
+  touches the header is refused with the reason; the same image twice is
+  one revision; sixteen per cartridge; the image is made on request and
+  checked against its digest on the way out, the way the ROM is. Routes
+  under `/v1/me/carts/{id}/revisions`, in the shelf's shape, with their
+  own tests (`api/test_revisions.py`). The rollback test learned that a
+  file at version four has no revisions table to leave behind.
+- **On the play workbench** the sprites section keeps the patch with a
+  message when the cartridge came from the shelf, lists the revisions,
+  loads one back with its edits on the sheet, and deletes one; a file
+  from the disk is told it has no shelf to go to. The shelf page counts
+  a cartridge's revisions.
+- **Held by** the signed-in shelf spec on the rig (keep, the server's
+  figures, revert, load back, count on the shelf page, delete) against
+  the preview and against beta, and the header, mobile, pages, menu and
+  language suites on the preview.
+
+Beta serves `9fb5f22`; main is there too, both pushed. Live is still
+`34cf5c0` (1.0.266), and the API routes reach it with the next deploy.
+Next on the note's order: reads out of the engine, which is the seam.
