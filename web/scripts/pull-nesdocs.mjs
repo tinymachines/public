@@ -12,7 +12,8 @@
  * with a broken link or raw HTML.
  */
 
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { NotCurrent, packagePdf } from "./bench-package.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
@@ -99,23 +100,15 @@ function kindOf(d) {
 }
 
 /**
- * A drawing package's file, from the bench's own manifest: the drawing
- * number and the revision are the package's facts (docs/package*.json),
- * and the file the bench's tool writes is named from them. The revision
- * was typed here once, and drifted the day the bench moved TM-NESB-001
- * from rev N to rev P (2026-09-23): nine pages linked a file that no
- * longer existed, and nothing here could tell. Now the pull reads the
- * manifest and refuses when the file it names is not in the package.
+ * A drawing package's file comes from the bench's own manifest and the
+ * record its build wrote beside the PDF: scripts/bench-package.mjs, which
+ * says what is refused and why. The revision was typed here once and
+ * drifted the day the bench moved TM-NESB-001 from rev N to rev P
+ * (2026-09-23); the record closed the rest the same day: a same-named PDF
+ * gone stale, a package built at another commit or from a dirty tree, each
+ * a refusal here rather than a silent copy. The three are taken below,
+ * once the bench's path is known.
  */
-function packagePdf(manifest) {
-  const m = JSON.parse(fs.readFileSync(path.join(BENCH, "docs", manifest), "utf8"));
-  const file = `nes-bench-${m.docno}-rev${m.rev}.pdf`;
-  const dir = path.join(BENCH, "docs", "package", m.docno.toLowerCase());
-  if (!fs.existsSync(path.join(dir, file))) {
-    throw new Error(`pull-nesdocs: ${manifest} names ${m.docno} rev ${m.rev}, and ${path.join(dir, file)} does not exist; build the package in nes-bench first.`);
-  }
-  return { docno: m.docno, href: `/nes/bench/${file}` };
-}
 
 // The notebook's parts, in reading order. The arc wrote its documents in
 // time order, which put the chips, the signal path, the console and the
@@ -212,9 +205,18 @@ const LAB = path.join(SIBLINGS, "nes-bench", "docs", "lab");
 // then served as-is beside the console's other figures.
 const BENCH = path.join(SIBLINGS, "nes-bench");
 
-const PKG_V1B = packagePdf("package.json");
-const PKG_V2B = packagePdf("package-v2b.json");
-const PKG_PADBLE = packagePdf("package-pad-ble.json");
+const BENCH_HEAD = execFileSync("git", ["-C", BENCH, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const takePackage = (manifest) => {
+  try {
+    return packagePdf(BENCH, manifest, BENCH_HEAD);
+  } catch (e) {
+    if (e instanceof NotCurrent) throw new Error(`pull-nesdocs: ${e.message} (nes-bench: make-package.py --check says the same)`);
+    throw e;
+  }
+};
+const PKG_V1B = takePackage("package.json");
+const PKG_V2B = takePackage("package-v2b.json");
+const PKG_PADBLE = takePackage("package-pad-ble.json");
 
 const ARTEFACTS = {
   v1b: { label: `v1b drawing package, ${PKG_V1B.docno} (PDF)`, href: PKG_V1B.href },
@@ -335,7 +337,7 @@ if (pkg.status !== 0) {
   const wanted = new Set([PKG_V1B, PKG_V2B, PKG_PADBLE].map((p) => path.basename(p.href)));
   for (const p of [PKG_V1B, PKG_V2B, PKG_PADBLE]) {
     const f = path.basename(p.href);
-    fs.copyFileSync(path.join(BENCH, "docs", "package", p.docno.toLowerCase(), f), path.join(benchOut, f));
+    fs.copyFileSync(path.join(p.dir, f), path.join(benchOut, f));
     console.log(`pull-nesdocs: ${f}`);
   }
   for (const f of fs.readdirSync(benchOut)) {
