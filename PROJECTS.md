@@ -3287,3 +3287,17 @@ directories held.
 Deployed at the owner's word, so live, main and beta are all at
 `96cfc05` and the version stays 1.0.266; rev A through N answer 404 on
 live, rev P answers, and the bench spec passes there.
+
+The bench then found the hole the mirror left: a sheet changed without a
+rev bump leaves a same-named stale PDF a copy would take in silence, and
+cairo's wall-clock stamp had made bytes useless for telling. Their build
+is reproducible now (SOURCE_DATE_EPOCH from the commit) and writes
+`built.json` beside each PDF: file, docno, rev, digest, full commit,
+dirty. The pull reads it (`fbeb64f`, `scripts/bench-package.mjs`) and
+refuses on a record missing, a record for another package, a PDF that
+is not the file the record describes, a commit other than the checkout's
+head, or a dirty tree; each refusal has a test that turns it red, and
+`make-package.py --check` asks the same on their side. The price, agreed
+on both sides: any commit there makes the packages stale until rebuilt,
+which is a plain equality instead of a source list to keep in step.
+Beta serves `fbeb64f`; live is at `96cfc05`, and nothing served changes.
