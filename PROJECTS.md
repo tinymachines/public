@@ -3301,3 +3301,41 @@ head, or a dirty tree; each refusal has a test that turns it red, and
 on both sides: any commit there makes the packages stale until rebuilt,
 which is a plain equality instead of a source list to keep in step.
 Beta serves `fbeb64f`; live is at `96cfc05`, and nothing served changes.
+
+## Afternoon, 2026-09-23: control and the code panel
+
+The owner's word on the inventory's fifth step.
+
+- **The console steps by its own units** (nes `482e1f4`, boarded here
+  with 71 tests green, the bundle rebuilt): a CPU half-cycle, a cycle,
+  an instruction (master half-steps until the SYNC pin rises, the next
+  opcode fetch), a scanline; each is `master_half_step` some number of
+  times, so a step does exactly what running does, stopped sooner. The
+  front panel's reset button restarts the CPU at its vector and leaves
+  RAM and the save as they are; controller 2 answers on the left hand.
+  The test walks a row of NOPs one byte a step and a JMP in three cycles.
+- **The transport's keys are all live** (`1614872`): power, reset (the
+  button, not a power cycle), play, half, cycle, op, line, frame, in the
+  chip transport's order, on a phone as icons on one row.
+- **The code panel** disassembles forward from the program counter with
+  the 6502 site's own table, `web/disasm.js`, served beside the console's
+  modules byte for byte from the boarded tree, and lights the next
+  instruction; forward is the honest direction on a 6502. A click and a
+  click further down select a block; captured, it carries the
+  cartridge's digest, its range, bytes and text, takes a label and a
+  note, and exports in the encyclopedia's own shape or as JSON. Blocks
+  stay in the page: keeping them on the shelf beside the revisions is
+  the next step, and for a game somebody else owns the bytes stay with
+  the reader.
+- **Held by** the play spec (two half steps and a cycle step on the
+  position, an instruction step moving the counter with the lit line
+  following, a scanline step moving the beam, the reset held for a frame,
+  a block captured, labelled and exported with its addresses in it), the
+  broad suites on the preview, and the NES, shelf, strip, kit and parts
+  specs against beta with the rig. The chip strip spec cannot run on a
+  bare preview, which has no proxy to the 6502 assets; it passes on beta.
+
+Beta serves `1614872`; main is there too, both pushed; the console
+repository is pushed at `482e1f4`. Live is still `96cfc05` (1.0.266).
+Deploying is the owner's call. Next on the note's order: breakpoints and
+the trace ring, or blocks kept on the shelf; the owner's pick.
