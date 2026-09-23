@@ -98,12 +98,24 @@ function kindOf(d) {
   );
 }
 
-const ARTEFACTS = {
-  v1b: { label: "v1b drawing package, TM-NESB-001 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-001-revN.pdf" },
-  v2b: { label: "v2b drawing package, TM-NESB-002 (PDF)", href: "/nes/bench/nes-bench-TM-NESB-002-revA.pdf" },
-  board: { label: "v2b board, top copper (SVG)", href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
-  photo: { label: "v1b as built, the checks called out on the photograph (PNG)", href: "/nes/lab/board-junctions-v1b.png" },
-};
+/**
+ * A drawing package's file, from the bench's own manifest: the drawing
+ * number and the revision are the package's facts (docs/package*.json),
+ * and the file the bench's tool writes is named from them. The revision
+ * was typed here once, and drifted the day the bench moved TM-NESB-001
+ * from rev N to rev P (2026-09-23): nine pages linked a file that no
+ * longer existed, and nothing here could tell. Now the pull reads the
+ * manifest and refuses when the file it names is not in the package.
+ */
+function packagePdf(manifest) {
+  const m = JSON.parse(fs.readFileSync(path.join(BENCH, "docs", manifest), "utf8"));
+  const file = `nes-bench-${m.docno}-rev${m.rev}.pdf`;
+  const dir = path.join(BENCH, "docs", "package", m.docno.toLowerCase());
+  if (!fs.existsSync(path.join(dir, file))) {
+    throw new Error(`pull-nesdocs: ${manifest} names ${m.docno} rev ${m.rev}, and ${path.join(dir, file)} does not exist; build the package in nes-bench first.`);
+  }
+  return { docno: m.docno, href: `/nes/bench/${file}` };
+}
 
 // The notebook's parts, in reading order. The arc wrote its documents in
 // time order, which put the chips, the signal path, the console and the
@@ -161,7 +173,7 @@ const DOCS = [
   { repo: "nes-bench", file: "bench-build-v1-v2.md", slug: "bench-build", code: null, kind: "procedure", title: "The bridge's schematics and parts", group: "bench-build", artefacts: ["v1b", "photo", "v2b"], order: 32, description: "The bridge as schematics (v1 and v1b), the extended bridge (v2), one controller poll as timing lanes, and an original pad as a phone's pad; parts lists and the build order." },
   { repo: "nes-bench", file: "bench-v1b-uno.md", slug: "bench-v1b", code: null, kind: "procedure", title: "The v1b bridge on an Arduino UNO", group: "bench-build", artefacts: ["v1b", "photo", "v2b", "board"], order: 33, description: "The version built first, everything at five volts: why the level shifters go away, the pin table, and four things writing the firmware showed the plan had wrong." },
   { repo: "nes-bench", file: "build-guide.md", slug: "build-guide", code: null, kind: "procedure", title: "The build guide, in five sittings", group: "bench-build", artefacts: ["v1b", "photo"], order: 34, description: "What to wire pin by pin, what the command then measures, which photographs to take, and where each sitting stands. Generated from the tool that runs the build." },
-  { repo: "nes-bench", file: "pad-ble-build.md", slug: "pad-ble", code: null, kind: "procedure", title: "An original pad as a Bluetooth keyboard", group: "bench-build", order: 39.5, description: "The standalone adapter, drawn to build from and not yet built: why this board can only be a Bluetooth keyboard, in silicon rather than firmware, the part read off its own silkscreen, the headers measured, and the three drawings." },
+  { repo: "nes-bench", file: "pad-ble-build.md", slug: "pad-ble", code: null, kind: "procedure", title: "An original pad as a Bluetooth keyboard", group: "bench-build", order: 39.5, artefacts: ["padble"], description: "The standalone adapter, drawn to build from and not yet built: why this board can only be a Bluetooth keyboard, in silicon rather than firmware, the part read off its own silkscreen, the headers measured, and the three drawings." },
   { repo: "nes-bench", file: "rig.md", slug: "rig", code: null, kind: "reference", title: "The QA rig", group: "bench-build", order: 39, description: "The cameras and the boards on the frame, in inches and pixels: each camera's job, mount and scale, the backing board and breadboard dimensions, the bench photographed, and what to run when something moves." },
   { repo: "nes-bench", file: "as-built-v1b.md", slug: "as-built", code: null, kind: "record", title: "The v1b board as built", group: "bench-build", order: 38, artefacts: ["v1b", "photo"], description: "Read off its photographs: where the chips sit and which way they face, the rails, the UNO ribbon, and where the headers should move to keep the jumpers short." },
   { repo: "nes-bench", section: "cart", file: "calibration-plan.md", slug: "calibration-plan", code: null, kind: "plan", title: "Planning the calibration cartridge", order: 2, description: "One cartridge whose every screen is built to be measured off the real console and the model through the same reader, each frame naming itself; colour, resolution, filtering and the pad." },
@@ -199,6 +211,18 @@ const LAB = path.join(SIBLINGS, "nes-bench", "docs", "lab");
 // The bench's drawing, derived from its wiring tables: refused if stale,
 // then served as-is beside the console's other figures.
 const BENCH = path.join(SIBLINGS, "nes-bench");
+
+const PKG_V1B = packagePdf("package.json");
+const PKG_V2B = packagePdf("package-v2b.json");
+const PKG_PADBLE = packagePdf("package-pad-ble.json");
+
+const ARTEFACTS = {
+  v1b: { label: `v1b drawing package, ${PKG_V1B.docno} (PDF)`, href: PKG_V1B.href },
+  v2b: { label: `v2b drawing package, ${PKG_V2B.docno} (PDF)`, href: PKG_V2B.href },
+  padble: { label: `pad-ble drawing package, ${PKG_PADBLE.docno} (PDF)`, href: PKG_PADBLE.href },
+  board: { label: "v2b board, top copper (SVG)", href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
+  photo: { label: "v1b as built, the checks called out on the photograph (PNG)", href: "/nes/lab/board-junctions-v1b.png" },
+};
 const check = spawnSync("python3", [path.join(BENCH, "tools", "draw-bench.py"), "--check"], { encoding: "utf8" });
 if (check.status !== 0) {
   throw new Error(`nes-bench/docs/bench.svg is not current: ${check.stdout}${check.stderr}`);

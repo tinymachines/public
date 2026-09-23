@@ -298,7 +298,7 @@ test("the play page is a workbench: the bar, the strip of its sections, the tran
   }));
   expect(r.bar, "one workbench bar").toBe(1);
   expect(r.name).toBe("Play");
-  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "Sprites", "Readouts", "About this console"]);
+  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this console"]);
   expect(r.foot, "the footer on the floor").toBe("fixed");
   // The keys, in the chip transport's order; every one grey before a
   // cartridge, and the ones the bundle cannot honour say why.
@@ -416,4 +416,56 @@ test("sprites from the bytes: the sheet, a painted pixel, the patch in the conso
   await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "0");
   await expect(page.locator("[data-spr-running]")).toHaveAttribute("data-spr-running", "base", { timeout: 20_000 });
   await expect(page.locator("[data-play-patched]")).toHaveCount(0);
+});
+
+test("reads out of the engine: the CPU, the memory monitor, the palettes and the sprites on screen, from the bundle", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  // Before a cartridge every panel says why it is empty.
+  await expect(page.locator("[data-state-why]")).toContainText("No cartridge");
+  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  // At power on, before a frame: the registers are read, the PC is in the cartridge.
+  const pc = async () => parseInt(((await page.locator('[data-reg="PC"]').textContent()) ?? "").replace("$", ""), 16);
+  await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
+  expect(await pc()).toBeGreaterThanOrEqual(0x8000);
+  await expect(page.locator("[data-flags] i")).toHaveCount(8);
+  // The beam is read as a place on the frame. One whole frame later it is
+  // back where it started, so what a frame moves is the count, not the beam.
+  await expect(page.locator("[data-ppu-beam]")).toHaveText(/line \d+, dot \d+/);
+  await page.locator("[data-play-frame]").click();
+  await expect(page.locator("[data-play-pos]")).toContainText("frame 1");
+  await expect(page.locator("[data-ppu-beam]")).toHaveText(/line \d+, dot \d+/);
+  // The memory monitor follows the page asked for: zero page, then the
+  // reset vector's page, whose last two bytes are the vector the header's
+  // program starts at (the PC read above, at power on).
+  await expect(page.locator("[data-mem-dump]")).toHaveAttribute("data-mem-dump", "0000");
+  await expect(page.locator("[data-mem-dump] .dump-row")).toHaveCount(16);
+  await page.locator("[data-mem-page]").fill("FF00");
+  await expect(page.locator("[data-mem-dump]")).toHaveAttribute("data-mem-dump", "FF00", { timeout: 10_000 });
+  const last = await page.locator("[data-mem-dump] .dump-row").last().locator(".bytes u").allTextContents();
+  const vector = parseInt(last[13] + last[12], 16) & 0xffff; // $FFFC and $FFFD: the reset vector, low byte first
+  const cal = fs.readFileSync("public/nes/cal.nes");
+  const fileVector = cal[16 + 32768 - 4] | (cal[16 + 32768 - 3] << 8);
+  expect(vector, "the reset vector read off the bus is the file's").toBe(fileVector);
+  // Palette RAM: the backdrop and eight palettes of four, every cell a code.
+  await expect(page.locator("[data-pal-cell]")).toHaveCount(1 + 32);
+  const cells = await page.locator("[data-pal-cell]").allTextContents();
+  for (const c of cells) expect(c).toMatch(/^[0-9A-F]{2}$/);
+  // OAM: either sprites on screen with their tiles, or the panel saying none are.
+  const rows = await page.locator("[data-oam-row]").count();
+  if (rows > 0) {
+    await page.locator("[data-oam-tile]").first().click();
+    await expect(page.locator("[data-spr-picked]")).not.toHaveAttribute("data-spr-picked", "");
+  } else {
+    await expect(page.locator("[data-oam-none]")).toHaveCount(1);
+  }
+  // The sheet can paint with the console's own palettes now.
+  await expect(page.locator("[data-spr-source] option")).toHaveCount(9);
+  // Power off: the panels say so; power on: the reads are back.
+  await page.locator("[data-play-power]").click();
+  await expect(page.locator("[data-state-why]")).toContainText("Power is off");
+  await page.locator("[data-play-power]").click();
+  await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 20_000 });
 });

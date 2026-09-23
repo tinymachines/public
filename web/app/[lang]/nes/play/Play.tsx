@@ -6,6 +6,8 @@ import { Gamepad } from "./Gamepad";
 import { attach, detach, load, subscribe, snapshot, serverSnapshot, type DriftStats, type PlayState } from "./playEngine";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
 import { Sprites } from "./Sprites";
+import { State } from "./State";
+import { useState } from "react";
 
 /**
  * The console in the page: a follower of playEngine's announcements. The
@@ -111,6 +113,9 @@ export function Play({ lang }: { lang: Lang }) {
   const T = S[lang];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  // A sprite on screen names its tile; the sheet opens it. The page holds
+  // the request because the two sections are siblings.
+  const [openTile, setOpenTile] = useState<{ tile: number; n: number } | null>(null);
 
   useEffect(() => {
     if (canvasRef.current) attach(canvasRef.current);
@@ -161,7 +166,9 @@ export function Play({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      <Sprites lang={lang} />
+      <State lang={lang} onTile={(tile) => setOpenTile((o) => ({ tile, n: (o?.n ?? 0) + 1 }))} />
+
+      <Sprites lang={lang} open={openTile} />
 
       <section className="wb-page play-section" id="readouts">
         <h2 className="eyebrow">{T.readH}</h2>

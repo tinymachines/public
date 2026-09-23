@@ -28,6 +28,18 @@ const ready = Promise.all([initNes(), initNtsc()]);
 
 let nes = null;
 let pacer = null;
+// The bus range the page watches (the memory panel's page): sent back with
+// every answer that ran the console, so the panel follows without asking.
+let watch = { at: 0, len: 256 };
+
+/**
+ * What the machine holds, as the bundle reads it (nes-wasm's reads: no
+ * side effect, no step). Flat byte vectors, parsed on the page.
+ */
+function state() {
+  if (!nes || !nes.cpu_state) return null;
+  return { cpu: nes.cpu_state(), ppu: nes.ppu_state(), palette: nes.palette(), oam: nes.oam(), watched: nes.peek(watch.at, watch.len), watchAt: watch.at };
+}
 
 self.onmessage = async (e) => {
   const { id, path } = e.data;
@@ -49,6 +61,23 @@ self.onmessage = async (e) => {
     // Power off: the console is dropped, the pacer with it. The page keeps
     // the cartridge and loads it again for power on, which is the only
     // reset this bundle has: a new console is the state it powered on into.
+    // The page's look at the machine, on request: after a load, a power
+    // cycle, and whenever a panel changes what it watches.
+    if (path === "state") {
+      if (!nes) throw new Error("no cartridge loaded");
+      self.postMessage({ id, ok: true, answer: { state: state() } });
+      return;
+    }
+    if (path === "watch") {
+      watch = { at: e.data.at & 0xffff, len: Math.max(1, Math.min(4096, e.data.len | 0)) };
+      self.postMessage({ id, ok: true, answer: { state: nes ? state() : null } });
+      return;
+    }
+    if (path === "ciram") {
+      if (!nes) throw new Error("no cartridge loaded");
+      self.postMessage({ id, ok: true, answer: { ciram: nes.ciram(), chrRam: nes.chr_ram() } });
+      return;
+    }
     if (path === "off") {
       if (nes) nes.free();
       nes = null;
@@ -72,7 +101,7 @@ self.onmessage = async (e) => {
       const s = pacer.stats();
       const stats = { presented: s[0], duplicated: s[1], dropped: s[2] };
       self.postMessage(
-        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced: 1, consoleMs, halfCycles: nes.cpu_half_cycles() } },
+        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced: 1, consoleMs, halfCycles: nes.cpu_half_cycles(), state: state() } },
         [colour.buffer, emphasis.buffer, sound.buffer],
       );
       return;
@@ -111,7 +140,7 @@ self.onmessage = async (e) => {
       const sound = nes.sound();
       const consoleMs = performance.now() - t0;
       self.postMessage(
-        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs, halfCycles: nes.cpu_half_cycles() } },
+        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs, halfCycles: nes.cpu_half_cycles(), state: state() } },
         [colour.buffer, emphasis.buffer, sound.buffer],
       );
       return;

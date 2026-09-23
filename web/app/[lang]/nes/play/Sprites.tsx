@@ -76,6 +76,10 @@ const S = {
     load: "Load",
     del: "Delete",
     delSure: (r: Revision) => `Delete revision ${r.seq}? The patch goes; the cartridge stays.`,
+    colours: "Sheet colours",
+    mine: "the four I chose",
+    bgPal: (i: number) => `the console's background palette ${i}`,
+    sprPal: (i: number) => `the console's sprite palette ${i}`,
   },
   ja: {
     h: "スプライト",
@@ -111,6 +115,10 @@ const S = {
     load: "読み込む",
     del: "削除",
     delSure: (r: Revision) => `リビジョン ${r.seq} を削除する? パッチは消え、カートリッジは残る。`,
+    colours: "シートの色",
+    mine: "自分で選んだ四色",
+    bgPal: (i: number) => `コンソールの背景パレット ${i}`,
+    sprPal: (i: number) => `コンソールのスプライトパレット ${i}`,
   },
 } as const;
 
@@ -142,7 +150,7 @@ function same(a: Uint8Array, b: Uint8Array): boolean {
   return true;
 }
 
-export function Sprites({ lang }: { lang: Lang }) {
+export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: number } | null }) {
   const T = S[lang];
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const base = s.base;
@@ -164,6 +172,21 @@ export function Sprites({ lang }: { lang: Lang }) {
   const [picked, setPicked] = useState<number | null>(null);
   const [codes, setCodes] = useState<number[]>(DEFAULT_CODES);
   const [slot, setSlot] = useState(3);
+  // The sheet's four colours: the reader's own, or one of the eight the
+  // PPU holds once the bundle reads palette RAM (the fourth step): the
+  // sprite's real colours at last, and the readout says which.
+  const [source, setSource] = useState<"mine" | number>("mine");
+  const live = s.machine?.palette ?? null;
+  const shown = source === "mine" || !live ? codes : [live[0], live[source * 4 + 1], live[source * 4 + 2], live[source * 4 + 3]];
+  // A sprite on screen asked for its tile: open it, in its table.
+  const [lastOpen, setLastOpen] = useState(0);
+  if (open && open.n !== lastOpen) {
+    setLastOpen(open.n);
+    if (open.tile < count) {
+      setPicked(open.tile);
+      setTable(Math.floor(open.tile / PER_TABLE));
+    }
+  }
   // A new cartridge is a new sheet: the edits were against the old base.
   // Adjusted during render, not in an effect (the same shape as the menu's
   // close-on-navigation), so the old edits never paint over the new sheet
@@ -182,7 +205,7 @@ export function Sprites({ lang }: { lang: Lang }) {
     return base!.subarray(h!.chrAt + tile * 16, h!.chrAt + tile * 16 + 16);
   };
 
-  const css = codes.map((c) => cssOf(c, s.palette));
+  const css = shown.map((c) => cssOf(c, s.palette));
   const sheetRef = useRef<HTMLCanvasElement>(null);
   const editRef = useRef<HTMLCanvasElement>(null);
 
@@ -363,8 +386,18 @@ export function Sprites({ lang }: { lang: Lang }) {
                   onPointerCancel={() => setDown(false)}
                 />
               </div></div>
+              {live ? (
+                <label className="field">
+                  <span>{T.colours}</span>
+                  <select className="input" value={String(source)} onChange={(e) => setSource(e.target.value === "mine" ? "mine" : Number(e.target.value))} data-spr-source>
+                    <option value="mine">{T.mine}</option>
+                    {[0, 1, 2, 3].map((i) => <option key={`bg${i}`} value={i}>{T.bgPal(i)}</option>)}
+                    {[0, 1, 2, 3].map((i) => <option key={`sp${i}`} value={4 + i}>{T.sprPal(i)}</option>)}
+                  </select>
+                </label>
+              ) : null}
               <div className="spr-brush" role="radiogroup" aria-label={T.brush}>
-                {codes.map((code, i) => (
+                {shown.map((code, i) => (
                   <button
                     key={i}
                     type="button"
@@ -372,7 +405,7 @@ export function Sprites({ lang }: { lang: Lang }) {
                     style={{ background: css[i] }}
                     aria-pressed={slot === i}
                     title={`${T.slots[i]}: $${code.toString(16).toUpperCase().padStart(2, "0")}`}
-                    onClick={() => setSlot(i)}
+                    onClick={() => { setSlot(i); if (source !== "mine") { setCodes(shown); setSource("mine"); } }}
                     data-spr-slot={i}
                   >
                     <span>{code.toString(16).toUpperCase().padStart(2, "0")}</span>

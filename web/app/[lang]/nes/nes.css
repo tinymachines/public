@@ -77,6 +77,31 @@
 .spr-swatch { aspect-ratio: 1; border: 1px solid var(--color-rule); border-radius: 0; cursor: pointer; padding: 0; }
 .spr-swatch.on { outline: 2px solid var(--color-accent-ink); outline-offset: 1px; }
 .spr-swatch:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 1px; }
+/* The machine's panels: the register file and the PPU readout side by side
+   where there is room; the palettes as rows of eight swatches. */
+.state-cpu { display: grid; gap: calc(var(--u) * 3); }
+@media (min-width: 52rem) {
+  .state-cpu { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+  .state-cpu > .readout { grid-column: 2; grid-row: 1; max-width: calc(var(--u) * 80); }
+  .state-cpu .state-fetch { grid-column: 1 / -1; }
+}
+.state-fetch { margin: 0; font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-glass-muted); }
+.state-fetch b { color: var(--color-glass); font-weight: 600; }
+.state-pal { display: grid; gap: calc(var(--u) * 1.5); }
+.state-pal-row { display: flex; align-items: center; gap: calc(var(--u) * 1); }
+.state-pal-row .tlab { min-width: 12ch; color: var(--color-glass-muted); font-family: var(--font-mono); font-size: var(--text-fine); }
+.state-swatch {
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 9);
+  height: calc(var(--u) * 7);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-style: normal;
+  color: transparent;
+  border: 1px solid var(--color-rule-panel);
+}
+.state-swatch:hover { color: var(--color-glass); text-shadow: 0 0 2px #000; }
 .spr-shelf { display: grid; gap: calc(var(--u) * 2); padding-top: calc(var(--u) * 2); border-top: 1px solid var(--color-rule); }
 .spr-shelf .chips { align-items: center; }
 .spr-shelf .input { min-width: min(100%, calc(var(--u) * 70)); }

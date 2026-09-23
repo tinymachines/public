@@ -47,6 +47,8 @@ export interface PlayState {
   palette: number[][] | null;
   /** The shelf cartridge the image came from, or null for a file off the disk. */
   cart: Cart | null;
+  /** The machine as the bundle reads it, after the last frame; null before one, or on a bundle without the reads. */
+  machine: Machine | null;
   /** Pictures painted. */
   frames: number;
   /** Console frames run but never decoded (the picture was busy). */
@@ -75,6 +77,52 @@ export interface PlayState {
   battery: { has: boolean; restored: boolean; savedAt: number | null; saving: boolean; why: string | null } | null;
 }
 
+/** The CPU as the core holds it, from the bundle's ten bytes. */
+export interface Cpu {
+  a: number; x: number; y: number; s: number; p: number; pc: number;
+  /** The last opcode fetch: where, and the opcode. */
+  fetchPc: number; opcode: number;
+}
+
+/** The PPU's registers and where its beam is, from the bundle's twenty bytes. */
+export interface Ppu {
+  line: number; dot: number; ctrl: number; mask: number; v: number; t: number; fineX: number; w: boolean; oamAddr: number;
+  vbl: boolean; spr0Hit: { line: number; dot: number } | null; sprOverflow: boolean;
+}
+
+export interface Machine {
+  cpu: Cpu;
+  ppu: Ppu;
+  /** Palette RAM, 32 bytes. */
+  palette: Uint8Array;
+  /** OAM, 256 bytes. */
+  oam: Uint8Array;
+  /** The bus range the memory panel watches, and where it starts. */
+  watched: Uint8Array;
+  watchAt: number;
+}
+
+interface RawState {
+  cpu: Uint8Array; ppu: Uint8Array; palette: Uint8Array; oam: Uint8Array; watched: Uint8Array; watchAt: number;
+}
+
+function parseMachine(r: RawState | null | undefined): Machine | null {
+  if (!r || r.cpu.length < 10 || r.ppu.length < 20) return null;
+  const c = r.cpu, p = r.ppu;
+  const u16 = (b: Uint8Array, i: number) => b[i] | (b[i + 1] << 8);
+  return {
+    cpu: { a: c[0], x: c[1], y: c[2], s: c[3], p: c[4], pc: u16(c, 5), fetchPc: u16(c, 7), opcode: c[9] },
+    ppu: {
+      line: u16(p, 0), dot: u16(p, 2), ctrl: p[4], mask: p[5], v: u16(p, 6), t: u16(p, 8), fineX: p[10], w: p[11] !== 0, oamAddr: p[12],
+      vbl: p[13] !== 0, spr0Hit: p[14] ? { line: u16(p, 15), dot: u16(p, 17) } : null, sprOverflow: p[19] !== 0,
+    },
+    palette: r.palette,
+    oam: r.oam,
+    watched: r.watched,
+    watchAt: r.watchAt,
+  };
+}
+
 interface ConsoleAnswer {
   colour: Uint8Array | null;
   emphasis: Uint8Array | null;
@@ -84,6 +132,7 @@ interface ConsoleAnswer {
   advanced: number;
   consoleMs: number;
   halfCycles?: number;
+  state?: RawState | null;
   /** The "battery" path's answer: the header's bit and the RAM, or `restored` when one was put back. */
   has?: boolean;
   ram?: Uint8Array;
@@ -128,6 +177,7 @@ const INITIAL: PlayState = {
   patched: false,
   palette: null,
   cart: null,
+  machine: null,
   frames: 0,
   undecoded: 0,
   consoleMs: null,
@@ -379,6 +429,22 @@ export async function load(file: File, cart: Cart | null = null, base: Uint8Arra
     }
   }
   set({ loaded: file.name, powered: true });
+  void refreshMachine();
+}
+
+/** The machine as it stands, asked of the worker: after a load and when a panel changes its watch. */
+export async function refreshMachine() {
+  const r = await consoleW.call({ path: "state" });
+  if (r.ok) set({ machine: parseMachine((r.answer as { state?: RawState | null }).state) });
+}
+
+/** The bus range the memory panel follows; the worker sends it back with every frame. */
+export async function watch(at: number, len = 256) {
+  const r = await consoleW.call({ path: "watch", at, len });
+  if (r.ok) {
+    const st = (r.answer as { state?: RawState | null }).state;
+    if (st) set({ machine: parseMachine(st) });
+  }
 }
 
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
@@ -406,7 +472,7 @@ export async function setPower(on: boolean) {
     stopWatching();
     keeper = null;
     await consoleW.call({ path: "off" });
-    set({ powered: false });
+    set({ powered: false, machine: null });
     return;
   }
   if (state.powered) return;
@@ -459,7 +525,7 @@ export async function stepFrame() {
     kick();
   }
   if (a.sound && a.sound.length > 0 && audio) play(a.sound);
-  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs });
+  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs, machine: a.state ? parseMachine(a.state) : state.machine });
 }
 
 function play(samples: Float32Array) {
@@ -553,7 +619,7 @@ async function loop() {
     kick();
   }
   if (a.sound && a.sound.length > 0) play(a.sound);
-  set({ stats: a.stats, framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles });
+  set({ stats: a.stats, framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, machine: a.state ? parseMachine(a.state) : state.machine });
   if (state.running) requestAnimationFrame(() => void loop());
 }
 
