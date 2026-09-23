@@ -27,6 +27,7 @@
  */
 
 import init, { Pipeline } from "../ntsc/wasm/ntsc_wasm.js";
+import { learnShape, measurePalette } from "./palette.mjs";
 
 const ready = init();
 const WIDTH = 2048;
@@ -467,6 +468,8 @@ function paintWasm(rgba) {
 
 // One message at a time: the first frame's WebGPU attempt awaits, and a
 // frame handled meanwhile would take the other path on the same canvas.
+let lastFrame = null; // the newest planes, kept for the palette measurement
+let palette = null;
 let chain = Promise.resolve();
 self.onmessage = (e) => {
   chain = chain.then(() => handle(e)).catch(() => {});
@@ -486,8 +489,18 @@ async function handle(e) {
       self.postMessage({ id, ok: true, answer: { width: WIDTH, height: HEIGHT } });
       return;
     }
+    // The 64 colours as measured through this worker's own pipeline
+    // (palette.mjs), for the sprite sheet. Null until a frame has been
+    // seen, because the measurement needs a real frame's shape; the page
+    // asks again after its next paint.
+    if (p === "palette") {
+      if (!palette && lastFrame) palette = measurePalette(Pipeline, learnShape(Pipeline, lastFrame));
+      self.postMessage({ id, ok: true, answer: palette ? { rgb: palette.rgb } : null });
+      return;
+    }
     if (p === "frame") {
       const { colour, emphasis, parity } = e.data;
+      lastFrame = { colour, emphasis, parity };
       const t0 = performance.now();
       if (!checked) {
         // First frame: try to build the WebGPU decode and hold it to the

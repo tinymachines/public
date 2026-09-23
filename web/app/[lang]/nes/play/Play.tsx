@@ -5,6 +5,7 @@ import type { Lang } from "@/lib/lang";
 import { Gamepad } from "./Gamepad";
 import { attach, detach, load, subscribe, snapshot, serverSnapshot, type DriftStats, type PlayState } from "./playEngine";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
+import { Sprites } from "./Sprites";
 
 /**
  * The console in the page: a follower of playEngine's announcements. The
@@ -32,6 +33,7 @@ const S = {
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
     off: "power is off: the cartridge is kept, the console is gone until power on",
+    patched: "running your patch, not the file as loaded",
     battery: (b: NonNullable<PlayState["battery"]>) =>
       !b.has ? <>no battery on this board: nothing to save</> :
       b.why ? <>save: <b>{b.why}</b></> :
@@ -71,6 +73,7 @@ const S = {
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
     off: "電源が切れている: カートリッジは残り、コンソールは電源を入れるまで無い",
+    patched: "走っているのは読み込んだままのファイルではなく、あなたのパッチ",
     battery: (b: NonNullable<PlayState["battery"]>) =>
       !b.has ? <>この基板に電池はない: 保存するものはない</> :
       b.why ? <>セーブ: <b>{b.why}</b></> :
@@ -158,6 +161,8 @@ export function Play({ lang }: { lang: Lang }) {
         </div>
       </section>
 
+      <Sprites lang={lang} />
+
       <section className="wb-page play-section" id="readouts">
         <h2 className="eyebrow">{T.readH}</h2>
         <p className="bench-readout" data-play-stats>
@@ -167,6 +172,7 @@ export function Play({ lang }: { lang: Lang }) {
             <>
               <span className="measured">{T.loaded(s.loaded)}</span>
               {!s.powered ? <span className="measured" data-play-off>{T.off}</span> : null}
+              {s.patched ? <span className="measured" data-play-patched>{T.patched}</span> : null}
               <span className="measured">{T.frames(s.frames, s.undecoded)}</span>
               {s.consoleMs !== null && s.pipeMs !== null && s.encodeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.encodeMs, s.pipeMs, s.path === "webgpu")}</span> : null}
               {s.path ? <span className="measured" data-play-path={s.path}>{T.path(s.path, s.pathWhy, s.agreement, s.tolerance, s.agreementV, s.toleranceV)}</span> : null}

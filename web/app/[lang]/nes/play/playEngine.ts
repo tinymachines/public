@@ -37,6 +37,14 @@ export interface PlayState {
   framesRun: number;
   /** The CPU's half-cycles since power on, the bundle's one counter. */
   halfCycles: number;
+  /** The image the reader loaded, as loaded: the base every edit is against. */
+  base: Uint8Array | null;
+  /** The image the console is running: the base, or the base with the reader's patch. */
+  rom: Uint8Array | null;
+  /** Whether the running image differs from the base, decided once at load. */
+  patched: boolean;
+  /** The 64 colours as the picture worker measured them, or null until a frame has been painted. */
+  palette: number[][] | null;
   /** Pictures painted. */
   frames: number;
   /** Console frames run but never decoded (the picture was busy). */
@@ -79,6 +87,10 @@ interface ConsoleAnswer {
   ram?: Uint8Array;
   restored?: boolean;
 }
+interface PaletteAnswer {
+  rgb: number[][];
+}
+
 interface PictureAnswer {
   bitmap: ImageBitmap;
   path: string;
@@ -109,6 +121,10 @@ const INITIAL: PlayState = {
   powered: false,
   framesRun: 0,
   halfCycles: 0,
+  base: null,
+  rom: null,
+  patched: false,
+  palette: null,
   frames: 0,
   undecoded: 0,
   consoleMs: null,
@@ -179,7 +195,7 @@ class Bridge<A> {
 }
 
 const consoleW = new Bridge<ConsoleAnswer>(CONSOLE_WORKER, "the console worker failed to load; the console bundle may be absent");
-const pictureW = new Bridge<PictureAnswer>(PICTURE_WORKER, "the picture worker failed to load; the signal path bundle may be absent");
+const pictureW = new Bridge<PictureAnswer | PaletteAnswer | null>(PICTURE_WORKER, "the picture worker failed to load; the signal path bundle may be absent");
 
 let canvas: HTMLCanvasElement | null = null;
 let lastT: number | null = null;
@@ -311,12 +327,16 @@ function stopWatching() {
  * worker and nowhere else. With `cart` (the shelf's entry it came from) the
  * save comes back before the game starts and is kept from then on.
  */
-export async function load(file: File, cart: Cart | null = null) {
+export async function load(file: File, cart: Cart | null = null, base: Uint8Array | null = null) {
   await saveNow();
   keeper = null;
   last = { file, cart };
   const bytes = await file.arrayBuffer();
-  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null });
+  // A copy stays on the page: the sprite sheet reads it, and the base is
+  // what a patch is measured against. The buffer itself goes to the worker.
+  const rom = new Uint8Array(bytes).slice();
+  const patched = base !== null && !sameBytes(rom, base);
+  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null, rom, base: base ?? rom, patched });
   latest = null;
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);
@@ -358,6 +378,12 @@ export async function load(file: File, cart: Cart | null = null) {
   set({ loaded: file.name, powered: true });
 }
 
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
 /** The last cartridge loaded, for power on and the power cycle. */
 let last: { file: File; cart: Cart | null } | null = null;
 
@@ -381,13 +407,36 @@ export async function setPower(on: boolean) {
     return;
   }
   if (state.powered) return;
-  await load(last.file, last.cart);
+  await load(last.file, last.cart, state.base);
 }
 
 /** Back to power on: the same cartridge, loaded again. */
 export async function powerCycle() {
   if (!state.loaded || !last) return;
-  await load(last.file, last.cart);
+  await load(last.file, last.cart, state.base);
+}
+
+/**
+ * The reader's patched image into the console: the same name, the same
+ * shelf cartridge (so its save still belongs to it), the base kept as the
+ * base. Power cycles from here on run the patched image, until the base
+ * is loaded back the same way.
+ */
+export async function reloadWith(image: Uint8Array) {
+  if (!state.loaded || !last || !state.base) return;
+  const name = last.file.name;
+  await load(new File([image.slice().buffer as ArrayBuffer], name, { type: "application/octet-stream" }), last.cart, state.base);
+}
+
+/** The picture worker's measured colours, asked for once per paint until there are some. */
+let paletteAsked = false;
+function askPalette() {
+  if (state.palette || paletteAsked) return;
+  paletteAsked = true;
+  void pictureW.call({ path: "palette" }).then((r) => {
+    paletteAsked = false;
+    if (r.ok && r.answer && "rgb" in r.answer) set({ palette: r.answer.rgb });
+  });
 }
 
 /** One frame, while paused: the way to watch a game a frame at a time. */
@@ -443,7 +492,7 @@ function kick() {
         set({ why: r.error });
         return;
       }
-      paint(r.answer);
+      paint(r.answer as PictureAnswer);
       kick();
     });
 }
@@ -463,6 +512,7 @@ function paint(a: PictureAnswer) {
   const now = performance.now();
   painted.push(now);
   while (painted.length && painted[0] < now - 1000) painted.shift();
+  askPalette();
   set({
     frames: state.frames + 1,
     pipeMs: a.decodeMs,

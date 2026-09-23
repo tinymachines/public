@@ -298,7 +298,7 @@ test("the play page is a workbench: the bar, the strip of its sections, the tran
   }));
   expect(r.bar, "one workbench bar").toBe(1);
   expect(r.name).toBe("Play");
-  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "Readouts", "About this console"]);
+  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "Sprites", "Readouts", "About this console"]);
   expect(r.foot, "the footer on the floor").toBe("fixed");
   // The keys, in the chip transport's order; every one grey before a
   // cartridge, and the ones the bundle cannot honour say why.
@@ -335,4 +335,85 @@ test("the play page is a workbench: the bar, the strip of its sections, the tran
   await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true");
   await expect.poll(framesRun).toBe(0);
   await expect(page.locator("[data-play-run]")).toBeEnabled();
+});
+
+test("sprites from the bytes: the sheet, a painted pixel, the patch in the console and out as IPS", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  // The section says what it is before a cartridge, and draws nothing.
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-count", "0");
+  await expect(page.locator("[data-spr-sheet]")).toHaveCount(0);
+
+  // The site's own calibration cartridge: 8 KiB of CHR, 512 tiles, one
+  // pattern table of 256 at a time.
+  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-count", "512");
+  await expect(page.locator("[data-spr-table] option")).toHaveCount(2);
+  await expect(page.locator("[data-spr-changed-line]")).toContainText("changed: 0 tiles, 0 bytes");
+  await expect(page.locator("[data-spr-running]")).toHaveAttribute("data-spr-running", "base");
+  for (const b of ["[data-spr-apply]", "[data-spr-revert]", "[data-spr-ips]", "[data-spr-nes]"]) await expect(page.locator(b)).toBeDisabled();
+
+  // Open tile 1 (second column, first row of table 0) and paint its top-left
+  // pixel with colour 3. The sheet's pixel takes the brush's colour, the
+  // edit is one tile and sixteen bytes, and the buttons light.
+  // Locator clicks, not the mouse at a point: the sheet is below the fold
+  // at desk height, and a locator scrolls it into view first.
+  const sheet = page.locator("[data-spr-sheet]");
+  const cell = (await sheet.boundingBox())!.width / 16;
+  await sheet.click({ position: { x: cell * 1.5, y: cell * 0.5 } });
+  await expect(page.locator("[data-spr-picked]")).toHaveAttribute("data-spr-picked", "1");
+  await page.locator('[data-spr-slot="3"]').click();
+  const edit = page.locator("[data-spr-edit]");
+  const eb = (await edit.boundingBox())!;
+  const ecell = eb.width / 8;
+  const before = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>("[data-spr-sheet]")!;
+    return Array.from(c.getContext("2d")!.getImageData(3 * 8 + 1, 1, 1, 1).data.slice(0, 3));
+  });
+  await edit.click({ position: { x: ecell / 2, y: ecell / 2 } });
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "1");
+  // One pixel is one or two bytes of the tile (one per plane whose bit
+  // changed), and the patch carries exactly those, not the whole tile.
+  await expect(page.locator("[data-spr-changed-line]")).toContainText(/changed: 1 tiles, [12] bytes/);
+  const changedBytes = Number(((await page.locator("[data-spr-changed-line]").textContent()) ?? "").match(/, (\d+) bytes/)![1]);
+  const after = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>("[data-spr-sheet]")!;
+    const slot = (document.querySelector('[data-spr-slot="3"]') as HTMLElement).style.background;
+    return { px: Array.from(c.getContext("2d")!.getImageData(3 * 8 + 1, 1, 1, 1).data.slice(0, 3)), slot };
+  });
+  expect(after.px, "the sheet's pixel changed").not.toEqual(before);
+  expect(after.slot.replace(/\s/g, "")).toContain(`rgb(${after.px.join(",")})`);
+  for (const b of ["[data-spr-apply]", "[data-spr-revert]", "[data-spr-ips]", "[data-spr-nes]"]) await expect(page.locator(b)).toBeEnabled();
+
+  // The patch out as IPS: PATCH, one record of the changed bytes inside
+  // tile 1's sixteen (header, 32 KiB of PRG, then the tile), EOF.
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("[data-spr-ips]").click()]);
+  expect(dl.suggestedFilename()).toBe("cal.ips");
+  const ips = fs.readFileSync((await dl.path())!);
+  expect(ips.subarray(0, 5).toString("latin1")).toBe("PATCH");
+  expect(ips.subarray(ips.length - 3).toString("latin1")).toBe("EOF");
+  const at = (ips[5] << 16) | (ips[6] << 8) | ips[7];
+  const tileAt = 16 + 32768 + 16;
+  expect(at).toBeGreaterThanOrEqual(tileAt);
+  expect(at + changedBytes).toBeLessThanOrEqual(tileAt + 16);
+  expect((ips[8] << 8) | ips[9]).toBe(changedBytes);
+  expect(ips.length).toBe(5 + 5 + changedBytes + 3);
+
+  // The patch into the console: the cartridge reloads at power on with the
+  // patched image, the readout says so, and a power cycle keeps it.
+  await page.locator("[data-spr-apply]").click();
+  await expect(page.locator("[data-spr-running]")).toHaveAttribute("data-spr-running", "patch", { timeout: 20_000 });
+  await expect(page.locator("[data-play-patched]")).toHaveCount(1);
+  await expect(page.locator("[data-spr-apply]")).toBeDisabled();
+  await page.locator("[data-play-start]").click();
+  await expect(page.locator("[data-play-patched]")).toHaveCount(1);
+  await expect(page.locator("[data-play-frame]")).toBeEnabled({ timeout: 20_000 });
+
+  // Revert: the edits go, and the console runs the file as loaded again.
+  await page.locator("[data-spr-revert]").click();
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "0");
+  await expect(page.locator("[data-spr-running]")).toHaveAttribute("data-spr-running", "base", { timeout: 20_000 });
+  await expect(page.locator("[data-play-patched]")).toHaveCount(0);
 });

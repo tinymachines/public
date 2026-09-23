@@ -47,6 +47,36 @@
 .play-shell .play-stage { max-width: calc(var(--u) * 180); }
 .play-shell .play-section > .eyebrow { margin: 0 0 calc(var(--u) * 3); }
 .play-shell .play-section#about { padding-bottom: calc(var(--u) * 8); }
+
+/* The sprite sheet and the open tile side by side where there is room,
+   stacked on a phone. The canvases are pixel art: scaled by the browser
+   with no smoothing, and never wider than their column. */
+.spr { display: grid; gap: calc(var(--u) * 3); }
+.spr-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 4); align-items: start; }
+@media (min-width: 52rem) {
+  .spr-grid { grid-template-columns: auto minmax(0, 1fr); }
+}
+.spr-sheet, .spr-edit { display: grid; gap: calc(var(--u) * 2); min-width: 0; }
+.spr-canvas { display: block; max-width: 100%; height: auto; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+.spr-tile { width: calc(var(--u) * 48); }
+.spr-edit .panel { width: fit-content; max-width: 100%; }
+.spr-brush { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1.5); align-items: center; }
+.spr-slot {
+  width: calc(var(--u) * 9);
+  height: calc(var(--u) * 9);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: transparent;
+  cursor: pointer;
+}
+.spr-slot.on { outline: 2px solid var(--color-accent-ink); outline-offset: 2px; }
+.spr-slot:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+.spr-swatches { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 2px; max-width: calc(var(--u) * 80); }
+.spr-swatch { aspect-ratio: 1; border: 1px solid var(--color-rule); border-radius: 0; cursor: pointer; padding: 0; }
+.spr-swatch.on { outline: 2px solid var(--color-accent-ink); outline-offset: 1px; }
+.spr-swatch:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 1px; }
 /* The pad's three zones shrink with the screen (minmax(0, ...)): a 390
    phone holds the cross at 108, the pills at their smallest and the two
    round buttons at 52 with room to spare; wider screens get the larger
