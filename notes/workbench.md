@@ -206,8 +206,9 @@ any state dump.
 
 - The page: a new `/nes/workbench`, or `/nes/play` growing panels. The
   brief's "leverage the workbench idea" reads as the former.
-- The tab component for panels at phone width (the kit has none), and
-  whether the strip is it.
+- The tab component for panels at phone width: **decided 2026-09-23,
+  leave mobile as it is.** The page scrolls, the strip lights the current
+  section, and the boxes hold their height; no tab component.
 - Revisions as whole ROMs or as patches against a base.
 - The `NOTICE.md` rule on sprites, palettes and captured bytes from
   commercial ROMs, and whether anything is shareable in the first cut.
