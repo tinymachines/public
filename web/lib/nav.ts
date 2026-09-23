@@ -128,6 +128,66 @@ export function menuGroups(): MenuGroup[] {
   return groups;
 }
 
+/** A section of the site: a project's landing and its first level, for the strip under the bar. */
+export interface Section {
+  title: string;
+  /** The landing's path: the strip shows on every page under it. */
+  when: string;
+  items: MenuItem[];
+}
+
+/**
+ * Each project's first level, for the strip on every page inside it.
+ *
+ * The panel is the site and the projects and nothing deeper (owner,
+ * 2026-09-22); the next morning, on a phone, the owner missed the second
+ * level, and this is it: not back in the panel but under the bar, on every
+ * page of a section, as the workbench pages already carry their own. The
+ * rule for what is on it is the one the section group had before it went:
+ * the landing (as "Overview"), the 6502's tracks, and each arrived surface
+ * unless a page above it already lists it: a track's page for what its
+ * headline names (a track's own path names nothing but itself), or, for a
+ * surface a level deeper than the first, the surface one segment up when it
+ * is the project's own. The signal's bench and its deep-dive are on
+ * /nes/signal, not here; the explorer's pages are on the Lab and tools
+ * page. A deeper page with no index of its own stays, because a page
+ * nothing lists is a page nobody finds.
+ */
+export function sections(): Section[] {
+  const out: Section[] = [];
+  for (const p of projects()) {
+    if (p.key === "roof" || !p.landing) continue;
+    const here = arrivedSurfaces(p);
+    if (!here.length) continue;
+    const onTrack = new Set(
+      p.key === "6502"
+        ? TRACKS.flatMap((tr) => tr.headline.map((h) => h.href.replace(/#.*$/, "")).filter((h) => h !== tr.path))
+        : [],
+    );
+    const routes = new Set(here.map((s) => s.lands_at));
+    const listedAbove = (href: string): boolean => {
+      if (onTrack.has(href)) return true;
+      if (!href.startsWith(p.landing + "/")) return false;
+      const above = href.replace(/\/[^/]+$/, "");
+      return above !== p.landing && routes.has(above);
+    };
+    out.push({
+      title: p.name,
+      when: p.landing,
+      items: [
+        { href: p.landing, label: "Overview" },
+        ...(p.key === "6502"
+          ? TRACKS.filter((tr) => tr.path !== "/6502/archive").map((tr) => ({ href: tr.path, label: tr.name.en }))
+          : []),
+        ...here
+          .filter((s) => s.lands_at !== p.landing && !listedAbove(s.lands_at))
+          .map((s) => ({ href: s.lands_at, label: s.nav_label ?? s.name, hard: isHardRoute(s.lands_at), prerendered: s.prerendered })),
+      ],
+    });
+  }
+  return out;
+}
+
 /**
  * Path to display name, for the breadcrumbs.
  *

@@ -2717,6 +2717,24 @@ html.has-fullscreen .workbench .app-head { display: none; }
 .wb-strip a[aria-current] { color: var(--color-ink); border-bottom-color: var(--color-accent-ink); }
 .wb-strip a:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: -2px; }
 html.has-fullscreen .wb-strip { top: 0; }
+/* The section's parts under the bar on a reading page (components/PartsStrip.tsx):
+   the same strip, on paper, at the page's measure so it lines up with the
+   crumb under it, and the whole width on a phone so it scrolls sideways
+   from the edge. Sticky under the bar like the workbench's. */
+.app-shell .parts-strip {
+  /* width: 100% matters: the shell is a column flex container, and an item
+     with auto inline margins and no width shrinks to its content there,
+     which on a phone was a 1120px strip scrolling the whole page sideways
+     (measured on /nes/chips at 390, 2026-09-23). */
+  width: 100%;
+  max-width: calc(var(--u) * 280);
+  margin-inline: auto;
+  padding-inline: calc(var(--u) * 8);
+  box-sizing: border-box;
+}
+@media (max-width: 40rem) {
+  .app-shell .parts-strip { padding-inline: calc(var(--u) * 5); }
+}
 /* A section reached through the strip lands under it, not beneath it. */
 .workbench .explorer-shell :is(section[id], h2[id]) { scroll-margin-top: calc(var(--u) * 24); }
 

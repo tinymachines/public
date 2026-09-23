@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { labels, menuGroups, type MenuGroup } from "@/lib/nav";
+import { labels, menuGroups, sections, type MenuGroup, type Section } from "@/lib/nav";
+import { PartsStrip } from "./PartsStrip";
 import { localize, t, type Lang } from "@/lib/i18n";
 import { Crumbs } from "./Crumbs";
 import { JsonLd, breadcrumbs } from "./JsonLd";
@@ -144,6 +145,19 @@ function localizedGroups(lang: Lang): MenuGroup[] {
       ...it,
       label: t(lang, it.label),
       hint: it.hint ? t(lang, it.hint) : it.hint,
+      href: it.prerendered === false ? it.href : localize(lang, it.href),
+    })),
+  }));
+}
+
+/** The sections' parts, translated and localized the way the menu's items are. */
+function localizedSections(lang: Lang): Section[] {
+  return sections().map((s) => ({
+    ...s,
+    title: t(lang, s.title),
+    items: s.items.map((it) => ({
+      ...it,
+      label: t(lang, it.label),
       href: it.prerendered === false ? it.href : localize(lang, it.href),
     })),
   }));
@@ -307,6 +321,10 @@ export function Shell({
       <header className="app-head">
         <Topbar lang={lang} die={die} />
       </header>
+      {/* The section's parts, under the bar, on every page inside a project:
+          the second level the panel no longer carries. Nothing on the site's
+          own pages. PartsStrip.tsx and lib/nav.ts sections() have the rest. */}
+      <PartsStrip sections={localizedSections(lang)} label={t(lang, "Parts of this section")} />
       {/* The beta origin says so on every page, above everything else. It is
           where a change is tried before the deploy carries it live
           (deploy/beta.tinymachines.ai.nginx, scripts/beta.sh), and a reader
