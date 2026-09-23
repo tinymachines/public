@@ -3260,7 +3260,8 @@ seam.
   power off and on) and the broad suites on the preview; the NES, shelf,
   parts and notebook specs pass against beta with the rig.
 
-Beta serves `c42b4ba`; main is there too, both pushed; the console
-repository is pushed at `6b5d89c`. Live is still `7722bb3` (1.0.266).
-Deploying is the owner's call. Next on the note's order: control and the
-code panel.
+Deployed clean afterwards at the owner's word, so live, main and beta are
+all at `5b7fcc1` and the version stays 1.0.266; the play, sprites and
+reads specs pass against live, and the bench's two PDFs answer there.
+The console repository is pushed at `6b5d89c`. Next on the note's order:
+control and the code panel.
