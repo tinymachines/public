@@ -75,6 +75,32 @@ the deploy refuses to publish an index missing the licence or the authors'
 names. That is licence compliance implemented as a build failure, and the same
 discipline belongs on anything this repo ships.
 
+## Somebody else's game, 2026-09-23
+
+The cartridge shelf and the play workbench take a reader's own dumps, and
+the workbench now edits them. The rule the shelf already ran on is written
+down here so the next feature cannot cross it by accident:
+
+- **A dump is private to the account that put it there.** Never in a
+  repository, never in a database row, never served to anyone else, never
+  listed to an admin. The bytes live on disk under the service's own
+  state, and leave it only to the owner's own browser, `private, no-store`.
+- **What is taken from a dump is as private as the dump.** Its tiles, its
+  palettes, a captured block's bytes, a trace of it running: the same
+  rule, because they are the dump's bytes in another arrangement.
+- **Shape is not bytes.** Addresses, labels, counts, event kinds and prose
+  about a game carry none of it, and are the kinds that may be shared or
+  published (the encyclopedia and the dissection already follow this).
+- **A patch is the reader's own bytes.** An IPS record holds what the
+  reader wrote, at an offset, and nothing of the base; a revision on the
+  shelf is one of those. It is the one artefact of an edit to somebody
+  else's game that could ever leave the reader's browser, and the shelf
+  keeps it as private as the dump all the same until sharing is a
+  decision somebody has made.
+- **Our own ROMs are the examples.** The calibration cartridge, the
+  plumbing cartridge and the bench's are ours to show whole, bytes and
+  all, and they are what every test and every public example uses.
+
 ## The rule
 
 **Surface this before any distribution or monetisation decision. Do not

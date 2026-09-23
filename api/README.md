@@ -75,6 +75,13 @@ on a shelf, held to every rule an upload is.
 | `GET /v1/me/carts/{cart_id}/save` | The cartridge's saved RAM, what its battery would have kept; 404 until the game has saved |
 | `PUT /v1/me/carts/{cart_id}/save` | Write it, whole. The play page is the battery: it writes while a cartridge with one runs, and when it stops |
 | `DELETE /v1/me/carts/{cart_id}/save` | Forget it. The ROM stays |
+| `GET /v1/me/carts/{cart_id}/revisions` | The cartridge's revisions, oldest first: each an IPS patch against the file as it arrived, and what this service measured when it applied it |
+| `POST /v1/me/carts/{cart_id}/revisions` | Keep one. The body is the IPS; it is applied here and refused if it changes nothing, grows the file or touches the header. `message` in the query |
+| `GET /v1/me/carts/{cart_id}/revisions/{rev_id}` | One revision |
+| `GET /v1/me/carts/{cart_id}/revisions/{rev_id}/patch` | The IPS bytes, `private, no-store` |
+| `GET /v1/me/carts/{cart_id}/revisions/{rev_id}/rom` | The patched image, made on request and checked against its digest on the way out |
+| `PATCH /v1/me/carts/{cart_id}/revisions/{rev_id}` | Change its message. Touches only what it names |
+| `DELETE /v1/me/carts/{cart_id}/revisions/{rev_id}` | Remove the revision and its patch. The cartridge stays |
 
 Everything below needs a dev key.
 

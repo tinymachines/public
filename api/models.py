@@ -841,6 +841,7 @@ class Cart(BaseModel):
     chr_bytes: int = Field(description="Picture ROM, in bytes. Zero means the board carries picture RAM instead.", examples=[131072])
     rom: str = Field(description="Where the bytes are, relative to the API's root. Answers only to the session that owns the shelf.", examples=["/v1/me/carts/ct_3f9a1b3c7d2e4f01/rom"])
     save: Optional[CartSave] = Field(default=None, description="The saved cartridge RAM at `{rom}`'s sibling `/save`, or null while the game has never saved. The play page writes it while a cartridge with a battery runs, and reads it back before the game starts.")
+    revisions: int = Field(default=0, description="How many revisions the cartridge keeps, at `{rom}`'s sibling `/revisions`.")
     created_at: datetime = Field(description="When it was put on the shelf, UTC.")
     updated_at: datetime = Field(description="When its name or note last changed, UTC.")
 
@@ -850,6 +851,46 @@ class CartLimits(BaseModel):
     held: int = Field(description="How many it keeps now.")
     remaining: int = Field(description="How many more it may add. Never negative: a shelf that was shrunk under its contents reports zero.")
     bytes_max: int = Field(description="The largest single file the shelf takes, in bytes.")
+    revisions_max: int = Field(description="How many revisions one cartridge may keep.")
+
+
+class Revision(BaseModel):
+    """One revision of a cartridge: an IPS patch against the file as it arrived, and what this service measured when it applied it.
+
+    The cartridge's bytes are never edited. A revision is what an edit is:
+    the reader's own bytes at their offsets, kept beside the ROM, and the
+    image they make when laid over it, which `rom` serves. Everything here
+    but `message` was measured here; the patch was applied on arrival and
+    refused if it changed nothing, grew the file or touched the header.
+    """
+
+    id: str = Field(description="The revision's id.", examples=["rv_9c2e4b1a7d3f0e55"])
+    cart_id: str = Field(description="The cartridge it revises.", examples=["ct_3f9a1b3c7d2e4f01"])
+    seq: int = Field(description="Its number on the cartridge, from 1, in the order the revisions were kept. Numbers are not reused after a delete.", examples=[3])
+    message: str = Field(description="What the owner said the revision is.", examples=["Mario's hat, red again"])
+    sha256: str = Field(description="SHA-256 of the patched image, the whole file with the patch laid over it. Measured here.")
+    patch_bytes: int = Field(description="The IPS file's length in bytes.", examples=[27])
+    ranges: int = Field(description="Records in the patch.", examples=[1])
+    changed: int = Field(description="Bytes of the image the patch changes, measured by applying it.", examples=[12])
+    patch: str = Field(description="Where the IPS bytes are, relative to the API's root. Answers only to the session that owns the shelf.", examples=["/v1/me/carts/ct_3f9a1b3c7d2e4f01/revisions/rv_9c2e4b1a7d3f0e55/patch"])
+    rom: str = Field(description="Where the patched image is: the cartridge's bytes with this patch laid over them, made on request and checked against `sha256` on the way out.", examples=["/v1/me/carts/ct_3f9a1b3c7d2e4f01/revisions/rv_9c2e4b1a7d3f0e55/rom"])
+    created_at: datetime = Field(description="When it was kept, UTC.")
+    updated_at: datetime = Field(description="When its message last changed, UTC.")
+
+
+class Revisions(BaseModel):
+    """A cartridge's revisions, oldest first."""
+
+    revisions: list[Revision] = Field(description="By number. Empty for a cartridge nobody has edited.")
+    max: int = Field(description="How many revisions this cartridge may keep.")
+
+
+class RevisionPatch(BaseModel):
+    """Change what a revision is called. The patch itself cannot be edited: keep a new revision."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: Optional[str] = Field(default=None, description="New message. Omit to leave it alone; an empty string clears it.")
 
 
 class Carts(BaseModel):

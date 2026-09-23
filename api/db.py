@@ -215,6 +215,30 @@ MIGRATIONS: list[str] = [
     """
     UPDATE users SET carts_max = 32 WHERE carts_max = 0;
     """,
+    # 6: revisions of a cartridge (2026-09-23, notes/workbench.md step 3).
+    #    A revision is an IPS patch against the cartridge as it arrived, kept
+    #    as a file beside the ROM and described here by what the service
+    #    measured when it applied the patch: the patched image's digest, the
+    #    patch's size, its records and the bytes they change. The bytes of
+    #    the cartridge are never edited; a revision is what an edit is.
+    """
+    CREATE TABLE cart_revisions (
+        id          TEXT PRIMARY KEY,
+        cart_id     TEXT NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        seq         INTEGER NOT NULL,
+        message     TEXT NOT NULL DEFAULT '',
+        sha256      TEXT NOT NULL,
+        patch_bytes INTEGER NOT NULL,
+        ranges      INTEGER NOT NULL,
+        changed     INTEGER NOT NULL,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX cart_revisions_seq ON cart_revisions(cart_id, seq);
+    -- One revision per resulting image: the same patch twice is one revision.
+    CREATE UNIQUE INDEX cart_revisions_sha ON cart_revisions(cart_id, sha256);
+    """,
 ]
 
 

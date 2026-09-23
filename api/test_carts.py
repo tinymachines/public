@@ -101,12 +101,16 @@ def test_the_migration_opened_the_shelves_that_were_closed_by_default():
     day's default; an account already set by hand keeps its own number."""
     conn = db.connect()
     with conn:
+        # A file at version 4 has no revisions table either (migration 6):
+        # the rollback drops what the later migrations made, then the count
+        # of what runs is everything after 4.
+        conn.execute("DROP TABLE IF EXISTS cart_revisions")
         conn.execute("PRAGMA user_version = 4")
         stamp = db.now()
         conn.execute("INSERT INTO users (id, email, handle, first_name, carts_max, created_at, updated_at) VALUES ('u_old', 'old@example.org', 'old', 'Old', 0, ?, ?)", (stamp, stamp))
         conn.execute("INSERT INTO users (id, email, handle, first_name, carts_max, created_at, updated_at) VALUES ('u_set', 'set@example.org', 'set', 'Set', 64, ?, ?)", (stamp, stamp))
     ran = db.migrate(conn)
-    assert ran == 1, "the fixture did not roll the file back to before migration 5"
+    assert ran == len(db.MIGRATIONS) - 4, "the fixture did not roll the file back to before migration 5"
     rows = dict(conn.execute("SELECT handle, carts_max FROM users"))
     conn.close()
     assert rows == {"old": 32, "set": 64}
@@ -150,7 +154,7 @@ def test_a_cartridge_goes_on_and_comes_back_byte_for_byte(shelf_dir):
 
     listed = c.get("/v1/me/carts").json()
     assert [x["id"] for x in listed["carts"]] == [cart["id"]]
-    assert listed["limits"] == {"max": 5, "held": 1, "remaining": 4, "bytes_max": carts.bytes_max()}
+    assert listed["limits"] == {"max": 5, "held": 1, "remaining": 4, "bytes_max": carts.bytes_max(), "revisions_max": carts.revisions_max()}
 
     rom = c.get(cart["rom"])
     assert rom.status_code == 200

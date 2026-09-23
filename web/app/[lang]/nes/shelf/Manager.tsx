@@ -56,6 +56,7 @@ const L = {
     remove: "delete",
     saved: (bytes: string, when: string) => `save: ${bytes}, written ${when}`,
     noSave: "no save yet",
+    revisions: (n: number) => (n === 1 ? "1 revision, from the play page's sprite sheet" : `${n} revisions, from the play page's sprite sheet`),
     forget: "forget the save",
     forgetSure: (name: string) => `Forget ${name}'s save? The next start is a cartridge whose battery was never written. The ROM stays.`,
     sure: (name: string) => `Delete ${name} from your shelf? The file is removed from the server. Your own copy is not touched.`,
@@ -105,6 +106,7 @@ const L = {
     remove: "削除",
     saved: (bytes: string, when: string) => `セーブ: ${bytes}、${when} に書き込み`,
     noSave: "セーブはまだない",
+    revisions: (n: number) => `リビジョン ${n}、プレイページのスプライトシートから`,
     forget: "セーブを忘れる",
     forgetSure: (name: string) => `${name} のセーブを忘れる? 次に起動するときは電池に何も書かれていないカートリッジになる。ROM は残る。`,
     sure: (name: string) => `${name} を棚から消す? サーバ上のファイルは削除される。手元のコピーには触れない。`,
@@ -198,6 +200,7 @@ function Row({ lang, cart, busy, onChanged, onError }: { lang: Lang; cart: Cart;
         <span className="measured" data-cart-kept={cart.save ? "kept" : "none"}>
           {cart.save ? S.saved(kib(cart.save.bytes), new Date(cart.save.saved_at).toLocaleString(lang === "ja" ? "ja" : "en")) : S.noSave}
         </span>
+        {cart.revisions > 0 ? <span className="measured" data-cart-revisions={cart.revisions}>{S.revisions(cart.revisions)}</span> : null}
       </p>
       <p className="shelf-row-acts">
         <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => void download()} data-cart-download>{S.download}</button>

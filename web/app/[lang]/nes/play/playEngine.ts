@@ -45,6 +45,8 @@ export interface PlayState {
   patched: boolean;
   /** The 64 colours as the picture worker measured them, or null until a frame has been painted. */
   palette: number[][] | null;
+  /** The shelf cartridge the image came from, or null for a file off the disk. */
+  cart: Cart | null;
   /** Pictures painted. */
   frames: number;
   /** Console frames run but never decoded (the picture was busy). */
@@ -125,6 +127,7 @@ const INITIAL: PlayState = {
   rom: null,
   patched: false,
   palette: null,
+  cart: null,
   frames: 0,
   undecoded: 0,
   consoleMs: null,
@@ -336,7 +339,7 @@ export async function load(file: File, cart: Cart | null = null, base: Uint8Arra
   // what a patch is measured against. The buffer itself goes to the worker.
   const rom = new Uint8Array(bytes).slice();
   const patched = base !== null && !sameBytes(rom, base);
-  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null, rom, base: base ?? rom, patched });
+  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null, rom, base: base ?? rom, patched, cart });
   latest = null;
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);

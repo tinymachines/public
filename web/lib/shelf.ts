@@ -34,6 +34,25 @@ export interface Cart {
   rom: string;
   /** The saved cartridge RAM, or null while the game has never saved. */
   save: CartSave | null;
+  /** How many revisions it keeps. */
+  revisions: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One revision: an IPS patch against the cartridge as it arrived, and what the server measured applying it. */
+export interface Revision {
+  id: string;
+  cart_id: string;
+  seq: number;
+  message: string;
+  /** Of the patched image, measured on the server. */
+  sha256: string;
+  patch_bytes: number;
+  ranges: number;
+  changed: number;
+  patch: string;
+  rom: string;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +62,7 @@ export interface ShelfLimits {
   held: number;
   remaining: number;
   bytes_max: number;
+  revisions_max: number;
 }
 
 export type Shelf =
@@ -157,6 +177,44 @@ export async function deleteSave(id: string): Promise<void> {
 }
 
 /** "256 KiB", for a size that is a whole number of them, which a ROM's always is. */
+// ---------------------------------------------------------------------------
+// Revisions: an edit kept as a patch (notes/workbench.md, the third step)
+// ---------------------------------------------------------------------------
+
+export async function listRevisions(cartId: string): Promise<{ revisions: Revision[]; max: number }> {
+  const r = await fetch(`${API}/${cartId}/revisions`, { cache: "no-store" });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as { revisions: Revision[]; max: number };
+}
+
+export async function addRevision(cartId: string, ips: Uint8Array, message: string): Promise<Revision> {
+  const q = new URLSearchParams({ message });
+  const r = await fetch(`${API}/${cartId}/revisions?${q}`, { method: "POST", headers: { "content-type": "application/octet-stream" }, body: ips.slice().buffer });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as Revision;
+}
+
+/** The revision's image, checked against the digest the server measured, as a file the console loads. */
+export async function fetchRevision(cart: Cart, rev: Revision): Promise<File> {
+  const r = await fetch(`/api${rev.rom}`, { cache: "no-store" });
+  if (!r.ok) return refuse(r);
+  const bytes = await r.arrayBuffer();
+  const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (digest !== rev.sha256) throw new ShelfError(0, `revision ${rev.seq} of ${cart.name} arrived with a different digest from the one the shelf recorded, so it was not loaded.`);
+  return new File([bytes], fileNameOf(cart), { type: "application/octet-stream" });
+}
+
+export async function patchRevision(cartId: string, revId: string, changes: { message?: string }): Promise<Revision> {
+  const r = await fetch(`${API}/${cartId}/revisions/${revId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(changes) });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as Revision;
+}
+
+export async function deleteRevision(cartId: string, revId: string): Promise<void> {
+  const r = await fetch(`${API}/${cartId}/revisions/${revId}`, { method: "DELETE" });
+  if (!r.ok) return refuse(r);
+}
+
 export function kib(bytes: number): string {
   return `${(bytes / 1024).toLocaleString("en", { maximumFractionDigits: 1 })} KiB`;
 }

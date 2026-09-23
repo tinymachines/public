@@ -75,7 +75,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Res
 import db
 from admin import connection
 from auth import require_user
-from models import Cart, CartLimits, CartPatch, CartSave, Carts
+from models import Cart, CartLimits, CartPatch, CartSave, Carts, Revision, RevisionPatch, Revisions
 
 router = APIRouter(prefix="/v1/me/carts", tags=["account"])
 
@@ -86,6 +86,11 @@ NOTE_MAX = 240
 # The console's cartridge RAM is 8 KiB; a save is that or nothing. Room for
 # four times it, for a board that fits more, and no more than that.
 SAVE_MAX = 32 * 1024
+
+
+def revisions_max() -> int:
+    """How many revisions one cartridge may keep. Sixteen is a working session's worth; the number is a quota, not a design."""
+    return int(os.environ.get("TM_CART_REVISIONS", "16"))
 
 
 def bytes_max() -> int:
@@ -245,16 +250,17 @@ def _save_of(uid: str, sha256: str) -> Optional[CartSave]:
     return CartSave(bytes=st.st_size, saved_at=datetime.fromtimestamp(st.st_mtime, timezone.utc))
 
 
-def _cart(row: sqlite3.Row) -> Cart:
+def _cart(row: sqlite3.Row, conn: sqlite3.Connection) -> Cart:
     d = dict(row)
     d.pop("user_id")
-    return Cart(**d, rom=f"/v1/me/carts/{row['id']}/rom", save=_save_of(row["user_id"], row["sha256"]))
+    n = conn.execute("SELECT COUNT(*) FROM cart_revisions WHERE cart_id = ?", (row["id"],)).fetchone()[0]
+    return Cart(**d, rom=f"/v1/me/carts/{row['id']}/rom", save=_save_of(row["user_id"], row["sha256"]), revisions=n)
 
 
 def _limits(conn: sqlite3.Connection, user: sqlite3.Row) -> CartLimits:
     held = conn.execute("SELECT COUNT(*) FROM carts WHERE user_id = ?", (user["id"],)).fetchone()[0]
     most = user["carts_max"]
-    return CartLimits(max=most, held=held, remaining=max(0, most - held), bytes_max=bytes_max())
+    return CartLimits(max=most, held=held, remaining=max(0, most - held), bytes_max=bytes_max(), revisions_max=revisions_max())
 
 
 def _owned(conn: sqlite3.Connection, uid: str, cid: str) -> sqlite3.Row:
@@ -346,7 +352,7 @@ def store(conn: sqlite3.Connection, user: sqlite3.Row, data: bytes, name: str, n
 )
 def list_carts(user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Carts:
     rows = conn.execute("SELECT * FROM carts WHERE user_id = ? ORDER BY name COLLATE NOCASE, created_at", (user["id"],))
-    return Carts(carts=[_cart(r) for r in rows], limits=_limits(conn, user))
+    return Carts(carts=[_cart(r, conn) for r in rows], limits=_limits(conn, user))
 
 
 @router.post(
@@ -388,7 +394,7 @@ def add_cart(
                 data = with_header(data, mapper, chr_kib, mirroring, battery)
             except NotACartridge as e:
                 raise Refused(422, str(e)) from e
-        return _cart(store(conn, user, data, name, note))
+        return _cart(store(conn, user, data, name, note), conn)
     except Refused as e:
         raise HTTPException(status_code=e.status, detail=e.detail) from e
 
@@ -441,7 +447,7 @@ def patch_cart(cart_id: str, body: CartPatch, request: Request, user: sqlite3.Ro
         sets = ", ".join(f"{k} = ?" for k in cleaned)
         with conn:
             conn.execute(f"UPDATE carts SET {sets}, updated_at = ? WHERE id = ?", (*cleaned.values(), db.now(), cart_id))
-    return _cart(_owned(conn, user["id"], cart_id))
+    return _cart(_owned(conn, user["id"], cart_id), conn)
 
 
 @router.delete(
@@ -459,6 +465,9 @@ def delete_cart(cart_id: str, request: Request, user: sqlite3.Row = Depends(requ
         conn.execute("DELETE FROM carts WHERE id = ?", (row["id"],))
     _file(user["id"], row["sha256"]).unlink(missing_ok=True)
     _save_file(user["id"], row["sha256"]).unlink(missing_ok=True)
+    # The revisions' rows went with the cascade; their patches go here.
+    for f in _file(user["id"], row["sha256"]).parent.glob(f"{row['sha256']}.r*.ips"):
+        f.unlink(missing_ok=True)
     return Response(status_code=204)
 
 
@@ -520,6 +529,262 @@ def put_save(cart_id: str, request: Request, data: bytes = Body(media_type="appl
 def delete_save(cart_id: str, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
     row = _owned(conn, user["id"], cart_id)
     _save_file(user["id"], row["sha256"]).unlink(missing_ok=True)
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------------------
+# Revisions: an edit as an IPS patch against the cartridge as it arrived
+#
+# The cartridge's bytes are never edited (notes/workbench.md, the third
+# step; NOTICE.md, "Somebody else's game"). What the workbench makes of an
+# edit is the reader's own bytes at their offsets, and that is what is kept:
+# the IPS file beside the ROM, and a row saying what this service measured
+# when it applied the patch. The patched image is made on request, never
+# stored, and checked against the digest measured on arrival on the way out,
+# the way the ROM is.
+# ---------------------------------------------------------------------------
+
+
+class NotAPatch(ValueError):
+    """The bytes are not an IPS file this service can apply. The message says why."""
+
+
+def apply_ips(base: bytes, patch: bytes) -> tuple[bytes, int]:
+    """The image with the patch laid over it, and how many records the patch has.
+
+    IPS as every patcher reads it: "PATCH", then records of a three-byte
+    offset, a two-byte length and that many bytes (a length of zero is a run:
+    two bytes of count and one byte repeated), then "EOF". A record past the
+    file's end is refused: a revision cannot grow a cartridge. One that
+    touches the sixteen-byte header is refused too, because the header is
+    the board and the sizes, and a cartridge whose board changed is another
+    cartridge.
+    """
+    if not patch.startswith(b"PATCH"):
+        raise NotAPatch("not an IPS file: no PATCH at the start")
+    out = bytearray(base)
+    i, n, records = 5, len(patch), 0
+    while True:
+        if i + 3 > n:
+            raise NotAPatch("the patch ends without EOF")
+        if patch[i:i + 3] == b"EOF" and i + 3 == n:
+            break
+        if i + 5 > n:
+            raise NotAPatch(f"record {records + 1} is cut short")
+        at = int.from_bytes(patch[i:i + 3], "big")
+        size = int.from_bytes(patch[i + 3:i + 5], "big")
+        i += 5
+        if size == 0:
+            if i + 3 > n:
+                raise NotAPatch(f"record {records + 1} is a run cut short")
+            run = int.from_bytes(patch[i:i + 2], "big")
+            data = bytes([patch[i + 2]]) * run
+            i += 3
+        else:
+            data = patch[i:i + size]
+            if len(data) != size:
+                raise NotAPatch(f"record {records + 1} claims {size} bytes and the patch has {len(data)} left")
+            i += size
+        if not data:
+            raise NotAPatch(f"record {records + 1} is empty")
+        if at < HEADER:
+            raise NotAPatch(f"record {records + 1} at {at} touches the header; a revision cannot change the board or the sizes")
+        if at + len(data) > len(base):
+            raise NotAPatch(f"record {records + 1} reaches {at + len(data)} and the cartridge is {len(base)} bytes; a revision cannot grow it")
+        out[at:at + len(data)] = data
+        records += 1
+    return bytes(out), records
+
+
+def _rev_file(uid: str, sha256: str, seq: int) -> Path:
+    return _file(uid, sha256).with_name(f"{sha256}.r{seq}.ips")
+
+
+def _revision(row: sqlite3.Row) -> Revision:
+    d = dict(row)
+    d.pop("user_id")
+    base = f"/v1/me/carts/{row['cart_id']}/revisions/{row['id']}"
+    return Revision(**d, patch=f"{base}/patch", rom=f"{base}/rom")
+
+
+def _owned_rev(conn: sqlite3.Connection, uid: str, cid: str, rid: str) -> sqlite3.Row:
+    _owned(conn, uid, cid)
+    row = conn.execute("SELECT * FROM cart_revisions WHERE id = ? AND cart_id = ? AND user_id = ?", (rid, cid, uid)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="No such revision of this cartridge.")
+    return row
+
+
+def _rom_bytes(uid: str, row: sqlite3.Row) -> bytes:
+    """The cartridge's bytes as recorded, or a 410 for a file that is gone or rotted."""
+    try:
+        data = _file(uid, row["sha256"]).read_bytes()
+    except FileNotFoundError:
+        raise HTTPException(status_code=410, detail="The shelf lists this cartridge and its file is gone from disk. Delete the entry and add the dump again.")
+    if hashlib.sha256(data).hexdigest() != row["sha256"]:
+        raise HTTPException(status_code=410, detail="The file on disk no longer matches the digest recorded when it arrived. Delete the entry and add the dump again.")
+    return data
+
+
+def keep_revision(conn: sqlite3.Connection, user: sqlite3.Row, cart: sqlite3.Row, patch: bytes, message: str = "") -> sqlite3.Row:
+    """Keep a revision of a cartridge, or refuse it with the reason. The one place the rules live."""
+    if not patch:
+        raise Refused(422, "An empty body is not a patch.")
+    if len(patch) > bytes_max():
+        raise Refused(413, f"{len(patch)} bytes; a patch is at most the size a cartridge may be, {bytes_max()}.")
+    message = clean_note(message)
+    base = _rom_bytes(user["id"], cart)
+    try:
+        image, records = apply_ips(base, patch)
+    except NotAPatch as e:
+        raise Refused(422, str(e)) from e
+    changed = sum(1 for a, b in zip(base, image) if a != b)
+    if changed == 0:
+        raise Refused(422, "The patch changes nothing: every byte it writes is already there.")
+    sha = hashlib.sha256(image).hexdigest()
+    twin = conn.execute("SELECT seq FROM cart_revisions WHERE cart_id = ? AND sha256 = ?", (cart["id"], sha)).fetchone()
+    if twin is not None:
+        raise Refused(409, f"This patch makes the same image as revision {twin['seq']}.")
+    held = conn.execute("SELECT COUNT(*), COALESCE(MAX(seq), 0) FROM cart_revisions WHERE cart_id = ?", (cart["id"],)).fetchone()
+    if held[0] >= revisions_max():
+        raise Refused(409, f"This cartridge keeps {held[0]} revisions, which is its limit of {revisions_max()}. Delete one to keep another.")
+    seq = held[1] + 1
+    path = _rev_file(user["id"], cart["sha256"], seq)
+    tmp = path.with_suffix(f".{secrets.token_hex(4)}.part")
+    try:
+        with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as f:
+            f.write(patch)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+    rid, now = f"rv_{secrets.token_hex(8)}", db.now()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO cart_revisions (id, cart_id, user_id, seq, message, sha256, patch_bytes, ranges, changed, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (rid, cart["id"], user["id"], seq, message, sha, len(patch), records, changed, now, now),
+            )
+    except sqlite3.IntegrityError:
+        path.unlink(missing_ok=True)
+        raise Refused(409, "Two revisions raced for the same number; keep it again.")
+    return _owned_rev(conn, user["id"], cart["id"], rid)
+
+
+_NO_REV = {**_NOT_YOURS, 404: {"description": "No such cartridge on this shelf, or no such revision of it."}}
+
+
+@router.get(
+    "/{cart_id}/revisions",
+    response_model=Revisions,
+    summary="The cartridge's revisions",
+    description="Oldest first. Each is an IPS patch against the file as it arrived, and what this service measured when it applied it.",
+    responses=_NOT_YOURS,
+)
+def list_revisions(cart_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Revisions:
+    _owned(conn, user["id"], cart_id)
+    rows = conn.execute("SELECT * FROM cart_revisions WHERE cart_id = ? ORDER BY seq", (cart_id,)).fetchall()
+    return Revisions(revisions=[_revision(r) for r in rows], max=revisions_max())
+
+
+@router.post(
+    "/{cart_id}/revisions",
+    response_model=Revision,
+    status_code=201,
+    summary="Keep a revision of a cartridge",
+    description="The body is an IPS patch, as `application/octet-stream`. It is applied here, to the cartridge as it arrived, and "
+                "refused if it changes nothing, grows the file or touches the header. What is kept is the patch and what "
+                "applying it measured; the patched image is made whenever it is asked for.",
+    responses={
+        **_NOT_YOURS,
+        409: {"description": "The cartridge keeps as many revisions as it may, or this patch makes the same image as one it keeps."},
+        410: {"description": "The cartridge's file is gone or rotted; the shelf says how to recover."},
+        413: {"description": "Larger than a cartridge may be."},
+        422: {"description": "Not an IPS file, a record past the file's end or in the header, a patch that changes nothing, or a message too long."},
+    },
+)
+def add_revision(
+    cart_id: str,
+    request: Request,
+    data: bytes = Body(media_type="application/octet-stream", description="The IPS patch."),
+    message: str = Query(default="", description=f"What the revision is, {NOTE_MAX} characters at most."),
+    user: sqlite3.Row = Depends(require_user),
+    conn: sqlite3.Connection = Depends(connection),
+) -> Revision:
+    cart = _owned(conn, user["id"], cart_id)
+    try:
+        return _revision(keep_revision(conn, user, cart, data, message))
+    except Refused as e:
+        raise HTTPException(status_code=e.status, detail=e.detail) from e
+
+
+@router.get("/{cart_id}/revisions/{rev_id}", response_model=Revision, summary="One revision", description="What the service measured when it kept it.", responses=_NO_REV)
+def get_revision(cart_id: str, rev_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Revision:
+    return _revision(_owned_rev(conn, user["id"], cart_id, rev_id))
+
+
+@router.get(
+    "/{cart_id}/revisions/{rev_id}/patch",
+    summary="The revision's patch",
+    description="The IPS file as it was kept, `private, no-store`.",
+    response_class=Response,
+    responses={200: {"content": {"application/octet-stream": {}}, "description": "The IPS file."}, **_NO_REV, 410: {"description": "The patch is gone from disk. Delete the revision and keep it again."}},
+)
+def revision_patch(cart_id: str, rev_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    cart = _owned(conn, user["id"], cart_id)
+    rev = _owned_rev(conn, user["id"], cart_id, rev_id)
+    try:
+        data = _rev_file(user["id"], cart["sha256"], rev["seq"]).read_bytes()
+    except FileNotFoundError:
+        raise HTTPException(status_code=410, detail="The shelf lists this revision and its patch is gone from disk. Delete the revision and keep it again.")
+    return Response(content=data, media_type="application/octet-stream", headers={"Cache-Control": "private, no-store"})
+
+
+@router.get(
+    "/{cart_id}/revisions/{rev_id}/rom",
+    summary="The revision's image",
+    description="The cartridge's bytes with the patch laid over them, made now and checked against the digest measured "
+                "when the revision was kept. `private, no-store`, like the ROM.",
+    response_class=Response,
+    responses={200: {"content": {"application/octet-stream": {}}, "description": "The patched `.nes` image."}, **_NO_REV, 410: {"description": "The cartridge's file or the patch is gone or rotted, or the image no longer matches its digest."}},
+)
+def revision_rom(cart_id: str, rev_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    cart = _owned(conn, user["id"], cart_id)
+    rev = _owned_rev(conn, user["id"], cart_id, rev_id)
+    base = _rom_bytes(user["id"], cart)
+    try:
+        patch = _rev_file(user["id"], cart["sha256"], rev["seq"]).read_bytes()
+        image, _ = apply_ips(base, patch)
+    except FileNotFoundError:
+        raise HTTPException(status_code=410, detail="The shelf lists this revision and its patch is gone from disk. Delete the revision and keep it again.")
+    except NotAPatch as e:
+        raise HTTPException(status_code=410, detail=f"The patch on disk no longer applies: {e}. Delete the revision and keep it again.")
+    if hashlib.sha256(image).hexdigest() != rev["sha256"]:
+        raise HTTPException(status_code=410, detail="The image no longer matches the digest measured when the revision was kept. Delete the revision and keep it again.")
+    return Response(content=image, media_type="application/octet-stream", headers={"Cache-Control": "private, no-store"})
+
+
+@router.patch("/{cart_id}/revisions/{rev_id}", response_model=Revision, summary="Change what a revision is called", description="Touches only what it names. The patch cannot be edited: keep a new revision.", responses={**_NO_REV, 422: {"description": "A message too long, or a field this route does not know."}})
+def patch_revision(cart_id: str, rev_id: str, body: RevisionPatch, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Revision:
+    _owned_rev(conn, user["id"], cart_id, rev_id)
+    changes = body.model_dump(exclude_unset=True)
+    if "message" in changes:
+        try:
+            message = clean_note(changes["message"] or "")
+        except Refused as e:
+            raise HTTPException(status_code=e.status, detail=e.detail) from e
+        with conn:
+            conn.execute("UPDATE cart_revisions SET message = ?, updated_at = ? WHERE id = ?", (message, db.now(), rev_id))
+    return _revision(_owned_rev(conn, user["id"], cart_id, rev_id))
+
+
+@router.delete("/{cart_id}/revisions/{rev_id}", status_code=204, summary="Remove a revision", description="The row and the patch. The cartridge stays, and the number is not reused.", responses=_NO_REV)
+def delete_revision(cart_id: str, rev_id: str, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    cart = _owned(conn, user["id"], cart_id)
+    rev = _owned_rev(conn, user["id"], cart_id, rev_id)
+    with conn:
+        conn.execute("DELETE FROM cart_revisions WHERE id = ?", (rev["id"],))
+    _rev_file(user["id"], cart["sha256"], rev["seq"]).unlink(missing_ok=True)
     return Response(status_code=204)
 
 

@@ -202,6 +202,69 @@ test.describe("the shelf, signed in", () => {
     await expect(menu).toHaveValue("");
   });
 
+  test("a sprite edit is kept on the shelf as a revision, loads back, and can be deleted", async ({ page }) => {
+    test.setTimeout(120_000);
+    const held = await shelfOf(page, "owner");
+    expect(held.carts.length, "the tests before this one leave a cartridge on the shelf").toBe(1);
+    await as(page, "owner");
+    await page.goto("/nes/play");
+    const menu = page.locator("[data-shelf-picker=open] select");
+    await menu.selectOption(held.carts[0].id);
+    await expect(page.locator("[data-play-stats]")).toContainText("Colour bars.nes");
+    // From the shelf, so the patch has somewhere to go.
+    await expect(page.locator("[data-spr-shelf]")).toHaveAttribute("data-spr-shelf", "shelf");
+    await expect(page.locator("[data-spr-kept]")).toHaveAttribute("data-spr-kept", "0");
+    await expect(page.locator("[data-spr-keep]")).toBeDisabled();
+    // Paint one pixel of tile 1 with colour 3, as the play spec does.
+    const sheet = page.locator("[data-spr-sheet]");
+    const cell = (await sheet.boundingBox())!.width / 16;
+    await sheet.click({ position: { x: cell * 1.5, y: cell * 0.5 } });
+    await page.locator('[data-spr-slot="3"]').click();
+    const edit = page.locator("[data-spr-edit]");
+    const ecell = (await edit.boundingBox())!.width / 8;
+    await edit.click({ position: { x: ecell / 2, y: ecell / 2 } });
+    await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "1");
+    // Keep it, with a message. The server measures the record and the bytes.
+    await page.locator("[data-spr-message]").fill("tile one, one pixel");
+    await page.locator("[data-spr-keep]").click();
+    await expect(page.locator("[data-spr-kept]")).toHaveAttribute("data-spr-kept", "1", { timeout: 15_000 });
+    await expect(page.locator("[data-spr-shelf-why]")).toHaveCount(0);
+    const row = page.locator('[data-spr-rev="1"]');
+    await expect(row).toContainText("1. tile one, one pixel");
+    await expect(row).toContainText(/[12] bytes in 1 record/);
+    const kept = await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/revisions`, { headers: { cookie: `${rig!.cookie}=${rig!.sessions.owner}` } });
+    expect(kept.status()).toBe(200);
+    const revs = (await kept.json()).revisions as { seq: number; message: string; changed: number; ranges: number }[];
+    expect(revs).toHaveLength(1);
+    expect(revs[0]).toMatchObject({ seq: 1, message: "tile one, one pixel", ranges: 1 });
+    expect([1, 2]).toContain(revs[0].changed);
+    // Revert the edit; then load the revision back: the edit is on the sheet
+    // again and the console runs the patch.
+    await page.locator("[data-spr-revert]").click();
+    await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "0");
+    await row.locator("[data-spr-rev-load]").click();
+    await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "1", { timeout: 20_000 });
+    await expect(page.locator("[data-play-patched]")).toHaveCount(1);
+    await expect(page.locator("[data-spr-running]")).toHaveAttribute("data-spr-running", "patch");
+    // The shelf page counts it.
+    await page.goto("/nes/shelf");
+    await expect(page.locator("[data-cart-revisions]")).toHaveAttribute("data-cart-revisions", "1");
+    // Back on the console, delete it: the row goes, the count goes, the shelf page no longer counts it.
+    await page.goto("/nes/play");
+    await page.locator("[data-shelf-picker=open] select").selectOption(held.carts[0].id);
+    await expect(page.locator("[data-spr-kept]")).toHaveAttribute("data-spr-kept", "1", { timeout: 15_000 });
+    page.once("dialog", (d) => void d.accept());
+    await page.locator('[data-spr-rev="1"] [data-spr-rev-delete]').click();
+    await expect(page.locator("[data-spr-kept]")).toHaveAttribute("data-spr-kept", "0", { timeout: 15_000 });
+    await expect(page.locator('[data-spr-rev="1"]')).toHaveCount(0);
+    const gone = await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/revisions`, { headers: { cookie: `${rig!.cookie}=${rig!.sessions.owner}` } });
+    expect((await gone.json()).revisions).toEqual([]);
+    // A file from the disk has no shelf to go to, and the section says so.
+    await page.locator("[data-play-rom]").setInputFiles(CAL);
+    await expect(page.locator("[data-play-stats]")).toContainText("cal.nes");
+    await expect(page.locator("[data-spr-shelf]")).toHaveAttribute("data-spr-shelf", "disk");
+  });
+
   test("every bench in the playground that takes a file offers the shelf", async ({ page }) => {
     // Under the longest name on the owner's real shelf, forty characters,
     // which is what pushed the playground's row past a phone.

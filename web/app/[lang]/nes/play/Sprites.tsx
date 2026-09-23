@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import type { Lang } from "@/lib/lang";
 import { applyRanges, ipsOf, parseInes, rangesOf, type Ines } from "@/lib/ines";
 import { reloadWith, snapshot, serverSnapshot, subscribe } from "./playEngine";
+import { addRevision, announceChange, deleteRevision, fetchRevision, listRevisions, ShelfError, type Revision } from "@/lib/shelf";
 // The console's own tile codec, the one file that says what a CHR byte is
 // (ChrArt.tsx imports it the same way and says why).
 import { decodeCHR, encodeCHR, TILE } from "../../../../public/6502/games/chr.js";
@@ -26,8 +27,14 @@ import { decodeCHR, encodeCHR, TILE } from "../../../../public/6502/games/chr.js
  * and survives a power cycle), take it away as an IPS patch (the reader's
  * new bytes and nothing of the base's, the one artefact of an edit to a
  * game somebody else owns that could leave this browser), or take the
- * whole patched image. Nothing here goes to the server: versions on the
- * shelf are the note's third step.
+ * whole patched image. For a cartridge that came from the shelf there is a
+ * fourth: keep the patch on the shelf as a revision, with a message (the
+ * note's third step). The server applies it, measures it and refuses one
+ * that changes nothing; a revision loads back into the console with its
+ * edits on the sheet, and can be deleted. The image with the patch is made
+ * by the server on request and checked against its digest, the way the
+ * ROM is; nothing but the reader's own bytes goes up (NOTICE.md, "Somebody
+ * else's game").
  *
  * The sprite's real colours come from palette RAM at run time, which this
  * bundle cannot read (the fourth step); until then the four the reader
@@ -57,7 +64,18 @@ const S = {
     ips: "Download the patch (.ips)",
     nes: "Download the patched image (.nes)",
     revertTile: "Revert this tile",
-    stays: "Nothing leaves this browser. A patch carries your new bytes and nothing of the file's; the sheet's colours are yours to choose until the console's own palette can be read.",
+    stays: "Nothing leaves this browser unless you keep a revision on your shelf, and a revision is the patch: your new bytes and nothing of the file's. The sheet's colours are yours to choose until the console's own palette can be read.",
+    keepH: "On the shelf",
+    keep: "Keep this patch as a revision",
+    message: "What this revision is",
+    keeping: "keeping",
+    kept: (n: number) => (n === 1 ? "1 revision kept" : `${n} revisions kept`),
+    noRevisions: "no revisions yet",
+    notShelf: "This cartridge came from your disk, so the patch has no shelf to go to. Put the cartridge on your shelf first, then load it from there.",
+    rev: (r: Revision) => `${r.seq}. ${r.message || "(no message)"}: ${r.changed} bytes in ${r.ranges} ${r.ranges === 1 ? "record" : "records"}, kept ${new Date(r.created_at).toLocaleString("en")}`,
+    load: "Load",
+    del: "Delete",
+    delSure: (r: Revision) => `Delete revision ${r.seq}? The patch goes; the cartridge stays.`,
   },
   ja: {
     h: "スプライト",
@@ -81,7 +99,18 @@ const S = {
     ips: "パッチをダウンロード（.ips）",
     nes: "パッチ済みイメージをダウンロード（.nes）",
     revertTile: "このタイルを戻す",
-    stays: "何もこのブラウザから出ない。パッチが運ぶのはあなたの新しいバイトだけで、ファイルのものは含まない。シートの色は、コンソール自身のパレットが読めるようになるまで、あなたが選ぶ。",
+    stays: "棚にリビジョンとして残さない限り、何もこのブラウザから出ない。リビジョンとはパッチのことで、あなたの新しいバイトだけを運び、ファイルのものは含まない。シートの色は、コンソール自身のパレットが読めるようになるまで、あなたが選ぶ。",
+    keepH: "棚に",
+    keep: "このパッチをリビジョンとして残す",
+    message: "このリビジョンは何か",
+    keeping: "保存中",
+    kept: (n: number) => `リビジョン ${n} を保持`,
+    noRevisions: "リビジョンはまだない",
+    notShelf: "このカートリッジはディスクから来たので、パッチの行き先の棚がない。まずカートリッジを棚に置き、そこから読み込む。",
+    rev: (r: Revision) => `${r.seq}. ${r.message || "(メッセージなし)"}: ${r.ranges} レコードで ${r.changed} バイト、${new Date(r.created_at).toLocaleString("ja")} に保存`,
+    load: "読み込む",
+    del: "削除",
+    delSure: (r: Revision) => `リビジョン ${r.seq} を削除する? パッチは消え、カートリッジは残る。`,
   },
 } as const;
 
@@ -228,6 +257,41 @@ export function Sprites({ lang }: { lang: Lang }) {
   };
   const [down, setDown] = useState(false);
 
+  // The shelf's revisions of this cartridge, when it came from the shelf.
+  const cart = s.cart;
+  const [revs, setRevs] = useState<Revision[] | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [shelfWhy, setShelfWhy] = useState<string | null>(null);
+  useEffect(() => {
+    if (!cart) return;
+    let live = true;
+    void listRevisions(cart.id).then((r) => { if (live) setRevs(r.revisions); }).catch((e) => { if (live) setShelfWhy(String((e as Error).message ?? e)); });
+    return () => { live = false; };
+  }, [cart]);
+  const shelfCall = async (what: string, fn: () => Promise<void>) => {
+    setBusy(what);
+    setShelfWhy(null);
+    try {
+      await fn();
+    } catch (e) {
+      setShelfWhy(e instanceof ShelfError ? e.message : String((e as Error).message ?? e));
+    } finally {
+      setBusy(null);
+    }
+  };
+  /** The edits a revision's image carries, tile by tile, so the sheet shows them. */
+  const editsFrom = (image: Uint8Array): Map<number, Uint8Array> => {
+    const m = new Map<number, Uint8Array>();
+    if (!h || !base) return m;
+    for (let t = 0; t < count; t++) {
+      const at = h.chrAt + t * 16;
+      const now = image.subarray(at, at + 16);
+      if (!same(now, base.subarray(at, at + 16))) m.set(t, now.slice());
+    }
+    return m;
+  };
+
   // The set as an image and as ranges: what the buttons act on.
   const working = useMemo(() => {
     if (!base || !h) return null;
@@ -341,6 +405,66 @@ export function Sprites({ lang }: { lang: Lang }) {
             <button type="button" className="btn" disabled={!working || working.ranges.length === 0} onClick={() => working && download(`${stem}.patched.nes`, working.image)} data-spr-nes>{T.nes}</button>
           </div>
           <p className="quiet">{T.stays}</p>
+
+          <div className="spr-shelf" data-spr-shelf={cart ? "shelf" : "disk"}>
+            <h3 className="eyebrow">{T.keepH}</h3>
+            {!cart ? (
+              <p className="quiet">{T.notShelf}</p>
+            ) : (
+              <>
+                <form
+                  className="chips"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!working || working.ranges.length === 0) return;
+                    void shelfCall("keep", async () => {
+                      const r = await addRevision(cart.id, ipsOf(working.ranges), message);
+                      setRevs((rs) => [...(rs ?? []), r]);
+                      setMessage("");
+                      announceChange();
+                    });
+                  }}
+                >
+                  <input className="input" value={message} onChange={(e) => setMessage(e.target.value)} placeholder={T.message} maxLength={240} aria-label={T.message} data-spr-message />
+                  <button type="submit" className="btn btn-primary" disabled={!working || working.ranges.length === 0 || busy !== null} data-spr-keep>{busy === "keep" ? T.keeping : T.keep}</button>
+                </form>
+                {shelfWhy ? <p className="notice fail" data-spr-shelf-why>{shelfWhy}</p> : null}
+                <p className="quiet" data-spr-kept={revs?.length ?? 0}>{revs === null ? "" : revs.length ? T.kept(revs.length) : T.noRevisions}</p>
+                {revs && revs.length ? (
+                  <ul className="spr-revs">
+                    {revs.map((r) => (
+                      <li key={r.id} data-spr-rev={r.seq}>
+                        <span>{T.rev(r)}</span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          disabled={busy !== null}
+                          onClick={() => void shelfCall(`load ${r.id}`, async () => {
+                            const file = await fetchRevision(cart, r);
+                            const image = new Uint8Array(await file.arrayBuffer());
+                            setEdits(editsFrom(image));
+                            await reloadWith(image);
+                          })}
+                          data-spr-rev-load
+                        >
+                          {T.load}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          disabled={busy !== null}
+                          onClick={() => { if (window.confirm(T.delSure(r))) void shelfCall(`delete ${r.id}`, async () => { await deleteRevision(cart.id, r.id); setRevs((rs) => (rs ?? []).filter((x) => x.id !== r.id)); announceChange(); }); }}
+                          data-spr-rev-delete
+                        >
+                          {T.del}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
       ) : null}
     </section>
