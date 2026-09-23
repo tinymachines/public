@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
-import { consoleModules, FILES, PATCHES, patch, SRC, upstreamCommit } from "./console-modules";
+import { consoleModules, FILES, PATCHES, patch, sourceOf, upstreamCommit } from "./console-modules";
 
 /**
  * The console modules come from the 6502 checkout with four patches on them.
@@ -22,7 +21,7 @@ describe("the console modules, read from the 6502 tree", () => {
 
   test("the unpatched files are byte for byte upstream's", () => {
     for (const f of files.filter((f) => !f.patched)) {
-      const up = fs.readFileSync(path.join(SRC, f.rel));
+      const up = fs.readFileSync(sourceOf(f.rel));
       expect(createHash("sha256").update(f.bytes).digest("hex"), f.rel).toBe(
         createHash("sha256").update(up).digest("hex"),
       );

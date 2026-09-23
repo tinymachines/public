@@ -93,6 +93,11 @@ export const FILES = [
 /** Files that live in the 6502 tree's web/ rather than games/. */
 const FROM_WEB = new Set<(typeof FILES)[number]>(["disasm.js"]);
 
+/** Where a module is read from in the 6502 tree: games/, or web/ for the few that live there. */
+export function sourceOf(rel: (typeof FILES)[number], src = SRC): string {
+  return path.join(FROM_WEB.has(rel) ? path.join(src, "..", "web") : src, rel);
+}
+
 export interface Patch {
   file: (typeof FILES)[number];
   /** The upstream text, which must occur exactly once. */
@@ -176,7 +181,7 @@ export function consoleModules(src = SRC): ConsoleFile[] {
     );
   }
   return FILES.map((rel) => {
-    const raw = fs.readFileSync(path.join(FROM_WEB.has(rel) ? path.join(src, "..", "web") : src, rel));
+    const raw = fs.readFileSync(sourceOf(rel, src));
     const patched = PATCHES.some((p) => p.file === rel);
     return { rel, bytes: patched ? Buffer.from(patch(rel, raw.toString("utf8"))) : raw, patched };
   });
