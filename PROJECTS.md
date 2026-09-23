@@ -3437,8 +3437,9 @@ for a tap-move sequence for the entire pad." Dig deep.
   the cross. The NES and mobile suites pass on the preview; the pad
   specs pass on beta.
 
-Beta serves `d121e19`; main is there too, both pushed. Live is at
-`63ec414` (1.0.266). Deploying is the owner's call.
+Deployed at the owner's word ("deploy the hounds"), so live, main and
+beta are all at `56519e7` and the version stays 1.0.266; the pad and
+workbench specs pass against live.
 
 Sources for the mechanism: the patent at patents.google.com/patent/US4687200A
 and the D-pad's history on Wikipedia.
