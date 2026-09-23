@@ -3092,3 +3092,39 @@ Deployed clean afterwards at the owner's word, so live, main and beta are
 all at `0e61981` and the version stays 1.0.266; the API serving that
 commit is the one whose Origin rule knows the beta. Nothing is waiting on
 the owner but the note's decisions.
+
+## Night, 2026-09-22: the play page is a workbench
+
+The owner's word on the inventory's first step: "Start with the frame
+around the play page."
+
+- **`/nes/play` wears the frame** (`d8fda5a`): the workbench bar with
+  NES on the tile, a strip read off the page's four sections (screen,
+  cartridge, readouts, about this console), the footer on the floor, and
+  the console's transport on top of it in the chip transport's shape and
+  classes, so the two strips read as one control. No engine work.
+- **The keys are the ones the bundle honours.** Power drops the console
+  in the worker and keeps the cartridge; on loads it again, which is
+  also what start does, since a power cycle is the only reset the bundle
+  has. Play and pause. Frame runs one frame while paused, a new worker
+  path. The instruction step, the rate and the seek are grey with the
+  reason in their title, by the strip's rule that a key the machine
+  cannot honour is disabled, never hidden. The position is frames run
+  and the CPU's half-cycles, read from every tick's answer.
+- **Full screen is the document's now**, from the strip: the bar leaves,
+  the stage takes the viewport above the strip, the pad over the
+  picture, the way out on the floor. The stage's own full screen control
+  went with the Shell page.
+- **Two things the screenshots caught** before the commit: the bar's tile
+  printed the trail's last label ("The NES console") in a tile made for
+  a word, so the workbench bar takes a `die` word now; and the stage,
+  freed from the prose column, was the width of the page. It keeps the
+  width it had.
+- **Held by** the play spec (the frame, the keys in order and grey before
+  a cartridge, one frame at a time, power off and on, full screen on a
+  phone), and the header, mobile, pages, menu, language and shelf suites,
+  the shelf's signed-in half on the rig against beta.
+
+Beta serves `d8fda5a`; main is there too, both pushed. Live is still
+`0e61981` (1.0.266). Deploying is the owner's call. Next on the note's
+order: sprites from the bytes.
