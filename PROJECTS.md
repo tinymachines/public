@@ -3062,3 +3062,32 @@ projects."
 Deployed clean afterwards at the owner's word, so live, main and beta are
 all at `2b01bdc` and the version stays 1.0.266; the menu, scrolled-open
 and notebook specs pass against live. Nothing is waiting on the owner.
+
+## Late, 2026-09-22: the workbench inventory
+
+The owner's brief for the last step: "A full game CRUD suite. Including
+the sprite and palette editors. Load a game, tweak and play a game. Debug
+a game. Capture and annotate code blocks." With the fullscreen workbench
+as the layout idea.
+
+- **`notes/workbench.md`** is the inventory: four read-only surveys (the
+  NES pages and their wasm, the API and its storage, the 6502 instruments
+  and the chrome, the console's source repositories), what we have,
+  what is in the engine but not reachable, what is nowhere, an order of
+  work in which every step stands on its own, and the decisions that are
+  the owner's.
+- **The one fact everything turns on:** the console's wasm has eleven
+  calls and none looks inside the machine. The Rust console has most of
+  what a debugger needs as public fields; the seam is `nes-wasm`.
+- **Two things can start with no engine work:** the frame around the
+  play page, and a sprite editor working on the ROM's own CHR bytes
+  through the patch model.
+- **Found on the way** (`3d9d4ce`): the API refused every write from
+  beta, because the Origin rule knew only the apex. A game saving its
+  battery RAM on beta looked like one that never saved. Fixed with a test
+  that tells the Origin's 403 from the lookup's 404; it reaches live with
+  the next deploy.
+
+Main is two commits past live (the fix and this text); beta serves the
+last deploy. Nothing else is waiting on the owner but the note's
+decisions.
