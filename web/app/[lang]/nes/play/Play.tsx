@@ -3,7 +3,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { Gamepad } from "./Gamepad";
-import { attach, detach, load, subscribe, snapshot, serverSnapshot, type DriftStats, type PlayState } from "./playEngine";
+import { attach, detach, load, subscribe, snapshot, serverSnapshot, toggleRun, type DriftStats, type PlayState } from "./playEngine";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
 import { Sprites } from "./Sprites";
 import { State } from "./State";
@@ -33,6 +33,8 @@ const S = {
     cartH: "Cartridge",
     readH: "Readouts",
     pick: "Cartridge (.nes)",
+    run: "Play",
+    pause: "Pause",
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
     off: "power is off: the cartridge is kept, the console is gone until power on",
@@ -73,6 +75,8 @@ const S = {
     cartH: "カートリッジ",
     readH: "読み出し",
     pick: "カートリッジ（.nes）",
+    run: "実行",
+    pause: "一時停止",
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
     off: "電源が切れている: カートリッジは残り、コンソールは電源を入れるまで無い",
@@ -160,6 +164,12 @@ export function Play({ lang }: { lang: Lang }) {
               />
             </label>
             <ShelfPicker lang={lang} onPick={(f, cart) => void load(f, cart)} loaded={s.loaded} />
+            {/* The strip's play key, again, beside the cartridge (owner,
+                2026-09-23): the same engine and the same state, so the two
+                never disagree; the strip may be a swipe away on a phone. */}
+            <button type="button" className="btn btn-primary" onClick={toggleRun} disabled={!s.loaded || !s.powered} aria-pressed={s.running} data-play-run-sister>
+              {s.running ? T.pause : T.run}
+            </button>
           </div>
           <p className="quiet" style={{ margin: 0 }}>
             {T.keys}

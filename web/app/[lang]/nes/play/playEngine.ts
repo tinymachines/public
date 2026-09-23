@@ -21,6 +21,7 @@
  */
 
 import { getSave, putSave, type Cart } from "@/lib/shelf";
+import { latest as newestEvery } from "@/lib/latest";
 
 export interface DriftStats {
   presented: number;
@@ -413,6 +414,8 @@ function stopWatching() {
  * save comes back before the game starts and is kept from then on.
  */
 export async function load(file: File, cart: Cart | null = null, base: Uint8Array | null = null) {
+  set({ running: false });
+  await waitIdle();
   await saveNow();
   keeper = null;
   last = { file, cart };
@@ -464,10 +467,30 @@ export async function load(file: File, cart: Cart | null = null, base: Uint8Arra
   void refreshMachine();
 }
 
+/**
+ * The machine's state reaches the panels through a buffer while the
+ * console runs: the worker answers every tick with it, and publishing
+ * every one redrew every panel sixty times a second (the owner, on a
+ * phone: "lots of blinking"). The newest answer is kept and published a
+ * few times a second; paused, a step or a reset publishes at once, since
+ * a reader stepping wants the panels to follow the step.
+ */
+const PANELS_EVERY_MS = 200;
+const panels = newestEvery<Machine | null>(PANELS_EVERY_MS, (m) => set({ machine: m }));
+function publishMachine(m: Machine | null, now = false) {
+  if (now || !state.running) panels.now(m);
+  else panels.push(m);
+}
+
+/** Until no tick or step is in flight: what every change of the console's life waits for. */
+async function waitIdle() {
+  while (tickInFlight) await new Promise((r) => setTimeout(r, 5));
+}
+
 /** The machine as it stands, asked of the worker: after a load and when a panel changes its watch. */
 export async function refreshMachine() {
   const r = await consoleW.call({ path: "state" });
-  if (r.ok) set({ machine: parseMachine((r.answer as { state?: RawState | null }).state) });
+  if (r.ok) publishMachine(parseMachine((r.answer as { state?: RawState | null }).state), true);
 }
 
 /** The bus range the memory panel follows; the worker sends it back with every frame. */
@@ -475,7 +498,7 @@ export async function watch(at: number, len = 256) {
   const r = await consoleW.call({ path: "watch", at, len });
   if (r.ok) {
     const st = (r.answer as { state?: RawState | null }).state;
-    if (st) set({ machine: parseMachine(st) });
+    if (st) publishMachine(parseMachine(st), true);
   }
 }
 
@@ -500,11 +523,16 @@ export async function setPower(on: boolean) {
   if (!on) {
     if (!state.powered) return;
     set({ running: false });
+    // The tick in flight finishes on the console that is about to go: an
+    // "off" that overtook it answered "no cartridge loaded" to the tick,
+    // which the page showed as a refusal (the owner's lockups).
+    await waitIdle();
     await saveNow();
     stopWatching();
     keeper = null;
     await consoleW.call({ path: "off" });
-    set({ powered: false, machine: null });
+    publishMachine(null, true);
+    set({ powered: false });
     return;
   }
   if (state.powered) return;
@@ -560,7 +588,8 @@ export async function step(kind: "half" | "cycle" | "op" | "line") {
     latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
     kick();
   }
-  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles, machine: a.state ? parseMachine(a.state) : state.machine });
+  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles });
+  if (a.state) publishMachine(parseMachine(a.state), true);
 }
 
 /** The front panel's reset button: the CPU restarts at its vector; RAM and the save keep what they hold. */
@@ -568,7 +597,7 @@ export async function reset() {
   if (!state.loaded || !state.powered) return;
   const wasRunning = state.running;
   if (wasRunning) set({ running: false });
-  while (tickInFlight) await new Promise((r) => setTimeout(r, 10));
+  await waitIdle();
   const r = await consoleW.call({ path: "reset" });
   if (!r.ok) {
     set({ why: r.error });
@@ -579,7 +608,8 @@ export async function reset() {
     latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
     kick();
   }
-  set({ halfCycles: a.halfCycles ?? state.halfCycles, machine: a.state ? parseMachine(a.state) : state.machine });
+  set({ halfCycles: a.halfCycles ?? state.halfCycles });
+  if (a.state) publishMachine(parseMachine(a.state), true);
   if (wasRunning) toggleRun();
 }
 
@@ -600,7 +630,8 @@ export async function stepFrame() {
     kick();
   }
   if (a.sound && a.sound.length > 0 && audio) play(a.sound);
-  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs, machine: a.state ? parseMachine(a.state) : state.machine });
+  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs });
+  if (a.state) publishMachine(parseMachine(a.state), true);
 }
 
 function play(samples: Float32Array) {
@@ -675,7 +706,14 @@ function paint(a: PictureAnswer) {
 }
 
 async function loop() {
-  if (!state.running || tickInFlight) return;
+  if (!state.running) return;
+  // A step or a frame still in flight: try again next frame rather than
+  // give up, which left the key reading "pause" over a console that never
+  // ran again (the owner's lockups, 2026-09-23).
+  if (tickInFlight) {
+    requestAnimationFrame(() => void loop());
+    return;
+  }
   tickInFlight = true;
   const now = performance.now();
   const dtNs = lastT === null ? 0 : (now - lastT) * 1e6;
@@ -694,7 +732,8 @@ async function loop() {
     kick();
   }
   if (a.sound && a.sound.length > 0) play(a.sound);
-  set({ stats: a.stats, framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, machine: a.state ? parseMachine(a.state) : state.machine });
+  set({ stats: a.stats, framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles });
+  if (a.state) publishMachine(parseMachine(a.state));
   if (state.running) requestAnimationFrame(() => void loop());
 }
 

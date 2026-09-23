@@ -574,3 +574,56 @@ test("the machine's panels hold their height: nothing below them moves as the co
   expect(r.inside, "the lit line is in view inside the box").toBe(true);
   expect(r.listH, "the listing is taller than its box, which scrolls").toBeGreaterThan(r.boxH);
 });
+
+test("the sister play key, the buffered panels, the locked width, and no lockup between power, play and pause", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize(PHONE);
+  await open(page, "/nes/play", 500);
+  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
+  const frames = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  // The sister key beside the cartridge and the strip's key are one state.
+  const sister = page.locator("[data-play-run-sister]");
+  const strip = page.locator("[data-play-run]");
+  await expect(sister).toHaveText("Play");
+  await sister.click();
+  await expect(strip).toHaveAttribute("aria-pressed", "true");
+  await expect(sister).toHaveText("Pause");
+  await expect.poll(frames, { timeout: 15_000 }).toBeGreaterThan(5);
+  // The panels' refresh rate while running is the buffer's (lib/latest.ts),
+  // held by its own unit test: a headless box runs too few frames a second
+  // for a count here to tell buffered from unbuffered.
+  await strip.click();
+  await expect(sister).toHaveText("Play");
+  // The shuffle that locked up: a frame step, then play before it lands,
+  // then pause, power off, power on, play. The frames keep climbing after.
+  await page.locator("[data-play-frame]").click();
+  await sister.click();
+  const f1 = await frames();
+  await expect.poll(frames, { timeout: 15_000 }).toBeGreaterThan(f1 + 5);
+  await strip.click();
+  await page.locator("[data-play-power]").click();
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("[data-play-why]")).toHaveCount(0);
+  await page.locator("[data-play-power]").click();
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  await expect(sister).toBeEnabled();
+  await sister.click();
+  await expect.poll(frames, { timeout: 15_000 }).toBeGreaterThan(5);
+  await expect(page.locator("[data-play-why]")).toHaveCount(0);
+  await strip.click();
+  // The width is locked: the sprites-on-screen box and the listing box
+  // never scroll sideways, even with a table wider than a phone in them.
+  const r = await page.evaluate(() => {
+    const box = document.querySelector<HTMLElement>(".state-oam")!;
+    box.innerHTML = '<table class="readout" data-oam><tbody>' + Array.from({ length: 6 }, (_, i) => `<tr><td class="num">${i}</td><td class="num">${100 + i}</td><td class="num">${50 + i}</td><td class="num">$A${i}</td><td class="num">2</td><td>HV</td><td>a much longer word than fits</td></tr>`).join("") + "</tbody></table>";
+    const code = document.querySelector<HTMLElement>(".code-box")!;
+    return { oamX: getComputedStyle(box).overflowX, oamFits: box.scrollWidth <= box.clientWidth + 1, codeX: getComputedStyle(code).overflowX, codeFits: code.scrollWidth <= code.clientWidth + 1, sideways: document.documentElement.scrollWidth > innerWidth + 1 };
+  });
+  expect(r.oamX).toBe("hidden");
+  expect(r.codeX).toBe("hidden");
+  expect(r.oamFits, "the sprites table fits its box").toBe(true);
+  expect(r.codeFits, "the listing fits its box").toBe(true);
+  expect(r.sideways).toBe(false);
+});
