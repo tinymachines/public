@@ -24,18 +24,29 @@
   max-width: 60ch;
 }
 
-/* The play page's stage: the screen, the on-screen pad and the full
-   screen control as one block, so the whole of it can go full screen.
+/* The play page's stage: the screen and the on-screen pad as one block.
    Mobile first: the pad sits under the screen, the thumbs' two zones at
    the bottom corners; on a wide screen it stays under the screen at a
-   comfortable width. In full screen (the Fullscreen API, or the fixed
-   overlay where a browser has no element fullscreen) the stage is the
-   viewport: black ground, the picture as large as its 256 by 240 shape
-   allows, the pad over the lower part in portrait and at the sides in
-   landscape, translucent so the picture shows through. */
+   comfortable width. Full screen is the document's (html.has-fullscreen,
+   the strip's control, since 2026-09-22 when the page became a
+   workbench): the stage takes the viewport above the strip, black ground,
+   the picture as large as its 256 by 240 shape allows, the pad over the
+   lower part in portrait and at the sides in landscape, translucent so
+   the picture shows through; the strip stays on the floor with the way
+   out. The stage's own full screen (a control of its own, the screen and
+   the pad and nothing else) went with the Shell page. */
 .play-stage { position: relative; display: grid; gap: calc(var(--u) * 2); min-width: 0; }
 .play-stage .play-panel { width: 100%; min-width: 0; }
-.play-full { justify-self: end; }
+/* The workbench's sections: the stage keeps the reading measure so the
+   picture is the size it was, the prose sections their column. The
+   section headings are the strip's labels and read as eyebrows. */
+.play-shell .play-section { padding-top: calc(var(--u) * 6); }
+.play-shell .wb-stage { max-width: calc(var(--u) * 280); margin-inline: auto; box-sizing: border-box; }
+/* The stage keeps the width it had inside the prose (the picture's size on
+   a desk is a decision the page already made); the pad sits under it. */
+.play-shell .play-stage { max-width: calc(var(--u) * 180); }
+.play-shell .play-section > .eyebrow { margin: 0 0 calc(var(--u) * 3); }
+.play-shell .play-section#about { padding-bottom: calc(var(--u) * 8); }
 /* The pad's three zones shrink with the screen (minmax(0, ...)): a 390
    phone holds the cross at 108, the pills at their smallest and the two
    round buttons at 52 with room to spare; wider screens get the larger
@@ -114,15 +125,15 @@
 .pad-face .pad-round:first-child { transform: translateY(12px); }
 .pad-arm.lit, .pad-pill.lit, .pad-round.lit { background: var(--color-accent); color: var(--color-glass); box-shadow: none; }
 
-.play-stage.full {
+html.has-fullscreen .play-stage {
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--strip-h, 0px) 0;
   z-index: 1000;
   background: #000;
   display: block;
   padding: 0;
 }
-.play-stage.full .play-panel {
+html.has-fullscreen .play-stage .play-panel {
   position: absolute;
   inset: 0;
   display: grid;
@@ -132,8 +143,8 @@
   box-shadow: none;
   border-radius: 0;
 }
-.play-stage.full .panel-face { padding: 0; background: #000; }
-.play-stage.full .bench-screen {
+html.has-fullscreen .play-stage .panel-face { padding: 0; background: #000; }
+html.has-fullscreen .play-stage .bench-screen {
   width: auto;
   height: auto;
   max-width: 100vw;
@@ -141,40 +152,31 @@
   aspect-ratio: 256 / 240;
 }
 @supports not (height: 100dvh) {
-  .play-stage.full .bench-screen { max-height: 100vh; }
+  html.has-fullscreen .play-stage .bench-screen { max-height: 100vh; }
 }
-.play-stage.full .pad {
+html.has-fullscreen .play-stage .pad {
   position: absolute;
   left: 0;
   right: 0;
   bottom: env(safe-area-inset-bottom, 0);
   opacity: 0.8;
 }
-.play-stage.full .play-full {
-  position: absolute;
-  top: calc(var(--u) * 2);
-  right: calc(var(--u) * 2);
-  color: var(--color-glass);
-  background: var(--color-panel);
-  border-color: var(--color-chrome-lo);
-  opacity: 0.85;
-}
 /* Over the black ground the faces are glass, dimmed so the picture
    shows through them where they overlap it. */
-.play-stage.full .pad-arm, .play-stage.full .pad-hub, .play-stage.full .pad-pill, .play-stage.full .pad-round {
+html.has-fullscreen .play-stage .pad-arm, html.has-fullscreen .play-stage .pad-hub, html.has-fullscreen .play-stage .pad-pill, html.has-fullscreen .play-stage .pad-round {
   background: var(--color-glass-muted);
   border-color: var(--color-glass);
   color: var(--color-ink);
 }
-.play-stage.full .pad-arm.lit, .play-stage.full .pad-pill.lit, .play-stage.full .pad-round.lit { background: var(--color-accent); color: var(--color-glass); }
+html.has-fullscreen .play-stage .pad-arm.lit, html.has-fullscreen .play-stage .pad-pill.lit, html.has-fullscreen .play-stage .pad-round.lit { background: var(--color-accent); color: var(--color-glass); }
 /* Portrait: the picture at the top, the pad under it with room. */
 @media (orientation: portrait) {
-  .play-stage.full .play-panel { align-items: start; padding-top: calc(var(--u) * 10); }
+  html.has-fullscreen .play-stage .play-panel { align-items: start; padding-top: calc(var(--u) * 10); }
 }
 /* Landscape on a phone: the picture centred, the pad's two zones at the
    sides over it; the middle pills sit low between them. */
 @media (orientation: landscape) and (max-height: 500px) {
-  .play-stage.full .pad { top: 0; padding: calc(var(--u) * 3); align-items: end; }
+  html.has-fullscreen .play-stage .pad { top: 0; padding: calc(var(--u) * 3); align-items: end; }
 }
 
 /* A shelf entry's milestone label ("N3 report"): beside the title, quieter

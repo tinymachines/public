@@ -5,13 +5,21 @@ import Link from "next/link";
 import { localize } from "@/lib/i18n";
 import { nes } from "@/lib/nes";
 import { ntsc } from "@/lib/ntsc";
-import { Shell } from "@/app/components/SiteFrame";
+import { SectionStrip } from "@/app/components/SectionStrip";
+import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { Play } from "./Play";
+import { PlayTransport } from "./PlayTransport";
 import "../signal/ntsc.css";
 import "../nes.css";
 
 /**
- * /nes/play: the console in the page. Two boarded bundles in one worker:
+ * /nes/play: the console in the page, as a workbench (the first step of
+ * notes/workbench.md, owner's call 2026-09-22): the bar, a strip of the
+ * page's sections, the screen with the pad as the stage, the cartridge
+ * and the readouts as sections, the prose last, the footer on the floor
+ * and the console's transport on top of it. No engine work: the transport
+ * has the keys the bundle honours (power, start, play, frame) and shows
+ * the rest grey with the reason. Two boarded bundles in one worker:
  * the console (data/nes.json's wasm_bundle, built by board-nes.py --wasm
  * at the boarded commit, served from build output and never committed
  * because its chip tables are measured from NC-SA die data) and the
@@ -95,6 +103,7 @@ const PROSE = {
       </>
     ),
     back: "Back to the NES console",
+    aboutH: "About this console",
   },
   ja: {
     what: (
@@ -118,6 +127,7 @@ const PROSE = {
       </>
     ),
     back: "NES コンソールへ戻る",
+    aboutH: "このコンソールについて",
   },
 } as const;
 
@@ -131,20 +141,46 @@ export default async function PlayPage({ params }: { params: Promise<{ lang: Lan
     throw new Error("data/nes.json has no console wasm_bundle; run scripts/board-nes.py --wasm");
   }
   const w = r.console.shell.wasm;
+  const title = lang === "ja" ? "コンソールを走らせる" : "Play";
   return (
-    <Shell lang={lang} die="NES" title={lang === "ja" ? "コンソールを走らせる" : "Play"}>
-      <div className="prose">
-        <p>{S.what}</p>
-        <p>{S.rom}</p>
+    <>
+      {/* A workbench, not a Shell page: the console is an instrument, and
+          the frame is the one every instrument page on the site wears
+          (6502/lab/page.tsx says why). The h1 lives in the bar, so the
+          one-h1 check holds; the footer is the last control, on the floor;
+          the transport sits on top of the footer, fixed, and lands on the
+          floor in full screen. The strip reads the sections off .play-shell. */}
+      <div className="workbench has-transport" data-workbench data-play-bench>
+        <WorkbenchBar
+          lang={lang}
+          die="NES"
+          title={title}
+          trail={[
+            { href: "/", label: "tinymachines.ai" },
+            { href: "/nes", label: lang === "ja" ? "NES コンソール" : "The NES console" },
+          ]}
+        />
+        <SectionStrip root=".play-shell" />
+        <div className="wb-main play-shell">
+          <Play lang={lang} />
 
-        <Play lang={lang} />
+          <section className="wb-page play-section" id="about">
+            <h2 className="eyebrow">{S.aboutH}</h2>
+            <div className="prose">
+              <p>{S.what}</p>
+              <p>{S.rom}</p>
+              <p>{S.rate(w.frames_per_s, w.real_time_x, r.boarded_on)}</p>
+              <p>{S.boarded(bundle.commit.slice(0, 7), `${r.console.repo}/commit/${bundle.commit}`, n.commit.slice(0, 7), `${n.repo}/commit/${n.commit}`)}</p>
+              <p>
+                <Link href={localize(lang, "/nes")}>{S.back}</Link>
+              </p>
+            </div>
+          </section>
 
-        <p>{S.rate(w.frames_per_s, w.real_time_x, r.boarded_on)}</p>
-        <p>{S.boarded(bundle.commit.slice(0, 7), `${r.console.repo}/commit/${bundle.commit}`, n.commit.slice(0, 7), `${n.repo}/commit/${n.commit}`)}</p>
-        <p>
-          <Link href={localize(lang, "/nes")}>{S.back}</Link>
-        </p>
+          <SiteFooter lang={lang} floor />
+        </div>
       </div>
-    </Shell>
+      <PlayTransport lang={lang} />
+    </>
   );
 }

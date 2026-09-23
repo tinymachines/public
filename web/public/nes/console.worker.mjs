@@ -8,8 +8,9 @@
  *                  { id, path: 'tick', dtNs, pad }
  *   here -> main   { id, ok: true, answer } | { id, ok: false, error }
  *
- * 'load' builds a console from the ROM bytes (NROM only; anything else is
- * refused by name) and a fresh pacer with its counters at zero. 'tick' is
+ * 'load' builds a console from the ROM bytes (the boards the console has,
+ * seven at the time of writing; anything else is refused by name) and a
+ * fresh pacer with its counters at zero. 'tick' is
  * one display callback: the drift policy decides from dtNs how many
  * frames are due (the signal path's own Pipeline carries that policy, so
  * an instance of it is the pacer here and pushes no frame; the rule is
@@ -45,6 +46,37 @@ self.onmessage = async (e) => {
       self.postMessage({ id, ok: true, answer: { bytes: bytes.length } });
       return;
     }
+    // Power off: the console is dropped, the pacer with it. The page keeps
+    // the cartridge and loads it again for power on, which is the only
+    // reset this bundle has: a new console is the state it powered on into.
+    if (path === "off") {
+      if (nes) nes.free();
+      nes = null;
+      pacer = null;
+      self.postMessage({ id, ok: true, answer: { off: true } });
+      return;
+    }
+    // One frame, on the transport's frame key while paused: the pad as it
+    // stands, the newest planes and the sound that frame made, the pacer's
+    // counters untouched because no display callback happened.
+    if (path === "frame") {
+      if (!nes || !pacer) throw new Error("no cartridge loaded");
+      nes.set_pad(e.data.pad & 0xff);
+      const t0 = performance.now();
+      nes.run_frames(1);
+      const colour = nes.colour();
+      const emphasis = nes.emphasis();
+      const parity = nes.parity();
+      const sound = nes.sound();
+      const consoleMs = performance.now() - t0;
+      const s = pacer.stats();
+      const stats = { presented: s[0], duplicated: s[1], dropped: s[2] };
+      self.postMessage(
+        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced: 1, consoleMs, halfCycles: nes.cpu_half_cycles() } },
+        [colour.buffer, emphasis.buffer, sound.buffer],
+      );
+      return;
+    }
     // The cartridge RAM at $6000, out and back: what a battery keeps. The
     // page is the battery (playEngine's keeper); the worker only hands the
     // bytes across. `has` is the header's battery bit, so the page knows
@@ -67,7 +99,7 @@ self.onmessage = async (e) => {
       const s = pacer.stats();
       const stats = { presented: s[0], duplicated: s[1], dropped: s[2] };
       if (advanced === 0) {
-        self.postMessage({ id, ok: true, answer: { colour: null, emphasis: null, parity: 0, sound: null, stats, advanced, consoleMs: 0 } });
+        self.postMessage({ id, ok: true, answer: { colour: null, emphasis: null, parity: 0, sound: null, stats, advanced, consoleMs: 0, halfCycles: nes.cpu_half_cycles() } });
         return;
       }
       nes.set_pad(pad & 0xff);
@@ -79,7 +111,7 @@ self.onmessage = async (e) => {
       const sound = nes.sound();
       const consoleMs = performance.now() - t0;
       self.postMessage(
-        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs } },
+        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs, halfCycles: nes.cpu_half_cycles() } },
         [colour.buffer, emphasis.buffer, sound.buffer],
       );
       return;

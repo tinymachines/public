@@ -232,11 +232,16 @@ export function WorkbenchBar({
   trail,
   titleIsHeading = true,
   hard = false,
+  die,
 }: {
   lang: Lang;
   title: string;
   trail: { href: string; label: string }[];
   titleIsHeading?: boolean;
+  /** The word on the die tile. Defaults to the section the trail ends in;
+      a section whose name is a sentence ("The NES console") names its tile
+      the short way. */
+  die?: string;
   /**
    * Every way off this page is a full navigation. The explorer's modules keep
    * state at module scope with no teardown, so leaving one client-side leaves
@@ -246,12 +251,12 @@ export function WorkbenchBar({
 }) {
   // The trail the reader sees is the trail a crawler is told about.
   const full = [...trail, { href: "", label: title }];
-  const die = trail.length > 1 ? trail[trail.length - 1].label : "6502";
+  const tile = die ?? (trail.length > 1 ? trail[trail.length - 1].label : "6502");
   return (
     <div className="app-head wb-bar">
       <AppMetrics />
       <JsonLd data={breadcrumbs(full.map((c) => ({ ...c, href: localize(lang, c.href) })), abs)} />
-      <Topbar lang={lang} die={die} page={title} pageIsHeading={titleIsHeading} hard={hard} />
+      <Topbar lang={lang} die={tile} page={title} pageIsHeading={titleIsHeading} hard={hard} />
     </div>
   );
 }

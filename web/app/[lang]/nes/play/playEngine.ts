@@ -31,6 +31,12 @@ export interface DriftStats {
 export interface PlayState {
   loaded: string | null;
   running: boolean;
+  /** False after power off: the cartridge is kept, the console is gone until power on. */
+  powered: boolean;
+  /** Console frames run, whether or not their picture was decoded. */
+  framesRun: number;
+  /** The CPU's half-cycles since power on, the bundle's one counter. */
+  halfCycles: number;
   /** Pictures painted. */
   frames: number;
   /** Console frames run but never decoded (the picture was busy). */
@@ -67,6 +73,7 @@ interface ConsoleAnswer {
   stats: DriftStats;
   advanced: number;
   consoleMs: number;
+  halfCycles?: number;
   /** The "battery" path's answer: the header's bit and the RAM, or `restored` when one was put back. */
   has?: boolean;
   ram?: Uint8Array;
@@ -99,6 +106,9 @@ const LEAD = 0.06;
 const INITIAL: PlayState = {
   loaded: null,
   running: false,
+  powered: false,
+  framesRun: 0,
+  halfCycles: 0,
   frames: 0,
   undecoded: 0,
   consoleMs: null,
@@ -234,6 +244,7 @@ export function detach() {
   bitmapCtx = null;
   latest = null;
   painted = [];
+  last = null;
   void audio?.close();
   audio = null;
   state = INITIAL;
@@ -303,8 +314,9 @@ function stopWatching() {
 export async function load(file: File, cart: Cart | null = null) {
   await saveNow();
   keeper = null;
+  last = { file, cart };
   const bytes = await file.arrayBuffer();
-  set({ running: false, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null });
+  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null });
   latest = null;
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);
@@ -343,7 +355,59 @@ export async function load(file: File, cart: Cart | null = null) {
       set({ battery: { has: false, restored: false, savedAt: null, saving: false, why: null } });
     }
   }
-  set({ loaded: file.name });
+  set({ loaded: file.name, powered: true });
+}
+
+/** The last cartridge loaded, for power on and the power cycle. */
+let last: { file: File; cart: Cart | null } | null = null;
+
+/**
+ * Power, as the transport's key. Off drops the console in the worker and
+ * keeps the cartridge; the picture it last painted stays on the page, as
+ * the chip pages leave what they hold. On loads the cartridge again, which
+ * is the state it powered on into (and the save comes back with it): the
+ * bundle has no reset of its own, so a power cycle is the reset.
+ */
+export async function setPower(on: boolean) {
+  if (!state.loaded || !last) return;
+  if (!on) {
+    if (!state.powered) return;
+    set({ running: false });
+    await saveNow();
+    stopWatching();
+    keeper = null;
+    await consoleW.call({ path: "off" });
+    set({ powered: false });
+    return;
+  }
+  if (state.powered) return;
+  await load(last.file, last.cart);
+}
+
+/** Back to power on: the same cartridge, loaded again. */
+export async function powerCycle() {
+  if (!state.loaded || !last) return;
+  await load(last.file, last.cart);
+}
+
+/** One frame, while paused: the way to watch a game a frame at a time. */
+export async function stepFrame() {
+  if (!state.loaded || !state.powered || state.running || tickInFlight) return;
+  tickInFlight = true;
+  const r = await consoleW.call({ path: "frame", pad: padByte() });
+  tickInFlight = false;
+  if (!r.ok) {
+    set({ why: r.error });
+    return;
+  }
+  const a = r.answer;
+  if (a.colour && a.emphasis) {
+    if (latest) set({ undecoded: state.undecoded + 1 });
+    latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
+    kick();
+  }
+  if (a.sound && a.sound.length > 0 && audio) play(a.sound);
+  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs });
 }
 
 function play(samples: Float32Array) {
@@ -436,12 +500,12 @@ async function loop() {
     kick();
   }
   if (a.sound && a.sound.length > 0) play(a.sound);
-  set({ stats: a.stats });
+  set({ stats: a.stats, framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles });
   if (state.running) requestAnimationFrame(() => void loop());
 }
 
 export function toggleRun() {
-  if (!state.loaded) return;
+  if (!state.loaded || !state.powered) return;
   if (state.running) {
     set({ running: false });
     void saveNow();

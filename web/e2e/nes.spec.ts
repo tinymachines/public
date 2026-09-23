@@ -257,18 +257,82 @@ test("the play page has a pad a thumb can hold and a full screen mode, on a phon
   await expect(pad).toHaveAttribute("data-play-pad", "10");
   await page.mouse.up();
   await expect(pad).toHaveAttribute("data-play-pad", "00");
-  // Full screen: the stage becomes the viewport (the overlay where the
-  // headless browser refuses the API, the API where it grants it), the
-  // control reads pressed, and the picture keeps its 256 by 240 shape.
-  await page.locator("[data-play-full]").click();
-  await expect(page.locator("[data-play-stage]")).toHaveAttribute("data-play-stage", "full");
-  const stage = (await page.locator("[data-play-stage]").boundingBox())!;
-  const vp = page.viewportSize()!;
-  expect(Math.round(stage.width)).toBe(vp.width);
-  expect(Math.round(stage.height)).toBe(vp.height);
-  const screen = (await page.locator(".bench-screen").boundingBox())!;
-  expect(Math.abs(screen.width / screen.height - 256 / 240)).toBeLessThan(0.02);
-  expect(screen.width).toBeGreaterThan(vp.width * 0.9);
-  await page.locator("[data-play-full]").click();
-  await expect(page.locator("[data-play-stage]")).toHaveAttribute("data-play-stage", "page");
+  // Full screen is the document's, from the strip on the floor (the page
+  // is a workbench since 2026-09-22): the bar leaves, the stage takes the
+  // viewport above the strip, the strip stays with the way out, and the
+  // picture keeps its 256 by 240 shape at the width of the screen.
+  const fs = page.locator(".tbtn.fs");
+  await expect(fs).toHaveCount(1);
+  await fs.click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains("has-fullscreen")), { timeout: 5000 }).toBe(true);
+  expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight), "the bar is gone").toBe(0);
+  const r = await page.evaluate(() => {
+    const stage = document.querySelector("[data-play-stage]")!.getBoundingClientRect();
+    const strip = document.querySelector(".chip-transport")!.getBoundingClientRect();
+    const screen = document.querySelector(".bench-screen")!.getBoundingClientRect();
+    return { stage: { w: stage.width, h: stage.height, top: stage.top, bottom: stage.bottom }, strip: { top: strip.top, bottom: strip.bottom }, screen: { w: screen.width, h: screen.height }, vw: innerWidth, vh: innerHeight };
+  });
+  expect(Math.round(r.stage.w)).toBe(r.vw);
+  expect(Math.round(r.stage.top)).toBe(0);
+  expect(Math.abs(r.stage.bottom - r.strip.top), "the stage ends where the strip begins").toBeLessThanOrEqual(1);
+  expect(Math.round(r.strip.bottom), "the strip on the floor").toBe(r.vh);
+  expect(Math.abs(r.screen.w / r.screen.h - 256 / 240)).toBeLessThan(0.02);
+  expect(r.screen.w).toBeGreaterThan(r.vw * 0.9);
+  await fs.click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.classList.contains("has-fullscreen")), { timeout: 5000 }).toBe(false);
+  expect(await page.evaluate(() => (document.querySelector(".app-head") as HTMLElement).offsetHeight)).toBeGreaterThan(20);
+});
+
+test("the play page is a workbench: the bar, the strip of its sections, the transport on the floor", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  const r = await page.evaluate(() => ({
+    bar: document.querySelectorAll(".workbench > .app-head.wb-bar").length,
+    name: document.querySelector(".topbar .tb-page")?.textContent?.trim() ?? "",
+    strip: [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim()),
+    foot: getComputedStyle(document.querySelector(".wb-foot")!).position,
+    keys: [...document.querySelectorAll(".chip-transport .ct-row button.tbtn:not(.fs)")].map((b) => ({ word: b.querySelector(".lb")?.textContent?.trim(), disabled: (b as HTMLButtonElement).disabled, title: b.getAttribute("title") ?? "" })),
+    seek: (document.querySelector(".ct-seek") as HTMLInputElement).disabled,
+    rate: (document.querySelector(".ct-rate input") as HTMLInputElement).disabled,
+    pos: document.querySelector("[data-play-pos]")?.textContent?.trim(),
+  }));
+  expect(r.bar, "one workbench bar").toBe(1);
+  expect(r.name).toBe("Play");
+  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "Readouts", "About this console"]);
+  expect(r.foot, "the footer on the floor").toBe("fixed");
+  // The keys, in the chip transport's order; every one grey before a
+  // cartridge, and the ones the bundle cannot honour say why.
+  expect(r.keys.map((k) => k.word)).toEqual(["power", "start", "play", "frame", "op"]);
+  expect(r.keys.every((k) => k.disabled)).toBe(true);
+  expect(r.keys[4].title).toContain("steps by the frame");
+  expect(r.seek && r.rate, "rate and seek are grey, not gone").toBe(true);
+  expect(r.pos).toBe("no cartridge");
+
+  // A cartridge: power, start and play light; frame lights while paused
+  // and runs exactly one frame; power off keeps the cartridge and greys
+  // the rest; power on brings the console back at power on.
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("testcart.nes", { timeout: 20_000 });
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("[data-play-run]")).toBeEnabled();
+  await expect(page.locator("[data-play-frame]")).toBeEnabled();
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  expect(await framesRun()).toBe(0);
+  await page.locator("[data-play-frame]").click();
+  await expect.poll(framesRun).toBe(1);
+  await page.locator("[data-play-frame]").click();
+  await expect.poll(framesRun).toBe(2);
+  await page.locator("[data-play-run]").click();
+  await expect.poll(framesRun, { timeout: 15_000 }).toBeGreaterThan(10);
+  await expect(page.locator("[data-play-frame]"), "no frame step while running").toBeDisabled();
+  await page.locator("[data-play-run]").click();
+  await page.locator("[data-play-power]").click();
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("[data-play-run]")).toBeDisabled();
+  await expect(page.locator("[data-play-off]")).toHaveCount(1);
+  await expect(page.locator("[data-play-stats]")).toContainText("testcart.nes");
+  await page.locator("[data-play-power]").click();
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(framesRun).toBe(0);
+  await expect(page.locator("[data-play-run]")).toBeEnabled();
 });
