@@ -80,6 +80,26 @@ if [ -n "$FOLLOW" ]; then
 fi
 HEAD=$(git -C "$BETA" rev-parse --short=12 HEAD)
 
+# The boarding scripts' outputs are built in THIS checkout and never
+# committed (the console bundle's tables are NC-SA-derived; the exported
+# cartridges are generated), and the build holds them to the records by
+# hash. The worktree kept the bundle from the last boarding and failed
+# its build the first time a re-board moved the record (2026-09-23, the
+# reads out of the engine). So the follow carries them across: every
+# ignored file under the boarded directories, this checkout's copy over
+# the worktree's, and check-build there says whether they match.
+say "1b. The boarded outputs"
+copied=0
+while IFS= read -r f; do
+  [ -f "$ROOT/$f" ] || continue
+  mkdir -p "$BETA/$(dirname "$f")"
+  if ! cmp -s "$ROOT/$f" "$BETA/$f"; then
+    cp -p "$ROOT/$f" "$BETA/$f"
+    copied=$((copied + 1))
+  fi
+done < <(git -C "$ROOT" ls-files --others --ignored --exclude-standard -- web/public/nes/wasm web/public/ntsc/wasm web/public/nes/slow web/public/nes/voices web/public/nes/bars.nes web/public/nes/cal.nes web/public/nes/cal.json web/public/nes/pad.nes web/public/nes/pad-dmc.nes 2>/dev/null)
+printf '  %s file(s) carried across from this checkout\n' "$copied"
+
 # TM_BETA is read at build time: the bar on every page, and noindex on every
 # page whatever it asked for (web/lib/seo.ts). A build without it is the live
 # site's build in the beta's chair, which is exactly what one hand-run

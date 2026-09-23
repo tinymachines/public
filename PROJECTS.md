@@ -3224,3 +3224,43 @@ a part. The owner chose the strip.
 Deployed clean at the owner's word, so live, main and beta are all at
 `7722bb3` and the version stays 1.0.266; the parts spec passes against
 live.
+
+## Midday, 2026-09-23: reads out of the engine
+
+The owner's word on the inventory's fourth step, the first across the
+seam.
+
+- **The console reads itself out** (nes `6b5d89c`, boarded here with
+  its 69 tests green, the bundle rebuilt and recorded): registers and
+  the last fetch, a side-effect-free bus peek that is the core's own
+  operand look, the PPU's registers and beam, palette RAM, OAM, the
+  nametable RAM and its CHR-RAM. Nothing steps, nothing touches a
+  mapper's counters, and the test holds it: the same reads twice, the
+  machine's counters between them, a peek at $2002 that leaves the
+  vblank flag standing. CHR-ROM stays the file's, because the only path
+  through a cartridge is the PPU's and a counting board would tick.
+- **Four panels on the play workbench** (`c42b4ba`): the register file
+  with the flags in NV-BDIZC order and the PPU's readout beside it; the
+  memory monitor following a page every frame; the eight palettes as
+  the PPU holds them, in the measured colours; the sprites on screen
+  from OAM, each naming its tile, which opens it in the sheet. The sheet
+  paints with the console's own palettes now.
+- **The beta follow carries the boarded outputs across** (`beta.sh`
+  stage 1b): the bundle is built in the main checkout and never
+  committed, and the worktree kept the old one and failed its build the
+  first time a re-board moved the record. Found on this step's first
+  follow.
+- **For the bench,** the pull derives each drawing package's file from
+  nes-bench's own manifest and refuses when the file it names is not in
+  the package, after the typed revision drifted the day TM-NESB-001 moved
+  from rev N to rev P; the pad-ble page carries TM-NESB-003.
+- **Held by** the play spec (registers at power on, the beam, the reset
+  vector off the bus against the file's, the palettes' cells, the
+  sprites or the word that there are none, the sheet's palette source,
+  power off and on) and the broad suites on the preview; the NES, shelf,
+  parts and notebook specs pass against beta with the rig.
+
+Beta serves `c42b4ba`; main is there too, both pushed; the console
+repository is pushed at `6b5d89c`. Live is still `7722bb3` (1.0.266).
+Deploying is the owner's call. Next on the note's order: control and the
+code panel.
