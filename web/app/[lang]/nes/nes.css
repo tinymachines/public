@@ -143,79 +143,83 @@
    phone holds the cross at 108, the pills at their smallest and the two
    round buttons at 52 with room to spare; wider screens get the larger
    sizes below. All in pixels on purpose: a thumb is a fixed size. */
+/* THE CONTROLLER (play/Gamepad.tsx): an SVG of the original on a
+   transparent layer, the cross one rocking piece, the domes and pills
+   with their travel. The face is 300 by 140 in its own units and scales
+   with its column; a thumb is a fixed size, so the pad is never narrower
+   than a hand's worth. The grip above it is the tap-move; --pad-dx and
+   --pad-dy are where the reader set it down. */
 .pad {
-  --cross: 108px;
-  --arm: 36px;
-  --round: 52px;
+  --pad-key: var(--color-chrome);
+  --pad-key-lo: var(--color-chrome-lo);
+  --pad-dome: #b8262b;
+  --pad-dome-hi: #e0555a;
+  --pad-label: var(--color-ink-muted);
+  /* Where the reader set the pad down; the component writes these inline. */
+  --pad-dx: 0px;
+  --pad-dy: 0px;
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: calc(var(--u) * 2);
-  padding: calc(var(--u) * 2) calc(var(--u) * 1);
+  gap: 2px;
+  width: 100%;
+  max-width: calc(var(--u) * 100);
+  margin-inline: auto;
+  padding: calc(var(--u) * 1);
   box-sizing: border-box;
-  max-width: 100%;
+  transform: translate(var(--pad-dx), var(--pad-dy));
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
-@media (min-width: 480px) {
-  .pad { --cross: 132px; --arm: 44px; --round: 64px; padding: calc(var(--u) * 2); }
-}
-.pad-cross {
-  position: relative;
-  width: var(--cross);
-  height: var(--cross);
-  justify-self: start;
-}
-.pad-arm {
-  position: absolute;
-  width: var(--arm);
-  height: var(--arm);
-  background: var(--color-chrome);
-  border: 1px solid var(--color-chrome-lo);
-  border-radius: 6px;
-  box-shadow: inset 0 -3px 0 var(--color-chrome-lo);
-}
-.pad-arm.up { left: var(--arm); top: 0; }
-.pad-arm.down { left: var(--arm); bottom: 0; }
-.pad-arm.left { left: 0; top: var(--arm); }
-.pad-arm.right { right: 0; top: var(--arm); }
-.pad-hub {
-  position: absolute;
-  left: var(--arm);
-  top: var(--arm);
-  width: var(--arm);
-  height: var(--arm);
-  background: var(--color-chrome);
-}
-.pad-middle { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 1); align-self: end; min-width: 0; }
-.pad-pill {
-  display: inline-block;
-  padding: 4px 10px;
+.pad-face { display: block; width: 100%; height: auto; overflow: visible; }
+/* The grip: three dots on a bar, the haptics key at its end. */
+.pad-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: calc(var(--u) * 5);
   border-radius: 999px;
-  border: 1px solid var(--color-chrome-lo);
-  background: var(--color-chrome);
-  color: var(--color-ink);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  background: color-mix(in srgb, var(--color-chrome) 60%, transparent);
+  cursor: grab;
 }
-.pad-face { display: flex; gap: calc(var(--u) * 2); justify-self: end; align-items: center; }
-.pad-round {
-  display: grid;
-  place-items: center;
-  width: var(--round);
-  height: var(--round);
-  border-radius: 50%;
+.pad-grip > span { width: 4px; height: 4px; border-radius: 50%; background: var(--color-ink-muted); }
+.pad-buzz {
+  position: absolute;
+  right: calc(var(--u) * 1);
+  top: 0;
+  height: calc(var(--u) * 5);
+  padding: 0 calc(var(--u) * 1.5);
   border: 1px solid var(--color-chrome-lo);
+  border-radius: 999px;
   background: var(--color-chrome);
-  color: var(--color-ink);
-  font-weight: 700;
-  box-shadow: inset 0 -3px 0 var(--color-chrome-lo);
+  color: var(--color-ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  cursor: pointer;
 }
-.pad-face .pad-round:first-child { transform: translateY(12px); }
-.pad-arm.lit, .pad-pill.lit, .pad-round.lit { background: var(--color-accent); color: var(--color-glass); box-shadow: none; }
+.pad-buzz.on { background: var(--color-accent); color: var(--color-glass); border-color: var(--color-accent); }
+/* Moving: outlined, the grip lit, the buttons inert to the thumb. */
+.pad.moving { outline: 2px dashed var(--color-accent-ink); outline-offset: 2px; cursor: move; }
+.pad.moving .pad-grip { background: var(--color-accent); }
+.pad.moving .pad-face { pointer-events: none; }
+/* The cross: the key top, its dish, its arrows; it tilts as a piece. */
+.pad-cross { transition: transform 40ms linear; }
+.pad-key { fill: var(--pad-key); stroke: var(--pad-key-lo); stroke-width: 1.5; }
+.pad-dish { fill: color-mix(in srgb, var(--pad-key-lo) 55%, var(--pad-key)); }
+.pad-arrow { fill: var(--pad-key-lo); }
+.pad-arrow.on { fill: var(--color-accent); }
+.pad-cross.lit .pad-key { fill: color-mix(in srgb, var(--pad-key) 85%, var(--color-accent)); }
+/* The domes and the pills: a shadow under, the top that sinks onto it. */
+.pad-dome, .pad-pill { transition: transform 30ms linear; }
+.pad-dome-shadow { fill: #5a1013; }
+.pad-dome-top { stroke: #7a1417; stroke-width: 1; }
+.pad-dome.down .pad-dome-top { filter: brightness(0.85); }
+.pad-pill-shadow { fill: var(--pad-key-lo); }
+.pad-pill-top { fill: var(--pad-key); stroke: var(--pad-key-lo); stroke-width: 1; }
+.pad-pill.down .pad-pill-top { fill: color-mix(in srgb, var(--pad-key) 70%, var(--color-accent)); }
+.pad-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; fill: var(--pad-label); pointer-events: none; }
 
 html.has-fullscreen .play-stage {
   position: fixed;
@@ -224,6 +228,10 @@ html.has-fullscreen .play-stage {
   background: #000;
   display: block;
   padding: 0;
+  /* The stage keeps the reading measure in the page; full screen is the
+     whole viewport (a phone held sideways showed the page's right third
+     beside a stage capped at the measure, 2026-09-23). */
+  max-width: none;
 }
 html.has-fullscreen .play-stage .play-panel {
   position: absolute;
@@ -246,29 +254,29 @@ html.has-fullscreen .play-stage .bench-screen {
 @supports not (height: 100dvh) {
   html.has-fullscreen .play-stage .bench-screen { max-height: 100vh; }
 }
+/* Over the black ground the pad floats where the reader set it down, its
+   chrome as glass so the picture shows through where they overlap. */
 html.has-fullscreen .play-stage .pad {
   position: absolute;
   left: 0;
   right: 0;
   bottom: env(safe-area-inset-bottom, 0);
-  opacity: 0.8;
+  --pad-key: var(--color-glass-muted);
+  --pad-key-lo: var(--color-glass);
+  --pad-label: var(--color-glass);
+  opacity: 0.85;
 }
-/* Over the black ground the faces are glass, dimmed so the picture
-   shows through them where they overlap it. */
-html.has-fullscreen .play-stage .pad-arm, html.has-fullscreen .play-stage .pad-hub, html.has-fullscreen .play-stage .pad-pill, html.has-fullscreen .play-stage .pad-round {
-  background: var(--color-glass-muted);
-  border-color: var(--color-glass);
-  color: var(--color-ink);
-}
-html.has-fullscreen .play-stage .pad-arm.lit, html.has-fullscreen .play-stage .pad-pill.lit, html.has-fullscreen .play-stage .pad-round.lit { background: var(--color-accent); color: var(--color-glass); }
 /* Portrait: the picture at the top, the pad under it with room. */
 @media (orientation: portrait) {
   html.has-fullscreen .play-stage .play-panel { align-items: start; padding-top: calc(var(--u) * 10); }
 }
 /* Landscape on a phone: the picture centred, the pad's two zones at the
    sides over it; the middle pills sit low between them. */
+/* Landscape on a phone: the picture is the height of the screen, and the
+   controller sits smaller at the bottom over its lower edge; the grip
+   moves it to wherever the thumbs are. */
 @media (orientation: landscape) and (max-height: 500px) {
-  html.has-fullscreen .play-stage .pad { top: 0; padding: calc(var(--u) * 3); align-items: end; }
+  html.has-fullscreen .play-stage .pad { max-width: calc(var(--u) * 80); bottom: calc(var(--u) * 1); }
 }
 
 /* A shelf entry's milestone label ("N3 report"): beside the title, quieter

@@ -2,83 +2,187 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { setTouchPad } from "./playEngine";
+import { press, release, rocker, type Rocker } from "@/lib/rocker";
 
 /**
- * An NES-shaped pad on the screen: the cross on the left, Select and
- * Start in the middle, B and A on the right, driven by pointer events so
- * a thumb can slide across the cross and two thumbs can hold A and Up at
- * once. Each pointer owns the bits it is over; the union goes to the
- * engine as the register's byte (A, B, Select, Start, Up, Down, Left,
- * Right from bit 0), ORed there with the keyboard's. The cross reads the
- * pointer's position from the pad's centre, so diagonals come from the
- * corners without a fifth button. touch-action is none on the whole pad
- * so a press never scrolls the page.
+ * The controller, drawn as the original: a cross that is one piece
+ * rocking on its fulcrum (lib/rocker.ts has the mechanism and its tests),
+ * Select and Start as pills, B and A as the two red domes, on a
+ * transparent layer over the game. Every part goes down when pressed: the
+ * cross tilts towards the thumb, a dome sinks by its travel, a pill by
+ * less; and where the phone can buzz and the reader has asked for it, a
+ * contact closing is a short pulse under the thumb, which is the click a
+ * dome makes going over its knee.
+ *
+ * Multitouch by pointer: each pointer is held with the bits it presses,
+ * the cross by its geometry (the thumb's offset from the fulcrum, in the
+ * key's units), a button by the element under the pointer, so a thumb
+ * can slide off A onto B without lifting; the bits of every held pointer
+ * are ORed and handed to the engine, which ORs the keyboard in.
+ *
+ * The grip is the tap-move: a tap on the bar above the pad puts the pad
+ * in its moving state, outlined, its buttons inert; a drag anywhere on
+ * it then carries the whole pad; a tap on the bar sets it down. Where it
+ * was set down is kept per orientation, so a phone held sideways keeps
+ * its own placement. A double tap on the bar puts it back where the page
+ * had it. This is the workbench's own habit for a control: the strip on
+ * the floor moved once at the owner's word; the pad moves at the thumb's.
  */
 
-const BIT = { a: 1, b: 2, select: 4, start: 8, up: 16, down: 32, left: 64, right: 128 } as const;
+const BIT = { a: 1, b: 2, select: 4, start: 8 } as const;
+const STORE = "tm.nes.pad";
+const HAPTICS = "tm.nes.pad.haptics";
 
-/** The cross's bits for a pointer at (dx, dy) from its centre, radius r. */
-function crossBits(dx: number, dy: number, r: number): number {
-  const d = Math.hypot(dx, dy);
-  if (d < r * 0.18) return 0; // the dead centre
-  const ang = Math.atan2(dy, dx); // -pi..pi, y down
-  let bits = 0;
-  // Eight sectors of 45 degrees: the cardinals in the middle 22.5 each side,
-  // the diagonals between, as the real cross's rocker resolves them.
-  const sector = Math.round((ang / Math.PI) * 4); // -4..4
-  const s = ((sector % 8) + 8) % 8; // 0 right, 1 down-right, 2 down, 3 down-left, 4 left, 5 up-left, 6 up, 7 up-right
-  if (s === 0 || s === 1 || s === 7) bits |= BIT.right;
-  if (s === 4 || s === 3 || s === 5) bits |= BIT.left;
-  if (s === 2 || s === 1 || s === 3) bits |= BIT.down;
-  if (s === 6 || s === 5 || s === 7) bits |= BIT.up;
-  return bits;
+type Placement = { dx: number; dy: number };
+
+function orientation(): "portrait" | "landscape" {
+  return typeof window !== "undefined" && window.innerWidth > window.innerHeight ? "landscape" : "portrait";
 }
+function loadPlacement(): Placement {
+  try {
+    const all = JSON.parse(localStorage.getItem(STORE) ?? "{}") as Record<string, Placement>;
+    return all[orientation()] ?? { dx: 0, dy: 0 };
+  } catch {
+    return { dx: 0, dy: 0 };
+  }
+}
+function savePlacement(p: Placement) {
+  try {
+    const all = JSON.parse(localStorage.getItem(STORE) ?? "{}") as Record<string, Placement>;
+    all[orientation()] = p;
+    localStorage.setItem(STORE, JSON.stringify(all));
+  } catch {
+    /* private mode: the placement lasts the page */
+  }
+}
+
+/** The pad's geometry, in its own units: a face 300 wide by 140 tall. */
+const W = 300;
+const H = 140;
+const CROSS = { cx: 62, cy: 70, arm: 22, len: 52 }; // arm half-width and the reach from the fulcrum to a tip
+const PILL = { y: 92, w: 40, h: 14, gap: 10, cx: 150 };
+const DOME = { r: 21, b: { cx: 214, cy: 82 }, a: { cx: 266, cy: 66 } };
+const DOME_TRAVEL = 3;
+const PILL_TRAVEL = 1.5;
+const TILT_DEG = 9;
 
 export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; labels: { select: string; start: string } }) {
   const held = useRef<Map<number, number>>(new Map());
-  const crossRef = useRef<HTMLDivElement>(null);
+  const rock = useRef<Rocker>(rocker());
+  const tiltRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
+  const padRef = useRef<HTMLDivElement>(null);
   const [lit, setLit] = useState(0);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [moving, setMoving] = useState(false);
+  const [place, setPlace] = useState<Placement>({ dx: 0, dy: 0 });
+  const [haptics, setHaptics] = useState(false);
+  const canBuzz = typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+  const drag = useRef<{ id: number; x: number; y: number; from: Placement } | null>(null);
+  const lastTap = useRef(0);
+
+  // The placement and the haptics come from the browser after a frame, as
+  // the strip's sections do: the server rendered the pad where the page
+  // has it, and a reader's own placement is a fact of this device.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setPlace(loadPlacement());
+      try { setHaptics(localStorage.getItem(HAPTICS) === "1"); } catch { /* private mode */ }
+    });
+    const onTurn = () => setPlace(loadPlacement());
+    window.addEventListener("resize", onTurn);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", onTurn); setTouchPad(0); };
+  }, []);
 
   const publish = useCallback(() => {
     let bits = 0;
     for (const b of held.current.values()) bits |= b;
     setTouchPad(bits);
-    setLit(bits);
+    setLit((was) => {
+      // A contact closing is the click: one short pulse per rising edge.
+      if (haptics && canBuzz && (bits & ~was) !== 0) navigator.vibrate(8);
+      return bits;
+    });
     onPad?.(bits);
-  }, [onPad]);
+  }, [onPad, haptics, canBuzz]);
 
-  useEffect(() => () => setTouchPad(0), []);
-
-  const bitsAt = useCallback((e: React.PointerEvent): number => {
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const btn = el?.closest<HTMLElement>("[data-pad-btn]")?.dataset.padBtn;
-    if (btn && btn !== "cross") return BIT[btn as keyof typeof BIT] ?? 0;
-    const c = crossRef.current;
-    if (!c) return 0;
-    const r = c.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
-    // Inside the cross's disc (a little past its edge, so a thumb that
-    // rolls off the side keeps the direction it had).
-    if (Math.hypot(dx, dy) > r.width * 0.75) return 0;
-    return crossBits(dx, dy, r.width / 2);
+  /** The pointer's place in the face's units. */
+  const local = useCallback((e: React.PointerEvent): { x: number; y: number } => {
+    const svg = svgRef.current!;
+    const r = svg.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * W, y: ((e.clientY - r.top) / r.height) * H };
   }, []);
+
+  /** The cross's contacts for a thumb at the pointer, and the key's tilt towards it. */
+  const crossBits = useCallback(
+    (e: React.PointerEvent): number => {
+      const p = local(e);
+      const x = (p.x - CROSS.cx) / CROSS.len;
+      const y = (p.y - CROSS.cy) / CROSS.len;
+      const bits = press(rock.current, x, y);
+      // The key tilts towards the thumb, as far as its rock allows.
+      const m = Math.hypot(x, y);
+      const k = m > 1 ? 1 / m : 1;
+      tiltRef.current = bits ? { x: x * k, y: y * k } : { x: 0, y: 0 };
+      setTilt(tiltRef.current);
+      return bits;
+    },
+    [local],
+  );
+
+  const bitsAt = useCallback(
+    (e: React.PointerEvent, onCross: boolean): number => {
+      if (onCross) return crossBits(e);
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const btn = el?.closest<Element>("[data-pad-btn]")?.getAttribute("data-pad-btn");
+      // A thumb that slid from a button onto the cross: the cross takes it.
+      if (btn === "cross") return crossBits(e);
+      return btn ? (BIT[btn as keyof typeof BIT] ?? 0) : 0;
+    },
+    [crossBits],
+  );
+
+  const crossPointer = useRef<number | null>(null);
 
   const down = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-      held.current.set(e.pointerId, bitsAt(e));
+      const target = (e.target as Element).closest<Element>("[data-pad-btn], [data-pad-grip]");
+      if (target?.hasAttribute("data-pad-grip")) {
+        const now = performance.now();
+        if (now - lastTap.current < 350) {
+          setPlace({ dx: 0, dy: 0 });
+          savePlacement({ dx: 0, dy: 0 });
+          setMoving(false);
+        } else {
+          setMoving((m) => !m);
+        }
+        lastTap.current = now;
+        return;
+      }
+      // Capture keeps a thumb that slides off the pad in hand. A pointer
+      // that cannot be captured (a synthetic one) still presses.
+      try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch { /* not a live pointer */ }
+      if (moving) {
+        drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: place };
+        return;
+      }
+      const onCross = target?.getAttribute("data-pad-btn") === "cross";
+      if (onCross) crossPointer.current = e.pointerId;
+      held.current.set(e.pointerId, bitsAt(e, onCross));
       publish();
     },
-    [bitsAt, publish],
+    [bitsAt, publish, moving, place],
   );
   const move = useCallback(
     (e: React.PointerEvent) => {
+      if (drag.current && drag.current.id === e.pointerId) {
+        const next = { dx: drag.current.from.dx + (e.clientX - drag.current.x), dy: drag.current.from.dy + (e.clientY - drag.current.y) };
+        setPlace(next);
+        return;
+      }
       if (!held.current.has(e.pointerId)) return;
-      const b = bitsAt(e);
+      const b = bitsAt(e, crossPointer.current === e.pointerId);
       if (b !== held.current.get(e.pointerId)) {
         held.current.set(e.pointerId, b);
         publish();
@@ -88,39 +192,109 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   );
   const up = useCallback(
     (e: React.PointerEvent) => {
+      if (drag.current && drag.current.id === e.pointerId) {
+        savePlacement({ dx: drag.current.from.dx + (e.clientX - drag.current.x), dy: drag.current.from.dy + (e.clientY - drag.current.y) });
+        drag.current = null;
+        return;
+      }
       if (!held.current.has(e.pointerId)) return;
       held.current.delete(e.pointerId);
+      if (crossPointer.current === e.pointerId) {
+        crossPointer.current = null;
+        release(rock.current);
+        tiltRef.current = { x: 0, y: 0 };
+        setTilt(tiltRef.current);
+      }
       publish();
     },
     [publish],
   );
 
-  const on = (bit: number) => (lit & bit ? " lit" : "");
+  const on = (bit: number) => (lit & bit) !== 0;
+  const crossLit = lit & 0xf0;
+  // The cross as a rocking piece: a tilt about the fulcrum, drawn as a
+  // rotation about the axis at right angles to the thumb's offset.
+  const crossTransform = crossLit ? `perspective(300px) rotate3d(${tilt.y}, ${-tilt.x}, 0, ${TILT_DEG}deg)` : "none";
+  const armPath = (() => {
+    const a = CROSS.arm, l = CROSS.len, c = CROSS.cx, d = CROSS.cy;
+    return `M${c - a} ${d - l} h${2 * a} v${l - a} h${l - a} v${2 * a} h${-(l - a)} v${l - a} h${-2 * a} v${-(l - a)} h${-(l - a)} v${-2 * a} h${l - a} z`;
+  })();
+
   return (
-    <div className="pad" data-play-pad={lit.toString(16).padStart(2, "0")} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onLostPointerCapture={up}>
-      <div className="pad-cross" ref={crossRef} data-pad-btn="cross" aria-label="direction">
-        <span className={"pad-arm up" + on(BIT.up)} />
-        <span className={"pad-arm down" + on(BIT.down)} />
-        <span className={"pad-arm left" + on(BIT.left)} />
-        <span className={"pad-arm right" + on(BIT.right)} />
-        <span className="pad-hub" />
+    <div
+      ref={padRef}
+      className={"pad" + (moving ? " moving" : "")}
+      data-play-pad={lit.toString(16).padStart(2, "0")}
+      data-pad-moving={moving ? "1" : "0"}
+      style={{ "--pad-dx": `${place.dx}px`, "--pad-dy": `${place.dy}px` } as React.CSSProperties}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={up}
+      onLostPointerCapture={up}
+    >
+      <div className="pad-grip" data-pad-grip role="button" aria-label="Move the pad" title="Tap to move the pad, tap again to set it down; double tap to put it back">
+        <span /><span /><span />
+        {canBuzz ? (
+          <button
+            type="button"
+            className={"pad-buzz" + (haptics ? " on" : "")}
+            aria-pressed={haptics}
+            title="Haptics: a pulse under the thumb when a contact closes"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setHaptics((h) => { const n = !h; try { localStorage.setItem(HAPTICS, n ? "1" : "0"); } catch { /* private mode */ } return n; }); }}
+            data-pad-haptics={haptics ? "1" : "0"}
+          >
+            ((•))
+          </button>
+        ) : null}
       </div>
-      <div className="pad-middle">
-        <span className={"pad-pill" + on(BIT.select)} data-pad-btn="select">
-          {labels.select}
-        </span>
-        <span className={"pad-pill" + on(BIT.start)} data-pad-btn="start">
-          {labels.start}
-        </span>
-      </div>
-      <div className="pad-face">
-        <span className={"pad-round" + on(BIT.b)} data-pad-btn="b">
-          B
-        </span>
-        <span className={"pad-round" + on(BIT.a)} data-pad-btn="a">
-          A
-        </span>
-      </div>
+      <svg ref={svgRef} className="pad-face" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="controller" data-pad-face>
+        <defs>
+          <radialGradient id="pad-dome" cx="40%" cy="35%" r="70%">
+            <stop offset="0" stopColor="var(--pad-dome-hi)" />
+            <stop offset="1" stopColor="var(--pad-dome)" />
+          </radialGradient>
+        </defs>
+        {/* The cross: one piece on its fulcrum, the dish in the middle. */}
+        <g
+          data-pad-btn="cross"
+          className={"pad-cross" + (crossLit ? " lit" : "")}
+          style={{ transform: crossTransform, transformOrigin: `${CROSS.cx}px ${CROSS.cy}px`, transformBox: "view-box" } as React.CSSProperties}
+        >
+          <path d={armPath} className="pad-key" />
+          <circle cx={CROSS.cx} cy={CROSS.cy} r={CROSS.arm * 0.55} className="pad-dish" />
+          {/* The four arrows, lit one at a time as their contact closes. */}
+          <path d={`M${CROSS.cx} ${CROSS.cy - CROSS.len + 8} l7 10 h-14 z`} className={"pad-arrow" + (on(16) ? " on" : "")} />
+          <path d={`M${CROSS.cx} ${CROSS.cy + CROSS.len - 8} l7 -10 h-14 z`} className={"pad-arrow" + (on(32) ? " on" : "")} />
+          <path d={`M${CROSS.cx - CROSS.len + 8} ${CROSS.cy} l10 7 v-14 z`} className={"pad-arrow" + (on(64) ? " on" : "")} />
+          <path d={`M${CROSS.cx + CROSS.len - 8} ${CROSS.cy} l-10 7 v-14 z`} className={"pad-arrow" + (on(128) ? " on" : "")} />
+        </g>
+        {/* Select and Start: the two pills, a shallow travel. */}
+        {(["select", "start"] as const).map((k, i) => {
+          const x = PILL.cx - PILL.w - PILL.gap / 2 + i * (PILL.w + PILL.gap);
+          const down = on(BIT[k]);
+          return (
+            <g key={k} data-pad-btn={k} className={"pad-pill" + (down ? " down" : "")} style={{ transform: down ? `translateY(${PILL_TRAVEL}px)` : "none" } as React.CSSProperties}>
+              <rect x={x} y={PILL.y + 3} width={PILL.w} height={PILL.h} rx={PILL.h / 2} className="pad-pill-shadow" />
+              <rect x={x} y={PILL.y} width={PILL.w} height={PILL.h} rx={PILL.h / 2} className="pad-pill-top" />
+              <text x={x + PILL.w / 2} y={PILL.y + PILL.h + 12} textAnchor="middle" className="pad-label">{labels[k].toUpperCase()}</text>
+            </g>
+          );
+        })}
+        {/* B and A: the domes, red, with their travel. */}
+        {(["b", "a"] as const).map((k) => {
+          const d = DOME[k];
+          const down = on(BIT[k]);
+          return (
+            <g key={k} data-pad-btn={k} className={"pad-dome" + (down ? " down" : "")} style={{ transform: down ? `translateY(${DOME_TRAVEL}px)` : "none" } as React.CSSProperties}>
+              <circle cx={d.cx} cy={d.cy + DOME_TRAVEL} r={DOME.r} className="pad-dome-shadow" />
+              <circle cx={d.cx} cy={d.cy} r={DOME.r} className="pad-dome-top" fill="url(#pad-dome)" />
+              <text x={d.cx} y={d.cy + DOME.r + 14} textAnchor="middle" className="pad-label">{k.toUpperCase()}</text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }

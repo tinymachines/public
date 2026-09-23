@@ -236,27 +236,34 @@ test("the play page has a pad a thumb can hold and a full screen mode, on a phon
   await expect(pad).toHaveCount(1);
   // Nothing scrolls sideways with the pad on the page.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-  // A press on A is bit 0 of the register's byte; a release clears it.
+  // A press on A is bit 0 of the register's byte; a release clears it, and
+  // the dome goes down while it is held (its group is translated).
   // (A thumb is on the screen by definition; the synthetic pointer is
   // not, so the pad is scrolled into view first.)
   await pad.scrollIntoViewIfNeeded();
   const a = page.locator('[data-pad-btn="a"]');
   const box = (await a.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 6);
   await page.mouse.down();
   await expect(pad).toHaveAttribute("data-play-pad", "01");
+  expect(await a.evaluate((g) => (g as HTMLElement).style.transform), "the dome sinks").toContain("translateY");
   await page.mouse.up();
   await expect(pad).toHaveAttribute("data-play-pad", "00");
+  expect(await a.evaluate((g) => (g as HTMLElement).style.transform)).toBe("none");
   // The cross: a press on its right arm is Right (bit 7); sliding the
-  // same press to the top arm becomes Up (bit 4), no second press.
-  const cross = (await page.locator('[data-pad-btn="cross"]').boundingBox())!;
+  // same press to the top arm becomes Up (bit 4), no second press, and
+  // the key tilts towards the thumb while it is held.
+  const crossEl = page.locator('[data-pad-btn="cross"]');
+  const cross = (await crossEl.boundingBox())!;
   await page.mouse.move(cross.x + cross.width * 0.85, cross.y + cross.height / 2);
   await page.mouse.down();
   await expect(pad).toHaveAttribute("data-play-pad", "80");
+  expect(await crossEl.evaluate((g) => (g as HTMLElement).style.transform), "the key tilts").toContain("rotate3d");
   await page.mouse.move(cross.x + cross.width / 2, cross.y + cross.height * 0.15, { steps: 4 });
   await expect(pad).toHaveAttribute("data-play-pad", "10");
   await page.mouse.up();
   await expect(pad).toHaveAttribute("data-play-pad", "00");
+  expect(await crossEl.evaluate((g) => (g as HTMLElement).style.transform)).toBe("none");
   // Full screen is the document's, from the strip on the floor (the page
   // is a workbench since 2026-09-22): the bar leaves, the stage takes the
   // viewport above the strip, the strip stays with the way out, and the
@@ -626,4 +633,90 @@ test("the sister play key, the buffered panels, the locked width, and no lockup 
   expect(r.oamFits, "the sprites table fits its box").toBe(true);
   expect(r.codeFits, "the listing fits its box").toBe(true);
   expect(r.sideways).toBe(false);
+});
+
+test("the controller's mechanics: a thumb rolled round the cross, no opposites, the pulse under the thumb, and the grip that moves the pad", async ({ page }) => {
+  test.setTimeout(120_000);
+  // A phone that can buzz: the vibration counted rather than felt.
+  await page.addInitScript(() => {
+    (window as unknown as { __buzz: number[] }).__buzz = [];
+    Object.defineProperty(navigator, "vibrate", { value: (ms: number) => { (window as unknown as { __buzz: number[] }).__buzz.push(ms); return true; }, configurable: true });
+  });
+  await page.setViewportSize(PHONE);
+  await open(page, "/nes/play", 500);
+  const pad = page.locator("[data-play-pad]");
+  await pad.scrollIntoViewIfNeeded();
+  const cross = (await page.locator('[data-pad-btn="cross"]').boundingBox())!;
+  const cx = cross.x + cross.width / 2, cy = cross.y + cross.height / 2, r = cross.width * 0.4;
+  // Round the cross clockwise from the top, one press: the eight contacts
+  // in the original's order, with the top again as the roll closes, and
+  // never a state outside them.
+  const seen: string[] = [];
+  await page.mouse.move(cx, cy - r);
+  await page.mouse.down();
+  for (let deg = -90; deg <= 270; deg += 5) {
+    const a = (deg * Math.PI) / 180;
+    await page.mouse.move(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    const v = (await pad.getAttribute("data-play-pad"))!;
+    if (seen[seen.length - 1] !== v) seen.push(v);
+  }
+  await page.mouse.up();
+  expect(seen).toEqual(["10", "90", "80", "a0", "20", "60", "40", "50", "10"]);
+  await expect(pad).toHaveAttribute("data-play-pad", "00");
+  // Haptics off by default: nothing buzzed during the roll. On, a contact
+  // closing is one pulse, a slide within the same contact none.
+  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz.length)).toBe(0);
+  await page.locator("[data-pad-haptics]").click();
+  await expect(page.locator("[data-pad-haptics]")).toHaveAttribute("data-pad-haptics", "1");
+  const a = (await page.locator('[data-pad-btn="a"]').boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2 - 6);
+  await page.mouse.down();
+  await expect(pad).toHaveAttribute("data-play-pad", "01");
+  await page.mouse.move(a.x + a.width / 2 + 3, a.y + a.height / 2 - 4, { steps: 3 });
+  await page.mouse.up();
+  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz)).toEqual([8]);
+  // Two thumbs: B and A held together are both bits, and lifting one
+  // leaves the other. Two pointers by id, which is what the pad keys on.
+  const b = (await page.locator('[data-pad-btn="b"]').boundingBox())!;
+  const pointer = (type: string, id: number, x: number, y: number) =>
+    page.evaluate(([type, id, x, y]) => {
+      const el = document.elementFromPoint(x as number, y as number)!;
+      el.dispatchEvent(new PointerEvent(type as string, { pointerId: id as number, clientX: x as number, clientY: y as number, bubbles: true, isPrimary: id === 7, pointerType: "touch" }));
+    }, [type, id, x, y]);
+  await pointer("pointerdown", 7, b.x + b.width / 2, b.y + b.height / 2 - 6);
+  await expect(pad).toHaveAttribute("data-play-pad", "02");
+  await pointer("pointerdown", 8, a.x + a.width / 2, a.y + a.height / 2 - 6);
+  await expect(pad).toHaveAttribute("data-play-pad", "03");
+  await pointer("pointerup", 7, b.x + b.width / 2, b.y + b.height / 2 - 6);
+  await expect(pad).toHaveAttribute("data-play-pad", "01");
+  await pointer("pointerup", 8, a.x + a.width / 2, a.y + a.height / 2 - 6);
+  await expect(pad).toHaveAttribute("data-play-pad", "00");
+  // The grip: a tap puts the pad in its moving state and its buttons go
+  // inert; a drag carries the pad; a tap sets it down; the placement
+  // survives a reload; a double tap puts it back.
+  const grip = page.locator("[data-pad-grip]");
+  await grip.click();
+  await expect(pad).toHaveAttribute("data-pad-moving", "1");
+  const before = (await pad.boundingBox())!;
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before.x + before.width / 2 - 40, before.y + before.height / 2 - 30, { steps: 5 });
+  await page.mouse.up();
+  await expect(pad).toHaveAttribute("data-play-pad", "00");
+  const after = (await pad.boundingBox())!;
+  expect(Math.round(after.x - before.x)).toBe(-40);
+  expect(Math.round(after.y - before.y)).toBe(-30);
+  await page.waitForTimeout(400);
+  await grip.click();
+  await expect(pad).toHaveAttribute("data-pad-moving", "0");
+  await page.reload({ waitUntil: "load" });
+  await page.waitForTimeout(500);
+  await page.locator("[data-play-pad]").scrollIntoViewIfNeeded();
+  const kept = await page.locator("[data-play-pad]").evaluate((el) => getComputedStyle(el).getPropertyValue("--pad-dx").trim() + " " + getComputedStyle(el).getPropertyValue("--pad-dy").trim());
+  expect(kept).toBe("-40px -30px");
+  const g2 = page.locator("[data-pad-grip]");
+  await g2.click();
+  await page.waitForTimeout(80);
+  await g2.click();
+  await expect.poll(() => page.locator("[data-play-pad]").evaluate((el) => getComputedStyle(el).getPropertyValue("--pad-dx").trim())).toBe("0px");
 });
