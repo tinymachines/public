@@ -3088,6 +3088,7 @@ as the layout idea.
   that tells the Origin's 403 from the lookup's 404; it reaches live with
   the next deploy.
 
-Main is two commits past live (the fix and this text); beta serves the
-last deploy. Nothing else is waiting on the owner but the note's
-decisions.
+Deployed clean afterwards at the owner's word, so live, main and beta are
+all at `0e61981` and the version stays 1.0.266; the API serving that
+commit is the one whose Origin rule knows the beta. Nothing is waiting on
+the owner but the note's decisions.
