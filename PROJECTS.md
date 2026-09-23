@@ -3125,6 +3125,6 @@ around the play page."
   phone), and the header, mobile, pages, menu, language and shelf suites,
   the shelf's signed-in half on the rig against beta.
 
-Beta serves `d8fda5a`; main is there too, both pushed. Live is still
-`0e61981` (1.0.266). Deploying is the owner's call. Next on the note's
-order: sprites from the bytes.
+Deployed clean afterwards at the owner's word, so live, main and beta are
+all at `56ac59d` and the version stays 1.0.266; the play specs pass
+against live. Next on the note's order: sprites from the bytes.
