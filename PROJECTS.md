@@ -3398,3 +3398,47 @@ pause; and a sister play button beside the cartridge.
 Deployed at the owner's word, so live, main and beta are all at
 `63ec414` and the version stays 1.0.266; the play specs pass against
 live.
+
+## Night, 2026-09-23: the controller, drawn as the original
+
+The owner: "an SVG gamepad control on a transparent canvas that looks and
+behaves like the OG gamepad; the movement pad behaves like a single
+unit; rolling your thumb in a circle has a specific sequence of bit
+streams; haptics, if enabled; buttons change when depressed; some space
+for a tap-move sequence for the entire pad." Dig deep.
+
+- **The cross is a mechanism** (`d121e19`, `lib/rocker.ts`): one piece
+  rocking on a hemispherical support at its centre, as Nintendo's
+  multi-directional switch (US patent 4,687,200) has it. A contact
+  closes when the key tilts towards it and the one opposite lifts away,
+  so up and down can never be pressed together; a closed contact opens
+  only at a lower tilt, the dome's own hysteresis, so a thumb on the
+  boundary does not chatter; the second contact of a diagonal needs a
+  firmer tilt than the first, which makes the cardinals easy to hold and
+  the corners deliberate. The patent sized its parts so neighbouring
+  contacts would not close either; the pads that shipped do, at the
+  corners, and every game that moves diagonally relies on it, so the
+  model is the pad in the hand, not the ideal in the patent. The unit
+  test rolls a thumb round the key and reads the eight contacts in the
+  original's order and nothing else, sweeps the whole key for opposites,
+  and holds the dead fulcrum, the hysteresis and the corner window.
+- **The face is SVG on a transparent layer**: the cross tilts on screen
+  towards the thumb, a dome sinks by its travel, a pill by less; where
+  the phone can buzz and the reader has switched it on, a contact closing
+  is one short pulse. Multitouch by pointer id. The grip above the pad is
+  the tap-move: a tap puts the pad in its moving state, a drag carries
+  it, a tap sets it down, kept per orientation, a double tap puts it
+  back. Full screen fills the viewport now (it had been capped at the
+  reading measure, which a phone held sideways showed) and the
+  controller sits smaller at the bottom in landscape.
+- **Held by** the play spec: the roll's sequence read off the live pad,
+  haptics counted rather than felt, two pointers on B and A, the grip's
+  move, the placement surviving a reload, and the old checks on A and
+  the cross. The NES and mobile suites pass on the preview; the pad
+  specs pass on beta.
+
+Beta serves `d121e19`; main is there too, both pushed. Live is at
+`63ec414` (1.0.266). Deploying is the owner's call.
+
+Sources for the mechanism: the patent at patents.google.com/patent/US4687200A
+and the D-pad's history on Wikipedia.

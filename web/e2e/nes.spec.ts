@@ -305,7 +305,10 @@ test("the play page is a workbench: the bar, the strip of its sections, the tran
   }));
   expect(r.bar, "one workbench bar").toBe(1);
   expect(r.name).toBe("Play");
-  expect(r.strip, "the strip is the page's sections").toEqual(["Screen", "Cartridge", "CPU", "Memory", "Palettes", "Sprites on screen", "Code", "Sprites", "Readouts", "About this console"]);
+  // The strip reads the page's sections after a frame; polled, since a slow
+  // load over the network has been seen to arrive before it did.
+  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())), { message: "the strip is the page's sections" })
+    .toEqual(["Screen", "Cartridge", "CPU", "Memory", "Palettes", "Sprites on screen", "Code", "Sprites", "Readouts", "About this console"]);
   expect(r.foot, "the footer on the floor").toBe("fixed");
   // The keys, in the chip transport's order; every one grey before a cartridge.
   expect(r.keys.map((k) => k.word)).toEqual(["power", "reset", "play", "½", "cyc", "op", "line", "frame"]);
