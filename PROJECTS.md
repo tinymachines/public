@@ -3335,7 +3335,10 @@ The owner's word on the inventory's fifth step.
   specs against beta with the rig. The chip strip spec cannot run on a
   bare preview, which has no proxy to the 6502 assets; it passes on beta.
 
-Beta serves `1614872`; main is there too, both pushed; the console
-repository is pushed at `482e1f4`. Live is still `96cfc05` (1.0.266).
-Deploying is the owner's call. Next on the note's order: breakpoints and
-the trace ring, or blocks kept on the shelf; the owner's pick.
+Deployed at the owner's word ("everything we have now"), after the
+console modules test learned that one of the files lives in the tree's
+web/ (`4a2caca`): live, main and beta are all at `4a2caca` and the
+version stays 1.0.266; the play, sprites, reads, control and bench specs
+pass against live. The console repository is pushed at `482e1f4`. Next
+on the note's order: breakpoints and the trace ring, or blocks kept on
+the shelf; the owner's pick.
