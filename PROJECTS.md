@@ -3365,5 +3365,6 @@ section below it.
   and requires the same heights; it caught the note's lost line before
   the commit.
 
-Beta serves `7bc5658`; main is there too, both pushed. Live is at
-`4a2caca` (1.0.266). Deploying is the owner's call.
+Deployed at the owner's word, so live, main and beta are all at
+`ffc6b45` and the version stays 1.0.266; the play specs, the height
+check among them, pass against live.
