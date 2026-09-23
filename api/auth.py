@@ -186,12 +186,24 @@ def require_user(request: Request, conn: sqlite3.Connection = Depends(connection
         raise HTTPException(status_code=401, detail="Not signed in. GET /v1/auth/github starts a sign-in.")
     # A state change from another origin is refused even though Lax cookies
     # already keep it out; the header is cheap to check and the rule is
-    # cheap to state.
+    # cheap to state. The site is the apex and its subdomains over https:
+    # the beta shares the session (the cookie is set on the apex's domain)
+    # and every write it made was refused until 2026-09-22, because this
+    # knew only the apex. Reads worked, so it looked like a game that
+    # never saved.
     if request.method not in ("GET", "HEAD"):
         origin = request.headers.get("origin")
-        if origin and origin != SITE and not origin.startswith("http://127.0.0.1") and not origin.startswith("http://localhost") and not origin.startswith("http://testserver"):
+        if origin and not _ours(origin) and not origin.startswith("http://127.0.0.1") and not origin.startswith("http://localhost") and not origin.startswith("http://testserver"):
             raise HTTPException(status_code=403, detail="That request came from another site.")
     return row
+
+
+def _ours(origin: str) -> bool:
+    """Whether an Origin is this site: the apex, or a subdomain of it, over https."""
+    if origin == SITE:
+        return True
+    scheme, _, host = origin.partition("//")
+    return scheme == "https:" and host.endswith("." + SITE.split("//", 1)[1]) and "/" not in host
 
 
 # ---------------------------------------------------------------------------

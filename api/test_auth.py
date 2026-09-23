@@ -243,6 +243,22 @@ def test_state_change_from_another_origin_is_refused(client, github):
     assert r.status_code == 403
 
 
+def test_a_state_change_from_a_subdomain_is_the_site_s_own(client, github):
+    """The beta shares the API and the session (the cookie is set on the
+    apex's domain), but every write it made was refused: the Origin rule
+    knew only the apex, so a game saving its battery RAM on beta got 403
+    while reading worked. A subdomain of the site is the site."""
+    sign_in(client)
+    apex = auth.SITE.split("//", 1)[1]
+    # A delete of a token that does not exist: the Origin rule answers first
+    # (403), and past it the lookup answers (404), so the two are told apart
+    # without a registry or a shelf behind the test.
+    for bad in (f"https://{apex}.evil.example", f"http://beta.{apex}", f"https://notbeta{apex}"):
+        assert client.delete("/v1/me/tokens/nothing", headers={"origin": bad}).status_code == 403, bad
+    assert client.delete("/v1/me/tokens/nothing", headers={"origin": f"https://beta.{apex}"}).status_code == 404
+    assert client.delete("/v1/me/tokens/nothing", headers={"origin": auth.SITE}).status_code == 404
+
+
 def test_a_sign_in_started_on_a_subdomain_is_sent_to_the_apex(client, github):
     """beta.tinymachines.ai shares the API, but GitHub sends the browser back
     to the apex, where a cookie set on beta does not exist. So the start
