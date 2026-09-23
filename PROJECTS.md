@@ -3265,3 +3265,25 @@ all at `5b7fcc1` and the version stays 1.0.266; the play, sprites and
 reads specs pass against live, and the bench's two PDFs answer there.
 The console repository is pushed at `6b5d89c`. Next on the note's order:
 control and the code panel.
+
+## Afternoon, 2026-09-23: the superseded drawings are withdrawn
+
+The bench session checked the live URLs rather than the links and found
+fourteen earlier revisions of TM-NESB-001 served beside the current one,
+each looking as authoritative as the right one. Their build directory
+had kept every revision since A, and our pull copied whatever the
+directories held.
+
+- **Fixed on both sides** (`96cfc05`; nes-bench `7752d23`): the pull
+  copies exactly the three files the bench's manifests name and
+  withdraws any PDF in the served directory that no manifest names.
+  `e2e/bench.spec.ts` reads the manifests and requires every earlier
+  revision letter of each package to answer 404; it failed against live
+  until the deploy, which was the honest state of it. The bench recorded
+  on its side that a revision is now a single sorting letter, since
+  anything else would break the guard rather than the link, and that a
+  whole package they retire is outside the guard and will be said.
+
+Deployed at the owner's word, so live, main and beta are all at
+`96cfc05` and the version stays 1.0.266; rev A through N answer 404 on
+live, rev P answers, and the bench spec passes there.
