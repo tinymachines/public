@@ -3626,3 +3626,28 @@ one.
 Live, main and beta at `9932355`, still 1.0.266 (a clean deploy is not
 bumped), all pushed; the NES specs pass against live. Nothing is waiting
 on the owner.
+
+## Rev E, and which ESP32 does which job
+
+nes-bench published TM-NESB-003 rev E (the pad-ble build moved off the
+ESP32-C6, which never took a flash, onto a Waveshare ESP32-P4 module whose
+radio is a C6 on SDIO; sheet 5 is the P4's header, nine pages). Nothing here
+names a bench revision: `artefacts.json` is written by the pull from the
+bench's manifest on every build, so rev E arrived with the next build and rev
+D went with it. The bench's `docs/esp32-part-choice.md` is now served beside
+pad-ble as "Which ESP32 does which job" (`5c2d6ed`), and the pad-ble card says
+the part moved.
+
+The deploy refused on the engine first: 6502 had released v0.349. Boarded at
+`fd36e779d3cd`, 42 tests (`60e1c1c`).
+
+## Checkpoint, 2026-09-24 (evening)
+
+Live, main and beta at `60e1c1c`, still 1.0.266, pushed. On live the ESP32
+page answers 200, rev E 200, rev D 404, and pad-ble links rev E. The full e2e
+against beta before the deploy: 936 passed, 13 skipped, 1 flaky (the hidden
+screen pause, green six times of six alone). The full e2e against live after
+it: 936 passed, 13 skipped, 3 flaky (the tracer article at desk, the console
+painting a cartridge, the strip on /6502/trace), all three green three times
+of three alone with no retries. Nothing failed, but flakes are rising under a
+full run and nobody has found why. Nothing is waiting on the owner.
