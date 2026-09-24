@@ -115,12 +115,31 @@ const S = {
 } as const;
 
 export function Play({ lang }: { lang: Lang }) {
-  const T = S[lang];
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   // A sprite on screen names its tile; the sheet opens it. The page holds
   // the request because the two sections are siblings.
   const [openTile, setOpenTile] = useState<{ tile: number; n: number } | null>(null);
+
+  return (
+    <>
+      <Screen lang={lang} />
+      <Cartridge lang={lang} />
+      <State lang={lang} onTile={(tile) => setOpenTile((o) => ({ tile, n: (o?.n ?? 0) + 1 }))} />
+      <Code lang={lang} />
+      <Sprites lang={lang} open={openTile} />
+      <Readouts lang={lang} />
+    </>
+  );
+}
+
+/**
+ * The screen, and the pad under it when `stage` is on. The element tree is
+ * the same either way, only the class changes, so a desk that switches
+ * between its window and its phone layout keeps the canvas the engine is
+ * attached to (a new canvas would mean detach, and detach stops the console).
+ */
+export function Screen({ lang, stage = true }: { lang: Lang; stage?: boolean }) {
+  const T = S[lang];
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (canvasRef.current) attach(canvasRef.current);
@@ -128,82 +147,86 @@ export function Play({ lang }: { lang: Lang }) {
   }, []);
 
   return (
-    <>
-      <section className="wb-stage play-section" id="screen" data-play>
-        <h2 className="eyebrow">{T.screenH}</h2>
-        <div className="play-stage" data-play-stage>
-          <div className="panel play-panel">
-            <div className="panel-face">
-              <canvas ref={canvasRef} width={2048} height={240} className="bench-screen" role="img" aria-label={T.canvasLabel} />
-            </div>
+    <section className="wb-stage play-section" id="screen" data-play>
+      <h2 className="eyebrow">{T.screenH}</h2>
+      <div className={stage ? "play-stage" : "desk-screen"} data-play-stage>
+        <div className="panel play-panel">
+          <div className="panel-face">
+            <canvas ref={canvasRef} width={2048} height={240} className="bench-screen" role="img" aria-label={T.canvasLabel} />
           </div>
-          <Gamepad labels={{ select: T.select, start: T.start }} />
         </div>
-      </section>
+        {stage ? <Gamepad labels={{ select: T.select, start: T.start }} /> : null}
+      </div>
+    </section>
+  );
+}
 
-      <section className="wb-page play-section" id="cartridge">
-        <h2 className="eyebrow">{T.cartH}</h2>
-        {s.why ? (
-          <p className="notice fail" data-play-why>
-            {s.why}
-          </p>
-        ) : null}
-        <div className="bench-controls">
-          <div className="chips">
-            <label className="btn">
-              {T.pick}
-              <input
-                type="file"
-                accept=".nes"
-                data-play-rom
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void load(f);
-                }}
-              />
-            </label>
-            <ShelfPicker lang={lang} onPick={(f, cart) => void load(f, cart)} loaded={s.loaded} />
-            {/* The strip's play key, again, beside the cartridge (owner,
-                2026-09-23): the same engine and the same state, so the two
-                never disagree; the strip may be a swipe away on a phone. */}
-            <button type="button" className="btn btn-primary" onClick={toggleRun} disabled={!s.loaded || !s.powered} aria-pressed={s.running} data-play-run-sister>
-              {s.running ? T.pause : T.run}
-            </button>
-          </div>
-          <p className="quiet" style={{ margin: 0 }}>
-            {T.keys}
-          </p>
-        </div>
-      </section>
-
-      <State lang={lang} onTile={(tile) => setOpenTile((o) => ({ tile, n: (o?.n ?? 0) + 1 }))} />
-
-      <Code lang={lang} />
-
-      <Sprites lang={lang} open={openTile} />
-
-      <section className="wb-page play-section" id="readouts">
-        <h2 className="eyebrow">{T.readH}</h2>
-        <p className="bench-readout" data-play-stats>
-          {!s.loaded ? (
-            <span className="quiet">{T.none}</span>
-          ) : (
-            <>
-              <span className="measured">{T.loaded(s.loaded)}</span>
-              {!s.powered ? <span className="measured" data-play-off>{T.off}</span> : null}
-              {s.patched ? <span className="measured" data-play-patched>{T.patched}</span> : null}
-              <span className="measured">{T.frames(s.frames, s.undecoded)}</span>
-              {s.consoleMs !== null && s.pipeMs !== null && s.encodeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.encodeMs, s.pipeMs, s.path === "webgpu")}</span> : null}
-              {s.path ? <span className="measured" data-play-path={s.path}>{T.path(s.path, s.pathWhy, s.agreement, s.tolerance, s.agreementV, s.toleranceV)}</span> : null}
-              {s.fps !== null ? <span className="measured">{T.fps(s.fps)}</span> : null}
-              {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
-              {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}
-              {s.battery ? <span className="measured" data-play-battery={s.battery.has ? (s.battery.savedAt ? "kept" : "none") : "no-battery"}>{T.battery(s.battery)}</span> : null}
-            </>
-          )}
+export function Cartridge({ lang }: { lang: Lang }) {
+  const T = S[lang];
+  const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  return (
+    <section className="wb-page play-section" id="cartridge">
+      <h2 className="eyebrow">{T.cartH}</h2>
+      {s.why ? (
+        <p className="notice fail" data-play-why>
+          {s.why}
         </p>
-      </section>
-    </>
+      ) : null}
+      <div className="bench-controls">
+        <div className="chips">
+          <label className="btn">
+            {T.pick}
+            <input
+              type="file"
+              accept=".nes"
+              data-play-rom
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void load(f);
+              }}
+            />
+          </label>
+          <ShelfPicker lang={lang} onPick={(f, cart) => void load(f, cart)} loaded={s.loaded} />
+          {/* The strip's play key, again, beside the cartridge (owner,
+              2026-09-23): the same engine and the same state, so the two
+              never disagree; the strip may be a swipe away on a phone. */}
+          <button type="button" className="btn btn-primary" onClick={toggleRun} disabled={!s.loaded || !s.powered} aria-pressed={s.running} data-play-run-sister>
+            {s.running ? T.pause : T.run}
+          </button>
+        </div>
+        <p className="quiet" style={{ margin: 0 }}>
+          {T.keys}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+export function Readouts({ lang }: { lang: Lang }) {
+  const T = S[lang];
+  const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  return (
+    <section className="wb-page play-section" id="readouts">
+      <h2 className="eyebrow">{T.readH}</h2>
+      <p className="bench-readout" data-play-stats>
+        {!s.loaded ? (
+          <span className="quiet">{T.none}</span>
+        ) : (
+          <>
+            <span className="measured">{T.loaded(s.loaded)}</span>
+            {!s.powered ? <span className="measured" data-play-off>{T.off}</span> : null}
+            {s.patched ? <span className="measured" data-play-patched>{T.patched}</span> : null}
+            <span className="measured">{T.frames(s.frames, s.undecoded)}</span>
+            {s.consoleMs !== null && s.pipeMs !== null && s.encodeMs !== null ? <span className="measured">{T.cost(s.consoleMs, s.encodeMs, s.pipeMs, s.path === "webgpu")}</span> : null}
+            {s.path ? <span className="measured" data-play-path={s.path}>{T.path(s.path, s.pathWhy, s.agreement, s.tolerance, s.agreementV, s.toleranceV)}</span> : null}
+            {s.fps !== null ? <span className="measured">{T.fps(s.fps)}</span> : null}
+            {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
+            {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}
+            {s.battery ? <span className="measured" data-play-battery={s.battery.has ? (s.battery.savedAt ? "kept" : "none") : "no-battery"}>{T.battery(s.battery)}</span> : null}
+          </>
+        )}
+      </p>
+    </section>
   );
 }

@@ -1,0 +1,155 @@
+/* The desk (Desk.tsx): structure, not look. What is settled here is where
+   a window sits, what scrolls, where its bar and its corner are, and that
+   the page stops above the floor strip. The look of a window (its edge,
+   its bar, its shadow, how the front one is marked, the tray's keys) is
+   the owner's to set; every colour and size here is a kit token, so a
+   change in style/tokens.css reaches it, and the rules to restyle are the
+   ones marked LOOK. */
+
+/* Floating: the page is exactly the viewport and does not scroll; the desk
+   takes what the bar and the tray leave, down to the strip on the floor
+   (and the footer under it, which full screen takes away). */
+html:has(.desk[data-mode="float"]) .workbench { height: 100dvh; min-height: 0; overflow: hidden; }
+.workbench:has(.desk[data-mode="float"]) .wb-main {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(var(--strip-h, 0px) + var(--app-foot-h, 0px));
+}
+html.has-fullscreen .workbench:has(.desk[data-mode="float"]) .wb-main { padding-bottom: var(--strip-h, 0px); }
+
+.desk[data-mode="float"] {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+/* Until the desk knows whether it floats, a wide screen shows nothing
+   rather than the stacked page for a frame. */
+@media (min-width: 64rem) and (min-height: 36rem) {
+  .desk:not([data-mode]) { visibility: hidden; }
+}
+
+.desk[data-mode="float"] .win {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0;
+  /* LOOK */
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  box-shadow: var(--shadow-card);
+}
+.desk[data-mode="float"]:not([data-ready]) .win,
+.desk[data-mode="float"] .win[data-open="false"] { display: none; }
+
+.win-bar, .win-grip { display: none; }
+.desk[data-mode="float"] .win-bar {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 0.75) calc(var(--u) * 1) calc(var(--u) * 0.75) calc(var(--u) * 3);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  /* LOOK */
+  border-bottom: 1px solid var(--color-rule);
+  background: var(--color-paper-sunk);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* LOOK: the front window's bar. */
+.desk[data-mode="float"] .win[data-front] .win-bar { background: var(--color-paper); }
+.win[data-dragging] .win-bar { cursor: grabbing; }
+.win-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.win-btn {
+  display: inline-grid;
+  place-items: center;
+  width: calc(var(--u) * 6);
+  height: calc(var(--u) * 6);
+  padding: 0;
+  cursor: pointer;
+  /* LOOK */
+  border: 1px solid transparent;
+  border-radius: var(--radius-hair);
+  background: transparent;
+  color: var(--color-ink-muted);
+}
+.win-btn:hover { color: var(--color-ink); border-color: var(--color-ink-faint); }
+.win-btn:focus-visible, .desk-tab:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+.win-btn svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.desk[data-mode="float"] .win-body { position: relative; flex: 1 1 auto; min-height: 0; overflow: auto; }
+.desk[data-mode="float"] .win-grip {
+  display: block;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  touch-action: none;
+  /* LOOK */
+  background: linear-gradient(135deg, transparent 55%, var(--color-ink-faint) 55% 62%, transparent 62% 76%, var(--color-ink-faint) 76% 83%, transparent 83%);
+}
+.desk[data-mode="float"] .win[data-max] .win-grip { display: none; }
+
+/* A panel inside a window: its own padding, no reading measure, and its
+   heading kept for the page's outline but not shown, because the bar
+   already says it (the bar's name is read from that heading). */
+.desk[data-mode="float"] .win-body > .play-section {
+  max-width: none;
+  margin: 0;
+  padding: calc(var(--u) * 3);
+}
+.desk[data-mode="float"] .win-body > .play-section > h2:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The screen in a window: the picture as large as its 256 by 240 shape
+   fits the window, on black. */
+.desk[data-mode="float"] .win-body > #screen { height: 100%; padding: 0; box-sizing: border-box; }
+.desk[data-mode="float"] .win[data-win="screen"] .win-body { overflow: hidden; background: #000; }
+.desk-screen { height: 100%; container-type: size; display: grid; place-items: center; }
+.desk-screen .play-panel, .desk-screen .panel-face { display: contents; }
+.desk-screen .bench-screen { width: min(100cqw, calc(100cqh * 256 / 240)); height: auto; aspect-ratio: 256 / 240; }
+
+/* The tray: a key for every window, lit while it is open. */
+.desk-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 1);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 3);
+  /* LOOK */
+  border-bottom: 1px solid var(--color-rule);
+  font-family: var(--font-mono);
+  font-size: var(--text-fine);
+}
+.desk-tab {
+  padding: calc(var(--u) * 1) calc(var(--u) * 2.5);
+  cursor: pointer;
+  font: inherit;
+  /* LOOK */
+  border: 1px solid var(--color-ink-faint);
+  border-radius: var(--radius-hair);
+  background: transparent;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.desk-tab:hover { color: var(--color-ink); }
+.desk-tab[aria-pressed="true"] { color: var(--color-ink); border-color: var(--color-ink); }
+.desk-tab[data-front] { background: var(--color-paper-sunk); }
+.desk-tidy { margin-left: auto; }

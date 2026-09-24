@@ -159,6 +159,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The console from the repository running in the page: both fast chips, the sound, and the signal path's three-line comb, on a cartridge from your own disk.",
   },
+  "/nes/create": {
+    title: "Create",
+    description:
+      "The console with every tool on one desk: the screen, the code, the CPU, the memory, the palettes and the sprite editor, each a window you can move, size and close.",
+  },
   "/nes/shelf": {
     title: "Your cartridges",
     description:

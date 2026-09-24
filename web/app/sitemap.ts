@@ -54,6 +54,7 @@ const STATIC = [
   "/nes",
   "/nes/playground",
   "/nes/play",
+  "/nes/create",
   "/nes/chips",
   "/nes/console",
   "/nes/signal",

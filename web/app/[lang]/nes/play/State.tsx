@@ -88,7 +88,10 @@ function cssOf(code: number, palette: number[][] | null): string {
   return ["#101010", "#585858", "#a8a8a8", "#f8f8f8"][(code >> 4) & 3];
 }
 
-export function State({ lang, onTile }: { lang: Lang; onTile?: (tile: number) => void }) {
+export type StatePart = "cpu" | "memory" | "palettes" | "oam";
+
+/** The four readouts, or only those named: the create desk gives each a window of its own. */
+export function State({ lang, onTile, only }: { lang: Lang; onTile?: (tile: number) => void; only?: StatePart[] }) {
   const T = S[lang];
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const m = s.machine;
@@ -96,37 +99,47 @@ export function State({ lang, onTile }: { lang: Lang; onTile?: (tile: number) =>
   const [pageText, setPageText] = useState("0000");
   // The page the monitor follows, told to the worker once it parses; the
   // bytes then arrive with every frame.
+  const has = (p: StatePart) => !only || only.includes(p);
+  const memory = has("memory");
   useEffect(() => {
-    if (!s.loaded || !s.powered) return;
+    if (!memory || !s.loaded || !s.powered) return;
     const at = parseInt(pageText, 16);
     if (Number.isFinite(at) && at >= 0 && at <= 0xffff) void watch(at & 0xff00, 256);
-  }, [pageText, s.loaded, s.powered]);
+  }, [memory, pageText, s.loaded, s.powered]);
 
   return (
     <>
-      <section className="wb-page play-section" id="cpu" data-state="cpu">
-        <h2 className="eyebrow">{T.cpuH}</h2>
-        {why ? <p className="quiet" data-state-why>{why}</p> : <CpuPanel m={m!} T={T} />}
-      </section>
+      {has("cpu") ? (
+        <section className="wb-page play-section" id="cpu" data-state="cpu">
+          <h2 className="eyebrow">{T.cpuH}</h2>
+          {why ? <p className="quiet" data-state-why>{why}</p> : <CpuPanel m={m!} T={T} />}
+        </section>
+      ) : null}
 
-      <section className="wb-page play-section" id="memory" data-state="memory">
-        <h2 className="eyebrow">{T.memH}</h2>
-        <label className="field">
-          <span>{T.page}</span>
-          <input className="input" value={pageText} onChange={(e) => setPageText(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 4))} title={T.pageHint} aria-label={T.page} data-mem-page />
-        </label>
-        {why ? <p className="quiet">{why}</p> : <Dump m={m!} />}
-      </section>
+      {has("memory") ? (
+        <section className="wb-page play-section" id="memory" data-state="memory">
+          <h2 className="eyebrow">{T.memH}</h2>
+          <label className="field">
+            <span>{T.page}</span>
+            <input className="input" value={pageText} onChange={(e) => setPageText(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 4))} title={T.pageHint} aria-label={T.page} data-mem-page />
+          </label>
+          {why ? <p className="quiet">{why}</p> : <Dump m={m!} />}
+        </section>
+      ) : null}
 
-      <section className="wb-page play-section" id="palettes" data-state="palettes">
-        <h2 className="eyebrow">{T.palH}</h2>
-        {why ? <p className="quiet">{why}</p> : <Palettes m={m!} T={T} measured={s.palette} />}
-      </section>
+      {has("palettes") ? (
+        <section className="wb-page play-section" id="palettes" data-state="palettes">
+          <h2 className="eyebrow">{T.palH}</h2>
+          {why ? <p className="quiet">{why}</p> : <Palettes m={m!} T={T} measured={s.palette} />}
+        </section>
+      ) : null}
 
-      <section className="wb-page play-section" id="oam" data-state="oam">
-        <h2 className="eyebrow">{T.oamH}</h2>
-        {why ? <p className="quiet">{why}</p> : <Oam m={m!} T={T} onTile={onTile} />}
-      </section>
+      {has("oam") ? (
+        <section className="wb-page play-section" id="oam" data-state="oam">
+          <h2 className="eyebrow">{T.oamH}</h2>
+          {why ? <p className="quiet">{why}</p> : <Oam m={m!} T={T} onTile={onTile} />}
+        </section>
+      ) : null}
     </>
   );
 }

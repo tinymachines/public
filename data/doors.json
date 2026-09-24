@@ -81,6 +81,7 @@
    "groups": [
     {
      "paths": [
+      "/nes/create",
       "/6502/api",
       "/6502/cart",
       "/6502/builders",
