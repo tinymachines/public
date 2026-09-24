@@ -172,7 +172,17 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+.pad-stage { position: relative; }
 .pad-face { display: block; width: 100%; height: auto; overflow: visible; }
+/* The cross's footprint in the face, invisible: it only takes the thumb. */
+.pad-hit { fill: transparent; stroke: none; }
+/* The cross as a plate on a pivot: an HTML layer over the footprint,
+   sized in container units so the perspective and the pivot depth scale
+   with the pad. The pivot sits below the plate, so the pressed arm sinks
+   and the plate shifts towards the thumb. Inert to the pointer. */
+.pad-cross-3d { position: absolute; container-type: inline-size; pointer-events: none; }
+.pad-tilt { width: 100%; height: 100%; transform-origin: 50% 50% -14cqw; transition: transform 40ms linear; will-change: transform; }
+.pad-tilt > svg { display: block; width: 100%; height: 100%; overflow: visible; }
 /* The grip: three dots on a bar, the haptics key at its end. */
 .pad-grip {
   display: flex;
@@ -219,6 +229,7 @@
 .pad-pill-top { fill: var(--pad-key); stroke: var(--pad-key-lo); stroke-width: 1; }
 .pad-pill.down .pad-pill-top { fill: color-mix(in srgb, var(--pad-key) 70%, var(--color-accent)); }
 .pad-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; fill: var(--pad-label); pointer-events: none; }
+.pad-label.pad-ab { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
 
 html.has-fullscreen .play-stage {
   position: fixed;

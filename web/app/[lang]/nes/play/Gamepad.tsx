@@ -59,10 +59,10 @@ const W = 300;
 const H = 140;
 const CROSS = { cx: 62, cy: 70, arm: 14, len: 52 }; // arm half-width and the reach from the fulcrum to a tip (slimmed at the owner's word)
 const PILL = { y: 92, w: 40, h: 14, gap: 10, cx: 150 };
-const DOME = { r: 21, b: { cx: 214, cy: 82 }, a: { cx: 266, cy: 66 } };
+const DOME = { r: 21, b: { cx: 214, cy: 88 }, a: { cx: 266, cy: 72 } }; // a touch lower than first drawn (owner, 2026-09-24)
 const DOME_TRAVEL = 3;
 const PILL_TRAVEL = 1.5;
-const TILT_DEG = 9;
+const TILT_DEG = 12;
 /** The pulse under the thumb as a contact closes: long enough to feel on a phone's motor. */
 const PULSE_MS = 30;
 
@@ -223,7 +223,13 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   // y with the right going away, so the axis is the tilt turned a quarter
   // the other way: the arm under the thumb sinks (the owner saw it rise,
   // 2026-09-23).
-  const crossTransform = crossLit ? `perspective(300px) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg)` : "none";
+  // The tilt is applied to an HTML layer over the face rather than to the
+  // SVG group: browsers flatten 3D transforms on SVG elements, so the
+  // perspective was being dropped and the key merely squashed (the owner:
+  // "perspective looks off", 2026-09-24). On the layer, the perspective
+  // distance and the pivot below the plate are in container units, so the
+  // key rocks the same at every size; see .pad-tilt in nes.css.
+  const crossTransform = crossLit ? `perspective(130cqw) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg)` : "none";
   const armPath = (() => {
     const a = CROSS.arm, l = CROSS.len, c = CROSS.cx, d = CROSS.cy;
     return `M${c - a} ${d - l} h${2 * a} v${l - a} h${l - a} v${2 * a} h${-(l - a)} v${l - a} h${-2 * a} v${-(l - a)} h${-(l - a)} v${-2 * a} h${l - a} z`;
@@ -258,6 +264,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
           </button>
         ) : null}
       </div>
+      <div className="pad-stage">
       <svg ref={svgRef} className="pad-face" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="controller" data-pad-face>
         <defs>
           <radialGradient id="pad-dome" cx="40%" cy="35%" r="70%">
@@ -265,21 +272,11 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
             <stop offset="1" stopColor="var(--pad-dome)" />
           </radialGradient>
         </defs>
-        {/* The cross: one piece on its fulcrum, the dish in the middle. */}
-        <g
-          data-pad-btn="cross"
-          className={"pad-cross" + (crossLit ? " lit" : "")}
-          style={{ transform: crossTransform, transformOrigin: `${CROSS.cx}px ${CROSS.cy}px`, transformBox: "view-box" } as React.CSSProperties}
-        >
-          <path d={armPath} className="pad-key" />
-          <circle cx={CROSS.cx} cy={CROSS.cy} r={CROSS.arm * 0.6} className="pad-dish" />
-          {/* The four arrows, lit one at a time as their contact closes. */}
-          <path d={`M${CROSS.cx} ${CROSS.cy - CROSS.len + 7} l5 8 h-10 z`} className={"pad-arrow" + (on(16) ? " on" : "")} />
-          <path d={`M${CROSS.cx} ${CROSS.cy + CROSS.len - 7} l5 -8 h-10 z`} className={"pad-arrow" + (on(32) ? " on" : "")} />
-          <path d={`M${CROSS.cx - CROSS.len + 7} ${CROSS.cy} l8 5 v-10 z`} className={"pad-arrow" + (on(64) ? " on" : "")} />
-          <path d={`M${CROSS.cx + CROSS.len - 7} ${CROSS.cy} l-8 5 v-10 z`} className={"pad-arrow" + (on(128) ? " on" : "")} />
-        </g>
+        {/* The cross's footprint takes the thumb; the key itself is drawn
+            on the layer above, where it can rock in three dimensions. */}
+        <path d={armPath} data-pad-btn="cross" className="pad-hit" />
         {/* Select and Start: the two pills, a shallow travel. */}
+        {/* (the domes and pills follow; the cross layer closes the stage below) */}
         {(["select", "start"] as const).map((k, i) => {
           const x = PILL.cx - PILL.w - PILL.gap / 2 + i * (PILL.w + PILL.gap);
           const down = on(BIT[k]);
@@ -299,11 +296,35 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
             <g key={k} data-pad-btn={k} className={"pad-dome" + (down ? " down" : "")} style={{ transform: down ? `translateY(${DOME_TRAVEL}px)` : "none" } as React.CSSProperties}>
               <circle cx={d.cx} cy={d.cy + DOME_TRAVEL} r={DOME.r} className="pad-dome-shadow" />
               <circle cx={d.cx} cy={d.cy} r={DOME.r} className="pad-dome-top" fill="url(#pad-dome)" />
-              <text x={d.cx} y={d.cy + DOME.r + 14} textAnchor="middle" className="pad-label">{k.toUpperCase()}</text>
+              <text x={d.cx} y={d.cy + DOME.r + 15} textAnchor="middle" className="pad-label pad-ab">{k.toUpperCase()}</text>
             </g>
           );
         })}
       </svg>
+      {/* The cross as one piece on its fulcrum: an HTML layer over its
+          footprint, tilted towards the thumb with a pivot below the plate,
+          so the pressed arm sinks and shortens, the opposite arm rises and
+          lengthens, and the side arms shift with the plate. */}
+      <div
+        className="pad-cross-3d"
+        data-pad-cross-3d
+        style={{ left: `${((CROSS.cx - CROSS.len) / W) * 100}%`, top: `${((CROSS.cy - CROSS.len) / H) * 100}%`, width: `${((2 * CROSS.len) / W) * 100}%`, height: `${((2 * CROSS.len) / H) * 100}%` }}
+      >
+        <div className="pad-tilt" data-pad-tilt style={{ transform: crossTransform }}>
+          <svg viewBox={`${CROSS.cx - CROSS.len} ${CROSS.cy - CROSS.len} ${2 * CROSS.len} ${2 * CROSS.len}`} aria-hidden="true">
+            <g className={"pad-cross" + (crossLit ? " lit" : "")}>
+              <path d={armPath} className="pad-key" />
+              <circle cx={CROSS.cx} cy={CROSS.cy} r={CROSS.arm * 0.6} className="pad-dish" />
+              {/* The four arrows, lit one at a time as their contact closes. */}
+              <path d={`M${CROSS.cx} ${CROSS.cy - CROSS.len + 7} l5 8 h-10 z`} className={"pad-arrow" + (on(16) ? " on" : "")} />
+              <path d={`M${CROSS.cx} ${CROSS.cy + CROSS.len - 7} l5 -8 h-10 z`} className={"pad-arrow" + (on(32) ? " on" : "")} />
+              <path d={`M${CROSS.cx - CROSS.len + 7} ${CROSS.cy} l8 5 v-10 z`} className={"pad-arrow" + (on(64) ? " on" : "")} />
+              <path d={`M${CROSS.cx + CROSS.len - 7} ${CROSS.cy} l-8 5 v-10 z`} className={"pad-arrow" + (on(128) ? " on" : "")} />
+            </g>
+          </svg>
+        </div>
+      </div>
+      </div>
     </div>
   );
 }

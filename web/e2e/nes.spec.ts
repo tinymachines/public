@@ -260,8 +260,11 @@ test("the play page has a pad a thumb can hold and a full screen mode, on a phon
   await expect(pad).toHaveAttribute("data-play-pad", "80");
   // The arm under the thumb sinks: CSS turns the right edge away from the
   // viewer about a positive y axis, the top edge about a positive x axis.
+  // The tilt is on the HTML layer over the cross, not on the SVG (which
+  // browsers flatten): read it there.
+  const tiltEl = page.locator("[data-pad-tilt]");
   const axis = async () => {
-    const m = (await crossEl.evaluate((g) => (g as HTMLElement).style.transform)).match(/rotate3d\(([-\d.e]+), ([-\d.e]+), 0, /);
+    const m = (await tiltEl.evaluate((g) => (g as HTMLElement).style.transform)).match(/rotate3d\(([-\d.e]+), ([-\d.e]+), 0, /);
     return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
   };
   const right = await axis();
@@ -275,7 +278,14 @@ test("the play page has a pad a thumb can hold and a full screen mode, on a phon
   expect(Math.abs(up!.y)).toBeLessThan(0.3);
   await page.mouse.up();
   await expect(pad).toHaveAttribute("data-play-pad", "00");
-  expect(await crossEl.evaluate((g) => (g as HTMLElement).style.transform)).toBe("none");
+  expect(await tiltEl.evaluate((g) => (g as HTMLElement).style.transform)).toBe("none");
+  // The layer sits exactly on the footprint the thumb presses.
+  const fit = await page.evaluate(() => {
+    const a = document.querySelector('[data-pad-btn="cross"]')!.getBoundingClientRect();
+    const b = document.querySelector("[data-pad-cross-3d]")!.getBoundingClientRect();
+    return Math.max(Math.abs(a.left - b.left), Math.abs(a.top - b.top), Math.abs(a.right - b.right), Math.abs(a.bottom - b.bottom));
+  });
+  expect(fit, "the tilting layer covers the cross's footprint").toBeLessThan(2);
   // Full screen is the document's, from the strip on the floor (the page
   // is a workbench since 2026-09-22): the bar leaves, the stage takes the
   // viewport above the strip, the strip stays with the way out, and the
