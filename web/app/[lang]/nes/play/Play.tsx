@@ -4,19 +4,20 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { Gamepad } from "./Gamepad";
 import { attach, detach, load, subscribe, snapshot, serverSnapshot, toggleRun, type DriftStats, type PlayState } from "./playEngine";
+import Link from "next/link";
+import { localize } from "@/lib/lang";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
-import { Sprites } from "./Sprites";
-import { State } from "./State";
-import { Code } from "./Code";
-import { useState } from "react";
 
 /**
  * The console in the page: a follower of playEngine's announcements. The
  * worker, the loop, the canvas, the keyboard and the audio cursor live in
- * the engine module; this renders the three machine sections of the
- * workbench (the screen with the pad, the cartridge, the readouts) from
- * its state. The transport on the floor (PlayTransport.tsx) drives the
- * same engine, and the page around them (page.tsx) says what this is.
+ * the engine module; this renders the play page's two machine sections
+ * (the screen with the pad, and the cartridge with a short line of what is
+ * running) from its state. The tools for looking inside a game live on
+ * the create desk (/nes/create), which builds its windows from the same
+ * sections exported here (owner, 2026-09-24: Play is just the playing).
+ * The transport on the floor (PlayTransport.tsx) drives the same engine,
+ * and the page around them (page.tsx) says what this is.
  *
  * Sections, each with its heading, because the section strip is built
  * from them: the strip is the map of the page, and the map is read off
@@ -65,7 +66,10 @@ const S = {
       <>display callbacks: <b>{s.presented}</b>, duplicated: <b>{s.duplicated}</b>, dropped: <b>{s.dropped}</b></>
     ),
     underruns: (n: number, audio: boolean) => (audio ? <>audio underruns: <b>{n}</b></> : <>audio: <b>none</b> (this browser gave no output)</>),
-    keys: "Keys: arrows, Z and X for B and A, Enter for Start, right Shift for Select; or the pad under the screen, a thumb on each side. Controller 2 on the left hand: W A S D, F and G for B and A, T for Start, R for Select. The strip on the floor has power, reset, play, and the steps: a half-cycle, a cycle, an instruction, a scanline, a frame.",
+    keys: "Keys: arrows, Z and X for B and A, Enter for Start, right Shift for Select; or the pad under the screen, a thumb on each side. Controller 2 on the left hand: W A S D, F and G for B and A, T for Start, R for Select.",
+    stripAll: "The strip on the floor has power, reset, play, and the steps: a half-cycle, a cycle, an instruction, a scanline, a frame.",
+    stripPlay: "The strip on the floor has power, reset, play, and full screen.",
+    create: (href: string) => <>To look inside a game while it runs, its code, its memory, its palettes and its sprites, or to change its tiles, open it on <Link href={href}>the create desk</Link>.</>,
     select: "select",
     start: "start",
     canvasLabel: "The console's picture through the three-line comb: 2048 samples by 240 lines",
@@ -107,7 +111,10 @@ const S = {
       <>表示コールバック: <b>{s.presented}</b>、重複: <b>{s.duplicated}</b>、欠落: <b>{s.dropped}</b></>
     ),
     underruns: (n: number, audio: boolean) => (audio ? <>音声のアンダーラン: <b>{n}</b></> : <>音声: <b>なし</b>（このブラウザは出力を与えなかった）</>),
-    keys: "キー: 矢印、Z と X が B と A、Enter が Start、右 Shift が Select。または画面の下のパッドを両手の親指で。コントローラ 2 は左手に: W A S D、F と G が B と A、T が Start、R が Select。床の帯には電源、リセット、実行、そしてステップ: 半サイクル、1 サイクル、1 命令、1 走査線、1 フレーム。",
+    keys: "キー: 矢印、Z と X が B と A、Enter が Start、右 Shift が Select。または画面の下のパッドを両手の親指で。コントローラ 2 は左手に: W A S D、F と G が B と A、T が Start、R が Select。",
+    stripAll: "床の帯には電源、リセット、実行、そしてステップ: 半サイクル、1 サイクル、1 命令、1 走査線、1 フレーム。",
+    stripPlay: "床の帯には電源、リセット、実行、そして全画面。",
+    create: (href: string) => <>走っているゲームの中、つまりコード、メモリ、パレット、スプライトを覗いたり、タイルを描き替えたりするには、<Link href={href}>作る机</Link>で開く。</>,
     select: "select",
     start: "start",
     canvasLabel: "3 ラインコムを通したコンソールの絵: 2048 サンプル x 240 ライン",
@@ -115,18 +122,10 @@ const S = {
 } as const;
 
 export function Play({ lang }: { lang: Lang }) {
-  // A sprite on screen names its tile; the sheet opens it. The page holds
-  // the request because the two sections are siblings.
-  const [openTile, setOpenTile] = useState<{ tile: number; n: number } | null>(null);
-
   return (
     <>
       <Screen lang={lang} />
-      <Cartridge lang={lang} />
-      <State lang={lang} onTile={(tile) => setOpenTile((o) => ({ tile, n: (o?.n ?? 0) + 1 }))} />
-      <Code lang={lang} />
-      <Sprites lang={lang} open={openTile} />
-      <Readouts lang={lang} />
+      <Cartridge lang={lang} brief />
     </>
   );
 }
@@ -161,7 +160,13 @@ export function Screen({ lang, stage = true }: { lang: Lang; stage?: boolean }) 
   );
 }
 
-export function Cartridge({ lang }: { lang: Lang }) {
+/**
+ * The cartridge: the file, the shelf, and the play key. `brief` is the play
+ * page's: the strip's sentence names only its keys, a line under the keys
+ * says what is running and whether the save is kept, and the create desk
+ * is pointed to for everything else.
+ */
+export function Cartridge({ lang, brief = false }: { lang: Lang; brief?: boolean }) {
   const T = S[lang];
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   return (
@@ -196,8 +201,26 @@ export function Cartridge({ lang }: { lang: Lang }) {
           </button>
         </div>
         <p className="quiet" style={{ margin: 0 }}>
-          {T.keys}
+          {T.keys} {brief ? T.stripPlay : T.stripAll}
         </p>
+        {brief ? (
+          <>
+            <p className="bench-readout" data-play-status>
+              {!s.loaded ? (
+                <span className="quiet">{T.none}</span>
+              ) : (
+                <>
+                  <span className="measured">{T.loaded(s.loaded)}</span>
+                  {!s.powered ? <span className="measured" data-play-off>{T.off}</span> : null}
+                  {s.battery ? <span className="measured" data-play-battery={s.battery.has ? (s.battery.savedAt ? "kept" : "none") : "no-battery"}>{T.battery(s.battery)}</span> : null}
+                </>
+              )}
+            </p>
+            <p className="quiet" style={{ margin: 0 }} data-play-create>
+              {T.create(localize(lang, "/nes/create"))}
+            </p>
+          </>
+        ) : null}
       </div>
     </section>
   );

@@ -47,6 +47,9 @@
 .play-shell .play-stage { max-width: calc(var(--u) * 180); }
 .play-shell .play-section > .eyebrow { margin: 0 0 calc(var(--u) * 3); }
 .play-shell .play-section#about { padding-bottom: calc(var(--u) * 8); }
+/* The play page's short strip has no seek to take the row's slack, so the
+   frame count takes it and full screen stays at the right end. */
+.chip-transport[data-brief] .ct-pos { margin-left: auto; }
 
 /* The sprite sheet and the open tile side by side where there is room,
    stacked on a phone. The canvases are pixel art: scaled by the browser

@@ -13,13 +13,12 @@ import "../signal/ntsc.css";
 import "../nes.css";
 
 /**
- * /nes/play: the console in the page, as a workbench (the first step of
- * notes/workbench.md, owner's call 2026-09-22): the bar, a strip of the
- * page's sections, the screen with the pad as the stage, the cartridge
- * and the readouts as sections, the prose last, the footer on the floor
- * and the console's transport on top of it. No engine work: the transport
- * has the keys the bundle honours (power, start, play, frame) and shows
- * the rest grey with the reason. Two boarded bundles in one worker:
+ * /nes/play: the console in the page, for playing (owner, 2026-09-24: the
+ * tools moved to the create desk, /nes/create). A workbench: the bar, a
+ * strip of the page's sections, the screen with the pad as the stage, the
+ * cartridge, the prose last, the footer on the floor and the console's
+ * short transport (power, reset, play, full screen) on top of it. Two
+ * boarded bundles in one worker:
  * the console (data/nes.json's wasm_bundle, built by board-nes.py --wasm
  * at the boarded commit, served from build output and never committed
  * because its chip tables are measured from NC-SA die data) and the
@@ -72,9 +71,10 @@ const PROSE = {
         source&rsquo;s rate against the wall clock and the sound with it,
         and the picture decodes the newest frame at whatever rate this
         browser manages, a frame that arrived while it was busy counted as
-        run but not decoded. The readout measures all of it live and the
-        drift counters print what a real display would have duplicated or
-        dropped, as the pacing rules specify. Where the browser gives the
+        run but not decoded. The readouts on{" "}
+        <Link href="/nes/create">the create desk</Link> measure all of it
+        live, and their drift counters print what a real display would have
+        duplicated or dropped, as the pacing rules specify. Where the browser gives the
         picture thread WebGPU, the whole picture runs there: the NES
         encoder as a compute pass (the source&rsquo;s segment map, its
         transcribed levels and its wave rule, ported line for line, the
@@ -82,11 +82,11 @@ const PROSE = {
         decode as three more, the native shell&rsquo;s shader with the
         display gamma left off, every constant from the decoder instance.
         Before it is used the first frame goes through the bundle&rsquo;s
-        own encoder and decoder as well: the readout states by how many
+        own encoder and decoder as well: the readouts state by how many
         volts the two encoders differed on any sample and by how many
         bytes of 255 the two decodes did, each against the tolerance it
         had to meet. Without WebGPU, or on a miss, the wasm path paints
-        and the readout says so.{" "}
+        and the readouts say so.{" "}
         <Link href="/nes/console">The console page</Link> has the native
         shell&rsquo;s figures.
       </>
@@ -118,7 +118,7 @@ const PROSE = {
     ),
     rate: (fps: string, x: string, stamp: string) => (
       <>
-        リポジトリのベンチの node 上では、音付きのコンソールは毎秒 {fps} フレーム、実時間の {x} 倍で走る（{stamp}）。ページではコンソールと信号経路がそれぞれ自分のスレッドで走る。ネイティブのシェルが落ち着いた形だ: コンソールは壁時計に対してソースのレートを保ち、音もそれに従う。絵はこのブラウザがこなすレートで最新のフレームを復号し、絵が忙しい間に届いたフレームは「走ったが復号されなかった」と数える。読み出しはそのすべてを生で測り、ドリフトカウンタは実際のディスプレイなら重複・欠落させたはずの分を、ペーシング規則の通りに表示する。ブラウザが絵のスレッドに WebGPU を与える場合、絵の全体がそこで走る: NES の符号化器は一つの計算パス（ソースのセグメント表、転写されたレベル、波の規則を一行ずつ移植し、レベルとグリッドは符号化器のインスタンスから取る）、コム復号はさらに三つで、ネイティブのシェルのシェーダから表示ガンマを外したもの、すべての定数は復号器のインスタンスから。使う前に最初のフレームをバンドル自身の符号化器と復号器にも通し、読み出しは二つの符号化器がどの標本でも何ボルト違ったか、二つの復号が 255 分の何バイト違ったかを、それぞれ満たすべき許容とともに述べる。WebGPU が無いか外れた場合は wasm の経路が描き、読み出しがそう告げる。ネイティブのシェルの数字は<Link href="/ja/nes/console">コンソールのページ</Link>に。
+        リポジトリのベンチの node 上では、音付きのコンソールは毎秒 {fps} フレーム、実時間の {x} 倍で走る（{stamp}）。ページではコンソールと信号経路がそれぞれ自分のスレッドで走る。ネイティブのシェルが落ち着いた形だ: コンソールは壁時計に対してソースのレートを保ち、音もそれに従う。絵はこのブラウザがこなすレートで最新のフレームを復号し、絵が忙しい間に届いたフレームは「走ったが復号されなかった」と数える。<Link href="/ja/nes/create">作る机</Link>の読み出しはそのすべてを生で測り、ドリフトカウンタは実際のディスプレイなら重複・欠落させたはずの分を、ペーシング規則の通りに表示する。ブラウザが絵のスレッドに WebGPU を与える場合、絵の全体がそこで走る: NES の符号化器は一つの計算パス（ソースのセグメント表、転写されたレベル、波の規則を一行ずつ移植し、レベルとグリッドは符号化器のインスタンスから取る）、コム復号はさらに三つで、ネイティブのシェルのシェーダから表示ガンマを外したもの、すべての定数は復号器のインスタンスから。使う前に最初のフレームをバンドル自身の符号化器と復号器にも通し、読み出しは二つの符号化器がどの標本でも何ボルト違ったか、二つの復号が 255 分の何バイト違ったかを、それぞれ満たすべき許容とともに述べる。WebGPU が無いか外れた場合は wasm の経路が描き、読み出しがそう告げる。ネイティブのシェルの数字は<Link href="/ja/nes/console">コンソールのページ</Link>に。
       </>
     ),
     boarded: (commit: string, href: string, ntscCommit: string, ntscHref: string) => (
@@ -180,7 +180,7 @@ export default async function PlayPage({ params }: { params: Promise<{ lang: Lan
           <SiteFooter lang={lang} floor />
         </div>
       </div>
-      <PlayTransport lang={lang} />
+      <PlayTransport lang={lang} brief />
     </>
   );
 }

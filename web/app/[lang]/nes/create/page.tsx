@@ -40,12 +40,12 @@ const PROSE = {
     phone: (
       <>
         On a phone there is no desk: the same tools stand one under another,
-        the way the play page shows them.
+        and the strip under the bar takes you to each.
       </>
     ),
     gaps: (
       <>
-        The tools are the ones the play page has had until now: the screen, the
+        The tools are the ones the play page had until they moved here: the screen, the
         cartridge, the CPU, the memory, the palettes, the sprites on screen, the
         code with its captured blocks, and the sprite editor. Breakpoints, a
         trace you can scroll back through and saved states are not here yet;
@@ -62,10 +62,10 @@ const PROSE = {
         <Link href="/ja/nes/play">遊ぶページ</Link>のコンソールと、ゲームの中を覗くための道具のすべてを、一つの机に並べたもの。道具はそれぞれウィンドウになっている: 上の帯をつかんで動かし、右下の角を引いて大きさを変え、帯をダブルクリックすると机いっぱいに広がる。使わないものは閉じておける。サイトの帯の下にあるキーで閉じたウィンドウをまた開け、「整える」ですべてのウィンドウが最初の位置に戻る。並べ方はこのブラウザに残る。
       </>
     ),
-    phone: <>スマートフォンには机が無い: 同じ道具が、遊ぶページと同じように縦に並ぶ。</>,
+    phone: <>スマートフォンには机が無い: 同じ道具が縦に並び、帯からそれぞれへ飛べる。</>,
     gaps: (
       <>
-        道具はいままで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、取り込んだブロック付きのコード、そしてスプライトのエディタ。ブレークポイント、遡って読めるトレース、状態の保存はまだ無い。これらはこの机のウィンドウとして加わる。
+        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、取り込んだブロック付きのコード、そしてスプライトのエディタ。ブレークポイント、遡って読めるトレース、状態の保存はまだ無い。これらはこの机のウィンドウとして加わる。
       </>
     ),
     back: "NES コンソールへ戻る",

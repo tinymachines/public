@@ -183,10 +183,10 @@ test.describe("the shelf, signed in", () => {
     await page.goto("/nes/play");
     const menu = page.locator("[data-shelf-picker=open] select");
     await expect(menu.locator("option")).toHaveCount(2); // the label, and the cartridge
-    await expect(page.locator("[data-play-stats]")).not.toContainText("Colour bars");
+    await expect(page.locator("[data-play-status]")).not.toContainText("Colour bars");
     await menu.selectOption(held.carts[0].id);
     // The page's own readout names what it loaded: the bytes reached the console.
-    await expect(page.locator("[data-play-stats]")).toContainText("Colour bars.nes");
+    await expect(page.locator("[data-play-status]")).toContainText("Colour bars.nes");
     await expect(page.locator("[data-play-why]")).toHaveCount(0);
     // The menu shows what the page is running, learned from the page.
     await expect(menu).toHaveValue(held.carts[0].id);
@@ -198,7 +198,7 @@ test.describe("the shelf, signed in", () => {
     expect(o.px).toBe(0);
     // A file from the disk clears it: the menu never claims a cartridge the console is not running.
     await page.locator("[data-play-rom]").setInputFiles(CAL);
-    await expect(page.locator("[data-play-stats]")).toContainText("cal.nes");
+    await expect(page.locator("[data-play-status]")).toContainText("cal.nes");
     await expect(menu).toHaveValue("");
   });
 
@@ -207,7 +207,10 @@ test.describe("the shelf, signed in", () => {
     const held = await shelfOf(page, "owner");
     expect(held.carts.length, "the tests before this one leave a cartridge on the shelf").toBe(1);
     await as(page, "owner");
-    await page.goto("/nes/play");
+    // The sprite editor is the create desk's, open in page order just under
+    // the width where the desk floats its windows.
+    await page.setViewportSize({ width: 1000, height: 900 });
+    await page.goto("/nes/create");
     const menu = page.locator("[data-shelf-picker=open] select");
     await menu.selectOption(held.carts[0].id);
     await expect(page.locator("[data-play-stats]")).toContainText("Colour bars.nes");
@@ -250,7 +253,7 @@ test.describe("the shelf, signed in", () => {
     await page.goto("/nes/shelf");
     await expect(page.locator("[data-cart-revisions]")).toHaveAttribute("data-cart-revisions", "1");
     // Back on the console, delete it: the row goes, the count goes, the shelf page no longer counts it.
-    await page.goto("/nes/play");
+    await page.goto("/nes/create");
     await page.locator("[data-shelf-picker=open] select").selectOption(held.carts[0].id);
     await expect(page.locator("[data-spr-kept]")).toHaveAttribute("data-spr-kept", "1", { timeout: 15_000 });
     page.once("dialog", (d) => void d.accept());
@@ -315,13 +318,13 @@ test.describe("the shelf, signed in", () => {
     await as(page, "owner");
     await page.goto("/nes/play");
     await page.locator("[data-shelf-select]").selectOption(cart.id);
-    await expect(page.locator("[data-play-stats]")).toContainText("Counter.nes");
+    await expect(page.locator("[data-play-status]")).toContainText("Counter.nes");
     await expect(page.locator("[data-play-battery]")).toHaveAttribute("data-play-battery", "none");
     expect(await saveOf(), "nothing is written before the game runs").toBeNull();
 
     // Run, then pause: the pause writes the RAM, which the program changed.
     await page.locator("[data-play-run]").click();
-    await expect.poll(async () => (await page.locator("[data-play-stats]").textContent()) ?? "").toMatch(/frames shown: [1-9]/);
+    await expect.poll(async () => (await page.locator("[data-play-pos]").textContent()) ?? "").toMatch(/frame [1-9]/);
     await page.locator("[data-play-run]").click();
     await expect(page.locator("[data-play-battery]")).toHaveAttribute("data-play-battery", "kept");
     const first = await saveOf();
@@ -334,7 +337,7 @@ test.describe("the shelf, signed in", () => {
     await page.locator("[data-shelf-select]").selectOption(cart.id);
     await expect(page.locator("[data-play-battery]")).toContainText("restored on load");
     await page.locator("[data-play-run]").click();
-    await expect.poll(async () => (await page.locator("[data-play-stats]").textContent()) ?? "").toMatch(/frames shown: [1-9]/);
+    await expect.poll(async () => (await page.locator("[data-play-pos]").textContent()) ?? "").toMatch(/frame [1-9]/);
     await page.locator("[data-play-run]").click();
     await expect.poll(async () => (await saveOf())?.[0]).toBe(2);
 
@@ -349,7 +352,7 @@ test.describe("the shelf, signed in", () => {
     // A file off the disk has no shelf entry, so nothing is kept for it.
     await page.goto("/nes/play");
     await page.locator("[data-play-rom]").setInputFiles({ name: "counter-from-disk.nes", mimeType: "application/octet-stream", buffer: Buffer.from(rom) });
-    await expect(page.locator("[data-play-stats]")).toContainText("counter-from-disk.nes");
+    await expect(page.locator("[data-play-status]")).toContainText("counter-from-disk.nes");
     await expect(page.locator("[data-play-battery]")).toHaveCount(0);
     expect((await page.request.delete(`${rig!.api}/v1/me/carts/${cart.id}`, { headers: H })).status()).toBe(204);
   });

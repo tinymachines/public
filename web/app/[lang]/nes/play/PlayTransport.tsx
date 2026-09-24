@@ -24,6 +24,10 @@ import { reset, setPower, snapshot, serverSnapshot, step, stepFrame, subscribe, 
  *
  * The position is frames run and the CPU's half-cycles, the bundle's one
  * counter, read from every tick's answer: nothing here polls the worker.
+ *
+ * `brief` is the play page's strip (owner, 2026-09-24: Play is just the
+ * playing): power, reset, play, the frames run and full screen. The steps,
+ * the rate and the seek are the create desk's, where the tools are.
  */
 
 const L = {
@@ -87,7 +91,7 @@ function Ic({ d }: { d: string }) {
   );
 }
 
-export function PlayTransport({ lang }: { lang: Lang }) {
+export function PlayTransport({ lang, brief = false }: { lang: Lang; brief?: boolean }) {
   const S = L[lang];
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   // The strip's height, published as --strip-h for what has to stop above
@@ -116,7 +120,7 @@ export function PlayTransport({ lang }: { lang: Lang }) {
   const canStep = on && !s.running && s.machine !== null;
   const stepTitle = (t: string) => (s.machine === null && on ? S.stepNone : t);
   return (
-    <div className="chip-transport" role="toolbar" aria-label="Console transport" data-powered={on ? "1" : "0"} data-play-transport>
+    <div className="chip-transport" role="toolbar" aria-label="Console transport" data-powered={on ? "1" : "0"} data-brief={brief ? "" : undefined} data-play-transport>
       <div className="ct-row">
         <button
           type="button"
@@ -145,28 +149,32 @@ export function PlayTransport({ lang }: { lang: Lang }) {
         >
           <Ic d={s.running ? IC.pause : IC.play} /><span className="lb">{s.running ? S.wPause : S.wPlay}</span>
         </button>
-        <button type="button" className="tbtn" title={stepTitle(S.half)} aria-label={stepTitle(S.half)} disabled={!canStep} onClick={() => void step("half")} data-play-half>
-          <Ic d={IC.next} /><span className="lb">{S.wHalf}</span>
-        </button>
-        <button type="button" className="tbtn" title={stepTitle(S.cycle)} aria-label={stepTitle(S.cycle)} disabled={!canStep} onClick={() => void step("cycle")} data-play-cycle>
-          <Ic d={IC.cycle} /><span className="lb">{S.wCyc}</span>
-        </button>
-        <button type="button" className="tbtn" title={stepTitle(S.op)} aria-label={stepTitle(S.op)} disabled={!canStep} onClick={() => void step("op")} data-play-op>
-          <Ic d={IC.op} /><span className="lb">{S.wOp}</span>
-        </button>
-        <button type="button" className="tbtn" title={stepTitle(S.line)} aria-label={stepTitle(S.line)} disabled={!canStep} onClick={() => void step("line")} data-play-line>
-          <Ic d={IC.line} /><span className="lb">{S.wLine}</span>
-        </button>
-        <button type="button" className="tbtn" title={S.frame} aria-label={S.frame} disabled={!on || s.running} onClick={() => void stepFrame()} data-play-frame>
-          <Ic d={IC.next} /><span className="lb">{S.wFrame}</span>
-        </button>
-        <label className="ct-rate" title={S.rate}>
-          <input type="range" min={0} max={0} step={1} value={0} disabled aria-label={S.rate} readOnly />
-          <span className="tlab">1x</span>
-        </label>
-        <input type="range" className="ct-seek" min={0} max={0} step={1} value={0} disabled aria-label={S.seek} title={S.seek} readOnly />
+        {brief ? null : (
+          <>
+            <button type="button" className="tbtn" title={stepTitle(S.half)} aria-label={stepTitle(S.half)} disabled={!canStep} onClick={() => void step("half")} data-play-half>
+              <Ic d={IC.next} /><span className="lb">{S.wHalf}</span>
+            </button>
+            <button type="button" className="tbtn" title={stepTitle(S.cycle)} aria-label={stepTitle(S.cycle)} disabled={!canStep} onClick={() => void step("cycle")} data-play-cycle>
+              <Ic d={IC.cycle} /><span className="lb">{S.wCyc}</span>
+            </button>
+            <button type="button" className="tbtn" title={stepTitle(S.op)} aria-label={stepTitle(S.op)} disabled={!canStep} onClick={() => void step("op")} data-play-op>
+              <Ic d={IC.op} /><span className="lb">{S.wOp}</span>
+            </button>
+            <button type="button" className="tbtn" title={stepTitle(S.line)} aria-label={stepTitle(S.line)} disabled={!canStep} onClick={() => void step("line")} data-play-line>
+              <Ic d={IC.line} /><span className="lb">{S.wLine}</span>
+            </button>
+            <button type="button" className="tbtn" title={S.frame} aria-label={S.frame} disabled={!on || s.running} onClick={() => void stepFrame()} data-play-frame>
+              <Ic d={IC.next} /><span className="lb">{S.wFrame}</span>
+            </button>
+            <label className="ct-rate" title={S.rate}>
+              <input type="range" min={0} max={0} step={1} value={0} disabled aria-label={S.rate} readOnly />
+              <span className="tlab">1x</span>
+            </label>
+            <input type="range" className="ct-seek" min={0} max={0} step={1} value={0} disabled aria-label={S.seek} title={S.seek} readOnly />
+          </>
+        )}
         <span className="ct-pos" aria-live="off" data-play-pos>
-          {!loaded ? S.none : <>{S.frames} <b>{s.framesRun}</b> · {S.cyc} <b>{Math.floor(s.halfCycles / 2)}</b></>}
+          {!loaded ? S.none : brief ? <>{S.frames} <b>{s.framesRun}</b></> : <>{S.frames} <b>{s.framesRun}</b> · {S.cyc} <b>{Math.floor(s.halfCycles / 2)}</b></>}
         </span>
         <FullscreenButton lang={lang} />
       </div>

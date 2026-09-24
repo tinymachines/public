@@ -63,6 +63,7 @@ const L = {
     useH: "Where they turn up",
     use: "Every cartridge menu on the site offers these by name once you are signed in:",
     play: "the console you can play",
+    create: "the create desk, where sprite edits are kept as revisions",
     playground: "the playground's benches",
   },
   ja: {
@@ -113,6 +114,7 @@ const L = {
     useH: "どこに現れるか",
     use: "サインインしていれば、サイト内のカートリッジを選ぶメニューすべてに名前で並ぶ:",
     play: "遊べるコンソール",
+    create: "スプライトの編集をリビジョンとして残す作る机",
     playground: "プレイグラウンドの各ベンチ",
   },
 } as const;
@@ -376,7 +378,7 @@ export function Manager({ lang }: { lang: Lang }) {
         <>
           <h2>{S.useH}</h2>
           <p>
-            {S.use} <a href={localize(lang, "/nes/play")}>{S.play}</a>, <a href={localize(lang, "/nes/playground")}>{S.playground}</a>.
+            {S.use} <a href={localize(lang, "/nes/play")}>{S.play}</a>, <a href={localize(lang, "/nes/create")}>{S.create}</a>, <a href={localize(lang, "/nes/playground")}>{S.playground}</a>.
           </p>
         </>
       ) : null}
