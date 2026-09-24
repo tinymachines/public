@@ -3531,3 +3531,35 @@ hand-named gate is gone and its list of the bench's checks is one line,
 the bench's own. That script now says in its own header that another
 repository reads it: adding a check strengthens both sides, and renaming
 it or changing its exit status breaks a build that is not the bench's.
+
+## Evening, 2026-09-23: rev C, a cache that kept rev B, and the outage that was ours
+
+The bench issued TM-NESB-003 rev C (nes-bench `76db660`: rev B's own
+summary band still said a second pad was polled). The pull took it, and
+the beta build refused: four pages still linked rev B. **Turbopack's
+build cache keys a compiled document on the document's own content**,
+so a remark plugin reading a record the bundler never sees ships the
+previous build's links the moment the record moves and the markdown
+does not, which is exactly a revision bump. The printable line is
+rendered by the docs page component now (`lib/artefacts.tsx`, passed as
+MDX `components`), reading the record as each page is generated on
+every build; the plugin is gone. check-build named the four pages, which
+is the check working.
+
+**Live went down on pad-ble the same evening, and it was this session's
+doing.** The live web unit runs `next start` from this checkout's own
+`web/` (WorkingDirectory), and the day's preview builds for the e2e
+specs ran `next build` in that directory under the running server.
+`next start` lists `public/` and loads its manifests at start, so a
+package file that appeared afterwards 404'd and a page whose HTML was
+momentarily absent mid-build was cached as a miss. The Japanese pad-ble
+page was current and the English one was gone; the peer session
+measured it the moment the owner hit it. The on-disk build under the
+unit was rebuilt at the deployed commit `56519e7` against the current
+bench; the restart was refused by this session's permission layer and
+handed to the owner.
+
+**The rule from it: no `next build` in this checkout except inside
+`deploy.sh`, which restarts the unit.** Previews of committed work go
+through the beta worktree (`scripts/beta.sh --follow`), which builds
+and restarts its own unit. The port-6512 preview habit is retired.

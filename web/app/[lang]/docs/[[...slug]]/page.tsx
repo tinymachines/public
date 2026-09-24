@@ -8,6 +8,7 @@ import { abs, pageMeta } from "@/lib/seo";
 import { localize, type Lang } from "@/lib/lang";
 import { JsonLd } from "@/app/components/JsonLd";
 import { Untranslated } from "@/app/components/Untranslated";
+import { artefactComponents } from "@/lib/artefacts";
 
 /**
  * Every docs URL, and the content behind it.
@@ -102,7 +103,10 @@ export default async function DocsPage({
           2026-08-28, when 38 ported pages needed the same one. The DECISION
           to print it stays here, next to the import that decides it. */}
       {useJa ? null : <Untranslated lang={lang as Lang} />}
-      <Content />
+      {/* The printable links under the title, read from the pull's record
+          as this page is generated: see lib/artefacts.tsx for why they are
+          neither in the markdown nor compiled into it. */}
+      <Content components={artefactComponents(page.file, useJa ? "ja" : "en")} />
     </>
   );
 }
