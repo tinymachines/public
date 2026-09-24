@@ -1063,7 +1063,9 @@ h2.display { font-size: var(--text-h2); }
    carries a phone-width version of the same guarantee, for the same reason.
    A pre does not wrap at all and scrolls instead, which is what a code block
    should do. */
-.prose > :is(p, ul, ol, blockquote, table) { overflow-wrap: break-word; }
+/* Headings too: a document's h2 can be one identifier longer than a phone
+   ("Why SOC_USB_OTG_SUPPORTED is the line that matters", 449px in 350). */
+.prose > :is(p, ul, ol, blockquote, table, h2, h3, h4) { overflow-wrap: break-word; }
 
 .prose a {
   color: var(--color-ink);

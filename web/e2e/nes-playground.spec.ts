@@ -40,7 +40,10 @@ test("the playground is published: indexed, in the sitemap, and in the section's
   const res = await page.request.get(`${BASE}/nes/playground`);
   expect(res.status()).toBe(200);
   const html = await res.text();
-  expect(html).not.toMatch(/<meta name="robots" content="noindex/);
+  // The beta is noindex on every page by design (lib/seo.ts BETA), so there
+  // the check is that it says so; the live site is where it must not.
+  if (/\/\/beta\./.test(BASE)) expect(html).toMatch(/<meta name="robots" content="noindex/);
+  else expect(html).not.toMatch(/<meta name="robots" content="noindex/);
   expect(html).toMatch(/<link rel="canonical" href="[^"]*\/nes\/playground"/);
   const sitemap = await (await page.request.get(`${BASE}/sitemap.xml`)).text();
   expect(sitemap).toContain("/nes/console</loc>");
