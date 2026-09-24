@@ -336,7 +336,9 @@ test("the play page is a workbench for playing: the bar, the strip of its sectio
   expect(r.bar, "one workbench bar").toBe(1);
   expect(r.name).toBe("Play");
   await expect.poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())), { message: "the strip is the page's sections" })
-    .toEqual(["Screen", "Cartridge", "About this console"]);
+    .toEqual(["Screen", "Cartridge", "About this console", "Create"]);
+  // After the divider, the other way to use the console.
+  expect(await page.locator(".wb-strip .strip-run + .strip-run a").first().getAttribute("href")).toBe("/nes/create");
   expect(r.foot, "the footer on the floor").toBe("fixed");
   // Playing takes power, reset and play; the steps, the rate and the seek
   // are the create desk's, and so are the panels.
@@ -391,7 +393,7 @@ test("the create desk's transport: every key in the chip transport's order, the 
   // The strip reads the page's sections after a frame; polled, since a slow
   // load over the network has been seen to arrive before it did.
   await expect.poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())), { message: "the strip is the page's sections" })
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this page"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this page", "Play"]);
   expect(r.foot, "the footer on the floor").toBe("fixed");
   // The keys, in the chip transport's order; every one grey before a cartridge.
   expect(r.keys.map((k) => k.word)).toEqual(["power", "reset", "play", "½", "cyc", "op", "line", "frame"]);

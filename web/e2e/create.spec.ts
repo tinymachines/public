@@ -34,6 +34,8 @@ test("the desk: a key for every window named by its own heading, the first five 
   expect(shown).toEqual(OPEN);
   const pressed = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => (b as HTMLElement).dataset.deskTab));
   expect(pressed).toEqual(OPEN);
+  // The tray ends with the way back to playing.
+  await expect(page.locator("[data-desk-more]")).toHaveAttribute("href", "/nes/play");
   // A bar's name is its window's heading.
   await expect(page.locator("[data-win=code] .win-title")).toHaveText("Code");
 
@@ -167,7 +169,7 @@ test("on a phone the windows stand one under another under the section strip, wi
   expect(await page.locator("[data-win-bar]").evaluateAll((bs) => bs.filter((b) => (b as HTMLElement).offsetParent !== null).length)).toBe(0);
   await expect
     .poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())))
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this page"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this page", "Play"]);
   // Every window shows, the closed-by-default ones too, in page order.
   const tops = await page.locator("[data-win]").evaluateAll((ws) => ws.map((w) => w.getBoundingClientRect().top));
   expect(tops.every((t, i) => i === 0 || t > tops[i - 1])).toBe(true);

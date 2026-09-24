@@ -51,28 +51,60 @@ async function panel(page: import("@playwright/test").Page) {
   return { titles, hrefs, labels };
 }
 
-test("the panel is the site and the projects, the same on every page, and nothing twice", async ({ page }) => {
+/** The brief groups under a section (or the whole panel outside one): the site and the projects. */
+async function brief(page: import("@playwright/test").Page) {
+  const titles = await page.locator(".menu-group:not(.menu-section) > h2").evaluateAll((hs) => hs.map((h) => h.textContent ?? ""));
+  const hrefs = await page.locator(".menu-group:not(.menu-section) .menu-item").evaluateAll((as) =>
+    as.map((a) => ((a as HTMLAnchorElement).getAttribute("href") ?? "").split("#")[0].replace(/\/$/, "") || "/"),
+  );
+  return { titles, hrefs };
+}
+
+test("the site and the projects are the same on every page, nothing twice; inside a section the panel opens on it first", async ({ page }) => {
+  // Owner, 2026-09-24: on /nes the panel was the site's map and nothing of
+  // the section the reader stood in. Inside a section it now opens on the
+  // section's parts under the section's name, the strip's links in the
+  // strip's order; the site and the projects follow, unchanged.
   await page.setViewportSize(DESK);
   let first: string[] | null = null;
-  for (const p of ["/", "/nes/play", "/docs/nes/boards", "/6502/explorer", "/hotbits"]) {
+  for (const [p, section] of [["/", null], ["/docs/nes/boards", null], ["/nes/play", "The NES console"], ["/6502/explorer", "6502"], ["/hotbits", "hotbits"]] as const) {
     await open(page, p, 500);
-    const { titles, hrefs } = await panel(page);
-    expect(titles, `${p}: two groups`).toEqual(["The site", "Projects"]);
-    expect(hrefs.length, `${p}: the doors`).toBeGreaterThanOrEqual(6);
-    for (const want of ["/", "/docs", "/6502", "/nes"]) expect(hrefs, `${p}: missing ${want}`).toContain(want);
-    expect(new Set(hrefs).size, `${p}: duplicate destination in ${JSON.stringify(hrefs)}`).toBe(hrefs.length);
-    if (first) expect(hrefs, `${p}: a different panel from the front page's`).toEqual(first);
-    first = hrefs;
+    const { titles } = await panel(page);
+    const b = await brief(page);
+    expect(b.titles, `${p}: the two groups`).toEqual(["The site", "Projects"]);
+    expect(titles, `${p}: the section first, by its name`).toEqual(section ? [section, "The site", "Projects"] : ["The site", "Projects"]);
+    expect(b.hrefs.length, `${p}: the doors`).toBeGreaterThanOrEqual(6);
+    for (const want of ["/", "/docs", "/6502", "/nes"]) expect(b.hrefs, `${p}: missing ${want}`).toContain(want);
+    expect(new Set(b.hrefs).size, `${p}: duplicate destination in ${JSON.stringify(b.hrefs)}`).toBe(b.hrefs.length);
+    if (first) expect(b.hrefs, `${p}: a different site and projects from the front page's`).toEqual(first);
+    first = b.hrefs;
+    if (section) {
+      const mine = await page.locator(".menu-section .menu-item").evaluateAll((as) => as.map((a) => (a.getAttribute("href") ?? "").replace(/\/$/, "")));
+      // A workbench carries its own strip, so the section's is read off a reading page of it.
+      const landing = mine[0];
+      await page.keyboard.press("Escape");
+      await open(page, landing, 300);
+      const strip = await page.locator("[data-parts-strip] .strip-row:not(.strip-ghost) a").evaluateAll((as) => as.map((a) => (a.getAttribute("href") ?? "").replace(/\/$/, "")));
+      expect(mine, `${p}: the section's parts are the strip's`).toEqual(strip);
+    }
   }
+  // Where the reader is in the section is marked there too.
+  await open(page, "/nes/signal/bench", 300);
+  await panel(page);
+  await expect(page.locator(".menu-section .menu-item[aria-current=location] b")).toHaveText("The signal");
+  await expect(page.locator(".menu-section .menu-item b").nth(3)).toHaveText("Learn");
+  await expect(page.locator(".menu-section .menu-item").nth(3).locator("span")).toHaveText("The NES at human speed");
 });
 
 test("the Japanese panel carries the same doors, localized", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/ja/nes", 500);
-  const { titles, hrefs, labels } = await panel(page);
-  expect(titles).toEqual(["サイト", "プロジェクト"]);
-  for (const want of ["/ja", "/ja/docs", "/ja/6502", "/ja/nes"]) expect(hrefs, `missing ${want}`).toContain(want);
+  const { titles, labels } = await panel(page);
+  const b = await brief(page);
+  expect(titles).toEqual(["NES コンソール", "サイト", "プロジェクト"]);
+  for (const want of ["/ja", "/ja/docs", "/ja/6502", "/ja/nes"]) expect(b.hrefs, `missing ${want}`).toContain(want);
   expect(labels.join(" ")).toContain("NES コンソール");
+  expect(labels).toContain("作る");
 });
 
 // The manifest, read the way the site reads it (lib/projects.ts arrivedSurfaces):

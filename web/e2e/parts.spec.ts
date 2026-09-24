@@ -89,16 +89,56 @@ test("inside a part, the strip marks the part; on a site page there is no strip"
   }
 });
 
-test("on a phone the strip scrolls itself sideways, never the page", async ({ page }) => {
-  await page.setViewportSize(PHONE);
-  await open(page, "/nes/chips", 500);
+test("the NES strip: Overview, Play, Create, Learn, then the parts, then Notebook and Retro, a divider between, all on one row at a desk", async ({ page }) => {
+  // Owner, 2026-09-24: Create was missing, the phrases ran the row off the
+  // edge, and the parts wanted to read as a cluster of their own.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, "/nes", 500);
   const r = await page.evaluate(() => {
     const nav = document.querySelector<HTMLElement>("[data-parts-strip]")!;
-    const cur = nav.querySelector<HTMLElement>("[aria-current]")!;
-    return { wider: nav.scrollWidth > nav.clientWidth, sideways: document.documentElement.scrollWidth > innerWidth + 1, sticky: getComputedStyle(nav).position, curVisible: cur.getBoundingClientRect().right <= innerWidth + 1 };
+    const runs = [...nav.querySelectorAll(".strip-row:not(.strip-ghost) > .strip-run")].map((run) => [...run.querySelectorAll("a")].map((a) => (a.textContent ?? "").trim()));
+    const row = nav.querySelector<HTMLElement>(".strip-row:not(.strip-ghost)")!;
+    const last = [...row.querySelectorAll("a")].pop()!.getBoundingClientRect();
+    return { fold: nav.dataset.fold, runs, rowShown: getComputedStyle(row).display !== "none", lastRight: last.right, vw: innerWidth };
   });
-  expect(r.wider, "more parts than a phone's width holds").toBe(true);
-  expect(r.sideways).toBe(false);
-  expect(r.sticky).toBe("sticky");
-  expect(r.curVisible, "the part you are on is in view without a swipe").toBe(true);
+  expect(r.runs).toEqual([
+    ["Overview", "Play", "Create", "Learn"],
+    ["The chips", "The console", "The signal", "The bench", "The calibration cart"],
+    ["Notebook", "Retro"],
+  ]);
+  expect(r.fold, "measured, and it fits").toBe("0");
+  expect(r.rowShown).toBe(true);
+  expect(r.lastRight, "the last part is on screen, not cut at the edge").toBeLessThanOrEqual(r.vw);
+  // The one-word labels are the strip's: the crumb and the heading keep the name.
+  await open(page, "/nes/playground", 500);
+  expect(await page.locator("[data-parts-strip] a[aria-current=page]").first().textContent()).toBe("Learn");
+});
+
+test("where the row does not fit, the strip folds into one button naming the page, which opens the same links; nothing scrolls sideways", async ({ page }) => {
+  for (const vp of [PHONE, { width: 900, height: 900 }]) {
+    await page.setViewportSize(vp);
+    await open(page, "/nes/chips", 500);
+    const nav = page.locator("[data-parts-strip]");
+    await expect(nav).toHaveAttribute("data-fold", "1");
+    const fold = nav.locator(".strip-fold");
+    await expect(fold).toBeVisible();
+    await expect(fold.locator(".strip-here")).toHaveText("The chips");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${vp.width}: sideways`).toBeLessThanOrEqual(vp.width);
+    const rowLinks = await nav.locator(".strip-row:not(.strip-ghost) a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+    await fold.click();
+    await expect(fold).toHaveAttribute("aria-expanded", "true");
+    const sheet = nav.locator(".strip-sheet");
+    await expect(sheet).toBeVisible();
+    expect(await sheet.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual(rowLinks);
+    await expect(sheet.locator("a[aria-current=page]")).toHaveText("The chips");
+    const box = await sheet.boundingBox();
+    expect(box!.y + box!.height, "the list is on screen").toBeLessThanOrEqual(vp.height);
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+    await expect(fold).toBeFocused();
+    // A link in the list goes there, and the list closes behind it.
+    await fold.click();
+    await sheet.getByText("Create", { exact: true }).click();
+    await expect(page).toHaveURL(/\/nes\/create$/);
+  }
 });
