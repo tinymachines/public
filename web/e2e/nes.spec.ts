@@ -258,9 +258,21 @@ test("the play page has a pad a thumb can hold and a full screen mode, on a phon
   await page.mouse.move(cross.x + cross.width * 0.85, cross.y + cross.height / 2);
   await page.mouse.down();
   await expect(pad).toHaveAttribute("data-play-pad", "80");
-  expect(await crossEl.evaluate((g) => (g as HTMLElement).style.transform), "the key tilts").toContain("rotate3d");
+  // The arm under the thumb sinks: CSS turns the right edge away from the
+  // viewer about a positive y axis, the top edge about a positive x axis.
+  const axis = async () => {
+    const m = (await crossEl.evaluate((g) => (g as HTMLElement).style.transform)).match(/rotate3d\(([-\d.e]+), ([-\d.e]+), 0, /);
+    return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
+  };
+  const right = await axis();
+  expect(right, "the key tilts").not.toBeNull();
+  expect(right!.y, "Right sinks the right arm").toBeGreaterThan(0.5);
+  expect(Math.abs(right!.x)).toBeLessThan(0.3);
   await page.mouse.move(cross.x + cross.width / 2, cross.y + cross.height * 0.15, { steps: 4 });
   await expect(pad).toHaveAttribute("data-play-pad", "10");
+  const up = await axis();
+  expect(up!.x, "Up sinks the top arm").toBeGreaterThan(0.5);
+  expect(Math.abs(up!.y)).toBeLessThan(0.3);
   await page.mouse.up();
   await expect(pad).toHaveAttribute("data-play-pad", "00");
   expect(await crossEl.evaluate((g) => (g as HTMLElement).style.transform)).toBe("none");

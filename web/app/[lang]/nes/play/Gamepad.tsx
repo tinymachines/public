@@ -219,7 +219,11 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   const crossLit = lit & 0xf0;
   // The cross as a rocking piece: a tilt about the fulcrum, drawn as a
   // rotation about the axis at right angles to the thumb's offset.
-  const crossTransform = crossLit ? `perspective(300px) rotate3d(${tilt.y}, ${-tilt.x}, 0, ${TILT_DEG}deg)` : "none";
+  // CSS rotates about x with the top going away from the viewer and about
+  // y with the right going away, so the axis is the tilt turned a quarter
+  // the other way: the arm under the thumb sinks (the owner saw it rise,
+  // 2026-09-23).
+  const crossTransform = crossLit ? `perspective(300px) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg)` : "none";
   const armPath = (() => {
     const a = CROSS.arm, l = CROSS.len, c = CROSS.cx, d = CROSS.cy;
     return `M${c - a} ${d - l} h${2 * a} v${l - a} h${l - a} v${2 * a} h${-(l - a)} v${l - a} h${-2 * a} v${-(l - a)} h${-(l - a)} v${-2 * a} h${l - a} z`;

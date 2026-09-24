@@ -3479,3 +3479,11 @@ automatically, user needs to click play to resume play."
   sees it still hold, then presses play and sees it run. The spec was
   run red with the listener removed before it was trusted. NES, mobile
   and parts suites pass on the preview (445), unit tests 101.
+
+The owner, on beta: "Close! Flip the up/down press effects and the
+left/right." The cross had tilted the wrong way: the arm under the thumb
+rose. CSS turns the top edge away from the viewer about a positive x
+axis and the right edge away about a positive y axis, and the axis had
+been written a quarter turn the other way. The play spec now reads the
+axis off the transform and asserts the sign for Right and for Up, and
+was run red against the old axis before it was trusted.
