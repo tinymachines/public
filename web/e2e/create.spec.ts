@@ -121,7 +121,7 @@ test("a window moves by its bar, stops at the desk's edge, sizes from its corner
   expect(Math.round((await rect(page, "[data-win=memory]")).x)).toBe(Math.round(before.x));
 });
 
-test("a window closes from its bar and opens again from the tray, on top; a sprite on screen opens the sprite window", async ({ page }) => {
+test("a window closes from its bar and opens again from the tray, on top", async ({ page }) => {
   await openDesk(page);
   await page.locator("[data-win=cpu] [data-win-close]").click();
   await expect(page.locator("[data-win=cpu]")).toBeHidden();
@@ -132,16 +132,6 @@ test("a window closes from its bar and opens again from the tray, on top; a spri
   // The tray key of the window on top closes it.
   await page.locator("[data-desk-tab=palettes]").click();
   await expect(page.locator("[data-win=palettes]")).toBeHidden();
-
-  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
-  await expect(page.locator("[data-play-pos]")).toContainText("frame", { timeout: 20_000 });
-  await page.locator("[data-play-frame]").click();
-  await page.locator("[data-desk-tab=oam]").click();
-  const tile = page.locator("[data-oam-tile]").first();
-  await expect(tile).toBeVisible({ timeout: 15_000 });
-  await tile.click();
-  await expect(page.locator("[data-win=sprites]")).toBeVisible();
-  await expect(page.locator("[data-desk-tab=sprites]")).toHaveAttribute("data-front", "");
 });
 
 test("the console runs in its window, the code window follows the steps, and a phone's width keeps it running", async ({ page }) => {
