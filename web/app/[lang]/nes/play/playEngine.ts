@@ -260,6 +260,11 @@ let canvas: HTMLCanvasElement | null = null;
 let lastT: number | null = null;
 let pad = 0;
 let tickInFlight = false;
+/** Whether a call to the console is out; the site's checks read it too, to tell a pause from the tick it let finish. */
+function setTicking(v: boolean) {
+  tickInFlight = v;
+  (window as unknown as { __playTicking?: boolean }).__playTicking = v;
+}
 let pictureBusy = false;
 let latest: { colour: Uint8Array; emphasis: Uint8Array; parity: number } | null = null;
 let painted: number[] = [];
@@ -590,9 +595,9 @@ function askPalette() {
  */
 export async function step(kind: "half" | "cycle" | "op" | "line") {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
-  tickInFlight = true;
+  setTicking(true);
   const r = await consoleW.call({ path: "step", kind, pad: padByte(), pad2: pad2Byte() });
-  tickInFlight = false;
+  setTicking(false);
   if (!r.ok) {
     set({ why: r.error });
     return;
@@ -631,9 +636,9 @@ export async function reset() {
 /** One frame, while paused: the way to watch a game a frame at a time. */
 export async function stepFrame() {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
-  tickInFlight = true;
+  setTicking(true);
   const r = await consoleW.call({ path: "frame", pad: padByte(), pad2: pad2Byte() });
-  tickInFlight = false;
+  setTicking(false);
   if (!r.ok) {
     set({ why: r.error });
     return;
@@ -729,12 +734,12 @@ async function loop() {
     requestAnimationFrame(() => void loop());
     return;
   }
-  tickInFlight = true;
+  setTicking(true);
   const now = performance.now();
   const dtNs = lastT === null ? 0 : (now - lastT) * 1e6;
   lastT = now;
   const r = await consoleW.call({ path: "tick", dtNs, pad: padByte(), pad2: pad2Byte() });
-  tickInFlight = false;
+  setTicking(false);
   if (!r.ok) {
     set({ running: false, why: r.error });
     return;

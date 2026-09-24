@@ -447,11 +447,17 @@ test("a hidden screen pauses the console, and only the play key resumes it", asy
   await hide(true);
   await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "false");
   // The tick in flight when the pause landed still finishes and counts
-  // its frames; the count is read once that has settled.
-  await page.waitForTimeout(400);
+  // its frames; the count is read once it has. That tick is paced by the
+  // wall clock, so after a stall on a busy box it catches up many frames at
+  // once and can outlast any fixed wait (29 to 55 seen after 400ms, and 11
+  // to 24 after two agreeing reads a quarter second apart), so the engine
+  // says when a call is out and the count is read when none is.
+  const ticking = () => page.evaluate(() => (window as unknown as { __playTicking?: boolean }).__playTicking);
+  await expect.poll(ticking, { timeout: 10_000 }).toBe(false);
   const at = await framesRun();
   await page.waitForTimeout(600);
   expect(await framesRun(), "no frame runs while hidden").toBe(at);
+  expect(await ticking(), "and no call to the console went out").toBe(false);
   // Coming back does not resume it: the reader's play key does.
   await hide(false);
   await page.waitForTimeout(600);
