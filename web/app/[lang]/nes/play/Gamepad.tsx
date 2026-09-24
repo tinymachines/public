@@ -238,7 +238,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   // thumb without changing size. (A z offset on transform-origin would
   // do the rock but also push the whole plate towards the eye before the
   // perspective, so every press grew the key by a tenth.)
-  const crossTransform = crossLit ? `perspective(130cqw) translateZ(${-PIVOT}) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg) translateZ(${PIVOT})` : "none";
+  const crossTransform = crossLit ? `perspective(130cqw) translateZ(-${PIVOT}) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg) translateZ(${PIVOT})` : "none";
   const armPath = (() => {
     const a = CROSS.arm, l = CROSS.len, c = CROSS.cx, d = CROSS.cy;
     return `M${c - a} ${d - l} h${2 * a} v${l - a} h${l - a} v${2 * a} h${-(l - a)} v${l - a} h${-2 * a} v${-(l - a)} h${-(l - a)} v${-2 * a} h${l - a} z`;
