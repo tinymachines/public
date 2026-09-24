@@ -3563,3 +3563,32 @@ handed to the owner.
 `deploy.sh`, which restarts the unit.** Previews of committed work go
 through the beta worktree (`scripts/beta.sh --follow`), which builds
 and restarts its own unit. The port-6512 preview habit is retired.
+
+## 2026-09-24: the cross rocks in three dimensions
+
+The owner, from the phone: scootch A and B down, make them bolder, and
+the perspective looks off: pressing down should send the down arm away
+(shorter edge) and bring the up arm towards the eye (longer edge), with
+the side arms shifting down with the plate.
+
+- **The tilt had been on the SVG group, and browsers flatten 3D
+  transforms on SVG elements**, so the perspective was dropped and the
+  key merely squashed a hair. The key is drawn now on an HTML layer
+  over its footprint (`.pad-cross-3d` > `.pad-tilt`), the footprint in
+  the face staying as the invisible hit target; the layer is inert to
+  the pointer. Perspective and pivot depth are in container units, so
+  the rock is the same at every size.
+- **The pivot is a hemisphere below the plate:** the plate is carried
+  down to it, rocked, and carried back before the eye looks
+  (`translateZ(-14cqw) rotate3d(...) translateZ(14cqw)`), so the
+  pressed arm sinks and shortens, the opposite rises and lengthens, and
+  the plate shifts towards the thumb without changing size. A z offset
+  on transform-origin did the rock but also grew the key by a tenth on
+  every press; that was the first attempt and the screenshots showed it.
+- A and B sit six units lower with a heavier, larger letter.
+- The phone spec reads the axis off the layer, asserts the sign for
+  Right and Up, and checks the layer covers the footprint to within
+  two pixels. It caught `translateZ(NaN)` (a unary minus on a string),
+  which the browser had silently dropped along with the whole transform.
+
+On beta at `4179e36`; the pad specs pass there.
