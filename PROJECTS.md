@@ -3592,3 +3592,19 @@ the side arms shifting down with the plate.
   which the browser had silently dropped along with the whole transform.
 
 On beta at `4179e36`; the pad specs pass there.
+
+## Checkpoint, 2026-09-24
+
+Live, main and beta at `d2c74b7`, version 1.0.266, all pushed. Deployed
+at the owner's word: the controller in the hand (felt pulse, slim arms,
+press-slide-release grip, the cross rocking in 3D on a layer with its
+pivot below the plate, A and B lower and bolder), a hidden screen
+pausing the console, pad-ble at one pad in both languages, and the
+printable links rendered by the docs page from the pull's record. The
+bench issued TM-NESB-003 rev D before the deploy and the pull took it
+with no hand; live serves rev D and rev C is withdrawn. Bench, docs and
+pad specs pass against live.
+
+Standing rule from the day: no `next build` in the main checkout outside
+`deploy.sh`, because the live unit serves from it; preview on beta with
+`scripts/beta.sh --follow`. Nothing is waiting on the owner.
