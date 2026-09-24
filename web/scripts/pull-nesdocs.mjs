@@ -244,14 +244,6 @@ const all = spawnSync(CHECK_ALL, [], { encoding: "utf8", cwd: BENCH });
 if (all.status !== 0) {
   throw new Error(`nes-bench's checks do not all agree:\n${all.stdout}${all.stderr}`);
 }
-// The schematics' rule check is not on that list yet (asked for,
-// 2026-09-23): a net with one end, a duplicated designator, a supply pin
-// nobody mentioned. Clean as of 2026-09-09, so it can be a gate. Drop this
-// once check-all.sh runs it.
-const erc = spawnSync("python3", [path.join(BENCH, "tools", "netlist.py"), "--erc"], { encoding: "utf8" });
-if (erc.status !== 0) {
-  throw new Error(`nes-bench's schematics do not pass their own rule check: ${erc.stdout}${erc.stderr}`);
-}
 const benchOut = path.join(ROOT, "web", "public", "nes", "bench");
 fs.mkdirSync(benchOut, { recursive: true });
 fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "public", "nes", "bench.svg"));

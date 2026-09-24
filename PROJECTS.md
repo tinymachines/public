@@ -3524,3 +3524,10 @@ fact the pull owns. So:
   of eight gates named here by hand: the subset habit that let the stale
   parts list through had a twin on this side. The one gate that list
   lacks, the schematics' rule check, stays here until it is added there.
+
+Later the same day: the bench's `check-all.sh` gained the schematics'
+rule check (nes-bench `5e15f22`, fifteen checks), so the pull's last
+hand-named gate is gone and its list of the bench's checks is one line,
+the bench's own. That script now says in its own header that another
+repository reads it: adding a check strengthens both sides, and renaming
+it or changing its exit status breaks a build that is not the bench's.
