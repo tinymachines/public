@@ -3651,3 +3651,41 @@ it: 936 passed, 13 skipped, 3 flaky (the tracer article at desk, the console
 painting a cartridge, the strip on /6502/trace), all three green three times
 of three alone with no retries. Nothing failed, but flakes are rising under a
 full run and nobody has found why. Nothing is waiting on the owner.
+
+## Play and Create
+
+The owner split the NES console in two (2026-09-24): Play is for playing,
+Create is the full-screen desk with every tool as a window. `/nes/create` is
+a window manager of our own, `web/app/components/Desk.tsx`, with its
+geometry in `web/lib/desk.ts` and unit tests: windows move by their bar,
+size from their corner, come forward on a press, fill the desk on a double
+press, close from the bar and open again from the tray, and the arrangement
+is kept in the browser. On a phone the same windows stack under the section
+strip. It is one tree in both modes, so crossing the breakpoint never
+remounts the canvas the console is attached to. The window's look is left
+as kit tokens, marked `LOOK` in `desk.css`, for the owner.
+
+`/nes/play` keeps the screen and pad, the cartridge with a status line
+(name, power, save) and a pointer to Create, and a short strip: power,
+reset, play, the frame count, full screen. The tool tests moved to Create,
+run at 1000px where every window stands in page order.
+
+Found on the way: the ESP32 page's `SOC_USB_OTG_SUPPORTED` heading slid a
+phone 79px sideways (the prose break-word rule now covers h2 to h4, in the
+kit); the playground's publish check could never pass on beta, which is
+noindex by design; the hidden-screen flake was a wall-clock catch-up tick
+in flight at the pause, not a restart, and the check now waits on
+`window.__playTicking`. The deploy's library tests caught two Japanese
+shadows behind nes-bench's new sections (rig's camera controls, pad-ble's
+P4 wiring); both are translated.
+
+## Checkpoint, 2026-09-24 (night)
+
+Live, main and beta at `d346033`, still 1.0.266, pushed. On live
+`/nes/create` and `/ja/nes/create` answer 200, the hub links Create, and
+the play page carries its status line. The full e2e against beta at
+`ca23c0f`, one strip fix before the deploy: 952 passed, 13 skipped, nothing
+failed, 1 flaky (the 6502 primer's link parity). The hidden-screen check
+passed fifteen of fifteen alone after its fix. Not run: the signed-in shelf
+tests, which need a session. Next on the workbench: breakpoints, a trace and
+saved states, as windows on the desk. Nothing is waiting on the owner.
