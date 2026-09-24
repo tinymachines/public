@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { delocalize, localize } from "@/lib/lang";
-import type { MenuGroup } from "@/lib/nav";
+import type { MenuGroup, MenuItem, Section } from "@/lib/nav";
+import { clusters, currentIn, sectionAt } from "@/lib/strip";
 import { listShelf } from "@/lib/shelf";
 
 /**
@@ -32,12 +33,20 @@ import { listShelf } from "@/lib/shelf";
  */
 export function Menu({
   groups,
+  sections = [],
   label = "Menu",
   close = "Close",
   account = { signIn: "Sign in with GitHub", signedIn: "Signed in as", tokens: "your tokens", carts: "your cartridges", signOut: "sign out" },
   hard = false,
 }: {
   groups: MenuGroup[];
+  /**
+   * The sections, for the one this page is in: inside a section the panel
+   * opens on its parts, under the section's own name, and the site and the
+   * projects follow as a short list (owner, 2026-09-24: on /nes the panel
+   * was the site's map and nothing of the section the reader was in).
+   */
+  sections?: Section[];
   label?: string;
   /** What the same button says while the panel is open: it closes it. */
   close?: string;
@@ -123,6 +132,33 @@ export function Menu({
   const { lang } = delocalize(here);
   const editor = `${localize(lang, "/6502/manage")}#account`;
 
+  const section = sectionAt(sections, here);
+
+  const entry = (item: MenuItem, current?: "page" | "location") => {
+    const props = { className: "menu-item", "aria-current": current };
+    const inner = (
+      <>
+        <b>{item.label}</b>
+        {item.hint ? <span>{item.hint}</span> : null}
+      </>
+    );
+    // Anything this site does not prerender gets a plain anchor.
+    // The API is uvicorn and the archive is nginx serving a
+    // directory: there is nothing for the client router to
+    // prefetch, and asking it to navigate to a route the build
+    // never made lands the reader on the not-found page.
+    const external = item.prerendered === false || item.hard === true || hard;
+    return external ? (
+      <a key={item.href} href={item.href.startsWith("/api") ? `${item.href}/` : item.href} {...props}>
+        {inner}
+      </a>
+    ) : (
+      <Link key={item.href} href={item.href} {...props}>
+        {inner}
+      </Link>
+    );
+  };
+
   return (
     <div className="menu-wrap" ref={wrap}>
       <button
@@ -159,38 +195,32 @@ export function Menu({
           {/* The panel spans the header; the sheet inside it keeps the site's
               measure, so the columns line up with the masthead above and the
               content below. */}
-          <div className="menu-sheet">
+          <div className="menu-sheet" data-menu-here={section ? section.when : undefined}>
+          {section ? (
+            <nav className="menu-group menu-section" aria-label={section.title}>
+              <h2>{section.title}</h2>
+              {clusters(section.items).map((run, i) => (
+                <div className="menu-run" key={i}>
+                  {run.map((it) =>
+                    entry(
+                      // The strip's one word is the name here, and the full
+                      // name is the line under it where the two differ.
+                      { ...it, hint: it.name },
+                      currentIn(section, here, it.href),
+                    ),
+                  )}
+                </div>
+              ))}
+            </nav>
+          ) : null}
           {groups.map((group) => (
-            <nav className="menu-group" key={group.title} aria-label={group.title}>
+            <nav className={section ? "menu-group menu-brief" : "menu-group"} key={group.title} aria-label={group.title}>
               <h2>{group.title}</h2>
-              {group.items.map((item) => {
-                const current = here === item.href;
-                const props = {
-                  className: "menu-item",
-                  "aria-current": current ? ("page" as const) : undefined,
-                };
-                const inner = (
-                  <>
-                    <b>{item.label}</b>
-                    {item.hint ? <span>{item.hint}</span> : null}
-                  </>
-                );
-                // Anything this site does not prerender gets a plain anchor.
-                // The API is uvicorn and the archive is nginx serving a
-                // directory: there is nothing for the client router to
-                // prefetch, and asking it to navigate to a route the build
-                // never made lands the reader on the not-found page.
-                const external = item.prerendered === false || item.hard === true || hard;
-                return external ? (
-                  <a key={item.href} href={item.href.startsWith("/api") ? `${item.href}/` : item.href} {...props}>
-                    {inner}
-                  </a>
-                ) : (
-                  <Link key={item.href} href={item.href} {...props}>
-                    {inner}
-                  </Link>
-                );
-              })}
+              {group.items.map((item) =>
+                // Below a section the rest of the site is a short list: the
+                // names, no lines, so the section keeps the panel.
+                entry(section ? { ...item, hint: undefined } : item, here === item.href ? "page" : undefined),
+              )}
             </nav>
           ))}
           </div>

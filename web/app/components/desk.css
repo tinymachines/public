@@ -153,3 +153,23 @@ html.has-fullscreen .workbench:has(.desk[data-mode="float"]) .wb-main { padding-
 .desk-tab[aria-pressed="true"] { color: var(--color-ink); border-color: var(--color-ink); }
 .desk-tab[data-front] { background: var(--color-paper-sunk); }
 .desk-tidy { margin-left: auto; }
+/* The page's neighbour (Create's is Play), after Tidy and a divider: a way
+   off the desk, so a link rather than a key, and drawn as one. */
+.desk-more {
+  position: relative;
+  margin-left: calc(var(--u) * 3);
+  text-decoration: none;
+  /* LOOK */
+  border-color: transparent;
+  color: var(--color-accent-ink);
+}
+.desk-more::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--u) * -2);
+  top: 20%;
+  bottom: 20%;
+  /* LOOK */
+  border-left: 1px solid var(--color-ink-faint);
+}
+.desk-more:hover { color: var(--color-ink); }

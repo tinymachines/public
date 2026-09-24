@@ -2,7 +2,8 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
-import { localize } from "@/lib/i18n";
+import { localize, t } from "@/lib/i18n";
+import { surface } from "@/lib/projects";
 import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { PlayTransport } from "../play/PlayTransport";
 import { Create } from "./Create";
@@ -101,7 +102,11 @@ export default async function CreatePage({ params }: { params: Promise<{ lang: L
           ]}
         />
         <div className="wb-main">
-          <Create lang={lang} about={about} />
+          <Create
+            lang={lang}
+            about={about}
+            more={[{ href: localize(lang, "/nes/play"), label: t(lang, surface("nes", "play").nav_label ?? "Play") }]}
+          />
           <SiteFooter lang={lang} floor />
         </div>
       </div>

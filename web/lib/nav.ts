@@ -55,6 +55,10 @@ export interface MenuItem {
    * A plain anchor is the honest link until the modules learn a lifecycle.
    */
   hard?: boolean;
+  /** On a section's strip: the cluster it sits in (Surface.strip_group). */
+  group?: string;
+  /** On a section's strip: the full name, where `label` is the strip's one word. */
+  name?: string;
 }
 
 export interface MenuGroup {
@@ -174,14 +178,28 @@ export function sections(): Section[] {
     out.push({
       title: p.name,
       when: p.landing,
+      // The strip says one word where the manifest gives it one
+      // (strip_label), and clusters the parts by strip_group with a divider
+      // between clusters; the name stays with the item for the menu panel,
+      // which has room for it. The 6502's tracks are a cluster of their own.
       items: [
-        { href: p.landing, label: "Overview" },
+        { href: p.landing, label: "Overview", group: p.key === "6502" ? "tracks" : here.find((s) => s.lands_at === p.landing)?.strip_group },
         ...(p.key === "6502"
-          ? TRACKS.filter((tr) => tr.path !== "/6502/archive").map((tr) => ({ href: tr.path, label: tr.name.en }))
+          ? TRACKS.filter((tr) => tr.path !== "/6502/archive").map((tr) => ({ href: tr.path, label: tr.name.en, group: "tracks" }))
           : []),
         ...here
           .filter((s) => s.lands_at !== p.landing && !listedAbove(s.lands_at))
-          .map((s) => ({ href: s.lands_at, label: s.nav_label ?? s.name, hard: isHardRoute(s.lands_at), prerendered: s.prerendered })),
+          .map((s) => {
+            const name = s.nav_label ?? s.name;
+            return {
+              href: s.lands_at,
+              label: s.strip_label ?? name,
+              name: s.strip_label ? name : undefined,
+              group: s.strip_group,
+              hard: isHardRoute(s.lands_at),
+              prerendered: s.prerendered,
+            };
+          }),
       ],
     });
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Strip } from "./Strip";
 
 /**
  * A strip of a page's sections, under the workbench bar.
@@ -13,9 +14,15 @@ import { useEffect, useState } from "react";
  * one"), the heading itself where they repeat (the talk's "Written, not
  * measured" four times). A page with fewer than three sections gets no strip.
  *
- * Sticky under the bar, scrolling sideways with the same edge fade as the
- * Lab's strip, docking to the top edge in fullscreen (components.css, section
- * 28). The current section lights as the reader passes it.
+ * Sticky under the bar, docking to the top edge in fullscreen
+ * (components.css, section 28), and drawn by Strip.tsx like the section's
+ * strip on a reading page: too many sections for the width fold into one
+ * button. The current section lights as the reader passes it.
+ *
+ * `more` is a page's neighbours, after a divider: Play's strip ends with
+ * Create and Create's with Play, the two ways to use one console (owner,
+ * 2026-09-24: the strip under Play had its three sections and no way to
+ * Create).
  */
 
 interface Sec { id: string; label: string; el: HTMLElement }
@@ -30,7 +37,17 @@ const short = (s: string, max = 34) => {
 const slug = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48) || "section";
 
-export function SectionStrip({ root = ".explorer-shell" }: { root?: string }) {
+export function SectionStrip({
+  root = ".explorer-shell",
+  more = [],
+  label = "Sections",
+  close = "Close",
+}: {
+  root?: string;
+  more?: { href: string; label: string }[];
+  label?: string;
+  close?: string;
+}) {
   const [secs, setSecs] = useState<Sec[]>([]);
   const [current, setCurrent] = useState<string | null>(null);
 
@@ -102,12 +119,14 @@ export function SectionStrip({ root = ".explorer-shell" }: { root?: string }) {
 
   if (!secs.length) return null;
   return (
-    <nav className="wb-strip" aria-label="Sections">
-      {secs.map((s) => (
-        <a key={s.id} href={`#${s.id}`} aria-current={current === s.id ? "location" : undefined}>
-          {s.label}
-        </a>
-      ))}
-    </nav>
+    <Strip
+      label={label}
+      fold={label}
+      close={close}
+      links={[
+        ...secs.map((s) => ({ href: `#${s.id}`, label: s.label, group: "page", plain: true, current: current === s.id ? ("location" as const) : undefined })),
+        ...more.map((m) => ({ href: m.href, label: m.label, group: "more" })),
+      ]}
+    />
   );
 }

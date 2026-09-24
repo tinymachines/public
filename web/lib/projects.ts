@@ -21,6 +21,18 @@ export interface Surface {
   nav: boolean;
   nav_label: string | null;
   /**
+   * The one word the section's strip calls it, where the name is a phrase
+   * ("The NES at human speed" is Learn). The strip only: crumbs, the menu
+   * and every heading keep the name.
+   */
+  strip_label?: string;
+  /**
+   * Which cluster of the section's strip it sits in. Neighbours with
+   * different groups get a divider between them; a section with no groups
+   * is one run.
+   */
+  strip_group?: string;
+  /**
    * Whether this site builds the page. False for the API (uvicorn) and the
    * archive (nginx serving a directory), which matters twice: the build cannot
    * check a route it did not render, and the client router cannot navigate to

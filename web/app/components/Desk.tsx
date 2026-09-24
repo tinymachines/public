@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SectionStrip } from "./SectionStrip";
 import { clamp, initial, raise, type Layout, type Rect, type Win, type WinSpec } from "@/lib/desk";
@@ -91,7 +92,22 @@ export function useDesk(): Pick<Ctx, "mode" | "show"> {
   return { mode: c.mode, show: c.show };
 }
 
-export function Desk({ storageKey, wins, labels, className, children }: { storageKey: string; wins: WinSpec[]; labels: DeskLabels; className?: string; children: ReactNode }) {
+export function Desk({
+  storageKey,
+  wins,
+  labels,
+  className,
+  more = [],
+  children,
+}: {
+  storageKey: string;
+  wins: WinSpec[];
+  labels: DeskLabels;
+  className?: string;
+  /** The page's neighbours, at the tray's far end and after the strip's divider (SectionStrip's `more`). */
+  more?: { href: string; label: string }[];
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<DeskMode | null>(null);
   const [dim, setDim] = useState<Dim | null>(null);
@@ -194,7 +210,7 @@ export function Desk({ storageKey, wins, labels, className, children }: { storag
 
   return (
     <DeskCtx.Provider value={ctx}>
-      {mode === "stack" ? <SectionStrip root=".desk" /> : null}
+      {mode === "stack" ? <SectionStrip root=".desk" more={more} label={labels.tray} close={labels.close} /> : null}
       {mode === "float" && layout ? (
         <div className="desk-tray" role="toolbar" aria-label={labels.tray} data-desk-tray>
           {wins.map((s) => {
@@ -216,6 +232,11 @@ export function Desk({ storageKey, wins, labels, className, children }: { storag
           <button type="button" className="desk-tab desk-tidy" title={labels.tidyTitle} onClick={tidy} data-desk-tidy>
             {labels.tidy}
           </button>
+          {more.map((m) => (
+            <Link key={m.href} href={m.href} className="desk-tab desk-more" data-desk-more>
+              {m.label}
+            </Link>
+          ))}
         </div>
       ) : null}
       <div ref={ref} className={"desk" + (className ? " " + className : "")} data-mode={mode ?? undefined} data-ready={layout ? "" : undefined} data-desk>

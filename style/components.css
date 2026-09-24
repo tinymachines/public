@@ -2793,3 +2793,215 @@ html.has-fullscreen .wb-strip { top: 0; }
   font-family: var(--font-mono);
   font-size: var(--text-fine);
 }
+
+/* ==========================================================================
+   29. THE FRAME'S LINES, 2026-09-24. The owner: "the horizontal rules are a
+   bit sloppy". They were: the bar's rule stopped at the band's measure, the
+   strip's ran a different width and faded out under its own mask, the
+   footer's ran edge to edge, the page head's heavy rule ran the content
+   measure and every section's rule under it ran the prose column's. Five
+   lengths on one screen. One rule now, for lines as for everything else:
+
+     chrome runs edge to edge    the bar, the strip, the footer, the floor
+     content runs its own width  the page head's heavy rule closes the head
+
+   and the sections inside a document open on a short mark instead of a
+   line of their own, so no two lines of different lengths ever stack.
+
+   The strip's words and the page's text share one left edge: the strip is
+   full bleed and pads itself to the band's measure, and a link's underline
+   is exactly as wide as its word.
+   ========================================================================== */
+
+/* The measure and the gutter the bands use, as one expression each. */
+:root {
+  --frame-measure: calc(var(--u) * 280);
+  --frame-gutter: calc(var(--u) * 8);
+  --frame-inset: max(var(--frame-gutter), calc((100% - var(--frame-measure)) / 2 + var(--frame-gutter)));
+}
+@media (max-width: 40rem) {
+  :root { --frame-gutter: calc(var(--u) * 5); }
+}
+
+/* THE BAR's line leaves the band for the head, which is full bleed. Where a
+   strip follows, the strip's line closes both, and the bar and the strip
+   read as one head. */
+.app-head .band.topbar { border-bottom: 0; }
+.app-head { border-bottom: 1px solid var(--color-rule); }
+.app-head:has(+ .wb-strip) { border-bottom-color: transparent; }
+
+/* THE STRIP. Full bleed, its words on the band's left edge, clusters with a
+   hairline between them, no fade and no sideways scroll: a row that would
+   not fit folds into one button (Strip.tsx measures). */
+.wb-strip,
+.app-shell .parts-strip {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--frame-inset);
+  box-sizing: border-box;
+  overflow: visible;
+  scroll-snap-type: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+  display: block;
+}
+.strip-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+}
+.strip-run { display: flex; align-items: stretch; gap: calc(var(--u) * 5); }
+.strip-run + .strip-run {
+  position: relative;
+  margin-left: calc(var(--u) * 5);
+  padding-left: calc(var(--u) * 5);
+}
+.strip-run + .strip-run::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(var(--u) * 3);
+  bottom: calc(var(--u) * 3);
+  border-left: 1px solid var(--color-ink-faint);
+}
+.strip-row > .strip-run > :is(a, span) {
+  flex: 0 0 auto;
+  padding: calc(var(--u) * 3) 0 calc(var(--u) * 2.5);
+  margin-bottom: -1px;
+  font-family: var(--font-display);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-ink-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color var(--t-snap) linear, border-color var(--t-snap) linear;
+}
+.strip-row > .strip-run > a:hover { color: var(--color-ink); border-bottom-color: var(--color-ink-faint); }
+.strip-row > .strip-run > a[aria-current] { color: var(--color-ink); border-bottom-color: var(--color-accent-ink); }
+.strip-row > .strip-run > a:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+
+/* The ghost the script measures: the row at its natural width, unseen. */
+.strip-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* THE FOLD: one button naming where you are, and the same links as a list. */
+.strip-fold {
+  display: none;
+  align-items: center;
+  gap: calc(var(--u) * 2.5);
+  width: 100%;
+  padding: calc(var(--u) * 3) 0;
+  font-family: var(--font-display);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.strip-fold:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: -2px; }
+.strip-fold .bars { display: grid; gap: 2px; width: calc(var(--u) * 3.5); }
+.strip-fold .bars i { display: block; height: 1.5px; background: currentColor; transition: transform var(--t-detent) var(--ease-detent), opacity var(--t-snap) linear; }
+.strip-fold[aria-expanded="true"] .bars i:first-child { transform: translateY(3.5px) rotate(45deg); }
+.strip-fold[aria-expanded="true"] .bars i:nth-child(2) { opacity: 0; }
+.strip-fold[aria-expanded="true"] .bars i:last-child { transform: translateY(-3.5px) rotate(-45deg); }
+.strip-here { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.strip-chev {
+  width: 6px;
+  height: 6px;
+  margin-right: 2px;
+  border-right: 1.5px solid var(--color-ink-muted);
+  border-bottom: 1.5px solid var(--color-ink-muted);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--t-detent) var(--ease-detent);
+}
+.strip-fold[aria-expanded="true"] .strip-chev { transform: translateY(1px) rotate(-135deg); }
+
+/* Which of the two shows. Measured, once the script has run; before it, a
+   phone's width folds and a wider one does not. */
+.wb-strip[data-fold="1"] > .strip-row:not(.strip-ghost) { display: none; }
+.wb-strip[data-fold="1"] > .strip-fold { display: flex; }
+@media (max-width: 40rem) {
+  .wb-strip:not([data-fold]) > .strip-row:not(.strip-ghost) { display: none; }
+  .wb-strip:not([data-fold]) > .strip-fold { display: flex; }
+}
+
+.strip-sheet {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: calc(100dvh - var(--app-head-h, 4rem) - var(--u) * 24);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(var(--u) * 1) var(--frame-inset) calc(var(--u) * 3);
+  background: var(--color-paper);
+  border-bottom: 1px solid var(--color-rule);
+  box-shadow: 0 12px 24px -16px color-mix(in srgb, var(--color-ink) 45%, transparent);
+  animation: module-snap var(--t-detent) var(--ease-detent);
+}
+.strip-sheet-run { display: grid; padding: calc(var(--u) * 1.5) 0; }
+.strip-sheet-run + .strip-sheet-run { border-top: 1px solid var(--color-ink-faint); }
+.strip-sheet a {
+  display: block;
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  margin-inline: calc(var(--u) * -3);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--color-ink);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+}
+.strip-sheet a:hover { background: var(--color-paper-sunk); }
+.strip-sheet a[aria-current] { font-weight: 700; border-left-color: var(--color-accent-ink); background: var(--color-paper-sunk); }
+.strip-sheet a:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: -2px; }
+
+/* A document's sections open on a short mark, not a line: a line under the
+   head's heavy rule, one column narrower, was the mismatch the eye caught.
+   The mark is the burnt ink the links wear, the width of a word. */
+.prose > h2 { border-top: 0; padding-top: calc(var(--u) * 6); position: relative; }
+.prose > h2::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--u) * 8);
+  height: 2px;
+  background: var(--color-accent-ink);
+}
+.prose > h1 + h2 { padding-top: 0; }
+.prose > h1 + h2::before { content: none; }
+
+/* THE MENU, inside a section: the section first, its clusters split by a
+   hairline, the strip's one word as the name and the full name under it;
+   then the site and the projects, two short columns of names. */
+.menu-section .menu-run { display: grid; }
+.menu-section .menu-run + .menu-run { margin-top: calc(var(--u) * 1.5); padding-top: calc(var(--u) * 1.5); border-top: 1px solid var(--color-ink-faint); }
+.menu-brief {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: calc(var(--u) * 2);
+}
+.menu-brief > h2 { grid-column: 1 / -1; }
+.menu-brief .menu-item { padding: calc(var(--u) * 1.25) calc(var(--u) * 2.5); }
+.menu-brief .menu-item b { font-size: var(--text-data); font-weight: 500; color: var(--color-ink-muted); }
+.menu-brief .menu-item:hover b, .menu-brief .menu-item[aria-current] b { color: var(--color-ink); }
+.menu-section + .menu-brief { margin-top: calc(var(--u) * 5); }
+.menu-item[aria-current="location"] { background: var(--color-paper-sunk); border-left-color: var(--color-ink-faint); }

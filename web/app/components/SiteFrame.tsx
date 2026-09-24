@@ -158,6 +158,7 @@ function localizedSections(lang: Lang): Section[] {
     items: s.items.map((it) => ({
       ...it,
       label: t(lang, it.label),
+      name: it.name ? t(lang, it.name) : it.name,
       href: it.prerendered === false ? it.href : localize(lang, it.href),
     })),
   }));
@@ -227,7 +228,7 @@ function Topbar({
       )}
       {page ? (pageIsHeading ? <h1 className="tb-page">{page}</h1> : <p className="tb-page">{page}</p>) : null}
       <LangSwitch lang={lang} hard={hard} />
-      <Menu groups={localizedGroups(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} hard={hard} />
+      <Menu groups={localizedGroups(lang)} sections={localizedSections(lang)} label={t(lang, "Menu")} close={t(lang, "Close")} account={accountWords(lang)} hard={hard} />
     </div>
   );
 }
@@ -324,7 +325,7 @@ export function Shell({
       {/* The section's parts, under the bar, on every page inside a project:
           the second level the panel no longer carries. Nothing on the site's
           own pages. PartsStrip.tsx and lib/nav.ts sections() have the rest. */}
-      <PartsStrip sections={localizedSections(lang)} label={t(lang, "Parts of this section")} />
+      <PartsStrip sections={localizedSections(lang)} label={t(lang, "Parts of this section")} close={t(lang, "Close")} />
       {/* The beta origin says so on every page, above everything else. It is
           where a change is tried before the deploy carries it live
           (deploy/beta.tinymachines.ai.nginx, scripts/beta.sh), and a reader

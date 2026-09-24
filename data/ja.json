@@ -427,5 +427,11 @@
  "What the sketch asked for, what the chips and the ROMs taught, and what stays for a bench.": "スケッチが求めたもの、チップと ROM が教えたもの、そしてベンチに残るもの。",
  "Every cartridge on the desk has a board": "机の上のカートリッジには、どれも基板がある",
  "The seven cartridge boards the model grew, the two that could only be tested with a console around them, the screen split that needed an interrupt to become a line, and the one cartridge that still does not draw.": "模型が備えた七つのカートリッジ基板、コンソールがなければ試せなかった二つ、割り込みが線になって初めて成立した画面の分割、そしていまだ絵を出さない一本。",
- "This is the beta: what goes live next, tried here first. Nothing here is indexed. The live site is": "ここはベータ版です。次に公開されるものを、まずここで試しています。ここのページは検索に載りません。公開中のサイトは"
+ "This is the beta: what goes live next, tried here first. Nothing here is indexed. The live site is": "ここはベータ版です。次に公開されるものを、まずここで試しています。ここのページは検索に載りません。公開中のサイトは",
+ "Play": "遊ぶ",
+ "Create": "作る",
+ "Notebook": "ノート",
+ "Retro": "振り返り",
+ "Sections": "セクション",
+ "The console from the play page with every tool for looking inside a game on one desk: the code, the CPU, the memory, the palettes, the sprites and the sprite editor, as windows you arrange.": "遊ぶページのコンソールと、ゲームの中を覗くための道具のすべてを一つの机に: コード、CPU、メモリ、パレット、スプライト、そしてスプライトのエディタを、並べ替えられるウィンドウとして。"
 }

@@ -49,9 +49,9 @@ const LABELS: Record<Lang, DeskLabels> = {
   },
 };
 
-export function Create({ lang, about }: { lang: Lang; about: ReactNode }) {
+export function Create({ lang, about, more }: { lang: Lang; about: ReactNode; more: { href: string; label: string }[] }) {
   return (
-    <Desk storageKey="tm.nes.create.desk" wins={WINS} labels={LABELS[lang]} className="play-shell">
+    <Desk storageKey="tm.nes.create.desk" wins={WINS} labels={LABELS[lang]} className="play-shell" more={more}>
       <Windows lang={lang} about={about} />
     </Desk>
   );

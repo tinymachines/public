@@ -2,7 +2,8 @@ import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
-import { localize } from "@/lib/i18n";
+import { localize, t } from "@/lib/i18n";
+import { surface } from "@/lib/projects";
 import { nes } from "@/lib/nes";
 import { ntsc } from "@/lib/ntsc";
 import { SectionStrip } from "@/app/components/SectionStrip";
@@ -160,7 +161,12 @@ export default async function PlayPage({ params }: { params: Promise<{ lang: Lan
             { href: "/nes", label: lang === "ja" ? "NES コンソール" : "The NES console" },
           ]}
         />
-        <SectionStrip root=".play-shell" />
+        <SectionStrip
+          root=".play-shell"
+          label={t(lang, "Sections")}
+          close={t(lang, "Close")}
+          more={[{ href: localize(lang, "/nes/create"), label: t(lang, surface("nes", "create").nav_label ?? "Create") }]}
+        />
         <div className="wb-main play-shell">
           <Play lang={lang} />
 
