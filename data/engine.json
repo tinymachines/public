@@ -1,14 +1,14 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-20T20:11:57+00:00",
+  "boarded_at": "2026-09-24T18:54:37+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.347",
-    "commit": "8fe3a66f4c75bc09ebb4ba8f5c10a4a6e1346c40",
-    "built": "2026-09-20T20:10:26+00:00",
+    "version": "v0.349",
+    "commit": "fd36e779d3cd424f2dfc6a13004830a4ff733cea",
+    "built": "2026-09-24T18:38:07+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-20T20:06:29+00:00",
+      "ran": "2026-09-24T18:33:52+00:00",
       "cargo": {
         "command": "cargo test --workspace",
         "passed": 136,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "8fe3a66f4c75bc09ebb4ba8f5c10a4a6e1346c40",
+  "running": "fd36e779d3cd424f2dfc6a13004830a4ff733cea",
   "worktree": {
-    "commit": "8fe3a66f4c75bc09ebb4ba8f5c10a4a6e1346c40",
-    "subject": "The generators' grammar stops showing through, in the three places it did",
-    "committed": "2026-09-20T15:02:12-04:00",
+    "commit": "fd36e779d3cd424f2dfc6a13004830a4ff733cea",
+    "subject": "The deploy also runs the console repository's self-counts",
+    "committed": "2026-09-21T18:58:31-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "9c47dd9ceaa7d2a5b6942a899bb71acc0cec7cd2b7377b6f2f86b18cddc5ada4",
+    "sha256": "fe63c63b53a4ccc035905702c4b7a181c65fac740ee9a89b57cfdfaf8b4c6ecd",
     "bytes": 719256,
-    "modified": "2026-09-20T20:02:44+00:00",
-    "stated": "8fe3a66f4c75bc09ebb4ba8f5c10a4a6e1346c40"
+    "modified": "2026-09-24T18:29:44+00:00",
+    "stated": "fd36e779d3cd424f2dfc6a13004830a4ff733cea"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 0.3,
+      "seconds": 18.2,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 8.2,
+      "seconds": 14.4,
       "ok": true
     }
   ]
