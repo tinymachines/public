@@ -34,4 +34,19 @@ test("the bench serves the manifests' packages and none of the superseded revisi
       expect(o.status(), `${old} is superseded and must not be served`).toBe(404);
     }
   }
+  // The pages link the packages by their current file, in both languages,
+  // and nothing on them links a withdrawn one. Nine Japanese pages carried
+  // a typed filename that had been withdrawn (2026-09-23); the links are
+  // rendered from one record now, and this reads them off the served page.
+  const pages = ["/docs/nes/parts", "/ja/docs/nes/parts", "/docs/nes/pad-ble", "/ja/docs/nes/pad-ble", "/docs/nes", "/ja/docs/nes"];
+  const want = new Map(current.map((c) => [c.docno, `/nes/bench/${c.file}`]));
+  for (const p of pages) {
+    const html = await (await request.get(p)).text();
+    const links = [...html.matchAll(/href="(\/nes\/bench\/[^"]+\.pdf)"/g)].map((m) => m[1]);
+    expect(links.length, `${p} links at least one package`).toBeGreaterThan(0);
+    for (const l of links) {
+      const docno = l.match(/TM-NESB-\d+/)?.[0] ?? "";
+      expect(l, `${p} links ${docno} by its current file`).toBe(want.get(docno));
+    }
+  }
 });

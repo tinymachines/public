@@ -125,4 +125,4 @@
 ## 印刷用 {#printable}
 
 ベンチの図面パッケージ。デプロイのたびに、コミット済みの回路図から作られる:
-[v1b 図面パッケージ、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf); [v2b 図面パッケージ、TM-NESB-002 (PDF)](/nes/bench/nes-bench-TM-NESB-002-revA.pdf); [v2b 基板、表面の銅 (SVG)](/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg); [組み上がった v1b、写真の上に検査箇所を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png)。
+<!-- artefacts -->

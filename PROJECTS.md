@@ -3487,3 +3487,40 @@ axis and the right edge away about a positive y axis, and the axis had
 been written a quarter turn the other way. The play spec now reads the
 axis off the transform and asserts the sign for Right and for Up, and
 was run red against the old axis before it was trusted.
+
+## 2026-09-23: pad-ble at rev B, and the links that are rendered rather than typed
+
+The nes-bench session took the second controller off the pad-ble design
+(a keyboard report carries six key slots; the second pad was polled and
+thrown away) and bumped TM-NESB-003 to rev B, the first revision bump
+since the package pull was made record-checked. The pull refused the
+first push (the bench's own parts list was stale; that session now runs
+every check it has, in `tools/check-all.sh`), then took `710cbd5`
+cleanly: rev B linked itself from the manifest and rev A was withdrawn
+with no hand from this side. The Japanese pad-ble document was brought
+to one pad line by line against the bench's diff.
+
+What that re-pull uncovered: **nine Japanese pages linked
+`TM-NESB-001-revN.pdf`**, withdrawn when N went to P, so a 404 on the
+live site that no check read. Each translation had a typed copy of a
+fact the pull owns. So:
+
+- **`lib/remark-artefacts.mjs`** puts the "Printable:" line under a bench
+  document's title at build time, in English or Japanese, from
+  `public/nes/bench/artefacts.json`, which the pull writes (each
+  package's current file, both labels, which documents show which), and
+  expands `<!-- artefacts -->` on the section index into the whole list.
+  No markdown in either language carries a package filename now, and a
+  revision bump no longer drifts a translation, because a rev letter was
+  never prose.
+- **`check-build.mjs` refuses a built page**, in either language, that
+  links a file under `/nes/bench/` or `/nes/lab/` that is not served,
+  and refuses to pass on nothing. Run red by withdrawing rev B: three
+  pages named.
+- **`e2e/bench.spec.ts`** reads the parts, pad-ble and index pages in
+  both languages off the served origin and requires every package link
+  to be the manifest's current file.
+- **The pull runs `tools/check-all.sh`**, the bench's own list, instead
+  of eight gates named here by hand: the subset habit that let the stale
+  parts list through had a twin on this side. The one gate that list
+  lacks, the schematics' rule check, stays here until it is added there.

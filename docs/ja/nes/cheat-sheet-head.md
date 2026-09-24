@@ -1,7 +1,5 @@
 # ヘッドの手の早見表
 
-**印刷用:** [v1b 図面パッケージ、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf)。
-
 `tools/cheatsheet.py --sheet bench-v1b-head` が生成する。ジャンパ、配線の一覧、
 各モジュールの「このベンチでは」の列は、回路図の三枚目 (`bench-v1b-3.svg`) から
 読み出す。ブレイクアウトの線は立ち上げツール自身の表から来る。書き下ろしの文は

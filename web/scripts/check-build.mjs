@@ -9,6 +9,7 @@
  * Run as part of `bun run build`, so a fresh clone cannot ship them.
  */
 
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -695,6 +696,25 @@ if (manifest) {
       }
     }
   }
+}
+
+// 9. Every link into the bench's served files points at a file that is
+//    served. The drawing packages change filename with each revision
+//    letter and the pull withdraws the old one; nine Japanese pages were
+//    found linking a withdrawn revision (2026-09-23), a 404 nothing had
+//    read. This reads the built pages of both languages, and refuses to
+//    pass on nothing: the bench's documents link at least one package.
+{
+  let benchLinks = 0;
+  for (const file of files) {
+    const body = await readFile(file, "utf8");
+    for (const m of body.matchAll(/href="(\/nes\/(?:bench|lab)\/[^"#?]+)"/g)) {
+      benchLinks++;
+      const target = path.join(PUBLIC, decodeURIComponent(m[1]));
+      if (!existsSync(target)) failures.push(`${path.relative(APP, file)}: links ${m[1]}, which is not served (withdrawn, or never pulled).`);
+    }
+  }
+  if (benchLinks < 10) failures.push(`only ${benchLinks} links into /nes/bench/ or /nes/lab/ across every page; the bench's documents alone carry more, so this check is running on the wrong tree.`);
 }
 
 if (failures.length) {

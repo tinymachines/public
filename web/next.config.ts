@@ -25,6 +25,9 @@ const remarkFrontmatter = pluginPath("remark-frontmatter");
 // slug rule is written here rather than taken from rehype-slug: a heading's id
 // is a public address the moment somebody links to it.
 const rehypeHeadings = pluginPath("./lib/rehype-headings.mjs");
+// The printable links under a bench document's title, in both languages,
+// from the record the pull writes; see lib/remark-artefacts.mjs.
+const remarkArtefacts = pluginPath("./lib/remark-artefacts.mjs");
 
 const nextConfig: NextConfig = {
   // md and mdx are routable page extensions. Without these two entries an
@@ -160,7 +163,7 @@ const withMDX = createMDX({
     // With this plugin the YAML is parsed as a frontmatter node and dropped
     // from the output, which is the behaviour the frontmatter convention in
     // START-HERE.md assumed all along.
-    remarkPlugins: [[remarkFrontmatter, ["yaml"]], [remarkGfm, {}]],
+    remarkPlugins: [[remarkFrontmatter, ["yaml"]], [remarkGfm, {}], [remarkArtefacts, {}]],
     rehypePlugins: [[rehypeHeadings, {}]],
   },
 });

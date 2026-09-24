@@ -1,7 +1,5 @@
 # ベンチの部品表
 
-**印刷用:** [v1b 図面一式、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf)、[v1b の実装状態、写真の上に検査点を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png)、[v2b 図面一式、TM-NESB-002 (PDF)](/nes/bench/nes-bench-TM-NESB-002-revA.pdf)。
-
 `tools/draw-schematics.py` から `tools/parts.py` が生成する。回路図を描くのと
 同じファイルだ。ここで手で打たれているのは状態の列だけ。図面には引き出しの
 中身が分からない。

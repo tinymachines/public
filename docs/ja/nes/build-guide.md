@@ -1,7 +1,5 @@
 # 組み立ての手引き、五回の作業で
 
-**印刷用:** [v1b 図面パッケージ、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf); [組み上がった v1b、写真の上に検査箇所を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png)。
-
 `tools/bringup.py` のステップの表と `docs/lab-log.jsonl` のログから、
 `tools/build-guide.py` が生成する。これは実際に走る手順であり、実際にいま
 ある状態でもあるので、どちらからもずれることができない。あの道具を走らせ

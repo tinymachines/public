@@ -1,7 +1,5 @@
 # 実験ノート
 
-**印刷用:** [v1b 図面一式、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf)、[v1b の実装状態、写真の上に検査点を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png)。
-
 `docs/lab-log.jsonl` から `tools/lab-notebook.py` が生成する。あのファイルには、
 各ステップを試すたびに `tools/bringup.py` が追記する。中身は一つも手で打たれて
 いない。失敗したものも含めて、すべての試行が載る。三回かかったステップこそ、

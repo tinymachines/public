@@ -31,8 +31,10 @@ const OUT = path.join(ROOT, "docs", "nes");
 // checked" with its code as a tag. `group` places it in the notebook
 // (GROUPS, below the artefacts).
 // The printable artefacts the pull builds and serves from /nes/bench/.
-// A document that names one of these gets a link to it under its h1,
-// and the pull refuses to publish a link to a file it did not produce.
+// A document that names one of these gets a link to it under its h1, in
+// either language, put there at build time by lib/remark-artefacts.mjs
+// from the record this pull writes (public/nes/bench/artefacts.json);
+// the pull refuses to record a link to a file it did not produce.
 // What each document IS, as against what it is about.
 //
 // The notebook groups by part of the console, which answers "where does this
@@ -219,43 +221,36 @@ const PKG_V2B = takePackage("package-v2b.json");
 const PKG_PADBLE = takePackage("package-pad-ble.json");
 
 const ARTEFACTS = {
-  v1b: { label: `v1b drawing package, ${PKG_V1B.docno} (PDF)`, href: PKG_V1B.href },
-  v2b: { label: `v2b drawing package, ${PKG_V2B.docno} (PDF)`, href: PKG_V2B.href },
-  padble: { label: `pad-ble drawing package, ${PKG_PADBLE.docno} (PDF)`, href: PKG_PADBLE.href },
-  board: { label: "v2b board, top copper (SVG)", href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
-  photo: { label: "v1b as built, the checks called out on the photograph (PNG)", href: "/nes/lab/board-junctions-v1b.png" },
+  v1b: { label: { en: `v1b drawing package, ${PKG_V1B.docno} (PDF)`, ja: `v1b 図面一式、${PKG_V1B.docno} (PDF)` }, href: PKG_V1B.href },
+  v2b: { label: { en: `v2b drawing package, ${PKG_V2B.docno} (PDF)`, ja: `v2b 図面一式、${PKG_V2B.docno} (PDF)` }, href: PKG_V2B.href },
+  padble: { label: { en: `pad-ble drawing package, ${PKG_PADBLE.docno} (PDF)`, ja: `pad-ble 図面一式、${PKG_PADBLE.docno} (PDF)` }, href: PKG_PADBLE.href },
+  board: { label: { en: "v2b board, top copper (SVG)", ja: "v2b 基板、表面の銅 (SVG)" }, href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
+  photo: { label: { en: "v1b as built, the checks called out on the photograph (PNG)", ja: "組み上がった v1b、写真の上に検査箇所を書き出したもの (PNG)" }, href: "/nes/lab/board-junctions-v1b.png" },
 };
-const check = spawnSync("python3", [path.join(BENCH, "tools", "draw-bench.py"), "--check"], { encoding: "utf8" });
-if (check.status !== 0) {
-  throw new Error(`nes-bench/docs/bench.svg is not current: ${check.stdout}${check.stderr}`);
+// nes-bench's own gates, every one of them, by its own list. This pull
+// used to name eight of them here by hand, and the bench's session named
+// four in its hook; on 2026-09-23 a stale parts list reached a push
+// because the one check that would have caught it was in neither hand-
+// picked subset, and this pull found it by luck of naming that one. So
+// there is one list, kept where the checks are: tools/check-all.sh runs
+// every generator's --check, every checker and every desk test the bench
+// has, in about three seconds. A bench without that script is one this
+// pull does not know how to trust.
+const CHECK_ALL = path.join(BENCH, "tools", "check-all.sh");
+if (!fs.existsSync(CHECK_ALL)) {
+  throw new Error(`${CHECK_ALL} is missing: the pull runs nes-bench's own check-all rather than a list of its own`);
 }
-const sheets = spawnSync("python3", [path.join(BENCH, "tools", "check-sheets.py")], { encoding: "utf8" });
-if (sheets.status !== 0) {
-  throw new Error(`nes-bench's sheets disagree with its wiring or its generator: ${sheets.stdout}${sheets.stderr}`);
+const all = spawnSync(CHECK_ALL, [], { encoding: "utf8", cwd: BENCH });
+if (all.status !== 0) {
+  throw new Error(`nes-bench's checks do not all agree:\n${all.stdout}${all.stderr}`);
 }
-// The schematics' own rule check. Clean as of 2026-09-09, so it can be
-// a gate: a net with one end, a duplicated designator, a supply pin
-// nobody mentioned. It cannot catch a connector drawn with the right
-// connections and the wrong pinout, which is what check-sheets.py's
-// port-pinout comparison is for.
+// The schematics' rule check is not on that list yet (asked for,
+// 2026-09-23): a net with one end, a duplicated designator, a supply pin
+// nobody mentioned. Clean as of 2026-09-09, so it can be a gate. Drop this
+// once check-all.sh runs it.
 const erc = spawnSync("python3", [path.join(BENCH, "tools", "netlist.py"), "--erc"], { encoding: "utf8" });
 if (erc.status !== 0) {
   throw new Error(`nes-bench's schematics do not pass their own rule check: ${erc.stdout}${erc.stderr}`);
-}
-// The bring-up tool's guards, driven with scripted answers. It is
-// interactive, so nothing else here would ever run its refusals, and a
-// guard that has never been seen to refuse is not a guard.
-const guards = spawnSync("python3", [path.join(BENCH, "tools", "check-bringup.py")], { encoding: "utf8" });
-if (guards.status !== 0) {
-  throw new Error(`nes-bench's bring-up guards do not hold: ${guards.stdout}${guards.stderr}`);
-}
-// The notebook is generated from the bring-up log. Publishing a stale one
-// would put a claim on the site that its own log does not support.
-for (const [tool, what] of [["lab-notebook.py", "lab notebook"], ["build-guide.py", "build guide"], ["parts.py", "parts list"], ["cheatsheet.py", "cheat sheet"]]) {
-  const r = spawnSync("python3", [path.join(BENCH, "tools", tool), "--check"], { encoding: "utf8" });
-  if (r.status !== 0) {
-    throw new Error(`nes-bench's ${what} is not current: ${r.stdout}${r.stderr}`);
-  }
 }
 const benchOut = path.join(ROOT, "web", "public", "nes", "bench");
 fs.mkdirSync(benchOut, { recursive: true });
@@ -452,22 +447,13 @@ for (const d of DOCS) {
   if (!d.title) throw new Error(`${d.slug}: no title of ours`);
   body = body.replace(/^# .+$/m, `# ${d.title}`);
   d.shownTitle = d.title;
-  if (d.artefacts) {
-    const links = d.artefacts.map((k) => {
-      const a = ARTEFACTS[k];
-      if (!a) throw new Error(`${d.slug}: unknown artefact ${k}`);
-      if (!fs.existsSync(path.join(ROOT, "web", "public", a.href))) {
-        throw new Error(`${d.slug} links ${a.href}, which this pull did not produce`);
-      }
-      return `[${a.label}](${a.href})`;
-    });
-    // Right under the h1, where a reader on a phone at the bench sees it
-    // before the prose.
-    body = body.replace(/^(# .+\n)/m, `$1\n**Printable:** ${links.join("; ")}.\n`);
+  for (const k of d.artefacts ?? []) {
+    if (!ARTEFACTS[k]) throw new Error(`${d.slug}: unknown artefact ${k}`);
   }
   // The milestone label, one line under the title and above the printable
-  // links: what the repositories call this document, and whether it was
-  // written before the work or after it.
+  // links (which lib/remark-artefacts.mjs puts there at build time): what
+  // the repositories call this document, and whether it was written before
+  // the work or after it.
   if (d.code) body = body.replace(/^(# .+\n)/m, `$1\n*${codeLine(d.code)}*\n`);
   const source = `https://github.com/tinymachines/${d.repo}/blob/main/docs/${d.file}`;
   const front = `---\ntitle: "${d.shownTitle.replace(/"/g, '\\"')}"\ndescription: "${d.description.replace(/"/g, '\\"')}"\norder: ${d.order}\n---\n\n`;
@@ -476,6 +462,25 @@ for (const d of DOCS) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${d.slug}.md`), front + body + note);
 }
+
+// The record the build renders the printable links from, for both
+// languages: each artefact's current file and labels, and which documents
+// show which. Written after the documents so that a document's own key
+// is the path the loader will see. A link to a file this pull did not
+// produce is refused here, once, rather than found by a reader.
+for (const [k, a] of Object.entries(ARTEFACTS)) {
+  if (!fs.existsSync(path.join(ROOT, "web", "public", a.href))) {
+    throw new Error(`artefact ${k} links ${a.href}, which this pull did not produce`);
+  }
+}
+const artefactDocs = Object.fromEntries(
+  DOCS.filter((d) => d.artefacts?.length).map((d) => [`${d.section ?? "nes"}/${d.slug}.md`, d.artefacts]),
+);
+fs.writeFileSync(
+  path.join(ROOT, "web", "public", "nes", "bench", "artefacts.json"),
+  JSON.stringify({ lead: { en: "Printable:", ja: "印刷用:" }, artefacts: ARTEFACTS, docs: artefactDocs }, null, 2) + "\n",
+);
+console.log(`pull-nesdocs: ${Object.keys(ARTEFACTS).length} printable artefacts on ${Object.keys(artefactDocs).length} documents`);
 
 // One table per group, each document linked by its title rather than its
 // file name: "n3-report" says where the file is, not what it is.
@@ -518,7 +523,9 @@ ${grouped}
 ## Printable
 
 The bench's drawing packages, built from the committed schematics on
-every deploy: ${Object.values(ARTEFACTS).map((a) => `[${a.label}](${a.href})`).join("; ")}.
+every deploy:
+
+<!-- artefacts -->
 `,
 );
 // The cart: the calibration cartridge and everything around building

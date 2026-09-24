@@ -1,7 +1,5 @@
 # ブリッジの回路図と部品
 
-**印刷用:** [v1b の図面一式、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf); [v1b の実装、写真の上に検査点を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png); [v2b の図面一式、TM-NESB-002 (PDF)](/nes/bench/nes-bench-TM-NESB-002-revA.pdf)。
-
 2026-09-07 に `nes-bench` の main (`docs/wiring.md` は 2026-09-07 改訂、
 `firmware/bridge/bridge.ino`、`head/headd.py`) に対して、ベンチの電子回路
 レビューから起こし、同じ日にリポジトリへ入れた。この文書には図面が 8 枚

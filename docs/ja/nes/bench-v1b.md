@@ -1,7 +1,5 @@
 # Arduino UNO の上の v1b ブリッジ
 
-**印刷用:** [v1b 図面一式、TM-NESB-001 (PDF)](/nes/bench/nes-bench-TM-NESB-001-revN.pdf)、[v1b の実装状態、写真の上に検査点を書き出したもの (PNG)](/nes/lab/board-junctions-v1b.png)、[v2b 図面一式、TM-NESB-002 (PDF)](/nes/bench/nes-bench-TM-NESB-002-revA.pdf)、[v2b 基板、表面の銅箔 (SVG)](/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg)。
-
 部品が届いた後、2026-09-08 に追加。最初に作るものとして v1 に取って代わる。v1 は、
 v2 の計数器が要求するときのための C6 版として、一式の中に残る。
 
