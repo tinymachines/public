@@ -58,8 +58,8 @@ function savePlacement(p: Placement) {
 const W = 300;
 const H = 140;
 const CROSS = { cx: 62, cy: 70, arm: 14, len: 52 }; // arm half-width and the reach from the fulcrum to a tip (slimmed at the owner's word)
-const PILL = { y: 92, w: 40, h: 14, gap: 10, cx: 150 };
-const DOME = { r: 21, b: { cx: 214, cy: 88 }, a: { cx: 266, cy: 72 } }; // a touch lower than first drawn (owner, 2026-09-24)
+const PILL = { y: 102, w: 40, h: 14, gap: 10, cx: 150 }; // a touch lower than first drawn (owner, 2026-09-24)
+const DOME = { r: 21, b: { cx: 214, cy: 82 }, a: { cx: 266, cy: 66 } };
 const DOME_TRAVEL = 3;
 const PILL_TRAVEL = 1.5;
 const TILT_DEG = 12;
@@ -67,6 +67,7 @@ const TILT_DEG = 12;
 const PIVOT = "14cqw";
 /** The pulse under the thumb as a contact closes: long enough to feel on a phone's motor. */
 const PULSE_MS = 30;
+const TEST_MS = 120; // switching haptics on buzzes once, long enough to feel, so a silent phone is told apart from a quiet pulse
 
 export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; labels: { select: string; start: string } }) {
   const held = useRef<Map<number, number>>(new Map());
@@ -266,7 +267,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
             aria-pressed={haptics}
             title="Haptics: a pulse under the thumb when a contact closes"
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); setHaptics((h) => { const n = !h; try { localStorage.setItem(HAPTICS, n ? "1" : "0"); } catch { /* private mode */ } return n; }); }}
+            onClick={(e) => { e.stopPropagation(); if (!haptics) navigator.vibrate(TEST_MS); setHaptics((h) => { const n = !h; try { localStorage.setItem(HAPTICS, n ? "1" : "0"); } catch { /* private mode */ } return n; }); }}
             data-pad-haptics={haptics ? "1" : "0"}
           >
             ((•))
@@ -293,7 +294,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
             <g key={k} data-pad-btn={k} className={"pad-pill" + (down ? " down" : "")} style={{ transform: down ? `translateY(${PILL_TRAVEL}px)` : "none" } as React.CSSProperties}>
               <rect x={x} y={PILL.y + 3} width={PILL.w} height={PILL.h} rx={PILL.h / 2} className="pad-pill-shadow" />
               <rect x={x} y={PILL.y} width={PILL.w} height={PILL.h} rx={PILL.h / 2} className="pad-pill-top" />
-              <text x={x + PILL.w / 2} y={PILL.y + PILL.h + 12} textAnchor="middle" className="pad-label">{labels[k].toUpperCase()}</text>
+              <text x={x + PILL.w / 2} y={PILL.y + PILL.h + 12} textAnchor="middle" className="pad-label pad-bold">{labels[k].toUpperCase()}</text>
             </g>
           );
         })}
@@ -305,7 +306,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
             <g key={k} data-pad-btn={k} className={"pad-dome" + (down ? " down" : "")} style={{ transform: down ? `translateY(${DOME_TRAVEL}px)` : "none" } as React.CSSProperties}>
               <circle cx={d.cx} cy={d.cy + DOME_TRAVEL} r={DOME.r} className="pad-dome-shadow" />
               <circle cx={d.cx} cy={d.cy} r={DOME.r} className="pad-dome-top" fill="url(#pad-dome)" />
-              <text x={d.cx} y={d.cy + DOME.r + 15} textAnchor="middle" className="pad-label pad-ab">{k.toUpperCase()}</text>
+              <text x={d.cx} y={d.cy + DOME.r + 14} textAnchor="middle" className="pad-label">{k.toUpperCase()}</text>
             </g>
           );
         })}

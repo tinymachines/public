@@ -725,13 +725,16 @@ test("the controller's mechanics: a thumb rolled round the cross, no opposites, 
   expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz.length)).toBe(0);
   await page.locator("[data-pad-haptics]").click();
   await expect(page.locator("[data-pad-haptics]")).toHaveAttribute("data-pad-haptics", "1");
+  // Switching on buzzes once, long, so a phone that cannot be felt is told
+  // apart from a pulse too short to notice.
+  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz)).toEqual([120]);
   const a = (await page.locator('[data-pad-btn="a"]').boundingBox())!;
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2 - 6);
   await page.mouse.down();
   await expect(pad).toHaveAttribute("data-play-pad", "01");
   await page.mouse.move(a.x + a.width / 2 + 3, a.y + a.height / 2 - 4, { steps: 3 });
   await page.mouse.up();
-  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz)).toEqual([30]);
+  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz)).toEqual([120, 30]);
   // Two thumbs: B and A held together are both bits, and lifting one
   // leaves the other. Two pointers by id, which is what the pad keys on.
   const b = (await page.locator('[data-pad-btn="b"]').boundingBox())!;

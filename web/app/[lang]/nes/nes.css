@@ -229,7 +229,7 @@
 .pad-pill-top { fill: var(--pad-key); stroke: var(--pad-key-lo); stroke-width: 1; }
 .pad-pill.down .pad-pill-top { fill: color-mix(in srgb, var(--pad-key) 70%, var(--color-accent)); }
 .pad-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; fill: var(--pad-label); pointer-events: none; }
-.pad-label.pad-ab { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
+.pad-label.pad-bold { font-weight: 800; }
 
 html.has-fullscreen .play-stage {
   position: fixed;
