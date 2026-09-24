@@ -3608,3 +3608,21 @@ pad specs pass against live.
 Standing rule from the day: no `next build` in the main checkout outside
 `deploy.sh`, because the live unit serves from it; preview on beta with
 `scripts/beta.sh --follow`. Nothing is waiting on the owner.
+
+## Select and Start, not A and B
+
+The owner had meant the pills when they asked for buttons lower and
+bolder. A and B went back to where they were first drawn; Select and
+Start moved down ten units and their labels went bold. Haptics were
+still not felt, so switching them on now buzzes once for 120ms, long
+enough to feel, which tells a phone that cannot buzz (silent mode,
+vibration off, a broken motor) apart from a 30ms pulse too short to
+notice. On an iPhone the switch is absent, because Safari has no
+vibration. The mechanics spec expects the test pulse and then the 30ms
+one.
+
+## Checkpoint, 2026-09-24 (later)
+
+Live, main and beta at `9932355`, still 1.0.266 (a clean deploy is not
+bumped), all pushed; the NES specs pass against live. Nothing is waiting
+on the owner.
