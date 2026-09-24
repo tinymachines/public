@@ -323,6 +323,19 @@ export function padByte(): number {
   return (pad | touchPad) & 0xff;
 }
 
+/**
+ * The screen hidden (the tab left, the phone locked, the app put away)
+ * pauses the console (owner, 2026-09-23): a game that ran on in the
+ * background was a game the reader came back to somewhere else, and its
+ * battery was a save nobody watched. It does not resume on its own; the
+ * play key does.
+ */
+function onPageHidden() {
+  if (document.visibilityState !== "hidden" || !state.running) return;
+  set({ running: false });
+  void saveNow(true);
+}
+
 export function attach(c: HTMLCanvasElement) {
   canvas = c;
   if (consoleW.worker) return;
@@ -330,6 +343,7 @@ export function attach(c: HTMLCanvasElement) {
   pictureW.start();
   window.addEventListener("keydown", onKey);
   window.addEventListener("keyup", onKey);
+  document.addEventListener("visibilitychange", onPageHidden);
   void consoleW.call({ path: "hello" });
   void pictureW.call({ path: "hello" });
 }
@@ -340,6 +354,7 @@ export function detach() {
   keeper = null;
   window.removeEventListener("keydown", onKey);
   window.removeEventListener("keyup", onKey);
+  document.removeEventListener("visibilitychange", onPageHidden);
   consoleW.stop();
   pictureW.stop();
   canvas = null;

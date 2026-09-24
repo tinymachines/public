@@ -3443,3 +3443,39 @@ workbench specs pass against live.
 
 Sources for the mechanism: the patent at patents.google.com/patent/US4687200A
 and the D-pad's history on Wikipedia.
+
+## Morning, 2026-09-23: the controller in the hand
+
+The owner, from the phone: "Not sensing haptics; slim down the
+directional pad arms; make reposition action a click, slide, unclick (or
+press) metaphor; if the play screen is hidden, pause the engine
+automatically, user needs to click play to resume play."
+
+- **The pulse** was eight milliseconds, asked for inside React's state
+  updater, which is not the pointer's event. A phone's motor needs
+  longer to be felt and browsers only grant the motor to a user gesture,
+  so the pulse is thirty milliseconds now and is asked for in the
+  pointer handler itself, with the lit byte kept in a ref for the
+  rising edge. iPhones have no `navigator.vibrate` at all, and the key
+  stays hidden there as before.
+- **The cross** is slimmer: the arm's half-width went from 22 to 14 of
+  the face's 300 units, the dish and arrowheads with it. The mechanism
+  in `lib/rocker.ts` is untouched; the contacts sit where they sat.
+- **The grip** is press, slide, release: pressing the bar takes the pad
+  in hand, the slide carries it, letting go sets it down and keeps the
+  placement per orientation. There is no moving mode to switch on and
+  off any more, and the buttons stay live throughout. A double tap on the
+  bar, with no slide between, puts the pad back.
+- **A hidden screen pauses the console** (`playEngine.ts`, a document
+  `visibilitychange` listener registered with the engine, not only for
+  shelf cartridges with a battery): the tab left, the phone locked or
+  the app put away pauses the game and saves the battery, and coming
+  back does not resume it; the play key does.
+- **Held by** the play spec: the pulse's duration read off the overridden
+  vibrate, the grip's press, slide and release with the outline while it
+  is held, the placement surviving a reload, the double tap; and a new
+  spec that runs a cartridge, hides the document, sees the play key
+  release and the frame count hold still, brings the document back and
+  sees it still hold, then presses play and sees it run. The spec was
+  run red with the listener removed before it was trusted. NES, mobile
+  and parts suites pass on the preview (445), unit tests 101.

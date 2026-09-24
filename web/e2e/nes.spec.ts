@@ -346,6 +346,38 @@ test("the play page is a workbench: the bar, the strip of its sections, the tran
   await expect(page.locator("[data-play-run]")).toBeEnabled();
 });
 
+test("a hidden screen pauses the console, and only the play key resumes it", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/play", 500);
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-run]")).toBeEnabled({ timeout: 20_000 });
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  await page.locator("[data-play-run]").click();
+  await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(framesRun, { timeout: 15_000 }).toBeGreaterThan(10);
+  // The tab goes to the background: the document reports itself hidden
+  // and says so. The console pauses (owner, 2026-09-23).
+  const hide = (hidden: boolean) => page.evaluate((h) => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (h ? "hidden" : "visible") });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }, hidden);
+  await hide(true);
+  await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "false");
+  // The tick in flight when the pause landed still finishes and counts
+  // its frames; the count is read once that has settled.
+  await page.waitForTimeout(400);
+  const at = await framesRun();
+  await page.waitForTimeout(600);
+  expect(await framesRun(), "no frame runs while hidden").toBe(at);
+  // Coming back does not resume it: the reader's play key does.
+  await hide(false);
+  await page.waitForTimeout(600);
+  expect(await framesRun(), "still paused after the screen returns").toBe(at);
+  await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "false");
+  await page.locator("[data-play-run]").click();
+  await expect.poll(framesRun, { timeout: 15_000 }).toBeGreaterThan(at + 5);
+});
+
 test("sprites from the bytes: the sheet, a painted pixel, the patch in the console and out as IPS", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize(DESK);
@@ -677,7 +709,7 @@ test("the controller's mechanics: a thumb rolled round the cross, no opposites, 
   await expect(pad).toHaveAttribute("data-play-pad", "01");
   await page.mouse.move(a.x + a.width / 2 + 3, a.y + a.height / 2 - 4, { steps: 3 });
   await page.mouse.up();
-  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz)).toEqual([8]);
+  expect(await page.evaluate(() => (window as unknown as { __buzz: number[] }).__buzz)).toEqual([30]);
   // Two thumbs: B and A held together are both bits, and lifting one
   // leaves the other. Two pointers by id, which is what the pad keys on.
   const b = (await page.locator('[data-pad-btn="b"]').boundingBox())!;
@@ -694,24 +726,21 @@ test("the controller's mechanics: a thumb rolled round the cross, no opposites, 
   await expect(pad).toHaveAttribute("data-play-pad", "01");
   await pointer("pointerup", 8, a.x + a.width / 2, a.y + a.height / 2 - 6);
   await expect(pad).toHaveAttribute("data-play-pad", "00");
-  // The grip: a tap puts the pad in its moving state and its buttons go
-  // inert; a drag carries the pad; a tap sets it down; the placement
-  // survives a reload; a double tap puts it back.
+  // The grip: press it, slide, let go, and the pad has moved; the
+  // placement survives a reload; a double tap puts it back.
   const grip = page.locator("[data-pad-grip]");
-  await grip.click();
-  await expect(pad).toHaveAttribute("data-pad-moving", "1");
   const before = (await pad.boundingBox())!;
-  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  const g = (await grip.boundingBox())!;
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
   await page.mouse.down();
-  await page.mouse.move(before.x + before.width / 2 - 40, before.y + before.height / 2 - 30, { steps: 5 });
+  await expect(pad).toHaveAttribute("data-pad-dragging", "1");
+  await page.mouse.move(g.x + g.width / 2 - 40, g.y + g.height / 2 - 30, { steps: 5 });
   await page.mouse.up();
+  await expect(pad).toHaveAttribute("data-pad-dragging", "0");
   await expect(pad).toHaveAttribute("data-play-pad", "00");
   const after = (await pad.boundingBox())!;
   expect(Math.round(after.x - before.x)).toBe(-40);
   expect(Math.round(after.y - before.y)).toBe(-30);
-  await page.waitForTimeout(400);
-  await grip.click();
-  await expect(pad).toHaveAttribute("data-pad-moving", "0");
   await page.reload({ waitUntil: "load" });
   await page.waitForTimeout(500);
   await page.locator("[data-play-pad]").scrollIntoViewIfNeeded();

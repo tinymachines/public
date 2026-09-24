@@ -20,13 +20,11 @@ import { press, release, rocker, type Rocker } from "@/lib/rocker";
  * can slide off A onto B without lifting; the bits of every held pointer
  * are ORed and handed to the engine, which ORs the keyboard in.
  *
- * The grip is the tap-move: a tap on the bar above the pad puts the pad
- * in its moving state, outlined, its buttons inert; a drag anywhere on
- * it then carries the whole pad; a tap on the bar sets it down. Where it
- * was set down is kept per orientation, so a phone held sideways keeps
- * its own placement. A double tap on the bar puts it back where the page
- * had it. This is the workbench's own habit for a control: the strip on
- * the floor moved once at the owner's word; the pad moves at the thumb's.
+ * The grip is the bar above the pad: press it, slide, and let go, and the
+ * whole pad has moved with the thumb (owner, 2026-09-23: press, slide,
+ * release, not a mode to switch on and off). Where it was set down is
+ * kept per orientation, so a phone held sideways keeps its own
+ * placement. A double tap on the bar puts it back where the page had it.
  */
 
 const BIT = { a: 1, b: 2, select: 4, start: 8 } as const;
@@ -59,12 +57,14 @@ function savePlacement(p: Placement) {
 /** The pad's geometry, in its own units: a face 300 wide by 140 tall. */
 const W = 300;
 const H = 140;
-const CROSS = { cx: 62, cy: 70, arm: 22, len: 52 }; // arm half-width and the reach from the fulcrum to a tip
+const CROSS = { cx: 62, cy: 70, arm: 14, len: 52 }; // arm half-width and the reach from the fulcrum to a tip (slimmed at the owner's word)
 const PILL = { y: 92, w: 40, h: 14, gap: 10, cx: 150 };
 const DOME = { r: 21, b: { cx: 214, cy: 82 }, a: { cx: 266, cy: 66 } };
 const DOME_TRAVEL = 3;
 const PILL_TRAVEL = 1.5;
 const TILT_DEG = 9;
+/** The pulse under the thumb as a contact closes: long enough to feel on a phone's motor. */
+const PULSE_MS = 30;
 
 export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; labels: { select: string; start: string } }) {
   const held = useRef<Map<number, number>>(new Map());
@@ -73,8 +73,9 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   const svgRef = useRef<SVGSVGElement>(null);
   const padRef = useRef<HTMLDivElement>(null);
   const [lit, setLit] = useState(0);
+  const litRef = useRef(0);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [moving, setMoving] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [place, setPlace] = useState<Placement>({ dx: 0, dy: 0 });
   const [haptics, setHaptics] = useState(false);
   const canBuzz = typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
@@ -98,11 +99,11 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
     let bits = 0;
     for (const b of held.current.values()) bits |= b;
     setTouchPad(bits);
-    setLit((was) => {
-      // A contact closing is the click: one short pulse per rising edge.
-      if (haptics && canBuzz && (bits & ~was) !== 0) navigator.vibrate(8);
-      return bits;
-    });
+    // A contact closing is the click: one pulse per rising edge, asked for
+    // here in the pointer's own event, where the browser allows the motor.
+    if (haptics && canBuzz && (bits & ~litRef.current) !== 0) navigator.vibrate(PULSE_MS);
+    litRef.current = bits;
+    setLit(bits);
     onPad?.(bits);
   }, [onPad, haptics, canBuzz]);
 
@@ -148,23 +149,22 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
     (e: React.PointerEvent) => {
       e.preventDefault();
       const target = (e.target as Element).closest<Element>("[data-pad-btn], [data-pad-grip]");
+      // Capture keeps a thumb that slides off the pad in hand. A pointer
+      // that cannot be captured (a synthetic one) still presses.
+      try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch { /* not a live pointer */ }
       if (target?.hasAttribute("data-pad-grip")) {
+        // Press the grip: the pad moves with this pointer until it lets go.
+        // Two presses within a beat, with no move between, put it back.
         const now = performance.now();
         if (now - lastTap.current < 350) {
           setPlace({ dx: 0, dy: 0 });
           savePlacement({ dx: 0, dy: 0 });
-          setMoving(false);
-        } else {
-          setMoving((m) => !m);
+          lastTap.current = 0;
+          return;
         }
         lastTap.current = now;
-        return;
-      }
-      // Capture keeps a thumb that slides off the pad in hand. A pointer
-      // that cannot be captured (a synthetic one) still presses.
-      try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); } catch { /* not a live pointer */ }
-      if (moving) {
         drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: place };
+        setDragging(true);
         return;
       }
       const onCross = target?.getAttribute("data-pad-btn") === "cross";
@@ -172,12 +172,14 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
       held.current.set(e.pointerId, bitsAt(e, onCross));
       publish();
     },
-    [bitsAt, publish, moving, place],
+    [bitsAt, publish, place],
   );
   const move = useCallback(
     (e: React.PointerEvent) => {
       if (drag.current && drag.current.id === e.pointerId) {
         const next = { dx: drag.current.from.dx + (e.clientX - drag.current.x), dy: drag.current.from.dy + (e.clientY - drag.current.y) };
+        // A slide is not a tap: a moved grip does not count towards a double tap.
+        if (Math.hypot(e.clientX - drag.current.x, e.clientY - drag.current.y) > 6) lastTap.current = 0;
         setPlace(next);
         return;
       }
@@ -193,8 +195,11 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   const up = useCallback(
     (e: React.PointerEvent) => {
       if (drag.current && drag.current.id === e.pointerId) {
-        savePlacement({ dx: drag.current.from.dx + (e.clientX - drag.current.x), dy: drag.current.from.dy + (e.clientY - drag.current.y) });
+        const set = { dx: drag.current.from.dx + (e.clientX - drag.current.x), dy: drag.current.from.dy + (e.clientY - drag.current.y) };
+        setPlace(set);
+        savePlacement(set);
         drag.current = null;
+        setDragging(false);
         return;
       }
       if (!held.current.has(e.pointerId)) return;
@@ -223,9 +228,9 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   return (
     <div
       ref={padRef}
-      className={"pad" + (moving ? " moving" : "")}
+      className={"pad" + (dragging ? " dragging" : "")}
       data-play-pad={lit.toString(16).padStart(2, "0")}
-      data-pad-moving={moving ? "1" : "0"}
+      data-pad-dragging={dragging ? "1" : "0"}
       style={{ "--pad-dx": `${place.dx}px`, "--pad-dy": `${place.dy}px` } as React.CSSProperties}
       onPointerDown={down}
       onPointerMove={move}
@@ -233,7 +238,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
       onPointerCancel={up}
       onLostPointerCapture={up}
     >
-      <div className="pad-grip" data-pad-grip role="button" aria-label="Move the pad" title="Tap to move the pad, tap again to set it down; double tap to put it back">
+      <div className="pad-grip" data-pad-grip role="button" aria-label="Move the pad" title="Press and slide to move the pad; double tap to put it back">
         <span /><span /><span />
         {canBuzz ? (
           <button
@@ -263,12 +268,12 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
           style={{ transform: crossTransform, transformOrigin: `${CROSS.cx}px ${CROSS.cy}px`, transformBox: "view-box" } as React.CSSProperties}
         >
           <path d={armPath} className="pad-key" />
-          <circle cx={CROSS.cx} cy={CROSS.cy} r={CROSS.arm * 0.55} className="pad-dish" />
+          <circle cx={CROSS.cx} cy={CROSS.cy} r={CROSS.arm * 0.6} className="pad-dish" />
           {/* The four arrows, lit one at a time as their contact closes. */}
-          <path d={`M${CROSS.cx} ${CROSS.cy - CROSS.len + 8} l7 10 h-14 z`} className={"pad-arrow" + (on(16) ? " on" : "")} />
-          <path d={`M${CROSS.cx} ${CROSS.cy + CROSS.len - 8} l7 -10 h-14 z`} className={"pad-arrow" + (on(32) ? " on" : "")} />
-          <path d={`M${CROSS.cx - CROSS.len + 8} ${CROSS.cy} l10 7 v-14 z`} className={"pad-arrow" + (on(64) ? " on" : "")} />
-          <path d={`M${CROSS.cx + CROSS.len - 8} ${CROSS.cy} l-10 7 v-14 z`} className={"pad-arrow" + (on(128) ? " on" : "")} />
+          <path d={`M${CROSS.cx} ${CROSS.cy - CROSS.len + 7} l5 8 h-10 z`} className={"pad-arrow" + (on(16) ? " on" : "")} />
+          <path d={`M${CROSS.cx} ${CROSS.cy + CROSS.len - 7} l5 -8 h-10 z`} className={"pad-arrow" + (on(32) ? " on" : "")} />
+          <path d={`M${CROSS.cx - CROSS.len + 7} ${CROSS.cy} l8 5 v-10 z`} className={"pad-arrow" + (on(64) ? " on" : "")} />
+          <path d={`M${CROSS.cx + CROSS.len - 7} ${CROSS.cy} l-8 5 v-10 z`} className={"pad-arrow" + (on(128) ? " on" : "")} />
         </g>
         {/* Select and Start: the two pills, a shallow travel. */}
         {(["select", "start"] as const).map((k, i) => {

@@ -200,10 +200,9 @@
   cursor: pointer;
 }
 .pad-buzz.on { background: var(--color-accent); color: var(--color-glass); border-color: var(--color-accent); }
-/* Moving: outlined, the grip lit, the buttons inert to the thumb. */
-.pad.moving { outline: 2px dashed var(--color-accent-ink); outline-offset: 2px; cursor: move; }
-.pad.moving .pad-grip { background: var(--color-accent); }
-.pad.moving .pad-face { pointer-events: none; }
+/* In the hand: outlined while the grip is held and the pad moves with it. */
+.pad.dragging { outline: 2px dashed var(--color-accent-ink); outline-offset: 2px; }
+.pad.dragging .pad-grip { background: var(--color-accent); cursor: grabbing; }
 /* The cross: the key top, its dish, its arrows; it tilts as a piece. */
 .pad-cross { transition: transform 40ms linear; }
 .pad-key { fill: var(--pad-key); stroke: var(--pad-key-lo); stroke-width: 1.5; }
