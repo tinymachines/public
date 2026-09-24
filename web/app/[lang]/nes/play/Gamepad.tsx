@@ -63,6 +63,8 @@ const DOME = { r: 21, b: { cx: 214, cy: 88 }, a: { cx: 266, cy: 72 } }; // a tou
 const DOME_TRAVEL = 3;
 const PILL_TRAVEL = 1.5;
 const TILT_DEG = 12;
+/** How far below the plate its pivot sits, in hundredths of the cross's width. */
+const PIVOT = "14cqw";
 /** The pulse under the thumb as a contact closes: long enough to feel on a phone's motor. */
 const PULSE_MS = 30;
 
@@ -229,7 +231,14 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   // "perspective looks off", 2026-09-24). On the layer, the perspective
   // distance and the pivot below the plate are in container units, so the
   // key rocks the same at every size; see .pad-tilt in nes.css.
-  const crossTransform = crossLit ? `perspective(130cqw) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg)` : "none";
+  // The pivot is a hemisphere under the plate, PIVOT below it: the plate
+  // is carried down to the pivot, rocked there, and carried back before
+  // the eye looks at it, so the pressed arm sinks and shortens, the
+  // opposite arm rises and lengthens, and the plate shifts towards the
+  // thumb without changing size. (A z offset on transform-origin would
+  // do the rock but also push the whole plate towards the eye before the
+  // perspective, so every press grew the key by a tenth.)
+  const crossTransform = crossLit ? `perspective(130cqw) translateZ(${-PIVOT}) rotate3d(${-tilt.y}, ${tilt.x}, 0, ${TILT_DEG}deg) translateZ(${PIVOT})` : "none";
   const armPath = (() => {
     const a = CROSS.arm, l = CROSS.len, c = CROSS.cx, d = CROSS.cy;
     return `M${c - a} ${d - l} h${2 * a} v${l - a} h${l - a} v${2 * a} h${-(l - a)} v${l - a} h${-2 * a} v${-(l - a)} h${-(l - a)} v${-2 * a} h${l - a} z`;
