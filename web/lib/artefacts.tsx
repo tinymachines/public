@@ -43,12 +43,12 @@ export function readArtefacts(): Artefacts | null {
   return JSON.parse(fs.readFileSync(RECORD, "utf8")) as Artefacts;
 }
 
-function Printable({ rec, keys, lang }: { rec: Artefacts; keys: string[]; lang: "en" | "ja" }) {
+function Printable({ rec, keys, lang, lead }: { rec: Artefacts; keys: string[]; lang: "en" | "ja"; lead: boolean }) {
   const sep = lang === "ja" ? "、" : "; ";
   const stop = lang === "ja" ? "。" : ".";
   return (
     <p data-printable>
-      <strong>{rec.lead[lang]}</strong>{" "}
+      {lead ? <><strong>{rec.lead[lang]}</strong>{" "}</> : null}
       {keys.map((k, i) => {
         const a = rec.artefacts[k];
         if (!a) throw new Error(`artefacts.json names no artefact ${k}`);
@@ -79,10 +79,11 @@ export function artefactComponents(file: string, lang: "en" | "ja"): MDXComponen
     h1: (props: React.ComponentPropsWithoutRef<"h1">) => (
       <>
         <h1 {...props} />
-        {keys?.length ? <Printable rec={rec} keys={keys} lang={lang} /> : null}
+        {keys?.length ? <Printable rec={rec} keys={keys} lang={lang} lead /> : null}
       </>
     ),
     p: (props: React.ComponentPropsWithoutRef<"p">) =>
-      props.children === TOKEN ? <Printable rec={rec} keys={Object.keys(rec.artefacts)} lang={lang} /> : <p {...props} />,
+      // The index's own sentence introduces the list, so no lead word here.
+      props.children === TOKEN ? <Printable rec={rec} keys={Object.keys(rec.artefacts)} lang={lang} lead={false} /> : <p {...props} />,
   };
 }
