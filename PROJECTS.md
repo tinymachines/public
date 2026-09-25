@@ -3724,3 +3724,35 @@ when rerun alone). The new strip and menu tests were run against the old
 live site first and failed there. Not run: the signed-in shelf tests. Next
 on the workbench: breakpoints, a trace and saved states, as windows on the
 desk. Nothing is waiting on the owner.
+
+## The pad's place, and rev F and rev G
+
+- **The pad shows once, where it was set down.** It remembers its place
+  per orientation in `localStorage` (`tm.nes.pad`), as an offset from its
+  slot. On load it was drawn in its slot, then moved a frame later, in the
+  same frame Play's section strip arrived and pushed the page down 41px:
+  two positions and a jump (the owner's "race condition with controller
+  placement and the empty space it slots into"). Now it is unseen until
+  its placement is read, Play and Create reserve the strip's height
+  (SectionStrip `reserve`), and the folded strip is exactly the row's
+  height. The slot stays reserved when the pad is moved, so the page under
+  a thumb never reflows; closing it up is the owner's call. A spec samples
+  every frame and failed on the old code.
+- **TM-NESB-003 rev F, then rev G, live.** Rev F corrected three
+  controller-cable lead colours that rev E had wrong (GND yellow, CLK blue,
+  OUT0 black, as rung out) and gave the P4 its own sheets; rev G marks
+  GPIO37 and GPIO38 as the P4's console UART. Both came from nes-bench by
+  the ordinary pull. The rev G deploy first stopped at the Japanese shadow
+  check: nes-bench's parts.md had gained `## pad-ble-p4`, and two older
+  row removals had never reached `docs/ja/nes/parts.md`. nes-bench's
+  README now asks for heading and row moves in parts.md to be announced.
+
+## Checkpoint, 2026-09-25
+
+Live, main and beta at `00322d2`, pushed. Live serves rev G, byte-identical
+to nes-bench's build at d820546 (its printed date now comes from the
+commit, so same commit, same bytes). The pad and frame specs pass on beta
+and on live; the last full e2e was at the frame's commit (952 passed,
+nothing failed). Not run: the signed-in shelf tests. Next on the workbench:
+breakpoints, a trace and saved states, as windows on the desk. Nothing is
+waiting on the owner.
