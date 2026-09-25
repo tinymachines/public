@@ -80,6 +80,11 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [place, setPlace] = useState<Placement>({ dx: 0, dy: 0 });
+  // Hidden until the reader's own placement is read: the server can only
+  // draw the pad in its slot, and showing it there first put it in two
+  // places in two frames (owner, 2026-09-25: "a race condition with
+  // controller placement and the empty space it slots into").
+  const [placed, setPlaced] = useState(false);
   const [haptics, setHaptics] = useState(false);
   const canBuzz = typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
   const drag = useRef<{ id: number; x: number; y: number; from: Placement } | null>(null);
@@ -91,6 +96,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setPlace(loadPlacement());
+      setPlaced(true);
       try { setHaptics(localStorage.getItem(HAPTICS) === "1"); } catch { /* private mode */ }
     });
     const onTurn = () => setPlace(loadPlacement());
@@ -251,6 +257,7 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
       className={"pad" + (dragging ? " dragging" : "")}
       data-play-pad={lit.toString(16).padStart(2, "0")}
       data-pad-dragging={dragging ? "1" : "0"}
+      data-placed={placed ? "" : undefined}
       style={{ "--pad-dx": `${place.dx}px`, "--pad-dy": `${place.dy}px` } as React.CSSProperties}
       onPointerDown={down}
       onPointerMove={move}

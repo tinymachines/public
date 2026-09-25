@@ -40,15 +40,23 @@ const slug = (s: string) =>
 export function SectionStrip({
   root = ".explorer-shell",
   more = [],
+  reserve = false,
   label = "Sections",
   close = "Close",
 }: {
   root?: string;
   more?: { href: string; label: string }[];
+  /**
+   * Hold the strip's height before the page's sections are read, on a page
+   * that always has them. Arriving a frame late, the strip pushed the whole
+   * page down under the reader, and the play page's pad with it, in the
+   * same frame the pad moved to its reader's place (2026-09-25).
+   */
+  reserve?: boolean;
   label?: string;
   close?: string;
 }) {
-  const [secs, setSecs] = useState<Sec[]>([]);
+  const [secs, setSecs] = useState<Sec[] | null>(null);
   const [current, setCurrent] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,7 +68,7 @@ export function SectionStrip({
     let io: IntersectionObserver | null = null;
     const frame = requestAnimationFrame(() => {
     const host = document.querySelector<HTMLElement>(root);
-    if (!host) return;
+    if (!host) return setSecs([]);
     // One heading per <section>, and only headings that belong to a section:
     // the explorer's die stage names its panels with h2s too, and a strip of
     // sixteen panel names is not a map of the page.
@@ -74,7 +82,7 @@ export function SectionStrip({
       seen.add(sec);
       return true;
     });
-    if (heads.length < 3) return;
+    if (heads.length < 3) return setSecs([]);
 
     const eyebrowOf = (h: HTMLElement) => {
       const sec = h.closest("section");
@@ -117,7 +125,14 @@ export function SectionStrip({
     };
   }, [root]);
 
-  if (!secs.length) return null;
+  if (secs === null && reserve) {
+    return (
+      <nav className="wb-strip" aria-hidden="true" data-fold="0" data-strip-wait>
+        <div className="strip-row"><div className="strip-run"><span>{"\u00a0"}</span></div></div>
+      </nav>
+    );
+  }
+  if (!secs?.length) return null;
   return (
     <Strip
       label={label}

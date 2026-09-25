@@ -210,7 +210,7 @@ export function Desk({
 
   return (
     <DeskCtx.Provider value={ctx}>
-      {mode === "stack" ? <SectionStrip root=".desk" more={more} label={labels.tray} close={labels.close} /> : null}
+      {mode === "stack" ? <SectionStrip root=".desk" reserve more={more} label={labels.tray} close={labels.close} /> : null}
       {mode === "float" && layout ? (
         <div className="desk-tray" role="toolbar" aria-label={labels.tray} data-desk-tray>
           {wins.map((s) => {

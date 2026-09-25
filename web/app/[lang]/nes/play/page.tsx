@@ -163,6 +163,7 @@ export default async function PlayPage({ params }: { params: Promise<{ lang: Lan
         />
         <SectionStrip
           root=".play-shell"
+          reserve
           label={t(lang, "Sections")}
           close={t(lang, "Close")}
           more={[{ href: localize(lang, "/nes/create"), label: t(lang, surface("nes", "create").nav_label ?? "Create") }]}

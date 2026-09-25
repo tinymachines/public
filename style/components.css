@@ -2903,7 +2903,12 @@ html.has-fullscreen .wb-strip { top: 0; }
   align-items: center;
   gap: calc(var(--u) * 2.5);
   width: 100%;
-  padding: calc(var(--u) * 3) 0;
+  /* The row's own box, border and all, so a strip is one height folded
+     or not, and a placeholder of the row holds the room for either. */
+  padding: calc(var(--u) * 3) 0 calc(var(--u) * 2.5);
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  line-height: inherit;
   font-family: var(--font-display);
   font-size: var(--text-micro);
   font-weight: 600;
@@ -2911,7 +2916,8 @@ html.has-fullscreen .wb-strip { top: 0; }
   text-transform: uppercase;
   color: var(--color-ink);
   background: none;
-  border: 0;
+  border-top: 0;
+  border-inline: 0;
   cursor: pointer;
   text-align: left;
 }

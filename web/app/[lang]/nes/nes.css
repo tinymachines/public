@@ -176,6 +176,9 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+/* Unseen until the reader's placement is read (Gamepad.tsx), so it is
+   shown once, where it belongs; it keeps its room meanwhile. */
+.pad:not([data-placed]) { visibility: hidden; }
 .pad-stage { position: relative; }
 .pad-face { display: block; width: 100%; height: auto; overflow: visible; }
 /* The cross's footprint in the face, invisible: it only takes the thumb. */

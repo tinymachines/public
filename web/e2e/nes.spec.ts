@@ -236,6 +236,37 @@ test("the console runs a cartridge on the create desk and paints it", async ({ p
   expect(text).toMatch(/display callbacks:\s*\d+/);
 });
 
+test("a pad set down somewhere is shown there once, and nothing above it moves after it shows", async ({ page }) => {
+  // Owner, 2026-09-25: the pad was drawn in its slot, then moved to where
+  // the reader had set it down, in the frame the section strip arrived and
+  // pushed the page down, so it showed in two places and the page jumped.
+  await page.setViewportSize(PHONE);
+  await open(page, "/nes/play", 300);
+  await page.evaluate(() => localStorage.setItem("tm.nes.pad", JSON.stringify({ portrait: { dx: 0, dy: -120 } })));
+  await page.addInitScript(() => {
+    const log: { top: number; shown: boolean; stage: number }[] = [];
+    (window as unknown as { __padLog: typeof log }).__padLog = log;
+    const t0 = performance.now();
+    const tick = () => {
+      const p = document.querySelector<HTMLElement>(".pad");
+      const st = document.querySelector<HTMLElement>(".play-stage");
+      if (p && st) log.push({ top: Math.round(p.getBoundingClientRect().top + scrollY), shown: getComputedStyle(p).visibility === "visible", stage: Math.round(st.getBoundingClientRect().top + scrollY) });
+      if (performance.now() - t0 < 2500) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await page.reload({ waitUntil: "load" });
+  await page.waitForTimeout(2800);
+  const log = await page.evaluate(() => (window as unknown as { __padLog: { top: number; shown: boolean; stage: number }[] }).__padLog);
+  const shown = log.filter((l) => l.shown);
+  expect(shown.length, "the pad showed").toBeGreaterThan(10);
+  const last = shown[shown.length - 1];
+  expect(new Set(shown.map((l) => l.top)), "one place, from the first frame it showed").toEqual(new Set([last.top]));
+  expect(new Set(shown.map((l) => l.stage)), "the page above did not move once it showed").toEqual(new Set([last.stage]));
+  expect(last.stage - last.top, "it is where it was set down").toBeGreaterThan(0);
+  await page.evaluate(() => localStorage.removeItem("tm.nes.pad"));
+});
+
 test("the play page has a pad a thumb can hold and a full screen mode, on a phone", async ({ page }) => {
   await page.setViewportSize(PHONE);
   await open(page, "/nes/play", 500);
