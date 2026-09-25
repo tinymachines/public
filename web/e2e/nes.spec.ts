@@ -263,7 +263,7 @@ test("a pad set down somewhere is shown there once, and nothing above it moves a
   const last = shown[shown.length - 1];
   expect(new Set(shown.map((l) => l.top)), "one place, from the first frame it showed").toEqual(new Set([last.top]));
   expect(new Set(shown.map((l) => l.stage)), "the page above did not move once it showed").toEqual(new Set([last.stage]));
-  expect(last.stage - last.top, "it is where it was set down").toBeGreaterThan(0);
+  expect(await page.locator(".pad").evaluate((p) => (p as HTMLElement).style.getPropertyValue("--pad-dy")), "it is where it was set down").toBe("-120px");
   await page.evaluate(() => localStorage.removeItem("tm.nes.pad"));
 });
 
