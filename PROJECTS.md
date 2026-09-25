@@ -3689,3 +3689,38 @@ failed, 1 flaky (the 6502 primer's link parity). The hidden-screen check
 passed fifteen of fifteen alone after its fix. Not run: the signed-in shelf
 tests, which need a session. Next on the workbench: breakpoints, a trace and
 saved states, as windows on the desk. Nothing is waiting on the owner.
+
+## The frame: the strip, the menu and the lines
+
+The owner, the same night, after using the split: Create was missing from
+the strips, the strip's last parts were cut off at the edge, the menu on a
+section's page showed the site and nothing of the section, and the
+horizontal rules were "a bit sloppy".
+
+- **Create is a surface** in `data/projects.json`, so it is on the NES
+  strip and in the crumbs. Play's strip ends with Create after a divider,
+  and Create's (and its tray) end with Play.
+- **The strip says one word and clusters.** `strip_label` (Learn, Notebook,
+  Retro) and `strip_group` in the manifest; a hairline between clusters.
+  `components/Strip.tsx` draws both the section strip and a workbench's
+  own, and never scrolls sideways: a ghost of the row is measured on every
+  resize and a row that does not fit folds into one button naming where
+  you are. It fits at a desk and folds on a tablet and a phone.
+- **The menu opens on its section.** Inside a section the panel starts
+  with the section's name and its parts in the strip's clusters, then the
+  site and the projects as two short columns. Outside one it is as before.
+  `lib/strip.ts` answers "where am I" for both.
+- **One rule for lines** (`style/components.css` section 29): chrome lines
+  run edge to edge (bar, strip, footer), the page head keeps its heavy
+  rule, and a document's sections open on a short burnt mark instead of a
+  full line. The strip's first word sits on the page's left edge.
+
+## Checkpoint, 2026-09-24 (late night)
+
+Live, main and beta at `0cc78f4`, pushed. The full e2e against beta at the
+frame's commit: 952 passed, 13 skipped, nothing failed, 2 flaky (the phone
+bar walk and the study view, each a page load that timed out; both passed
+when rerun alone). The new strip and menu tests were run against the old
+live site first and failed there. Not run: the signed-in shelf tests. Next
+on the workbench: breakpoints, a trace and saved states, as windows on the
+desk. Nothing is waiting on the owner.
