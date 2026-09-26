@@ -29,6 +29,7 @@ sub-projects, along the licence line. Where each one is right now:
 |---|---|---|
 | `web/` | the site: Next 16.3.2, React 19.2.8, Tailwind 4, MDX; `bun`. Serves `/`, `/ja`, `/docs`, `/6502/*`, `/hotbits`, `/style`, `/admin` | `127.0.0.1:6511` behind nginx |
 | `api/` | the roof's API: FastAPI, Pydantic, one SQLite file. REST and MCP from one set of models | `127.0.0.1:6510` at `/api` |
+| `wasm/` | three crates behind wasm-bindgen, built by `scripts/build-playground-wasm.py` into gitignored bundles under `web/public/nes/`: `slowppu` and `apuvoices` wrap the 2C02 and the 2A03 from their sibling checkouts (their tables are measured from NC-SA die data), and `flow`, the flow tools for /nes/create, reads a recorded run's trace and embeds no die data (MIT) | in the browser; `--check` at deploy |
 | `style/` | the design system: `tokens.css` (the owner's `@theme`), `components.css`, the zoo, and five Python checks | build time and deploy gates |
 | `data/` | the facts that are typed once: `pieces.json`, `projects.json`, `chip.json`, `ja.json`, `engine.json`; plus the scripts that check prose against them. One of them reaches the network on purpose: `check-i18n.py --live` counts how much of each published page's Japanese twin is Japanese, which the tree cannot answer | read by `web/lib` and `api/` at build and start; `--live` against a served origin |
 | `docs/` | the documentation tree, markdown; `web/lib/docs.ts` walks it | prerendered at `/docs` |

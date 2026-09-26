@@ -29,7 +29,7 @@ async function openDesk(page: Page) {
 test("the desk: a key for every window named by its own heading, the first five open, all inside the desk, the page not scrolling", async ({ page }) => {
   await openDesk(page);
   const keys = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.map((b) => (b.textContent ?? "").trim()));
-  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this page"]);
+  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "About this page"]);
   const shown = await page.locator("[data-win]").evaluateAll((ws) => ws.filter((w) => (w as HTMLElement).offsetParent !== null).map((w) => (w as HTMLElement).dataset.win));
   expect(shown).toEqual(OPEN);
   const pressed = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => (b as HTMLElement).dataset.deskTab));
@@ -169,11 +169,65 @@ test("on a phone the windows stand one under another under the section strip, wi
   expect(await page.locator("[data-win-bar]").evaluateAll((bs) => bs.filter((b) => (b as HTMLElement).offsetParent !== null).length)).toBe(0);
   await expect
     .poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())))
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "About this page", "Play"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "About this page", "Play"]);
   // Every window shows, the closed-by-default ones too, in page order.
   const tops = await page.locator("[data-win]").evaluateAll((ws) => ws.map((w) => w.getBoundingClientRect().top));
   expect(tops.every((t, i) => i === 0 || t > tops[i - 1])).toBe(true);
   await expect(page.locator("[data-win=screen] .play-stage [data-pad-grip]")).toHaveCount(1);
   const w = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(w).toBeLessThanOrEqual(PHONE.width);
+});
+
+test("a run recorded from power-on is kept in the browser, played back to the same pictures, and read by the flow tools", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openDesk(page);
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  await page.locator("[data-desk-tab=record]").click();
+  await page.locator("[data-desk-tab=flow]").click();
+  const rec = page.locator("[data-win=record]");
+  await rec.locator("[data-record-start]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "on");
+  // Recording starts at power-on: the console was started again for it.
+  await expect(rec.locator("[data-record-frames]")).toHaveAttribute("data-record-frames", "0");
+  await page.locator("[data-play-run]").click();
+  const frames = () => rec.locator("[data-record-frames]").getAttribute("data-record-frames").then(Number);
+  await expect.poll(frames, { timeout: 20_000 }).toBeGreaterThan(40);
+  // Buttons pressed while recording are part of the run the playback must match.
+  await page.keyboard.down("ArrowRight");
+  await expect.poll(frames, { timeout: 20_000 }).toBeGreaterThan(70);
+  await page.keyboard.up("ArrowRight");
+  await page.keyboard.down("KeyX");
+  await expect.poll(frames, { timeout: 20_000 }).toBeGreaterThan(90);
+  await page.keyboard.up("KeyX");
+  await rec.locator("[data-record-stop]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "off");
+  // The console runs on, unrecorded.
+  await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "true");
+
+  const item = rec.locator("[data-recording-id]").first();
+  await expect(item).toContainText("testcart.nes");
+  await item.locator("[data-record-read]").click();
+  const flow = page.locator("[data-win=flow] [data-flow]");
+  await expect(flow).not.toHaveAttribute("data-flow-open", "", { timeout: 60_000 });
+  await expect(page.locator("[data-flow-why]"), "the playback matched every picture").toHaveCount(0);
+  await expect(flow.locator("[data-flow-overview]")).toContainText("instructions");
+  // The test cartridge counts frames in its NMI handler: the routines say so.
+  await flow.locator("[data-flow-view=routines]").click();
+  await expect(flow.locator("[data-flow-routines] tbody tr").first()).toBeVisible();
+  expect(await flow.locator("[data-flow-routines] tbody tr").allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining("each frame (NMI)")]));
+  await flow.locator("[data-flow-routines] tbody tr").first().click();
+  await expect(flow.locator("[data-flow-picked] tbody tr").first()).toBeVisible();
+  await flow.locator("[data-flow-view=modes]").click();
+  await expect(flow.locator(".flow-seg").first()).toBeVisible();
+  await flow.locator("[data-flow-view=loops]").click();
+  await expect(flow.locator("[data-flow-loop]").first()).toBeVisible();
+
+  // Kept in this browser: a reload lists it, and it opens without reading again.
+  await page.reload();
+  await expect(page.locator(".desk[data-ready]")).toHaveCount(1);
+  await page.locator("[data-win=record] [data-recording-id] [data-record-open]").first().click();
+  await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "");
+  await page.locator("[data-win=record] [data-record-delete]").first().click();
+  await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
 });
