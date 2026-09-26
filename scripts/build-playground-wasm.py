@@ -172,7 +172,7 @@ def build_at(name: str, b: dict, crate: Path, files: tuple, head: str, repo: Pat
     b["record"].write_text(json.dumps({
         "note": f"Written only by scripts/build-playground-wasm.py. {b['what']}, after its native suite passed. "
                 f"The files in {dest.relative_to(ROOT)}/ must hash to these values and are never committed "
-                + ("(a build is served, not committed; this crate is MIT and carries no die data)." if b.get("own")
+                + ("(a build, not a source; the crate itself is MIT and carries no die data)." if b.get("own")
                    else "(what the chip was measured from is NC-SA)."),
         "repo": b["url"],
         ("tree" if b.get("own") else "commit"): head,
