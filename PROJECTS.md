@@ -3789,3 +3789,36 @@ Live, main and beta at `b426081`, pushed. Live serves rev I, and rev G
 returns 404. The three subdomains still redirect. Lib tests pass; the
 last full e2e was at the frame's commit. Next, the owner's idea for the
 debugger. Nothing is waiting on the owner.
+
+## The debugger: record a run, read its flow
+
+The owner's idea (2026-09-26): record the game's state and code path raw,
+then point tools at it to understand the loops and cut the code into
+routines. The tools are in WASM, and everything is kept locally. The
+owner decided three things: the analysis sits on top of the hardware
+stack in this repo, the store is whatever is canonical for a PWA (OPFS),
+and the tools are windows on /nes/create.
+
+- A recording is the console's input log from power-on: pad changes,
+  resets and a digest of every picture (nes `record.rs`). The replay
+  writes the trace (every CPU cycle, the registers at each instruction,
+  where in the ROM each read lands) and refuses at the first picture
+  that differs from the recording.
+- Keying code by its place in the ROM needed `Cartridge::prg_offset` in
+  nes-bus v0.1.7. The chips pin nes-bus in lockstep, so ntsc-crt
+  (v0.2.17) and 2c02 (6a7d0c0) moved their pins with it, and the console
+  was boarded at nes 5d8a311.
+- `wasm/flow` (MIT, no die data) finds routines, loops, tables, modes,
+  shared RAM, and which routines follow the pad. The Mario dissection's
+  addresses are found by the tools on the owner's multicart
+  (`tests/mario.rs`, run by hand).
+- One bug was found by reasoning and then shown red: a reset pressed part
+  way into a frame made the replay refuse a good recording. It is fixed
+  in nes 5d8a311.
+
+## Checkpoint, 2026-09-26 (evening)
+
+Beta serves the Record and Flow windows. The create spec passes on beta
+(6 of 6), and the NES, playground, prose, language and pages specs pass
+(333, after the strip lists were updated). Live is still `b426081`: the
+deploy waits on the owner's look at beta.
