@@ -65,6 +65,8 @@ test("a window moves by its bar, stops at the desk's edge, sizes from its corner
   await openDesk(page);
   const desk = await rect(page, "[data-desk]");
   const z = (id: string) => page.locator(`[data-win=${id}]`).evaluate((e) => Number((e as HTMLElement).style.zIndex));
+  // The window on top is numbered by how many windows there are (lib/desk's raise).
+  const top = await page.locator("[data-win]").count();
 
   // Move: the bar's middle, dragged left and up (the window starts on the desk's floor).
   const before = await rect(page, "[data-win=memory]");
@@ -76,7 +78,7 @@ test("a window moves by its bar, stops at the desk's edge, sizes from its corner
   const moved = await rect(page, "[data-win=memory]");
   expect(Math.round(moved.x - before.x)).toBe(-300);
   expect(Math.round(moved.y - before.y)).toBe(-30);
-  expect(await z("memory"), "the window pressed is on top").toBe(10);
+  expect(await z("memory"), "the window pressed is on top").toBe(top);
 
   // A drag far past the edge stops at it.
   await page.mouse.move(moved.x + 40, moved.y + 8);
@@ -100,7 +102,7 @@ test("a window moves by its bar, stops at the desk's edge, sizes from its corner
 
   // A press anywhere on a window brings it forward.
   await page.locator("[data-win=code] .win-body").click({ position: { x: 20, y: 20 } });
-  expect(await z("code")).toBe(10);
+  expect(await z("code")).toBe(top);
 
   // Fill the desk, and back.
   await page.locator("[data-win=code] [data-win-bar] .win-title").dblclick();
