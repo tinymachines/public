@@ -121,6 +121,16 @@ self.onmessage = async (e) => {
       return;
     }
     if (path === "off") {
+      // A recording in progress ends here, and its log goes back with the
+      // answer rather than with the console.
+      const log = nes && nes.recording && nes.recording() ? nes.record_stop() : null;
+      if (log) {
+        nes.free();
+        nes = null;
+        pacer = null;
+        self.postMessage({ id, ok: true, answer: { off: true, log } }, [log.buffer]);
+        return;
+      }
       if (nes) nes.free();
       nes = null;
       pacer = null;
@@ -187,6 +197,22 @@ self.onmessage = async (e) => {
         { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs, halfCycles: nes.cpu_half_cycles(), state: state() } },
         [colour.buffer, emphasis.buffer, sound.buffer],
       );
+      return;
+    }
+    // A recording (nes-console's record.rs): every pad change, reset press
+    // and picture from power-on, which is where the console refuses to
+    // start one anywhere else. `on` starts it; off answers the log, ended
+    // where the console stands, for the page to keep.
+    if (path === "record") {
+      if (!nes) throw new Error("no cartridge loaded");
+      if (!nes.record_start) throw new Error("this bundle cannot record");
+      if (e.data.on) {
+        nes.record_start();
+        self.postMessage({ id, ok: true, answer: { recording: true } });
+        return;
+      }
+      const log = nes.record_stop();
+      self.postMessage({ id, ok: true, answer: { log } }, [log.buffer]);
       return;
     }
     throw new Error(`unknown path ${JSON.stringify(path)}`);

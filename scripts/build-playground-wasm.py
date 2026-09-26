@@ -8,8 +8,14 @@ Two crates under wasm/ wrap the engineers' chips, unchanged, for
 - wasm/apuvoices: the fast 2A03's sound unit and its DACs (the sound
   station), from the sibling 2a03 checkout.
 
-Each builds out of die data fetched into its checkout (NC-SA), so for
-each:
+A third is this repository's own: wasm/flow, the flow tools for
+/nes/create, which read a recorded run's trace and embed no die data. Its
+record pins the git tree of wasm/flow at HEAD instead of a chip's commit,
+and the source must be committed and clean: a bundle built from anything
+else is refused by --check as stale.
+
+The two chip crates build out of die data fetched into their checkouts
+(NC-SA), so for each:
 
 - the checkout must be clean and at the commit data/nes.json records
   for that chip (the one the rest of the site was boarded at), or this
@@ -20,7 +26,7 @@ each:
 
 Run it:
 
-    python3 scripts/build-playground-wasm.py            # both
+    python3 scripts/build-playground-wasm.py            # all three
     python3 scripts/build-playground-wasm.py apuvoices  # one
     python3 scripts/build-playground-wasm.py --check    # what is served, checked
 
@@ -61,6 +67,14 @@ BUNDLES = {
         # the bundle: the die's own shapes, for the die view.
         "extras": ["geometry.bin"],
     },
+    "flow": {
+        "repo": ROOT,
+        "own": True,
+        "url": "https://github.com/tinymachines/public",
+        "dest": ROOT / "web" / "public" / "nes" / "flow",
+        "record": ROOT / "data" / "flow.json",
+        "what": "The flow tools for /nes/create: wasm/flow at this git tree of the roof",
+    },
     "apuvoices": {
         "repo": ROOT.parent / "2a03",
         "url": "https://github.com/tinymachines/2a03",
@@ -79,12 +93,33 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
+def own_tree(name: str) -> str:
+    """The git tree of wasm/<name> at HEAD: what an own bundle is built from."""
+    return subprocess.run(["git", "rev-parse", f"HEAD:wasm/{name}"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+
+
+def pinned(name: str) -> str:
+    b = BUNDLES[name]
+    return own_tree(name) if b.get("own") else b["commit"]
+
+
 def build(name: str) -> None:
     b = BUNDLES[name]
     repo: Path = b["repo"]
     crate = ROOT / "wasm" / name
     files = (f"{name}.js", f"{name}_bg.wasm")
     git = lambda *a: subprocess.run(["git", *a], cwd=repo, capture_output=True, text=True).stdout.strip()
+    if b.get("own"):
+        dirty = git("status", "--porcelain", "--", f"wasm/{name}")
+        if dirty:
+            fail(f"wasm/{name} has changes that are not committed:\n{dirty}")
+        head = own_tree(name)
+    else:
+        head = check_checkout(name, b, repo, git)
+    build_at(name, b, crate, files, head, repo)
+
+
+def check_checkout(name: str, b: dict, repo: Path, git) -> str:
     if not (repo / b["marker"]).is_dir():
         fail(f"{repo} is not the checkout {name} needs")
     if not (repo / b["extern"]).is_dir():
@@ -95,7 +130,10 @@ def build(name: str) -> None:
     head = git("rev-parse", "HEAD")
     if head != b["commit"]:
         fail(f"the {repo.name} checkout is at {head[:7]}, data/nes.json records {b['commit'][:7]}")
+    return head
 
+
+def build_at(name: str, b: dict, crate: Path, files: tuple, head: str, repo: Path) -> None:
     # rustup's toolchain first: /usr/bin carries an older rustc.
     env = {**os.environ, "PATH": f"{Path.home()}/.cargo/bin:{os.environ['PATH']}"}
     print(f"build-playground-wasm: {name}: the native suite at {repo.name} {head[:7]}...")
@@ -134,9 +172,10 @@ def build(name: str) -> None:
     b["record"].write_text(json.dumps({
         "note": f"Written only by scripts/build-playground-wasm.py. {b['what']}, after its native suite passed. "
                 f"The files in {dest.relative_to(ROOT)}/ must hash to these values and are never committed "
-                "(what the chip was measured from is NC-SA).",
+                + ("(a build is served, not committed; this crate is MIT and carries no die data)." if b.get("own")
+                   else "(what the chip was measured from is NC-SA)."),
         "repo": b["url"],
-        "commit": head,
+        ("tree" if b.get("own") else "commit"): head,
         "built_on": dt.date.today().isoformat(),
         "built_with": f"{tool}; {rustc}; RUSTFLAGS {flags}",
         "files": hashes,
@@ -158,7 +197,13 @@ def check(name: str) -> list[str]:
     if not record.is_file():
         return [f"{name}: {dest.relative_to(ROOT)}/ is served but {record.relative_to(ROOT)} does not exist"]
     r = json.loads(record.read_text())
-    if r.get("commit") != b["commit"]:
+    if b.get("own"):
+        if r.get("tree") != pinned(name):
+            bad.append(
+                f"{name}: built from wasm/{name} at tree {str(r.get('tree'))[:7]}, but HEAD has "
+                f"{pinned(name)[:7]}; rebuild it with python3 scripts/build-playground-wasm.py {name}"
+            )
+    elif r.get("commit") != b["commit"]:
         bad.append(
             f"{name}: built from {str(r.get('commit'))[:7]}, but data/nes.json records "
             f"{b['commit'][:7]} for that chip; rebuild it with "
@@ -174,7 +219,7 @@ def check(name: str) -> list[str]:
         elif hashlib.sha256(path.read_bytes()).hexdigest() != want["sha256"]:
             bad.append(f"{name}: {path.relative_to(ROOT)} is not the file that was recorded")
     if not bad:
-        print(f"build-playground-wasm: {name}: {b['repo'].name} {b['commit'][:7]}, {len(files)} files as recorded")
+        print(f"build-playground-wasm: {name}: {b['repo'].name} {pinned(name)[:7]}, {len(files)} files as recorded")
     return bad
 
 

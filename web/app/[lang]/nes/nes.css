@@ -302,3 +302,28 @@ html.has-fullscreen .play-stage .pad {
   font-size: var(--text-fine);
   color: var(--color-ink-muted);
 }
+
+/* The flow tools (create/Flow.tsx, create/Record.tsx). The tables are
+   readouts on the instrument face, in boxes that scroll down and never
+   sideways (the code listing's rule, for the same phone). */
+.flow-scroll { position: relative; max-height: calc(var(--u) * 110); overflow-y: auto; overflow-x: hidden; }
+.flow-scroll .readout { width: 100%; table-layout: fixed; }
+.flow-scroll .readout td, .flow-scroll .readout th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.flow-table tbody tr[data-flow-routine] { cursor: pointer; }
+.flow-table tbody tr.picked td { background: color-mix(in srgb, var(--color-blue) 25%, transparent); }
+.flow-views .btn[aria-pressed="true"] { border-color: var(--color-accent-ink); box-shadow: inset 0 -3px 0 var(--color-accent-ink); }
+.flow-recs, .flow-list, .flow-modes { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--u) * 4); }
+.flow-recs li { display: grid; gap: calc(var(--u) * 1); }
+.flow-recs li[aria-current="true"] { box-shadow: inset 3px 0 0 var(--color-accent-ink); padding-left: calc(var(--u) * 3); }
+.flow-rec-h { margin: 0; }
+.flow-list .tag { margin: calc(var(--u) * 0.5) calc(var(--u) * 1) 0 0; }
+.flow-why { color: var(--color-orange-ink); }
+/* The run as a bar, one stretch per mode, cycling the four identity inks;
+   a mode's key in its legend is the same ink. */
+.flow-bar { display: flex; height: calc(var(--u) * 6); border: 1px solid var(--color-rule); margin-block: calc(var(--u) * 3); }
+.flow-seg { min-width: 1px; }
+.flow-key { display: inline-block; width: 1em; height: 1em; vertical-align: -0.15em; border: 1px solid var(--color-rule); }
+.flow-seg[data-mode="0"], .flow-key[data-mode="0"] { background: var(--color-burnt); }
+.flow-seg[data-mode="1"], .flow-key[data-mode="1"] { background: var(--color-mustard); }
+.flow-seg[data-mode="2"], .flow-key[data-mode="2"] { background: var(--color-forest); }
+.flow-seg[data-mode="3"], .flow-key[data-mode="3"] { background: var(--color-ocean); }

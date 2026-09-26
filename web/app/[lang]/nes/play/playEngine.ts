@@ -21,6 +21,7 @@
  */
 
 import { getSave, putSave, type Cart } from "@/lib/shelf";
+import { saveRecording, type RecordingMeta } from "@/lib/flowStore";
 import { latest as newestEvery } from "@/lib/latest";
 
 export interface DriftStats {
@@ -76,6 +77,10 @@ export interface PlayState {
   why: string | null;
   /** The save, for a shelf cartridge with a battery: when it was last written, and whether one came back on load. */
   battery: { has: boolean; restored: boolean; savedAt: number | null; saving: boolean; why: string | null } | null;
+  /** A recording in progress, from the power-on it began at; null when none is. */
+  recording: { startedAt: number } | null;
+  /** Counts the recordings kept since the page opened, so a list knows to look again. */
+  recordingsKept: number;
 }
 
 /** The CPU as the core holds it, from the bundle's ten bytes. */
@@ -143,6 +148,8 @@ interface ConsoleAnswer {
   has?: boolean;
   ram?: Uint8Array;
   restored?: boolean;
+  /** The "record" path's answer when it stops, and "off"'s when a recording was running: the input log. */
+  log?: Uint8Array;
 }
 interface PaletteAnswer {
   rgb: number[][];
@@ -202,6 +209,8 @@ const INITIAL: PlayState = {
   audio: false,
   why: null,
   battery: null,
+  recording: null,
+  recordingsKept: 0,
 };
 
 let state: PlayState = INITIAL;
@@ -369,6 +378,9 @@ export function detach() {
   last = null;
   void audio?.close();
   audio = null;
+  // A recording still running when the page goes is lost with the console:
+  // the worker is gone before it could answer.
+  recordingOf = null;
   state = INITIAL;
 }
 
@@ -436,6 +448,9 @@ function stopWatching() {
 export async function load(file: File, cart: Cart | null = null, base: Uint8Array | null = null) {
   set({ running: false });
   await waitIdle();
+  // Another cartridge, a power cycle or a patched image ends a recording:
+  // it is kept as it stands.
+  if (state.recording && !startingRecording) await stopRecording();
   await saveNow();
   keeper = null;
   last = { file, cart };
@@ -550,9 +565,10 @@ export async function setPower(on: boolean) {
     await saveNow();
     stopWatching();
     keeper = null;
-    await consoleW.call({ path: "off" });
+    const off = await consoleW.call({ path: "off" });
     publishMachine(null, true);
     set({ powered: false });
+    if (state.recording) await keepRecording(off.ok ? (off.answer.log ?? null) : null);
     return;
   }
   if (state.powered) return;
@@ -575,6 +591,73 @@ export async function reloadWith(image: Uint8Array) {
   if (!state.loaded || !last || !state.base) return;
   const name = last.file.name;
   await load(new File([image.slice().buffer as ArrayBuffer], name, { type: "application/octet-stream" }), last.cart, state.base);
+}
+
+// ---------------------------------------------------------------------------
+// Recording, for the flow tools on the create desk. A recording is every
+// pad change, reset press and picture from power-on (nes-console's
+// record.rs); the console is deterministic from there, so the recording
+// replays to the same game, and the flow tools read that replay. Starting
+// one power-cycles the cartridge (with its save put back first, as any
+// power-on does); another cartridge, a power cycle, a patch or power off
+// ends it, and it is kept in this browser (lib/flowStore).
+// ---------------------------------------------------------------------------
+
+let startingRecording = false;
+let recordingOf: { name: string; rom: Uint8Array; battery: Uint8Array | null; patched: boolean } | null = null;
+
+export async function startRecording(): Promise<void> {
+  if (!state.loaded || !last || state.recording) return;
+  const wasRunning = state.running;
+  startingRecording = true;
+  try {
+    await load(last.file, last.cart, state.base);
+  } finally {
+    startingRecording = false;
+  }
+  if (!state.powered || !state.rom || !state.loaded) return;
+  // The cartridge RAM the game starts with, when a save was put back: a
+  // replay puts the same bytes back before its first step.
+  let battery: Uint8Array | null = null;
+  if (state.battery?.restored) {
+    const b = await consoleW.call({ path: "battery" });
+    if (b.ok && b.answer.ram) battery = b.answer.ram;
+  }
+  const r = await consoleW.call({ path: "record", on: true });
+  if (!r.ok) {
+    set({ why: r.error });
+    return;
+  }
+  recordingOf = { name: state.loaded, rom: state.rom, battery, patched: state.patched };
+  set({ recording: { startedAt: Date.now() } });
+  if (wasRunning) toggleRun();
+}
+
+/** End the recording and keep it: the console runs on, unrecorded. */
+export async function stopRecording(): Promise<RecordingMeta | null> {
+  if (!state.recording) return null;
+  const wasRunning = state.running;
+  if (wasRunning) set({ running: false });
+  await waitIdle();
+  const r = await consoleW.call({ path: "record", on: false });
+  const kept = await keepRecording(r.ok ? (r.answer.log ?? null) : null);
+  if (wasRunning && !startingRecording) toggleRun();
+  return kept;
+}
+
+async function keepRecording(log: Uint8Array | null): Promise<RecordingMeta | null> {
+  const of = recordingOf;
+  recordingOf = null;
+  set({ recording: null });
+  if (!of || !log || log.length === 0) return null;
+  try {
+    const meta = await saveRecording({ ...of, log });
+    set({ recordingsKept: state.recordingsKept + 1 });
+    return meta;
+  } catch (e) {
+    set({ why: `the recording could not be kept: ${String((e as Error).message ?? e)}` });
+    return null;
+  }
 }
 
 /** The picture worker's measured colours, asked for once per paint until there are some. */

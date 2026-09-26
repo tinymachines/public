@@ -125,3 +125,6 @@ web/public/nes/bench/fab/
 # data/apuvoices.json record their hashes).
 web/public/nes/slow/
 web/public/nes/voices/
+# The flow tools' bundle (wasm/flow), built by the same script from this
+# repository's own crate; data/flow.json records its tree and hashes.
+web/public/nes/flow/

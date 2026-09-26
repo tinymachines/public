@@ -7,6 +7,8 @@ import { Cartridge, Readouts, Screen } from "../play/Play";
 import { State } from "../play/State";
 import { Code } from "../play/Code";
 import { Sprites } from "../play/Sprites";
+import { Record } from "./Record";
+import { Flow } from "./Flow";
 
 /**
  * The create desk: the play page's console and every tool it has, each in
@@ -25,6 +27,8 @@ const WINS: WinSpec[] = [
   { id: "oam", at: [0.12, 0.1, 0.4, 0.6], open: false },
   { id: "sprites", at: [0.2, 0.04, 0.6, 0.9], open: false },
   { id: "readouts", at: [0.3, 0.3, 0.4, 0.4], open: false },
+  { id: "record", at: [0.04, 0.08, 0.3, 0.8], open: false },
+  { id: "flow", at: [0.3, 0.02, 0.66, 0.96], open: false },
   { id: "about", at: [0.3, 0.16, 0.4, 0.6], open: false },
 ];
 
@@ -77,6 +81,8 @@ function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
       <Window id="oam"><State lang={lang} only={["oam"]} onTile={onTile} /></Window>
       <Window id="sprites"><Sprites lang={lang} open={openTile} /></Window>
       <Window id="readouts"><Readouts lang={lang} /></Window>
+      <Window id="record"><Record lang={lang} /></Window>
+      <Window id="flow"><Flow lang={lang} /></Window>
       <Window id="about">{about}</Window>
     </>
   );

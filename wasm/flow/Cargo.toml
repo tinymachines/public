@@ -1,0 +1,28 @@
+# The flow tools for /nes/create: what a game's code did, read from the
+# trace of one recorded run (the console's replay writes it; see src/lib.rs).
+# It reads a trace and embeds no die data, so it is MIT, like halfphi, and
+# carries no chip crate: the trace is the only thing that crosses in.
+# scripts/build-playground-wasm.py builds it into web/public/nes/flow/
+# (gitignored, like every bundle).
+[package]
+name = "flow"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
