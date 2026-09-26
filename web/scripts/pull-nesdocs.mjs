@@ -132,6 +132,12 @@ const GROUPS = [
   { key: "bench-exercise", heading: "Exercising the bench", intro: "The regime that drives both stacks harder one step at a time, and the words it teaches the automation: the model tuned to the part, games learned from the pad, and the x-ray of a game's code.", ja: { heading: "ベンチを鍛える", intro: "両方のスタックを一段ずつ厳しく動かす体制と、それが自動化に教える言葉: 実機に合わせた模型、パッドから学ぶゲーム、ゲームのコードのレントゲン。" } },
 ];
 
+// nes-bench holds its own copy of which of its files come in here, and
+// gates their heading counts (tools/check-pulled-headings.py), because a
+// moved heading breaks the Japanese shadow's check at our deploy. It can
+// only gate what it has been told: a nes-bench entry added here, or a
+// Japanese shadow added for one (esp32-part-choice has none yet), is
+// news for that project, with the file and the slug.
 const DOCS = [
   { repo: "nes", file: "nes-end-to-end-v0_2.md", slug: "sketch", code: "Sketch v0.2", title: "The plan for the whole console", group: "start", order: 1, description: "What a working console means, how the parts fit together, the milestones from N0 to N8, and the decisions made along the way." },
   { repo: "nes-bus", file: "n0-report.md", slug: "n0-report", code: "N0 report", title: "The contract the chips share", group: "chips", order: 2, description: "The pin tables, the dot frame and the cartridge edge as one small crate with no dependencies, checked against the recorded reference runs." },
