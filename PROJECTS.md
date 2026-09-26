@@ -3756,3 +3756,36 @@ and on live; the last full e2e was at the frame's commit (952 passed,
 nothing failed). Not run: the signed-in shelf tests. Next on the workbench:
 breakpoints, a trace and saved states, as windows on the desk. Nothing is
 waiting on the owner.
+
+## Rev I: the pad builds as USB
+
+- **TM-NESB-003 rev I, live.** The build moved twice: from the ESP32-C6,
+  which never took a flash, to a Waveshare ESP32-P4 module, then from
+  Bluetooth to USB, because the P4 reaches its radio (the module's C6)
+  over a link whose firmware-version request goes unanswered and crashes
+  BLE init. The P4 has real USB OTG, so USB removes the failing part.
+  The wiring is unchanged. Rev H, which never shipped alone, named the
+  five header holes as one contiguous run.
+- **The title is ours.** The page title comes from `DOCS` in
+  `web/scripts/pull-nesdocs.mjs`, not from nes-bench's H1, so it changed
+  here: "An original pad as a USB or Bluetooth keyboard", in both
+  languages.
+- **The shadow check caught a second file.** pad-ble-build.md gained six
+  headings, which would have stopped the deploy at lib tests just as
+  parts.md did for rev G. Translated, and shown red without the
+  translation. nes-bench now gates it on its own side:
+  `tools/check-pulled-headings.py` (d3f2c7d) holds the heading counts of
+  the 22 files we pull. It knows only the list we sent it, so a new
+  nes-bench entry in `DOCS`, or a Japanese copy of esp32-part-choice
+  (there is none yet), must be told to that project; a comment at `DOCS`
+  says so.
+- **Stamp one file, not the tree.** `check-ja-docs.mjs --stamp` clears
+  every drift at once. Only pad-ble's digest was updated; the NES index,
+  parts, rig and the 6502's walk-snake still drift and want a reread.
+
+## Checkpoint, 2026-09-26
+
+Live, main and beta at `b426081`, pushed. Live serves rev I, and rev G
+returns 404. The three subdomains still redirect. Lib tests pass; the
+last full e2e was at the frame's commit. Next, the owner's idea for the
+debugger. Nothing is waiting on the owner.
