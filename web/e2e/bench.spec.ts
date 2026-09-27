@@ -19,8 +19,8 @@ const MANIFESTS = ["package.json", "package-v2b.json", "package-pad-ble.json"];
 test("the bench serves the manifests' packages and none of the superseded revisions", async ({ request }) => {
   test.skip(!fs.existsSync(path.join(BENCH, "package.json")), "no nes-bench checkout beside this one");
   const current = MANIFESTS.map((m) => {
-    const j = JSON.parse(fs.readFileSync(path.join(BENCH, m), "utf8")) as { docno: string; rev: string };
-    return { docno: j.docno, rev: j.rev, file: `nes-bench-${j.docno}-rev${j.rev}.pdf` };
+    const j = JSON.parse(fs.readFileSync(path.join(BENCH, m), "utf8")) as { docno: string; rev: string; title: string };
+    return { docno: j.docno, rev: j.rev, title: j.title, file: `nes-bench-${j.docno}-rev${j.rev}.pdf` };
   });
   expect(current.length).toBe(3);
   for (const c of current) {
@@ -48,5 +48,20 @@ test("the bench serves the manifests' packages and none of the superseded revisi
       const docno = l.match(/TM-NESB-\d+/)?.[0] ?? "";
       expect(l, `${p} links ${docno} by its current file`).toBe(want.get(docno));
     }
+  }
+});
+
+test("a package's link is named by the package: its own title, number and revision", async ({ page }) => {
+  // "pad-ble drawing package" was typed once and outlived the build moving
+  // to USB (2026-09-26); the link text is the manifest's now, in both
+  // languages, and this reads it off the served page.
+  test.skip(!fs.existsSync(path.join(BENCH, "package-pad-ble.json")), "no nes-bench checkout beside this one");
+  const m = JSON.parse(fs.readFileSync(path.join(BENCH, "package-pad-ble.json"), "utf8")) as { docno: string; rev: string; title: string };
+  for (const [p, rev] of [["/docs/nes/pad-ble", `rev ${m.rev}`], ["/ja/docs/nes/pad-ble", `版 ${m.rev}`]]) {
+    await page.goto(p);
+    const a = page.locator(`a[href="/nes/bench/nes-bench-${m.docno}-rev${m.rev}.pdf"]`).first();
+    await expect(a, p).toContainText(m.title);
+    await expect(a, p).toContainText(m.docno);
+    await expect(a, p).toContainText(rev);
   }
 });

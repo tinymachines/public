@@ -50,5 +50,5 @@ export function packagePdf(bench, manifest, head) {
   if (typeof r.commit !== "string" || r.commit !== head) {
     throw new NotCurrent(`${where}: built at ${String(r.commit).slice(0, 7)} and the checkout is at ${String(head).slice(0, 7)}: stale against the sources, rebuild it.`);
   }
-  return { docno: m.docno, rev: m.rev, file, dir, href: `/nes/bench/${file}` };
+  return { docno: m.docno, rev: m.rev, title: m.title, file, dir, href: `/nes/bench/${file}` };
 }

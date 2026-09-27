@@ -227,10 +227,18 @@ const PKG_V1B = takePackage("package.json");
 const PKG_V2B = takePackage("package-v2b.json");
 const PKG_PADBLE = takePackage("package-pad-ble.json");
 
+// A package's link is named by the package itself: the title, number and
+// revision its manifest prints on every sheet, never a name typed here (a
+// typed "pad-ble drawing package" outlived the build moving to USB). The
+// sheets are in English, and the Japanese label says so.
+const packageLink = (p) => ({
+  label: { en: `${p.title}: drawing package ${p.docno} rev ${p.rev} (PDF)`, ja: `図面一式「${p.title}」${p.docno} 版 ${p.rev} (PDF、英語)` },
+  href: p.href,
+});
 const ARTEFACTS = {
-  v1b: { label: { en: `v1b drawing package, ${PKG_V1B.docno} (PDF)`, ja: `v1b 図面一式、${PKG_V1B.docno} (PDF)` }, href: PKG_V1B.href },
-  v2b: { label: { en: `v2b drawing package, ${PKG_V2B.docno} (PDF)`, ja: `v2b 図面一式、${PKG_V2B.docno} (PDF)` }, href: PKG_V2B.href },
-  padble: { label: { en: `pad-ble drawing package, ${PKG_PADBLE.docno} (PDF)`, ja: `pad-ble 図面一式、${PKG_PADBLE.docno} (PDF)` }, href: PKG_PADBLE.href },
+  v1b: packageLink(PKG_V1B),
+  v2b: packageLink(PKG_V2B),
+  padble: packageLink(PKG_PADBLE),
   board: { label: { en: "v2b board, top copper (SVG)", ja: "v2b 基板、表面の銅 (SVG)" }, href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
   photo: { label: { en: "v1b as built, the checks called out on the photograph (PNG)", ja: "組み上がった v1b、写真の上に検査箇所を書き出したもの (PNG)" }, href: "/nes/lab/board-junctions-v1b.png" },
 };
