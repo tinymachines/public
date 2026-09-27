@@ -2809,7 +2809,7 @@ html.has-fullscreen .wb-strip { top: 0; }
    line of their own, so no two lines of different lengths ever stack.
 
    The strip's words and the page's text share one left edge: the strip is
-   full bleed and pads itself to the band's measure, and a link's underline
+   full bleed and pads itself to the band's measure, and the mark over a link
    is exactly as wide as its word.
    ========================================================================== */
 
@@ -2868,8 +2868,9 @@ html.has-fullscreen .wb-strip { top: 0; }
 }
 .strip-row > .strip-run > :is(a, span) {
   flex: 0 0 auto;
-  padding: calc(var(--u) * 3) 0 calc(var(--u) * 2.5);
-  margin-bottom: -1px;
+  /* The mark for where you are runs ABOVE the word, on the strip's top
+     edge under the bar (owner, 2026-09-27), not on the rule below it. */
+  padding: calc(var(--u) * 2.5) 0 calc(var(--u) * 3);
   font-family: var(--font-display);
   font-size: var(--text-micro);
   font-weight: 600;
@@ -2878,11 +2879,12 @@ html.has-fullscreen .wb-strip { top: 0; }
   white-space: nowrap;
   color: var(--color-ink-muted);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
+  border-top: 2px solid transparent;
+  border-bottom: 0;
   transition: color var(--t-snap) linear, border-color var(--t-snap) linear;
 }
-.strip-row > .strip-run > a:hover { color: var(--color-ink); border-bottom-color: var(--color-ink-faint); }
-.strip-row > .strip-run > a[aria-current] { color: var(--color-ink); border-bottom-color: var(--color-accent-ink); }
+.strip-row > .strip-run > a:hover { color: var(--color-ink); border-top-color: var(--color-ink-faint); }
+.strip-row > .strip-run > a[aria-current] { color: var(--color-ink); border-top-color: var(--color-accent-ink); }
 .strip-row > .strip-run > a:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
 
 /* The ghost the script measures: the row at its natural width, unseen. */
@@ -2951,17 +2953,12 @@ html.has-fullscreen .wb-strip { top: 0; }
   position: relative;
   overflow-x: auto;
   /* Sideways only (owner, 2026-09-27: "vertical scroll slop"). A row that
-     scrolls on x computes y as scrollable too, and its links' underline ran
-     a pixel past its height (each link's -1px margin, which lays its
-     underline on the strip's rule), so a thumb could nudge it up and down.
-     The row takes that pixel inside itself instead, a pixel of padding
-     pulled back by a pixel of margin, so the underline still lands on the
-     rule and nothing overhangs; y is clipped as well. A vertical swipe that
-     starts on the strip still scrolls the page, and one at either end of
-     the row is not handed on as a back or forward gesture. */
+     scrolls on x computes y as scrollable too, so y is clipped, and nothing
+     inside overhangs the row (the mark sits inside each link's box). A
+     vertical swipe that starts on the strip still scrolls the page, and one
+     at either end of the row is not handed on as a back or forward
+     gesture. */
   overflow-y: hidden;
-  padding-bottom: 1px;
-  margin-bottom: -1px;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   scroll-snap-type: x proximity;
