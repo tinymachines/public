@@ -2952,11 +2952,16 @@ html.has-fullscreen .wb-strip { top: 0; }
   overflow-x: auto;
   /* Sideways only (owner, 2026-09-27: "vertical scroll slop"). A row that
      scrolls on x computes y as scrollable too, and its links' underline ran
-     a pixel past its height, so a thumb could nudge it up and down. y is
-     clipped, so the row moves only sideways; a vertical swipe that starts
-     on it still scrolls the page, and one at either end of the row is not
-     handed on as a back or forward gesture. */
+     a pixel past its height (each link's -1px margin, which lays its
+     underline on the strip's rule), so a thumb could nudge it up and down.
+     The row takes that pixel inside itself instead, a pixel of padding
+     pulled back by a pixel of margin, so the underline still lands on the
+     rule and nothing overhangs; y is clipped as well. A vertical swipe that
+     starts on the strip still scrolls the page, and one at either end of
+     the row is not handed on as a back or forward gesture. */
   overflow-y: hidden;
+  padding-bottom: 1px;
+  margin-bottom: -1px;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   scroll-snap-type: x proximity;
