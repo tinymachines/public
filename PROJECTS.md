@@ -3822,3 +3822,34 @@ Beta serves the Record and Flow windows. The create spec passes on beta
 (6 of 6), and the NES, playground, prose, language and pages specs pass
 (333, after the strip lists were updated). Live is still `b426081`: the
 deploy waits on the owner's look at beta.
+
+## Rev J, rev K, the package links, and the strip as a list
+
+- Rev J (nes-bench 8c2cc99) found that the bench's pad was a replica, and
+  its section is translated. Rereading it turned up the Japanese P4 wire
+  table still carrying rev E's colours; that is fixed.
+- The owner sent rev J back because J1 was drawn in the replica's colours
+  under a label that says "original". Rev K (010857a) draws J1 as the
+  original pad (brown, red, orange, yellow, white, marked not measured).
+- The drawing packages' links are named by their manifests (title, number
+  and revision), so a new revision needs no edit here.
+- A pull run in the main checkout for beta withdrew rev J's PDF under the
+  live server, which answered 500 until rev J was put back. The rule now
+  covers every writer into `web/public`, not only builds.
+- The strip is a list again, at the owner's call: a row too wide for its
+  screen scrolls sideways, locked to that axis, and the fold is kept but
+  hidden.
+
+## Checkpoint, 2026-09-27
+
+Live, main and beta are at `0751ed1`, pushed. The deploy's lint, tests
+and build passed; against live, the parts, create and bench specs pass
+(18 of 18). The subdomains still redirect.
+
+Open, and offered to the owner:
+- Record: keep a recording that is running when the page is left, and
+  make Record and Flow easier to find on the desk (both small).
+- Then, as engine work: recording from mid-game (saved states),
+  breakpoints, and a trace to scroll back through while stepping.
+- Four Japanese copies want a reread: nes/index, nes/parts, nes/rig,
+  6502/walk-snake.
