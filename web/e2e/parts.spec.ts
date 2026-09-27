@@ -133,12 +133,18 @@ test("where the row does not fit, the strip scrolls inside itself with every lin
         links: [...row.querySelectorAll("a")].map((a) => (a.textContent ?? "").trim()),
         scrolls: row.scrollWidth > row.clientWidth,
         curIn: cur.left >= rr.left - 1 && cur.right <= rr.right + 1,
+        // Sideways only: nothing to scroll up and down (owner, 2026-09-27).
+        y: getComputedStyle(row).overflowY,
+        yRoom: row.scrollHeight - row.clientHeight,
+        yMoves: (() => { row.scrollTop = 5; const t = row.scrollTop; row.scrollTop = 0; return t; })(),
       };
     });
     expect(r.shown, `${vp.width}: the row shows`).toBe(true);
     expect(r.links, `${vp.width}: every link is in the row`).toEqual(expect.arrayContaining(["Overview", "Play", "Create", "The chips", "Retro"]));
     expect(r.scrolls, `${vp.width}: the row scrolls inside the strip`).toBe(true);
     expect(r.curIn, `${vp.width}: the current part is in view`).toBe(true);
+    expect(r.y, `${vp.width}: the row does not scroll vertically`).toBe("hidden");
+    expect(r.yMoves, `${vp.width}: a vertical nudge does not move the row (${r.yRoom}px of it)`).toBe(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `${vp.width}: the page does not scroll sideways`).toBeLessThanOrEqual(vp.width);
     // A link in the row goes there.
     await nav.locator(".strip-row:not(.strip-ghost) a", { hasText: "Create" }).click();
