@@ -21,17 +21,18 @@ import * as flow from "./flowEngine";
 const WINS: WinSpec[] = [
   { id: "screen", at: [0, 0, 0.36, 0.56] },
   { id: "cartridge", at: [0, 0.56, 0.36, 0.44] },
-  { id: "code", at: [0.36, 0, 0.32, 0.6] },
-  { id: "cpu", at: [0.68, 0, 0.32, 0.34] },
-  { id: "memory", at: [0.68, 0.34, 0.32, 0.66] },
+  { id: "code", at: [0.36, 0, 0.32, 1] },
+  { id: "cpu", at: [0.68, 0, 0.32, 0.3] },
+  { id: "memory", at: [0.68, 0.3, 0.32, 0.4] },
   { id: "palettes", at: [0.06, 0.06, 0.4, 0.5], open: false },
   { id: "oam", at: [0.12, 0.1, 0.4, 0.6], open: false },
   { id: "sprites", at: [0.2, 0.04, 0.6, 0.9], open: false },
   { id: "readouts", at: [0.3, 0.3, 0.4, 0.4], open: false },
-  // Record is open from the start, under the code, so the way into the flow
-  // tools is on the desk rather than in the tray (owner, 2026-09-27).
-  { id: "record", at: [0.36, 0.6, 0.32, 0.4] },
-  { id: "flow", at: [0.3, 0.02, 0.66, 0.96], open: false },
+  // Record is open from the start, under the memory, so the way into the
+  // flow tools is on the desk rather than in the tray (owner, 2026-09-27);
+  // Flow opens over the screen and the code, beside Record rather than on it.
+  { id: "record", at: [0.68, 0.7, 0.32, 0.3] },
+  { id: "flow", at: [0, 0, 0.68, 1], open: false },
   { id: "about", at: [0.3, 0.16, 0.4, 0.6], open: false },
 ];
 

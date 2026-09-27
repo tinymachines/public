@@ -9,7 +9,7 @@ import { DESK, PHONE, open } from "./lib";
  * tree either way, so crossing between the two never stops the console.
  */
 
-// Record opens with the console's five, under the code, so the way into
+// Record opens with the console's five, under the memory, so the way into
 // the flow tools is on the desk rather than in the tray.
 const OPEN = ["screen", "cartridge", "code", "cpu", "memory", "record"];
 
@@ -217,6 +217,9 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   // What was read comes up in the Flow window, opened and brought forward.
   await expect(page.locator("[data-win=flow]")).toBeVisible();
   await expect(page.locator("[data-win=flow]")).toHaveAttribute("data-front", "");
+  // Beside Record, not on it, so the list stays in reach.
+  const [f, r] = [await rect(page, "[data-win=flow]"), await rect(page, "[data-win=record]")];
+  expect(f.right <= r.x + 1 || r.right <= f.x + 1 || f.bottom <= r.y + 1 || r.bottom <= f.y + 1, "Flow and Record do not overlap").toBe(true);
   await expect(page.locator("[data-flow-why]"), "the playback matched every picture").toHaveCount(0);
   await expect(flow.locator("[data-flow-overview]")).toContainText("instructions");
   // The test cartridge counts frames in its NMI handler: the routines say so.
@@ -245,7 +248,10 @@ test("a link to a window by its id opens it on top", async ({ page }) => {
   await page.evaluate(() => (location.hash = "#flow"));
   await expect(page.locator("[data-win=flow]")).toBeVisible();
   await expect(page.locator("[data-win=flow]")).toHaveAttribute("data-front", "");
-  await open(page, "/nes/create#palettes", 500);
+  // Arriving with the hash does the same (from another page: the same
+  // page with a new hash is not a load).
+  await open(page, "/nes", 300);
+  await page.goto("/nes/create#palettes");
   await expect(page.locator("[data-win=palettes]")).toBeVisible();
   await expect(page.locator("[data-win=palettes]")).toHaveAttribute("data-front", "");
 });
@@ -271,6 +277,9 @@ test("a recording still running when the page is left is stopped and kept", asyn
   // Off the desk by its own link, the recording still running.
   await page.locator("[data-desk-more]").click();
   await expect(page).toHaveURL(/\/nes\/play$/);
+  // The last word (stop, then keep) takes the page a moment; a load that
+  // overtakes it would end it.
+  await page.waitForTimeout(1_500);
   await open(page, "/nes/create", 500);
   const item = page.locator("[data-win=record] [data-recording-id]").first();
   await expect(item).toContainText("testcart.nes", { timeout: 15_000 });
