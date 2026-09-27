@@ -114,31 +114,35 @@ test("the NES strip: Overview, Play, Create, Learn, then the parts, then Noteboo
   expect(await page.locator("[data-parts-strip] a[aria-current=page]").first().textContent()).toBe("Learn");
 });
 
-test("where the row does not fit, the strip folds into one button naming the page, which opens the same links; nothing scrolls sideways", async ({ page }) => {
+test("where the row does not fit, the strip scrolls inside itself with every link, the current one in view; the page never scrolls sideways", async ({ page }) => {
+  // Owner, 2026-09-26: the list reads better than the folded button, which
+  // hid half the create desk's windows. The row scrolls, as it did before
+  // 2026-09-24; the fold is kept in the code and hidden.
   for (const vp of [PHONE, { width: 900, height: 900 }]) {
     await page.setViewportSize(vp);
     await open(page, "/nes/chips", 500);
     const nav = page.locator("[data-parts-strip]");
-    await expect(nav).toHaveAttribute("data-fold", "1");
-    const fold = nav.locator(".strip-fold");
-    await expect(fold).toBeVisible();
-    await expect(fold.locator(".strip-here")).toHaveText("The chips");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${vp.width}: sideways`).toBeLessThanOrEqual(vp.width);
-    const rowLinks = await nav.locator(".strip-row:not(.strip-ghost) a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
-    await fold.click();
-    await expect(fold).toHaveAttribute("aria-expanded", "true");
-    const sheet = nav.locator(".strip-sheet");
-    await expect(sheet).toBeVisible();
-    expect(await sheet.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")))).toEqual(rowLinks);
-    await expect(sheet.locator("a[aria-current=page]")).toHaveText("The chips");
-    const box = await sheet.boundingBox();
-    expect(box!.y + box!.height, "the list is on screen").toBeLessThanOrEqual(vp.height);
-    await page.keyboard.press("Escape");
-    await expect(sheet).toHaveCount(0);
-    await expect(fold).toBeFocused();
-    // A link in the list goes there, and the list closes behind it.
-    await fold.click();
-    await sheet.getByText("Create", { exact: true }).click();
+    await expect(nav, "measured, and it does not fit").toHaveAttribute("data-fold", "1");
+    await expect(nav.locator(".strip-fold")).toBeHidden();
+    const r = await nav.evaluate((n) => {
+      const row = n.querySelector<HTMLElement>(".strip-row:not(.strip-ghost)")!;
+      const rr = row.getBoundingClientRect();
+      const cur = row.querySelector<HTMLElement>("a[aria-current]")!.getBoundingClientRect();
+      return {
+        shown: getComputedStyle(row).display !== "none",
+        links: [...row.querySelectorAll("a")].map((a) => (a.textContent ?? "").trim()),
+        scrolls: row.scrollWidth > row.clientWidth,
+        curIn: cur.left >= rr.left - 1 && cur.right <= rr.right + 1,
+      };
+    });
+    expect(r.shown, `${vp.width}: the row shows`).toBe(true);
+    expect(r.links, `${vp.width}: every link is in the row`).toEqual(expect.arrayContaining(["Overview", "Play", "Create", "The chips", "Retro"]));
+    expect(r.scrolls, `${vp.width}: the row scrolls inside the strip`).toBe(true);
+    expect(r.curIn, `${vp.width}: the current part is in view`).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${vp.width}: the page does not scroll sideways`).toBeLessThanOrEqual(vp.width);
+    // A link in the row goes there.
+    await nav.locator(".strip-row:not(.strip-ghost) a", { hasText: "Create" }).click();
     await expect(page).toHaveURL(/\/nes\/create$/);
   }
 });
+

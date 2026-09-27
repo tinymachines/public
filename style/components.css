@@ -2939,14 +2939,26 @@ html.has-fullscreen .wb-strip { top: 0; }
 }
 .strip-fold[aria-expanded="true"] .strip-chev { transform: translateY(1px) rotate(-135deg); }
 
-/* Which of the two shows. Measured, once the script has run; before it, a
-   phone's width folds and a wider one does not. */
-.wb-strip[data-fold="1"] > .strip-row:not(.strip-ghost) { display: none; }
-.wb-strip[data-fold="1"] > .strip-fold { display: flex; }
-@media (max-width: 40rem) {
-  .wb-strip:not([data-fold]) > .strip-row:not(.strip-ghost) { display: none; }
-  .wb-strip:not([data-fold]) > .strip-fold { display: flex; }
+/* A row too wide for its screen scrolls sideways, as the strip did before
+   the fold (owner, 2026-09-26: the list reads better than the folded
+   button, which hid half the create desk's windows). Strip.tsx still
+   measures, and a row that overflows (data-fold="1") scrolls inside the
+   strip with a fade at the edge it continues past, and brings the current
+   entry into view; the page itself never scrolls sideways. The fold button
+   and its list stay in the code and never show. The scroll container is
+   positioned, so nothing laid out inside it escapes into the page's width. */
+.wb-strip > .strip-row:not(.strip-ghost) {
+  position: relative;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
 }
+.wb-strip > .strip-row:not(.strip-ghost)::-webkit-scrollbar { display: none; }
+.wb-strip[data-fold="1"] > .strip-row:not(.strip-ghost) {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
+}
+.wb-strip > .strip-fold { display: none; }
 
 .strip-sheet {
   position: absolute;

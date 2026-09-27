@@ -14,15 +14,16 @@ import { clusters } from "@/lib/strip";
  * wherever the group changes (the NES section is using it, its parts, and
  * reading about it; owner, 2026-09-24).
  *
- * It never scrolls sideways. When the row would not fit, it folds into one
- * button that names where you are and opens the same links as a list under
- * the strip (owner, same day: the strip's last parts were cut off at the
- * edge). Whether it fits is measured, not guessed from a breakpoint: a ghost
- * of the row, out of sight and out of the accessibility tree, is laid out at
- * its natural width and compared with the room the strip has, on every
- * resize. Until the script has measured, a phone's width folds and a wider
- * one does not (components.css section 28), so the first paint is almost
- * always the right one.
+ * The page never scrolls sideways. A row too wide for its screen scrolls
+ * inside the strip, with a fade at the edge it continues past, and the
+ * current entry is brought into it (owner, 2026-09-26: the list reads
+ * better than the fold). From 2026-09-24 to then, such a row folded into
+ * one button naming where you are, opening the links as a list under the
+ * strip; that button and list are still here and components.css hides
+ * them, so going back is one rule. Whether the row fits is measured, not
+ * guessed from a breakpoint: a ghost of the row, out of sight and out of
+ * the accessibility tree, is laid out at its natural width and compared
+ * with the room the strip has, on every resize.
  */
 
 export interface StripLink {
@@ -82,6 +83,19 @@ export function Strip({
     ro.observe(el);
     return () => ro.disconnect();
   }, [links.length]);
+
+  // A row that overflows scrolls sideways (components.css section 28): the
+  // current entry is brought into it, by the row's own scroll and never the
+  // page's, so where you are is never past the fade.
+  useEffect(() => {
+    if (!folded) return;
+    const row = nav.current?.querySelector<HTMLElement>(".strip-row:not(.strip-ghost)");
+    const cur = row?.querySelector<HTMLElement>("a[aria-current]");
+    if (!row || !cur) return;
+    const r = row.getBoundingClientRect();
+    const c = cur.getBoundingClientRect();
+    if (c.left < r.left || c.right > r.right - 40) row.scrollLeft += c.left - r.left - r.width / 3;
+  }, [folded, here, links]);
 
   useEffect(() => {
     if (!open) return;
