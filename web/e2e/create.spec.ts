@@ -9,7 +9,9 @@ import { DESK, PHONE, open } from "./lib";
  * tree either way, so crossing between the two never stops the console.
  */
 
-const OPEN = ["screen", "cartridge", "code", "cpu", "memory"];
+// Record opens with the console's five, under the code, so the way into
+// the flow tools is on the desk rather than in the tray.
+const OPEN = ["screen", "cartridge", "code", "cpu", "memory", "record"];
 
 async function rect(page: Page, sel: string) {
   return page.locator(sel).evaluate((e) => {
@@ -26,7 +28,7 @@ async function openDesk(page: Page) {
   await expect(page.locator(".desk[data-mode=float][data-ready]")).toHaveCount(1);
 }
 
-test("the desk: a key for every window named by its own heading, the first five open, all inside the desk, the page not scrolling", async ({ page }) => {
+test("the desk: a key for every window named by its own heading, the console's five and Record open, all inside the desk, the page not scrolling", async ({ page }) => {
   await openDesk(page);
   const keys = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.map((b) => (b.textContent ?? "").trim()));
   expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "About this page"]);
@@ -185,9 +187,9 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await openDesk(page);
   await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
   await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
-  await page.locator("[data-desk-tab=record]").click();
-  await page.locator("[data-desk-tab=flow]").click();
   const rec = page.locator("[data-win=record]");
+  await expect(rec, "Record is on the desk from the start").toBeVisible();
+  await expect(page.locator("[data-win=flow]")).toBeHidden();
   await rec.locator("[data-record-start]").click();
   await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "on");
   // Recording starts at power-on: the console was started again for it.
@@ -212,6 +214,9 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await item.locator("[data-record-read]").click();
   const flow = page.locator("[data-win=flow] [data-flow]");
   await expect(flow).not.toHaveAttribute("data-flow-open", "", { timeout: 60_000 });
+  // What was read comes up in the Flow window, opened and brought forward.
+  await expect(page.locator("[data-win=flow]")).toBeVisible();
+  await expect(page.locator("[data-win=flow]")).toHaveAttribute("data-front", "");
   await expect(page.locator("[data-flow-why]"), "the playback matched every picture").toHaveCount(0);
   await expect(flow.locator("[data-flow-overview]")).toContainText("instructions");
   // The test cartridge counts frames in its NMI handler: the routines say so.
@@ -231,5 +236,68 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await page.locator("[data-win=record] [data-recording-id] [data-record-open]").first().click();
   await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "");
   await page.locator("[data-win=record] [data-record-delete]").first().click();
+  await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
+});
+
+test("a link to a window by its id opens it on top", async ({ page }) => {
+  await openDesk(page);
+  await expect(page.locator("[data-win=flow]")).toBeHidden();
+  await page.evaluate(() => (location.hash = "#flow"));
+  await expect(page.locator("[data-win=flow]")).toBeVisible();
+  await expect(page.locator("[data-win=flow]")).toHaveAttribute("data-front", "");
+  await open(page, "/nes/create#palettes", 500);
+  await expect(page.locator("[data-win=palettes]")).toBeVisible();
+  await expect(page.locator("[data-win=palettes]")).toHaveAttribute("data-front", "");
+});
+
+/** Load the test cartridge, start recording, and run until the recording holds more than `past` pictures. */
+async function recordFor(page: Page, past: number) {
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  const rec = page.locator("[data-win=record]");
+  await rec.locator("[data-record-start]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "on");
+  await page.locator("[data-play-run]").click();
+  await page.keyboard.down("ArrowRight");
+  const frames = () => rec.locator("[data-record-frames]").getAttribute("data-record-frames").then(Number);
+  await expect.poll(frames, { timeout: 30_000 }).toBeGreaterThan(past);
+  return rec;
+}
+
+test("a recording still running when the page is left is stopped and kept", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openDesk(page);
+  await recordFor(page, 60);
+  // Off the desk by its own link, the recording still running.
+  await page.locator("[data-desk-more]").click();
+  await expect(page).toHaveURL(/\/nes\/play$/);
+  await open(page, "/nes/create", 500);
+  const item = page.locator("[data-win=record] [data-recording-id]").first();
+  await expect(item).toContainText("testcart.nes", { timeout: 15_000 });
+  await expect(item.locator("[data-record-left]"), "stopped on the way out, so not a copy").toHaveCount(0);
+  const n = Number((await item.locator(".measured").first().textContent())?.match(/(\d+) frames/)?.[1] ?? 0);
+  expect(n, "the whole run up to the leaving").toBeGreaterThan(60);
+  await item.locator("[data-record-delete]").click();
+  await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
+});
+
+test("a tab reloaded while recording keeps the copy taken as it went, and the copy plays back true", async ({ page }) => {
+  test.setTimeout(150_000);
+  await openDesk(page);
+  const rec = await recordFor(page, 60);
+  // A copy is kept every five seconds; the list does not show the recording
+  // while it runs.
+  await page.waitForTimeout(6_000);
+  await expect(rec.locator("[data-recording-id]")).toHaveCount(0);
+  // A reload gives the page no last word: what is left is the copy.
+  await page.reload();
+  await expect(page.locator(".desk[data-ready]")).toHaveCount(1);
+  const item = page.locator("[data-win=record] [data-recording-id]").first();
+  await expect(item).toContainText("testcart.nes", { timeout: 15_000 });
+  await expect(item.locator("[data-record-left]")).toHaveCount(1);
+  await item.locator("[data-record-read]").click();
+  await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "", { timeout: 60_000 });
+  await expect(page.locator("[data-flow-why]"), "the copy played back to every picture it holds").toHaveCount(0);
+  await item.locator("[data-record-delete]").click();
   await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Lang } from "@/lib/lang";
 import { Desk, Window, useDesk, type DeskLabels, type WinSpec } from "@/app/components/Desk";
 import { Cartridge, Readouts, Screen } from "../play/Play";
@@ -9,6 +9,7 @@ import { Code } from "../play/Code";
 import { Sprites } from "../play/Sprites";
 import { Record } from "./Record";
 import { Flow } from "./Flow";
+import * as flow from "./flowEngine";
 
 /**
  * The create desk: the play page's console and every tool it has, each in
@@ -20,14 +21,16 @@ import { Flow } from "./Flow";
 const WINS: WinSpec[] = [
   { id: "screen", at: [0, 0, 0.36, 0.56] },
   { id: "cartridge", at: [0, 0.56, 0.36, 0.44] },
-  { id: "code", at: [0.36, 0, 0.32, 1] },
+  { id: "code", at: [0.36, 0, 0.32, 0.6] },
   { id: "cpu", at: [0.68, 0, 0.32, 0.34] },
   { id: "memory", at: [0.68, 0.34, 0.32, 0.66] },
   { id: "palettes", at: [0.06, 0.06, 0.4, 0.5], open: false },
   { id: "oam", at: [0.12, 0.1, 0.4, 0.6], open: false },
   { id: "sprites", at: [0.2, 0.04, 0.6, 0.9], open: false },
   { id: "readouts", at: [0.3, 0.3, 0.4, 0.4], open: false },
-  { id: "record", at: [0.04, 0.08, 0.3, 0.8], open: false },
+  // Record is open from the start, under the code, so the way into the flow
+  // tools is on the desk rather than in the tray (owner, 2026-09-27).
+  { id: "record", at: [0.36, 0.6, 0.32, 0.4] },
   { id: "flow", at: [0.3, 0.02, 0.66, 0.96], open: false },
   { id: "about", at: [0.3, 0.16, 0.4, 0.6], open: false },
 ];
@@ -70,6 +73,14 @@ function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
     setOpenTile((o) => ({ tile, n: (o?.n ?? 0) + 1 }));
     desk.show("sprites");
   };
+  // A recording read or opened comes up in the Flow window, brought forward.
+  const opened = useSyncExternalStore(flow.subscribe, () => flow.snapshot().open?.meta.id ?? null, () => null);
+  const { show } = desk;
+  useEffect(() => {
+    if (opened) show("flow");
+    // Only when another recording opens, not whenever the desk moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened]);
   return (
     <>
       <Window id="screen"><Screen lang={lang} stage={desk.mode !== "float"} /></Window>

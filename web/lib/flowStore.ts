@@ -30,6 +30,8 @@ export interface RecordingMeta {
   recordedAt: string;
   battery: boolean;
   patched: boolean;
+  /** Kept as it went and never stopped: the page was left while it ran, and it ends at the last copy taken. */
+  left?: true;
 }
 
 const EXPORT_MAGIC = "TMNESREC";
@@ -89,10 +91,17 @@ async function keep() {
   }
 }
 
-export async function saveRecording(r: { name: string; rom: Uint8Array; battery: Uint8Array | null; log: Uint8Array; patched: boolean }): Promise<RecordingMeta> {
+/**
+ * Keep a recording. A recording still running is kept again and again under
+ * the one id (`over`, the meta its first keeping answered) as it goes, with
+ * `left` set, and a last time without it when it is stopped; a page closed
+ * in between leaves the last copy, which says it was never stopped.
+ */
+export async function saveRecording(r: { name: string; rom: Uint8Array; battery: Uint8Array | null; log: Uint8Array; patched: boolean; left?: boolean; over?: RecordingMeta | null }): Promise<RecordingMeta> {
   await keep();
-  const sha = await sha256(r.rom);
-  const id = `${new Date().toISOString().replace(/[:.]/g, "-")}-${sha.slice(0, 8)}`;
+  const sha = r.over?.sha256 ?? (await sha256(r.rom));
+  const recordedAt = r.over?.recordedAt ?? new Date().toISOString();
+  const id = r.over?.id ?? `${recordedAt.replace(/[:.]/g, "-")}-${sha.slice(0, 8)}`;
   const meta: RecordingMeta = {
     v: 1,
     id,
@@ -100,15 +109,19 @@ export async function saveRecording(r: { name: string; rom: Uint8Array; battery:
     sha256: sha,
     prgLen: prgLength(r.rom),
     frames: framesIn(r.log),
-    recordedAt: new Date().toISOString(),
+    recordedAt,
     battery: !!r.battery && r.battery.length > 0,
     patched: r.patched,
+    ...(r.left ? { left: true as const } : {}),
   };
   const roms = await dir(["roms"]);
   if (!(await read(roms, `${sha}.nes`))) await write(roms, `${sha}.nes`, r.rom);
   const d = await dir(["recordings", id]);
+  // The log before the meta that counts it: each file is replaced whole
+  // when its writer closes, so a page gone between the two leaves a meta a
+  // copy behind its log, never one that promises more than the log holds.
   await write(d, "inputs.bin", r.log);
-  if (meta.battery) await write(d, "battery.bin", r.battery!);
+  if (meta.battery && !r.over) await write(d, "battery.bin", r.battery!);
   await write(d, "meta.json", JSON.stringify(meta));
   return meta;
 }

@@ -27,6 +27,8 @@ const S = {
     frames: (f: number) => `${f} frames, ${(f / 60.0988).toFixed(1)} s`,
     patched: "patched",
     save: "with a save",
+    left: "never stopped",
+    leftTitle: "The page was left while this was recording; it ends at the last copy kept, a few seconds before",
     read: "Read it",
     readTitle: "Plays the recording back and reads every instruction it ran",
     reread: "Read it again",
@@ -39,7 +41,7 @@ const S = {
     reading: "reading",
     cancel: "Stop",
     import: "Import a recording",
-    stays: "Recordings stay in this browser, in its own private storage, and nothing is sent anywhere. An exported recording holds the buttons and the save but never the game, so playing it back somewhere else needs the same cartridge there. Leaving the page while recording loses the recording.",
+    stays: "Recordings stay in this browser, in its own private storage, and nothing is sent anywhere. An exported recording holds the buttons and the save but never the game, so playing it back somewhere else needs the same cartridge there. A recording is kept as it goes: leave the page while recording and it is stopped and kept, and closing the tab loses at most its last few seconds.",
   },
   ja: {
     h: "記録",
@@ -54,6 +56,8 @@ const S = {
     frames: (f: number) => `${f} フレーム、${(f / 60.0988).toFixed(1)} 秒`,
     patched: "パッチ済み",
     save: "セーブ付き",
+    left: "止めずに離れた",
+    leftTitle: "記録中にページを離れた。最後に残した写し、数秒前のところで終わっている",
     read: "読む",
     readTitle: "記録を再生し、実行されたすべての命令を読む",
     reread: "もう一度読む",
@@ -66,7 +70,7 @@ const S = {
     reading: "読んでいる",
     cancel: "止める",
     import: "記録を読み込む",
-    stays: "記録はこのブラウザ専用の保存領域に残り、どこへも送られない。書き出した記録にはボタンとセーブが入るがゲームは入らないので、別の場所で再生するにはそこにも同じカートリッジが要る。記録中にページを離れると、その記録は失われる。",
+    stays: "記録はこのブラウザ専用の保存領域に残り、どこへも送られない。書き出した記録にはボタンとセーブが入るがゲームは入らないので、別の場所で再生するにはそこにも同じカートリッジが要る。記録は進むそばから残る: 記録中にページを離れれば止めて残し、タブを閉じても失うのは最後の数秒だけ。",
   },
 } as const;
 
@@ -77,6 +81,8 @@ export function Record({ lang }: { lang: Lang }) {
   useEffect(() => {
     void flow.refresh();
   }, [p.recordingsKept]);
+  // The recording still running is kept as it goes, and is listed once it stops.
+  const list = f.list?.filter((r) => r.id !== p.recording?.id) ?? null;
   const when = (iso: string) => new Date(iso).toLocaleString(lang === "ja" ? "ja-JP" : "en-GB", { dateStyle: "medium", timeStyle: "short" });
 
   return (
@@ -97,11 +103,11 @@ export function Record({ lang }: { lang: Lang }) {
       )}
 
       <h3 className="eyebrow">{T.listH}</h3>
-      {f.list === null ? null : f.list.length === 0 ? (
+      {list === null ? null : list.length === 0 ? (
         <p className="quiet" data-record-empty>{T.empty}</p>
       ) : (
         <ul className="flow-recs">
-          {f.list.map((r) => {
+          {list.map((r) => {
             const busy = f.busy?.id === r.id ? f.busy : null;
             return (
               <li key={r.id} data-recording-id={r.id} aria-current={f.open?.meta.id === r.id ? "true" : undefined}>
@@ -112,6 +118,7 @@ export function Record({ lang }: { lang: Lang }) {
                   <span className="measured">{T.frames(r.frames)}</span>
                   {r.patched ? <span className="tag">{T.patched}</span> : null}
                   {r.battery ? <span className="tag">{T.save}</span> : null}
+                  {r.left ? <span className="tag" title={T.leftTitle} data-record-left>{T.left}</span> : null}
                 </p>
                 {busy ? (
                   <p className="chips">

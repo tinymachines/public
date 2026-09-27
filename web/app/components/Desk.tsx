@@ -49,7 +49,8 @@ export interface DeskLabels {
 
 /** Where a desk floats its windows; narrower or shorter, they stack. */
 const FLOAT = "(min-width: 64rem) and (min-height: 36rem)";
-const VERSION = 1;
+/** The stored arrangement's version. 2 (2026-09-27): Record opens on the create desk's first look, so every desk starts from that once. */
+const VERSION = 2;
 
 function load(key: string): Layout | null {
   try {
@@ -204,6 +205,25 @@ export function Desk({
   );
 
   const tidy = () => setKept({ read: true, wins: null });
+
+  // A link to a window by its id (/nes/create#record) opens it and brings
+  // it forward, on arrival and whenever the hash changes; on a phone the
+  // browser's own scroll to the id does the same job.
+  const ready = !!layout;
+  const showRef = useRef(show);
+  useEffect(() => {
+    showRef.current = show;
+  });
+  useEffect(() => {
+    if (!ready || mode !== "float") return;
+    const go = () => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      if (id && wins.some((w) => w.id === id)) showRef.current(id);
+    };
+    go();
+    window.addEventListener("hashchange", go);
+    return () => window.removeEventListener("hashchange", go);
+  }, [ready, mode, wins]);
 
   const ctx = useMemo<Ctx>(() => ({ mode, dim, layout, titles, labels, front, place, show }), [mode, dim, layout, titles, labels, front, place, show]);
   const topZ = layout ? Math.max(...Object.values(layout).map((w) => w.z)) : 0;

@@ -162,7 +162,7 @@ export const PAGES: Record<string, FixedPage> = {
   "/nes/create": {
     title: "Create",
     description:
-      "The console with every tool on one desk: the screen, the code, the CPU, the memory, the palettes and the sprite editor, each a window you can move, size and close.",
+      "The console with every tool on one desk: the screen, the code, the CPU, the memory, the palettes, the sprite editor, and a recorder whose runs the flow tools read back, each a window you can move, size and close.",
   },
   "/nes/shelf": {
     title: "Your cartridges",

@@ -202,10 +202,17 @@ self.onmessage = async (e) => {
     // A recording (nes-console's record.rs): every pad change, reset press
     // and picture from power-on, which is where the console refuses to
     // start one anywhere else. `on` starts it; off answers the log, ended
-    // where the console stands, for the page to keep.
+    // where the console stands, for the page to keep; `soFar` answers the
+    // same while the recording carries on, which the page keeps as it goes.
     if (path === "record") {
       if (!nes) throw new Error("no cartridge loaded");
       if (!nes.record_start) throw new Error("this bundle cannot record");
+      if (e.data.soFar) {
+        if (!nes.record_so_far) throw new Error("this bundle cannot copy a recording as it goes");
+        const log = nes.record_so_far();
+        self.postMessage({ id, ok: true, answer: { log } }, [log.buffer]);
+        return;
+      }
       if (e.data.on) {
         nes.record_start();
         self.postMessage({ id, ok: true, answer: { recording: true } });

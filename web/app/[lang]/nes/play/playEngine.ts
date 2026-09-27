@@ -21,7 +21,7 @@
  */
 
 import { getSave, putSave, type Cart } from "@/lib/shelf";
-import { saveRecording, type RecordingMeta } from "@/lib/flowStore";
+import { framesIn, saveRecording, type RecordingMeta } from "@/lib/flowStore";
 import { latest as newestEvery } from "@/lib/latest";
 
 export interface DriftStats {
@@ -77,8 +77,8 @@ export interface PlayState {
   why: string | null;
   /** The save, for a shelf cartridge with a battery: when it was last written, and whether one came back on load. */
   battery: { has: boolean; restored: boolean; savedAt: number | null; saving: boolean; why: string | null } | null;
-  /** A recording in progress, from the power-on it began at; null when none is. */
-  recording: { startedAt: number } | null;
+  /** A recording in progress, from the power-on it began at, and its id in the store once a first copy is kept; null when none is. */
+  recording: { startedAt: number; id: string | null } | null;
   /** Counts the recordings kept since the page opened, so a list knows to look again. */
   recordingsKept: number;
 }
@@ -239,10 +239,11 @@ class Bridge<A> {
     if (this.worker) return;
     const w = new Worker(this.url, { type: "module" });
     this.worker = w;
+    const pending = this.pending;
     w.onmessage = (e) => {
       const { id, ...rest } = e.data as { id: number } & Outcome<A>;
-      this.pending.get(id)?.(rest as Outcome<A>);
-      this.pending.delete(id);
+      pending.get(id)?.(rest as Outcome<A>);
+      pending.delete(id);
     };
     w.onerror = () => set({ why: this.onFail, running: false });
   }
@@ -250,6 +251,16 @@ class Bridge<A> {
     this.worker?.terminate();
     this.worker = null;
     this.pending.clear();
+  }
+  /** Hand the worker to another bridge for a last word, and start afresh without it. */
+  release(): Bridge<A> {
+    const b = new Bridge<A>(this.url, this.onFail);
+    b.worker = this.worker;
+    b.pending = this.pending;
+    b.nextId = this.nextId;
+    this.worker = null;
+    this.pending = new Map();
+    return b;
   }
   call(body: Record<string, unknown>, transfer: Transferable[] = []): Promise<Outcome<A>> {
     if (!this.worker) return Promise.resolve({ ok: false, error: "no worker" });
@@ -345,7 +356,9 @@ export function padByte(): number {
  * play key does.
  */
 function onPageHidden() {
-  if (document.visibilityState !== "hidden" || !state.running) return;
+  if (document.visibilityState !== "hidden") return;
+  void keepSoFar();
+  if (!state.running) return;
   set({ running: false });
   void saveNow(true);
 }
@@ -369,7 +382,6 @@ export function detach() {
   window.removeEventListener("keydown", onKey);
   window.removeEventListener("keyup", onKey);
   document.removeEventListener("visibilitychange", onPageHidden);
-  consoleW.stop();
   pictureW.stop();
   canvas = null;
   bitmapCtx = null;
@@ -378,9 +390,23 @@ export function detach() {
   last = null;
   void audio?.close();
   audio = null;
-  // A recording still running when the page goes is lost with the console:
-  // the worker is gone before it could answer.
+  // A recording still running when the page goes is stopped and kept: the
+  // worker is handed over for that last word and ends after it. (A tab
+  // closed outright gets no last word; the copies kept as it went hold all
+  // but its last few seconds.)
+  const of = recordingOf;
   recordingOf = null;
+  stopKeeping();
+  if (of) {
+    const w = consoleW.release();
+    void w
+      .call({ path: "record", on: false })
+      .then((r) => keepLog(of, r.ok ? (r.answer.log ?? null) : null, false))
+      .then((meta) => meta && set({ recordingsKept: state.recordingsKept + 1 }))
+      .catch(() => {})
+      .finally(() => w.stop());
+  }
+  consoleW.stop();
   state = INITIAL;
 }
 
@@ -599,12 +625,56 @@ export async function reloadWith(image: Uint8Array) {
 // record.rs); the console is deterministic from there, so the recording
 // replays to the same game, and the flow tools read that replay. Starting
 // one power-cycles the cartridge (with its save put back first, as any
-// power-on does); another cartridge, a power cycle, a patch or power off
-// ends it, and it is kept in this browser (lib/flowStore).
+// power-on does); another cartridge, a power cycle, a patch, power off or
+// leaving the page ends it, and it is kept in this browser (lib/flowStore).
+// While it runs, a copy of it so far is kept every KEEP_EVERY_MS and when
+// the page is hidden, so a tab closed mid-recording loses seconds, not
+// the recording.
 // ---------------------------------------------------------------------------
 
+const KEEP_EVERY_MS = 5_000;
 let startingRecording = false;
-let recordingOf: { name: string; rom: Uint8Array; battery: Uint8Array | null; patched: boolean } | null = null;
+type Recording = { name: string; rom: Uint8Array; battery: Uint8Array | null; patched: boolean; kept: RecordingMeta | null; noCopies: boolean };
+let recordingOf: Recording | null = null;
+let keepTimer: ReturnType<typeof setInterval> | null = null;
+/** The keepings in order: a copy and the stop that follows it land one after the other, never across. */
+let keeping: Promise<unknown> = Promise.resolve();
+
+function stopKeeping() {
+  if (keepTimer !== null) clearInterval(keepTimer);
+  keepTimer = null;
+}
+
+/** Keep a log under the recording's one id; one with no pictures yet is not worth a place in the list. */
+function keepLog(of: Recording, log: Uint8Array | null, left: boolean): Promise<RecordingMeta | null> {
+  const p = keeping.then(async () => {
+    if (!log || framesIn(log) === 0) return of.kept;
+    of.kept = await saveRecording({ ...of, log, left, over: of.kept });
+    return of.kept;
+  });
+  keeping = p.catch(() => null);
+  return p;
+}
+
+/** A copy of the recording so far, kept while it carries on. */
+async function keepSoFar() {
+  const of = recordingOf;
+  if (!of || of.noCopies) return;
+  const r = await consoleW.call({ path: "record", soFar: true });
+  // Stopped meanwhile: the stop keeps the whole of it.
+  if (recordingOf !== of) return;
+  if (!r.ok) {
+    // A bundle from before copies: the recording is kept when it stops.
+    of.noCopies = true;
+    return;
+  }
+  try {
+    const meta = await keepLog(of, r.answer.log ?? null, true);
+    if (meta && recordingOf === of && state.recording && state.recording.id !== meta.id) set({ recording: { ...state.recording, id: meta.id } });
+  } catch {
+    // The next copy, or the stop, tries again.
+  }
+}
 
 export async function startRecording(): Promise<void> {
   if (!state.loaded || !last || state.recording) return;
@@ -628,8 +698,10 @@ export async function startRecording(): Promise<void> {
     set({ why: r.error });
     return;
   }
-  recordingOf = { name: state.loaded, rom: state.rom, battery, patched: state.patched };
-  set({ recording: { startedAt: Date.now() } });
+  recordingOf = { name: state.loaded, rom: state.rom, battery, patched: state.patched, kept: null, noCopies: false };
+  set({ recording: { startedAt: Date.now(), id: null } });
+  stopKeeping();
+  keepTimer = setInterval(() => void keepSoFar(), KEEP_EVERY_MS);
   if (wasRunning) toggleRun();
 }
 
@@ -648,11 +720,12 @@ export async function stopRecording(): Promise<RecordingMeta | null> {
 async function keepRecording(log: Uint8Array | null): Promise<RecordingMeta | null> {
   const of = recordingOf;
   recordingOf = null;
+  stopKeeping();
   set({ recording: null });
-  if (!of || !log || log.length === 0) return null;
+  if (!of) return null;
   try {
-    const meta = await saveRecording({ ...of, log });
-    set({ recordingsKept: state.recordingsKept + 1 });
+    const meta = await keepLog(of, log, false);
+    if (meta) set({ recordingsKept: state.recordingsKept + 1 });
     return meta;
   } catch (e) {
     set({ why: `the recording could not be kept: ${String((e as Error).message ?? e)}` });
