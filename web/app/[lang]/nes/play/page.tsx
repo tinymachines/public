@@ -166,7 +166,10 @@ export default async function PlayPage({ params }: { params: Promise<{ lang: Lan
           reserve
           label={t(lang, "Sections")}
           close={t(lang, "Close")}
-          more={[{ href: localize(lang, "/nes/create"), label: t(lang, surface("nes", "create").nav_label ?? "Create") }]}
+          more={[
+            { href: localize(lang, "/nes/create"), label: t(lang, surface("nes", "create").nav_label ?? "Create") },
+            ...(surface("nes", "create").strip_also ?? []).map((e) => ({ href: localize(lang, "/nes/create" + e.at), label: t(lang, e.label) })),
+          ]}
         />
         <div className="wb-main play-shell">
           <Play lang={lang} />

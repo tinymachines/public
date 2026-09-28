@@ -43,6 +43,12 @@ export interface Surface {
   piece: string | null;
   /** Probed, not remembered. Where it answers right now. */
   serves_today: string;
+  /**
+   * More entries for the strip and the menu under this surface, at a place
+   * inside its page (`at`, a hash the page opens on: the create desk's
+   * Record window). One word for the strip; `name` for the menu's line.
+   */
+  strip_also?: { label: string; at: string; name?: string }[];
   /** Where it is proposed to land under the apex. */
   lands_at: string;
   /** False while lands_at is a proposal rather than a decision. */

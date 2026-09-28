@@ -269,6 +269,13 @@
      "nav": false,
      "nav_label": "Create",
      "strip_group": "use",
+     "strip_also": [
+      {
+       "label": "Record",
+       "at": "#record",
+       "name": "Record a run of a game and read what its code did"
+      }
+     ],
      "piece": null,
      "serves_today": "https://tinymachines.ai/nes/create",
      "lands_at": "/nes/create",

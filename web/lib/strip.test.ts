@@ -42,7 +42,9 @@ describe("the NES section, as the manifest builds it", () => {
   const s = sections().find((x) => x.when === "/nes")!;
   test("Create is on it, beside Play, and the phrases are one word", () => {
     const labels = s.items.map((i) => i.label);
-    expect(labels.slice(0, 4)).toEqual(["Overview", "Play", "Create", "Learn"]);
+    expect(labels.slice(0, 5)).toEqual(["Overview", "Play", "Create", "Record", "Learn"]);
+    // Record is a place on the create desk, not a page: the desk opens on it.
+    expect(s.items.find((i) => i.label === "Record")!.href).toBe("/nes/create#record");
     expect(labels).toContain("Notebook");
     expect(labels).toContain("Retro");
   });

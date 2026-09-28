@@ -92,8 +92,9 @@ test("the site and the projects are the same on every page, nothing twice; insid
   await open(page, "/nes/signal/bench", 300);
   await panel(page);
   await expect(page.locator(".menu-section .menu-item[aria-current=location] b")).toHaveText("The signal");
-  await expect(page.locator(".menu-section .menu-item b").nth(3)).toHaveText("Learn");
-  await expect(page.locator(".menu-section .menu-item").nth(3).locator("span")).toHaveText("The NES at human speed");
+  await expect(page.locator(".menu-section .menu-item b").nth(3)).toHaveText("Record");
+  await expect(page.locator(".menu-section .menu-item b").nth(4)).toHaveText("Learn");
+  await expect(page.locator(".menu-section .menu-item").nth(4).locator("span")).toHaveText("The NES at human speed");
 });
 
 test("the Japanese panel carries the same doors, localized", async ({ page }) => {

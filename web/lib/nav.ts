@@ -189,16 +189,21 @@ export function sections(): Section[] {
           : []),
         ...here
           .filter((s) => s.lands_at !== p.landing && !listedAbove(s.lands_at))
-          .map((s) => {
+          .flatMap((s) => {
             const name = s.nav_label ?? s.name;
-            return {
-              href: s.lands_at,
-              label: s.strip_label ?? name,
-              name: s.strip_label ? name : undefined,
-              group: s.strip_group,
-              hard: isHardRoute(s.lands_at),
-              prerendered: s.prerendered,
-            };
+            return [
+              {
+                href: s.lands_at,
+                label: s.strip_label ?? name,
+                name: s.strip_label ? name : undefined,
+                group: s.strip_group,
+                hard: isHardRoute(s.lands_at),
+                prerendered: s.prerendered,
+              },
+              // A place inside the page, beside it (the create desk's Record
+              // window, owner 2026-09-28: Record was not on the strip).
+              ...(s.strip_also ?? []).map((e) => ({ href: s.lands_at + e.at, label: e.label, name: e.name, group: s.strip_group })),
+            ];
           }),
       ],
     });

@@ -430,6 +430,8 @@
  "This is the beta: what goes live next, tried here first. Nothing here is indexed. The live site is": "ここはベータ版です。次に公開されるものを、まずここで試しています。ここのページは検索に載りません。公開中のサイトは",
  "Play": "遊ぶ",
  "Create": "作る",
+ "Record": "記録",
+ "Record a run of a game and read what its code did": "ゲームの一回の走行を記録し、そのコードが何をしたかを読む",
  "Notebook": "ノート",
  "Retro": "振り返り",
  "Sections": "セクション",

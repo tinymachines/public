@@ -89,7 +89,7 @@ test("inside a part, the strip marks the part; on a site page there is no strip"
   }
 });
 
-test("the NES strip: Overview, Play, Create, Learn, then the parts, then Notebook and Retro, a divider between, all on one row at a desk", async ({ page }) => {
+test("the NES strip: Overview, Play, Create, Record, Learn, then the parts, then Notebook and Retro, a divider between, all on one row at a desk", async ({ page }) => {
   // Owner, 2026-09-24: Create was missing, the phrases ran the row off the
   // edge, and the parts wanted to read as a cluster of their own.
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -102,7 +102,7 @@ test("the NES strip: Overview, Play, Create, Learn, then the parts, then Noteboo
     return { fold: nav.dataset.fold, runs, rowShown: getComputedStyle(row).display !== "none", lastRight: last.right, vw: innerWidth };
   });
   expect(r.runs).toEqual([
-    ["Overview", "Play", "Create", "Learn"],
+    ["Overview", "Play", "Create", "Record", "Learn"],
     ["The chips", "The console", "The signal", "The bench", "The calibration cart"],
     ["Notebook", "Retro"],
   ]);

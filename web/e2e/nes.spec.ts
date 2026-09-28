@@ -367,7 +367,7 @@ test("the play page is a workbench for playing: the bar, the strip of its sectio
   expect(r.bar, "one workbench bar").toBe(1);
   expect(r.name).toBe("Play");
   await expect.poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())), { message: "the strip is the page's sections" })
-    .toEqual(["Screen", "Cartridge", "About this console", "Create"]);
+    .toEqual(["Screen", "Cartridge", "About this console", "Create", "Record"]);
   // After the divider, the other way to use the console.
   expect(await page.locator(".wb-strip .strip-run + .strip-run a").first().getAttribute("href")).toBe("/nes/create");
   expect(r.foot, "the footer on the floor").toBe("fixed");
