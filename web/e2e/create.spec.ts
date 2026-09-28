@@ -343,3 +343,38 @@ test("a run recorded from the middle of a game starts from the console saved the
   await expect(page.locator("[data-flow-why]"), "the playback from the saved state matched every picture").toHaveCount(0);
   await expect(page.locator("[data-win=flow] [data-flow-overview]")).toContainText("instructions");
 });
+
+test("a saved moment puts the machine back exactly where it was, and is kept per game", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openDesk(page);
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  await expect(page.locator("[data-moments-empty]")).toHaveCount(1);
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  await page.locator("[data-play-run]").click();
+  await expect.poll(framesRun, { timeout: 20_000 }).toBeGreaterThan(40);
+  await page.locator("[data-play-run]").click();
+  await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "false");
+  // The machine as it stands: the cycle count, the registers, the PPU.
+  const where = async () => [await page.locator("[data-play-pos]").textContent(), await page.locator("[data-win=cpu]").textContent()].join(" | ");
+  await page.locator("[data-moment-save]").click();
+  await expect(page.locator("[data-moment-id]")).toHaveCount(1);
+  // Saving runs the console to the end of the CPU's cycle; the readout
+  // shows where that left it.
+  await page.locator("[data-play-op]").click();
+  await page.locator("[data-play-op]").click();
+  const saved = await where();
+  const [loadAt] = [await page.locator("[data-moment-id]").first()];
+  for (let i = 0; i < 3; i++) await page.locator("[data-play-frame]").click();
+  await expect.poll(where).not.toBe(saved);
+  await loadAt.locator("[data-moment-load]").click();
+  await page.locator("[data-play-op]").click();
+  await page.locator("[data-play-op]").click();
+  await expect.poll(where, { message: "loaded, then the same two instructions: the same machine" }).toBe(saved);
+  // Kept in this browser, per game: a reload lists it; deleting empties it.
+  await page.reload();
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-moment-id]")).toHaveCount(1, { timeout: 20_000 });
+  await page.locator("[data-moment-delete]").click();
+  await expect(page.locator("[data-moments-empty]")).toHaveCount(1);
+});

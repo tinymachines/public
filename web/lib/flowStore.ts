@@ -255,3 +255,65 @@ export async function importRecording(file: File): Promise<RecordingMeta> {
   await write(d, "meta.json", JSON.stringify(clean));
   return clean;
 }
+
+// ---------------------------------------------------------------------------
+// Moments: the whole console saved at one instant, per game, kept beside the
+// recordings. `moments/<sha>/<id>.bin` is the console's bytes (the ROM's
+// digest inside them, so a moment refuses any other image), `<id>.json`
+// what the list shows.
+// ---------------------------------------------------------------------------
+
+export interface MomentMeta {
+  v: 1;
+  id: string;
+  /** SHA-256 of the image the console ran. */
+  sha256: string;
+  /** The cartridge's name as loaded. */
+  name: string;
+  savedAt: string;
+  /** Frames the page had run when it was saved. */
+  frame: number;
+  bytes: number;
+}
+
+export async function saveMoment(m: { rom: Uint8Array; name: string; frame: number; state: Uint8Array }): Promise<MomentMeta> {
+  await keep();
+  const sha = await sha256(m.rom);
+  const savedAt = new Date().toISOString();
+  const meta: MomentMeta = { v: 1, id: savedAt.replace(/[:.]/g, "-"), sha256: sha, name: m.name, savedAt, frame: m.frame, bytes: m.state.length };
+  const d = await dir(["moments", sha]);
+  await write(d, `${meta.id}.bin`, m.state);
+  await write(d, `${meta.id}.json`, JSON.stringify(meta));
+  return meta;
+}
+
+/** The moments saved on one image, newest first. */
+export async function listMoments(sha: string): Promise<MomentMeta[]> {
+  const d = await dir(["moments", sha]);
+  const out: MomentMeta[] = [];
+  for await (const [name, h] of d as unknown as AsyncIterable<[string, FileSystemHandle]>) {
+    if (h.kind !== "file" || !name.endsWith(".json")) continue;
+    const b = await read(d, name);
+    if (!b) continue;
+    try {
+      const m = JSON.parse(new TextDecoder().decode(b)) as MomentMeta;
+      // A moment whose bytes are gone is not listed.
+      if (m.sha256 === sha && `${m.id}.json` === name && (await read(d, `${m.id}.bin`))) out.push(m);
+    } catch {
+      // A moment whose meta cannot be read is not listed.
+    }
+  }
+  return out.sort((a, b) => b.savedAt.localeCompare(a.savedAt) || b.id.localeCompare(a.id));
+}
+
+export async function loadMoment(sha: string, id: string): Promise<Uint8Array> {
+  const b = await read(await dir(["moments", sha], false), `${id}.bin`);
+  if (!b) throw new Error("that moment is no longer in this browser");
+  return b;
+}
+
+export async function deleteMoment(sha: string, id: string) {
+  const d = await dir(["moments", sha], false);
+  await d.removeEntry(`${id}.bin`).catch(() => {});
+  await d.removeEntry(`${id}.json`).catch(() => {});
+}

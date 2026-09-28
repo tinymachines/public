@@ -7,6 +7,7 @@ import { attach, detach, load, subscribe, snapshot, serverSnapshot, toggleRun, t
 import Link from "next/link";
 import { localize } from "@/lib/lang";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
+import { Moments } from "./Moments";
 
 /**
  * The console in the page: a follower of playEngine's announcements. The
@@ -222,6 +223,7 @@ export function Cartridge({ lang, brief = false }: { lang: Lang; brief?: boolean
           </>
         ) : null}
       </div>
+      <Moments lang={lang} />
     </section>
   );
 }

@@ -199,6 +199,23 @@ self.onmessage = async (e) => {
       );
       return;
     }
+    // A moment: the whole console saved where the CPU's cycle ends
+    // (nes-console's state.rs), and put back. A load answers as a step
+    // does, with the picture the moment holds.
+    if (path === "save") {
+      if (!nes) throw new Error("no cartridge loaded");
+      if (!nes.save_state) throw new Error("this bundle cannot save a moment");
+      const saved = nes.save_state();
+      self.postMessage({ id, ok: true, answer: { saved } }, [saved.buffer]);
+      return;
+    }
+    if (path === "restore") {
+      if (!nes) throw new Error("no cartridge loaded");
+      if (!nes.load_state) throw new Error("this bundle cannot load a moment");
+      nes.load_state(new Uint8Array(e.data.saved));
+      afterStep(id, 0);
+      return;
+    }
     // A recording (nes-console's record.rs): every pad change, reset press
     // and picture from power-on, which is where the console refuses to
     // start one anywhere else. `on` starts it; off answers the log, ended

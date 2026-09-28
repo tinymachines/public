@@ -21,7 +21,7 @@
  */
 
 import { getSave, putSave, type Cart } from "@/lib/shelf";
-import { framesIn, saveRecording, type RecordingMeta } from "@/lib/flowStore";
+import { framesIn, loadMoment as readMoment, saveMoment as keepMoment, saveRecording, type MomentMeta, type RecordingMeta } from "@/lib/flowStore";
 import { latest as newestEvery } from "@/lib/latest";
 
 export interface DriftStats {
@@ -81,6 +81,8 @@ export interface PlayState {
   recording: { startedAt: number; id: string | null } | null;
   /** Counts the recordings kept since the page opened, so a list knows to look again. */
   recordingsKept: number;
+  /** Counts the moments saved since the page opened, the same way. */
+  momentsKept: number;
 }
 
 /** The CPU as the core holds it, from the bundle's ten bytes. */
@@ -213,6 +215,7 @@ const INITIAL: PlayState = {
   battery: null,
   recording: null,
   recordingsKept: 0,
+  momentsKept: 0,
 };
 
 let state: PlayState = INITIAL;
@@ -808,6 +811,62 @@ export async function reset() {
     kick();
   }
   set({ halfCycles: a.halfCycles ?? state.halfCycles });
+  if (a.state) publishMachine(parseMachine(a.state), true);
+  if (wasRunning) toggleRun();
+}
+
+// ---------------------------------------------------------------------------
+// Moments: the whole console saved where the CPU's cycle ends, and put back
+// (nes-console's state.rs), kept per game in this browser (lib/flowStore).
+// ---------------------------------------------------------------------------
+
+/** Save the machine as it stands. */
+export async function saveMoment(): Promise<MomentMeta | null> {
+  if (!state.loaded || !state.powered || !state.rom) return null;
+  const r = await consoleW.call({ path: "save" });
+  if (!r.ok || !r.answer.saved) {
+    set({ why: r.ok ? "the console did not answer with its state" : r.error });
+    return null;
+  }
+  try {
+    const meta = await keepMoment({ rom: state.rom, name: state.loaded, frame: state.framesRun, state: r.answer.saved });
+    set({ momentsKept: state.momentsKept + 1 });
+    return meta;
+  } catch (e) {
+    set({ why: `the moment could not be kept: ${String((e as Error).message ?? e)}` });
+    return null;
+  }
+}
+
+/** Put the machine back to a saved moment of the game that is loaded. */
+export async function loadMoment(m: MomentMeta) {
+  if (!state.loaded || !state.powered) return;
+  if (state.recording) {
+    set({ why: "stop the recording before loading a moment: a recording is one run from where it started" });
+    return;
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = await readMoment(m.sha256, m.id);
+  } catch (e) {
+    set({ why: String((e as Error).message ?? e) });
+    return;
+  }
+  const wasRunning = state.running;
+  if (wasRunning) set({ running: false });
+  await waitIdle();
+  const r = await consoleW.call({ path: "restore", saved: bytes.buffer }, [bytes.buffer]);
+  if (!r.ok) {
+    set({ why: r.error });
+    if (wasRunning) toggleRun();
+    return;
+  }
+  const a = r.answer;
+  if (a.colour && a.emphasis) {
+    latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
+    kick();
+  }
+  set({ framesRun: m.frame, halfCycles: a.halfCycles ?? state.halfCycles, why: null });
   if (a.state) publishMachine(parseMachine(a.state), true);
   if (wasRunning) toggleRun();
 }
