@@ -347,9 +347,10 @@ function onKey(e: KeyboardEvent) {
   const bit = KEYS[e.code];
   const bit2 = KEYS2[e.code];
   if (bit === undefined && bit2 === undefined) return;
-  // A key typed into a field is typing, not a button.
+  // A key typed into a field is typing, not a button. The console's own
+  // off-screen input (below) is not a field.
   const t = e.target as HTMLElement | null;
-  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  if (t && t !== padFocus && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
   if (bit !== undefined) {
     if (e.type === "keydown") pad |= bit;
     else pad &= ~bit;
@@ -391,11 +392,47 @@ function onPageHidden() {
   void saveNow(true);
 }
 
+/**
+ * A phone hands a hardware keyboard's arrow keys to the focused element, and
+ * keeps them for scrolling when nothing is focused; letters, Shift and Enter
+ * reach the page either way. So an original pad on the bench's USB adapter
+ * moved a game's A, B, Select and Start on an iPhone and none of its cross
+ * (nes-bench, pad-usb-protocol.md step 7, 2026-09-28), while the lab page
+ * that had seen all eight codes the same day keeps an off-screen input
+ * focused. The console does the same: inputmode none so no soft keyboard
+ * rises, tabindex -1 so it is not a tab stop, aria-hidden so it is not read,
+ * and refocused after any tap or click that did not land in a real field.
+ */
+let padFocus: HTMLInputElement | null = null;
+function refocusPad() {
+  try {
+    padFocus?.focus({ preventScroll: true });
+  } catch {
+    /* a detached input, or a browser that refuses: the keys still reach the window */
+  }
+}
+function onPointerDone(e: Event) {
+  const t = e.target as HTMLElement | null;
+  if (t && t !== padFocus && t.closest?.("input, textarea, select, [contenteditable]")) return;
+  refocusPad();
+}
+
 export function attach(c: HTMLCanvasElement) {
   canvas = c;
   if (consoleW.worker) return;
   consoleW.start();
   pictureW.start();
+  padFocus = document.createElement("input");
+  padFocus.setAttribute("aria-hidden", "true");
+  padFocus.setAttribute("tabindex", "-1");
+  padFocus.setAttribute("autocomplete", "off");
+  padFocus.setAttribute("inputmode", "none");
+  padFocus.setAttribute("data-pad-focus", "");
+  padFocus.style.cssText = "position:absolute;opacity:0;width:1px;height:1px;left:-9999px;top:0";
+  document.body.appendChild(padFocus);
+  document.addEventListener("click", onPointerDone);
+  document.addEventListener("touchend", onPointerDone);
+  refocusPad();
   window.addEventListener("keydown", onKey);
   window.addEventListener("keyup", onKey);
   document.addEventListener("visibilitychange", onPageHidden);
@@ -410,6 +447,10 @@ export function detach() {
   window.removeEventListener("keydown", onKey);
   window.removeEventListener("keyup", onKey);
   document.removeEventListener("visibilitychange", onPageHidden);
+  document.removeEventListener("click", onPointerDone);
+  document.removeEventListener("touchend", onPointerDone);
+  padFocus?.remove();
+  padFocus = null;
   pictureW.stop();
   canvas = null;
   bitmapCtx = null;
