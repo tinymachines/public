@@ -285,7 +285,7 @@ function Breakpoints({ lang }: { lang: Lang }) {
           setText("");
         }}
       >
-        <input className="input" size={6} value={text} placeholder={T.bpAt} aria-label={T.bpAt} onChange={(e) => setText(e.target.value)} data-code-bp-input />
+        <input className="input" size={6} value={text} placeholder="$8000" aria-label={T.bpAt} onChange={(e) => setText(e.target.value)} data-code-bp-input />
         <button type="submit" className="btn" disabled={addr === null} data-code-bp-add>{T.bpAdd}</button>
       </form>
       {s.breakpoints.length ? <button type="button" className="btn btn-ghost" onClick={clearBreakpoints} data-code-bp-clear>{T.bpClear}</button> : null}
