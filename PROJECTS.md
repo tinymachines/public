@@ -3853,3 +3853,68 @@ Open, and offered to the owner:
   breakpoints, and a trace to scroll back through while stepping.
 - Four Japanese copies want a reread: nes/index, nes/parts, nes/rig,
   6502/walk-snake.
+
+## The record tool, finished
+
+- Record is on the create desk from the start, and a recording outlives
+  the page: a copy is kept every five seconds and when the page is hidden
+  (nes 0085fcc's `record_so_far`), leaving the page stops and keeps it,
+  and a closed tab loses seconds, not the run.
+- Recording from mid-game needed saved states, and the owner chose them
+  over a mark on a running log. Every chip saves and restores itself
+  behind a `state` feature: the 2A03 (a7fa5f5, over the 6502 core's own
+  MicroState, mirrored field for field), the 2C02 (c9fe9e8), every
+  cartridge board (nes-bus v0.1.8, never the ROM), the glue, and the
+  console as one versioned blob (nes 459016f). Each has a test that
+  restores mid-run beside a copy that never stopped, and a sabotage that
+  must go red. The owner's multicart held for 240 frames and 401 splits.
+- A state is taken only where a CPU cycle ends: the pinned 6502 core's
+  state lacked the byte a read holds between its halves. The 6502
+  session fixed that upstream (55e386b); the pin stays at 3805107.
+- Record from here saves the console at that moment with the recording
+  (`state.bin`, a fourth part of a `.nesrec`), and the replay starts there.
+
+## Moments, breakpoints, history
+
+- Saved moments under the cartridge on Play and Create, per game in the
+  browser; a load is busy from the press to the worker's answer, after a
+  step pressed in between went from the wrong place.
+- Breakpoints on the Code window (nes 8100cc2's `run_frames_until`): a
+  run stops as the CPU begins fetching the instruction at an address,
+  the listing lit there; running on goes past it.
+- The History window (nes 595dcf6): the console's own trace kept while
+  asked, read back as instructions, newest at the bottom, with Step
+  back. The mark is taken after each step, not before, because a step
+  stops as the next fetch begins and a save lands at that cycle's end;
+  and a moment's bytes are copied to the worker, not handed over, so it
+  can be returned to twice.
+- With the history, the owner's debugger list of 2026-09-26 is complete.
+
+## The pad works, the Japanese caught up, Record on the strip
+
+- nes-bench c4705c3: an original pad at 3.3 V, full-speed USB on the
+  P4's other controller, every key on a Linux host. The Japanese pad
+  pages follow, and the Japanese open items had lost six entries of the
+  bench section while their heading count still matched; the peer will
+  raise a list-entry count with the owner.
+- The four drifted Japanese pages were reread: the notebook index gains
+  four rows, walk-snake's paragraph on buses follows the English, rig
+  and parts only wanted restamping. Zero drift across 78 documents.
+- Record is on the NES strip and menu and beside Create on Play's strip
+  (the manifest's `strip_also`), opening the desk on its window.
+- The engine was boarded twice at the served 6502 releases (v0.350
+  55e386b, then v0.351 58b165f) as that project deployed.
+
+## Checkpoint, 2026-09-28
+
+Live, main and beta are at `9be55e9`, pushed. Against live, the strip,
+menu and create specs pass (28 of 28). Two older tests flake only in
+parallel runs at load averages above 20 and pass alone; no reason was
+captured.
+
+Open:
+- The console's measured speed on the site is 0.83x real time, taken
+  under load; a boarding on a quiet machine gives the true figure.
+- The owner said "get the record feature working"; if recording failed
+  for them, the browser and what they saw are the next thing to learn.
+- esp32-part-choice still has no Japanese copy.
