@@ -359,6 +359,7 @@ test("a saved moment puts the machine back exactly where it was, and is kept per
   const where = async () => [await page.locator("[data-play-pos]").textContent(), await page.locator("[data-win=cpu]").textContent()].join(" | ");
   await page.locator("[data-moment-save]").click();
   await expect(page.locator("[data-moment-id]")).toHaveCount(1);
+  await expect(page.locator("[data-moments-busy]")).toHaveCount(0);
   // Saving runs the console to the end of the CPU's cycle; the readout
   // shows where that left it.
   await page.locator("[data-play-op]").click();
@@ -368,6 +369,9 @@ test("a saved moment puts the machine back exactly where it was, and is kept per
   for (let i = 0; i < 3; i++) await page.locator("[data-play-frame]").click();
   await expect.poll(where).not.toBe(saved);
   await loadAt.locator("[data-moment-load]").click();
+  // The machine is the worker's until the load answers; a step pressed
+  // before that is refused.
+  await expect(page.locator("[data-moments-busy]")).toHaveCount(0);
   await page.locator("[data-play-op]").click();
   await page.locator("[data-play-op]").click();
   await expect.poll(where, { message: "loaded, then the same two instructions: the same machine" }).toBe(saved);

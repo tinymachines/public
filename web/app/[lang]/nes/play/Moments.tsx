@@ -75,10 +75,10 @@ export function Moments({ lang }: { lang: Lang }) {
   const when = (iso: string) => new Date(iso).toLocaleString(lang === "ja" ? "ja-JP" : "en-GB", { dateStyle: "medium", timeStyle: "medium" });
 
   return (
-    <div className="play-moments" data-moments>
+    <div className="play-moments" data-moments data-moments-busy={s.momentBusy ? "" : undefined}>
       <h3 className="eyebrow">{T.h}</h3>
       <p className="chips">
-        <button type="button" className="btn" title={T.saveTitle} disabled={!s.powered} onClick={() => void saveMoment()} data-moment-save>
+        <button type="button" className="btn" title={T.saveTitle} disabled={!s.powered || s.momentBusy} onClick={() => void saveMoment()} data-moment-save>
           {T.save}
         </button>
       </p>
@@ -91,7 +91,7 @@ export function Moments({ lang }: { lang: Lang }) {
               <p className="chips">
                 <span className="measured">{when(m.savedAt)}</span>
                 <span className="measured">{T.at(m.frame)}</span>
-                <button type="button" className="btn" title={T.loadTitle} disabled={!s.powered || !!s.recording} onClick={() => void loadMoment(m)} data-moment-load>
+                <button type="button" className="btn" title={T.loadTitle} disabled={!s.powered || !!s.recording || s.momentBusy} onClick={() => void loadMoment(m)} data-moment-load>
                   {T.load}
                 </button>
                 <button

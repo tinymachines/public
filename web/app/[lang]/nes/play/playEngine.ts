@@ -83,6 +83,8 @@ export interface PlayState {
   recordingsKept: number;
   /** Counts the moments saved since the page opened, the same way. */
   momentsKept: number;
+  /** A moment being saved or loaded: the machine is the worker's until it answers. */
+  momentBusy: boolean;
   /** The addresses a run stops at, as the CPU begins fetching the opcode there. */
   breakpoints: number[];
   /** The breakpoint the last run stopped at, until it runs or steps again. */
@@ -222,6 +224,7 @@ const INITIAL: PlayState = {
   recording: null,
   recordingsKept: 0,
   momentsKept: 0,
+  momentBusy: false,
   breakpoints: [],
   stoppedAt: null,
 };
@@ -831,53 +834,65 @@ export async function reset() {
 
 /** Save the machine as it stands. */
 export async function saveMoment(): Promise<MomentMeta | null> {
-  if (!state.loaded || !state.powered || !state.rom) return null;
-  const r = await consoleW.call({ path: "save" });
-  if (!r.ok || !r.answer.saved) {
-    set({ why: r.ok ? "the console did not answer with its state" : r.error });
-    return null;
-  }
+  if (!state.loaded || !state.powered || !state.rom || state.momentBusy) return null;
+  set({ momentBusy: true });
   try {
+    await waitIdle();
+    setTicking(true);
+    const r = await consoleW.call({ path: "save" });
+    setTicking(false);
+    if (!r.ok || !r.answer.saved) {
+      set({ why: r.ok ? "the console did not answer with its state" : r.error });
+      return null;
+    }
     const meta = await keepMoment({ rom: state.rom, name: state.loaded, frame: state.framesRun, state: r.answer.saved });
     set({ momentsKept: state.momentsKept + 1 });
     return meta;
   } catch (e) {
     set({ why: `the moment could not be kept: ${String((e as Error).message ?? e)}` });
     return null;
+  } finally {
+    setTicking(false);
+    set({ momentBusy: false });
   }
 }
 
 /** Put the machine back to a saved moment of the game that is loaded. */
 export async function loadMoment(m: MomentMeta) {
-  if (!state.loaded || !state.powered) return;
+  if (!state.loaded || !state.powered || state.momentBusy) return;
   if (state.recording) {
     set({ why: "stop the recording before loading a moment: a recording is one run from where it started" });
     return;
   }
-  let bytes: Uint8Array;
+  // Busy from the first moment, so nothing (a step, a test) acts on the
+  // machine between the press and the worker's answer.
+  set({ momentBusy: true });
+  const wasRunning = state.running;
   try {
-    bytes = await readMoment(m.sha256, m.id);
+    const bytes = await readMoment(m.sha256, m.id);
+    if (wasRunning) set({ running: false });
+    await waitIdle();
+    setTicking(true);
+    const r = await consoleW.call({ path: "restore", saved: bytes.buffer }, [bytes.buffer]);
+    setTicking(false);
+    if (!r.ok) {
+      set({ why: r.error });
+      return;
+    }
+    const a = r.answer;
+    if (a.colour && a.emphasis) {
+      latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
+      kick();
+    }
+    set({ framesRun: m.frame, halfCycles: a.halfCycles ?? state.halfCycles, why: null, stoppedAt: null });
+    if (a.state) publishMachine(parseMachine(a.state), true);
   } catch (e) {
     set({ why: String((e as Error).message ?? e) });
-    return;
+  } finally {
+    setTicking(false);
+    set({ momentBusy: false });
+    if (wasRunning && !state.running) toggleRun();
   }
-  const wasRunning = state.running;
-  if (wasRunning) set({ running: false });
-  await waitIdle();
-  const r = await consoleW.call({ path: "restore", saved: bytes.buffer }, [bytes.buffer]);
-  if (!r.ok) {
-    set({ why: r.error });
-    if (wasRunning) toggleRun();
-    return;
-  }
-  const a = r.answer;
-  if (a.colour && a.emphasis) {
-    latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
-    kick();
-  }
-  set({ framesRun: m.frame, halfCycles: a.halfCycles ?? state.halfCycles, why: null });
-  if (a.state) publishMachine(parseMachine(a.state), true);
-  if (wasRunning) toggleRun();
 }
 
 /** One frame, while paused: the way to watch a game a frame at a time. */
