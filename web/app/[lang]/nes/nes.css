@@ -150,7 +150,7 @@
 /* The box lays the table out fixed, so the widths go on the first row,
    the heading's; the memory column takes what is left. The widths include
    the cells' own padding. */
-.panel-face .history-list th:first-child { width: 9ch; }
+.panel-face .history-list th:first-child { width: 11ch; }
 .panel-face .history-list th:nth-child(2) { width: 18ch; }
 .panel-face .history-list th:nth-child(n+3):nth-child(-n+7) { width: 6ch; }
 /* The heading stays put while the list scrolls under it. */
