@@ -268,16 +268,16 @@ function Breakpoints({ lang }: { lang: Lang }) {
   const [text, setText] = useState("");
   const addr = /^\$?[0-9a-fA-F]{1,4}$/.test(text.trim()) ? parseInt(text.trim().replace("$", ""), 16) : null;
   return (
-    <div className="chips" data-code-bps={s.breakpoints.length}>
+    <div className="chips code-bps" data-code-bps={s.breakpoints.length}>
       <span className="eyebrow">{T.bpsH}</span>
       {s.breakpoints.length === 0 ? <span className="quiet">{T.bpsNone}</span> : null}
       {s.breakpoints.map((a) => (
         <button key={a} type="button" className="btn btn-ghost" title={T.bpRemove(a)} aria-label={T.bpRemove(a)} onClick={() => toggleBreakpoint(a)} data-code-bp-set={hex4(a)}>
-          ${hex4(a)} \u00d7
+          ${hex4(a)} {"\u00d7"}
         </button>
       ))}
       <form
-        className="chips"
+        className="chips code-bp-form"
         onSubmit={(e) => {
           e.preventDefault();
           if (addr === null) return;

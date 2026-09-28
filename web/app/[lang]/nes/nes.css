@@ -129,7 +129,7 @@
 /* The kit's readout spans its panel; a listing reads left to right. Scoped
    as the kit scopes it, so the override outranks it. */
 .panel-face .code-list { width: 100%; }
-.panel-face .code-list td:first-child, .panel-face .code-list th:first-child { width: 3ch; }
+.panel-face .code-list td:first-child, .panel-face .code-list th:first-child { width: 6ch; text-overflow: clip; }
 .panel-face .code-list td:nth-child(2) { width: 6ch; }
 .panel-face .code-list td:nth-child(3) { width: 10ch; }
 .panel-face .code-list td.num, .panel-face .code-list th { text-align: left; }
@@ -142,6 +142,9 @@
 .code-bp { padding: 0; border: 0; background: none; font: inherit; line-height: 1; cursor: pointer; color: var(--color-glass-muted); }
 .code-bp[aria-pressed="true"] { color: var(--color-burnt); }
 .code-bp:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 1px; }
+.code-bps, .code-bp-form { align-items: center; }
+.code-bp-form { flex-wrap: nowrap; }
+.code-bp-form .input { width: 12ch; }
 .code-blocks { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--u) * 4); }
 .code-blocks li { display: grid; gap: calc(var(--u) * 2); }
 .spr-shelf { display: grid; gap: calc(var(--u) * 2); padding-top: calc(var(--u) * 2); border-top: 1px solid var(--color-rule); }
