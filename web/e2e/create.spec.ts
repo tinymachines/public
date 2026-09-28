@@ -429,27 +429,32 @@ test("the history lists the instructions just run, and a step back puts the mach
   const count = () => h.locator("[data-history-count]").getAttribute("data-history-count").then(Number);
   await expect.poll(count, { timeout: 20_000 }).toBeGreaterThan(100);
   const lit = () => page.locator("[data-win=code] tr[aria-current]").getAttribute("data-code-line");
-  // Steps: each one's instruction joins the history's end.
+  // Steps: the history's last line is the instruction about to run, the
+  // one the code panel lights, after every step and every step back.
   const pcs: (string | null)[] = [];
   for (let i = 0; i < 4; i++) {
     pcs.push(await lit());
     await page.locator("[data-play-op]").click();
     await expect.poll(lit).not.toBe(pcs[pcs.length - 1]);
   }
-  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "5");
+  const p4 = await lit();
+  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "4");
   const newest = () => h.locator("tr[data-history-pc]").last().getAttribute("data-history-pc");
-  await expect.poll(newest).toBe(pcs[3]);
-  // Back, and back again: the machine and the history return with it.
+  await expect.poll(newest).toBe(p4);
+  // Back, and back again: the machine and the history return together.
   const where = () => page.locator("[data-play-pos]").textContent();
   await h.locator("[data-history-back]").click();
   await expect.poll(lit).toBe(pcs[3]);
-  await expect.poll(newest).toBe(pcs[2]);
+  await expect.poll(newest).toBe(pcs[3]);
   await h.locator("[data-history-back]").click();
   await expect.poll(lit).toBe(pcs[2]);
+  await expect.poll(newest).toBe(pcs[2]);
+  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "2");
   const at = await where();
-  // Forward again from there is the same machine as before.
+  // Forward again from there, then back, is the same machine.
   await page.locator("[data-play-op]").click();
   await expect.poll(lit).toBe(pcs[3]);
   await h.locator("[data-history-back]").click();
+  await expect.poll(lit).toBe(pcs[2]);
   await expect.poll(where).toBe(at);
 });

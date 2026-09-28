@@ -803,10 +803,12 @@ export async function step(kind: "half" | "cycle" | "op" | "line") {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
   set({ stoppedAt: null });
   setTicking(true);
-  if (state.history) await markBack();
+  // Where the machine stands goes on the stack once; each step then
+  // leaves the machine after it on top.
+  if (state.history && back.length === 0) await markBack();
   const r = await consoleW.call({ path: "step", kind, pad: padByte(), pad2: pad2Byte() });
-  setTicking(false);
   if (!r.ok) {
+    setTicking(false);
     set({ why: r.error });
     return;
   }
@@ -816,8 +818,11 @@ export async function step(kind: "half" | "cycle" | "op" | "line") {
     latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
     kick();
   }
-  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles, moves: state.moves + 1 });
+  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles });
   if (a.state) publishMachine(parseMachine(a.state), true);
+  if (state.history) await markBack();
+  setTicking(false);
+  set({ moves: state.moves + 1 });
 }
 
 /** The front panel's reset button: the CPU restarts at its vector; RAM and the save keep what they hold. */
@@ -915,10 +920,10 @@ export async function loadMoment(m: MomentMeta) {
 export async function stepFrame() {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
   setTicking(true);
-  if (state.history) await markBack();
+  if (state.history && back.length === 0) await markBack();
   const r = await consoleW.call({ path: "frame", pad: padByte(), pad2: pad2Byte() });
-  setTicking(false);
   if (!r.ok) {
+    setTicking(false);
     set({ why: r.error });
     return;
   }
@@ -929,8 +934,11 @@ export async function stepFrame() {
     kick();
   }
   if (a.sound && a.sound.length > 0 && audio) play(a.sound);
-  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs, moves: state.moves + 1 });
+  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs });
   if (a.state) publishMachine(parseMachine(a.state), true);
+  if (state.history) await markBack();
+  setTicking(false);
+  set({ moves: state.moves + 1 });
 }
 
 function play(samples: Float32Array) {
@@ -1047,9 +1055,13 @@ async function loop() {
 
 // ---------------------------------------------------------------------------
 // History: the console's own trace while it is on (nes-wasm's set_history),
-// read by the History window on the create desk; and steps back, each a
-// moment saved before a step with the place the history ended, so going
-// back puts the machine there and cuts the history to match.
+// read by the History window on the create desk; and steps back. After
+// each step a moment is saved with the place the history ends, so the
+// machine, the history and the code panel's lit line agree (a step stops
+// as the next fetch begins; a moment is saved at that cycle's end, once
+// the fetch is in the history, and the step's mark moves the machine
+// there). The stack's top is the machine as it stands; going back drops
+// it, puts the one under it back, and cuts the history to match.
 // ---------------------------------------------------------------------------
 
 const BACK_KEEP = 64;
@@ -1060,13 +1072,18 @@ function forgetBack() {
   if (state.backDepth) set({ backDepth: 0 });
 }
 
-/** A moment to step back to, taken before a step (the worker is ours: the caller holds the tick). */
+/** The machine as it stands onto the stack (the worker is ours: the caller holds the tick). */
 async function markBack() {
   const r = await consoleW.call({ path: "mark" });
-  if (!r.ok || !r.answer.saved) return;
-  back.push({ saved: r.answer.saved, end: r.answer.end ?? 0, framesRun: state.framesRun, halfCycles: state.halfCycles });
-  if (back.length > BACK_KEEP) back.shift();
-  set({ backDepth: back.length });
+  if (!r.ok) return;
+  const a = r.answer;
+  const saved = a.saved;
+  if (!saved) return;
+  set({ halfCycles: a.halfCycles ?? state.halfCycles });
+  if (a.state) publishMachine(parseMachine(a.state), true);
+  back.push({ saved, end: a.end ?? 0, framesRun: state.framesRun, halfCycles: state.halfCycles });
+  if (back.length > BACK_KEEP + 1) back.shift();
+  set({ backDepth: Math.max(0, back.length - 1) });
 }
 
 export async function setHistory(on: boolean) {
@@ -1090,14 +1107,15 @@ export async function readHistoryBytes(max: number): Promise<Uint8Array | null> 
 
 /** Back one step: the machine as it was before the last step, and the history cut to then. */
 export async function stepBack() {
-  if (!state.loaded || !state.powered || state.running || tickInFlight || !back.length) return;
-  const b = back.pop()!;
+  if (!state.loaded || !state.powered || state.running || tickInFlight || back.length < 2) return;
+  back.pop();
+  const b = back[back.length - 1];
   setTicking(true);
   const r = await consoleW.call({ path: "restore", saved: b.saved.buffer }, [b.saved.buffer]);
   if (r.ok) await consoleW.call({ path: "historyCut", end: b.end });
   setTicking(false);
   if (!r.ok) {
-    set({ why: r.error, backDepth: back.length });
+    set({ why: r.error, backDepth: Math.max(0, back.length - 1) });
     return;
   }
   const a = r.answer;
@@ -1105,7 +1123,7 @@ export async function stepBack() {
     latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
     kick();
   }
-  set({ framesRun: b.framesRun, halfCycles: b.halfCycles, stoppedAt: null, backDepth: back.length, moves: state.moves + 1 });
+  set({ framesRun: b.framesRun, halfCycles: b.halfCycles, stoppedAt: null, backDepth: Math.max(0, back.length - 1), moves: state.moves + 1 });
   if (a.state) publishMachine(parseMachine(a.state), true);
 }
 

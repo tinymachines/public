@@ -424,7 +424,7 @@ test("the create desk's transport: every key in the chip transport's order, the 
   // The strip reads the page's sections after a frame; polled, since a slow
   // load over the network has been seen to arrive before it did.
   await expect.poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())), { message: "the strip is the page's sections" })
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "About this page", "Play"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "History", "About this page", "Play"]);
   expect(r.foot, "the footer on the floor").toBe("fixed");
   // The keys, in the chip transport's order; every one grey before a cartridge.
   expect(r.keys.map((k) => k.word)).toEqual(["power", "reset", "play", "½", "cyc", "op", "line", "frame"]);

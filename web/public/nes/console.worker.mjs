@@ -234,8 +234,10 @@ self.onmessage = async (e) => {
     }
     if (path === "mark") {
       if (!nes || !nes.save_state) throw new Error("this bundle cannot save a moment");
+      // Saving runs the console to the end of the CPU's cycle, so the
+      // machine as it now stands goes back with the moment.
       const saved = nes.save_state();
-      self.postMessage({ id, ok: true, answer: { saved, end: nes.history_end ? nes.history_end() : 0 } }, [saved.buffer]);
+      self.postMessage({ id, ok: true, answer: { saved, end: nes.history_end ? nes.history_end() : 0, halfCycles: nes.cpu_half_cycles(), state: state() } }, [saved.buffer]);
       return;
     }
     if (path === "historyCut") {
