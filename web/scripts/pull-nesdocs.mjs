@@ -270,13 +270,13 @@ fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "p
 // /lab/<name> (next.config.ts maps that to the .html). They are tools,
 // not documents: no entry in DOCS, no Japanese shadow, no link from any
 // nav, index or sitemap, and each carries its own noindex.
-const LAB = [
+const LAB_PAGES = [
   { from: "keydown-page.html", name: "pad-keydown" },
 ];
 const labPages = path.join(ROOT, "web", "public", "lab");
 fs.rmSync(labPages, { recursive: true, force: true });
 fs.mkdirSync(labPages, { recursive: true });
-for (const l of LAB) {
+for (const l of LAB_PAGES) {
   const src = path.join(BENCH, "tools", l.from);
   const body = fs.readFileSync(src, "utf8");
   if (!/<meta name="robots" content="noindex[^"]*">/.test(body)) {
