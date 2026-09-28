@@ -3918,3 +3918,39 @@ Open:
 - The owner said "get the record feature working"; if recording failed
   for them, the browser and what they saw are the next thing to learn.
 - esp32-part-choice still has no Japanese copy.
+
+## The Japanese carried a corrections sweep, and the gate that could not see it
+
+The evening of 2026-09-28. The bench notebook's cc17f04 was a
+corrections commit: the bench as built, the pad proven at 3.3 V, rev L
+of the pad-ble package. It changed no heading count in any of the 23
+pulled documents, so the notebook's own gate reported nothing, and the
+Japanese shadows would have kept saying the bench was unbuilt. What
+caught it here is the digest stamp in `data/ja-docs.json`: the deploy
+that pulled cc17f04 reported 17 drifted, the notebook's 14 plus three
+cart pages the notebook had not known were pulled (their record now
+names them, at bce9bce and b294a09).
+
+Each changed English sentence got its Japanese, 54 edits across the 17
+files, stamped against the pulled English: drift 0 of 78. Live at
+`e8085ef` on the owner's word, rev L served and rev K withdrawn.
+
+Two things worth keeping. A corrections commit is invisible to a
+heading count and visible only to a digest; the stamp is the check that
+earns its place here. And `bun test` in `web/` sweeps the e2e specs up
+and reports 39 failures that are not failures; the deploy's `bun run
+test` runs the library tests alone, 126 green.
+
+## Checkpoint, 2026-09-28 (evening)
+
+Live, main and beta are at `e8085ef`, pushed. The drift check is 0 of
+78; the library tests are green. Nothing is running.
+
+Open:
+- The console's measured speed on the site is 0.83x real time, taken
+  under load; a boarding on a quiet machine gives the true figure.
+- If recording failed for the owner, the browser and what they saw are
+  the next thing to learn.
+- esp32-part-choice still has no Japanese copy.
+- Two older e2e tests flake only in parallel runs at load averages
+  above 20; no reason captured.
