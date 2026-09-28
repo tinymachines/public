@@ -147,9 +147,13 @@
    bottom, the registers in narrow columns, the memory touched last. */
 .panel-face .history-list { width: 100%; }
 .panel-face .history-list th, .panel-face .history-list td.num { text-align: left; }
-.panel-face .history-list td:first-child { width: 6ch; }
-.panel-face .history-list td:nth-child(2) { width: 16ch; }
-.panel-face .history-list td:nth-child(n+3):nth-child(-n+7) { width: 4ch; }
+/* The box lays the table out fixed, so the widths go on the first row,
+   the heading's; the memory column takes what is left. */
+.panel-face .history-list th:first-child { width: 6ch; }
+.panel-face .history-list th:nth-child(2) { width: 15ch; }
+.panel-face .history-list th:nth-child(n+3):nth-child(-n+7) { width: 3.5ch; }
+/* The heading stays put while the list scrolls under it. */
+.panel-face .history-list thead th { position: sticky; top: 0; background: var(--color-panel); z-index: 1; }
 .history-list tbody tr[aria-current] td { color: var(--color-mustard); }
 .history-list td:last-child { color: var(--color-glass-muted); }
 .code-bp-form { flex-wrap: nowrap; }

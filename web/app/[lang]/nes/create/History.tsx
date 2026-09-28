@@ -56,8 +56,19 @@ const S = {
 const hex2 = (n: number) => n.toString(16).toUpperCase().padStart(2, "0");
 const hex4 = (n: number) => n.toString(16).toUpperCase().padStart(4, "0");
 
-function text(st: Step): string {
-  const d = disassemble(st.opcode, st.pc, (a: number) => st.operand[(a - st.pc - 1 + 0x10000) & 0xffff] ?? 0);
+/**
+ * The instruction's text. Its operand is the bytes the CPU read after the
+ * opcode; the newest line is the instruction about to run, whose operand
+ * the CPU has not read yet, so its bytes come from the code panel's own
+ * read of the bus at the program counter (`code`, from `codeAt`).
+ */
+function text(st: Step, code: Uint8Array | null, codeAt: number): string {
+  const d = disassemble(st.opcode, st.pc, (a: number) => {
+    const i = (a - st.pc - 1 + 0x10000) & 0xffff;
+    if (i < st.operand.length) return st.operand[i];
+    if (code && st.pc === codeAt && i + 1 < code.length) return code[i + 1];
+    return 0;
+  });
   return d.text;
 }
 
@@ -84,6 +95,8 @@ export function History({ lang }: { lang: Lang }) {
   }, [steps]);
 
   const shown = steps ? steps.slice(-SHOW) : [];
+  const code = s.machine?.code ?? null;
+  const codeAt = s.machine?.codeAt ?? -1;
   return (
     <section className="wb-page play-section" id="history" data-history={s.history ? "on" : "off"}>
       <h2 className="eyebrow">{T.h}</h2>
@@ -116,7 +129,7 @@ export function History({ lang }: { lang: Lang }) {
                 {shown.map((st, i) => (
                   <tr key={i} data-history-pc={hex4(st.pc)} aria-current={i === shown.length - 1 ? "true" : undefined}>
                     <td className="num">{hex4(st.pc)}</td>
-                    <td>{text(st)}</td>
+                    <td>{text(st, code, codeAt)}</td>
                     {st.regs ? (
                       <>
                         <td className="num">{hex2(st.regs.a)}</td>
