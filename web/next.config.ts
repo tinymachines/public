@@ -69,6 +69,9 @@ const nextConfig: NextConfig = {
     return {
       afterFiles: [
         { source: "/", destination: "/en" },
+        // The lab's unlisted test pages are files in public/lab, pulled from
+        // the bench; /lab/<name> is the address and the .html is the file.
+        { source: "/lab/:page([a-z0-9-]+)", destination: "/lab/:page.html" },
         // /og is a route of its own (the link cards), not a page in a language:
         // it carries the language inside its path, so it is kept out of the
         // prefix the same way /ja is.

@@ -97,6 +97,8 @@ web/public/nes/cal.nes
 # The bench drawing, pulled from ../nes-bench by pull-nesdocs.mjs
 web/public/nes/bench.svg
 web/public/nes/bench/
+# The lab's unlisted test pages, pulled from ../nes-bench/tools by the same script
+web/public/lab/
 
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.

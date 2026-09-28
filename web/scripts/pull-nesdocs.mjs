@@ -263,6 +263,28 @@ if (all.status !== 0) {
 const benchOut = path.join(ROOT, "web", "public", "nes", "bench");
 fs.mkdirSync(benchOut, { recursive: true });
 fs.copyFileSync(path.join(BENCH, "docs", "bench.svg"), path.join(ROOT, "web", "public", "nes", "bench.svg"));
+// The lab: unlisted test pages the bench asks the site to hold, so the
+// owner can open them from anywhere (a phone with the pad on its USB-C
+// port, a browser away from the bench). Each is one self-contained HTML
+// file in the bench's tools/, copied byte for byte and served at
+// /lab/<name> (next.config.ts maps that to the .html). They are tools,
+// not documents: no entry in DOCS, no Japanese shadow, no link from any
+// nav, index or sitemap, and each carries its own noindex.
+const LAB = [
+  { from: "keydown-page.html", name: "pad-keydown" },
+];
+const labPages = path.join(ROOT, "web", "public", "lab");
+fs.rmSync(labPages, { recursive: true, force: true });
+fs.mkdirSync(labPages, { recursive: true });
+for (const l of LAB) {
+  const src = path.join(BENCH, "tools", l.from);
+  const body = fs.readFileSync(src, "utf8");
+  if (!/<meta name="robots" content="noindex[^"]*">/.test(body)) {
+    throw new Error(`lab page ${l.from} carries no noindex: an unlisted page has to say so itself`);
+  }
+  fs.copyFileSync(src, path.join(labPages, `${l.name}.html`));
+  console.log(`pull-nesdocs: lab/${l.name} from tools/${l.from}`);
+}
 // A renamed sheet leaves its old self behind, and a served file nothing
 // points at is a file somebody eventually links to. bench-v1b.svg
 // became two sheets and both copies sat here until this existed.
