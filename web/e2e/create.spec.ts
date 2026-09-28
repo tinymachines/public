@@ -463,3 +463,22 @@ test("the history lists the instructions just run, and a step back puts the mach
   await expect.poll(where).toBe(at);
   await expect(page.locator("[data-play-why]"), "no step back was refused").toHaveCount(0);
 });
+
+test("Record on the strip: from a reading page and from Play, the entry opens the desk on the Record window", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/nes", 500);
+  await page.locator("[data-parts-strip] a", { hasText: /^Record$/ }).click();
+  await expect(page).toHaveURL(/\/nes\/create#record$/);
+  await expect(page.locator("[data-win=record]")).toBeVisible();
+  await expect(page.locator("[data-win=record]")).toHaveAttribute("data-front", "");
+  // From Play, where it sits beside Create after the divider.
+  await open(page, "/nes/play", 500);
+  await page.locator(".wb-strip a", { hasText: /^Record$/ }).click();
+  await expect(page).toHaveURL(/\/nes\/create#record$/);
+  await expect(page.locator("[data-win=record]")).toHaveAttribute("data-front", "");
+  // In Japanese too, by its word.
+  await open(page, "/ja/nes", 500);
+  await page.locator("[data-parts-strip] a", { hasText: /^記録$/ }).click();
+  await expect(page).toHaveURL(/\/ja\/nes\/create#record$/);
+  await expect(page.locator("[data-win=record]")).toBeVisible();
+});
