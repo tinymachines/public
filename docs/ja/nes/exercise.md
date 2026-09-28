@@ -63,7 +63,7 @@
 | 層 | 単語 | 誰が守るか |
 |---|---|---|
 | 配線 | ブリッジの行 `MODE PASS`、`MODE INJECT`、`SET hh`、`AT n hh`、`TRIG n`、`RESET`、`STATUS`、GPIO のレベル、SCPI | UNO のファームウェア、Pi の `pinctrl`、スコープ |
-| ヘッド | UDP JSON 越しの op `status`、`run`、`abort`、`bridge`、`runs`、HTTP 越しの `runs/<stamp>/` | `head/headd.py` |
+| ヘッド | UDP JSON 越しの op `status`、`run`、`abort`、`bridge`、`runs`、そして 2026-09-21 からは `pad`、HTTP 越しの `runs/<stamp>/` | `head/headd.py` |
 | 台本 | `RESET`、`POWER ON`、`POWER OFF`、`MODE`、`SET`、`AT`、`TRIG`、`ARM`、`CAPTURE`、`WAIT` | ヘッドはこれら全部を演奏する。模型のランナーは `SET` と `AT` をラッチ番号で守り、残りは名指しで飛ばす |
 | 模型 | `set_pad`、`run_frames`、`master_half_step`、`cpu_trace`、`Alignment`、ランナー `pad-log`、`trace`、`capture-score`、`split-score`、`run-rom` | `nes-console` |
 | 比較器 | `compare-logs.py`、`b1-score.py`、`split-score.py`、`eyes.py`、`cal.py`、`replay-recorded` | ワークステーション |
@@ -114,7 +114,8 @@ Super Mario Bros. のタイトルだ: `exercise/e2-title.txt`、これが上で�
 流れが走る順で:
 
 - **ヘッドがユニットになった。** Pi の上で `head/setup.sh --bridge /dev/ttyACM0
-  --baud 115200 --scope <ip>`: `nes-bench-head.service`、有効化済み。これは
+  --baud 115200 --scope <ip>` (ブリッジは 2026-09-24 から `/dev/nes-bridge` だ):
+  `nes-bench-head.service`、有効化済み。これは
   `serial-bridge.service` と衝突する (二つが一つのポートを開くと、Linux は二人の
   読み手に何も言わずバイトを分け合わせる) し、止まるときは両方のピンを起動時の
   レベルに戻す。

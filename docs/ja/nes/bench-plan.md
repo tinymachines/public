@@ -137,7 +137,7 @@ M2、ALE に。
 
 ## 部品と、その置き場所
 
-- `firmware/`: ESP32 のスケッチ。USB シリアル越しの行プロトコルで、形は
+- `firmware/`: ブリッジのスケッチ (v1 は ESP32-C6 で `bridge/`、組んだとおりのものは UNO で `bridge-uno/`)。USB シリアル越しの行プロトコルで、形は
   `halfwave` のものと同じ: `MODE PASS` / `MODE INJECT`、`SET hh` (いま保持する
   バイト)、`AT n hh` (ラッチ n から保持するバイト)、`TRIG n`、`RESET` (計数器を
   ゼロに)、そしてラッチごとに 1 行の `L n hh c` の流れ。テキストなので、デーモンと
@@ -177,7 +177,8 @@ M2、ALE に。
   もの (A は x、B は z、Select は右の shift、Start は enter、十字は矢印) なので、
   アダプタを付けた電話は追加のコード無しで `/nes/play` を動かせる。USB に使う
   部品は ESP32-S3 で、手元の C6 は BLE ができる。これは自前のマイルストーンで、
-  ベンチの四つの後。
+  ベンチの四つの後。(組んだとおりのもの: ESP32-P4-Module、USB、3.3 V の純正パッド、
+  2026-09-27 に Linux のホストですべてのキー。`pad-usb-protocol.md`。)
 
 ## 2026-09-08 追加: v1b、UNO のブリッジ、それに合うファームウェア
 
