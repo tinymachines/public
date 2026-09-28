@@ -187,15 +187,31 @@ self.onmessage = async (e) => {
       nes.set_pad(pad & 0xff);
       if (nes.set_pad2) nes.set_pad2((e.data.pad2 ?? 0) & 0xff);
       const t0 = performance.now();
-      nes.run_frames(advanced);
+      // Breakpoints: the run stops as the CPU begins fetching an opcode at
+      // one of them (nes-console's run_frames_until), and says which; the
+      // pictures that completed before it are what advanced.
+      const at = e.data.at && e.data.at.length ? new Uint16Array(e.data.at) : null;
+      let hit = -1;
+      let ran = advanced;
+      if (at) {
+        if (!nes.run_frames_until) throw new Error("this bundle cannot stop at a breakpoint");
+        const before = nes.frames_done();
+        hit = nes.run_frames_until(advanced, at);
+        ran = nes.frames_done() - before;
+      } else {
+        nes.run_frames(advanced);
+      }
       const colour = nes.colour();
       const emphasis = nes.emphasis();
       const parity = nes.parity();
       const sound = nes.sound();
       const consoleMs = performance.now() - t0;
       self.postMessage(
-        { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced, consoleMs, halfCycles: nes.cpu_half_cycles(), state: state() } },
-        [colour.buffer, emphasis.buffer, sound.buffer],
+        // A stop before the console ever completed a picture has none.
+        colour.length
+          ? { id, ok: true, answer: { colour, emphasis, parity, sound, stats, advanced: ran, consoleMs, halfCycles: nes.cpu_half_cycles(), state: state(), hit } }
+          : { id, ok: true, answer: { colour: null, emphasis: null, parity, sound, stats, advanced: ran, consoleMs, halfCycles: nes.cpu_half_cycles(), state: state(), hit } },
+        colour.length ? [colour.buffer, emphasis.buffer, sound.buffer] : [sound.buffer],
       );
       return;
     }

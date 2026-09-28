@@ -83,6 +83,10 @@ export interface PlayState {
   recordingsKept: number;
   /** Counts the moments saved since the page opened, the same way. */
   momentsKept: number;
+  /** The addresses a run stops at, as the CPU begins fetching the opcode there. */
+  breakpoints: number[];
+  /** The breakpoint the last run stopped at, until it runs or steps again. */
+  stoppedAt: number | null;
 }
 
 /** The CPU as the core holds it, from the bundle's ten bytes. */
@@ -154,6 +158,8 @@ interface ConsoleAnswer {
   log?: Uint8Array;
   /** The "record" path's answer when it starts from where the game stands: the console's saved state there. */
   saved?: Uint8Array;
+  /** The "tick" path's answer when a breakpoint stopped the run: its address. */
+  hit?: number;
 }
 interface PaletteAnswer {
   rgb: number[][];
@@ -216,6 +222,8 @@ const INITIAL: PlayState = {
   recording: null,
   recordingsKept: 0,
   momentsKept: 0,
+  breakpoints: [],
+  stoppedAt: null,
 };
 
 let state: PlayState = INITIAL;
@@ -777,6 +785,7 @@ function askPalette() {
  */
 export async function step(kind: "half" | "cycle" | "op" | "line") {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
+  set({ stoppedAt: null });
   setTicking(true);
   const r = await consoleW.call({ path: "step", kind, pad: padByte(), pad2: pad2Byte() });
   setTicking(false);
@@ -976,7 +985,8 @@ async function loop() {
   const now = performance.now();
   const dtNs = lastT === null ? 0 : (now - lastT) * 1e6;
   lastT = now;
-  const r = await consoleW.call({ path: "tick", dtNs, pad: padByte(), pad2: pad2Byte() });
+  const at = state.breakpoints.length ? new Uint16Array(state.breakpoints) : null;
+  const r = await consoleW.call({ path: "tick", dtNs, pad: padByte(), pad2: pad2Byte(), at });
   setTicking(false);
   if (!r.ok) {
     set({ running: false, why: r.error });
@@ -991,8 +1001,27 @@ async function loop() {
   }
   if (a.sound && a.sound.length > 0) play(a.sound);
   set({ stats: a.stats, framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles });
+  if (typeof a.hit === "number" && a.hit >= 0) {
+    // A breakpoint: the console stands in the fetch of the instruction at
+    // it, and the page stands with it, every panel on that instruction.
+    set({ running: false, stoppedAt: a.hit });
+    if (a.state) publishMachine(parseMachine(a.state), true);
+    void saveNow();
+    return;
+  }
   if (a.state) publishMachine(parseMachine(a.state));
   if (state.running) requestAnimationFrame(() => void loop());
+}
+
+/** A breakpoint on or off at `addr`. */
+export function toggleBreakpoint(addr: number) {
+  const a = addr & 0xffff;
+  const has = state.breakpoints.includes(a);
+  set({ breakpoints: has ? state.breakpoints.filter((b) => b !== a) : [...state.breakpoints, a].sort((x, y) => x - y) });
+}
+
+export function clearBreakpoints() {
+  set({ breakpoints: [], stoppedAt: null });
 }
 
 export function toggleRun() {
@@ -1013,7 +1042,7 @@ export function toggleRun() {
   }
   void audio?.resume();
   cursor = 0;
-  set({ running: true, why: null });
+  set({ running: true, why: null, stoppedAt: null });
   lastT = null;
   void loop();
 }

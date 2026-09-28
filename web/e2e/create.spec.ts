@@ -378,3 +378,36 @@ test("a saved moment puts the machine back exactly where it was, and is kept per
   await page.locator("[data-moment-delete]").click();
   await expect(page.locator("[data-moments-empty]")).toHaveCount(1);
 });
+
+test("a breakpoint stops the run as the CPU reaches it, once a frame on the NMI handler, and running on goes past it", async ({ page }) => {
+  test.setTimeout(120_000);
+  // The test cartridge's NMI handler, read off its own vector: NROM, the
+  // PRG after the 16-byte header, its last bytes at $FFFA.
+  const rom = (await import("node:fs")).readFileSync("e2e/fixtures/testcart.nes");
+  const prg = rom[4] * 0x4000;
+  const nmi = rom[16 + prg - 6] | (rom[16 + prg - 5] << 8);
+  const hex = nmi.toString(16).toUpperCase().padStart(4, "0");
+  await openDesk(page);
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  await page.locator("[data-code-bp-input]").fill(`$${hex}`);
+  await page.locator("[data-code-bp-add]").click();
+  await expect(page.locator(`[data-code-bp-set="${hex}"]`)).toHaveCount(1);
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  const stops: number[] = [];
+  for (let i = 0; i < 3; i++) {
+    await page.locator("[data-play-run]").click();
+    await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "false", { timeout: 20_000 });
+    await expect(page.locator("[data-code-stopped]")).toHaveAttribute("data-code-stopped", hex);
+    // The listing is lit on the instruction at the breakpoint.
+    await expect(page.locator("[data-win=code] tr[aria-current]")).toHaveAttribute("data-code-line", hex);
+    stops.push(await framesRun());
+  }
+  expect(stops[1] - stops[0], `${stops}`).toBe(1);
+  expect(stops[2] - stops[1], `${stops}`).toBe(1);
+  // Cleared, the run runs on.
+  await page.locator("[data-code-bp-clear]").click();
+  await page.locator("[data-play-run]").click();
+  await expect.poll(framesRun, { timeout: 20_000 }).toBeGreaterThan(stops[2] + 30);
+  await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "true");
+});

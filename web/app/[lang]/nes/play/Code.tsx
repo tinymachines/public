@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import { snapshot, serverSnapshot, subscribe } from "./playEngine";
+import { clearBreakpoints, snapshot, serverSnapshot, subscribe, toggleBreakpoint } from "./playEngine";
 // The 6502 site's disassembler, the one table of the documented opcodes,
 // served beside the console's modules (lib/console-modules.ts says why).
 import { disassemble } from "../../../../public/6502/games/disasm.js";
@@ -54,7 +54,16 @@ const S = {
     exportMd: "Download the blocks (markdown)",
     exportJson: "Download the blocks (JSON)",
     stays: "Blocks stay in this page. Keeping them on the shelf beside the revisions is the next step; a block from a game you do not own carries its bytes, which are the game's.",
-    cols: ["address", "bytes", "instruction"],
+    cols: ["stop", "address", "bytes", "instruction"],
+    stopped: (a: number) => <>stopped at the breakpoint at <b>${hex4(a)}</b>, the instruction there about to run</>,
+    bpTitle: (a: number) => `Stop here: a run stops as the CPU begins to fetch the instruction at $${hex4(a)}`,
+    bpsH: "Breakpoints",
+    bpsNone: "none set: press a dot in the listing, or add an address",
+    bpAdd: "Add",
+    bpAt: "address, in hex",
+    bpClear: "Clear all",
+    bpRemove: (a: number) => `Remove the breakpoint at $${hex4(a)}`,
+    bpBank: "An address stops the run whichever bank is mapped there.",
   },
   ja: {
     h: "コード",
@@ -76,7 +85,16 @@ const S = {
     exportMd: "ブロックをダウンロード（markdown）",
     exportJson: "ブロックをダウンロード（JSON）",
     stays: "ブロックはこのページに留まる。棚にリビジョンと並べて残すのは次の段階。自分のものでないゲームのブロックは、そのゲームのバイトを含む。",
-    cols: ["アドレス", "バイト", "命令"],
+    cols: ["停止", "アドレス", "バイト", "命令"],
+    stopped: (a: number) => <>ブレークポイント <b>${hex4(a)}</b> で止まった。そこの命令がこれから走る</>,
+    bpTitle: (a: number) => `ここで止める: CPU が $${hex4(a)} の命令を読み始めたところで実行が止まる`,
+    bpsH: "ブレークポイント",
+    bpsNone: "無し: リストの点を押すか、アドレスを足す",
+    bpAdd: "足す",
+    bpAt: "アドレス (16 進)",
+    bpClear: "すべて消す",
+    bpRemove: (a: number) => `$${hex4(a)} のブレークポイントを消す`,
+    bpBank: "アドレスは、そこにどのバンクが載っていても実行を止める。",
   },
 } as const;
 
@@ -181,7 +199,7 @@ export function Code({ lang }: { lang: Lang }) {
         <p className="quiet" data-code-why>{why}</p>
       ) : (
         <>
-          <p className="quiet">{T.from(m!.codeAt)} {T.select}</p>
+          <p className="quiet" data-code-stopped={s.stoppedAt === null ? undefined : hex4(s.stoppedAt)}>{s.stoppedAt !== null ? T.stopped(s.stoppedAt) : T.from(m!.codeAt)} {T.select}</p>
           <div className="panel"><div className="panel-face code-box" ref={box}>
             <table className="readout code-list" data-code-list={hex4(m!.codeAt)}>
               <thead><tr>{T.cols.map((c) => <th key={c}>{c}</th>)}</tr></thead>
@@ -191,6 +209,11 @@ export function Code({ lang }: { lang: Lang }) {
                   const inSel = sel ? l.at >= sel.from && l.at <= sel.to : anchor === l.at;
                   return (
                     <tr key={l.at} aria-current={lit ? "true" : undefined} aria-selected={inSel || undefined} onClick={() => pick(l.at)} data-code-line={hex4(l.at)} className={(lit ? "lit" : "") + (inSel ? " picked" : "")}>
+                      <td>
+                        <button type="button" className="code-bp" aria-pressed={s.breakpoints.includes(l.at)} title={T.bpTitle(l.at)} aria-label={T.bpTitle(l.at)} onClick={(e) => { e.stopPropagation(); toggleBreakpoint(l.at); }} data-code-bp={hex4(l.at)}>
+                          {s.breakpoints.includes(l.at) ? "\u25cf" : "\u25cb"}
+                        </button>
+                      </td>
                       <td className="num">{hex4(l.at)}</td>
                       <td className="num">{l.bytes.map(hex2).join(" ")}</td>
                       <td>{l.text}</td>
@@ -200,6 +223,7 @@ export function Code({ lang }: { lang: Lang }) {
               </tbody>
             </table>
           </div></div>
+          <Breakpoints lang={lang} />
           <div className="chips code-sel">
             <span className="quiet" data-code-selection={sel ? selectedLines.length : 0}>{sel ? T.selected(sel.from, sel.to, selectedLines.length) : T.select}</span>
             <button type="button" className="btn btn-primary" disabled={!sel || selectedLines.length === 0} onClick={capture} data-code-capture>{T.capture}</button>
@@ -234,5 +258,38 @@ export function Code({ lang }: { lang: Lang }) {
       </div>
       <p className="quiet">{T.stays}</p>
     </section>
+  );
+}
+
+/** The breakpoints set, each removable, and a field for any address. */
+function Breakpoints({ lang }: { lang: Lang }) {
+  const T = S[lang];
+  const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  const [text, setText] = useState("");
+  const addr = /^\$?[0-9a-fA-F]{1,4}$/.test(text.trim()) ? parseInt(text.trim().replace("$", ""), 16) : null;
+  return (
+    <div className="chips" data-code-bps={s.breakpoints.length}>
+      <span className="eyebrow">{T.bpsH}</span>
+      {s.breakpoints.length === 0 ? <span className="quiet">{T.bpsNone}</span> : null}
+      {s.breakpoints.map((a) => (
+        <button key={a} type="button" className="btn btn-ghost" title={T.bpRemove(a)} aria-label={T.bpRemove(a)} onClick={() => toggleBreakpoint(a)} data-code-bp-set={hex4(a)}>
+          ${hex4(a)} \u00d7
+        </button>
+      ))}
+      <form
+        className="chips"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (addr === null) return;
+          if (!s.breakpoints.includes(addr)) toggleBreakpoint(addr);
+          setText("");
+        }}
+      >
+        <input className="input" size={6} value={text} placeholder={T.bpAt} aria-label={T.bpAt} onChange={(e) => setText(e.target.value)} data-code-bp-input />
+        <button type="submit" className="btn" disabled={addr === null} data-code-bp-add>{T.bpAdd}</button>
+      </form>
+      {s.breakpoints.length ? <button type="button" className="btn btn-ghost" onClick={clearBreakpoints} data-code-bp-clear>{T.bpClear}</button> : null}
+      <span className="quiet">{T.bpBank}</span>
+    </div>
   );
 }
