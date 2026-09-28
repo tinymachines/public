@@ -3941,10 +3941,32 @@ earns its place here. And `bun test` in `web/` sweeps the e2e specs up
 and reports 39 failures that are not failures; the deploy's `bun run
 test` runs the library tests alone, 126 green.
 
+## The lab: a page the bench can point a phone at
+
+Later the same evening. The owner, away from the bench with the Pi
+headless, needed a page to open from anywhere for the pad adapter's
+next two steps: a browser keydown check, then a phone with the pad on
+its USB-C port. The notebook wrote it (`tools/keydown-page.html`,
+self-contained, its own noindex) and asked this site to serve it
+unlisted.
+
+`/lab/<name>` is that place. The pull copies each lab page byte for
+byte into a generated `public/lab/`, a rewrite makes the name the
+address, and the pull refuses a page that does not say noindex itself.
+A tool, not a document: no docs entry, no Japanese shadow, no heading
+count, no link from any nav, index or sitemap. The spec holds each of
+those from outside and presses X on the page to see the tick. Live at
+`154e57f` on the owner's word, compared against the notebook's file
+with `cmp`.
+
+One round lost to a name: the script already had a `LAB`, the
+notebook's lab directory, and the first beta build said so.
+
 ## Checkpoint, 2026-09-28 (evening)
 
-Live, main and beta are at `e8085ef`, pushed. The drift check is 0 of
-78; the library tests are green. Nothing is running.
+Live, main and beta are at `154e57f`, pushed. The drift check is 0 of
+78; the library tests are green; the lab spec is 4 of 4 on live.
+Nothing is running.
 
 Open:
 - The console's measured speed on the site is 0.83x real time, taken
