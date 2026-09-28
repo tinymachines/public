@@ -2,8 +2,10 @@
  * The flow tools' worker: a recording played back with the trace on, the
  * trace read by the flow crate as it comes, and the report handed back.
  *
- *   main -> here   { id, path: 'analyze', rom, battery, log, prgLen }
- *                  { id, path: 'trace', rom, battery, log, from, to }
+ *   main -> here   { id, path: 'analyze', rom, battery, state, log, prgLen }
+ *                  { id, path: 'trace', rom, battery, state, log, from, to }
+ *                  (state: the saved console a mid-game recording starts
+ *                  from, or absent for power-on)
  *   here -> main   { id, progress: { checked, frames } }   (while it runs)
  *                  { id, ok: true, answer } | { id, ok: false, error }
  *
@@ -34,7 +36,13 @@ self.onmessage = async (e) => {
   try {
     await ready;
     if (!NesReplay) throw new Error("this console bundle cannot replay a recording");
-    const r = new NesReplay(new Uint8Array(e.data.rom), new Uint8Array(e.data.battery ?? new ArrayBuffer(0)), new Uint8Array(e.data.log));
+    // A recording that started mid-game replays from the console's saved
+    // state there; one from power-on from the cartridge and its save.
+    const state = e.data.state ? new Uint8Array(e.data.state) : null;
+    if (state && state.length && !NesReplay.from_state) throw new Error("this console bundle cannot replay a recording that starts mid-game");
+    const r = state && state.length
+      ? NesReplay.from_state(new Uint8Array(e.data.rom), state, new Uint8Array(e.data.log))
+      : new NesReplay(new Uint8Array(e.data.rom), new Uint8Array(e.data.battery ?? new ArrayBuffer(0)), new Uint8Array(e.data.log));
     const frames = r.frames();
     if (path === "analyze") {
       const flow = new FlowTool(e.data.prgLen >>> 0);

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { framesIn, prgLength } from "./flowStore";
+import { framesIn, packRecording, prgLength, unpackRecording, type RecordingMeta } from "./flowStore";
 
 // The flow tools key code by its offset into the PRG, so its length must
 // be the header's, in both header formats; and a recording's length is
@@ -33,5 +33,33 @@ describe("framesIn", () => {
   });
   test("an empty log holds no pictures", () => {
     expect(framesIn(new Uint8Array(0))).toBe(0);
+  });
+});
+
+describe("a recording as one file", () => {
+  const meta: RecordingMeta = { v: 1, id: "r", name: "g.nes", sha256: "a".repeat(64), prgLen: 0x8000, frames: 1, recordedAt: "2026-09-27T00:00:00.000Z", battery: false, patched: false };
+  const log = new Uint8Array(32).fill(3);
+  test("carries the state a mid-game recording starts from", () => {
+    const state = new Uint8Array([9, 8, 7]);
+    const u = unpackRecording(packRecording({ ...meta, fromState: true }, null, log, state));
+    expect([...u.state]).toEqual([9, 8, 7]);
+    expect([...u.log]).toEqual([...log]);
+    expect(u.meta.fromState).toBe(true);
+  });
+  test("a file from before states, ending after the inputs, reads as power-on", () => {
+    const full = packRecording(meta, null, log, null);
+    // The old form is the new one without its last part (a length of 0).
+    const old = full.slice(0, full.length - 4);
+    const u = unpackRecording(old);
+    expect(u.state.length).toBe(0);
+    expect([...u.log]).toEqual([...log]);
+  });
+  test("a mid-game recording without its state is refused", () => {
+    const full = packRecording({ ...meta, fromState: true }, null, log, null);
+    expect(() => unpackRecording(full)).toThrow("no state");
+  });
+  test("a file cut inside a part is refused", () => {
+    const full = packRecording(meta, null, log, new Uint8Array([1, 2, 3]));
+    expect(() => unpackRecording(full.slice(0, full.length - 1))).toThrow("cut short");
   });
 });

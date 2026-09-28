@@ -16,8 +16,10 @@ import * as flow from "./flowEngine";
 const S = {
   en: {
     h: "Record",
-    what: "A recording keeps every button you press and when, from power-on. Played back, it makes the same game again to the dot, and the flow tools read that playback: every instruction the game ran, what it read and wrote, and when.",
+    what: "A recording keeps every button you press and when, from where it starts: right where the game is, or from power-on. Played back, it makes the same game again to the dot, and the flow tools read that playback: every instruction the game ran, what it read and wrote, and when.",
     none: "Load a cartridge to record it.",
+    here: "Record from here",
+    hereTitle: "Records from where the game is now: the whole console is saved at this moment and kept with the recording, and playing it back starts there",
     start: "Record from power-on",
     startTitle: "Starts the cartridge again from power-on (its save goes back first) and records from there",
     stop: "Stop and keep",
@@ -28,6 +30,8 @@ const S = {
     patched: "patched",
     save: "with a save",
     left: "never stopped",
+    mid: "from mid-game",
+    midTitle: "Started where the game stood, from the whole console saved at that moment",
     leftTitle: "The page was left while this was recording; it ends at the last copy kept, a few seconds before",
     read: "Read it",
     readTitle: "Plays the recording back and reads every instruction it ran",
@@ -45,8 +49,10 @@ const S = {
   },
   ja: {
     h: "記録",
-    what: "記録は、電源を入れた時から押したボタンとその時刻をすべて残す。再生すると同じゲームがドット単位でもう一度走り、フローの道具はその再生を読む: ゲームが実行したすべての命令、何を読み何を書いたか、そしていつか。",
+    what: "記録は、始めた所から押したボタンとその時刻をすべて残す。始める所は、ゲームのいまの場面か、電源投入のどちらか。再生すると同じゲームがドット単位でもう一度走り、フローの道具はその再生を読む: ゲームが実行したすべての命令、何を読み何を書いたか、そしていつか。",
     none: "記録するにはカートリッジを読み込む。",
+    here: "ここから記録",
+    hereTitle: "ゲームのいまの場面から記録する: この瞬間のコンソール全体を保存して記録と一緒に残し、再生はそこから始まる",
     start: "電源投入から記録",
     startTitle: "カートリッジを電源投入からやり直し（セーブを先に戻す）、そこから記録する",
     stop: "止めて残す",
@@ -57,6 +63,8 @@ const S = {
     patched: "パッチ済み",
     save: "セーブ付き",
     left: "止めずに離れた",
+    mid: "途中から",
+    midTitle: "ゲームの途中、その瞬間に保存したコンソール全体から始めた記録",
     leftTitle: "記録中にページを離れた。最後に残した写し、数秒前のところで終わっている",
     read: "読む",
     readTitle: "記録を再生し、実行されたすべての命令を読む",
@@ -98,7 +106,8 @@ export function Record({ lang }: { lang: Lang }) {
         </div>
       ) : (
         <div className="chips">
-          <button type="button" className="btn btn-primary" title={T.startTitle} disabled={!!f.busy} onClick={() => void play.startRecording()} data-record-start>{T.start}</button>
+          <button type="button" className="btn btn-primary" title={T.hereTitle} disabled={!!f.busy || !p.powered} onClick={() => void play.startRecording("here")} data-record-here>{T.here}</button>
+          <button type="button" className="btn" title={T.startTitle} disabled={!!f.busy} onClick={() => void play.startRecording("power")} data-record-start>{T.start}</button>
         </div>
       )}
 
@@ -119,6 +128,7 @@ export function Record({ lang }: { lang: Lang }) {
                   {r.patched ? <span className="tag">{T.patched}</span> : null}
                   {r.battery ? <span className="tag">{T.save}</span> : null}
                   {r.left ? <span className="tag" title={T.leftTitle} data-record-left>{T.left}</span> : null}
+                  {r.fromState ? <span className="tag" title={T.midTitle} data-record-mid>{T.mid}</span> : null}
                 </p>
                 {busy ? (
                   <p className="chips">

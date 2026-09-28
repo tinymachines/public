@@ -32,6 +32,8 @@ export interface RecordingMeta {
   patched: boolean;
   /** Kept as it went and never stopped: the page was left while it ran, and it ends at the last copy taken. */
   left?: true;
+  /** Started where the game stood rather than at power-on: the console's saved state there is kept with it (`state.bin`), and a replay starts from it. */
+  fromState?: true;
 }
 
 const EXPORT_MAGIC = "TMNESREC";
@@ -97,7 +99,7 @@ async function keep() {
  * `left` set, and a last time without it when it is stopped; a page closed
  * in between leaves the last copy, which says it was never stopped.
  */
-export async function saveRecording(r: { name: string; rom: Uint8Array; battery: Uint8Array | null; log: Uint8Array; patched: boolean; left?: boolean; over?: RecordingMeta | null }): Promise<RecordingMeta> {
+export async function saveRecording(r: { name: string; rom: Uint8Array; battery: Uint8Array | null; state?: Uint8Array | null; log: Uint8Array; patched: boolean; left?: boolean; over?: RecordingMeta | null }): Promise<RecordingMeta> {
   await keep();
   const sha = r.over?.sha256 ?? (await sha256(r.rom));
   const recordedAt = r.over?.recordedAt ?? new Date().toISOString();
@@ -113,6 +115,7 @@ export async function saveRecording(r: { name: string; rom: Uint8Array; battery:
     battery: !!r.battery && r.battery.length > 0,
     patched: r.patched,
     ...(r.left ? { left: true as const } : {}),
+    ...(r.state && r.state.length ? { fromState: true as const } : {}),
   };
   const roms = await dir(["roms"]);
   if (!(await read(roms, `${sha}.nes`))) await write(roms, `${sha}.nes`, r.rom);
@@ -122,6 +125,7 @@ export async function saveRecording(r: { name: string; rom: Uint8Array; battery:
   // copy behind its log, never one that promises more than the log holds.
   await write(d, "inputs.bin", r.log);
   if (meta.battery && !r.over) await write(d, "battery.bin", r.battery!);
+  if (meta.fromState && !r.over) await write(d, "state.bin", r.state!);
   await write(d, "meta.json", JSON.stringify(meta));
   return meta;
 }
@@ -148,14 +152,16 @@ export async function listRecordings(): Promise<(RecordingMeta & { report: boole
   return out.sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
 }
 
-export async function loadRecording(id: string): Promise<{ meta: RecordingMeta; log: Uint8Array; battery: Uint8Array | null; rom: Uint8Array | null }> {
+export async function loadRecording(id: string): Promise<{ meta: RecordingMeta; log: Uint8Array; battery: Uint8Array | null; state: Uint8Array | null; rom: Uint8Array | null }> {
   const d = await dir(["recordings", id], false);
   const m = await read(d, "meta.json");
   const log = await read(d, "inputs.bin");
   if (!m || !log) throw new Error("the recording is incomplete");
   const meta = JSON.parse(new TextDecoder().decode(m)) as RecordingMeta;
+  const state = await read(d, "state.bin");
+  if (meta.fromState && !state) throw new Error("the recording is incomplete: the state it starts from is missing");
   const rom = await read(await dir(["roms"]), `${meta.sha256}.nes`);
-  return { meta, log, battery: await read(d, "battery.bin"), rom };
+  return { meta, log, battery: await read(d, "battery.bin"), state, rom };
 }
 
 /** Keep an image for a recording that arrived without it; refused unless it is the one recorded on. */
@@ -183,17 +189,29 @@ export async function deleteRecording(id: string) {
   }
 }
 
-/** One file: the magic, then meta, save and inputs, each behind its length. Never the image. */
-export async function exportRecording(id: string): Promise<Blob> {
-  const { meta, log, battery } = await loadRecording(id);
+/**
+ * A recording as one file: the magic, then meta, save, inputs and the
+ * state it starts from (empty for power-on), each behind its length. Never
+ * the image. A file from before states ends after the inputs, and reads
+ * as power-on.
+ */
+export function packRecording(meta: RecordingMeta, battery: Uint8Array | null, log: Uint8Array, state: Uint8Array | null): Uint8Array {
   const m = new TextEncoder().encode(JSON.stringify(meta));
   const b = battery ?? new Uint8Array(0);
+  const st = state ?? new Uint8Array(0);
   const len = (n: number) => new Uint8Array(new Uint32Array([n]).buffer);
-  return new Blob([new TextEncoder().encode(EXPORT_MAGIC), len(m.length), m, len(b.length), b, len(log.length), log].map((p) => p.slice().buffer as ArrayBuffer), { type: "application/octet-stream" });
+  const parts = [new TextEncoder().encode(EXPORT_MAGIC), len(m.length), m, len(b.length), b, len(log.length), log, len(st.length), st];
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.length;
+  }
+  return out;
 }
 
-export async function importRecording(file: File): Promise<RecordingMeta> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
+/** The parts of a packed recording, refused whole if it is not one. */
+export function unpackRecording(bytes: Uint8Array): { meta: RecordingMeta; battery: Uint8Array; log: Uint8Array; state: Uint8Array } {
   if (new TextDecoder().decode(bytes.subarray(0, 8)) !== EXPORT_MAGIC) throw new Error("that file is not a recording");
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let at = 8;
@@ -209,13 +227,31 @@ export async function importRecording(file: File): Promise<RecordingMeta> {
   const meta = JSON.parse(new TextDecoder().decode(part())) as RecordingMeta;
   const battery = part();
   const log = part();
+  // A file from before states ends here; one after carries the state, or
+  // an empty part for power-on.
+  const state = at < bytes.length ? part() : new Uint8Array(0);
   if (meta.v !== 1 || !/^[0-9a-f]{64}$/.test(meta.sha256) || log.length % 16 !== 0) throw new Error("that file is not a recording this page can read");
+  if (meta.fromState && !state.length) throw new Error("the recording starts mid-game and the file has no state to start it from");
+  return { meta, battery, log, state };
+}
+
+export async function exportRecording(id: string): Promise<Blob> {
+  const { meta, log, battery, state } = await loadRecording(id);
+  return new Blob([packRecording(meta, battery, log, state).buffer as ArrayBuffer], { type: "application/octet-stream" });
+}
+
+export async function importRecording(file: File): Promise<RecordingMeta> {
+  const { meta, battery, log, state } = unpackRecording(new Uint8Array(await file.arrayBuffer()));
   await keep();
   const id = meta.id.replace(/[^0-9A-Za-z-]/g, "");
   const d = await dir(["recordings", id]);
   await write(d, "inputs.bin", log);
   if (battery.length) await write(d, "battery.bin", battery);
+  if (state.length) await write(d, "state.bin", state);
+  // What the file holds decides, not what its meta claims.
   const clean: RecordingMeta = { ...meta, id, frames: framesIn(log), battery: battery.length > 0 };
+  if (state.length) clean.fromState = true;
+  else delete clean.fromState;
   await write(d, "meta.json", JSON.stringify(clean));
   return clean;
 }

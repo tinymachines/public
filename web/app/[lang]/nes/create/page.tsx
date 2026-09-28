@@ -49,11 +49,13 @@ const PROSE = {
         The tools are the ones the play page had until they moved here: the screen, the
         cartridge, the CPU, the memory, the palettes, the sprites on screen, the
         code with its captured blocks, and the sprite editor. Two more are this
-        desk&rsquo;s own. Record keeps a run of a game from power-on, and Flow
-        plays it back and reads what the code did: its routines, its loops, the
-        tables it chose through, what followed the pad, and the stretches of the
-        run that looked alike. Breakpoints and saved states are not here yet;
-        they will arrive as windows on this desk.
+        desk&rsquo;s own. Record keeps a run of a game, from right where you are
+        or from power-on, and Flow plays it back and reads what the code did: its
+        routines, its loops, the tables it chose through, what followed the pad,
+        and the stretches of the run that looked alike. A run recorded from where
+        you are starts from the whole console saved at that moment, kept with the
+        recording. Saving and loading a moment on its own, and breakpoints, are
+        not here yet; they will arrive as windows on this desk.
       </>
     ),
     back: "Back to the NES console",
@@ -69,7 +71,7 @@ const PROSE = {
     phone: <>スマートフォンには机が無い: 同じ道具が縦に並び、帯からそれぞれへ飛べる。</>,
     gaps: (
       <>
-        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、取り込んだブロック付きのコード、そしてスプライトのエディタ。この机だけの道具が二つある。「記録」はゲームの一回の走行を電源投入から残し、「フロー」はそれを再生してコードが何をしたかを読む: ルーチン、ループ、選んだテーブル、パッドに続いたもの、そして似ていた区間。ブレークポイントと状態の保存はまだ無い。これらはこの机のウィンドウとして加わる。
+        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、取り込んだブロック付きのコード、そしてスプライトのエディタ。この机だけの道具が二つある。「記録」はゲームの一回の走行を、いまの場面からか電源投入から残し、「フロー」はそれを再生してコードが何をしたかを読む: ルーチン、ループ、選んだテーブル、パッドに続いたもの、そして似ていた区間。いまの場面から記録した走行は、その瞬間に保存したコンソール全体から始まり、その保存は記録と一緒に残る。場面を単独で保存して読み込むことと、ブレークポイントはまだ無い。これらはこの机のウィンドウとして加わる。
       </>
     ),
     back: "NES コンソールへ戻る",

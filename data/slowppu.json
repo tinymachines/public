@@ -1,8 +1,8 @@
 {
   "note": "Written only by scripts/build-playground-wasm.py. The slow chip for /nes/playground: wasm/slowppu built against the 2c02 checkout at this commit, after its native suite passed. The files in web/public/nes/slow/ must hash to these values and are never committed (what the chip was measured from is NC-SA).",
   "repo": "https://github.com/tinymachines/2c02",
-  "commit": "6a7d0c070fb42d33013779cec7931e9680b73546",
-  "built_on": "2026-09-26",
+  "commit": "c9fe9e8bec3bb19a9241a084a194a6df33a71eb9",
+  "built_on": "2026-09-27",
   "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
   "files": {
     "slowppu.js": {
@@ -10,7 +10,7 @@
       "bytes": 10331
     },
     "slowppu_bg.wasm": {
-      "sha256": "c37675962c5c6b7b4ca1df48dc8d0941e5809e252608559ec6e60afefdf2e60a",
+      "sha256": "ac91c42aef5b75fedc715ef85dfeceac455aea27cf06f2cc1dcdd292515bfb9a",
       "bytes": 469353
     },
     "geometry.bin": {

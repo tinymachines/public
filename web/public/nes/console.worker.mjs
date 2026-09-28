@@ -207,6 +207,15 @@ self.onmessage = async (e) => {
     if (path === "record") {
       if (!nes) throw new Error("no cartridge loaded");
       if (!nes.record_start) throw new Error("this bundle cannot record");
+      if (e.data.here) {
+        // From where the game stands: the console runs to the end of the
+        // CPU's cycle, saves its whole state there and logs from there;
+        // the state goes back for the page to keep with the log.
+        if (!nes.record_start_here) throw new Error("this bundle cannot record from the middle of a game");
+        const state = nes.record_start_here();
+        self.postMessage({ id, ok: true, answer: { recording: true, saved: state } }, [state.buffer]);
+        return;
+      }
       if (e.data.soFar) {
         if (!nes.record_so_far) throw new Error("this bundle cannot copy a recording as it goes");
         const log = nes.record_so_far();

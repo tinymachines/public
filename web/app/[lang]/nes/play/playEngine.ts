@@ -150,6 +150,8 @@ interface ConsoleAnswer {
   restored?: boolean;
   /** The "record" path's answer when it stops, and "off"'s when a recording was running: the input log. */
   log?: Uint8Array;
+  /** The "record" path's answer when it starts from where the game stands: the console's saved state there. */
+  saved?: Uint8Array;
 }
 interface PaletteAnswer {
   rgb: number[][];
@@ -621,11 +623,13 @@ export async function reloadWith(image: Uint8Array) {
 
 // ---------------------------------------------------------------------------
 // Recording, for the flow tools on the create desk. A recording is every
-// pad change, reset press and picture from power-on (nes-console's
+// pad change, reset press and picture from where it starts (nes-console's
 // record.rs); the console is deterministic from there, so the recording
-// replays to the same game, and the flow tools read that replay. Starting
-// one power-cycles the cartridge (with its save put back first, as any
-// power-on does); another cartridge, a power cycle, a patch, power off or
+// replays to the same game, and the flow tools read that replay. It
+// starts at power-on (the cartridge starts again, its save put back
+// first, as any power-on does) or where the game stands (the console's
+// whole saved state there is kept with it, nes-console's state.rs, and a
+// replay starts from it); another cartridge, a power cycle, a patch, power off or
 // leaving the page ends it, and it is kept in this browser (lib/flowStore).
 // While it runs, a copy of it so far is kept every KEEP_EVERY_MS and when
 // the page is hidden, so a tab closed mid-recording loses seconds, not
@@ -634,7 +638,7 @@ export async function reloadWith(image: Uint8Array) {
 
 const KEEP_EVERY_MS = 5_000;
 let startingRecording = false;
-type Recording = { name: string; rom: Uint8Array; battery: Uint8Array | null; patched: boolean; kept: RecordingMeta | null; noCopies: boolean };
+type Recording = { name: string; rom: Uint8Array; battery: Uint8Array | null; state: Uint8Array | null; patched: boolean; kept: RecordingMeta | null; noCopies: boolean };
 let recordingOf: Recording | null = null;
 let keepTimer: ReturnType<typeof setInterval> | null = null;
 /** The keepings in order: a copy and the stop that follows it land one after the other, never across. */
@@ -676,8 +680,27 @@ async function keepSoFar() {
   }
 }
 
-export async function startRecording(): Promise<void> {
+/**
+ * Start a recording: from power-on (the cartridge starts again, its save
+ * put back first), or from `here`, where the game stands, which keeps the
+ * console's whole saved state with the log and starts the replay there.
+ */
+export async function startRecording(from: "power" | "here" = "power"): Promise<void> {
   if (!state.loaded || !last || state.recording) return;
+  if (from === "here") {
+    if (!state.powered || !state.rom) return;
+    const r = await consoleW.call({ path: "record", here: true });
+    if (!r.ok || !r.answer.saved) {
+      set({ why: r.ok ? "the console did not answer with its state" : r.error });
+      return;
+    }
+    // The cartridge's RAM is in the state; nothing is put back first.
+    recordingOf = { name: state.loaded, rom: state.rom, battery: null, state: r.answer.saved, patched: state.patched, kept: null, noCopies: false };
+    set({ recording: { startedAt: Date.now(), id: null } });
+    stopKeeping();
+    keepTimer = setInterval(() => void keepSoFar(), KEEP_EVERY_MS);
+    return;
+  }
   const wasRunning = state.running;
   startingRecording = true;
   try {
@@ -698,7 +721,7 @@ export async function startRecording(): Promise<void> {
     set({ why: r.error });
     return;
   }
-  recordingOf = { name: state.loaded, rom: state.rom, battery, patched: state.patched, kept: null, noCopies: false };
+  recordingOf = { name: state.loaded, rom: state.rom, battery, state: null, patched: state.patched, kept: null, noCopies: false };
   set({ recording: { startedAt: Date.now(), id: null } });
   stopKeeping();
   keepTimer = setInterval(() => void keepSoFar(), KEEP_EVERY_MS);

@@ -310,3 +310,36 @@ test("a tab reloaded while recording keeps the copy taken as it went, and the co
   await item.locator("[data-record-delete]").click();
   await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
 });
+
+test("a run recorded from the middle of a game starts from the console saved there, and plays back true", async ({ page }) => {
+  test.setTimeout(150_000);
+  await openDesk(page);
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  // Played a while first, with the pad held: the recording starts here,
+  // not at power-on.
+  await page.locator("[data-play-run]").click();
+  await page.keyboard.down("ArrowLeft");
+  await expect.poll(framesRun, { timeout: 20_000 }).toBeGreaterThan(80);
+  const rec = page.locator("[data-win=record]");
+  await rec.locator("[data-record-here]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "on");
+  // The console was not started again for it.
+  expect(await framesRun()).toBeGreaterThan(80);
+  const frames = () => rec.locator("[data-record-frames]").getAttribute("data-record-frames").then(Number);
+  await expect.poll(frames, { timeout: 20_000 }).toBeGreaterThan(30);
+  await page.keyboard.up("ArrowLeft");
+  await page.keyboard.down("KeyX");
+  await expect.poll(frames, { timeout: 20_000 }).toBeGreaterThan(60);
+  await page.keyboard.up("KeyX");
+  await rec.locator("[data-record-stop]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "off");
+
+  const item = rec.locator("[data-recording-id]").first();
+  await expect(item.locator("[data-record-mid]")).toHaveCount(1);
+  await item.locator("[data-record-read]").click();
+  await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "", { timeout: 60_000 });
+  await expect(page.locator("[data-flow-why]"), "the playback from the saved state matched every picture").toHaveCount(0);
+  await expect(page.locator("[data-win=flow] [data-flow-overview]")).toContainText("instructions");
+});

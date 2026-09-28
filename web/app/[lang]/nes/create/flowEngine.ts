@@ -140,7 +140,8 @@ export async function analyze(id: string) {
   try {
     const r = await inputs(id);
     const bat = r.battery ?? new Uint8Array(0);
-    const a = await playBack(id, "analyze", { rom: r.rom!.buffer, battery: bat.buffer, log: r.log.buffer, prgLen: r.meta.prgLen }, [r.rom!.buffer, bat.buffer, r.log.buffer]);
+    const st = r.state ?? new Uint8Array(0);
+    const a = await playBack(id, "analyze", { rom: r.rom!.buffer, battery: bat.buffer, state: st.buffer, log: r.log.buffer, prgLen: r.meta.prgLen }, [r.rom!.buffer, bat.buffer, st.buffer, r.log.buffer]);
     const report = a.report as string;
     await saveReport(id, report);
     set({ open: { meta: r.meta, report: JSON.parse(report) as Report } });
@@ -219,7 +220,8 @@ export async function saveTrace(id: string, from: number, to: number) {
   try {
     const r = await inputs(id);
     const bat = r.battery ?? new Uint8Array(0);
-    const a = await playBack(id, "trace", { rom: r.rom!.buffer, battery: bat.buffer, log: r.log.buffer, from, to }, [r.rom!.buffer, bat.buffer, r.log.buffer]);
+    const st = r.state ?? new Uint8Array(0);
+    const a = await playBack(id, "trace", { rom: r.rom!.buffer, battery: bat.buffer, state: st.buffer, log: r.log.buffer, from, to }, [r.rom!.buffer, bat.buffer, st.buffer, r.log.buffer]);
     const t = a.trace as Uint8Array;
     download(`${stem(r.meta)}-f${a.from}-${a.to}.trace`, new Blob([t.slice().buffer as ArrayBuffer], { type: "application/octet-stream" }));
   } catch (e) {

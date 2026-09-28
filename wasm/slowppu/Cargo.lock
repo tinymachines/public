@@ -60,24 +60,24 @@ source = "git+https://github.com/tinymachines/nes-bus?tag=v0.1.2#220ebf8913205c4
 
 [[package]]
 name = "nes-bus"
-version = "0.1.7"
-source = "git+https://github.com/tinymachines/nes-bus?tag=v0.1.7#e1167361d6f0e7dc73b9da8befa456353510d37a"
+version = "0.1.8"
+source = "git+https://github.com/tinymachines/nes-bus?tag=v0.1.8#707485ab5c5106d68bd1b69e21438aac071eb8cd"
 
 [[package]]
 name = "ntsc-grid"
 version = "0.1.0"
-source = "git+https://github.com/tinymachines/ntsc-crt?tag=v0.2.17#8cb660e100359e083f0d5da5f4b6685986fc1047"
+source = "git+https://github.com/tinymachines/ntsc-crt?tag=v0.2.18#f91aecb2bdfbf2e65e0d256bb85ecb6cf5082dce"
 dependencies = [
- "nes-bus 0.1.7",
+ "nes-bus 0.1.8",
  "num-rational",
 ]
 
 [[package]]
 name = "ntsc-source-nes"
 version = "0.1.0"
-source = "git+https://github.com/tinymachines/ntsc-crt?tag=v0.2.17#8cb660e100359e083f0d5da5f4b6685986fc1047"
+source = "git+https://github.com/tinymachines/ntsc-crt?tag=v0.2.18#f91aecb2bdfbf2e65e0d256bb85ecb6cf5082dce"
 dependencies = [
- "nes-bus 0.1.7",
+ "nes-bus 0.1.8",
  "ntsc-grid",
  "toml",
 ]
@@ -265,7 +265,7 @@ name = "v2c02-dots"
 version = "0.1.0"
 dependencies = [
  "halfphi",
- "nes-bus 0.1.7",
+ "nes-bus 0.1.8",
  "ntsc-grid",
  "ntsc-source-nes",
  "v2c02-netlist",
@@ -276,7 +276,7 @@ dependencies = [
 name = "v2c02-fast"
 version = "0.1.0"
 dependencies = [
- "nes-bus 0.1.7",
+ "nes-bus 0.1.8",
  "v2c02-dots",
  "v2c02-netlist",
  "v2c02-sim",
@@ -294,7 +294,7 @@ name = "v2c02-sim"
 version = "0.1.0"
 dependencies = [
  "halfphi",
- "nes-bus 0.1.7",
+ "nes-bus 0.1.8",
  "v2c02-netlist",
 ]
 
