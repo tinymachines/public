@@ -1,17 +1,17 @@
 {
   "_": "The engine this site boards: written only by scripts/board-engine.py --board, after the suites below passed on the served commit, in a worktree pinned to it. deploy.sh --check compares the served release, the running service and the worktree against it. See notes/modules.md.",
-  "boarded_at": "2026-09-24T18:54:37+00:00",
+  "boarded_at": "2026-09-28T12:02:26+00:00",
   "rustc": "rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)",
   "served": {
-    "version": "v0.349",
-    "commit": "fd36e779d3cd424f2dfc6a13004830a4ff733cea",
-    "built": "2026-09-24T18:38:07+00:00",
+    "version": "v0.350",
+    "commit": "55e386b79990504373ae6c8e514ed442574dbd13",
+    "built": "2026-09-28T11:29:46+00:00",
     "dirty": true,
     "their_tests": {
-      "ran": "2026-09-24T18:33:52+00:00",
+      "ran": "2026-09-28T11:27:34+00:00",
       "cargo": {
         "command": "cargo test --workspace",
-        "passed": 136,
+        "passed": 137,
         "failed": 0,
         "require_chips": true,
         "require_golden": true,
@@ -23,11 +23,11 @@
       }
     }
   },
-  "running": "fd36e779d3cd424f2dfc6a13004830a4ff733cea",
+  "running": "55e386b79990504373ae6c8e514ed442574dbd13",
   "worktree": {
-    "commit": "fd36e779d3cd424f2dfc6a13004830a4ff733cea",
-    "subject": "The deploy also runs the console repository's self-counts",
-    "committed": "2026-09-21T18:58:31-04:00",
+    "commit": "55e386b79990504373ae6c8e514ed442574dbd13",
+    "subject": "Rung 3's machine value carries the byte read at phi1, so a split read asks the bus once",
+    "committed": "2026-09-27T19:21:38-04:00",
     "dirty": false
   },
   "halfphi": {
@@ -50,10 +50,10 @@
     }
   },
   "halfwave": {
-    "sha256": "fe63c63b53a4ccc035905702c4b7a181c65fac740ee9a89b57cfdfaf8b4c6ecd",
-    "bytes": 719256,
-    "modified": "2026-09-24T18:29:44+00:00",
-    "stated": "fd36e779d3cd424f2dfc6a13004830a4ff733cea"
+    "sha256": "56fac191e9209f53ba323f7c19804d829f32c706e679cd7a84c475819bbc2763",
+    "bytes": 719768,
+    "modified": "2026-09-28T11:25:01+00:00",
+    "stated": "55e386b79990504373ae6c8e514ed442574dbd13"
   },
   "tests": [
     {
@@ -65,7 +65,7 @@
       "passed": 3,
       "failed": 0,
       "skipped": [],
-      "seconds": 18.2,
+      "seconds": 19.9,
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "passed": 39,
       "failed": 0,
       "skipped": [],
-      "seconds": 14.4,
+      "seconds": 13.9,
       "ok": true
     }
   ]
