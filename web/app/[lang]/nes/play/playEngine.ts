@@ -1111,7 +1111,10 @@ export async function stepBack() {
   back.pop();
   const b = back[back.length - 1];
   setTicking(true);
-  const r = await consoleW.call({ path: "restore", saved: b.saved.buffer }, [b.saved.buffer]);
+  // Copied, not handed over: the moment stays on the stack to go back to
+  // again (a handed-over buffer is empty here afterwards, and the second
+  // return to a moment sent nothing).
+  const r = await consoleW.call({ path: "restore", saved: b.saved.slice().buffer });
   if (r.ok) await consoleW.call({ path: "historyCut", end: b.end });
   setTicking(false);
   if (!r.ok) {

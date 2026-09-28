@@ -438,7 +438,8 @@ test("the history lists the instructions just run, and a step back puts the mach
     await expect.poll(lit).not.toBe(pcs[pcs.length - 1]);
   }
   const p4 = await lit();
-  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "4");
+  // The frame step above and the four steps: five to take back.
+  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "5");
   const newest = () => h.locator("tr[data-history-pc]").last().getAttribute("data-history-pc");
   await expect.poll(newest).toBe(p4);
   // Back, and back again: the machine and the history return together.
@@ -449,12 +450,16 @@ test("the history lists the instructions just run, and a step back puts the mach
   await h.locator("[data-history-back]").click();
   await expect.poll(lit).toBe(pcs[2]);
   await expect.poll(newest).toBe(pcs[2]);
-  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "2");
+  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "3");
   const at = await where();
-  // Forward again from there, then back, is the same machine.
+  // Forward again from there, then back, is the same machine. The step's
+  // mark follows the step; a key pressed before it lands is dropped, as
+  // any is while the machine is busy.
   await page.locator("[data-play-op]").click();
   await expect.poll(lit).toBe(pcs[3]);
+  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "4");
   await h.locator("[data-history-back]").click();
   await expect.poll(lit).toBe(pcs[2]);
   await expect.poll(where).toBe(at);
+  await expect(page.locator("[data-play-why]"), "no step back was refused").toHaveCount(0);
 });
