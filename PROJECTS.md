@@ -3968,7 +3968,16 @@ Live, main and beta are at `154e57f`, pushed. The drift check is 0 of
 78; the library tests are green; the lab spec is 4 of 4 on live.
 Nothing is running.
 
+The repository carries its first tag, `v1.0`, at `ff015a4` (the
+checkpoint commit above 154e57f), pushed on the owner's word the same
+night. Every sibling checkout was level with its remote at the tag.
+
 Open:
+- nes-bench 3518702, pushed after the tag: a correction in
+  pad-usb-protocol and open-items recording that a browser saw all
+  eight pad codes through the lab page. No heading count changed, so
+  the two Japanese shadows drift only by digest at the next pull;
+  carry it over by hand as cc17f04 was.
 - The console's measured speed on the site is 0.83x real time, taken
   under load; a boarding on a quiet machine gives the true figure.
 - If recording failed for the owner, the browser and what they saw are
