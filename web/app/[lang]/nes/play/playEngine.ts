@@ -89,6 +89,12 @@ export interface PlayState {
   breakpoints: number[];
   /** The breakpoint the last run stopped at, until it runs or steps again. */
   stoppedAt: number | null;
+  /** Whether the console keeps a history (its trace), which costs it time. */
+  history: boolean;
+  /** Counts the machine's moves while paused, so the history knows to read again. */
+  moves: number;
+  /** How many steps back there are to take. */
+  backDepth: number;
 }
 
 /** The CPU as the core holds it, from the bundle's ten bytes. */
@@ -162,6 +168,9 @@ interface ConsoleAnswer {
   saved?: Uint8Array;
   /** The "tick" path's answer when a breakpoint stopped the run: its address. */
   hit?: number;
+  /** The history's newest records ("historyRead"), and where it ends ("historyRead", "mark"). */
+  bytes?: Uint8Array;
+  end?: number;
 }
 interface PaletteAnswer {
   rgb: number[][];
@@ -227,6 +236,9 @@ const INITIAL: PlayState = {
   momentBusy: false,
   breakpoints: [],
   stoppedAt: null,
+  history: false,
+  moves: 0,
+  backDepth: 0,
 };
 
 let state: PlayState = INITIAL;
@@ -501,7 +513,8 @@ export async function load(file: File, cart: Cart | null = null, base: Uint8Arra
   // what a patch is measured against. The buffer itself goes to the worker.
   const rom = new Uint8Array(bytes).slice();
   const patched = base !== null && !sameBytes(rom, base);
-  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null, rom, base: base ?? rom, patched, cart });
+  forgetBack();
+  set({ running: false, powered: false, framesRun: 0, halfCycles: 0, frames: 0, undecoded: 0, stats: null, consoleMs: null, pipeMs: null, encodeMs: null, fps: null, underruns: 0, why: null, battery: null, rom, base: base ?? rom, patched, cart, history: false });
   latest = null;
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);
@@ -790,6 +803,7 @@ export async function step(kind: "half" | "cycle" | "op" | "line") {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
   set({ stoppedAt: null });
   setTicking(true);
+  if (state.history) await markBack();
   const r = await consoleW.call({ path: "step", kind, pad: padByte(), pad2: pad2Byte() });
   setTicking(false);
   if (!r.ok) {
@@ -802,7 +816,7 @@ export async function step(kind: "half" | "cycle" | "op" | "line") {
     latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
     kick();
   }
-  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles });
+  set({ framesRun: state.framesRun + (a.advanced ?? 0), halfCycles: a.halfCycles ?? state.halfCycles, moves: state.moves + 1 });
   if (a.state) publishMachine(parseMachine(a.state), true);
 }
 
@@ -822,7 +836,8 @@ export async function reset() {
     latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
     kick();
   }
-  set({ halfCycles: a.halfCycles ?? state.halfCycles });
+  forgetBack();
+  set({ halfCycles: a.halfCycles ?? state.halfCycles, moves: state.moves + 1 });
   if (a.state) publishMachine(parseMachine(a.state), true);
   if (wasRunning) toggleRun();
 }
@@ -884,7 +899,8 @@ export async function loadMoment(m: MomentMeta) {
       latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
       kick();
     }
-    set({ framesRun: m.frame, halfCycles: a.halfCycles ?? state.halfCycles, why: null, stoppedAt: null });
+    forgetBack();
+    set({ framesRun: m.frame, halfCycles: a.halfCycles ?? state.halfCycles, why: null, stoppedAt: null, moves: state.moves + 1 });
     if (a.state) publishMachine(parseMachine(a.state), true);
   } catch (e) {
     set({ why: String((e as Error).message ?? e) });
@@ -899,6 +915,7 @@ export async function loadMoment(m: MomentMeta) {
 export async function stepFrame() {
   if (!state.loaded || !state.powered || state.running || tickInFlight) return;
   setTicking(true);
+  if (state.history) await markBack();
   const r = await consoleW.call({ path: "frame", pad: padByte(), pad2: pad2Byte() });
   setTicking(false);
   if (!r.ok) {
@@ -912,7 +929,7 @@ export async function stepFrame() {
     kick();
   }
   if (a.sound && a.sound.length > 0 && audio) play(a.sound);
-  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs });
+  set({ framesRun: state.framesRun + a.advanced, halfCycles: a.halfCycles ?? state.halfCycles, consoleMs: a.consoleMs, moves: state.moves + 1 });
   if (a.state) publishMachine(parseMachine(a.state), true);
 }
 
@@ -1019,13 +1036,77 @@ async function loop() {
   if (typeof a.hit === "number" && a.hit >= 0) {
     // A breakpoint: the console stands in the fetch of the instruction at
     // it, and the page stands with it, every panel on that instruction.
-    set({ running: false, stoppedAt: a.hit });
+    set({ running: false, stoppedAt: a.hit, moves: state.moves + 1 });
     if (a.state) publishMachine(parseMachine(a.state), true);
     void saveNow();
     return;
   }
   if (a.state) publishMachine(parseMachine(a.state));
   if (state.running) requestAnimationFrame(() => void loop());
+}
+
+// ---------------------------------------------------------------------------
+// History: the console's own trace while it is on (nes-wasm's set_history),
+// read by the History window on the create desk; and steps back, each a
+// moment saved before a step with the place the history ended, so going
+// back puts the machine there and cuts the history to match.
+// ---------------------------------------------------------------------------
+
+const BACK_KEEP = 64;
+let back: { saved: Uint8Array; end: number; framesRun: number; halfCycles: number }[] = [];
+
+function forgetBack() {
+  back = [];
+  if (state.backDepth) set({ backDepth: 0 });
+}
+
+/** A moment to step back to, taken before a step (the worker is ours: the caller holds the tick). */
+async function markBack() {
+  const r = await consoleW.call({ path: "mark" });
+  if (!r.ok || !r.answer.saved) return;
+  back.push({ saved: r.answer.saved, end: r.answer.end ?? 0, framesRun: state.framesRun, halfCycles: state.halfCycles });
+  if (back.length > BACK_KEEP) back.shift();
+  set({ backDepth: back.length });
+}
+
+export async function setHistory(on: boolean) {
+  if (!state.loaded || !state.powered) return;
+  const r = await consoleW.call({ path: "history", on });
+  if (!r.ok) {
+    set({ why: r.error });
+    return;
+  }
+  forgetBack();
+  set({ history: on, moves: state.moves + 1 });
+}
+
+/** The history's newest `max` bytes, while paused. */
+export async function readHistoryBytes(max: number): Promise<Uint8Array | null> {
+  if (!state.history || state.running) return null;
+  await waitIdle();
+  const r = await consoleW.call({ path: "historyRead", max });
+  return r.ok && r.answer.bytes ? r.answer.bytes : null;
+}
+
+/** Back one step: the machine as it was before the last step, and the history cut to then. */
+export async function stepBack() {
+  if (!state.loaded || !state.powered || state.running || tickInFlight || !back.length) return;
+  const b = back.pop()!;
+  setTicking(true);
+  const r = await consoleW.call({ path: "restore", saved: b.saved.buffer }, [b.saved.buffer]);
+  if (r.ok) await consoleW.call({ path: "historyCut", end: b.end });
+  setTicking(false);
+  if (!r.ok) {
+    set({ why: r.error, backDepth: back.length });
+    return;
+  }
+  const a = r.answer;
+  if (a.colour && a.emphasis) {
+    latest = { colour: a.colour, emphasis: a.emphasis, parity: a.parity };
+    kick();
+  }
+  set({ framesRun: b.framesRun, halfCycles: b.halfCycles, stoppedAt: null, backDepth: back.length, moves: state.moves + 1 });
+  if (a.state) publishMachine(parseMachine(a.state), true);
 }
 
 /** A breakpoint on or off at `addr`. */
@@ -1042,7 +1123,7 @@ export function clearBreakpoints() {
 export function toggleRun() {
   if (!state.loaded || !state.powered) return;
   if (state.running) {
-    set({ running: false });
+    set({ running: false, moves: state.moves + 1 });
     void saveNow();
     return;
   }
@@ -1057,6 +1138,7 @@ export function toggleRun() {
   }
   void audio?.resume();
   cursor = 0;
+  forgetBack();
   set({ running: true, why: null, stoppedAt: null });
   lastT = null;
   void loop();

@@ -215,6 +215,34 @@ self.onmessage = async (e) => {
       );
       return;
     }
+    // The history (nes-wasm's set_history): the console's own trace, kept
+    // while asked for. `mark` saves a moment with the place the history
+    // ends, which is what stepping back returns to; `historyCut` puts the
+    // end back there.
+    if (path === "history") {
+      if (!nes) throw new Error("no cartridge loaded");
+      if (!nes.set_history) throw new Error("this bundle keeps no history");
+      nes.set_history(!!e.data.on);
+      self.postMessage({ id, ok: true, answer: { on: !!e.data.on } });
+      return;
+    }
+    if (path === "historyRead") {
+      if (!nes || !nes.history) throw new Error("this bundle keeps no history");
+      const bytes = nes.history(e.data.max >>> 0);
+      self.postMessage({ id, ok: true, answer: { bytes, end: nes.history_end() } }, [bytes.buffer]);
+      return;
+    }
+    if (path === "mark") {
+      if (!nes || !nes.save_state) throw new Error("this bundle cannot save a moment");
+      const saved = nes.save_state();
+      self.postMessage({ id, ok: true, answer: { saved, end: nes.history_end ? nes.history_end() : 0 } }, [saved.buffer]);
+      return;
+    }
+    if (path === "historyCut") {
+      if (nes && nes.history_cut) nes.history_cut(e.data.end);
+      self.postMessage({ id, ok: true, answer: {} });
+      return;
+    }
     // A moment: the whole console saved where the CPU's cycle ends
     // (nes-console's state.rs), and put back. A load answers as a step
     // does, with the picture the moment holds.

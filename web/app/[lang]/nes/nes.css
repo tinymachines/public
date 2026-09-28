@@ -143,6 +143,15 @@
 .code-bp[aria-pressed="true"] { color: var(--color-burnt); }
 .code-bp:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 1px; }
 .code-bps, .code-bp-form { align-items: center; }
+/* The History window's listing (create/History.tsx): newest at the
+   bottom, the registers in narrow columns, the memory touched last. */
+.panel-face .history-list { width: 100%; }
+.panel-face .history-list th, .panel-face .history-list td.num { text-align: left; }
+.panel-face .history-list td:first-child { width: 6ch; }
+.panel-face .history-list td:nth-child(2) { width: 16ch; }
+.panel-face .history-list td:nth-child(n+3):nth-child(-n+7) { width: 4ch; }
+.history-list tbody tr[aria-current] td { color: var(--color-mustard); }
+.history-list td:last-child { color: var(--color-glass-muted); }
 .code-bp-form { flex-wrap: nowrap; }
 .code-bp-form .input { width: 12ch; }
 .code-blocks { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--u) * 4); }

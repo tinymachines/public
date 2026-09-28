@@ -31,7 +31,7 @@ async function openDesk(page: Page) {
 test("the desk: a key for every window named by its own heading, the console's five and Record open, all inside the desk, the page not scrolling", async ({ page }) => {
   await openDesk(page);
   const keys = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.map((b) => (b.textContent ?? "").trim()));
-  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "About this page"]);
+  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "History", "About this page"]);
   const shown = await page.locator("[data-win]").evaluateAll((ws) => ws.filter((w) => (w as HTMLElement).offsetParent !== null).map((w) => (w as HTMLElement).dataset.win));
   expect(shown).toEqual(OPEN);
   const pressed = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => (b as HTMLElement).dataset.deskTab));
@@ -173,7 +173,7 @@ test("on a phone the windows stand one under another under the section strip, wi
   expect(await page.locator("[data-win-bar]").evaluateAll((bs) => bs.filter((b) => (b as HTMLElement).offsetParent !== null).length)).toBe(0);
   await expect
     .poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())))
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "About this page", "Play"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "History", "About this page", "Play"]);
   // Every window shows, the closed-by-default ones too, in page order.
   const tops = await page.locator("[data-win]").evaluateAll((ws) => ws.map((w) => w.getBoundingClientRect().top));
   expect(tops.every((t, i) => i === 0 || t > tops[i - 1])).toBe(true);
@@ -414,4 +414,42 @@ test("a breakpoint stops the run as the CPU reaches it, once a frame on the NMI 
   await page.locator("[data-play-run]").click();
   await expect.poll(framesRun, { timeout: 20_000 }).toBeGreaterThan(stops[2] + 30);
   await expect(page.locator("[data-play-run]")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the history lists the instructions just run, and a step back puts the machine where it was before the step", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openDesk(page);
+  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  await page.locator("[data-desk-tab=history]").click();
+  const h = page.locator("[data-win=history]");
+  await h.locator("[data-history-toggle]").click();
+  await expect(h.locator("[data-history]")).toHaveAttribute("data-history", "on");
+  await page.locator("[data-play-frame]").click();
+  const count = () => h.locator("[data-history-count]").getAttribute("data-history-count").then(Number);
+  await expect.poll(count, { timeout: 20_000 }).toBeGreaterThan(100);
+  const lit = () => page.locator("[data-win=code] tr[aria-current]").getAttribute("data-code-line");
+  // Steps: each one's instruction joins the history's end.
+  const pcs: (string | null)[] = [];
+  for (let i = 0; i < 4; i++) {
+    pcs.push(await lit());
+    await page.locator("[data-play-op]").click();
+    await expect.poll(lit).not.toBe(pcs[pcs.length - 1]);
+  }
+  await expect(h.locator("[data-history-back]")).toHaveAttribute("data-history-back", "5");
+  const newest = () => h.locator("tr[data-history-pc]").last().getAttribute("data-history-pc");
+  await expect.poll(newest).toBe(pcs[3]);
+  // Back, and back again: the machine and the history return with it.
+  const where = () => page.locator("[data-play-pos]").textContent();
+  await h.locator("[data-history-back]").click();
+  await expect.poll(lit).toBe(pcs[3]);
+  await expect.poll(newest).toBe(pcs[2]);
+  await h.locator("[data-history-back]").click();
+  await expect.poll(lit).toBe(pcs[2]);
+  const at = await where();
+  // Forward again from there is the same machine as before.
+  await page.locator("[data-play-op]").click();
+  await expect.poll(lit).toBe(pcs[3]);
+  await h.locator("[data-history-back]").click();
+  await expect.poll(where).toBe(at);
 });

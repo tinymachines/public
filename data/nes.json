@@ -35,10 +35,10 @@
       "visible_dots": 62160,
       "frame_period_ms": "16.639",
       "frames_timed": 200,
-      "mean_ms": "1.310",
-      "mean_inside_x": "12.7",
-      "worst_ms": "1.944",
-      "worst_inside_x": "8.6",
+      "mean_ms": "1.659",
+      "mean_inside_x": "10.0",
+      "worst_ms": "2.132",
+      "worst_inside_x": "7.8",
       "sprite_dots": 61440,
       "hit_line": 92,
       "hit_pixel": 183,
@@ -72,8 +72,8 @@
   },
   "console": {
     "repo": "https://github.com/tinymachines/nes",
-    "commit": "8100cc264991cc35c8d405a34efab9be67f6f397",
-    "tests_green": 84,
+    "commit": "595dcf62bc04b5bfd061aec8e985929caf606d3e",
+    "tests_green": 85,
     "pin_6502": "3805107",
     "alignment": {
       "cpu_phase": 4,
@@ -317,14 +317,14 @@
           "worst": 4.77e-07,
           "mean": 1.24e-08,
           "components": 1658880,
-          "ms_per_frame": "1.05"
+          "ms_per_frame": "0.72"
         },
         "mask_and_geometry_on": {
           "adapter": "NVIDIA GeForce RTX 3070",
           "worst": 2.83e-05,
           "mean": 1.89e-07,
           "components": 1658880,
-          "ms_per_frame": "1.15"
+          "ms_per_frame": "0.76"
         }
       },
       "gpu_tolerance": {
@@ -353,9 +353,9 @@
       },
       "wasm": {
         "frames": 300,
-        "seconds": "5.90",
-        "frames_per_s": "50.9",
-        "real_time_x": "0.85",
+        "seconds": "6.03",
+        "frames_per_s": "49.7",
+        "real_time_x": "0.83",
         "sound_per_frame": "798.7",
         "rom": "full_palette.nes"
       }
@@ -373,17 +373,17 @@
     },
     "wasm_bundle": {
       "note": "Built by scripts/board-nes.py --wasm at the boarded nes commit; the files in web/public/nes/wasm/ must hash to these values and are never committed (the chip tables inside are derived from NC-SA die data).",
-      "commit": "8100cc264991cc35c8d405a34efab9be67f6f397",
+      "commit": "595dcf62bc04b5bfd061aec8e985929caf606d3e",
       "built_on": "2026-09-28",
       "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
       "files": {
         "nes_wasm.js": {
-          "sha256": "20f54160c2a4af83d6cece7388b488dd21eca2c03e15be80c963b194bff0bfcd",
-          "bytes": 17864
+          "sha256": "551937f2dfc6943cb3dfe4b79e531cad6130afeed0be9f340343687678e92664",
+          "bytes": 18543
         },
         "nes_wasm_bg.wasm": {
-          "sha256": "74536ef30ff4b09c3e6af4bae082c56b302d721ba2c6cd0a232e409f86d1222e",
-          "bytes": 460153
+          "sha256": "a79fab4fde10abe9678ca2cfe1c8cb7f1738f2eecd24b782d46d55dabbf1dc8e",
+          "bytes": 461280
         }
       }
     }

@@ -9,6 +9,7 @@ import { Code } from "../play/Code";
 import { Sprites } from "../play/Sprites";
 import { Record } from "./Record";
 import { Flow } from "./Flow";
+import { History } from "./History";
 import * as flow from "./flowEngine";
 
 /**
@@ -33,6 +34,7 @@ const WINS: WinSpec[] = [
   // Flow opens over the screen and the code, beside Record rather than on it.
   { id: "record", at: [0.68, 0.7, 0.32, 0.3] },
   { id: "flow", at: [0, 0, 0.68, 1], open: false },
+  { id: "history", at: [0.36, 0.04, 0.5, 0.92], open: false },
   { id: "about", at: [0.3, 0.16, 0.4, 0.6], open: false },
 ];
 
@@ -95,6 +97,7 @@ function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
       <Window id="readouts"><Readouts lang={lang} /></Window>
       <Window id="record"><Record lang={lang} /></Window>
       <Window id="flow"><Flow lang={lang} /></Window>
+      <Window id="history"><History lang={lang} /></Window>
       <Window id="about">{about}</Window>
     </>
   );
