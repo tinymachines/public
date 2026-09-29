@@ -4264,8 +4264,9 @@ shape from the load waits.
 
 ## Checkpoint, 2026-09-29, evening
 
-On beta, not deployed: main and origin at the commit after `933000f`
-(a spec assertion), beta at `933000f`, live at `aaa502f` (1.0.267).
+Deployed on the owner's word as the eleventh deploy since the tag:
+live, main, origin and beta level at `6ad6920`, 1.0.267 (clean tree);
+library tests 130, API tests 158, project tools 16.
 
 - `128099b` and `698fda0`: the cartridge line says what this browser
   already keeps for the game, on both pages: moments and recordings
