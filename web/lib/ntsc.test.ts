@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { nes } from "./nes";
 import { ntsc } from "./ntsc";
 
 /**
@@ -40,6 +41,18 @@ describe("the boarded ntsc record", () => {
     expect(r.wasm_fps.notch).toBeGreaterThan(0);
     expect(r.wasm_fps.comb3).toBeGreaterThan(0);
     expect(r.wasm_fps.stamp.length).toBeGreaterThan(10);
+  });
+
+  test("the shipped bundle is the release the console pins", () => {
+    // The console (nes-console's Cargo.toml, read into data/nes.json by
+    // board-nes.py) pins ntsc-crt by tag, and the browser runs the bundle
+    // recorded here: the console worker paces with its Pipeline and the
+    // picture worker encodes and decodes with it. On 2026-09-29 the served
+    // bundle was six tags behind the pin and nothing said so; this does.
+    const pin = nes().console.picture.ntsc_crt;
+    expect(pin).toMatch(/^v\d+\.\d+\.\d+$/);
+    expect(r.bundle).toBeDefined();
+    expect(r.bundle!.tags, `the served bundle is ${r.bundle!.tags.join(", ")} and the console pins ${pin}; re-board ntsc-crt at the pin`).toContain(pin);
   });
 
   test("the shipped bundle is byte for byte the boarded one", async () => {
