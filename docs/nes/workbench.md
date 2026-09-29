@@ -141,13 +141,17 @@ Three things this drawing makes visible:
   the host by `board-nes.py` and gitignored. The signal path's bundle
   embeds no chip data and is committed. The flow analyser in `wasm/flow`
   is ours, MIT, and reads only a trace.
-- **The picture bundle is behind the console's pin.** The console pins
-  `ntsc-crt` at tag v0.2.18; the site serves the signal path's bundle
-  boarded at 35b01e4, which is v0.2.12 (`data/ntsc.json`, `bundle`). The
-  build check holds the console bundle to its record and, as far as a
-  search found, not the signal path's.
-- **The API knows cartridges, saves and revisions, and nothing else.**
-  Moments, recordings, reports and code blocks never reach the server.
+- **The picture bundle is held to the console's pin.** The console pins
+  `ntsc-crt` by tag (v0.2.18 at the time of writing), and the site serves
+  the signal path's bundle boarded at that tag (`data/ntsc.json`,
+  `bundle`). Two library tests in the deploy's first stage hold it there:
+  one refuses a served bundle whose tag is not the console's pin, the
+  other holds the served files to the record's digests. Until 2026-09-29
+  the served bundle was six tags behind the pin and nothing said so.
+- **The API knows cartridges, saves, revisions and code blocks, and
+  nothing else.** Moments, recordings and reports never reach the server.
+  A code block does only for a cartridge from the shelf, and only to
+  that shelf, where the game already is.
 
 ### What each repository gives the page
 
@@ -167,7 +171,7 @@ Three things this drawing makes visible:
 ## The desk itself
 
 ```mermaid
-%% The create desk: its thirteen windows, six open from the start and seven in the tray, and the floor transport, all reading one engine; the flow engine beside it; the three workers under them; and the three places anything is kept.
+%% The create desk: its fourteen windows, six open from the start and eight in the tray, and the floor transport, all reading one engine; the flow engine beside it; the three workers under them; and the three places anything is kept.
 flowchart TB
   subgraph desk["/nes/create, Desk.tsx (layout in localStorage tm.nes.create.desk)"]
     direction TB
@@ -184,7 +188,8 @@ flowchart TB
       direction LR
       pal["Palettes"]
       oam["OAM<br/>a tile opens Sprites"]
-      spr["Sprites<br/>CHR sheet, edit, apply,<br/>IPS, revisions"]
+      nt["Nametables<br/>the two tables the chip holds,<br/>drawn with the game's tiles"]
+      spr["Sprites<br/>CHR sheet, edit, apply,<br/>IPS, revisions, rename"]
       read["Readouts<br/>performance only"]
       flow["Flow<br/>the report's views,<br/>save trace, download report"]
       hist["History<br/>trace on/off, step back"]
@@ -197,7 +202,7 @@ flowchart TB
   engine["playEngine.ts<br/>snapshot + verbs"]
   fe["flowEngine.ts<br/>list, analyze, open,<br/>import, export, remove"]
 
-  screen & cart & code & cpu & mem & pal & oam & spr & read & hist & transport --> engine
+  screen & cart & code & cpu & mem & pal & oam & nt & spr & read & hist & transport --> engine
   rec --> engine
   rec --> fe
   flow --> fe
@@ -218,6 +223,7 @@ flowchart TB
   fe <-->|"recordings, reports, game copies"| opfs
   engine <-->|"battery save"| shelf
   spr <-->|"revisions (IPS)"| shelf
+  code <-->|"blocks"| shelf
   cart <-->|"list, fetch"| shelf
   screen <-->|"pad placement"| ls
 ```
@@ -255,7 +261,7 @@ and a new canvas would stop the console.
 
 | open from the start | in the tray until asked for |
 |---|---|
-| Screen (top left), Cartridge (under it), Code (the middle column), CPU and Memory (top right), Record (bottom right) | Palettes, OAM, Sprites, Readouts, Flow (which opens over the screen and the code when a report arrives), History, About |
+| Screen (top left), Cartridge (under it), Code (the middle column), CPU and Memory (top right), Record (bottom right) | Palettes, OAM, Nametables, Sprites, Readouts, Flow (which opens over the screen and the code when a report arrives), History, About |
 
 Record is open from the start so the way into the flow tools is on the
 desk rather than in the tray (owner's call, 2026-09-27).
@@ -271,9 +277,10 @@ fields; the worker paths behind each verb are in the next section.
 | **Screen** | the picture worker's bitmaps, painted by the engine into the canvas | `attach`, `detach`; the Gamepad's `setTouchPad(bits)`; keys handled in the engine | pad placement per orientation and haptics, localStorage `tm.nes.pad*` | the Gamepad shows only when the desk stacks (a phone); an off-screen input holds focus so a phone hands over the arrows |
 | **Cartridge** | `loaded`, `powered`, `running`, `battery`, `why` | `load(file, cart?)` from disk or the shelf; `toggleRun` | battery RAM to the shelf on a timer, on pause, on hide, and before another load; restored on load | contains **Moments** |
 | **Moments** (inside Cartridge) | the game's SHA-256, `momentsKept` | `saveMoment`, `loadMoment`, `deleteMoment` | the file store, `flow/moments/<sha>/<id>.bin` with a `.json` | a moment is the whole console (nes-console `state.rs`) with its frame count; Load is disabled while recording |
-| **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart.sha256`; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block | breakpoints: engine memory, sent with every tick; blocks: React state, exported as markdown or JSON downloads | **blocks are lost on leaving the page**; the window says the shelf is the next step |
+| **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart`; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block, its label and note | breakpoints: engine memory, sent with every tick; blocks: the shelf for a cartridge from there (kept as captured, the words as the field is left), the page otherwise; exported as markdown or JSON downloads | a block from the shelf comes back with the cartridge; a block of a cartridge from the disk leaves with the page, and the window says so |
 | **CPU, Memory, Palettes, OAM** (one component, `State.tsx`) | `machine` (published every 200 ms while running), `palette` (the measured colours) | Memory: `watch(page)`; OAM: a tile button hands its tile to Sprites | none | four windows, one reader |
-| **Sprites** | `base` (the parsed iNES image), `rom`, `patched`, `palette`, `machine.palette` (live), `cart` | Apply (`reloadWith(image)`), Revert, download `.ips` or `.patched.nes`; Keep a revision, load one, delete one | edits: a Map in memory; revisions: the shelf, as IPS with a message | the only window that changes bytes |
+| **Nametables** | the nametable RAM and the console's CHR-RAM, asked of the worker (`nametables`) each time the machine is published while the window is on view; `ppu.ctrl` for the pattern table, palette RAM and the measured colours, `rom` for the file's tiles and the header's mirroring | nothing | none | draws the two tables as the chip holds them; on a board that banks its CHR it reads the tile numbers and refuses to draw the tiles, and says so |
+| **Sprites** | `base` (the parsed iNES image), `rom`, `patched`, `palette`, `machine.palette` (live), `cart` | Apply (`reloadWith(image)`), Revert, download `.ips` or `.patched.nes`; Keep a revision, rename one, load one, delete one | edits: a Map in memory; revisions: the shelf, as IPS with a message | the only window that changes bytes |
 | **Readouts** | frames, undecoded, per-frame costs, path, agreement, fps, drift, underruns, battery | nothing | none | read only |
 | **Record** | play: `loaded`, `recording`, `powered`, `framesRun`, `recordingsKept`; flow: `list`, `busy`, `open`, `why` | `startRecording("here" or "power")`, `stopRecording`; per recording: `analyze` (Read), `open`, `exportOne` (`.nesrec`), `remove`, `cancel`, `giveRom`, `importOne` | recordings in the file store; a copy every 5 s while recording and on hide | the way into the flow tools; open on the desk from the start |
 | **Flow** | `flow.snapshot().open` (the recording's meta and its parsed report) | the view (overview, modes, routines, loops, tables, pad, vars, raw); `saveTrace(from, to)` as `.trace`; `downloadReport` as `.flow.json` | nothing new; the report is already in the file store | brought forward when a report opens |
@@ -300,8 +307,20 @@ at the PC. Breakpoints live in the engine and travel with every tick, so
 the console stops on them without asking the page. A block is a run of
 the listing the reader selected, labelled and noted; it carries the
 cartridge's digest, the range, the bytes and the text, so it can leave as
-the encyclopedia's own shape or as JSON. It lives in the window's React
-state and nowhere else.
+the encyclopedia's own shape or as JSON. For a cartridge from the shelf
+it is kept there beside the revisions, the bytes with it, and comes back
+when the cartridge is loaded from the shelf again; for a cartridge from
+the disk it lives in the window's state and leaves with the page.
+
+**Nametables** is the picture chip's own two kilobytes of nametable RAM,
+drawn as the two tables the chip holds, with the game's tiles from the
+pattern table the control register names and the four background
+palettes. The board's mirroring decides which PPU addresses land on
+which table: the header says it for a board whose mirroring is soldered,
+and the window says so when the board switches it instead. On a board
+that banks its picture ROM the console does not yet say which bank the
+chip sees, so the window reads the tile numbers and does not draw the
+tiles, rather than drawing the file's first bank as if it were on the bus.
 
 **Sprites** is the one window that changes bytes. An edit is a tile's
 sixteen new bytes against the base image. The set can go into the console
@@ -331,7 +350,7 @@ and the WebAssembly behind it (nes-wasm's `Nes`):
 | `save`, `restore` | `saveMoment`, `loadMoment`, `stepBack` | `save_state`, `load_state` | Moments, History |
 | `record` (here, soFar, on, off) | `startRecording`, `keepSoFar`, `stopRecording`, `detach` | `record_start_here`, `record_so_far`, `record_start`, `record_stop` | Record |
 | `history`, `historyRead`, `mark`, `historyCut` | `setHistory`, `readHistoryBytes`, `markBack`, `stepBack` | `set_history`, `history`, `history_end`, `save_state`, `history_cut` | History |
-| `ciram` | **nobody** | `ciram`, `chr_ram` | a nametable or CHR-RAM view has its export waiting |
+| `ciram` | `nametables` | `ciram`, `chr_ram` | Nametables |
 
 One tick is in flight at a time, so the time each display callback
 reports is the true cost of the one before; the drift policy that decides
@@ -432,29 +451,33 @@ loads that state first (`NesReplay.from_state`) and then applies the log.
 ## The shelf
 
 ```mermaid
-%% The cartridge shelf: four callers in the browser, one API behind a GitHub sign-in, and the files and rows it keeps on the server.
+%% The cartridge shelf: five callers in the browser, one API behind a GitHub sign-in, and the files and rows it keeps on the server.
 flowchart LR
   subgraph browser
     picker["ShelfPicker<br/>listShelf, fetchCart (SHA checked)"]
     eng["playEngine<br/>getSave, putSave"]
-    spr["Sprites<br/>listRevisions, addRevision,<br/>fetchRevision, deleteRevision"]
+    spr["Sprites<br/>listRevisions, addRevision,<br/>fetchRevision, patchRevision,<br/>deleteRevision"]
+    code["Code<br/>listBlocks, addBlock,<br/>patchBlock, deleteBlock"]
     mgr["/nes/shelf Manager<br/>addCart, addRaw, patchCart,<br/>deleteCart, deleteSave"]
   end
   api["api/carts.py<br/>/api/v1/me/carts<br/>require_user (GitHub OAuth, tm_session)"]
   disk[("$STATE/carts/user/<br/>sha.nes  sha.sav  sha.rN.ips<br/>0600 in 0700")]
-  db[("SQLite carts")]
-  picker & eng & spr & mgr <--> api
+  db[("SQLite carts, cart_revisions,<br/>cart_blocks (the bytes in the row)")]
+  picker & eng & spr & code & mgr <--> api
   api <--> disk
   api <--> db
 ```
 
 The limits are the API's, read from its constants and its environment: a
 name of 80 characters and a note of 240; a battery save of 32 KiB; 16
-revisions per cartridge; a cartridge of 4 MiB plus its header and
-trainer; and 32 places per account, which an admin resizes and zero
-closes. A revision is an IPS patch against the base image; the patched
-image is built on request and never stored. The window event
-`tm:shelf-changed` refreshes every picker after a write.
+revisions per cartridge; 64 code blocks per cartridge, each 4 KiB at
+most; a cartridge of 4 MiB plus its header and trainer; and 32 places
+per account, which an admin resizes and zero closes. A revision is an
+IPS patch against the base image; the patched image is built on request
+and never stored. A block is its range, the bytes that were on the bus
+and two strings; its listing is disassembled from the bytes wherever it
+is shown and never stored. The window event `tm:shelf-changed` refreshes
+every picker after a write.
 
 ## What is kept where, and what survives
 
@@ -462,15 +485,15 @@ image is built on request and never stored. The window event
 |---|---|---|---|---|---|
 | the browser's private file store | recordings and their reports, one copy of each game, moments | recording id; the game's SHA-256 | yes | yes | no: this browser only, and clearing site data removes it |
 | localStorage | the desk's layout, the touch pad's placement and haptics | fixed keys | yes | yes | no |
-| the shelf, signed in with GitHub | cartridges, one battery save per cartridge, sprite revisions as IPS | the account and the cartridge id | yes | yes | yes, signed in |
-| memory | code blocks, breakpoints, the history trace, the 64 step-back marks | nothing | no | no | no |
+| the shelf, signed in with GitHub | cartridges, one battery save per cartridge, sprite revisions as IPS, code blocks | the account and the cartridge id | yes | yes | yes, signed in |
+| memory | breakpoints, the history trace, the 64 step-back marks; the code blocks of a cartridge from the disk | nothing | no | no | no |
 
 Two consequences for anyone redesigning the desk. A game's moments and
 recordings are already indexed by its digest, so "what you have for this
-game" can be shown the moment a game loads, on either page. And code
-blocks are the one thing on the desk that is written and never kept: a
-"keep" gesture for them would be the first thing the desk saves that it
-does not already.
+game" can be shown the moment a game loads, on either page. And since
+2026-09-29 everything written on the desk is kept somewhere, with one
+exception: a code block of a cartridge from the disk, which has no shelf
+to go to and leaves with the page, as the window says.
 
 ## Leaving a page
 
@@ -498,12 +521,13 @@ engine carries their state and never exercises it.
 | console worker | picture worker | the colour, emphasis and parity planes; a bitmap back |
 | console worker | the file store | the input log, the saved state, battery RAM |
 | flow worker | the file store | the report JSON |
-| the page | the API | HTTP with the session cookie: the game's bytes, a `.sav`, an IPS |
+| the page | the API | HTTP with the session cookie: the game's bytes, a `.sav`, an IPS, a code block (its range, its bytes and its words) |
 | the engine | localStorage | the desk's layout; the pad's placement |
 | the desk | downloads | a block as markdown or JSON; a recording as `.nesrec`; a trace; a report; an IPS or a patched image |
 
-Nothing crosses that is not in this table. In particular no key, no
-trace and no block reaches the server, and the game's bytes go up only to
+Nothing crosses that is not in this table. In particular no key and no
+trace reaches the server; a code block does only for a cartridge from
+the shelf, and only to that shelf; and the game's bytes go up only to
 the reader's own shelf.
 
 ## What the survey found behind the code
@@ -522,11 +546,13 @@ what a survey of a system's own words catches:
    bundle; the component reads it.
 4. The console worker's header listed three of the sixteen paths it
    answers, and said a recording could start only at power-on; one can
-   start mid-game. Its `ciram` path has no caller.
+   start mid-game. Its `ciram` path had no caller (it has one since
+   2026-09-29: the Nametables window).
 5. The picture worker's header omitted its `palette` path.
 6. The file store's header omitted `state.bin` and the moments.
 7. The Record header said "from power-on" only.
-8. `shelf.patchRevision` has no caller.
+8. `shelf.patchRevision` had no caller (it has one since 2026-09-29:
+   Rename, in Sprites).
 9. `detach()` resets the engine's state without telling its followers,
    which is harmless for the reason given above; it now says so.
 10. `lib/nes-shelves.ts` is the notebook's document shelves, not the
@@ -534,19 +560,24 @@ what a survey of a system's own words catches:
 11. Record, Flow and History exist only on Create while Play's engine
     carries their state; the engine's header now says so.
 
-## What is not on the desk yet
+## What the survey found missing, and what arrived
 
-- **Code blocks are not kept.** They live in the Code window's state and
-  leave with the page. The shelf, beside the revisions, is where the
-  window itself says they should go.
-- **The nametables have no window.** The console worker answers `ciram`
-  (the nametable RAM and any CHR-RAM) and nothing asks.
-- **A revision cannot be re-described.** `shelf.patchRevision` exists in
-  the shelf module and no window calls it; a revision is kept with its
-  message and not edited.
-- **The picture bundle is behind the console's pin**, v0.2.12
-  served against v0.2.18 pinned, and the build check does not hold the
-  served one to a record.
+The survey of 2026-09-28 found four things not on the desk. All four
+arrived on 2026-09-29, and the rest of this document describes the desk
+with them on it:
+
+- **Code blocks are kept.** For a cartridge from the shelf they go to
+  the shelf beside the revisions, as the window itself said they should,
+  and come back with the cartridge. Blocks of a cartridge from the disk
+  still stay in the page, and the window says so.
+- **The nametables have a window.** Nametables asks the console worker's
+  `ciram` path, which had no caller, and draws the two tables the chip
+  holds.
+- **A revision can be re-described.** Rename, in Sprites, calls
+  `shelf.patchRevision`, which no window had called.
+- **The picture bundle is at the console's pin**, boarded at the tag
+  the console names, and a library test in the deploy refuses a served
+  bundle at any other tag.
 
 ## What this means for the ergonomics work
 
@@ -560,8 +591,10 @@ cosmetic:
 - **The desk's own persistence is one key.** The layout is `{v, wins}` in
   pixels under `tm.nes.create.desk`; a version bump discards it and Tidy
   removes it. A URL hash opens and raises a window.
-- **Three things are waiting for a home.** Code blocks live in React
-  state; the `ciram` export has no view; `patchRevision` has no caller.
+- **Nothing is waiting for a home.** The three things the survey found
+  waiting (code blocks in React state, the `ciram` export with no view,
+  `patchRevision` with no caller) each have one since 2026-09-29: the
+  shelf, the Nametables window, Rename in Sprites.
 - **Two things are already keyed by the game's digest** and so follow a
   game from Play to Create and back: moments and recordings. A design that
   shows "what you have for this game" has its index already.
@@ -585,6 +618,13 @@ cosmetic:
   one. Kept on the shelf, one per cartridge.
 - **A revision**: an edit to a cartridge's tiles, kept on the shelf as an
   IPS patch with a message. The base image is never changed.
+- **A block**: a run of the code listing the reader selected and
+  described, with the bytes that were on the bus. Kept on the shelf for a
+  cartridge from there; its listing is read from its bytes again wherever
+  it is shown.
+- **A nametable**: one screen of tile numbers and their palettes, as the
+  picture chip holds it. The chip's RAM holds two; the board's mirroring
+  says which PPU addresses land on which.
 - **A board**: the cartridge's circuit, which decides how the console
   reads it. The console has seven and refuses the rest by name.
 - **The picture worker**: the signal path from the console's dots to a
