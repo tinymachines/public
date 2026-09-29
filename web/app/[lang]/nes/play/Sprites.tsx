@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import type { Lang } from "@/lib/lang";
 import { applyRanges, ipsOf, parseInes, rangesOf, type Ines } from "@/lib/ines";
 import { reloadWith, snapshot, serverSnapshot, subscribe } from "./playEngine";
-import { addRevision, announceChange, deleteRevision, fetchRevision, listRevisions, ShelfError, type Revision } from "@/lib/shelf";
+import { addRevision, announceChange, deleteRevision, fetchRevision, listRevisions, patchRevision, ShelfError, type Revision } from "@/lib/shelf";
 // The console's own tile codec, the one file that says what a CHR byte is
 // (ChrArt.tsx imports it the same way and says why).
 import { decodeCHR, encodeCHR, TILE } from "../../../../public/6502/games/chr.js";
@@ -77,6 +77,10 @@ const S = {
     load: "Load",
     del: "Delete",
     delSure: (r: Revision) => `Delete revision ${r.seq}? The patch goes; the cartridge stays.`,
+    rename: "Rename",
+    renameTitle: (r: Revision) => `Say again what revision ${r.seq} is; the patch itself does not change`,
+    save: "Save",
+    cancel: "Cancel",
     colours: "Sheet colours",
     mine: "the four I chose",
     bgPal: (i: number) => `the console's background palette ${i}`,
@@ -116,6 +120,10 @@ const S = {
     load: "読み込む",
     del: "削除",
     delSure: (r: Revision) => `リビジョン ${r.seq} を削除する? パッチは消え、カートリッジは残る。`,
+    rename: "説明を変える",
+    renameTitle: (r: Revision) => `リビジョン ${r.seq} が何かを言い直す。パッチそのものは変わらない`,
+    save: "保存",
+    cancel: "やめる",
     colours: "シートの色",
     mine: "自分で選んだ四色",
     bgPal: (i: number) => `コンソールの背景パレット ${i}`,
@@ -285,6 +293,8 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
   const cart = s.cart;
   const [revs, setRevs] = useState<Revision[] | null>(null);
   const [message, setMessage] = useState("");
+  // A revision being re-described: which, and the words so far.
+  const [renaming, setRenaming] = useState<{ id: string; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [shelfWhy, setShelfWhy] = useState<string | null>(null);
   useEffect(() => {
@@ -468,7 +478,28 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
                   <ul className="spr-revs">
                     {revs.map((r) => (
                       <li key={r.id} data-spr-rev={r.seq}>
-                        <span>{T.rev(r)}</span>
+                        {renaming?.id === r.id ? (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              void shelfCall(`rename ${r.id}`, async () => {
+                                const u = await patchRevision(cart.id, r.id, { message: renaming.text });
+                                setRevs((rs) => (rs ?? []).map((x) => (x.id === u.id ? u : x)));
+                                setRenaming(null);
+                                announceChange();
+                              });
+                            }}
+                          >
+                            <input className="input" value={renaming.text} onChange={(e) => setRenaming({ id: r.id, text: e.target.value })} maxLength={240} aria-label={T.message} autoFocus data-spr-rev-message />
+                            <button type="submit" className="btn btn-primary" disabled={busy !== null} data-spr-rev-save>{T.save}</button>
+                            <button type="button" className="btn btn-ghost" disabled={busy !== null} onClick={() => setRenaming(null)} data-spr-rev-cancel>{T.cancel}</button>
+                          </form>
+                        ) : (
+                          <>
+                            <span>{T.rev(r)}</span>
+                            <button type="button" className="btn btn-ghost" disabled={busy !== null} title={T.renameTitle(r)} onClick={() => setRenaming({ id: r.id, text: r.message })} data-spr-rev-rename>{T.rename}</button>
+                          </>
+                        )}
                         <button
                           type="button"
                           className="btn btn-ghost"
