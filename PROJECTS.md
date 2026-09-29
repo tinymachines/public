@@ -3964,16 +3964,18 @@ notebook's lab directory, and the first beta build said so.
 
 ## Checkpoint, 2026-09-28 (evening)
 
-Live, main and beta are at `a3e2bf1`, pushed, version 1.0.266. The
-drift check reports 2 of 78 drifted, on purpose (below); the library
-tests are green; the play and lab specs are 6 of 6 against beta and the
-deploy's own checks passed. Nothing is running.
+Live, main and beta are at `8e86ee7`, pushed, version 1.0.266; main is
+one commit further at `01faff5`, a note only. The drift check is 0 of
+78; the library tests are green; the play and lab specs are 6 of 6
+against beta and every deploy's own checks passed. Nothing is running.
 
 The repository carries its first tag, `v1.0`, at `ff015a4`, pushed on
 the owner's word the same night. Every sibling checkout was level with
 its remote at the tag.
 
-Since the tag, three deploys in the same evening:
+Since the tag, five deploys in the same evening, each on the owner's
+word here (two requests first arrived relayed by a peer session and
+were staged on beta only until the owner spoke):
 
 - `78eb7a2`: nes-bench 3518702 (step 6 of pad-usb-protocol passes: a
   browser saw all eight pad codes through `/lab/pad-keydown`) carried
@@ -3991,17 +3993,38 @@ Since the tag, three deploys in the same evening:
   field), which is what the lab page had done all along. Verified on
   beta and then on live in headless Chrome at phone width: one input,
   focused after load and after a tap, no scroll, ArrowRight taken as a
-  button. The deploy request first arrived relayed by a peer session
-  and was staged on beta only; live moved when the owner said so here.
-- The same deploy pulled nes-bench 8365848 and 8048aea, which record
-  step 7 as run and not passed. No heading count changed.
+  button.
+- `f468ca3`: with that live, the cross moved on the phone and step 7
+  passed, seven of seven (nes-bench ca925be). Both Japanese shadows
+  carried, the count moved to seven in the DOCS description and the
+  Japanese index, digests restamped. That deploy's pull also took
+  nes-bench 83f9175, which nobody had announced, leaving the Japanese
+  pad-ble and open-items behind by digest for one deploy.
+- `8e86ee7`: 83f9175 carried into those two (the BLE pad advertises
+  from a second C6; the sketch's manufacturer characteristic was written
+  before it was created, a fault the P4 never reached; CDCOnBoot=cdc or
+  Serial goes to the UART pins). Drift back to 0 of 78. The peer now
+  names every nes-bench commit that touches a pulled document before
+  pushing it.
+
+Then `01faff5`, not deployed: `notes/workbench-map.md`, the wiring map
+of the desk for the ergonomics redesign the owner is starting (one
+engine module behind every window, two workers and a flow worker per
+job, four persistence places, one saved state with three uses, the
+worker paths and the wasm behind each verb, what crosses each boundary
+between the seven repositories and the site). Its five Mermaid diagrams
+were rendered under Mermaid 11 before committing.
 
 Open:
-- The two Japanese shadows of pad-usb-protocol and open-items are
-  behind 8048aea by digest, held so they are written once against step
-  7's final wording. When the cross moves on the phone: carry both, and
-  move the passed-step count from six to seven in the DOCS description
-  and `docs/ja/nes/index.md`, then restamp.
+- From the map: code blocks on the Code window live in React state and
+  are lost on leaving the page; the console worker's `ciram` path (the
+  nametables and CHR-RAM) has no view; `shelf.patchRevision` has no
+  caller; the served ntsc bundle is v0.2.12 while the console pins
+  v0.2.18 and check-build does not appear to hold that bundle to its
+  record; eleven comments or lines of copy describe a desk that no
+  longer exists (listed at the end of the note).
+- The bench side, not for the site yet: whether the phone alone powers
+  the board with the UART cable out, and step 6's host to be named.
 - The console's measured speed on the site is 0.83x real time, taken
   under load; a boarding on a quiet machine gives the true figure.
 - If recording failed for the owner, the browser and what they saw are
