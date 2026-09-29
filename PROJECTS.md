@@ -4226,8 +4226,10 @@ recording-failed question; esp32 ja; two load flakes.
 
 ## Checkpoint, 2026-09-29, later
 
-On beta, not deployed: main, origin and beta at `5a8efc9`, live at
-`b2a3c4e` (1.0.267). Three commits, in the order of the list above.
+Deployed on the owner's word as the tenth deploy since the tag: live,
+main, origin and beta level at `aaa502f`, 1.0.267 (a clean tree, no
+bump); library tests 130, API tests 158, project tools 16. Three
+commits, in the order of the list above.
 
 - `8ab568e`: a disk cartridge's code blocks are kept in the browser's
   file store beside the game's moments, `flow/blocks/<sha>/<id>.json`,
