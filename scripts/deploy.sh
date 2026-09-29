@@ -180,6 +180,15 @@ say "1. Lint"
 # modules read from the 6502 tree with their three patches (a module that
 # stops matching upstream fails here, before the build ships it). Nothing
 # ran these before 2026-08-26.
+# The pulls first, because one of those tests holds every Japanese shadow
+# to the shape of the English it translates, and for the notebook that
+# English is generated: without a pull here it is the LAST deploy's copy.
+# The day the Japanese index gained a shelf together with the pull that
+# generates it (2026-09-29), the test compared twelve headings against
+# eleven and failed a deploy of a tree that was right. The build pulls
+# again in stage 4; the pull is the same both times.
+say "1a. The pulls"
+(cd web && bun scripts/pull-chipdocs.mjs && bun scripts/pull-nesdocs.mjs) || fail "pull"
 say "1b. Library tests"
 (cd web && bun run test) || fail "bun test lib"
 
