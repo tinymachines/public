@@ -39,6 +39,7 @@ const S = {
     pause: "Pause",
     none: "No cartridge. Choose a .nes file from your own disk; it never leaves this browser.",
     loaded: (name: string) => <>cartridge: <b>{name}</b></>,
+    loading: (name: string) => <>loading <b>{name}</b>: the console is being built for it</>,
     off: "power is off: the cartridge is kept, the console is gone until power on",
     patched: "running your patch, not the file as loaded",
     battery: (b: NonNullable<PlayState["battery"]>) =>
@@ -84,6 +85,7 @@ const S = {
     pause: "一時停止",
     none: "カートリッジが無い。自分のディスクから .nes ファイルを選ぶ。ファイルはこのブラウザから出ない。",
     loaded: (name: string) => <>カートリッジ: <b>{name}</b></>,
+    loading: (name: string) => <><b>{name}</b> を読み込み中: コンソールを組んでいる</>,
     off: "電源が切れている: カートリッジは残り、コンソールは電源を入れるまで無い",
     patched: "走っているのは読み込んだままのファイルではなく、あなたのパッチ",
     battery: (b: NonNullable<PlayState["battery"]>) =>
@@ -207,8 +209,9 @@ export function Cartridge({ lang, brief = false }: { lang: Lang; brief?: boolean
         {brief ? (
           <>
             <p className="bench-readout" data-play-status>
+              {s.loading ? <span className="measured" data-play-loading={s.loading}>{T.loading(s.loading)}</span> : null}
               {!s.loaded ? (
-                <span className="quiet">{T.none}</span>
+                s.loading ? null : <span className="quiet">{T.none}</span>
               ) : (
                 <>
                   <span className="measured">{T.loaded(s.loaded)}</span>
@@ -235,8 +238,9 @@ export function Readouts({ lang }: { lang: Lang }) {
     <section className="wb-page play-section" id="readouts">
       <h2 className="eyebrow">{T.readH}</h2>
       <p className="bench-readout" data-play-stats>
+        {s.loading ? <span className="measured" data-play-loading={s.loading}>{T.loading(s.loading)}</span> : null}
         {!s.loaded ? (
-          <span className="quiet">{T.none}</span>
+          s.loading ? null : <span className="quiet">{T.none}</span>
         ) : (
           <>
             <span className="measured">{T.loaded(s.loaded)}</span>

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { DESK, PHONE, open } from "./lib";
+import { DESK, PHONE, loadCartridge, open } from "./lib";
 
 // The tools (the code, the memory, the palettes, the sprites, the steps
 // and the readouts) are the create desk's since 2026-09-24. Their tests
@@ -200,8 +200,7 @@ test("the console runs a cartridge on the create desk and paints it", async ({ p
   await open(page, "/nes/create", 500);
   // The repository's own test cartridge (nobody's game), from disk, as a
   // reader would load one. The worker builds the console and the pipeline.
-  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("testcart.nes", { timeout: 20_000 });
+  await loadCartridge(page, "e2e/fixtures/testcart.nes", "testcart.nes");
   await page.locator("[data-play-run]").click();
   // Frames shown climbs past a handful: the console ran, the comb decoded,
   // the canvas painted, the pacing counted.
@@ -384,8 +383,7 @@ test("the play page is a workbench for playing: the bar, the strip of its sectio
   // A cartridge: power, reset and play light; the line under the cartridge
   // names it; play runs it; power off keeps the cartridge and greys play;
   // power on brings the console back at power on.
-  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
-  await expect(page.locator("[data-play-status] .measured").first()).toContainText("testcart.nes", { timeout: 20_000 });
+  await loadCartridge(page, "e2e/fixtures/testcart.nes", "testcart.nes", "[data-play-status]");
   await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("[data-play-start]")).toBeEnabled();
   const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
@@ -436,8 +434,7 @@ test("the create desk's transport: every key in the chip transport's order, the 
   // A cartridge: power, start and play light; frame lights while paused
   // and runs exactly one frame; power off keeps the cartridge and greys
   // the rest; power on brings the console back at power on.
-  await page.locator("[data-play-rom]").setInputFiles("e2e/fixtures/testcart.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("testcart.nes", { timeout: 20_000 });
+  await loadCartridge(page, "e2e/fixtures/testcart.nes", "testcart.nes");
   await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("[data-play-run]")).toBeEnabled();
   await expect(page.locator("[data-play-frame]")).toBeEnabled();
@@ -577,8 +574,7 @@ test("sprites from the bytes: the sheet, a painted pixel, the patch in the conso
 
   // The site's own calibration cartridge: 8 KiB of CHR, 512 tiles, one
   // pattern table of 256 at a time.
-  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await loadCartridge(page, "public/nes/cal.nes", "cal.nes");
   await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-count", "512");
   await expect(page.locator("[data-spr-table] option")).toHaveCount(2);
   await expect(page.locator("[data-spr-changed-line]")).toContainText("changed: 0 tiles, 0 bytes");
@@ -654,8 +650,7 @@ test("reads out of the engine: the CPU, the memory monitor, the palettes and the
   await open(page, "/nes/create", 500);
   // Before a cartridge every panel says why it is empty.
   await expect(page.locator("[data-state-why]")).toContainText("No cartridge");
-  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await loadCartridge(page, "public/nes/cal.nes", "cal.nes");
   // At power on, before a frame: the registers are read, the PC is in the cartridge.
   const pc = async () => parseInt(((await page.locator('[data-reg="PC"]').textContent()) ?? "").replace("$", ""), 16);
   await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
@@ -704,8 +699,7 @@ test("control and the code panel: the steps by the machine's units, the reset, a
   test.setTimeout(120_000);
   await page.setViewportSize(BENCH);
   await open(page, "/nes/create", 500);
-  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await loadCartridge(page, "public/nes/cal.nes", "cal.nes");
   await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
   const cyc = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/cyc\s+(\d+)/)?.[1] ?? -1);
   const pc = async () => parseInt(((await page.locator('[data-reg="PC"]').textContent()) ?? "").replace("$", ""), 16);
@@ -785,8 +779,7 @@ async function captureFirstTwo(page: import("@playwright/test").Page): Promise<[
 }
 
 async function loadFromDisk(page: import("@playwright/test").Page, file: string, name: string) {
-  await page.locator("[data-play-rom]").setInputFiles(file);
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText(name, { timeout: 20_000 });
+  await loadCartridge(page, file, name);
   await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
 }
 
@@ -861,8 +854,7 @@ test("the machine's panels hold their height: nothing below them moves as the co
   test.setTimeout(120_000);
   await page.setViewportSize(BENCH);
   await open(page, "/nes/create", 500);
-  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await loadCartridge(page, "public/nes/cal.nes", "cal.nes");
   await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
   const heights = () => page.evaluate(() => Object.fromEntries(["cpu", "memory", "palettes", "oam", "code", "sprites"].map((id) => [id, Math.round(document.getElementById(id)!.getBoundingClientRect().height)])));
   const h0 = await heights();
@@ -903,8 +895,7 @@ test("the sister play key, the buffered panels, the locked width, and no lockup 
   test.setTimeout(150_000);
   await page.setViewportSize(PHONE);
   await open(page, "/nes/create", 500);
-  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
-  await expect(page.locator("[data-play-stats] .measured").first()).toContainText("cal.nes", { timeout: 20_000 });
+  await loadCartridge(page, "public/nes/cal.nes", "cal.nes");
   await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
   const frames = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
   // The sister key beside the cartridge and the strip's key are one state.

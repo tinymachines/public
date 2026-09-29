@@ -37,6 +37,8 @@ export interface DriftStats {
 
 export interface PlayState {
   loaded: string | null;
+  /** The file handed to the console worker and not yet answered: the name shows while the console is built for it, and a load that hangs shows where it hung. */
+  loading: string | null;
   running: boolean;
   /** False after power off: the cartridge is kept, the console is gone until power on. */
   powered: boolean;
@@ -207,6 +209,7 @@ const LEAD = 0.06;
 
 const INITIAL: PlayState = {
   loaded: null,
+  loading: null,
   running: false,
   powered: false,
   framesRun: 0,
@@ -548,7 +551,7 @@ function stopWatching() {
  * save comes back before the game starts and is kept from then on.
  */
 export async function load(file: File, cart: Cart | null = null, base: Uint8Array | null = null) {
-  set({ running: false });
+  set({ running: false, loading: file.name });
   await waitIdle();
   // Another cartridge, a power cycle or a patched image ends a recording:
   // it is kept as it stands.
@@ -567,7 +570,7 @@ export async function load(file: File, cart: Cart | null = null, base: Uint8Arra
   painted = [];
   const r = await consoleW.call({ path: "load", rom: bytes }, [bytes]);
   if (!r.ok) {
-    set({ loaded: null, why: r.error });
+    set({ loaded: null, loading: null, why: r.error });
     return;
   }
   await pictureW.call({ path: "reset" });
@@ -601,7 +604,7 @@ export async function load(file: File, cart: Cart | null = null, base: Uint8Arra
       set({ battery: { has: false, restored: false, savedAt: null, saving: false, why: null } });
     }
   }
-  set({ loaded: file.name, powered: true });
+  set({ loaded: file.name, loading: null, powered: true });
   void refreshMachine();
 }
 

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export const BASE = process.env.BASE ?? "https://tinymachines.ai";
 export const UPSTREAM = process.env.UPSTREAM ?? "https://6502.tinymachines.ai";
@@ -155,4 +155,30 @@ export async function visibleText(page: Page) {
     }
     return s;
   });
+}
+
+/**
+ * A cartridge from the disk, and the wait for the console to answer with
+ * it, on `status` (the stats line on the create desk, the status line on
+ * the play page). Twenty seconds is many times the load measured under
+ * load 19 with four workers (a third of a second, 2026-09-29), and the
+ * three tests that had timed out here did so for reasons nobody had
+ * captured; when this wait fails it says what the page showed, which is
+ * the capture: a loading line still up means the console worker never
+ * answered, neither that nor a refusal means the file never reached the
+ * page's handler.
+ */
+export async function loadCartridge(page: Page, file: string, name: string, status = "[data-play-stats]") {
+  await page.locator("[data-play-rom]").setInputFiles(file);
+  try {
+    await expect(page.locator(`${status} .measured`).first()).toContainText(name, { timeout: 20_000 });
+  } catch (e) {
+    const seen = await page.evaluate((sel) => ({
+      loading: document.querySelector("[data-play-loading]")?.getAttribute("data-play-loading") ?? null,
+      why: document.querySelector("[data-play-why]")?.textContent?.trim() ?? null,
+      hydrated: !!document.querySelector("[data-pad-focus]"),
+      line: document.querySelector(sel)?.textContent?.trim().slice(0, 200) ?? null,
+    }), status).catch(() => null);
+    throw new Error(`${name} did not load in 20 s; the page showed ${JSON.stringify(seen)}`, { cause: e });
+  }
 }
