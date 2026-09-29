@@ -92,5 +92,6 @@ for (const file of pages(DOCS)) {
 
 if (found === 0) failures.push(`no mermaid fences under ${path.relative(ROOT, DOCS)}: this check would pass on nothing`);
 for (const f of failures) console.error(`check-diagrams: ${f}`);
-console.log(`check-diagrams: ${found} drawings in ${files} documents, ${failures.length} failing`);
+const n = (k, one, many) => `${k} ${k === 1 ? one : many}`;
+console.log(`check-diagrams: ${n(found, "drawing", "drawings")} in ${n(files, "document", "documents")}, ${failures.length} failing`);
 process.exit(failures.length ? 1 : 0);
