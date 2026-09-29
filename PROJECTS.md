@@ -3964,16 +3964,16 @@ notebook's lab directory, and the first beta build said so.
 
 ## Checkpoint, 2026-09-28 (evening)
 
-Live, main and beta are at `8e86ee7`, pushed, version 1.0.266; main is
-one commit further at `01faff5`, a note only. The drift check is 0 of
-78; the library tests are green; the play and lab specs are 6 of 6
-against beta and every deploy's own checks passed. Nothing is running.
+Live, main and beta are at `7c72844`, pushed, version 1.0.266. The
+drift check is 0 of 78; lint has no errors; the library tests are 126
+of 126; the play and lab specs are 6 of 6 against beta and every
+deploy's own checks passed. Nothing is running.
 
 The repository carries its first tag, `v1.0`, at `ff015a4`, pushed on
 the owner's word the same night. Every sibling checkout was level with
 its remote at the tag.
 
-Since the tag, five deploys in the same evening, each on the owner's
+Since the tag, six deploys in the same evening, each on the owner's
 word here (two requests first arrived relayed by a peer session and
 were staged on beta only until the owner spoke):
 
@@ -4007,7 +4007,7 @@ were staged on beta only until the owner spoke):
   names every nes-bench commit that touches a pulled document before
   pushing it.
 
-Then `01faff5`, not deployed: `notes/workbench-map.md`, the wiring map
+Then `01faff5`: `notes/workbench-map.md`, the wiring map
 of the desk for the ergonomics redesign the owner is starting (one
 engine module behind every window, two workers and a flow worker per
 job, four persistence places, one saved state with three uses, the
@@ -4015,14 +4015,28 @@ worker paths and the wasm behind each verb, what crosses each boundary
 between the seven repositories and the site). Its five Mermaid diagrams
 were rendered under Mermaid 11 before committing.
 
+- `7c72844`: the eleven comments and two lines of copy the map found
+  behind the code, cleared on the owner's word. The desk's about says
+  moments, breakpoints and History are here; the transport's seek title
+  points at History's step back; the sprite editor's header says the
+  machine reads palette RAM; the console worker's header lists every
+  path it answers; the picture worker's header gains the palette path;
+  flowStore's layout gains the saved state and the moments; Record's
+  header records from here too; kib's comment is back on kib and
+  patchRevision says no window calls it; the two shelves name each other
+  as unrelated; detach says why it announces nothing; the play engine's
+  header says the desk's tools ride on its state. The map's ninth item
+  was corrected on the way (detach does clear the last cart).
+
 Open:
 - From the map: code blocks on the Code window live in React state and
   are lost on leaving the page; the console worker's `ciram` path (the
   nametables and CHR-RAM) has no view; `shelf.patchRevision` has no
   caller; the served ntsc bundle is v0.2.12 while the console pins
   v0.2.18 and check-build does not appear to hold that bundle to its
-  record; eleven comments or lines of copy describe a desk that no
-  longer exists (listed at the end of the note).
+  record.
+- The owner is starting on the desk's ergonomics and UI design, to make
+  building a game easy; the map is the reference for it.
 - The bench side, not for the site yet: whether the phone alone powers
   the board with the UART cable out, and step 6's host to be named.
 - The console's measured speed on the site is 0.83x real time, taken
