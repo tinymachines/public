@@ -501,8 +501,9 @@ test("a hidden screen pauses the console, and only the play key resumes it", asy
 });
 
 /**
- * A cartridge with CHR-RAM, made here: UxROM (mapper 2), 16 KiB of
- * program and no CHR. The program waits two frames for the picture chip
+ * A cartridge with CHR-RAM, made here: UxROM (mapper 2), 32 KiB of
+ * program (the board's least, two banks; the code in the fixed one at
+ * $C000) and no CHR. The program waits two frames for the picture chip
  * to take writes, then puts one tile's sixteen bytes at pattern address
  * $0000 through $2006 and $2007, and loops. There is nothing else on the
  * bus, so the sheet can only draw that tile by reading the console.
@@ -520,11 +521,11 @@ function chrRamCartridge(): Buffer {
   for (const b of [0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f]) code.push(0xa9, b, 0x8d, 0x07, 0x20);
   const here = 0xc000 + code.length;
   code.push(0x4c, here & 0xff, here >> 8); // JMP here
-  const prg = Buffer.alloc(0x4000, 0xff);
-  Buffer.from(code).copy(prg, 0);
-  prg[0x3ffc] = 0x00;
-  prg[0x3ffd] = 0xc0;
-  const header = Buffer.from([0x4e, 0x45, 0x53, 0x1a, 1, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const prg = Buffer.alloc(0x8000, 0xff);
+  Buffer.from(code).copy(prg, 0x4000);
+  prg[0x7ffc] = 0x00;
+  prg[0x7ffd] = 0xc0;
+  const header = Buffer.from([0x4e, 0x45, 0x53, 0x1a, 2, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   return Buffer.concat([header, prg]);
 }
 
