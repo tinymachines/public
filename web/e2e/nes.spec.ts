@@ -385,6 +385,8 @@ test("the play page is a workbench for playing: the bar, the strip of its sectio
   // power on brings the console back at power on.
   await loadCartridge(page, "e2e/fixtures/testcart.nes", "testcart.nes", "[data-play-status]");
   await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true");
+  // The brief line counts what this browser keeps for the game, here too.
+  await expect(page.locator("[data-play-status] [data-play-held]")).toHaveAttribute("data-play-held", "0/0/0", { timeout: 15_000 });
   await expect(page.locator("[data-play-start]")).toBeEnabled();
   const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
   expect(await framesRun()).toBe(0);
