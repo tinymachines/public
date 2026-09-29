@@ -5,6 +5,8 @@ sprite and palette editors. Load a game, tweak and play a game. Debug a
 game. Capture and annotate code blocks. We did create a fullscreen
 workbench earlier. Leverage that idea for general layout."*
 
+*Continued 2026-09-29 by `notes/autopsy.md`: the desk taken to the scale of a whole game (decompile, crawl, identify, label), the game model, and the studio it leads to.*
+
 Written from four read-only surveys on 2026-09-22: the NES pages and their
 wasm, the API and its storage, the 6502 instruments and the site's chrome,
 and the console's source repositories (`~/projects/tinymachines/nes`,
