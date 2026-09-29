@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 6511",
-    "build": "python3 ../style/build-icon.py && bun scripts/build-sw.mjs && bun scripts/pull-console.mjs && bun scripts/build-lab.mjs && bun scripts/build-pretext.mjs && bun scripts/pull-chipdocs.mjs && bun scripts/pull-nesdocs.mjs && bun scripts/check-ja-docs.mjs && next build && bun scripts/check-build.mjs",
+    "build": "python3 ../style/build-icon.py && bun scripts/build-sw.mjs && bun scripts/pull-console.mjs && bun scripts/build-lab.mjs && bun scripts/build-pretext.mjs && bun scripts/pull-chipdocs.mjs && bun scripts/pull-nesdocs.mjs && bun scripts/check-ja-docs.mjs && bun scripts/check-diagrams.mjs && next build && bun scripts/check-build.mjs",
     "start": "next start -H 127.0.0.1 -p 6511",
     "lint": "eslint",
     "check": "bun scripts/check-build.mjs",
@@ -20,6 +20,7 @@
     "@react-three/fiber": "9.6.1",
     "@types/mdx": "^2.0.14",
     "gray-matter": "^4.0.3",
+    "mermaid": "^11",
     "next": "16.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -35,6 +36,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "happy-dom": "^20.14.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

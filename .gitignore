@@ -102,7 +102,11 @@ web/public/lab/
 
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.
-docs/nes/
+docs/nes/*
+# Except the desk's own document. The desk is this repository's, so its
+# as-built page is written here, and pull-nesdocs.mjs lists it beside the
+# pulled ones (the `here` entry in its DOCS table) rather than pulling it.
+!docs/nes/workbench.md
 docs/cart/
 
 # The console-shell handoff pack: its sources/ carry third-party IP and are mood only.

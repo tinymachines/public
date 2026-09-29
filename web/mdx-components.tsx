@@ -1,6 +1,8 @@
 import type { MDXComponents } from "mdx/types";
 import { TwoWaysDemo } from "./app/components/TwoWaysDemo";
 import { CopyPre } from "./app/components/CopyPre";
+import { Diagram } from "./app/components/Diagram";
+import type { ReactElement } from "react";
 
 /**
  * Required at the project root. Without this file MDX pages fail to render,
@@ -13,7 +15,11 @@ import { CopyPre } from "./app/components/CopyPre";
  * classes: that forks the kit.
  *
  * The overrides are `code`, which is not styling (see below), and `pre`,
- * which is the same block with a Copy control on it (components/CopyPre.tsx).
+ * which is the same block with a Copy control on it (components/CopyPre.tsx),
+ * except that a ```mermaid fence is a drawing, not a block of text to copy,
+ * and goes to components/Diagram.tsx (a thumbnail, and full screen behind a
+ * press). Decided here, in the one place every fence passes through, so a
+ * drawing in any document is drawn and no document has to say so.
  */
 
 // A hex colour, and nothing else. Three, four, six or eight digits, anchored
@@ -52,9 +58,20 @@ function Code({ children, ...props }: React.ComponentPropsWithoutRef<"code">) {
   return <code {...props}>{children}</code>;
 }
 
+/** A fenced block: a drawing when its language is mermaid, a code block with Copy otherwise. */
+function Pre(props: React.ComponentPropsWithoutRef<"pre">) {
+  const child = props.children as ReactElement<{ className?: string; children?: unknown }> | undefined;
+  const cls = child?.props?.className ?? "";
+  if (typeof cls === "string" && /\blanguage-mermaid\b/.test(cls)) {
+    const code = child?.props?.children;
+    if (typeof code === "string") return <Diagram code={code.replace(/\n$/, "")} />;
+  }
+  return <CopyPre {...props} />;
+}
+
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   // Components a document may use by name. Registered here rather than
   // imported inside each .mdx file, so a document stays markdown with one
   // element in it rather than markdown with an import path in it.
-  return { ...components, code: Code, pre: CopyPre, TwoWaysDemo };
+  return { ...components, code: Code, pre: Pre, TwoWaysDemo };
 }

@@ -3033,3 +3033,97 @@ html.has-fullscreen .wb-strip { top: 0; }
 .menu-brief .menu-item:hover b, .menu-brief .menu-item[aria-current] b { color: var(--color-ink); }
 .menu-section + .menu-brief { margin-top: calc(var(--u) * 5); }
 .menu-item[aria-current="location"] { background: var(--color-paper-sunk); border-left-color: var(--color-ink-faint); }
+
+/* ==========================================================================
+   30. THE DRAWING, 2026-09-29. A drawn figure in a document (a mermaid
+   fence, drawn in the browser by components/Diagram.tsx): the whole picture
+   at the column's width as a thumbnail, and the same picture full screen
+   behind a press, fitted to the screen or at its own size (owner: "the
+   diagrams should have thumbnails and a full screen version").
+
+   The thumbnail is a button and reads as one: it stands in the kit's
+   hairline on paper, sinks on hover like the ghost button, and its cursor
+   says it opens; the caption says so in words too. The full screen is a
+   dialog the size of the viewport, paper, with one bar: the caption, the
+   size toggle and Close. Structure only. The drawing's own colours are
+   mermaid's neutral theme until the owner sets them (Diagram.tsx, `theme`).
+   ========================================================================== */
+
+.diagram { margin: 0 0 calc(var(--u) * 6); }
+.diagram-thumb {
+  display: block;
+  width: 100%;
+  padding: calc(var(--u) * 3);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-hair);
+  cursor: zoom-in;
+  font: inherit;
+}
+.diagram-thumb:hover { background: var(--color-paper-sunk); }
+.diagram-thumb:focus-visible { outline: 2px solid var(--color-blue-ink); outline-offset: 2px; }
+/* The whole drawing, never a crop: shrunk to the column's width or to a
+   sensible height, whichever binds, keeping its shape. Mermaid writes its
+   own width on the element; the thumbnail's size is the frame's to decide. */
+.diagram-thumb svg {
+  display: block;
+  margin: 0 auto;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 26rem;
+}
+.diagram figcaption {
+  margin-top: calc(var(--u) * 2);
+  font-family: var(--font-sans);
+  font-size: var(--text-fine);
+  line-height: 1.45;
+  color: var(--color-ink-muted);
+}
+.diagram-hint { color: var(--color-accent-ink); white-space: nowrap; }
+.diagram-failed {
+  margin: calc(var(--u) * 2) 0 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  color: var(--color-red-ink);
+}
+
+/* Full screen: the viewport, as a dialog. The bar is the only chrome. */
+.diagram-full {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.diagram-full[open] { display: flex; flex-direction: column; }
+.diagram-full::backdrop { background: color-mix(in srgb, var(--color-ink) 60%, transparent); }
+.diagram-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 2) calc(var(--u) * 4);
+  border-bottom: 1px solid var(--color-rule);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+}
+.diagram-title { flex: 1 1 12rem; min-width: 0; font-weight: 600; }
+.diagram-bar .btn { padding: calc(var(--u) * 1.5) calc(var(--u) * 3); font-size: var(--text-data); }
+/* Fitted: the drawing takes the room under the bar and keeps its shape,
+   so the whole of it is on the screen. Actual: the drawing at the width
+   mermaid drew it (--diagram-w, set by the component), and the view
+   scrolls. Mermaid's inline max-width yields to both. */
+.diagram-view {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: calc(var(--u) * 4);
+}
+.diagram-view svg { display: block; width: 100%; height: 100%; max-width: none !important; }
+.diagram-view.actual svg { width: var(--diagram-w, auto); height: auto; margin: 0 auto; }

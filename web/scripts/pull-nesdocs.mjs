@@ -10,6 +10,11 @@
  * one copy). A missing checkout or a document that stops matching the
  * narrow transforms below THROWS, so a build cannot quietly ship a page
  * with a broken link or raw HTML.
+ *
+ * One document in the table is not pulled but written here (`here`): the
+ * desk's own as-built page, docs/nes/workbench.md, tracked in this tree
+ * because the desk is this repository's. It is read for the index and the
+ * shelves and held to the same hygiene; nothing rewrites it.
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -125,6 +130,7 @@ const GROUPS = [
   { key: "chips", heading: "The chips", intro: "The contract every chip speaks, then the NES's two chips at their switches (the 2A03 CPU and sound, the 2C02 picture chip) and the fast versions built from them.", ja: { heading: "チップ", intro: "すべてのチップが話す規約、スイッチのレベルの NES の二つのチップ（CPU と音の 2A03、絵の 2C02）、そしてそこから組んだ高速版。" } },
   { key: "signal", heading: "The signal", intro: "The composite video between the console and the television: the specification, each milestone of ntsc-crt, and where it knowingly departs from the references.", ja: { heading: "信号", intro: "コンソールとテレビの間のコンポジット映像: 仕様、ntsc-crt の各マイルストーン、そして参照から意図して離れる箇所。" } },
   { key: "console", heading: "The console", intro: "Both chips on one board: the glue, the machine running test ROMs, then its picture, its sound and the window it plays in.", ja: { heading: "コンソール", intro: "一枚の基板に載った二つのチップ: 糊、テスト ROM を走らせる機械、そしてその絵、音、遊ぶための窓。" } },
+  { key: "desk", heading: "The desk", intro: "The console in the browser and the tools around it: what each window consumes, produces and saves, and how the repositories become the page.", ja: { heading: "机", intro: "ブラウザの中のコンソールと、その周りの道具: 各ウィンドウが何を受け取り、何を作り、何を保存するか、そしてリポジトリがどうページになるか。" } },
   { key: "bench-plan", heading: "Planning the bench", intro: "The bench puts a real console and the model under the same controller presses. These were written first.", ja: { heading: "ベンチの計画", intro: "ベンチは実機と模型を同じコントローラ入力の下に置く。以下は先に書かれたもの。" } },
   { key: "bench-build", heading: "Building the bench", intro: "The bridge as drawn and as built: schematics, parts, the pin-by-pin cheat sheet and the build guide.", ja: { heading: "ベンチを組む", intro: "図面の上のブリッジと、組み上がったブリッジ: 回路図、部品、ピンごとの早見表、組み立てガイド。" } },
   { key: "bench-record", heading: "What happened at the bench", intro: "The build, step by step with its photographs, and the running report of what each tool has shown.", ja: { heading: "ベンチで起きたこと", intro: "写真つきで一歩ずつ進んだ組み立てと、各道具が示したことの経過報告。" } },
@@ -167,6 +173,10 @@ const DOCS = [
   { repo: "nes", file: "n7-report.md", slug: "n7-report", code: "N7 report", title: "The console's sound", group: "console", order: 25, description: "The sound through the board's audio stage, blargg's mixer test ROMs cancelling, and his recordings of real hardware beside ours." },
   { repo: "nes", file: "n8-plan.md", slug: "n8-plan", code: "N8 plan", title: "Planning the console's window", group: "console", order: 26, description: "The window the console plays in, the picture on the GPU, the pacing, and a second target in the browser." },
   { repo: "nes", file: "n8-report.md", slug: "n8-report", code: "N8 report", title: "The console in a window", group: "console", order: 27, description: "The window built and checked without a screen, the GPU picture matching the CPU's, and the browser build measured." },
+  // Written here, not pulled: the desk is this repository's. Its title and
+  // description are the file's own frontmatter, read below, so the file is
+  // the one copy; no code, because a milestone code is a repository's label.
+  { here: "workbench.md", slug: "workbench", code: null, kind: "reference", group: "desk", order: 27.5 },
   { repo: "nes-bench", file: "bench-plan.md", slug: "bench-plan", code: null, kind: "plan", title: "Planning the bench", group: "bench-plan", order: 28, description: "A real console and the model under the same controller presses: a bridge on the controller port, relays and a scope under one script, and the checks for each step." },
   { repo: "nes-bench", file: "wiring.md", slug: "bench-wiring", code: null, kind: "procedure", title: "Wiring the bridge", group: "bench-plan", order: 29, description: "The shift register that stands in for the pad, the level shifter, the microcontroller's pins, the relays, and the meter checks to do before power." },
   { repo: "nes-bench", file: "script.md", slug: "bench-script", code: null, kind: "reference", title: "The bench script", group: "bench-plan", order: 30, description: "One file both the bench and the model read: the pad's bytes by poll, the arm, the trigger and the capture." },
@@ -390,6 +400,9 @@ if (fs.existsSync(LAB)) {
 // 127.0.0.1 or 198.51.100.7, and the bench's guides do.
 const HOST = /(?<![\w.])(?!127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)((?:\d{1,3}\.){3}\d{1,3})(?![\w.])/;
 
+/** Where a document's text lives, for an error message. */
+const where = (d) => (d.here ? `docs/nes/${d.here}` : `${d.repo}/docs/${d.file}`);
+
 function transform(doc, md) {
   let s = md;
   // A blockquote pointer at the top of a copy (nes-bus's sketch) is not
@@ -398,6 +411,7 @@ function transform(doc, md) {
   // Cross-links between the pulled documents, however they were written
   // upstream (a bare file, docs/file, a path into a sibling repository).
   for (const d of DOCS) {
+    if (d.here) continue; // no upstream spelling to rewrite
     const local = `/docs/${d.section ?? "nes"}/${d.slug}`;
     s = s.replace(new RegExp(`\\]\\((?:\\.\\./)*(?:[a-z0-9-]+/)?(?:docs/)?${d.file.replace(".", "\\.")}(#[^)]*)?\\)`, "g"), (_, hash) => `](${local}${hash ?? ""})`);
   }
@@ -411,7 +425,7 @@ function transform(doc, md) {
   for (const [i, line] of s.split("\n").entries()) {
     if (/^```/.test(line)) fenced = !fenced;
     if (!fenced && /<(p|img|sub|a|div|table)\b/i.test(line)) {
-      throw new Error(`${doc.repo}/docs/${doc.file}:${i + 1}: raw HTML ("${line.slice(0, 60)}"); teach pull-nesdocs.mjs the shape.`);
+      throw new Error(`${where(doc)}:${i + 1}: raw HTML ("${line.slice(0, 60)}"); teach pull-nesdocs.mjs the shape.`);
     }
     // A host's address, published. CLAUDE.md keeps host-specific detail out
     // of this repository, and these documents are the hole in that: they are
@@ -424,7 +438,7 @@ function transform(doc, md) {
     // is published exactly like its prose.
     if (HOST.test(line)) {
       throw new Error(
-        `${doc.repo}/docs/${doc.file}:${i + 1}: a host address ("${line.trim().slice(0, 60)}").\n` +
+        `${where(doc)}:${i + 1}: a host address ("${line.trim().slice(0, 60)}").\n` +
           "    This tree publishes these pages, and CLAUDE.md keeps host-specific detail out of it.\n" +
           "    Redact it where the line is written, in the tool that emits it, not here.",
       );
@@ -462,6 +476,26 @@ function codeLine(code) {
   throw new Error(`no line for the code "${code}"`);
 }
 for (const d of DOCS) {
+  if (d.here) {
+    // Ours: not written, not renamed, not footnoted. Read for the index and
+    // the shelves, and held to the same hygiene as a pulled page.
+    const src = path.join(OUT, d.here);
+    if (!fs.existsSync(src)) throw new Error(`${where(d)} is missing, and it is tracked in this tree: nothing pulls it`);
+    const raw = fs.readFileSync(src, "utf8");
+    const fm = matter(raw);
+    if (typeof fm.data.title !== "string" || typeof fm.data.description !== "string") {
+      throw new Error(`${where(d)}: the frontmatter needs a title and a description; the index and the shelves print them`);
+    }
+    const h1 = fm.content.match(/^# (.+)$/m);
+    if (!h1 || h1[1] !== fm.data.title) {
+      throw new Error(`${where(d)}: the h1 ("${h1?.[1] ?? ""}") must be the frontmatter's title ("${fm.data.title}"): one name for one page`);
+    }
+    if (d.code) throw new Error(`${where(d)}: a milestone code is a repository's label, and this document has no repository but ours`);
+    transform(d, raw);
+    d.shownTitle = fm.data.title;
+    d.description = fm.data.description;
+    continue;
+  }
   const src = path.join(SIBLINGS, d.repo, "docs", d.file);
   if (!fs.existsSync(src)) {
     throw new Error(`${src} is missing: the ${d.repo} checkout must sit beside this repository with its docs`);
@@ -621,4 +655,7 @@ for (const dir of [OUT, path.join(OUT, "..", "cart")]) {
     }
   }
 }
-console.log(`pull-nesdocs: ${DOCS.length} documents from the sibling checkouts (${DOCS.filter((d) => d.section === "cart").length} in the cart section)`);
+console.log(
+  `pull-nesdocs: ${DOCS.filter((d) => !d.here).length} documents from the sibling checkouts ` +
+    `(${DOCS.filter((d) => d.section === "cart").length} in the cart section), ${DOCS.filter((d) => d.here).length} written here`,
+);
