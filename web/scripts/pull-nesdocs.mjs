@@ -142,7 +142,7 @@ const GROUPS = [
 // gates their heading counts (tools/check-pulled-headings.py), because a
 // moved heading breaks the Japanese shadow's check at our deploy. It can
 // only gate what it has been told: a nes-bench entry added here, or a
-// Japanese shadow added for one (esp32-part-choice has none yet), is
+// Japanese shadow added for one (esp32-part-choice got its 2026-09-29), is
 // news for that project, with the file and the slug.
 const DOCS = [
   { repo: "nes", file: "nes-end-to-end-v0_2.md", slug: "sketch", code: "Sketch v0.2", title: "The plan for the whole console", group: "start", order: 1, description: "What a working console means, how the parts fit together, the milestones from N0 to N8, and the decisions made along the way." },
