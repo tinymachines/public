@@ -4046,3 +4046,86 @@ Open:
 - esp32-part-choice still has no Japanese copy.
 - Two older e2e tests flake only in parallel runs at load averages
   above 20; no reason captured.
+
+## Checkpoint, 2026-09-29
+
+Live, main and beta are at `757f204`, pushed, version 1.0.266. Lint has
+no errors; the library tests are 126 of 126; the API tests 153; the
+drift check is 0 of 78; the build's new drawing check reads 6 drawings
+in 1 document, 0 failing; the diagram spec is 3 of 3 against live and
+the docs and notebook specs 15 of 15 against beta. Nothing is running.
+
+The seventh deploy since the tag, on the owner's word ("this doc is the
+key"; "v1 / as-built"): the workbench map is a notebook document.
+
+- `e9e34b9`: `docs/nes/workbench.md`, "The desk as built", the one
+  tracked file under `docs/nes/` (everything else there is pulled at
+  build time; `.gitignore` says so). It is listed by `pull-nesdocs.mjs`
+  as a `here` entry on a new shelf, "The desk", between the console and
+  the bench, with its title and description read from the frontmatter
+  and the same hygiene run over it as over a pulled document. Six
+  drawings: the seven repositories becoming one page, the desk's
+  windows (open from the start, in the tray until asked for), one saved
+  state and its three uses, a recording end to end, the shelf, and what
+  leaving a page keeps. The text was read off the code again on the
+  way (`Win` has seven fields, the desk's layout is version 2, panels
+  every 200 ms, a keep every 5 s, 64 keeps back, a million-entry
+  history, the shelf's name, note and save limits) and says what the
+  survey found behind the code and what is not on the desk yet.
+- A ```mermaid fence anywhere in the documents is now a drawing:
+  `mdx-components.tsx` hands it to `components/Diagram.tsx`, which
+  renders it in the browser (Mermaid 11, strict, the neutral theme in
+  the kit's sans face) as a thumbnail that opens a full-screen dialog
+  with Fit the screen and Actual size, captioned from the fence's first
+  `%%` line, in both languages. Kit section 30, "The drawing", tokens
+  only. A fence that does not parse shows its source and says so.
+- `scripts/check-diagrams.mjs` runs in the build after the pulls: every
+  fence must parse (under happy-dom, because DOMPurify wants a DOM) and
+  carry a caption, and zero drawings is a failure. Sabotaged fences
+  fail it. `e2e/diagram.spec.ts` holds the rendered page: every figure
+  drawn with a thumbnail of a sane size, the dialog wider than the
+  thumbnail and no wider than the screen, Actual size changing the
+  width, Escape closing it, the other code blocks keeping Copy, and the
+  phone under `/ja` not widening.
+- The Japanese notebook index gained the shelf and the row; the
+  document itself is English under `/ja` until translated (the one
+  untranslated notice on that page, asserted). Digests restamped from
+  beta's pull; `notes/workbench-map.md` is a pointer now.
+- Two dependencies, `mermaid` and `happy-dom`. Neither `beta.sh` nor
+  `deploy.sh` runs `bun install`, so the beta worktree needed
+  `bun install --frozen-lockfile` by hand; a fresh worktree will again.
+
+Two deploy attempts failed on the way and each fix went in as its own
+commit:
+
+- `9f211bc`: `deploy.sh` stage 1a runs both pulls before the library
+  tests. The heading-count test held the Japanese index to the last
+  deploy's generated English index (eleven headings against twelve),
+  because nothing had refreshed it since; now a shadow is held to this
+  deploy's English.
+- `757f204`: the drawing's actual-size width is an inline style on its
+  sheet. It had been a `var(--diagram-w)` set from React, and the token
+  check refuses a `var()` naming a token the kit does not define
+  (3017 uses, all defined now).
+
+Open:
+- The document's Japanese copy, and a palette for the drawings once
+  the owner's design work reaches them (the neutral theme is a
+  placeholder, deliberately).
+- `check-diagrams` prints "1 documents".
+- From the map: code blocks on the Code window live in React state and
+  are lost on leaving the page; the console worker's `ciram` path has
+  no view; `shelf.patchRevision` has no caller; the served ntsc bundle
+  is v0.2.12 while the console pins v0.2.18 and check-build does not
+  hold that bundle to its record.
+- The owner is starting on the desk's ergonomics and UI design; the
+  document is the reference for it.
+- The bench side, not for the site yet: whether the phone alone powers
+  the board with the UART cable out, and step 6's host to be named.
+- The console's measured speed on the site is 0.83x real time, taken
+  under load; a boarding on a quiet machine gives the true figure.
+- If recording failed for the owner, the browser and what they saw are
+  the next thing to learn.
+- esp32-part-choice still has no Japanese copy.
+- Two older e2e tests flake only in parallel runs at load averages
+  above 20; no reason captured.
