@@ -4223,3 +4223,39 @@ Open: a palette for the drawings when the owner's design reaches them;
 blocks of a disk cartridge leave with the page; the owner's ergonomics
 work; the bench side; the quiet machine's 0.83x speed; the
 recording-failed question; esp32 ja; two load flakes.
+
+## Checkpoint, 2026-09-29, later
+
+On beta, not deployed: main, origin and beta at `5a8efc9`, live at
+`b2a3c4e` (1.0.267). Three commits, in the order of the list above.
+
+- `8ab568e`: a disk cartridge's code blocks are kept in the browser's
+  file store beside the game's moments, `flow/blocks/<sha>/<id>.json`,
+  one block whole, read back through a validator that refuses a file
+  that is not the block it was filed as (three library tests). The
+  Code window asks by the image's digest, with a hook Moments shares;
+  a browser without the store falls back to the page and says so. Two
+  e2e tests (capture, label, export, another file shows none, reload
+  brings it back with its words, remove stays removed; and the store
+  taken away). The sabotage (the store answering nothing) went red at
+  the reload, run through beta on a local-only commit. The document
+  says, in both languages and in the drawings, that blocks live in two
+  places and that three things are keyed by the digest.
+- `c3013b6`: esp32-part-choice speaks Japanese, the last pulled
+  document without a shadow (14 headings for 14; nes-bench `44a9054`
+  marks the row as shadowed).
+- `5a8efc9`: the load flakes. Measured under load 19 with four workers
+  the first load takes a third of a second; a CPU twenty times slower
+  and a network at 150 kbps both still deliver the file; the service
+  worker precaches nothing. The cause stays uncaptured, so the capture
+  is built in: the cartridge line shows what is loading until the
+  console answers (`data-play-loading`, both languages), and the one
+  load wait in the specs (`loadCartridge` in `e2e/lib.ts`, nine call
+  sites in nes.spec; its commit message says ten, which is wrong) throws
+  with what the page showed. nes.spec 20 of 20 and shelf.spec 13 of 13
+  against beta.
+
+Open: the drawings' palette; the owner's ergonomics work; the bench
+side; the quiet machine's 0.83x speed (load 17 to 21 all day); the
+recording-failed question; create.spec's "on a phone" flake, a different
+shape from the load waits.
