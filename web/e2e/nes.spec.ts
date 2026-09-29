@@ -764,6 +764,99 @@ test("control and the code panel: the steps by the machine's units, the reset, a
   await expect(page.locator("[data-code]")).toHaveAttribute("data-code-blocks", "0");
 });
 
+// A cartridge from the disk has no shelf; its blocks are kept in the
+// browser's private file store under the game's digest (lib/flowStore.ts),
+// so they survive the page and come back with the same file, and never
+// show under another. The second test takes the store away and watches
+// the window fall back to the page and say so: that is the difference the
+// first test's reload turns on.
+async function captureFirstTwo(page: import("@playwright/test").Page): Promise<[string, string]> {
+  await page.locator("[data-play-op]").click();
+  await expect(page.locator("[data-code-list] tbody tr")).not.toHaveCount(0);
+  const rows = page.locator("[data-code-list] tbody tr");
+  const a = (await rows.nth(0).getAttribute("data-code-line"))!;
+  const b = (await rows.nth(1).getAttribute("data-code-line"))!;
+  await rows.nth(0).click();
+  await rows.nth(1).click();
+  await expect(page.locator("[data-code-selection]")).toHaveAttribute("data-code-selection", "2");
+  await page.locator("[data-code-capture]").click();
+  await expect(page.locator("[data-code]")).toHaveAttribute("data-code-blocks", "1", { timeout: 15_000 });
+  return [a, b];
+}
+
+async function loadFromDisk(page: import("@playwright/test").Page, file: string, name: string) {
+  await page.locator("[data-play-rom]").setInputFiles(file);
+  await expect(page.locator("[data-play-stats] .measured").first()).toContainText(name, { timeout: 20_000 });
+  await expect(page.locator('[data-reg="PC"]')).toHaveCount(1, { timeout: 10_000 });
+}
+
+test("a disk cartridge's blocks are kept in this browser under the game's digest: they come back with the same file, its words with them, and never under another game", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize(BENCH);
+  await open(page, "/nes/create", 500);
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  const code = page.locator("[data-code]");
+  await expect(code).toHaveAttribute("data-code-shelf", "browser");
+  await expect(page.locator("[data-code-where]")).toHaveAttribute("data-code-where", "browser");
+  const [a] = await captureFirstTwo(page);
+  const block = page.locator(`[data-code-block="${a}"]`);
+  await expect(block).toHaveAttribute("data-code-block-kept", "browser");
+  await block.locator("[data-code-label]").fill("the loop");
+  await block.locator("[data-code-label]").blur();
+  await block.locator("[data-code-note]").fill("kept in this browser");
+  await block.locator("[data-code-note]").blur();
+  // The JSON export names the game by its digest now, as the shelf's does.
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.locator("[data-code-export-json]").click()]);
+  const exported = JSON.parse(fs.readFileSync((await dl.path())!, "utf8")) as { cart: string | null; blocks: { label: string; storeId?: unknown }[] };
+  expect(exported.cart).toMatch(/^[0-9a-f]{64}$/);
+  expect(exported.blocks[0].label).toBe("the loop");
+  expect("storeId" in exported.blocks[0]).toBe(false);
+  // Another cartridge from the disk: none of this game's blocks under it.
+  await loadFromDisk(page, "e2e/fixtures/testcart.nes", "testcart.nes");
+  await expect(code).toHaveAttribute("data-code-shelf", "browser");
+  await expect(code).toHaveAttribute("data-code-blocks", "0");
+  await expect(page.locator("[data-code-none]")).toHaveCount(1);
+  // The page left and opened again, the same file loaded: the block is back, with its words.
+  await page.reload();
+  await expect(page.locator("[data-play-rom]")).toHaveCount(1, { timeout: 20_000 });
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  await expect(code).toHaveAttribute("data-code-blocks", "1", { timeout: 15_000 });
+  await expect(block).toHaveAttribute("data-code-block-kept", "browser");
+  await expect(block.locator("[data-code-label]")).toHaveValue("the loop");
+  await expect(block.locator("[data-code-note]")).toHaveValue("kept in this browser");
+  await expect(block.locator("pre")).toContainText(a);
+  // Removed, it stays removed.
+  await block.locator("[data-code-remove]").click();
+  await expect(code).toHaveAttribute("data-code-blocks", "0");
+  await page.reload();
+  await expect(page.locator("[data-play-rom]")).toHaveCount(1, { timeout: 20_000 });
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  await expect(code).toHaveAttribute("data-code-shelf", "browser");
+  await expect(page.locator("[data-code-none]")).toHaveCount(1);
+  await expect(code).toHaveAttribute("data-code-blocks", "0");
+});
+
+test("a browser without the private file store keeps a disk cartridge's blocks in the page, says so, and loses them with it", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize(BENCH);
+  await page.addInitScript(() => {
+    // What a browser without the store looks like to the page: no directory to ask for.
+    Object.defineProperty(navigator, "storage", { value: {}, configurable: true });
+  });
+  await open(page, "/nes/create", 500);
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  const code = page.locator("[data-code]");
+  await expect(code).toHaveAttribute("data-code-shelf", "page", { timeout: 15_000 });
+  await expect(page.locator("[data-code-where]")).toContainText("stay in this page");
+  const [a] = await captureFirstTwo(page);
+  await expect(page.locator(`[data-code-block="${a}"]`)).toHaveAttribute("data-code-block-kept", "page");
+  await page.reload();
+  await expect(page.locator("[data-play-rom]")).toHaveCount(1, { timeout: 20_000 });
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  await expect(code).toHaveAttribute("data-code-shelf", "page", { timeout: 15_000 });
+  await expect(code).toHaveAttribute("data-code-blocks", "0");
+});
+
 test("the machine's panels hold their height: nothing below them moves as the console steps, selects or paints", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize(BENCH);

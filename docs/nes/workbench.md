@@ -37,10 +37,11 @@ of this page.
   flow analyser, then throws the worker away.
 - **Four places things are kept, and nothing else.** The browser's own
   private file store holds recordings, their reports, one copy of each
-  game and the moments. The browser's local storage holds the desk's
-  layout and the touch pad's placement. The shelf, behind a GitHub
-  sign-in, holds cartridges, one battery save per cartridge, and sprite
-  revisions as patches. Everything else, code blocks, breakpoints, the
+  game, the moments, and the code blocks of a cartridge from the disk.
+  The browser's local storage holds the desk's layout and the touch pad's
+  placement. The shelf, behind a GitHub sign-in, holds cartridges, one
+  battery save per cartridge, sprite revisions as patches, and the code
+  blocks of a cartridge from there. Everything else, breakpoints, the
   history trace and the step-back marks, lives in memory and goes with the
   page.
 - **No live handoff between Play and Create.** Both pages import the same
@@ -104,7 +105,7 @@ flowchart LR
     cw["console.worker.mjs<br/>Nes, Pipeline (pacer)"]
     pw["picture.worker.mjs<br/>Pipeline or WebGPU"]
     fw["flow.worker.mjs<br/>NesReplay + FlowTool"]
-    opfs[("the private file store<br/>flow/recordings, flow/roms,<br/>flow/moments")]
+    opfs[("the private file store<br/>flow/recordings, flow/roms,<br/>flow/moments, flow/blocks")]
     ls[("localStorage")]
   end
 
@@ -220,6 +221,7 @@ flowchart TB
   shelf[("the shelf API")]
   ls[("localStorage")]
   engine <-->|"moments, recordings"| opfs
+  code <-->|"blocks, from the disk"| opfs
   fe <-->|"recordings, reports, game copies"| opfs
   engine <-->|"battery save"| shelf
   spr <-->|"revisions (IPS)"| shelf
@@ -277,7 +279,7 @@ fields; the worker paths behind each verb are in the next section.
 | **Screen** | the picture worker's bitmaps, painted by the engine into the canvas | `attach`, `detach`; the Gamepad's `setTouchPad(bits)`; keys handled in the engine | pad placement per orientation and haptics, localStorage `tm.nes.pad*` | the Gamepad shows only when the desk stacks (a phone); an off-screen input holds focus so a phone hands over the arrows |
 | **Cartridge** | `loaded`, `powered`, `running`, `battery`, `why` | `load(file, cart?)` from disk or the shelf; `toggleRun` | battery RAM to the shelf on a timer, on pause, on hide, and before another load; restored on load | contains **Moments** |
 | **Moments** (inside Cartridge) | the game's SHA-256, `momentsKept` | `saveMoment`, `loadMoment`, `deleteMoment` | the file store, `flow/moments/<sha>/<id>.bin` with a `.json` | a moment is the whole console (nes-console `state.rs`) with its frame count; Load is disabled while recording |
-| **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart`; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block, its label and note | breakpoints: engine memory, sent with every tick; blocks: the shelf for a cartridge from there (kept as captured, the words as the field is left), the page otherwise; exported as markdown or JSON downloads | a block from the shelf comes back with the cartridge; a block of a cartridge from the disk leaves with the page, and the window says so |
+| **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart`, the game's SHA-256; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block, its label and note | breakpoints: engine memory, sent with every tick; blocks: the shelf for a cartridge from there, the file store under the game's digest (`flow/blocks/<sha>/<id>.json`) for one from the disk, kept as captured and the words as the field is left either way; exported as markdown or JSON downloads | a block comes back with the cartridge from wherever it was kept; only a browser without the file store leaves a disk cartridge's blocks in the page, and the window says so |
 | **CPU, Memory, Palettes, OAM** (one component, `State.tsx`) | `machine` (published every 200 ms while running), `palette` (the measured colours) | Memory: `watch(page)`; OAM: a tile button hands its tile to Sprites | none | four windows, one reader |
 | **Nametables** | the nametable RAM and the pattern memory as the picture chip sees it, through the board's banks, asked of the worker (`nametables`) each time the machine is published while the window is on view; `ppu.ctrl` for the pattern table, palette RAM and the measured colours, `rom` for the header's mirroring | nothing | none | draws the two tables as the chip holds them, with the tiles the chip sees at that instant, whatever the board banks |
 | **Sprites** | `base` (the parsed iNES image), `rom`, `patched`, `palette`, `machine.palette` (live), `cart`; on a board that draws from CHR-RAM, the console's pattern memory (`patternMemory`), asked with each publish while the sheet is on view | Apply (`reloadWith(image)`), Revert, download `.ips` or `.patched.nes`; Keep a revision, rename one, load one, delete one | edits: a Map in memory; revisions: the shelf, as IPS with a message | the only window that changes bytes; on a CHR-RAM board it only shows them |
@@ -310,7 +312,9 @@ cartridge's digest, the range, the bytes and the text, so it can leave as
 the encyclopedia's own shape or as JSON. For a cartridge from the shelf
 it is kept there beside the revisions, the bytes with it, and comes back
 when the cartridge is loaded from the shelf again; for a cartridge from
-the disk it lives in the window's state and leaves with the page.
+the disk it is kept in the browser's file store beside the game's
+moments, under the game's digest, and comes back when the same file is
+loaded again.
 
 **Nametables** is the picture chip's own two kilobytes of nametable RAM,
 drawn as the two tables the chip holds, with the game's tiles from the
@@ -489,17 +493,19 @@ every picker after a write.
 
 | where | what | keyed by | survives a reload | survives leaving the page | another browser, another machine |
 |---|---|---|---|---|---|
-| the browser's private file store | recordings and their reports, one copy of each game, moments | recording id; the game's SHA-256 | yes | yes | no: this browser only, and clearing site data removes it |
+| the browser's private file store | recordings and their reports, one copy of each game, moments, the code blocks of a cartridge from the disk | recording id; the game's SHA-256 | yes | yes | no: this browser only, and clearing site data removes it |
 | localStorage | the desk's layout, the touch pad's placement and haptics | fixed keys | yes | yes | no |
 | the shelf, signed in with GitHub | cartridges, one battery save per cartridge, sprite revisions as IPS, code blocks | the account and the cartridge id | yes | yes | yes, signed in |
-| memory | breakpoints, the history trace, the 64 step-back marks; the code blocks of a cartridge from the disk | nothing | no | no | no |
+| memory | breakpoints, the history trace, the 64 step-back marks | nothing | no | no | no |
 
-Two consequences for anyone redesigning the desk. A game's moments and
-recordings are already indexed by its digest, so "what you have for this
-game" can be shown the moment a game loads, on either page. And since
-2026-09-29 everything written on the desk is kept somewhere, with one
-exception: a code block of a cartridge from the disk, which has no shelf
-to go to and leaves with the page, as the window says.
+Two consequences for anyone redesigning the desk. A game's moments,
+recordings and (from the disk) code blocks are already indexed by its
+digest, so "what you have for this game" can be shown the moment a game
+loads, on either page. And since 2026-09-29 everything written on the
+desk is kept somewhere: code blocks live in two places, the shelf for a
+cartridge from there and the file store for one from the disk, and a
+block never crosses between them, because each is asked for by the
+cartridge it was read on.
 
 ## Leaving a page
 
@@ -575,7 +581,10 @@ with them on it:
 - **Code blocks are kept.** For a cartridge from the shelf they go to
   the shelf beside the revisions, as the window itself said they should,
   and come back with the cartridge. Blocks of a cartridge from the disk
-  still stay in the page, and the window says so.
+  go to the browser's file store beside the game's moments, under its
+  digest, and come back when the same file is loaded again. Only a
+  browser without that store leaves them in the page, and the window
+  says so.
 - **The nametables have a window.** Nametables asks the console worker's
   `ciram` path, which had no caller, and draws the two tables the chip
   holds.
@@ -601,9 +610,10 @@ cosmetic:
   waiting (code blocks in React state, the `ciram` export with no view,
   `patchRevision` with no caller) each have one since 2026-09-29: the
   shelf, the Nametables window, Rename in Sprites.
-- **Two things are already keyed by the game's digest** and so follow a
-  game from Play to Create and back: moments and recordings. A design that
-  shows "what you have for this game" has its index already.
+- **Three things are already keyed by the game's digest** and so follow a
+  game from Play to Create and back: moments, recordings, and the code
+  blocks of a cartridge from the disk. A design that shows "what you have
+  for this game" has its index already.
 - **The bytes only change in Sprites.** Every other window reads. An
   "edited" state for the whole desk is Sprites' edit Map plus the
   engine's `patched` flag, nothing more.

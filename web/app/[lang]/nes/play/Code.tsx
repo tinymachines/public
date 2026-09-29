@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import type { Lang } from "@/lib/lang";
 import { clearBreakpoints, snapshot, serverSnapshot, subscribe, toggleBreakpoint } from "./playEngine";
 import { addBlock, announceChange, deleteBlock, listBlocks, patchBlock, ShelfError, type Block as ShelfBlock } from "@/lib/shelf";
+import { deleteBlock as dropStoredBlock, listBlocks as listStoredBlocks, saveBlock as storeBlock, type StoredBlock } from "@/lib/flowStore";
+import { useDigest } from "./digest";
 // The 6502 site's disassembler, the one table of the documented opcodes,
 // served beside the console's modules (lib/console-modules.ts says why).
 import { disassemble } from "../../../../public/6502/games/disasm.js";
@@ -32,8 +34,12 @@ import { disassemble } from "../../../../public/6502/games/disasm.js";
  * the revisions (lib/shelf.ts, api/carts.py), and come back when the
  * cartridge is loaded from the shelf again; the bytes go only to the
  * reader's own shelf, where the game already is (NOTICE.md, "Somebody
- * else's game"). A cartridge from the disk has no shelf, and its blocks
- * stay in the page, as every block did until 2026-09-29.
+ * else's game"). A cartridge from the disk has no shelf: its blocks are
+ * kept in this browser's private file store beside the game's moments,
+ * under the image's digest (lib/flowStore.ts), and come back when the
+ * same file is loaded again. Only a browser without that store leaves
+ * them in the page, as every block did until 2026-09-29, and the window
+ * says so.
  */
 
 const S = {
@@ -56,7 +62,8 @@ const S = {
     remove: "Remove",
     exportMd: "Download the blocks (markdown)",
     exportJson: "Download the blocks (JSON)",
-    stays: "This cartridge came from your disk, so its blocks stay in this page. Put the cartridge on your shelf and load it from there to keep them.",
+    stays: "This browser has no private file store, so the blocks of a cartridge from your disk stay in this page. Put the cartridge on your shelf and load it from there to keep them.",
+    browser: "This cartridge came from your disk, so its blocks are kept in this browser beside the game's moments, under the game's own digest: load the same file again and they come back. Nothing leaves this browser. Put the cartridge on your shelf and load it from there to keep them with it.",
     kept: "Blocks are kept on your shelf beside the revisions, and come back when you load this cartridge from there. A block carries the game's bytes, and they go nowhere but your own shelf, where the game already is.",
     keeping: "keeping",
     cols: ["stop", "address", "bytes", "instruction"],
@@ -89,7 +96,8 @@ const S = {
     remove: "削除",
     exportMd: "ブロックをダウンロード（markdown）",
     exportJson: "ブロックをダウンロード（JSON）",
-    stays: "このカートリッジはディスクから来たので、ブロックはこのページに留まる。カートリッジを棚に置き、そこから読み込めば残る。",
+    stays: "このブラウザには私有のファイル保管庫が無いので、ディスクから来たカートリッジのブロックはこのページに留まる。カートリッジを棚に置き、そこから読み込めば残る。",
+    browser: "このカートリッジはディスクから来たので、ブロックはこのブラウザの中に、ゲームのモーメントと並べて、ゲーム自身のダイジェストの下に残る。同じファイルをもう一度読み込めば戻ってくる。何もこのブラウザの外には出ない。カートリッジを棚に置き、そこから読み込めば、ブロックも一緒に残る。",
     kept: "ブロックは棚にリビジョンと並べて残り、このカートリッジを棚から読み込むと戻ってくる。ブロックはゲームのバイトを運ぶが、行き先はゲームがすでにあるあなたの棚だけだ。",
     keeping: "保存中",
     cols: ["停止", "アドレス", "バイト", "命令"],
@@ -117,8 +125,10 @@ interface Line {
 /** A captured block: where, what was there, and what the reader says about it. */
 export interface Block {
   id: number;
-  /** Its id on the shelf, for a cartridge from there; null for a block that lives in the page. */
+  /** Its id on the shelf, for a cartridge from there; null otherwise. */
   shelfId: string | null;
+  /** Its id in the browser's file store, for a cartridge from the disk; null for a block that lives in the page. */
+  storeId: string | null;
   cart: string | null;
   from: number;
   to: number;
@@ -148,7 +158,13 @@ const fromHex = (hex: string) => Uint8Array.from(hex.match(/.{2}/g) ?? [], (h) =
 /** A block as the shelf keeps it, its listing disassembled again from the bytes. */
 function fromShelf(b: ShelfBlock, id: number, cart: string | null): Block {
   const bytes = fromHex(b.bytes);
-  return { id, shelfId: b.id, cart, from: b.at, to: b.to, lines: listing(bytes, b.at, bytes.length), label: b.label, note: b.note };
+  return { id, shelfId: b.id, storeId: null, cart, from: b.at, to: b.to, lines: listing(bytes, b.at, bytes.length), label: b.label, note: b.note };
+}
+
+/** A block as the browser's file store keeps it, its listing disassembled again from the bytes. */
+function fromStore(b: StoredBlock, id: number): Block {
+  const bytes = fromHex(b.bytes);
+  return { id, shelfId: null, storeId: b.id, cart: b.sha256, from: b.at, to: b.to, lines: listing(bytes, b.at, bytes.length), label: b.label, note: b.note };
 }
 
 function download(name: string, text: string, type: string) {
@@ -183,40 +199,60 @@ export function Code({ lang }: { lang: Lang }) {
   const nextId = useRef(1);
   const sel = anchor !== null && end !== null ? { from: Math.min(anchor, end), to: Math.max(anchor, end) } : null;
   const selectedLines = sel ? lines.filter((l) => l.at >= sel.from && l.at <= sel.to) : [];
-  const cart = s.cart?.sha256 ?? null;
   // The shelf's cartridge, when the one loaded came from there: its blocks
-  // are the shelf's, listed when it arrives and written as they change.
+  // are the shelf's, listed when it arrives and written as they change. A
+  // file from the disk is known by its digest instead, and its blocks are
+  // the browser's file store's, under that digest.
   const shelf = s.cart;
   const shelfId = shelf?.id ?? null;
+  const digest = useDigest(s.rom);
+  const cart = shelf?.sha256 ?? digest;
   const [busy, setBusy] = useState<string | null>(null);
   const [shelfWhy, setShelfWhy] = useState<string | null>(null);
+  // Where a block of a cartridge from the disk goes: the file store until
+  // the store refuses (a browser without one), then the page.
+  const [store, setStore] = useState<"browser" | "page">("browser");
+  const where = shelfId ? "shelf" : store;
   // Another cartridge is another set of blocks. Adjusted during render, as
   // the sprite sheet drops its edits, so the old blocks never show under
   // the new cartridge for a frame.
-  const [lastShelf, setLastShelf] = useState(shelfId);
-  if (lastShelf !== shelfId) {
-    setLastShelf(shelfId);
+  const key = shelfId ? `shelf:${shelfId}` : digest ? `browser:${digest}` : null;
+  const [lastKey, setLastKey] = useState(key);
+  if (lastKey !== key) {
+    setLastKey(key);
     setBlocks([]);
     setShelfWhy(null);
   }
   useEffect(() => {
-    if (!shelfId) return;
+    if (!key) return;
     let live = true;
     const sha = cart;
-    void listBlocks(shelfId)
-      .then((r) => {
-        if (!live) return;
-        setBlocks(r.blocks.map((b) => fromShelf(b, nextId.current++, sha)));
-      })
-      .catch((e) => {
-        if (live) setShelfWhy(e instanceof ShelfError ? e.message : String((e as Error).message ?? e));
-      });
+    if (shelfId) {
+      void listBlocks(shelfId)
+        .then((r) => {
+          if (!live) return;
+          setBlocks(r.blocks.map((b) => fromShelf(b, nextId.current++, sha)));
+        })
+        .catch((e) => {
+          if (live) setShelfWhy(e instanceof ShelfError ? e.message : String((e as Error).message ?? e));
+        });
+    } else {
+      void listStoredBlocks(digest!)
+        .then((kept) => {
+          if (!live) return;
+          setBlocks(kept.map((b) => fromStore(b, nextId.current++)));
+          setStore("browser");
+        })
+        .catch(() => {
+          if (live) setStore("page");
+        });
+    }
     return () => {
       live = false;
     };
-    // The digest travels with the id; a new cartridge is a new id.
+    // The digest and the id travel together in the key; a new cartridge is a new key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shelfId]);
+  }, [key]);
   const shelfCall = async (what: string, fn: () => Promise<void>) => {
     setBusy(what);
     setShelfWhy(null);
@@ -251,15 +287,32 @@ export function Code({ lang }: { lang: Lang }) {
       });
       return;
     }
-    setBlocks((bs) => [...bs, { id: nextId.current++, shelfId: null, cart, from: at, to, lines: selectedLines, label: "", note: "" }]);
+    const inPage = () => setBlocks((bs) => [...bs, { id: nextId.current++, shelfId: null, storeId: null, cart, from: at, to, lines: selectedLines, label: "", note: "" }]);
+    if (store === "browser" && digest) {
+      void shelfCall("keep", async () => {
+        try {
+          const kept = await storeBlock(digest, { at, to, bytes: hexOf(selectedLines), label: "", note: "" });
+          setBlocks((bs) => [...bs, fromStore(kept, nextId.current++)]);
+        } catch {
+          // A browser without the store: the block lives in the page, and the window says so from here on.
+          setStore("page");
+          inPage();
+        }
+      });
+      return;
+    }
+    inPage();
   };
-  /** The words changed on a block: the page's copy at once, the shelf's when the field is left. */
+  /** The words changed on a block: the page's copy at once, the shelf's or the store's when the field is left. */
   const word = (b: Block, field: "label" | "note", value: string) => setBlocks((bs) => bs.map((x) => (x.id === b.id ? { ...x, [field]: value } : x)));
   const keepWords = (b: Block) => {
-    if (!shelfId || !b.shelfId) return;
-    void shelfCall(`words ${b.shelfId}`, async () => {
-      await patchBlock(shelfId, b.shelfId!, { label: b.label, note: b.note });
-    });
+    if (shelfId && b.shelfId) {
+      void shelfCall(`words ${b.shelfId}`, async () => {
+        await patchBlock(shelfId, b.shelfId!, { label: b.label, note: b.note });
+      });
+    } else if (b.storeId && digest) {
+      void storeBlock(digest, { id: b.storeId, at: b.from, to: b.to, bytes: hexOf(b.lines), label: b.label, note: b.note }).catch(() => setStore("page"));
+    }
   };
   const remove = (b: Block) => {
     if (shelfId && b.shelfId) {
@@ -270,6 +323,7 @@ export function Code({ lang }: { lang: Lang }) {
       });
       return;
     }
+    if (b.storeId && digest) void dropStoredBlock(digest, b.storeId).catch(() => setStore("page"));
     setBlocks((bs) => bs.filter((x) => x.id !== b.id));
   };
   const stem = (s.loaded ?? "cartridge").replace(/\.nes$/i, "");
@@ -283,7 +337,7 @@ export function Code({ lang }: { lang: Lang }) {
   }, [lines]);
 
   return (
-    <section className="wb-page play-section" id="code" data-code data-code-blocks={blocks.length} data-code-shelf={shelfId ? "shelf" : "page"}>
+    <section className="wb-page play-section" id="code" data-code data-code-blocks={blocks.length} data-code-shelf={where}>
       <h2 className="eyebrow">{T.h}</h2>
       {why ? (
         <p className="quiet" data-code-why>{why}</p>
@@ -329,7 +383,7 @@ export function Code({ lang }: { lang: Lang }) {
       ) : (
         <ul className="code-blocks">
           {blocks.map((b) => (
-            <li key={b.id} data-code-block={hex4(b.from)} data-code-block-kept={b.shelfId ? "shelf" : "page"}>
+            <li key={b.id} data-code-block={hex4(b.from)} data-code-block-kept={b.shelfId ? "shelf" : b.storeId ? "browser" : "page"}>
               <div className="form-grid">
                 <label className="field"><span>{T.label}</span><input className="input" value={b.label} placeholder={T.labelHint} maxLength={80} onChange={(e) => word(b, "label", e.target.value)} onBlur={(e) => keepWords({ ...b, label: e.target.value })} data-code-label /></label>
                 <label className="field"><span>{T.note}</span><input className="input" value={b.note} placeholder={T.noteHint} maxLength={240} onChange={(e) => word(b, "note", e.target.value)} onBlur={(e) => keepWords({ ...b, note: e.target.value })} data-code-note /></label>
@@ -345,9 +399,9 @@ export function Code({ lang }: { lang: Lang }) {
       )}
       <div className="chips">
         <button type="button" className="btn" disabled={blocks.length === 0} onClick={() => download(`${stem}.blocks.md`, markdownOf(blocks, cart), "text/markdown")} data-code-export-md>{T.exportMd}</button>
-        <button type="button" className="btn" disabled={blocks.length === 0} onClick={() => download(`${stem}.blocks.json`, JSON.stringify({ cart, blocks: blocks.map(({ id: _id, shelfId: _shelf, ...b }) => b) }, null, 2), "application/json")} data-code-export-json>{T.exportJson}</button>
+        <button type="button" className="btn" disabled={blocks.length === 0} onClick={() => download(`${stem}.blocks.json`, JSON.stringify({ cart, blocks: blocks.map(({ id: _id, shelfId: _shelf, storeId: _store, ...b }) => b) }, null, 2), "application/json")} data-code-export-json>{T.exportJson}</button>
       </div>
-      <p className="quiet">{shelfId ? T.kept : T.stays}</p>
+      <p className="quiet" data-code-where={where}>{where === "shelf" ? T.kept : where === "browser" ? T.browser : T.stays}</p>
     </section>
   );
 }

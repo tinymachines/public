@@ -335,7 +335,7 @@ test.describe("the shelf, signed in", () => {
     // A file from the disk keeps its blocks in the page, and the window says so.
     await page.locator("[data-play-rom]").setInputFiles(CAL);
     await expect(page.locator("[data-play-stats]")).toContainText("cal.nes");
-    await expect(code).toHaveAttribute("data-code-shelf", "page");
+    await expect(code).toHaveAttribute("data-code-shelf", "browser");
   });
 
   test("every bench in the playground that takes a file offers the shelf", async ({ page }) => {

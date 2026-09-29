@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import { deleteMoment, listMoments, sha256, type MomentMeta } from "@/lib/flowStore";
+import { deleteMoment, listMoments, type MomentMeta } from "@/lib/flowStore";
+import { useDigest } from "./digest";
 import { loadMoment, saveMoment, serverSnapshot, snapshot, subscribe } from "./playEngine";
 
 /**
@@ -42,20 +43,9 @@ export function Moments({ lang }: { lang: Lang }) {
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   // Each answer names what it answers for, so one that arrives for another
   // game (or before a save) is not shown.
-  const [hashed, setHashed] = useState<{ rom: Uint8Array; sha: string } | null>(null);
   const [listed, setListed] = useState<{ sha: string; kept: number; gone: number; list: MomentMeta[] } | null>(null);
   const [gone, setGone] = useState(0);
-  const sha = hashed && hashed.rom === s.rom ? hashed.sha : null;
-
-  useEffect(() => {
-    const rom = s.rom;
-    if (!rom) return;
-    let live = true;
-    void sha256(rom).then((h) => live && setHashed({ rom, sha: h }));
-    return () => {
-      live = false;
-    };
-  }, [s.rom]);
+  const sha = useDigest(s.rom);
 
   useEffect(() => {
     if (!sha) return;

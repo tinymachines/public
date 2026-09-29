@@ -12,6 +12,7 @@
  *   flow/roms/<sha256>.nes             the image it was played on, once per image
  *   flow/moments/<sha256>/<id>.bin     a moment: the console saved at one instant (below)
  *   flow/moments/<sha256>/<id>.json    what the list shows of it
+ *   flow/blocks/<sha256>/<id>.json     a code block of a cartridge from the disk (below)
  *
  * The image is kept so a recording can be played back later without the
  * reader finding the file again. It stays in this browser: an exported
@@ -318,5 +319,80 @@ export async function loadMoment(sha: string, id: string): Promise<Uint8Array> {
 export async function deleteMoment(sha: string, id: string) {
   const d = await dir(["moments", sha], false);
   await d.removeEntry(`${id}.bin`).catch(() => {});
+  await d.removeEntry(`${id}.json`).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// Blocks: the code blocks of a cartridge from the disk, which has no shelf
+// to keep them. `blocks/<sha>/<id>.json` is one block whole: its range, the
+// bytes that were on the bus (hex, as the shelf keeps them) and the
+// reader's words. A cartridge from the shelf keeps its blocks there
+// (lib/shelf.ts), never here; the two never mix, because a block names
+// the image it was read on and the list is asked by that digest.
+// ---------------------------------------------------------------------------
+
+export interface StoredBlock {
+  v: 1;
+  id: string;
+  /** SHA-256 of the image the block was read on. */
+  sha256: string;
+  at: number;
+  to: number;
+  /** The bytes on the bus from `at` to the end of the last instruction, as hex. */
+  bytes: string;
+  label: string;
+  note: string;
+  savedAt: string;
+}
+
+const SHA = /^[0-9a-f]{64}$/;
+const ADDR = (n: unknown) => typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= 0xffff;
+
+/**
+ * A stored block read back, or null when the file is not one: a block
+ * whose digest is not the one it was filed under, whose range is not two
+ * addresses in order, or whose bytes are not hex is not a block, and is
+ * not listed rather than drawn wrong.
+ */
+export function readBlock(json: string, sha: string, id: string): StoredBlock | null {
+  let b: Partial<StoredBlock>;
+  try {
+    b = JSON.parse(json) as Partial<StoredBlock>;
+  } catch {
+    return null;
+  }
+  if (!b || b.v !== 1 || b.id !== id || b.sha256 !== sha || !SHA.test(sha)) return null;
+  if (!ADDR(b.at) || !ADDR(b.to) || b.to! < b.at!) return null;
+  if (typeof b.bytes !== "string" || !/^([0-9A-Fa-f]{2})+$/.test(b.bytes)) return null;
+  if (typeof b.label !== "string" || typeof b.note !== "string" || typeof b.savedAt !== "string") return null;
+  return { v: 1, id: b.id, sha256: b.sha256, at: b.at!, to: b.to!, bytes: b.bytes, label: b.label, note: b.note, savedAt: b.savedAt };
+}
+
+/** Keep a block whole: a new one gets an id, one already kept is written over (its words changed). */
+export async function saveBlock(sha: string, b: { id?: string; at: number; to: number; bytes: string; label: string; note: string }): Promise<StoredBlock> {
+  await keep();
+  const savedAt = new Date().toISOString();
+  const id = b.id ?? `${savedAt.replace(/[:.]/g, "-")}-${b.at.toString(16).padStart(4, "0")}`;
+  const block: StoredBlock = { v: 1, id, sha256: sha, at: b.at, to: b.to, bytes: b.bytes, label: b.label, note: b.note, savedAt };
+  await write(await dir(["blocks", sha]), `${id}.json`, JSON.stringify(block));
+  return block;
+}
+
+/** The blocks kept on one image, in the order they were captured. */
+export async function listBlocks(sha: string): Promise<StoredBlock[]> {
+  const d = await dir(["blocks", sha]);
+  const out: StoredBlock[] = [];
+  for await (const [name, h] of d as unknown as AsyncIterable<[string, FileSystemHandle]>) {
+    if (h.kind !== "file" || !name.endsWith(".json")) continue;
+    const bytes = await read(d, name);
+    if (!bytes) continue;
+    const b = readBlock(new TextDecoder().decode(bytes), sha, name.slice(0, -".json".length));
+    if (b) out.push(b);
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function deleteBlock(sha: string, id: string) {
+  const d = await dir(["blocks", sha], false);
   await d.removeEntry(`${id}.json`).catch(() => {});
 }

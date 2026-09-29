@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { framesIn, packRecording, prgLength, unpackRecording, type RecordingMeta } from "./flowStore";
+import { framesIn, packRecording, prgLength, readBlock, unpackRecording, type RecordingMeta } from "./flowStore";
 
 // The flow tools key code by its offset into the PRG, so its length must
 // be the header's, in both header formats; and a recording's length is
@@ -61,5 +61,25 @@ describe("a recording as one file", () => {
   test("a file cut inside a part is refused", () => {
     const full = packRecording(meta, null, log, new Uint8Array([1, 2, 3]));
     expect(() => unpackRecording(full.slice(0, full.length - 1))).toThrow("cut short");
+  });
+});
+
+describe("a block read back from the store", () => {
+  const sha = "b".repeat(64);
+  const block = { v: 1, id: "2026-09-29T00-00-00-000Z-c000", sha256: sha, at: 0xc000, to: 0xc003, bytes: "A9004C00C0", label: "the loop", note: "", savedAt: "2026-09-29T00:00:00.000Z" };
+  const json = (over: object) => JSON.stringify({ ...block, ...over });
+  test("comes back whole when it is the block it was filed as", () => {
+    expect(readBlock(json({}), sha, block.id)).toEqual(block as never);
+  });
+  test("is refused under another digest, another id, or a range out of order", () => {
+    expect(readBlock(json({}), "c".repeat(64), block.id)).toBeNull();
+    expect(readBlock(json({}), sha, "other")).toBeNull();
+    expect(readBlock(json({ to: 0xbfff }), sha, block.id)).toBeNull();
+    expect(readBlock(json({ at: 0x10000, to: 0x10000 }), sha, block.id)).toBeNull();
+  });
+  test("is refused when its bytes are not hex, its words are missing, or it is not JSON", () => {
+    expect(readBlock(json({ bytes: "A9 00" }), sha, block.id)).toBeNull();
+    expect(readBlock(json({ label: undefined }), sha, block.id)).toBeNull();
+    expect(readBlock("{not json", sha, block.id)).toBeNull();
   });
 });
