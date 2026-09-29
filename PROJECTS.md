@@ -4190,3 +4190,29 @@ of a disk cartridge leave with the page; a banked-CHR board's tiles wait
 on the console saying which bank the PPU sees; the version bump; the
 owner's ergonomics work; the bench side; the quiet machine's 0.83x
 speed; the recording-failed question; esp32 ja; two load flakes.
+
+## Checkpoint, 2026-09-29, night
+
+Deployed as 1.0.267, the ninth deploy since the tag; the version moved
+with this deploy, the first dirty-tree deploy since the tag.
+
+- `d8cdfbb`: the desk's document speaks Japanese (`docs/ja/nes/
+  workbench.md`: the fifteen sections, the fifty-seven table rows and
+  the six drawings with their captions and labels; stamped); the
+  diagrams check counts its nouns ("1 document").
+- nes `ffa239e`, boarded, `46cda97` here: the console reads its pattern
+  memory as the picture chip sees it (`Console::chr`, 8 KiB through the
+  board's banks as they stand, the board's state put back after every
+  byte because MMC2's latch trips on a read of its trigger tiles; two
+  tests, one red when the state is put back once instead); the worker's
+  `ciram` path answers `{ ciram, chr }`; the Nametables window draws
+  with it whatever the board, and the refusal for a banked board is gone.
+  The nes suite is 87 green; the record and the bundle followed. Checked
+  on beta against the owner's CNROM, MMC3, MMC2 (Punch-Out!!'s title at
+  frame 357), UxROM and NROM dumps with a temporary spec, deleted after.
+
+Open: a palette for the drawings when the owner's design reaches them;
+blocks of a disk cartridge leave with the page; the owner's ergonomics
+work; the sprite sheet could draw a CHR-RAM board's live tiles the way
+Nametables now does; the bench side; the quiet machine's 0.83x speed;
+the recording-failed question; esp32 ja; two load flakes.
