@@ -3115,15 +3115,18 @@ html.has-fullscreen .wb-strip { top: 0; }
 }
 .diagram-title { flex: 1 1 12rem; min-width: 0; font-weight: 600; }
 .diagram-bar .btn { padding: calc(var(--u) * 1.5) calc(var(--u) * 3); font-size: var(--text-data); }
-/* Fitted: the drawing takes the room under the bar and keeps its shape,
-   so the whole of it is on the screen. Actual: the drawing at the width
-   mermaid drew it (--diagram-w, set by the component), and the view
-   scrolls. Mermaid's inline max-width yields to both. */
+/* Fitted: the sheet takes the room under the bar and the drawing keeps
+   its shape inside it, so the whole of it is on the screen. Actual: the
+   component sets the sheet's width inline to the width mermaid drew (data,
+   not a token), the drawing fills it, and the view scrolls. Mermaid's own
+   inline max-width yields to both. */
 .diagram-view {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   padding: calc(var(--u) * 4);
 }
+.diagram-view .diagram-sheet { height: 100%; }
 .diagram-view svg { display: block; width: 100%; height: 100%; max-width: none !important; }
-.diagram-view.actual svg { width: var(--diagram-w, auto); height: auto; margin: 0 auto; }
+.diagram-view.actual .diagram-sheet { height: auto; margin: 0 auto; }
+.diagram-view.actual svg { height: auto; }

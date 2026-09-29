@@ -144,11 +144,12 @@ export function Diagram({ code }: { code: string }) {
             {S.close}
           </button>
         </div>
-        <div
-          className={"diagram-view" + (actual ? " actual" : "")}
-          style={actual && ok?.width ? ({ "--diagram-w": `${ok.width}px` } as React.CSSProperties) : undefined}
-          dangerouslySetInnerHTML={{ __html: ok?.full ?? "" }}
-        />
+        <div className={"diagram-view" + (actual ? " actual" : "")}>
+          {/* The sheet's width at actual size is this drawing's own, so it
+              arrives as an inline style the way the swatch's colour does:
+              it is data, not a token. */}
+          <div className="diagram-sheet" style={actual && ok?.width ? { width: ok.width } : undefined} dangerouslySetInnerHTML={{ __html: ok?.full ?? "" }} />
+        </div>
       </dialog>
     </figure>
   );
