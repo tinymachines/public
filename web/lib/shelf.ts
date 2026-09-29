@@ -1,5 +1,6 @@
 /**
  * Your own cartridges: the one place the site talks to /api/v1/me/carts.
+ * (The notebook's document shelves are lib/nes-shelves.ts, unrelated.)
  *
  * Several pages ask for a .nes file (the console at /nes/play, and three
  * benches in the playground). Each of them already loads a `File` a reader
@@ -176,7 +177,6 @@ export async function deleteSave(id: string): Promise<void> {
   if (!r.ok) return refuse(r);
 }
 
-/** "256 KiB", for a size that is a whole number of them, which a ROM's always is. */
 // ---------------------------------------------------------------------------
 // Revisions: an edit kept as a patch (notes/workbench.md, the third step)
 // ---------------------------------------------------------------------------
@@ -204,6 +204,7 @@ export async function fetchRevision(cart: Cart, rev: Revision): Promise<File> {
   return new File([bytes], fileNameOf(cart), { type: "application/octet-stream" });
 }
 
+/** No window calls this yet: the sprite editor keeps a revision with its message and does not edit it. */
 export async function patchRevision(cartId: string, revId: string, changes: { message?: string }): Promise<Revision> {
   const r = await fetch(`${API}/${cartId}/revisions/${revId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(changes) });
   if (!r.ok) return refuse(r);
@@ -215,6 +216,7 @@ export async function deleteRevision(cartId: string, revId: string): Promise<voi
   if (!r.ok) return refuse(r);
 }
 
+/** "256 KiB", for a size that is a whole number of them, which a ROM's always is. */
 export function kib(bytes: number): string {
   return `${(bytes / 1024).toLocaleString("en", { maximumFractionDigits: 1 })} KiB`;
 }

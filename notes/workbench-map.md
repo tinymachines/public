@@ -334,8 +334,8 @@ after a write.
 ## Where the code's own words are behind the code
 
 Found on the way; each is a comment or a line of copy, not a behaviour.
-Worth clearing before the redesign so the desk's text does not describe
-a desk that no longer exists.
+Cleared the same night, on the owner's word; the list stays as the record
+of what a survey of the code's own words catches.
 
 1. `create/page.tsx` still says saving a moment on its own and
    breakpoints "are not here yet". Both are on the desk.
@@ -351,9 +351,10 @@ a desk that no longer exists.
    tree.
 7. `Record.tsx`'s header says "from power-on"; it also records from here.
 8. `shelf.patchRevision` has no caller.
-9. `detach()` resets the engine's state without notifying subscribers
-   and leaves the last file and cart set; harmless today because the
-   power verbs check `loaded` first.
+9. `detach()` resets the engine's state without notifying subscribers.
+   Harmless, because the only followers are the sections leaving with
+   the page; it now says so. (A first draft of this note said it also
+   left the last file and cart set; it does not, it clears them.)
 10. `lib/nes-shelves.ts` is the documents' shelves, not the cartridge
     shelf; the name invites the confusion.
 11. Record, Flow and History exist only on Create, while Play's engine

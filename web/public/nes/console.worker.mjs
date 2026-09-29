@@ -5,7 +5,13 @@
  *
  *   main -> here   { id, path: 'hello' }
  *                  { id, path: 'load', rom: ArrayBuffer }
- *                  { id, path: 'tick', dtNs, pad }
+ *                  { id, path: 'tick', dtNs, pad, pad2, at }
+ *                  { id, path: 'state' | 'watch' | 'ciram' }              looking inside
+ *                  { id, path: 'step' | 'frame' | 'reset' | 'off' }      the transport
+ *                  { id, path: 'battery' }                               the cartridge RAM
+ *                  { id, path: 'save' | 'restore' }                      a moment
+ *                  { id, path: 'record' }                                the input log
+ *                  { id, path: 'history' | 'historyRead' | 'mark' | 'historyCut' }
  *   here -> main   { id, ok: true, answer } | { id, ok: false, error }
  *
  * 'load' builds a console from the ROM bytes (the boards the console has,
@@ -18,7 +24,8 @@
  * as it stands, and the answer carries the newest frame's dot planes and
  * parity, the 48 kHz sound those frames produced, the counters and the
  * milliseconds the console took. The picture worker takes the planes
- * from there. The ROM never leaves this browser.
+ * from there. The ROM never leaves this browser. Each other path says
+ * beside its handler what it takes and answers.
  */
 
 import initNes, { Nes } from "./wasm/nes_wasm.js";
@@ -263,8 +270,8 @@ self.onmessage = async (e) => {
       return;
     }
     // A recording (nes-console's record.rs): every pad change, reset press
-    // and picture from power-on, which is where the console refuses to
-    // start one anywhere else. `on` starts it; off answers the log, ended
+    // and picture, from power-on (`on`) or from where the game stands
+    // (`here`, below). Off answers the log, ended
     // where the console stands, for the page to keep; `soFar` answers the
     // same while the recording carries on, which the page keeps as it goes.
     if (path === "record") {

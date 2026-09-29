@@ -8,7 +8,10 @@
  *   flow/recordings/<id>/inputs.bin    the input log (nes-console record.rs)
  *   flow/recordings/<id>/battery.bin   the cartridge RAM it started with, if any
  *   flow/recordings/<id>/report.json   the flow tools' report, once made
+ *   flow/recordings/<id>/state.bin     the whole console, when the recording began mid-game
  *   flow/roms/<sha256>.nes             the image it was played on, once per image
+ *   flow/moments/<sha256>/<id>.bin     a moment: the console saved at one instant (below)
+ *   flow/moments/<sha256>/<id>.json    what the list shows of it
  *
  * The image is kept so a recording can be played back later without the
  * reader finding the file again. It stays in this browser: an exported

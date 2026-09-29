@@ -7,8 +7,8 @@ import * as play from "../play/playEngine";
 import * as flow from "./flowEngine";
 
 /**
- * The Record window: a recording from power-on of what the reader pressed
- * and when (the console's input log, with a digest of every picture), the
+ * The Record window: a recording, from power-on or from where the game
+ * stands, of what the reader pressed and when (the console's input log, with a digest of every picture), the
  * recordings kept in this browser, and the key that plays one back through
  * the flow tools. flowEngine.ts and lib/flowStore.ts hold the mechanics.
  */

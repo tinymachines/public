@@ -5,7 +5,8 @@ import { DOCS_DIR } from "./docs";
 
 /**
  * The NES section's shelves: which notebook documents belong to which part
- * of the console, read from docs/nes/shelves.json.
+ * of the console, read from docs/nes/shelves.json. Not the cartridge
+ * shelf: that is lib/shelf.ts and /api/v1/me/carts.
  *
  * scripts/pull-nesdocs.mjs writes that file beside the documents it pulls,
  * from the one list that names each document's group, so /nes/chips, the

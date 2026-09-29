@@ -23,6 +23,7 @@
  *
  *   main -> here   { id, path: 'hello' | 'reset' }
  *                  { id, path: 'frame', colour, emphasis, parity }
+ *                  { id, path: 'palette' }   the 64 colours as this worker measured them
  *   here -> main   { id, ok: true, answer } | { id, ok: false, error }
  */
 

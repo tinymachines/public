@@ -36,16 +36,17 @@ import { decodeCHR, encodeCHR, TILE } from "../../../../public/6502/games/chr.js
  * ROM is; nothing but the reader's own bytes goes up (NOTICE.md, "Somebody
  * else's game").
  *
- * The sprite's real colours come from palette RAM at run time, which this
- * bundle cannot read (the fourth step); until then the four the reader
- * picks are the sheet's, and the readout says so.
+ * The sprite's real colours come from palette RAM at run time, which the
+ * engine reads with the rest of the machine (`machine.palette`): the sheet
+ * paints with the reader's own four or with one of the PPU's eight, and
+ * the readout says which.
  */
 
 const S = {
   en: {
     h: "Sprites",
     none: "No cartridge loaded: the sheet is its CHR.",
-    ram: "This board draws from CHR-RAM, which the game fills as it runs; the file carries no tiles, and this bundle cannot read the RAM yet.",
+    ram: "This board draws from CHR-RAM, which the game fills as it runs; the file carries no tiles, and this desk does not read the RAM yet.",
     bad: (why: string) => `The file could not be read as an image: ${why}`,
     tiles: (n: number, tables: number) => <>tiles in the file: <b>{n}</b>, in <b>{tables}</b> pattern tables of 256</>,
     table: "Pattern table",
@@ -84,7 +85,7 @@ const S = {
   ja: {
     h: "スプライト",
     none: "カートリッジが読み込まれていない。シートはその CHR だ。",
-    ram: "この基板は CHR-RAM から描く。ゲームが走りながら埋めるもので、ファイルにタイルは無く、このバンドルはまだその RAM を読めない。",
+    ram: "この基板は CHR-RAM から描く。ゲームが走りながら埋めるもので、ファイルにタイルは無く、この机はまだその RAM を読んでいない。",
     bad: (why: string) => `ファイルをイメージとして読めなかった: ${why}`,
     tiles: (n: number, tables: number) => <>ファイル中のタイル: <b>{n}</b>、256 ずつ <b>{tables}</b> のパターンテーブル</>,
     table: "パターンテーブル",
@@ -173,8 +174,8 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
   const [codes, setCodes] = useState<number[]>(DEFAULT_CODES);
   const [slot, setSlot] = useState(3);
   // The sheet's four colours: the reader's own, or one of the eight the
-  // PPU holds once the bundle reads palette RAM (the fourth step): the
-  // sprite's real colours at last, and the readout says which.
+  // PPU holds, read from palette RAM with the machine: the sprite's real
+  // colours, and the readout says which.
   const [source, setSource] = useState<"mine" | number>("mine");
   const live = s.machine?.palette ?? null;
   const shown = source === "mine" || !live ? codes : [live[0], live[source * 4 + 1], live[source * 4 + 2], live[source * 4 + 3]];

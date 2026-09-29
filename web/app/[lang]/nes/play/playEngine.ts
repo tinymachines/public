@@ -18,6 +18,11 @@
  * each tick's samples are scheduled on a running cursor a little ahead of
  * the audio clock; a cursor that fell behind is an underrun, counted and
  * reset.
+ *
+ * The create desk's tools ride on the same state: a recording and the
+ * moments (lib/flowStore.ts), the console's history and the step back,
+ * the breakpoints. The play page carries that state and never exercises
+ * it; only the desk's windows do.
  */
 
 import { getSave, putSave, type Cart } from "@/lib/shelf";
@@ -476,6 +481,8 @@ export function detach() {
       .finally(() => w.stop());
   }
   consoleW.stop();
+  // No announcement: the followers are the sections leaving with the page,
+  // and the next attach starts from this fresh snapshot.
   state = INITIAL;
 }
 
