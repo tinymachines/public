@@ -290,9 +290,13 @@ test.describe("the shelf, signed in", () => {
     const code = page.locator("[data-code]");
     await expect(code).toHaveAttribute("data-code-shelf", "shelf");
     await expect(code).toHaveAttribute("data-code-blocks", "0");
-    // Step once so the listing is there, then select three lines and capture.
+    // Step once and let the listing redraw for it before a row is read: a
+    // row read before the step lands names a line the redraw moves.
+    const pc = async () => ((await page.locator('[data-reg="PC"]').textContent()) ?? "").trim();
+    const p0 = await pc();
     await page.locator("[data-play-op]").click();
-    await expect(page.locator("[data-code-list]")).toHaveCount(1);
+    await expect.poll(pc).not.toBe(p0);
+    await expect(page.locator("[data-code-list] tr[aria-current]")).toHaveCount(1);
     const lines = page.locator("[data-code-line]");
     const first = (await lines.nth(0).getAttribute("data-code-line"))!;
     const third = (await lines.nth(2).getAttribute("data-code-line"))!;

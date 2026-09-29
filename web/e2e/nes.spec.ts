@@ -765,8 +765,13 @@ test("control and the code panel: the steps by the machine's units, the reset, a
 // the window fall back to the page and say so: that is the difference the
 // first test's reload turns on.
 async function captureFirstTwo(page: import("@playwright/test").Page): Promise<[string, string]> {
+  // One instruction step, and the listing redrawn for it before any row is
+  // read: a row read before the step lands names a line the redraw moves.
+  const pc = async () => ((await page.locator('[data-reg="PC"]').textContent()) ?? "").trim();
+  const p0 = await pc();
   await page.locator("[data-play-op]").click();
-  await expect(page.locator("[data-code-list] tbody tr")).not.toHaveCount(0);
+  await expect.poll(pc).not.toBe(p0);
+  await expect(page.locator("[data-code-list] tr[aria-current]")).toHaveCount(1);
   const rows = page.locator("[data-code-list] tbody tr");
   const a = (await rows.nth(0).getAttribute("data-code-line"))!;
   const b = (await rows.nth(1).getAttribute("data-code-line"))!;
