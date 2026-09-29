@@ -4211,8 +4211,15 @@ with this deploy, the first dirty-tree deploy since the tag.
   on beta against the owner's CNROM, MMC3, MMC2 (Punch-Out!!'s title at
   frame 357), UxROM and NROM dumps with a temporary spec, deleted after.
 
+Later, `836fc66` and `b2a3c4e`, deployed (a clean tree, so the version
+stays 1.0.267): the sprite sheet on a CHR-RAM board shows the console's
+512 tiles as the game drew them, read only (`patternMemory`, the same
+ask as Nametables'); the test makes its own UxROM cartridge (two banks,
+the board's least, one tile written through $2006 and $2007) and holds
+tile 0 drawn, tile 1 blank, and no edit taken. Checked on one of the
+owner's CHR-RAM dumps on beta.
+
 Open: a palette for the drawings when the owner's design reaches them;
 blocks of a disk cartridge leave with the page; the owner's ergonomics
-work; the sprite sheet could draw a CHR-RAM board's live tiles the way
-Nametables now does; the bench side; the quiet machine's 0.83x speed;
-the recording-failed question; esp32 ja; two load flakes.
+work; the bench side; the quiet machine's 0.83x speed; the
+recording-failed question; esp32 ja; two load flakes.
