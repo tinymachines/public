@@ -3964,20 +3964,44 @@ notebook's lab directory, and the first beta build said so.
 
 ## Checkpoint, 2026-09-28 (evening)
 
-Live, main and beta are at `154e57f`, pushed. The drift check is 0 of
-78; the library tests are green; the lab spec is 4 of 4 on live.
-Nothing is running.
+Live, main and beta are at `a3e2bf1`, pushed, version 1.0.266. The
+drift check reports 2 of 78 drifted, on purpose (below); the library
+tests are green; the play and lab specs are 6 of 6 against beta and the
+deploy's own checks passed. Nothing is running.
 
-The repository carries its first tag, `v1.0`, at `ff015a4` (the
-checkpoint commit above 154e57f), pushed on the owner's word the same
-night. Every sibling checkout was level with its remote at the tag.
+The repository carries its first tag, `v1.0`, at `ff015a4`, pushed on
+the owner's word the same night. Every sibling checkout was level with
+its remote at the tag.
+
+Since the tag, three deploys in the same evening:
+
+- `78eb7a2`: nes-bench 3518702 (step 6 of pad-usb-protocol passes: a
+  browser saw all eight pad codes through `/lab/pad-keydown`) carried
+  into the two Japanese shadows by hand, as cc17f04 was. The passed-step
+  count for that page is typed in two places, the DOCS description in
+  `web/scripts/pull-nesdocs.mjs` and the Japanese index, so both moved
+  from five to six and the digests were restamped from beta's pull.
+- `a3e2bf1`: the owner ran step 7, an original pad on the bench's USB
+  adapter into an iPhone in Safari at `/nes/play`. A, B, Select and
+  Start moved the game; the cross moved a focus highlight round the
+  page's frame instead, because a phone spends a hardware keyboard's
+  arrows on focus navigation unless a field is focused. The play engine
+  now keeps an off-screen input focused while attached (inputmode none,
+  tabindex -1, aria-hidden, refocused after any tap not in a real
+  field), which is what the lab page had done all along. Verified on
+  beta and then on live in headless Chrome at phone width: one input,
+  focused after load and after a tap, no scroll, ArrowRight taken as a
+  button. The deploy request first arrived relayed by a peer session
+  and was staged on beta only; live moved when the owner said so here.
+- The same deploy pulled nes-bench 8365848 and 8048aea, which record
+  step 7 as run and not passed. No heading count changed.
 
 Open:
-- nes-bench 3518702, pushed after the tag: a correction in
-  pad-usb-protocol and open-items recording that a browser saw all
-  eight pad codes through the lab page. No heading count changed, so
-  the two Japanese shadows drift only by digest at the next pull;
-  carry it over by hand as cc17f04 was.
+- The two Japanese shadows of pad-usb-protocol and open-items are
+  behind 8048aea by digest, held so they are written once against step
+  7's final wording. When the cross moves on the phone: carry both, and
+  move the passed-step count from six to seven in the DOCS description
+  and `docs/ja/nes/index.md`, then restamp.
 - The console's measured speed on the site is 0.83x real time, taken
   under load; a boarding on a quiet machine gives the true figure.
 - If recording failed for the owner, the browser and what they saw are
