@@ -4129,3 +4129,64 @@ Open:
 - esp32-part-choice still has no Japanese copy.
 - Two older e2e tests flake only in parallel runs at load averages
   above 20; no reason captured.
+
+## Checkpoint, 2026-09-29, evening
+
+Live, main, origin and beta are at `8aeeb27`, version 1.0.266 (not
+bumped). Lint has no errors; the library tests are 127 of 127; the API
+tests 158; the project tools 16; the token check reads 3024 uses, all
+defined; the drawing check 6 drawings in 1 document, 0 failing; the
+create and shelf specs against beta 33 of 33 with the rig up; the create
+and diagram specs against live 17 passed and 1 flaky (the saved-moment
+test, on the network, green on retry). Nothing is running; the shelf rig
+was stopped by pid.
+
+The eighth deploy since the tag, on the owner's word ("Shall we
+implement the remaining items"; "deploy"): the four things the desk's
+document found not on the desk, each its own commit, and the document
+following.
+
+- `a0bafd0`: the signal path's bundle at the console's pin. ntsc-crt
+  re-boarded at `f91aecb` (v0.2.18; 54 claims, 67 tests green, 33
+  sabotage reds) with `board-ntsc.py --board` and `--wasm` run from the
+  beta worktree, the record and the bundle copied into main; only the
+  `.wasm` changed, since the six tags between moved ntsc-crt's own
+  nes-bus pin. A library test in stage 1b holds the served bundle's tag
+  to `nes().console.picture.ntsc_crt`; it was red on the old record. A
+  `git checkout` of the record after the first boarding wiped it and
+  the boarding ran twice; both runs agreed.
+- `87ebeee`: Rename on each revision row in Sprites, through
+  `shelf.patchRevision`, which no window had called.
+- `9f51c3d`: code blocks on the shelf. Migration 7 `cart_blocks` (the
+  range, the bytes on the bus in the row, a label and a note), five
+  routes under `/v1/me/carts/{id}/blocks`, 64 per cartridge and 4 KiB
+  each, the bytes held to reach the last instruction and stay on the
+  bus; `test_blocks.py` provokes every refusal and the reach and limit
+  rules went red with their checks removed. The Code window keeps a
+  shelf cartridge's blocks there as captured, the words as the field is
+  left, lists them again with the cartridge and removes through the
+  shelf; a disk cartridge's blocks stay in the page and the window says
+  which case it is in. The shelf page counts them; the shelf spec keeps
+  one, reloads it and removes it.
+- `0fd233d`: the Nametables window, in the tray after Sprites on screen.
+  `playEngine.nametables()` asks the worker's `ciram` path on demand,
+  each time the machine is published while the window is on view and
+  once when it comes on view. The two tables drawn side by side with the
+  background pattern table, the four background palettes and the
+  measured colours; the pointer names a tile's number, palette and
+  address; the header's soldered mirroring read out, a switching board
+  said to be one. A board that banks its picture ROM gets the numbers
+  and not the tiles, with the reason. The create spec draws the
+  calibration cartridge's tables.
+- `c7b1cd7`, `8aeeb27`: the document follows (the "not on the desk yet"
+  list became "what the survey found missing, and what arrived"; the
+  desk has fourteen windows, the shelf five callers, the seam's `ciram`
+  row a caller) and the inventory's rows; the window list's third copy
+  in the phone test, which the beta run found.
+
+Open: the document's Japanese copy; a palette for the drawings when the
+owner's design reaches them; `check-diagrams` says "1 documents"; blocks
+of a disk cartridge leave with the page; a banked-CHR board's tiles wait
+on the console saying which bank the PPU sees; the version bump; the
+owner's ergonomics work; the bench side; the quiet machine's 0.83x
+speed; the recording-failed question; esp32 ja; two load flakes.
