@@ -82,6 +82,11 @@ on a shelf, held to every rule an upload is.
 | `GET /v1/me/carts/{cart_id}/revisions/{rev_id}/rom` | The patched image, made on request and checked against its digest on the way out |
 | `PATCH /v1/me/carts/{cart_id}/revisions/{rev_id}` | Change its message. Touches only what it names |
 | `DELETE /v1/me/carts/{cart_id}/revisions/{rev_id}` | Remove the revision and its patch. The cartridge stays |
+| `GET /v1/me/carts/{cart_id}/blocks` | The cartridge's code blocks, oldest first: each a run of the code window's listing the owner selected, with the bytes that were on the bus, a label and a note |
+| `POST /v1/me/carts/{cart_id}/blocks` | Keep one. JSON: the range, the bytes as hex, a label and a note; refused if the bytes do not reach the last instruction or run off the bus |
+| `GET /v1/me/carts/{cart_id}/blocks/{block_id}` | One block |
+| `PATCH /v1/me/carts/{cart_id}/blocks/{block_id}` | Change its label or note. Touches only what it names |
+| `DELETE /v1/me/carts/{cart_id}/blocks/{block_id}` | Remove the block. The cartridge stays |
 
 Everything below needs a dev key.
 

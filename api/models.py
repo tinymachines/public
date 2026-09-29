@@ -842,6 +842,7 @@ class Cart(BaseModel):
     rom: str = Field(description="Where the bytes are, relative to the API's root. Answers only to the session that owns the shelf.", examples=["/v1/me/carts/ct_3f9a1b3c7d2e4f01/rom"])
     save: Optional[CartSave] = Field(default=None, description="The saved cartridge RAM at `{rom}`'s sibling `/save`, or null while the game has never saved. The play page writes it while a cartridge with a battery runs, and reads it back before the game starts.")
     revisions: int = Field(default=0, description="How many revisions the cartridge keeps, at `{rom}`'s sibling `/revisions`.")
+    blocks: int = Field(default=0, description="How many code blocks the cartridge keeps, at `{rom}`'s sibling `/blocks`.")
     created_at: datetime = Field(description="When it was put on the shelf, UTC.")
     updated_at: datetime = Field(description="When its name or note last changed, UTC.")
 
@@ -852,6 +853,7 @@ class CartLimits(BaseModel):
     remaining: int = Field(description="How many more it may add. Never negative: a shelf that was shrunk under its contents reports zero.")
     bytes_max: int = Field(description="The largest single file the shelf takes, in bytes.")
     revisions_max: int = Field(description="How many revisions one cartridge may keep.")
+    blocks_max: int = Field(description="How many code blocks one cartridge may keep.")
 
 
 class Revision(BaseModel):
@@ -891,6 +893,57 @@ class RevisionPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     message: Optional[str] = Field(default=None, description="New message. Omit to leave it alone; an empty string clears it.")
+
+
+class Block(BaseModel):
+    """One code block of a cartridge: a run of the code window's listing the owner selected and described.
+
+    The bytes are what was on the CPU's bus from `at` when the block was
+    captured, which on a board that banks its program is not the same as
+    the file at that address; the listing is disassembled from them again
+    wherever the block is shown, so the text is never stored. The bytes are
+    the game's, and go nowhere but the shelf the game is already on.
+    """
+
+    id: str = Field(description="The block's id.", examples=["bk_4d1e9a7c2b3f0e58"])
+    cart_id: str = Field(description="The cartridge it was read from.", examples=["ct_3f9a1b3c7d2e4f01"])
+    seq: int = Field(description="Its number on the cartridge, from 1, in the order the blocks were kept.", examples=[2])
+    label: str = Field(description="What the owner calls this code.", examples=["read the pad"])
+    note: str = Field(description="What it does, and how the owner knows.", examples=["strobes $4016 and shifts eight bits into $00"])
+    at: int = Field(description="The address of the block's first instruction.", examples=[0x8123])
+    to: int = Field(description="The address of its last instruction; the bytes run on to the end of that instruction.", examples=[0x8140])
+    bytes: str = Field(description="The bytes from `at`, as hex, two digits a byte.", examples=["a90085f6a2088e1640"])
+    size: int = Field(description="How many bytes, measured here.", examples=[9])
+    created_at: datetime = Field(description="When it was kept, UTC.")
+    updated_at: datetime = Field(description="When its label or note last changed, UTC.")
+
+
+class Blocks(BaseModel):
+    """A cartridge's code blocks, oldest first."""
+
+    blocks: list[Block] = Field(description="By number. Empty for a cartridge nobody has read.")
+    max: int = Field(description="How many blocks this cartridge may keep.")
+
+
+class BlockNew(BaseModel):
+    """A block to keep: the range, the bytes that were there, and what the owner says about them."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    at: int = Field(ge=0, le=0xFFFF, description="The address of the first instruction.", examples=[0x8123])
+    to: int = Field(ge=0, le=0xFFFF, description="The address of the last instruction, `at` or after it.", examples=[0x8140])
+    bytes: str = Field(min_length=2, pattern=r"^(?:[0-9a-fA-F]{2})+$", description="The bytes from `at`, as hex. They must reach `to`; how many a block may carry is the shelf's rule, and a body over it is refused as too large.", examples=["a90085f6a2088e1640"])
+    label: str = Field(default="", description="What the code is. Optional; 80 characters at most.", examples=["read the pad"])
+    note: str = Field(default="", description="What it does, and how you know. Optional; 240 characters at most.")
+
+
+class BlockPatch(BaseModel):
+    """Change what a block is called or what is said about it. The bytes and the range cannot be edited: keep a new block."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: Optional[str] = Field(default=None, description="New label. Omit to leave it alone; an empty string clears it.")
+    note: Optional[str] = Field(default=None, description="New note. Omit to leave it alone; an empty string clears it.")
 
 
 class Carts(BaseModel):

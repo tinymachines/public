@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { clearBreakpoints, snapshot, serverSnapshot, subscribe, toggleBreakpoint } from "./playEngine";
+import { addBlock, announceChange, deleteBlock, listBlocks, patchBlock, ShelfError, type Block as ShelfBlock } from "@/lib/shelf";
 // The 6502 site's disassembler, the one table of the documented opcodes,
 // served beside the console's modules (lib/console-modules.ts says why).
 import { disassemble } from "../../../../public/6502/games/disasm.js";
@@ -23,14 +24,16 @@ import { disassemble } from "../../../../public/6502/games/disasm.js";
  * The lit line is kept in view inside the box, never by scrolling the page.
  *
  * A block is a run of that listing the reader selected (a click, then a
- * click further down), given a label and a note, and kept here in the
- * page. It carries the cartridge's digest, the address range, the bytes
- * and the text, so it can be exported as the encyclopedia's own shape
- * (docs/nes/encyclopedia.md: a listing of `ADDR  MNEM operand ; comment`
- * under the block's name) or as JSON. Keeping blocks on the shelf, beside
- * the revisions, is the step after this one; nothing here goes to the
- * server, and for a game somebody else owns the bytes stay with the
- * reader (NOTICE.md, "Somebody else's game").
+ * click further down), given a label and a note. It carries the
+ * cartridge's digest, the address range, the bytes and the text, so it can
+ * be exported as the encyclopedia's own shape (docs/nes/encyclopedia.md: a
+ * listing of `ADDR  MNEM operand ; comment` under the block's name) or as
+ * JSON. For a cartridge from the shelf the blocks are kept there, beside
+ * the revisions (lib/shelf.ts, api/carts.py), and come back when the
+ * cartridge is loaded from the shelf again; the bytes go only to the
+ * reader's own shelf, where the game already is (NOTICE.md, "Somebody
+ * else's game"). A cartridge from the disk has no shelf, and its blocks
+ * stay in the page, as every block did until 2026-09-29.
  */
 
 const S = {
@@ -53,7 +56,9 @@ const S = {
     remove: "Remove",
     exportMd: "Download the blocks (markdown)",
     exportJson: "Download the blocks (JSON)",
-    stays: "Blocks stay in this page. Keeping them on the shelf beside the revisions is the next step; a block from a game you do not own carries its bytes, which are the game's.",
+    stays: "This cartridge came from your disk, so its blocks stay in this page. Put the cartridge on your shelf and load it from there to keep them.",
+    kept: "Blocks are kept on your shelf beside the revisions, and come back when you load this cartridge from there. A block carries the game's bytes, and they go nowhere but your own shelf, where the game already is.",
+    keeping: "keeping",
     cols: ["stop", "address", "bytes", "instruction"],
     stopped: (a: number) => <>stopped at the breakpoint at <b>${hex4(a)}</b>, the instruction there about to run</>,
     bpTitle: (a: number) => `Stop here: a run stops as the CPU begins to fetch the instruction at $${hex4(a)}`,
@@ -84,7 +89,9 @@ const S = {
     remove: "削除",
     exportMd: "ブロックをダウンロード（markdown）",
     exportJson: "ブロックをダウンロード（JSON）",
-    stays: "ブロックはこのページに留まる。棚にリビジョンと並べて残すのは次の段階。自分のものでないゲームのブロックは、そのゲームのバイトを含む。",
+    stays: "このカートリッジはディスクから来たので、ブロックはこのページに留まる。カートリッジを棚に置き、そこから読み込めば残る。",
+    kept: "ブロックは棚にリビジョンと並べて残り、このカートリッジを棚から読み込むと戻ってくる。ブロックはゲームのバイトを運ぶが、行き先はゲームがすでにあるあなたの棚だけだ。",
+    keeping: "保存中",
     cols: ["停止", "アドレス", "バイト", "命令"],
     stopped: (a: number) => <>ブレークポイント <b>${hex4(a)}</b> で止まった。そこの命令がこれから走る</>,
     bpTitle: (a: number) => `ここで止める: CPU が $${hex4(a)} の命令を読み始めたところで実行が止まる`,
@@ -110,6 +117,8 @@ interface Line {
 /** A captured block: where, what was there, and what the reader says about it. */
 export interface Block {
   id: number;
+  /** Its id on the shelf, for a cartridge from there; null for a block that lives in the page. */
+  shelfId: string | null;
   cart: string | null;
   from: number;
   to: number;
@@ -131,6 +140,15 @@ function listing(code: Uint8Array, at: number, n: number): Line[] {
     i += len;
   }
   return out;
+}
+
+const hexOf = (lines: Line[]) => lines.flatMap((l) => l.bytes).map(hex2).join("");
+const fromHex = (hex: string) => Uint8Array.from(hex.match(/.{2}/g) ?? [], (h) => parseInt(h, 16));
+
+/** A block as the shelf keeps it, its listing disassembled again from the bytes. */
+function fromShelf(b: ShelfBlock, id: number, cart: string | null): Block {
+  const bytes = fromHex(b.bytes);
+  return { id, shelfId: b.id, cart, from: b.at, to: b.to, lines: listing(bytes, b.at, bytes.length), label: b.label, note: b.note };
 }
 
 function download(name: string, text: string, type: string) {
@@ -162,10 +180,54 @@ export function Code({ lang }: { lang: Lang }) {
   const [anchor, setAnchor] = useState<number | null>(null);
   const [end, setEnd] = useState<number | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [nextId, setNextId] = useState(1);
+  const nextId = useRef(1);
   const sel = anchor !== null && end !== null ? { from: Math.min(anchor, end), to: Math.max(anchor, end) } : null;
   const selectedLines = sel ? lines.filter((l) => l.at >= sel.from && l.at <= sel.to) : [];
   const cart = s.cart?.sha256 ?? null;
+  // The shelf's cartridge, when the one loaded came from there: its blocks
+  // are the shelf's, listed when it arrives and written as they change.
+  const shelf = s.cart;
+  const shelfId = shelf?.id ?? null;
+  const [busy, setBusy] = useState<string | null>(null);
+  const [shelfWhy, setShelfWhy] = useState<string | null>(null);
+  // Another cartridge is another set of blocks. Adjusted during render, as
+  // the sprite sheet drops its edits, so the old blocks never show under
+  // the new cartridge for a frame.
+  const [lastShelf, setLastShelf] = useState(shelfId);
+  if (lastShelf !== shelfId) {
+    setLastShelf(shelfId);
+    setBlocks([]);
+    setShelfWhy(null);
+  }
+  useEffect(() => {
+    if (!shelfId) return;
+    let live = true;
+    const sha = cart;
+    void listBlocks(shelfId)
+      .then((r) => {
+        if (!live) return;
+        setBlocks(r.blocks.map((b) => fromShelf(b, nextId.current++, sha)));
+      })
+      .catch((e) => {
+        if (live) setShelfWhy(e instanceof ShelfError ? e.message : String((e as Error).message ?? e));
+      });
+    return () => {
+      live = false;
+    };
+    // The digest travels with the id; a new cartridge is a new id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shelfId]);
+  const shelfCall = async (what: string, fn: () => Promise<void>) => {
+    setBusy(what);
+    setShelfWhy(null);
+    try {
+      await fn();
+    } catch (e) {
+      setShelfWhy(e instanceof ShelfError ? e.message : String((e as Error).message ?? e));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const pick = (at: number) => {
     if (anchor === null || end !== null) {
@@ -177,10 +239,38 @@ export function Code({ lang }: { lang: Lang }) {
   };
   const capture = () => {
     if (!sel || selectedLines.length === 0) return;
-    setBlocks((bs) => [...bs, { id: nextId, cart, from: sel.from, to: sel.to, lines: selectedLines, label: "", note: "" }]);
-    setNextId((n) => n + 1);
+    const at = selectedLines[0].at;
+    const to = selectedLines[selectedLines.length - 1].at;
     setAnchor(null);
     setEnd(null);
+    if (shelfId) {
+      void shelfCall("keep", async () => {
+        const kept = await addBlock(shelfId, { at, to, bytes: hexOf(selectedLines) });
+        setBlocks((bs) => [...bs, fromShelf(kept, nextId.current++, cart)]);
+        announceChange();
+      });
+      return;
+    }
+    setBlocks((bs) => [...bs, { id: nextId.current++, shelfId: null, cart, from: at, to, lines: selectedLines, label: "", note: "" }]);
+  };
+  /** The words changed on a block: the page's copy at once, the shelf's when the field is left. */
+  const word = (b: Block, field: "label" | "note", value: string) => setBlocks((bs) => bs.map((x) => (x.id === b.id ? { ...x, [field]: value } : x)));
+  const keepWords = (b: Block) => {
+    if (!shelfId || !b.shelfId) return;
+    void shelfCall(`words ${b.shelfId}`, async () => {
+      await patchBlock(shelfId, b.shelfId!, { label: b.label, note: b.note });
+    });
+  };
+  const remove = (b: Block) => {
+    if (shelfId && b.shelfId) {
+      void shelfCall(`remove ${b.shelfId}`, async () => {
+        await deleteBlock(shelfId, b.shelfId!);
+        setBlocks((bs) => bs.filter((x) => x.id !== b.id));
+        announceChange();
+      });
+      return;
+    }
+    setBlocks((bs) => bs.filter((x) => x.id !== b.id));
   };
   const stem = (s.loaded ?? "cartridge").replace(/\.nes$/i, "");
   const box = useRef<HTMLDivElement>(null);
@@ -193,7 +283,7 @@ export function Code({ lang }: { lang: Lang }) {
   }, [lines]);
 
   return (
-    <section className="wb-page play-section" id="code" data-code data-code-blocks={blocks.length}>
+    <section className="wb-page play-section" id="code" data-code data-code-blocks={blocks.length} data-code-shelf={shelfId ? "shelf" : "page"}>
       <h2 className="eyebrow">{T.h}</h2>
       {why ? (
         <p className="quiet" data-code-why>{why}</p>
@@ -226,27 +316,28 @@ export function Code({ lang }: { lang: Lang }) {
           <Breakpoints lang={lang} />
           <div className="chips code-sel">
             <span className="quiet" data-code-selection={sel ? selectedLines.length : 0}>{sel ? T.selected(sel.from, sel.to, selectedLines.length) : T.select}</span>
-            <button type="button" className="btn btn-primary" disabled={!sel || selectedLines.length === 0} onClick={capture} data-code-capture>{T.capture}</button>
+            <button type="button" className="btn btn-primary" disabled={!sel || selectedLines.length === 0 || busy !== null} onClick={capture} data-code-capture>{busy === "keep" ? T.keeping : T.capture}</button>
             <button type="button" className="btn btn-ghost" disabled={anchor === null} onClick={() => { setAnchor(null); setEnd(null); }} data-code-clear>{T.clear}</button>
           </div>
         </>
       )}
 
       <h3 className="eyebrow">{T.blocksH}</h3>
+      {shelfWhy ? <p className="notice fail" data-code-shelf-why>{shelfWhy}</p> : null}
       {blocks.length === 0 ? (
         <p className="quiet" data-code-none>{T.noBlocks}</p>
       ) : (
         <ul className="code-blocks">
           {blocks.map((b) => (
-            <li key={b.id} data-code-block={hex4(b.from)}>
+            <li key={b.id} data-code-block={hex4(b.from)} data-code-block-kept={b.shelfId ? "shelf" : "page"}>
               <div className="form-grid">
-                <label className="field"><span>{T.label}</span><input className="input" value={b.label} placeholder={T.labelHint} maxLength={80} onChange={(e) => setBlocks((bs) => bs.map((x) => (x.id === b.id ? { ...x, label: e.target.value } : x)))} data-code-label /></label>
-                <label className="field"><span>{T.note}</span><input className="input" value={b.note} placeholder={T.noteHint} maxLength={240} onChange={(e) => setBlocks((bs) => bs.map((x) => (x.id === b.id ? { ...x, note: e.target.value } : x)))} data-code-note /></label>
+                <label className="field"><span>{T.label}</span><input className="input" value={b.label} placeholder={T.labelHint} maxLength={80} onChange={(e) => word(b, "label", e.target.value)} onBlur={(e) => keepWords({ ...b, label: e.target.value })} data-code-label /></label>
+                <label className="field"><span>{T.note}</span><input className="input" value={b.note} placeholder={T.noteHint} maxLength={240} onChange={(e) => word(b, "note", e.target.value)} onBlur={(e) => keepWords({ ...b, note: e.target.value })} data-code-note /></label>
               </div>
               <pre className="code"><code>{b.lines.map((l) => `${hex4(l.at)}  ${l.text}`).join("\n")}</code></pre>
               <p className="chips">
                 <span className="measured">${hex4(b.from)} to ${hex4(b.to)}, {b.lines.length} {b.lines.length === 1 ? "instruction" : "instructions"}</span>
-                <button type="button" className="btn btn-ghost" onClick={() => setBlocks((bs) => bs.filter((x) => x.id !== b.id))} data-code-remove>{T.remove}</button>
+                <button type="button" className="btn btn-ghost" disabled={busy !== null} onClick={() => remove(b)} data-code-remove>{T.remove}</button>
               </p>
             </li>
           ))}
@@ -254,9 +345,9 @@ export function Code({ lang }: { lang: Lang }) {
       )}
       <div className="chips">
         <button type="button" className="btn" disabled={blocks.length === 0} onClick={() => download(`${stem}.blocks.md`, markdownOf(blocks, cart), "text/markdown")} data-code-export-md>{T.exportMd}</button>
-        <button type="button" className="btn" disabled={blocks.length === 0} onClick={() => download(`${stem}.blocks.json`, JSON.stringify({ cart, blocks: blocks.map(({ id: _id, ...b }) => b) }, null, 2), "application/json")} data-code-export-json>{T.exportJson}</button>
+        <button type="button" className="btn" disabled={blocks.length === 0} onClick={() => download(`${stem}.blocks.json`, JSON.stringify({ cart, blocks: blocks.map(({ id: _id, shelfId: _shelf, ...b }) => b) }, null, 2), "application/json")} data-code-export-json>{T.exportJson}</button>
       </div>
-      <p className="quiet">{T.stays}</p>
+      <p className="quiet">{shelfId ? T.kept : T.stays}</p>
     </section>
   );
 }

@@ -75,7 +75,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, Res
 import db
 from admin import connection
 from auth import require_user
-from models import Cart, CartLimits, CartPatch, CartSave, Carts, Revision, RevisionPatch, Revisions
+from models import Block, BlockNew, BlockPatch, Blocks, Cart, CartLimits, CartPatch, CartSave, Carts, Revision, RevisionPatch, Revisions
 
 router = APIRouter(prefix="/v1/me/carts", tags=["account"])
 
@@ -91,6 +91,16 @@ SAVE_MAX = 32 * 1024
 def revisions_max() -> int:
     """How many revisions one cartridge may keep. Sixteen is a working session's worth; the number is a quota, not a design."""
     return int(os.environ.get("TM_CART_REVISIONS", "16"))
+
+
+def blocks_max() -> int:
+    """How many code blocks one cartridge may keep. A block is a screen of instructions at most, so this is a quota on rows, not on bytes."""
+    return int(os.environ.get("TM_CART_BLOCKS", "64"))
+
+
+# A block is a run of the code window's listing, thirty-two instructions of
+# three bytes at the most as the window stands; room for forty times that.
+BLOCK_BYTES_MAX = 4096
 
 
 def bytes_max() -> int:
@@ -254,13 +264,14 @@ def _cart(row: sqlite3.Row, conn: sqlite3.Connection) -> Cart:
     d = dict(row)
     d.pop("user_id")
     n = conn.execute("SELECT COUNT(*) FROM cart_revisions WHERE cart_id = ?", (row["id"],)).fetchone()[0]
-    return Cart(**d, rom=f"/v1/me/carts/{row['id']}/rom", save=_save_of(row["user_id"], row["sha256"]), revisions=n)
+    b = conn.execute("SELECT COUNT(*) FROM cart_blocks WHERE cart_id = ?", (row["id"],)).fetchone()[0]
+    return Cart(**d, rom=f"/v1/me/carts/{row['id']}/rom", save=_save_of(row["user_id"], row["sha256"]), revisions=n, blocks=b)
 
 
 def _limits(conn: sqlite3.Connection, user: sqlite3.Row) -> CartLimits:
     held = conn.execute("SELECT COUNT(*) FROM carts WHERE user_id = ?", (user["id"],)).fetchone()[0]
     most = user["carts_max"]
-    return CartLimits(max=most, held=held, remaining=max(0, most - held), bytes_max=bytes_max(), revisions_max=revisions_max())
+    return CartLimits(max=most, held=held, remaining=max(0, most - held), bytes_max=bytes_max(), revisions_max=revisions_max(), blocks_max=blocks_max())
 
 
 def _owned(conn: sqlite3.Connection, uid: str, cid: str) -> sqlite3.Row:
@@ -785,6 +796,138 @@ def delete_revision(cart_id: str, rev_id: str, request: Request, user: sqlite3.R
     with conn:
         conn.execute("DELETE FROM cart_revisions WHERE id = ?", (rev["id"],))
     _rev_file(user["id"], cart["sha256"], rev["seq"]).unlink(missing_ok=True)
+    return Response(status_code=204)
+
+
+# ---------------------------------------------------------------------------
+# Code blocks: a run of the listing, described (docs/nes/workbench.md)
+# ---------------------------------------------------------------------------
+#
+# The code window disassembles the bus from the program counter; a block is
+# the run of that listing the reader selected, with a label and a note. Until
+# 2026-09-29 blocks lived in the window's own state and left with the page.
+# They are kept here beside the revisions, on the shelf the game is already
+# on, because a block's bytes are the game's (NOTICE.md, "Somebody else's
+# game"): a cartridge from the disk has no shelf and its blocks stay in the
+# page. The listing is never stored: it is disassembled from the bytes again
+# wherever the block is shown, so there is one copy of the fact.
+
+
+def clean_label(label: str) -> str:
+    n = " ".join("".join(ch for ch in label if ch.isprintable()).split())
+    if len(n) > NAME_MAX:
+        raise Refused(422, f"label: {NAME_MAX} characters at most.")
+    return n
+
+
+def _block(row: sqlite3.Row) -> Block:
+    d = dict(row)
+    d.pop("user_id")
+    data = d.pop("bytes")
+    d["to"] = d.pop("last")
+    return Block(**d, bytes=bytes(data).hex(), size=len(data))
+
+
+def _owned_block(conn: sqlite3.Connection, uid: str, cid: str, bid: str) -> sqlite3.Row:
+    _owned(conn, uid, cid)
+    row = conn.execute("SELECT * FROM cart_blocks WHERE id = ? AND cart_id = ? AND user_id = ?", (bid, cid, uid)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="No such block of this cartridge.")
+    return row
+
+
+def keep_block(conn: sqlite3.Connection, user: sqlite3.Row, cart: sqlite3.Row, new: BlockNew) -> sqlite3.Row:
+    """Keep a block, or refuse it with the reason. The one place the rules live."""
+    data = bytes.fromhex(new.bytes)
+    if len(data) > BLOCK_BYTES_MAX:
+        raise Refused(413, f"{len(data)} bytes; a block is at most {BLOCK_BYTES_MAX}, a screen of instructions many times over.")
+    if new.to < new.at:
+        raise Refused(422, f"The block ends at ${new.to:04X}, before it starts at ${new.at:04X}.")
+    if len(data) < new.to - new.at + 1:
+        raise Refused(422, f"{len(data)} bytes from ${new.at:04X} do not reach the last instruction at ${new.to:04X}.")
+    if new.at + len(data) > 0x10000:
+        raise Refused(422, f"{len(data)} bytes from ${new.at:04X} run past the end of the bus.")
+    label, note = clean_label(new.label), clean_note(new.note)
+    held = conn.execute("SELECT COUNT(*), COALESCE(MAX(seq), 0) FROM cart_blocks WHERE cart_id = ?", (cart["id"],)).fetchone()
+    if held[0] >= blocks_max():
+        raise Refused(409, f"This cartridge keeps {held[0]} blocks, which is its limit of {blocks_max()}. Remove one to keep another.")
+    bid, now = f"bk_{secrets.token_hex(8)}", db.now()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO cart_blocks (id, cart_id, user_id, seq, label, note, at, last, bytes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (bid, cart["id"], user["id"], held[1] + 1, label, note, new.at, new.to, data, now, now),
+            )
+    except sqlite3.IntegrityError:
+        raise Refused(409, "Two blocks raced for the same number; keep it again.")
+    return _owned_block(conn, user["id"], cart["id"], bid)
+
+
+_NO_BLOCK = {**_NOT_YOURS, 404: {"description": "No such cartridge on this shelf, or no such block of it."}}
+
+
+@router.get(
+    "/{cart_id}/blocks",
+    response_model=Blocks,
+    summary="The cartridge's code blocks",
+    description="Oldest first. Each is a run of the code window's listing the owner selected: where it started, where its last instruction is, the bytes that were on the bus, a label and a note. The listing itself is not here; it is disassembled from the bytes wherever the block is shown.",
+    responses=_NOT_YOURS,
+)
+def list_blocks(cart_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Blocks:
+    _owned(conn, user["id"], cart_id)
+    rows = conn.execute("SELECT * FROM cart_blocks WHERE cart_id = ? ORDER BY seq", (cart_id,)).fetchall()
+    return Blocks(blocks=[_block(r) for r in rows], max=blocks_max())
+
+
+@router.post(
+    "/{cart_id}/blocks",
+    response_model=Block,
+    status_code=201,
+    summary="Keep a code block",
+    description="The body names the range, the bytes as hex, and optionally a label and a note. The bytes must reach the last instruction and stay on the bus; the block is refused with the reason otherwise. The bytes are the game's and go nowhere but this shelf.",
+    responses={
+        **_NOT_YOURS,
+        409: {"description": "The cartridge keeps as many blocks as it may."},
+        413: {"description": "More bytes than a block may carry."},
+        422: {"description": "Not hex, a range that ends before it starts or runs off the bus, bytes that do not reach the last instruction, or a label or note too long."},
+    },
+)
+def add_block(cart_id: str, body: BlockNew, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Block:
+    cart = _owned(conn, user["id"], cart_id)
+    try:
+        return _block(keep_block(conn, user, cart, body))
+    except Refused as e:
+        raise HTTPException(status_code=e.status, detail=e.detail) from e
+
+
+@router.get("/{cart_id}/blocks/{block_id}", response_model=Block, summary="One code block", description="As kept, with its bytes.", responses=_NO_BLOCK)
+def get_block(cart_id: str, block_id: str, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Block:
+    return _block(_owned_block(conn, user["id"], cart_id, block_id))
+
+
+@router.patch("/{cart_id}/blocks/{block_id}", response_model=Block, summary="Change what a block is called or what is said about it", description="Touches only what it names. The range and the bytes cannot be edited: keep a new block.", responses={**_NO_BLOCK, 422: {"description": "A label or note too long, or a field this route does not know."}})
+def patch_block(cart_id: str, block_id: str, body: BlockPatch, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Block:
+    _owned_block(conn, user["id"], cart_id, block_id)
+    changes = body.model_dump(exclude_unset=True)
+    try:
+        if "label" in changes:
+            changes["label"] = clean_label(changes["label"] or "")
+        if "note" in changes:
+            changes["note"] = clean_note(changes["note"] or "")
+    except Refused as e:
+        raise HTTPException(status_code=e.status, detail=e.detail) from e
+    if changes:
+        sets = ", ".join(f"{k} = ?" for k in changes)
+        with conn:
+            conn.execute(f"UPDATE cart_blocks SET {sets}, updated_at = ? WHERE id = ?", (*changes.values(), db.now(), block_id))
+    return _block(_owned_block(conn, user["id"], cart_id, block_id))
+
+
+@router.delete("/{cart_id}/blocks/{block_id}", status_code=204, summary="Remove a code block", description="The row goes; the cartridge stays.", responses=_NO_BLOCK)
+def delete_block(cart_id: str, block_id: str, request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Response:
+    row = _owned_block(conn, user["id"], cart_id, block_id)
+    with conn:
+        conn.execute("DELETE FROM cart_blocks WHERE id = ?", (row["id"],))
     return Response(status_code=204)
 
 

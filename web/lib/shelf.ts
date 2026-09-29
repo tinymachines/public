@@ -37,6 +37,8 @@ export interface Cart {
   save: CartSave | null;
   /** How many revisions it keeps. */
   revisions: number;
+  /** How many code blocks it keeps. */
+  blocks: number;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +66,25 @@ export interface ShelfLimits {
   remaining: number;
   bytes_max: number;
   revisions_max: number;
+  blocks_max: number;
+}
+
+/** One code block: a run of the code window's listing, with the bytes that were on the bus and what the owner says about them. */
+export interface Block {
+  id: string;
+  cart_id: string;
+  seq: number;
+  label: string;
+  note: string;
+  /** The address of the first instruction. */
+  at: number;
+  /** The address of the last instruction; the bytes run on to its end. */
+  to: number;
+  /** The bytes from `at`, as hex. */
+  bytes: string;
+  size: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export type Shelf =
@@ -204,7 +225,7 @@ export async function fetchRevision(cart: Cart, rev: Revision): Promise<File> {
   return new File([bytes], fileNameOf(cart), { type: "application/octet-stream" });
 }
 
-/** No window calls this yet: the sprite editor keeps a revision with its message and does not edit it. */
+/** Re-describe a revision (the sprite editor's Rename); the patch itself cannot change. */
 export async function patchRevision(cartId: string, revId: string, changes: { message?: string }): Promise<Revision> {
   const r = await fetch(`${API}/${cartId}/revisions/${revId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(changes) });
   if (!r.ok) return refuse(r);
@@ -213,6 +234,34 @@ export async function patchRevision(cartId: string, revId: string, changes: { me
 
 export async function deleteRevision(cartId: string, revId: string): Promise<void> {
   const r = await fetch(`${API}/${cartId}/revisions/${revId}`, { method: "DELETE" });
+  if (!r.ok) return refuse(r);
+}
+
+// ---------------------------------------------------------------------------
+// Code blocks: a run of the listing, kept beside the revisions (2026-09-29)
+// ---------------------------------------------------------------------------
+
+export async function listBlocks(cartId: string): Promise<{ blocks: Block[]; max: number }> {
+  const r = await fetch(`${API}/${cartId}/blocks`, { cache: "no-store" });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as { blocks: Block[]; max: number };
+}
+
+/** Keep a block: the range, the bytes on the bus from `at` as hex, and the words so far. */
+export async function addBlock(cartId: string, block: { at: number; to: number; bytes: string; label?: string; note?: string }): Promise<Block> {
+  const r = await fetch(`${API}/${cartId}/blocks`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(block) });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as Block;
+}
+
+export async function patchBlock(cartId: string, blockId: string, changes: { label?: string; note?: string }): Promise<Block> {
+  const r = await fetch(`${API}/${cartId}/blocks/${blockId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(changes) });
+  if (!r.ok) return refuse(r);
+  return (await r.json()) as Block;
+}
+
+export async function deleteBlock(cartId: string, blockId: string): Promise<void> {
+  const r = await fetch(`${API}/${cartId}/blocks/${blockId}`, { method: "DELETE" });
   if (!r.ok) return refuse(r);
 }
 

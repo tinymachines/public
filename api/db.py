@@ -239,6 +239,30 @@ MIGRATIONS: list[str] = [
     -- One revision per resulting image: the same patch twice is one revision.
     CREATE UNIQUE INDEX cart_revisions_sha ON cart_revisions(cart_id, sha256);
     """,
+    # 7: code blocks of a cartridge (2026-09-29, docs/nes/workbench.md, "what
+    #    is not on the desk yet"). A block is a run of the code window's
+    #    listing the reader selected and described: where it started, the
+    #    address of its last instruction, the bytes that were on the bus
+    #    there, a label and a note. The bytes are the game's, so they live
+    #    only on the owner's own shelf beside the game itself (NOTICE.md,
+    #    "Somebody else's game"); they are small (a screen of instructions),
+    #    so they sit in the row rather than in a file beside the ROM.
+    """
+    CREATE TABLE cart_blocks (
+        id          TEXT PRIMARY KEY,
+        cart_id     TEXT NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        seq         INTEGER NOT NULL,
+        label       TEXT NOT NULL DEFAULT '',
+        note        TEXT NOT NULL DEFAULT '',
+        at          INTEGER NOT NULL,
+        last        INTEGER NOT NULL,
+        bytes       BLOB NOT NULL,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX cart_blocks_seq ON cart_blocks(cart_id, seq);
+    """,
 ]
 
 

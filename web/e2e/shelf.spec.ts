@@ -241,6 +241,14 @@ test.describe("the shelf, signed in", () => {
     expect(revs).toHaveLength(1);
     expect(revs[0]).toMatchObject({ seq: 1, message: "tile one, one pixel", ranges: 1 });
     expect([1, 2]).toContain(revs[0].changed);
+    // Re-described: the row and the shelf both say the new words.
+    await row.locator("[data-spr-rev-rename]").click();
+    await row.locator("[data-spr-rev-message]").fill("tile one, its corner");
+    await row.locator("[data-spr-rev-save]").click();
+    await expect(row).toContainText("1. tile one, its corner", { timeout: 15_000 });
+    await expect(row.locator("[data-spr-rev-message]")).toHaveCount(0);
+    const renamed = await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/revisions`, { headers: { cookie: `${rig!.cookie}=${rig!.sessions.owner}` } });
+    expect((await renamed.json()).revisions[0].message).toBe("tile one, its corner");
     // Revert the edit; then load the revision back: the edit is on the sheet
     // again and the console runs the patch.
     await page.locator("[data-spr-revert]").click();
@@ -266,6 +274,68 @@ test.describe("the shelf, signed in", () => {
     await page.locator("[data-play-rom]").setInputFiles(CAL);
     await expect(page.locator("[data-play-stats]")).toContainText("cal.nes");
     await expect(page.locator("[data-spr-shelf]")).toHaveAttribute("data-spr-shelf", "disk");
+  });
+
+  test("a code block is kept on the shelf beside the revisions, comes back with the cartridge, and can be removed", async ({ page }) => {
+    test.setTimeout(120_000);
+    const held = await shelfOf(page, "owner");
+    expect(held.carts.length, "the tests before this one leave a cartridge on the shelf").toBe(1);
+    const cookie = { cookie: `${rig!.cookie}=${rig!.sessions.owner}` };
+    await as(page, "owner");
+    await page.setViewportSize({ width: 1000, height: 900 });
+    await page.goto("/nes/create");
+    await page.locator("[data-shelf-picker=open] select").selectOption(held.carts[0].id);
+    await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+    // From the shelf, so the blocks have somewhere to go.
+    const code = page.locator("[data-code]");
+    await expect(code).toHaveAttribute("data-code-shelf", "shelf");
+    await expect(code).toHaveAttribute("data-code-blocks", "0");
+    // Step once so the listing is there, then select three lines and capture.
+    await page.locator("[data-play-op]").click();
+    await expect(page.locator("[data-code-list]")).toHaveCount(1);
+    const lines = page.locator("[data-code-line]");
+    const first = (await lines.nth(0).getAttribute("data-code-line"))!;
+    const third = (await lines.nth(2).getAttribute("data-code-line"))!;
+    await lines.nth(0).click();
+    await lines.nth(2).click();
+    await expect(page.locator("[data-code-selection]")).toHaveAttribute("data-code-selection", "3");
+    await page.locator("[data-code-capture]").click();
+    await expect(code).toHaveAttribute("data-code-blocks", "1", { timeout: 15_000 });
+    await expect(page.locator("[data-code-shelf-why]")).toHaveCount(0);
+    const block = page.locator(`[data-code-block="${first}"]`);
+    await expect(block).toHaveAttribute("data-code-block-kept", "shelf");
+    // The shelf has it, with the range the listing showed and the bytes on the bus.
+    const kept = await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/blocks`, { headers: cookie });
+    expect(kept.status()).toBe(200);
+    const blocks = (await kept.json()).blocks as { id: string; seq: number; at: number; to: number; bytes: string; label: string; note: string }[];
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({ seq: 1, at: parseInt(first, 16), to: parseInt(third, 16), label: "", note: "" });
+    expect(blocks[0].bytes.length).toBeGreaterThanOrEqual(6);
+    // Words, kept when the field is left.
+    await block.locator("[data-code-label]").fill("the start");
+    await block.locator("[data-code-note]").fill("what runs first");
+    await page.locator("[data-code-label]").blur();
+    await page.locator("[data-code-note]").blur();
+    await expect.poll(async () => ((await (await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/blocks`, { headers: cookie })).json()).blocks[0] as { label: string; note: string }), { timeout: 15_000 })
+      .toMatchObject({ label: "the start", note: "what runs first" });
+    // The shelf page counts it.
+    await page.goto("/nes/shelf");
+    await expect(page.locator("[data-cart-blocks]")).toHaveAttribute("data-cart-blocks", "1");
+    // Back with the cartridge: the block is listed again from the shelf, its words with it.
+    await page.goto("/nes/create");
+    await page.locator("[data-shelf-picker=open] select").selectOption(held.carts[0].id);
+    await expect(code).toHaveAttribute("data-code-blocks", "1", { timeout: 15_000 });
+    await expect(block.locator("[data-code-label]")).toHaveValue("the start");
+    await expect(block.locator("pre")).toContainText(first);
+    // Removed: the row goes, the shelf no longer has it.
+    await block.locator("[data-code-remove]").click();
+    await expect(code).toHaveAttribute("data-code-blocks", "0", { timeout: 15_000 });
+    const gone = await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/blocks`, { headers: cookie });
+    expect((await gone.json()).blocks).toEqual([]);
+    // A file from the disk keeps its blocks in the page, and the window says so.
+    await page.locator("[data-play-rom]").setInputFiles(CAL);
+    await expect(page.locator("[data-play-stats]")).toContainText("cal.nes");
+    await expect(code).toHaveAttribute("data-code-shelf", "page");
   });
 
   test("every bench in the playground that takes a file offers the shelf", async ({ page }) => {
