@@ -4261,3 +4261,28 @@ Open: the drawings' palette; the owner's ergonomics work; the bench
 side; the quiet machine's 0.83x speed (load 17 to 21 all day); the
 recording-failed question; create.spec's "on a phone" flake, a different
 shape from the load waits.
+
+## Checkpoint, 2026-09-29, evening
+
+On beta, not deployed: main and origin at the commit after `933000f`
+(a spec assertion), beta at `933000f`, live at `aaa502f` (1.0.267).
+
+- `128099b` and `698fda0`: the cartridge line says what this browser
+  already keeps for the game, on both pages: moments and recordings
+  under its digest, and its blocks, the shelf's for a cartridge from
+  there and the file store's for one from the disk (`Held.tsx`). The
+  store has one notifier that every write and removal fires, and the
+  shelf's change event covers its blocks, so the line is read again at
+  every change and says nothing until the counts are known. The e2e test
+  walks 0/0/0, a moment, a block, a recording, a reload, a removal and
+  another game; the shelf's block test holds the line counting the
+  shelf's block. The sabotage (the notifier silenced) went red at the
+  first count after a save. 128099b was pushed with a type error in the
+  shelf spec (a second `held`); beta refused it and 698fda0 fixed it.
+- `933000f`: both block tests read the listing's first row only after
+  the step has redrawn it; read earlier, the clicks fell on the redrawn
+  listing one instruction on. Found because the count's render moved
+  the timing. NES spec 12 of 12 over three repeats, shelf spec 13 of 13
+  twice, against beta.
+
+Open: as above, less nothing.
