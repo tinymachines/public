@@ -305,9 +305,9 @@ test.describe("the shelf, signed in", () => {
     const block = page.locator(`[data-code-block="${first}"]`);
     await expect(block).toHaveAttribute("data-code-block-kept", "shelf");
     // The cartridge line counts it as the shelf's.
-    const held = page.locator("[data-play-stats] [data-play-held]");
-    await expect(held).toHaveAttribute("data-play-held", /\/1$/, { timeout: 15_000 });
-    await expect(held).toHaveAttribute("data-play-held-blocks", "shelf");
+    const heldLine = page.locator("[data-play-stats] [data-play-held]");
+    await expect(heldLine).toHaveAttribute("data-play-held", /\/1$/, { timeout: 15_000 });
+    await expect(heldLine).toHaveAttribute("data-play-held-blocks", "shelf");
     // The shelf has it, with the range the listing showed and the bytes on the bus.
     const kept = await page.request.get(`${rig!.api}/v1/me/carts/${held.carts[0].id}/blocks`, { headers: cookie });
     expect(kept.status()).toBe(200);
