@@ -269,7 +269,7 @@ type Win = { x: number; y: number; w: number; h: number; z: number; open: boolea
 | **コード** | `machine.code`、`codeAt`、`cpu.pc`、`breakpoints`、`stoppedAt`、`cart`。6502 サイト自身の表で逆アセンブルする | `toggleBreakpoint`、`clearBreakpoints`。取り込んだブロックとそのラベルとメモ | ブレークポイント: エンジンのメモリ、毎ティックに送られる。ブロック: 棚から来たカートリッジなら棚へ（取り込んだままで残し、言葉は欄を離れたときに）、それ以外はページに。markdown か JSON のダウンロードとして書き出す | 棚のブロックはカートリッジと一緒に戻る。ディスクから来たカートリッジのブロックはページと一緒に消え、ウィンドウがそう言う |
 | **CPU、メモリ、パレット、画面上のスプライト**（一つのコンポーネント、`State.tsx`） | `machine`（走行中は 200 ms ごとに公開）、`palette`（実測した色） | メモリ: `watch(page)`。画面上のスプライト: タイルのボタンがそのタイルをスプライトに渡す | 無し | 四つのウィンドウ、一人の読み手 |
 | **ネームテーブル** | ネームテーブル RAM と、基板のバンクを通して画像チップが見ているパターンメモリ。ウィンドウが見えている間、機械が公開されるたびにワーカーへ尋ねる（`nametables`）。パターンテーブルのための `ppu.ctrl`、パレット RAM と実測した色、ヘッダのミラーリングのための `rom` | 何も | 無し | 二つのテーブルをチップが持つままに描く。タイルはその瞬間にチップが見ているもので、基板が何をバンク切り替えしていても変わらない |
-| **スプライト** | `base`（解釈した iNES イメージ）、`rom`、`patched`、`palette`、`machine.palette`（生きた値）、`cart` | 適用（`reloadWith(image)`）、戻す、`.ips` か `.patched.nes` のダウンロード。リビジョンを残す、説明を変える、読み込む、削除する | 編集: メモリの Map。リビジョン: 棚へ、メッセージ付きの IPS として | バイトを変える唯一のウィンドウ |
+| **スプライト** | `base`（解釈した iNES イメージ）、`rom`、`patched`、`palette`、`machine.palette`（生きた値）、`cart`。CHR-RAM から描く基板では、コンソールのパターンメモリ（`patternMemory`）をシートが見えている間、公開のたびに尋ねる | 適用（`reloadWith(image)`）、戻す、`.ips` か `.patched.nes` のダウンロード。リビジョンを残す、説明を変える、読み込む、削除する | 編集: メモリの Map。リビジョン: 棚へ、メッセージ付きの IPS として | バイトを変える唯一のウィンドウ。CHR-RAM の基板では見せるだけ |
 | **読み出し** | フレーム数、デコードされなかった数、フレームごとのコスト、経路、一致、fps、ドリフト、アンダーラン、電池 | 何も | 無し | 読むだけ |
 | **記録** | 遊ぶ側: `loaded`、`recording`、`powered`、`framesRun`、`recordingsKept`。フロー側: `list`、`busy`、`open`、`why` | `startRecording("here" か "power")`、`stopRecording`。記録ごとに `analyze`（読む）、`open`、`exportOne`（`.nesrec`）、`remove`、`cancel`、`giveRom`、`importOne` | ファイル保存領域の記録。記録中は 5 秒ごとと隠れたときにコピー | フローの道具への入口。最初から机の上に開いている |
 | **フロー** | `flow.snapshot().open`（記録のメタとその解釈済みの報告） | 見方（概要、モード、ルーチン、ループ、テーブル、パッド、変数、生）。`saveTrace(from, to)` を `.trace` として。`downloadReport` を `.flow.json` として | 新しいものは無し。報告はすでにファイル保存領域にある | 報告が開くと前に出る |
@@ -315,7 +315,10 @@ type Win = { x: number; y: number; w: number; h: number; z: number; open: boolea
 対する一つのタイルの新しい 16 バイトのこと。その集まりはパッチ済みイメージ
 としてコンソールに入れられ（元は元のままなので、変更は電源の切り入れを
 越えて残る）、IPS パッチかパッチ済みイメージ全体として外へ出られ、棚から
-来たカートリッジならメッセージ付きのリビジョンとしてそこに残せる。
+来たカートリッジならメッセージ付きのリビジョンとしてそこに残せる。CHR-RAM
+から描く基板ではファイルにタイルが無いので、シートはゲームが描いたままの
+コンソールのパターンメモリを、機械に従って見せ、何も変えない: パッチする
+元が無いからだ。
 
 **記録**、**フロー**、**履歴**は机自身の道具で、次の節がそれらの作るものを
 追う。
@@ -339,7 +342,7 @@ WebAssembly（nes-wasm の `Nes`）:
 | `save`、`restore` | `saveMoment`、`loadMoment`、`stepBack` | `save_state`、`load_state` | 場面、履歴 |
 | `record`（here、soFar、on、off） | `startRecording`、`keepSoFar`、`stopRecording`、`detach` | `record_start_here`、`record_so_far`、`record_start`、`record_stop` | 記録 |
 | `history`、`historyRead`、`mark`、`historyCut` | `setHistory`、`readHistoryBytes`、`markBack`、`stepBack` | `set_history`、`history`、`history_end`、`save_state`、`history_cut` | 履歴 |
-| `ciram` | `nametables` | `ciram`、`chr` | ネームテーブル |
+| `ciram` | `nametables`、`patternMemory` | `ciram`、`chr` | ネームテーブル、スプライト |
 
 飛んでいるティックは常に一つなので、表示のコールバックが報告する時間は
 その前の一つの本当のコストだ。ティックが何フレーム負うかを決めるドリフト

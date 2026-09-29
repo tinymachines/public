@@ -500,6 +500,72 @@ test("a hidden screen pauses the console, and only the play key resumes it", asy
   await expect.poll(framesRun, { timeout: 15_000 }).toBeGreaterThan(at + 5);
 });
 
+/**
+ * A cartridge with CHR-RAM, made here: UxROM (mapper 2), 16 KiB of
+ * program and no CHR. The program waits two frames for the picture chip
+ * to take writes, then puts one tile's sixteen bytes at pattern address
+ * $0000 through $2006 and $2007, and loops. There is nothing else on the
+ * bus, so the sheet can only draw that tile by reading the console.
+ */
+function chrRamCartridge(): Buffer {
+  const code = [
+    0x78, 0xd8, // SEI; CLD
+    0xa9, 0x00, 0x8d, 0x00, 0x20, 0x8d, 0x01, 0x20, // LDA #0; STA $2000; STA $2001
+    0x2c, 0x02, 0x20, // BIT $2002
+    0x2c, 0x02, 0x20, 0x10, 0xfb, // wait: BIT $2002; BPL wait
+    0x2c, 0x02, 0x20, 0x10, 0xfb, // and once more
+    0xa9, 0x00, 0x8d, 0x06, 0x20, 0x8d, 0x06, 0x20, // LDA #0; STA $2006; STA $2006  (pattern $0000)
+  ];
+  // Plane 0 rows of $AA and plane 1 rows of $0F: four colours in the tile.
+  for (const b of [0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f]) code.push(0xa9, b, 0x8d, 0x07, 0x20);
+  const here = 0xc000 + code.length;
+  code.push(0x4c, here & 0xff, here >> 8); // JMP here
+  const prg = Buffer.alloc(0x4000, 0xff);
+  Buffer.from(code).copy(prg, 0);
+  prg[0x3ffc] = 0x00;
+  prg[0x3ffd] = 0xc0;
+  const header = Buffer.from([0x4e, 0x45, 0x53, 0x1a, 1, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  return Buffer.concat([header, prg]);
+}
+
+test("sprites on a CHR-RAM board: the sheet is the console's pattern memory as the game drew it, and nothing on it can be changed", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(BENCH);
+  await open(page, "/nes/create", 500);
+  await page.locator("[data-play-rom]").setInputFiles({ name: "chr-ram.nes", mimeType: "application/octet-stream", buffer: chrRamCartridge() });
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  await page.locator("[data-play-run]").click();
+  await expect.poll(framesRun, { timeout: 15_000 }).toBeGreaterThan(5);
+  await page.locator("[data-play-run]").click();
+  // The sheet says what it is, and draws the console's 512 tiles.
+  await expect(page.locator("[data-spr-ram]")).toBeVisible();
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-ram-tiles", "drawn", { timeout: 10_000 });
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-count", "512");
+  // Tile 0 carries the program's four colours and the rest of the sheet is
+  // blank: more than one colour in the tile's corner, one colour beside it.
+  const colours = async (x: number, y: number, w: number, h: number) =>
+    page.evaluate(([x, y, w, h]) => {
+      const c = document.querySelector<HTMLCanvasElement>("[data-spr-sheet]")!;
+      const d = c.getContext("2d")!.getImageData(x, y, w, h).data;
+      const seen = new Set<number>();
+      for (let i = 0; i < d.length; i += 4) seen.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+      return seen.size;
+    }, [x, y, w, h]);
+  const cell = (await page.locator("[data-spr-sheet]").evaluate((c) => (c as HTMLCanvasElement).width)) / 16;
+  expect(await colours(0, 0, cell, cell), "tile 0, as the program drew it").toBeGreaterThan(1);
+  expect(await colours(cell, 0, cell, cell), "tile 1, never written").toBe(1);
+  // Open tile 0 and press on it: no edit is made, and nothing can leave.
+  await page.locator("[data-spr-sheet]").click({ position: { x: cell / 2, y: cell / 2 } });
+  await expect(page.locator("[data-spr-picked]")).toHaveAttribute("data-spr-picked", "0");
+  await page.locator('[data-spr-slot="3"]').click();
+  const edit = page.locator("[data-spr-edit]");
+  const eb = (await edit.boundingBox())!;
+  await edit.click({ position: { x: eb.width / 16, y: eb.height / 16 } });
+  await expect(page.locator("[data-spr]")).toHaveAttribute("data-spr-changed", "0");
+  for (const b of ["[data-spr-apply]", "[data-spr-revert]", "[data-spr-ips]", "[data-spr-nes]"]) await expect(page.locator(b)).toBeDisabled();
+});
+
 test("sprites from the bytes: the sheet, a painted pixel, the patch in the console and out as IPS", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize(BENCH);

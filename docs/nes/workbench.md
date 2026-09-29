@@ -280,7 +280,7 @@ fields; the worker paths behind each verb are in the next section.
 | **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart`; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block, its label and note | breakpoints: engine memory, sent with every tick; blocks: the shelf for a cartridge from there (kept as captured, the words as the field is left), the page otherwise; exported as markdown or JSON downloads | a block from the shelf comes back with the cartridge; a block of a cartridge from the disk leaves with the page, and the window says so |
 | **CPU, Memory, Palettes, OAM** (one component, `State.tsx`) | `machine` (published every 200 ms while running), `palette` (the measured colours) | Memory: `watch(page)`; OAM: a tile button hands its tile to Sprites | none | four windows, one reader |
 | **Nametables** | the nametable RAM and the pattern memory as the picture chip sees it, through the board's banks, asked of the worker (`nametables`) each time the machine is published while the window is on view; `ppu.ctrl` for the pattern table, palette RAM and the measured colours, `rom` for the header's mirroring | nothing | none | draws the two tables as the chip holds them, with the tiles the chip sees at that instant, whatever the board banks |
-| **Sprites** | `base` (the parsed iNES image), `rom`, `patched`, `palette`, `machine.palette` (live), `cart` | Apply (`reloadWith(image)`), Revert, download `.ips` or `.patched.nes`; Keep a revision, rename one, load one, delete one | edits: a Map in memory; revisions: the shelf, as IPS with a message | the only window that changes bytes |
+| **Sprites** | `base` (the parsed iNES image), `rom`, `patched`, `palette`, `machine.palette` (live), `cart`; on a board that draws from CHR-RAM, the console's pattern memory (`patternMemory`), asked with each publish while the sheet is on view | Apply (`reloadWith(image)`), Revert, download `.ips` or `.patched.nes`; Keep a revision, rename one, load one, delete one | edits: a Map in memory; revisions: the shelf, as IPS with a message | the only window that changes bytes; on a CHR-RAM board it only shows them |
 | **Readouts** | frames, undecoded, per-frame costs, path, agreement, fps, drift, underruns, battery | nothing | none | read only |
 | **Record** | play: `loaded`, `recording`, `powered`, `framesRun`, `recordingsKept`; flow: `list`, `busy`, `open`, `why` | `startRecording("here" or "power")`, `stopRecording`; per recording: `analyze` (Read), `open`, `exportOne` (`.nesrec`), `remove`, `cancel`, `giveRom`, `importOne` | recordings in the file store; a copy every 5 s while recording and on hide | the way into the flow tools; open on the desk from the start |
 | **Flow** | `flow.snapshot().open` (the recording's meta and its parsed report) | the view (overview, modes, routines, loops, tables, pad, vars, raw); `saveTrace(from, to)` as `.trace`; `downloadReport` as `.flow.json` | nothing new; the report is already in the file store | brought forward when a report opens |
@@ -329,7 +329,10 @@ first.
 sixteen new bytes against the base image. The set can go into the console
 as a patched image (the base stays the base, so the change survives a
 power cycle), leave as an IPS patch or the whole patched image, or, for a
-cartridge from the shelf, be kept there as a revision with a message.
+cartridge from the shelf, be kept there as a revision with a message. On
+a board that draws from CHR-RAM the file carries no tiles, so the sheet
+shows the console's pattern memory as the game has drawn it, following
+the machine, and changes nothing: there is no base to patch.
 
 **Record**, **Flow** and **History** are the desk's own tools, and the
 next sections follow what they make.
@@ -353,7 +356,7 @@ and the WebAssembly behind it (nes-wasm's `Nes`):
 | `save`, `restore` | `saveMoment`, `loadMoment`, `stepBack` | `save_state`, `load_state` | Moments, History |
 | `record` (here, soFar, on, off) | `startRecording`, `keepSoFar`, `stopRecording`, `detach` | `record_start_here`, `record_so_far`, `record_start`, `record_stop` | Record |
 | `history`, `historyRead`, `mark`, `historyCut` | `setHistory`, `readHistoryBytes`, `markBack`, `stepBack` | `set_history`, `history`, `history_end`, `save_state`, `history_cut` | History |
-| `ciram` | `nametables` | `ciram`, `chr` | Nametables |
+| `ciram` | `nametables`, `patternMemory` | `ciram`, `chr` | Nametables, Sprites |
 
 One tick is in flight at a time, so the time each display callback
 reports is the true cost of the one before; the drift policy that decides

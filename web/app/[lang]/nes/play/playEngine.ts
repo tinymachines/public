@@ -659,6 +659,16 @@ export async function nametables(): Promise<{ ciram: Uint8Array; chr: Uint8Array
   return { ciram: a.ciram, chr: a.chr ?? new Uint8Array(0) };
 }
 
+/**
+ * The pattern memory alone, for the sprite sheet on a board that draws
+ * from CHR-RAM: the same ask as `nametables`, the tables left aside. Null
+ * without a powered console or from a board that cannot say.
+ */
+export async function patternMemory(): Promise<Uint8Array | null> {
+  const r = await nametables();
+  return r && r.chr.length >= 8192 ? r.chr : null;
+}
+
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { applyRanges, ipsOf, parseInes, rangesOf, type Ines } from "@/lib/ines";
-import { reloadWith, snapshot, serverSnapshot, subscribe } from "./playEngine";
+import { patternMemory, reloadWith, snapshot, serverSnapshot, subscribe } from "./playEngine";
 import { addRevision, announceChange, deleteRevision, fetchRevision, listRevisions, patchRevision, ShelfError, type Revision } from "@/lib/shelf";
 // The console's own tile codec, the one file that says what a CHR byte is
 // (ChrArt.tsx imports it the same way and says why).
@@ -16,8 +16,10 @@ import { decodeCHR, encodeCHR, TILE } from "../../../../public/6502/games/chr.js
  * codec and painted with four colours the reader picks from the sixty-four
  * as the picture worker measured them (there is no colour table on this
  * site; a code is what the console puts on the wire). A board that draws
- * from CHR-RAM has no tiles in its file, and the sheet says so rather than
- * drawing nothing.
+ * from CHR-RAM has no tiles in its file: the sheet shows the console's
+ * pattern memory as the game has drawn it (asked of the console with each
+ * publish of the machine while the sheet is on view, since 2026-09-29),
+ * says so, and edits nothing, because there is no base to patch.
  *
  * A click opens a tile large; a brush paints it. Every edit is a change to
  * sixteen bytes of the image, kept here as the tile's new bytes against
@@ -46,7 +48,9 @@ const S = {
   en: {
     h: "Sprites",
     none: "No cartridge loaded: the sheet is its CHR.",
-    ram: "This board draws from CHR-RAM, which the game fills as it runs; the file carries no tiles. The Nametables window draws them as the game has drawn them.",
+    ram: "This board draws from CHR-RAM, which the game fills as it runs. The sheet shows the tiles as the game has drawn them at this instant, read from the console, and cannot change them: the file carries none, so there is nothing to patch.",
+    ramTiles: "the console's CHR-RAM: 512 tiles in 2 pattern tables, as the game has drawn them now",
+    ramWaiting: "waiting for the console's CHR-RAM",
     bad: (why: string) => `The file could not be read as an image: ${why}`,
     tiles: (n: number, tables: number) => <>tiles in the file: <b>{n}</b>, in <b>{tables}</b> pattern tables of 256</>,
     table: "Pattern table",
@@ -89,7 +93,9 @@ const S = {
   ja: {
     h: "スプライト",
     none: "カートリッジが読み込まれていない。シートはその CHR だ。",
-    ram: "この基板は CHR-RAM から描く。ゲームが走りながら埋めるもので、ファイルにタイルは無い。ネームテーブルのウィンドウが、ゲームが描いたままのタイルを描く。",
+    ram: "この基板は CHR-RAM から描く。ゲームが走りながら埋めるものだ。シートはこの瞬間にゲームが描いたままのタイルをコンソールから読んで見せるが、変えることはできない: ファイルにタイルは無く、パッチする元が無い。",
+    ramTiles: "コンソールの CHR-RAM: パターンテーブル 2 つに 512 タイル、いまゲームが描いたまま",
+    ramWaiting: "コンソールの CHR-RAM を待っている",
     bad: (why: string) => `ファイルをイメージとして読めなかった: ${why}`,
     tiles: (n: number, tables: number) => <>ファイル中のタイル: <b>{n}</b>、256 ずつ <b>{tables}</b> のパターンテーブル</>,
     table: "パターンテーブル",
@@ -172,7 +178,38 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
     }
   }, [base]);
   const h = header.h;
-  const count = h ? h.chr / 16 : 0;
+  // A board that draws from CHR-RAM: the tiles are the console's, asked
+  // for with each publish of the machine while the sheet is on view, and
+  // shown only while they are this cartridge's.
+  const ramBoard = !!h && h.chr === 0;
+  const [ram, setRam] = useState<{ bytes: Uint8Array; base: Uint8Array } | null>(null);
+  const [onView, setOnView] = useState(0);
+  const box = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      if (el.getClientRects().length) setOnView((n) => n + 1);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const machine = s.machine;
+  const powered = s.powered;
+  useEffect(() => {
+    if (!ramBoard || !powered || !base) return;
+    const el = box.current;
+    if (!el || el.getClientRects().length === 0) return;
+    let live = true;
+    void patternMemory().then((bytes) => {
+      if (live && bytes) setRam({ bytes, base });
+    });
+    return () => {
+      live = false;
+    };
+  }, [ramBoard, powered, base, machine, onView]);
+  const chrRam = ramBoard && ram && ram.base === base ? ram.bytes : null;
+  const count = ramBoard ? (chrRam ? chrRam.length / 16 : 0) : h ? h.chr / 16 : 0;
   const tables = Math.ceil(count / PER_TABLE);
 
   // The edits, keyed by tile index in the file: the tile's sixteen bytes now.
@@ -209,6 +246,7 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
   }
 
   const bytesOf = (tile: number): Uint8Array => {
+    if (chrRam) return chrRam.subarray(tile * 16, tile * 16 + 16);
     const e = edits.get(tile);
     if (e) return e;
     return base!.subarray(h!.chrAt + tile * 16, h!.chrAt + tile * 16 + 16);
@@ -270,7 +308,7 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
   });
 
   const paint = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (picked === null || !h) return;
+    if (picked === null || !h || ramBoard) return;
     const r = e.currentTarget.getBoundingClientRect();
     const x = Math.floor(((e.clientX - r.left) / r.width) * TILE);
     const y = Math.floor(((e.clientY - r.top) / r.height) * TILE);
@@ -328,32 +366,31 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
 
   // The set as an image and as ranges: what the buttons act on.
   const working = useMemo(() => {
-    if (!base || !h) return null;
+    if (!base || !h || ramBoard) return null;
     const ranges = [...edits].map(([tile, bytes]) => ({ at: h.chrAt + tile * 16, bytes }));
     return { image: applyRanges(base, ranges), ranges: rangesOf(base, applyRanges(base, ranges)) };
-  }, [base, h, edits]);
+  }, [base, h, edits, ramBoard]);
   const changedBytes = working ? working.ranges.reduce((n, r) => n + r.bytes.length, 0) : 0;
   const patched = s.patched;
   const applyable = !!(working && s.rom && !same(working.image, s.rom));
   const stem = (s.loaded ?? "cartridge").replace(/\.nes$/i, "");
 
   return (
-    <section className="wb-page play-section" id="sprites" data-spr data-spr-count={count} data-spr-changed={edits.size}>
+    <section className="wb-page play-section" id="sprites" ref={box} data-spr data-spr-count={count} data-spr-changed={edits.size} data-spr-ram-tiles={ramBoard ? (chrRam ? "drawn" : "waiting") : undefined}>
       <h2 className="eyebrow">{T.h}</h2>
       {!base ? (
         <p className="quiet">{T.none}</p>
       ) : header.why ? (
         <p className="notice fail">{T.bad(header.why)}</p>
-      ) : h && h.chr === 0 ? (
-        <p className="notice" data-spr-ram>{T.ram}</p>
       ) : h ? (
         <div className="spr">
+          {ramBoard ? <p className="notice" data-spr-ram>{T.ram}</p> : null}
           <p className="bench-readout">
-            <span className="measured">{T.tiles(count, tables)}</span>
-            <span className="measured" data-spr-changed-line>{T.changed(edits.size, changedBytes)}</span>
-            <span className="measured" data-spr-running={patched ? "patch" : "base"}>{T.running(patched)}</span>
+            <span className="measured">{ramBoard ? (chrRam ? T.ramTiles : T.ramWaiting) : T.tiles(count, tables)}</span>
+            {ramBoard ? null : <span className="measured" data-spr-changed-line>{T.changed(edits.size, changedBytes)}</span>}
+            {ramBoard ? null : <span className="measured" data-spr-running={patched ? "patch" : "base"}>{T.running(patched)}</span>}
           </p>
-          <div className="spr-grid">
+          {count > 0 ? <div className="spr-grid">
             <div className="spr-sheet">
               {tables > 1 ? (
                 <label className="field">
@@ -441,7 +478,7 @@ export function Sprites({ lang, open }: { lang: Lang; open?: { tile: number; n: 
               {/* Two lines reserved: the note before the colours are measured is the longer one. */}
               <p className="quiet spr-note">{s.palette ? T.measured : T.unmeasured}</p>
             </div>
-          </div>
+          </div> : null}
           <div className="chips">
             <button type="button" className="btn btn-primary" disabled={!applyable} onClick={() => working && void reloadWith(working.image)} data-spr-apply>{T.apply}</button>
             <button type="button" className="btn" disabled={edits.size === 0 && !patched} onClick={() => { setEdits(new Map()); if (patched && base) void reloadWith(base); }} data-spr-revert>{T.revert}</button>
