@@ -48,8 +48,10 @@ const PROSE = {
       <>
         The tools are the ones the play page had until they moved here: the screen, the
         cartridge, the CPU, the memory, the palettes, the sprites on screen, the
-        code with its captured blocks, and the sprite editor. Three more are this
-        desk&rsquo;s own. Record keeps a run of a game, from right where you are
+        code with its blocks (kept on your shelf when the cartridge came from
+        there), and the sprite editor. Four more are this desk&rsquo;s own.
+        Nametables shows the two screens of tile numbers the picture chip holds,
+        drawn with the game&rsquo;s own tiles. Record keeps a run of a game, from right where you are
         or from power-on, and Flow plays it back and reads what the code did: its
         routines, its loops, the tables it chose through, what followed the pad,
         and the stretches of the run that looked alike. A run recorded from where
@@ -73,7 +75,7 @@ const PROSE = {
     phone: <>スマートフォンには机が無い: 同じ道具が縦に並び、帯からそれぞれへ飛べる。</>,
     gaps: (
       <>
-        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、取り込んだブロック付きのコード、そしてスプライトのエディタ。この机だけの道具が三つある。「記録」はゲームの一回の走行を、いまの場面からか電源投入から残し、「フロー」はそれを再生してコードが何をしたかを読む: ルーチン、ループ、選んだテーブル、パッドに続いたもの、そして似ていた区間。いまの場面から記録した走行は、その瞬間に保存したコンソール全体から始まり、その保存は記録と一緒に残る。場面は単独でも、カートリッジの下で保存して読み込める。ブレークポイントはコードのウィンドウにある。「履歴」はコンソール自身のトレースを残し、各ステップの前に保存した場面へ一歩ずつ戻る。
+        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、ブロック付きのコード（カートリッジが棚から来たものなら、ブロックは棚に残る）、そしてスプライトのエディタ。この机だけの道具が四つある。「ネームテーブル」は画像チップが持つ二画面ぶんのタイル番号を、ゲーム自身のタイルで描いて見せる。「記録」はゲームの一回の走行を、いまの場面からか電源投入から残し、「フロー」はそれを再生してコードが何をしたかを読む: ルーチン、ループ、選んだテーブル、パッドに続いたもの、そして似ていた区間。いまの場面から記録した走行は、その瞬間に保存したコンソール全体から始まり、その保存は記録と一緒に残る。場面は単独でも、カートリッジの下で保存して読み込める。ブレークポイントはコードのウィンドウにある。「履歴」はコンソール自身のトレースを残し、各ステップの前に保存した場面へ一歩ずつ戻る。
       </>
     ),
     back: "NES コンソールへ戻る",

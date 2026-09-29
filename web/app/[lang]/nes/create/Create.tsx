@@ -10,6 +10,7 @@ import { Sprites } from "../play/Sprites";
 import { Record } from "./Record";
 import { Flow } from "./Flow";
 import { History } from "./History";
+import { Nametables } from "./Nametables";
 import * as flow from "./flowEngine";
 
 /**
@@ -27,6 +28,7 @@ const WINS: WinSpec[] = [
   { id: "memory", at: [0.68, 0.3, 0.32, 0.4] },
   { id: "palettes", at: [0.06, 0.06, 0.4, 0.5], open: false },
   { id: "oam", at: [0.12, 0.1, 0.4, 0.6], open: false },
+  { id: "nametables", at: [0.1, 0.06, 0.56, 0.7], open: false },
   { id: "sprites", at: [0.2, 0.04, 0.6, 0.9], open: false },
   { id: "readouts", at: [0.3, 0.3, 0.4, 0.4], open: false },
   // Record is open from the start, under the memory, so the way into the
@@ -93,6 +95,7 @@ function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
       <Window id="memory"><State lang={lang} only={["memory"]} /></Window>
       <Window id="palettes"><State lang={lang} only={["palettes"]} /></Window>
       <Window id="oam"><State lang={lang} only={["oam"]} onTile={onTile} /></Window>
+      <Window id="nametables"><Nametables lang={lang} /></Window>
       <Window id="sprites"><Sprites lang={lang} open={openTile} /></Window>
       <Window id="readouts"><Readouts lang={lang} /></Window>
       <Window id="record"><Record lang={lang} /></Window>

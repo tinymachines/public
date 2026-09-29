@@ -31,7 +31,7 @@ async function openDesk(page: Page) {
 test("the desk: a key for every window named by its own heading, the console's five and Record open, all inside the desk, the page not scrolling", async ({ page }) => {
   await openDesk(page);
   const keys = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.map((b) => (b.textContent ?? "").trim()));
-  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Sprites", "Readouts", "Record", "Flow", "History", "About this page"]);
+  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "History", "About this page"]);
   const shown = await page.locator("[data-win]").evaluateAll((ws) => ws.filter((w) => (w as HTMLElement).offsetParent !== null).map((w) => (w as HTMLElement).dataset.win));
   expect(shown).toEqual(OPEN);
   const pressed = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => (b as HTMLElement).dataset.deskTab));
@@ -240,6 +240,45 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "");
   await page.locator("[data-win=record] [data-record-delete]").first().click();
   await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
+});
+
+test("the nametables window draws the two tables the chip holds from the calibration cartridge's own tiles, and names the tile under the pointer", async ({ page }) => {
+  await openDesk(page);
+  // The calibration cartridge draws its picture from tiles (NROM, one bank
+  // of CHR), so its tables fill and the window can draw them.
+  await page.locator("[data-play-rom]").setInputFiles("public/nes/cal.nes");
+  await expect(page.locator("[data-play-power]")).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  const framesRun = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  await page.locator("[data-play-run]").click();
+  await expect.poll(framesRun, { timeout: 15_000 }).toBeGreaterThan(10);
+  await page.locator("[data-play-run]").click();
+  // Closed until asked for; opened from the tray, it asks the console.
+  await expect(page.locator("[data-win=nametables]")).toBeHidden();
+  await page.locator("[data-desk-tab=nametables]").click();
+  await expect(page.locator("[data-win=nametables]")).toBeVisible();
+  const nt = page.locator("[data-nt]");
+  await expect(nt).toHaveAttribute("data-nt-tiles", "drawn", { timeout: 10_000 });
+  const filled = Number(await nt.getAttribute("data-nt-filled"));
+  expect(filled, "the cartridge's tables carry tile numbers").toBeGreaterThan(100);
+  // The picture is drawn: more than one colour on the canvas.
+  const colours = await page.locator("[data-nt-canvas]").evaluate((c) => {
+    const d = (c as HTMLCanvasElement).getContext("2d")!.getImageData(0, 0, (c as HTMLCanvasElement).width, (c as HTMLCanvasElement).height).data;
+    const seen = new Set<number>();
+    for (let i = 0; i < d.length; i += 4) seen.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+    return seen.size;
+  });
+  expect(colours).toBeGreaterThan(1);
+  // The header's soldered mirroring is read out, and the pointer names a tile.
+  await expect(page.locator("[data-nt-mirroring]")).toContainText(/mirroring/);
+  const box = (await page.locator("[data-nt-canvas]").boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.1, box.y + box.height * 0.1);
+  await expect(page.locator("[data-nt-hover]")).toHaveAttribute("data-nt-hover", /^0:\d+:\d+$/);
+  await expect(page.locator("[data-nt-hover]")).toContainText("tile $");
+  await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.9);
+  await expect(page.locator("[data-nt-hover]")).toHaveAttribute("data-nt-hover", /^1:\d+:\d+$/);
+  // A step publishes the machine and the window follows it.
+  await page.locator("[data-play-frame]").click();
+  await expect(nt).toHaveAttribute("data-nt-tiles", "drawn");
 });
 
 test("a link to a window by its id opens it on top", async ({ page }) => {

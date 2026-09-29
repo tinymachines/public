@@ -166,6 +166,15 @@
 .spr-shelf .input { min-width: min(100%, calc(var(--u) * 70)); }
 .spr-revs { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(var(--u) * 1.5); }
 .spr-revs li { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); align-items: center; font-size: var(--text-fine); }
+.spr-revs form { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 2); align-items: center; }
+.spr-revs form .input { min-width: min(100%, calc(var(--u) * 60)); }
+/* The Nametables window (create/Nametables.tsx): the two tables the chip
+   holds side by side, one dot a pixel, scaled to the window's width; the
+   readout under them keeps its height while the pointer moves. */
+.nt { display: grid; gap: calc(var(--u) * 2); }
+.nt-canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+.nt-labels { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); margin: 0; font-family: var(--font-mono); font-size: var(--text-fine); color: var(--color-glass-muted); }
+.nt-hover { min-height: 1.5em; margin: 0; }
 /* The pad's three zones shrink with the screen (minmax(0, ...)): a 390
    phone holds the cross at 108, the pills at their smallest and the two
    round buttons at 52 with room to spare; wider screens get the larger

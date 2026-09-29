@@ -640,6 +640,24 @@ export async function watch(at: number, len = 256) {
   }
 }
 
+/**
+ * The nametable RAM as the chip holds it (2 KiB, in its own address order;
+ * the board's mirroring decides which PPU addresses land where) and the
+ * console's CHR-RAM (8 KiB on a board that keeps its tiles there, empty
+ * where the file carries them). Asked on demand by the Nametables window,
+ * not sent with every tick: ten kilobytes a frame would be most of the
+ * traffic for a window that is usually closed. Null without a powered
+ * console.
+ */
+export async function nametables(): Promise<{ ciram: Uint8Array; chrRam: Uint8Array } | null> {
+  if (!state.loaded || !state.powered) return null;
+  const r = await consoleW.call({ path: "ciram" });
+  if (!r.ok) return null;
+  const a = r.answer as unknown as { ciram?: Uint8Array; chrRam?: Uint8Array };
+  if (!a.ciram || a.ciram.length === 0) return null;
+  return { ciram: a.ciram, chrRam: a.chrRam ?? new Uint8Array(0) };
+}
+
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
