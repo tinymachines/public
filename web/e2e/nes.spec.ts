@@ -829,6 +829,44 @@ test("a disk cartridge's blocks are kept in this browser under the game's digest
   await expect(code).toHaveAttribute("data-code-blocks", "0");
 });
 
+test("the cartridge line says what this browser already keeps for the game: moments, recordings and blocks, counted the moment it loads and again at every change", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize(BENCH);
+  await open(page, "/nes/create", 500);
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  const held = page.locator("[data-play-stats] [data-play-held]");
+  await expect(held).toHaveAttribute("data-play-held", "0/0/0", { timeout: 15_000 });
+  await expect(held).toHaveAttribute("data-play-held-blocks", "browser");
+  await expect(held).toContainText("nothing kept for this game yet");
+  // A moment saved: counted without a reload.
+  await page.locator("[data-moment-save]").click();
+  await expect(held).toHaveAttribute("data-play-held", "1/0/0", { timeout: 15_000 });
+  // A block captured: counted.
+  await captureFirstTwo(page);
+  await expect(held).toHaveAttribute("data-play-held", "1/0/1", { timeout: 15_000 });
+  // A recording kept: counted once it is kept.
+  const rec = page.locator("[data-win=record]");
+  await rec.locator("[data-record-start]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "on");
+  await page.locator("[data-play-run]").click();
+  await expect.poll(() => rec.locator("[data-record-frames]").getAttribute("data-record-frames").then(Number), { timeout: 20_000 }).toBeGreaterThan(10);
+  await rec.locator("[data-record-stop]").click();
+  await expect(rec.locator("[data-record]")).toHaveAttribute("data-recording", "off");
+  await expect(held).toHaveAttribute("data-play-held", "1/1/1", { timeout: 15_000 });
+  await expect(held).toContainText("1 moment, 1 recording, 1 block");
+  // The page left and the same file loaded: the line counts what was kept.
+  await page.reload();
+  await expect(page.locator("[data-play-rom]")).toHaveCount(1, { timeout: 20_000 });
+  await loadFromDisk(page, "public/nes/cal.nes", "cal.nes");
+  await expect(held).toHaveAttribute("data-play-held", "1/1/1", { timeout: 15_000 });
+  // A moment removed: counted down.
+  await page.locator("[data-moment-delete]").first().click();
+  await expect(held).toHaveAttribute("data-play-held", "0/1/1", { timeout: 15_000 });
+  // Another game: nothing of this one under it.
+  await loadFromDisk(page, "e2e/fixtures/testcart.nes", "testcart.nes");
+  await expect(held).toHaveAttribute("data-play-held", "0/0/0", { timeout: 15_000 });
+});
+
 test("a browser without the private file store keeps a disk cartridge's blocks in the page, says so, and loses them with it", async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize(BENCH);

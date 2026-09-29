@@ -277,7 +277,7 @@ fields; the worker paths behind each verb are in the next section.
 | window | consumes | produces (verbs) | saves | notes |
 |---|---|---|---|---|
 | **Screen** | the picture worker's bitmaps, painted by the engine into the canvas | `attach`, `detach`; the Gamepad's `setTouchPad(bits)`; keys handled in the engine | pad placement per orientation and haptics, localStorage `tm.nes.pad*` | the Gamepad shows only when the desk stacks (a phone); an off-screen input holds focus so a phone hands over the arrows |
-| **Cartridge** | `loaded`, `powered`, `running`, `battery`, `why` | `load(file, cart?)` from disk or the shelf; `toggleRun` | battery RAM to the shelf on a timer, on pause, on hide, and before another load; restored on load | contains **Moments** |
+| **Cartridge** | `loaded`, `loading`, `powered`, `running`, `battery`, `why`; the game's SHA-256, for what is kept under it (moments, recordings, the disk's blocks from the file store, the shelf's blocks from the shelf), counted again whenever either says it changed | `load(file, cart?)` from disk or the shelf; `toggleRun` | battery RAM to the shelf on a timer, on pause, on hide, and before another load; restored on load | contains **Moments**; the line says what is loading until the console answers, and what is kept for the game once it has |
 | **Moments** (inside Cartridge) | the game's SHA-256, `momentsKept` | `saveMoment`, `loadMoment`, `deleteMoment` | the file store, `flow/moments/<sha>/<id>.bin` with a `.json` | a moment is the whole console (nes-console `state.rs`) with its frame count; Load is disabled while recording |
 | **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart`, the game's SHA-256; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block, its label and note | breakpoints: engine memory, sent with every tick; blocks: the shelf for a cartridge from there, the file store under the game's digest (`flow/blocks/<sha>/<id>.json`) for one from the disk, kept as captured and the words as the field is left either way; exported as markdown or JSON downloads | a block comes back with the cartridge from wherever it was kept; only a browser without the file store leaves a disk cartridge's blocks in the page, and the window says so |
 | **CPU, Memory, Palettes, OAM** (one component, `State.tsx`) | `machine` (published every 200 ms while running), `palette` (the measured colours) | Memory: `watch(page)`; OAM: a tile button hands its tile to Sprites | none | four windows, one reader |
@@ -500,8 +500,9 @@ every picker after a write.
 
 Two consequences for anyone redesigning the desk. A game's moments,
 recordings and (from the disk) code blocks are already indexed by its
-digest, so "what you have for this game" can be shown the moment a game
-loads, on either page. And since 2026-09-29 everything written on the
+digest, so the cartridge line says what is kept for a game the moment
+it loads, on either page, and again at every change (`Held.tsx`, since
+2026-09-29). And since 2026-09-29 everything written on the
 desk is kept somewhere: code blocks live in two places, the shelf for a
 cartridge from there and the file store for one from the disk, and a
 block never crosses between them, because each is asked for by the
@@ -612,8 +613,8 @@ cosmetic:
   shelf, the Nametables window, Rename in Sprites.
 - **Three things are already keyed by the game's digest** and so follow a
   game from Play to Create and back: moments, recordings, and the code
-  blocks of a cartridge from the disk. A design that shows "what you have
-  for this game" has its index already.
+  blocks of a cartridge from the disk. The cartridge line counts them
+  the moment a game loads.
 - **The bytes only change in Sprites.** Every other window reads. An
   "edited" state for the whole desk is Sprites' edit Map plus the
   engine's `patched` flag, nothing more.

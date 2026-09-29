@@ -42,6 +42,21 @@ export interface RecordingMeta {
 
 const EXPORT_MAGIC = "TMNESREC";
 
+// Whoever shows what the store holds hears every change to it, from any
+// window on the page: a moment saved, a recording kept as it goes, a block
+// removed. One notifier for the whole store, so a window never has to
+// know which other window wrote.
+const listeners = new Set<() => void>();
+export function onStoreChange(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+function changed() {
+  for (const fn of listeners) fn();
+}
+
 async function root(): Promise<FileSystemDirectoryHandle> {
   if (typeof navigator === "undefined" || !navigator.storage?.getDirectory) throw new Error("this browser has no private file store, so recordings cannot be kept");
   const r = await navigator.storage.getDirectory();
@@ -131,6 +146,7 @@ export async function saveRecording(r: { name: string; rom: Uint8Array; battery:
   if (meta.battery && !r.over) await write(d, "battery.bin", r.battery!);
   if (meta.fromState && !r.over) await write(d, "state.bin", r.state!);
   await write(d, "meta.json", JSON.stringify(meta));
+  changed();
   return meta;
 }
 
@@ -191,6 +207,7 @@ export async function deleteRecording(id: string) {
   if (meta && !(await listRecordings()).some((r) => r.sha256 === meta.sha256)) {
     await (await dir(["roms"])).removeEntry(`${meta.sha256}.nes`).catch(() => {});
   }
+  changed();
 }
 
 /**
@@ -257,6 +274,7 @@ export async function importRecording(file: File): Promise<RecordingMeta> {
   if (state.length) clean.fromState = true;
   else delete clean.fromState;
   await write(d, "meta.json", JSON.stringify(clean));
+  changed();
   return clean;
 }
 
@@ -288,6 +306,7 @@ export async function saveMoment(m: { rom: Uint8Array; name: string; frame: numb
   const d = await dir(["moments", sha]);
   await write(d, `${meta.id}.bin`, m.state);
   await write(d, `${meta.id}.json`, JSON.stringify(meta));
+  changed();
   return meta;
 }
 
@@ -320,6 +339,7 @@ export async function deleteMoment(sha: string, id: string) {
   const d = await dir(["moments", sha], false);
   await d.removeEntry(`${id}.bin`).catch(() => {});
   await d.removeEntry(`${id}.json`).catch(() => {});
+  changed();
 }
 
 // ---------------------------------------------------------------------------
@@ -375,6 +395,7 @@ export async function saveBlock(sha: string, b: { id?: string; at: number; to: n
   const id = b.id ?? `${savedAt.replace(/[:.]/g, "-")}-${b.at.toString(16).padStart(4, "0")}`;
   const block: StoredBlock = { v: 1, id, sha256: sha, at: b.at, to: b.to, bytes: b.bytes, label: b.label, note: b.note, savedAt };
   await write(await dir(["blocks", sha]), `${id}.json`, JSON.stringify(block));
+  changed();
   return block;
 }
 
@@ -395,4 +416,20 @@ export async function listBlocks(sha: string): Promise<StoredBlock[]> {
 export async function deleteBlock(sha: string, id: string) {
   const d = await dir(["blocks", sha], false);
   await d.removeEntry(`${id}.json`).catch(() => {});
+  changed();
+}
+
+/**
+ * What this browser holds for one image, counted: the moments and the
+ * code blocks filed under its digest, and the recordings made on it. Null
+ * when the store cannot be asked, so a readout says nothing rather than
+ * three zeroes that would be a guess.
+ */
+export async function heldFor(sha: string): Promise<{ moments: number; recordings: number; blocks: number } | null> {
+  try {
+    const [moments, recordings, blocks] = await Promise.all([listMoments(sha), listRecordings(), listBlocks(sha)]);
+    return { moments: moments.length, recordings: recordings.filter((r) => r.sha256 === sha).length, blocks: blocks.length };
+  } catch {
+    return null;
+  }
 }

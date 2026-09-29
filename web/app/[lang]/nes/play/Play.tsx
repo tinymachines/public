@@ -8,6 +8,7 @@ import Link from "next/link";
 import { localize } from "@/lib/lang";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
 import { Moments } from "./Moments";
+import { Held } from "./Held";
 
 /**
  * The console in the page: a follower of playEngine's announcements. The
@@ -217,6 +218,7 @@ export function Cartridge({ lang, brief = false }: { lang: Lang; brief?: boolean
                   <span className="measured">{T.loaded(s.loaded)}</span>
                   {!s.powered ? <span className="measured" data-play-off>{T.off}</span> : null}
                   {s.battery ? <span className="measured" data-play-battery={s.battery.has ? (s.battery.savedAt ? "kept" : "none") : "no-battery"}>{T.battery(s.battery)}</span> : null}
+                  <Held lang={lang} />
                 </>
               )}
             </p>
@@ -253,6 +255,7 @@ export function Readouts({ lang }: { lang: Lang }) {
             {s.stats ? <span className="measured">{T.drift(s.stats)}</span> : null}
             {s.frames > 0 ? <span className="measured">{T.underruns(s.underruns, s.audio)}</span> : null}
             {s.battery ? <span className="measured" data-play-battery={s.battery.has ? (s.battery.savedAt ? "kept" : "none") : "no-battery"}>{T.battery(s.battery)}</span> : null}
+            <Held lang={lang} />
           </>
         )}
       </p>
