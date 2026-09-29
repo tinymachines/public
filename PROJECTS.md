@@ -4287,3 +4287,28 @@ library tests 130, API tests 158, project tools 16.
   twice, against beta.
 
 Open: as above, less nothing.
+
+## Checkpoint, 2026-09-29, late
+
+No deploy: live, main, origin and beta stay level at `6ad6920`, 1.0.267,
+main one docs commit ahead at `5ce0e4f`. The evening went to the bench
+side, in nes-bench rather than here.
+
+- nes-bench `8f5bbb8`, `tools/pi-esp32-setup.sh`: a Raspberry Pi 5 is
+  the ESP32 test platform now, set up in one idempotent run with the
+  toolchain the pad firmware was proven on (esp32 Arduino core 3.3.11,
+  avr 1.8.8, esptool), a Rust side (stable and nightly with the RISC-V
+  targets, espflash, espup for the S3's Xtensa fork, the generators),
+  ESP-IDF v5.5.1 for six targets, and a udev rule that hands the usual
+  serial bridges to the user. Its `--verify` is the check that cannot
+  pass on nothing: pad-ble for the C6 and pad-usb for the P4 must each
+  build to a plausible image with the fqbn the sketch records. Both do,
+  pad-usb at the same 386576 bytes as on the workstation; pad-ble is 16
+  bytes apart because the core embeds its own source paths and the home
+  directory differs. Digests differ on every build (compile time is
+  stamped in), so a digest is not the reproducibility check. nes-bench
+  is cloned on the Pi; nothing is plugged into it yet. Where the Pi is
+  lives in the gitignored bench file, not here.
+
+Open: as above, plus the first flash of pad-usb from the Pi once a board
+is on a cable.
