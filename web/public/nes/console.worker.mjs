@@ -99,7 +99,7 @@ self.onmessage = async (e) => {
     }
     if (path === "ciram") {
       if (!nes) throw new Error("no cartridge loaded");
-      self.postMessage({ id, ok: true, answer: { ciram: nes.ciram(), chrRam: nes.chr_ram() } });
+      self.postMessage({ id, ok: true, answer: { ciram: nes.ciram(), chr: nes.chr() } });
       return;
     }
     // The steps: the machine moved by one of its own units, with the pads

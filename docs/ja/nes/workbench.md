@@ -1,7 +1,7 @@
 # 机の竣工図
 
 *作る机の版 1、2026-09-28 時点のコードから読み取った: このサイトは
-8e86ee7、nes 595dcf6、nes-bus 707485a、2a03 a7fa5f5、2c02 c9fe9e8、
+8e86ee7、nes ffa239e、nes-bus 707485a、2a03 a7fa5f5、2c02 c9fe9e8、
 ntsc-crt f91aecb、nes-bench 83f9175。ここにある主張はすべてファイルの中で
 読んだもので、記憶から書いたものではない。ファイル自身のコメントがその
 コードと食い違っていた所は同じ晩に直し、最後の節にその結果をまとめた。*
@@ -268,7 +268,7 @@ type Win = { x: number; y: number; w: number; h: number; z: number; open: boolea
 | **場面**（カートリッジの中） | ゲームの SHA-256、`momentsKept` | `saveMoment`、`loadMoment`、`deleteMoment` | ファイル保存領域、`flow/moments/<sha>/<id>.bin` と `.json` | 場面はコンソール全体（nes-console の `state.rs`）とそのフレーム数。記録中は読み込みが無効 |
 | **コード** | `machine.code`、`codeAt`、`cpu.pc`、`breakpoints`、`stoppedAt`、`cart`。6502 サイト自身の表で逆アセンブルする | `toggleBreakpoint`、`clearBreakpoints`。取り込んだブロックとそのラベルとメモ | ブレークポイント: エンジンのメモリ、毎ティックに送られる。ブロック: 棚から来たカートリッジなら棚へ（取り込んだままで残し、言葉は欄を離れたときに）、それ以外はページに。markdown か JSON のダウンロードとして書き出す | 棚のブロックはカートリッジと一緒に戻る。ディスクから来たカートリッジのブロックはページと一緒に消え、ウィンドウがそう言う |
 | **CPU、メモリ、パレット、画面上のスプライト**（一つのコンポーネント、`State.tsx`） | `machine`（走行中は 200 ms ごとに公開）、`palette`（実測した色） | メモリ: `watch(page)`。画面上のスプライト: タイルのボタンがそのタイルをスプライトに渡す | 無し | 四つのウィンドウ、一人の読み手 |
-| **ネームテーブル** | ネームテーブル RAM とコンソールの CHR-RAM。ウィンドウが見えている間、機械が公開されるたびにワーカーへ尋ねる（`nametables`）。パターンテーブルのための `ppu.ctrl`、パレット RAM と実測した色、ファイルのタイルとヘッダのミラーリングのための `rom` | 何も | 無し | 二つのテーブルをチップが持つままに描く。CHR をバンク切り替えする基板ではタイル番号は読むがタイルは描かず、そう言う |
+| **ネームテーブル** | ネームテーブル RAM と、基板のバンクを通して画像チップが見ているパターンメモリ。ウィンドウが見えている間、機械が公開されるたびにワーカーへ尋ねる（`nametables`）。パターンテーブルのための `ppu.ctrl`、パレット RAM と実測した色、ヘッダのミラーリングのための `rom` | 何も | 無し | 二つのテーブルをチップが持つままに描く。タイルはその瞬間にチップが見ているもので、基板が何をバンク切り替えしていても変わらない |
 | **スプライト** | `base`（解釈した iNES イメージ）、`rom`、`patched`、`palette`、`machine.palette`（生きた値）、`cart` | 適用（`reloadWith(image)`）、戻す、`.ips` か `.patched.nes` のダウンロード。リビジョンを残す、説明を変える、読み込む、削除する | 編集: メモリの Map。リビジョン: 棚へ、メッセージ付きの IPS として | バイトを変える唯一のウィンドウ |
 | **読み出し** | フレーム数、デコードされなかった数、フレームごとのコスト、経路、一致、fps、ドリフト、アンダーラン、電池 | 何も | 無し | 読むだけ |
 | **記録** | 遊ぶ側: `loaded`、`recording`、`powered`、`framesRun`、`recordingsKept`。フロー側: `list`、`busy`、`open`、`why` | `startRecording("here" か "power")`、`stopRecording`。記録ごとに `analyze`（読む）、`open`、`exportOne`（`.nesrec`）、`remove`、`cancel`、`giveRom`、`importOne` | ファイル保存領域の記録。記録中は 5 秒ごとと隠れたときにコピー | フローの道具への入口。最初から机の上に開いている |
@@ -304,10 +304,12 @@ type Win = { x: number; y: number; w: number; h: number; z: number; open: boolea
 パターンテーブルからゲームのものを使い、背景パレットは四つ。基板の
 ミラーリングが、どの PPU アドレスがどのテーブルに載るかを決める:
 ミラーリングがはんだで決まっている基板ならヘッダがそれを言い、基板が
-切り替える場合はウィンドウがそう言う。ピクチャ ROM をバンク切り替えする
-基板では、コンソールはまだチップがどのバンクを見ているかを言わない。だから
-ウィンドウはタイル番号を読み、タイルは描かない。ファイルの最初のバンクが
-バスに載っているふりをして描くよりはそのほうがよい。
+切り替える場合はウィンドウがそう言う。タイルはその瞬間にチップが見ている
+パターンメモリだ: コンソールが基板のバンクをいまある通りに通して読み、
+一バイトごとに基板の状態を戻す。読むこと自体に副作用を持つ基板が一つある
+からだ（MMC2 のラッチは引き金のタイルで動く）。だからピクチャ ROM を
+バンク切り替えする基板も、ファイルの最初のバンクではなくバスに載っている
+バンクで描く。
 
 **スプライト**はバイトを変える唯一のウィンドウだ。編集とは、元のイメージに
 対する一つのタイルの新しい 16 バイトのこと。その集まりはパッチ済みイメージ
@@ -337,7 +339,7 @@ WebAssembly（nes-wasm の `Nes`）:
 | `save`、`restore` | `saveMoment`、`loadMoment`、`stepBack` | `save_state`、`load_state` | 場面、履歴 |
 | `record`（here、soFar、on、off） | `startRecording`、`keepSoFar`、`stopRecording`、`detach` | `record_start_here`、`record_so_far`、`record_start`、`record_stop` | 記録 |
 | `history`、`historyRead`、`mark`、`historyCut` | `setHistory`、`readHistoryBytes`、`markBack`、`stepBack` | `set_history`、`history`、`history_end`、`save_state`、`history_cut` | 履歴 |
-| `ciram` | `nametables` | `ciram`、`chr_ram` | ネームテーブル |
+| `ciram` | `nametables` | `ciram`、`chr` | ネームテーブル |
 
 飛んでいるティックは常に一つなので、表示のコールバックが報告する時間は
 その前の一つの本当のコストだ。ティックが何フレーム負うかを決めるドリフト

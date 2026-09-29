@@ -46,7 +46,7 @@ const S = {
   en: {
     h: "Sprites",
     none: "No cartridge loaded: the sheet is its CHR.",
-    ram: "This board draws from CHR-RAM, which the game fills as it runs; the file carries no tiles, and this desk does not read the RAM yet.",
+    ram: "This board draws from CHR-RAM, which the game fills as it runs; the file carries no tiles. The Nametables window draws them as the game has drawn them.",
     bad: (why: string) => `The file could not be read as an image: ${why}`,
     tiles: (n: number, tables: number) => <>tiles in the file: <b>{n}</b>, in <b>{tables}</b> pattern tables of 256</>,
     table: "Pattern table",
@@ -89,7 +89,7 @@ const S = {
   ja: {
     h: "スプライト",
     none: "カートリッジが読み込まれていない。シートはその CHR だ。",
-    ram: "この基板は CHR-RAM から描く。ゲームが走りながら埋めるもので、ファイルにタイルは無く、この机はまだその RAM を読んでいない。",
+    ram: "この基板は CHR-RAM から描く。ゲームが走りながら埋めるもので、ファイルにタイルは無い。ネームテーブルのウィンドウが、ゲームが描いたままのタイルを描く。",
     bad: (why: string) => `ファイルをイメージとして読めなかった: ${why}`,
     tiles: (n: number, tables: number) => <>ファイル中のタイル: <b>{n}</b>、256 ずつ <b>{tables}</b> のパターンテーブル</>,
     table: "パターンテーブル",

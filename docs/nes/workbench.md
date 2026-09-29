@@ -7,7 +7,7 @@ order: 100
 # The desk as built
 
 *Version 1 of the create desk, read off the code as it stood on
-2026-09-28: this site at 8e86ee7, nes 595dcf6, nes-bus 707485a, 2a03
+2026-09-28: this site at 8e86ee7, nes ffa239e, nes-bus 707485a, 2a03
 a7fa5f5, 2c02 c9fe9e8, ntsc-crt f91aecb and nes-bench 83f9175. Every
 claim here was read in a file, not remembered. Where a file's own comment
 disagreed with its code, the comment was fixed the same night and the
@@ -279,7 +279,7 @@ fields; the worker paths behind each verb are in the next section.
 | **Moments** (inside Cartridge) | the game's SHA-256, `momentsKept` | `saveMoment`, `loadMoment`, `deleteMoment` | the file store, `flow/moments/<sha>/<id>.bin` with a `.json` | a moment is the whole console (nes-console `state.rs`) with its frame count; Load is disabled while recording |
 | **Code** | `machine.code`, `codeAt`, `cpu.pc`, `breakpoints`, `stoppedAt`, `cart`; disassembles with the 6502 site's own table | `toggleBreakpoint`, `clearBreakpoints`; a captured block, its label and note | breakpoints: engine memory, sent with every tick; blocks: the shelf for a cartridge from there (kept as captured, the words as the field is left), the page otherwise; exported as markdown or JSON downloads | a block from the shelf comes back with the cartridge; a block of a cartridge from the disk leaves with the page, and the window says so |
 | **CPU, Memory, Palettes, OAM** (one component, `State.tsx`) | `machine` (published every 200 ms while running), `palette` (the measured colours) | Memory: `watch(page)`; OAM: a tile button hands its tile to Sprites | none | four windows, one reader |
-| **Nametables** | the nametable RAM and the console's CHR-RAM, asked of the worker (`nametables`) each time the machine is published while the window is on view; `ppu.ctrl` for the pattern table, palette RAM and the measured colours, `rom` for the file's tiles and the header's mirroring | nothing | none | draws the two tables as the chip holds them; on a board that banks its CHR it reads the tile numbers and refuses to draw the tiles, and says so |
+| **Nametables** | the nametable RAM and the pattern memory as the picture chip sees it, through the board's banks, asked of the worker (`nametables`) each time the machine is published while the window is on view; `ppu.ctrl` for the pattern table, palette RAM and the measured colours, `rom` for the header's mirroring | nothing | none | draws the two tables as the chip holds them, with the tiles the chip sees at that instant, whatever the board banks |
 | **Sprites** | `base` (the parsed iNES image), `rom`, `patched`, `palette`, `machine.palette` (live), `cart` | Apply (`reloadWith(image)`), Revert, download `.ips` or `.patched.nes`; Keep a revision, rename one, load one, delete one | edits: a Map in memory; revisions: the shelf, as IPS with a message | the only window that changes bytes |
 | **Readouts** | frames, undecoded, per-frame costs, path, agreement, fps, drift, underruns, battery | nothing | none | read only |
 | **Record** | play: `loaded`, `recording`, `powered`, `framesRun`, `recordingsKept`; flow: `list`, `busy`, `open`, `why` | `startRecording("here" or "power")`, `stopRecording`; per recording: `analyze` (Read), `open`, `exportOne` (`.nesrec`), `remove`, `cancel`, `giveRom`, `importOne` | recordings in the file store; a copy every 5 s while recording and on hide | the way into the flow tools; open on the desk from the start |
@@ -317,10 +317,13 @@ drawn as the two tables the chip holds, with the game's tiles from the
 pattern table the control register names and the four background
 palettes. The board's mirroring decides which PPU addresses land on
 which table: the header says it for a board whose mirroring is soldered,
-and the window says so when the board switches it instead. On a board
-that banks its picture ROM the console does not yet say which bank the
-chip sees, so the window reads the tile numbers and does not draw the
-tiles, rather than drawing the file's first bank as if it were on the bus.
+and the window says so when the board switches it instead. The tiles
+are the pattern memory as the chip sees it at that instant: the console
+reads it through the board's banks as they stand and puts the board's
+state back after every byte, because one board's read has a side effect
+of its own (MMC2's latch trips on its trigger tiles). So a board that
+banks its picture ROM draws with the bank on the bus, not the file's
+first.
 
 **Sprites** is the one window that changes bytes. An edit is a tile's
 sixteen new bytes against the base image. The set can go into the console
@@ -350,7 +353,7 @@ and the WebAssembly behind it (nes-wasm's `Nes`):
 | `save`, `restore` | `saveMoment`, `loadMoment`, `stepBack` | `save_state`, `load_state` | Moments, History |
 | `record` (here, soFar, on, off) | `startRecording`, `keepSoFar`, `stopRecording`, `detach` | `record_start_here`, `record_so_far`, `record_start`, `record_stop` | Record |
 | `history`, `historyRead`, `mark`, `historyCut` | `setHistory`, `readHistoryBytes`, `markBack`, `stepBack` | `set_history`, `history`, `history_end`, `save_state`, `history_cut` | History |
-| `ciram` | `nametables` | `ciram`, `chr_ram` | Nametables |
+| `ciram` | `nametables` | `ciram`, `chr` | Nametables |
 
 One tick is in flight at a time, so the time each display callback
 reports is the true cost of the one before; the drift policy that decides

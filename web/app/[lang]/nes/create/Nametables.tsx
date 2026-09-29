@@ -21,10 +21,11 @@ import { decodeCHR, TILE } from "../../../../public/6502/games/chr.js";
  * on these two tables is the board's mirroring: the header says it for a
  * board whose mirroring is soldered, and a board that switches it says
  * nothing this window can read, so the labels say which case they are in.
- * A board that banks its picture ROM is the one refusal here: the console
- * does not yet say which bank the PPU sees, so the tile numbers are read
- * and the tiles are not drawn, and the window says so rather than drawing
- * the file's first bank as if it were on the bus.
+ * The tiles are the pattern memory as the chip sees it at that instant,
+ * read from the console through the board's banks as they stand (since
+ * 2026-09-29; until then a board that banked its picture ROM had its tile
+ * numbers read and its tiles refused, because the console did not say
+ * which bank was on the bus).
  *
  * The tables are asked of the worker on demand, each time the machine's
  * panels are published while this window is on view, not sent with every
@@ -46,7 +47,7 @@ const S = {
     vertical: "The header says vertical mirroring: the left table is the PPU's $2000 and $2800 (the left screen) and the right one $2400 and $2C00 (the right).",
     switched: "This board switches its mirroring as the game runs, so which PPU addresses land on which table is the game's to say; the tables are shown as the chip holds them.",
     four: "The header says four-screen: the board carries two more tables of its own, which the chip's RAM does not hold.",
-    banked: (kib: number) => `This board banks its ${kib} KiB of picture ROM and the console does not yet say which bank the picture chip sees, so the tile numbers are read and the tiles are not drawn.`,
+    banked: (kib: number) => `This board banks its ${kib} KiB of picture ROM; the tiles are the 8 KiB the picture chip sees now, through the board's banks as they stand.`,
     ram: "The tiles are the console's CHR-RAM, as the game has drawn them.",
     hover: (table: string, col: number, row: number, tile: number, pal: number, at: number) => <>{table}, column {col}, row {row}: tile <b>${tile.toString(16).toUpperCase().padStart(2, "0")}</b>, palette {pal}, at CIRAM <b>${at.toString(16).toUpperCase().padStart(3, "0")}</b></>,
     hoverNone: "Point at a tile to read its number and palette.",
@@ -65,7 +66,7 @@ const S = {
     vertical: "ヘッダは垂直ミラーリングと言っている: 左のテーブルが PPU の $2000 と $2800（左の画面）、右が $2400 と $2C00（右の画面）。",
     switched: "この基板はゲームの実行中にミラーリングを切り替えるので、どの PPU アドレスがどのテーブルに載るかはゲームが決める。テーブルはチップが持つままの並びで示す。",
     four: "ヘッダは四画面と言っている。基板が自前のテーブルを二つ余分に持ち、チップの RAM には無い。",
-    banked: (kib: number) => `この基板は ${kib} KiB のピクチャ ROM をバンク切り替えし、コンソールはまだ画像チップがどのバンクを見ているか言わないので、タイル番号は読むがタイルは描かない。`,
+    banked: (kib: number) => `この基板は ${kib} KiB のピクチャ ROM をバンク切り替えする。タイルは、基板のバンクがいまある通りに画像チップが見ている 8 KiB だ。`,
     ram: "タイルはコンソールの CHR-RAM で、ゲームが描いたそのままだ。",
     hover: (table: string, col: number, row: number, tile: number, pal: number, at: number) => <>{table}、列 {col}、行 {row}: タイル <b>${tile.toString(16).toUpperCase().padStart(2, "0")}</b>、パレット {pal}、CIRAM <b>${at.toString(16).toUpperCase().padStart(3, "0")}</b></>,
     hoverNone: "タイルを指すと、その番号とパレットが読める。",
@@ -73,7 +74,7 @@ const S = {
 } as const;
 
 /** The worker's answer, with the image it was read from, so a new cartridge never shows the old one's tables. */
-type Tables = { ciram: Uint8Array; chrRam: Uint8Array; rom: Uint8Array | null };
+type Tables = { ciram: Uint8Array; chr: Uint8Array; rom: Uint8Array | null };
 
 const COLS = 32;
 const ROWS = 30;
@@ -140,14 +141,9 @@ export function Nametables({ lang }: { lang: Lang }) {
     }
   }, [rom]);
 
-  // Where the tiles come from: CHR-RAM as the game drew it, the file's one
-  // bank when it has exactly one, or nowhere (a banked board).
-  const chr = useMemo<Uint8Array | null>(() => {
-    if (!t) return null;
-    if (t.chrRam.length >= 8192) return t.chrRam;
-    if (board && rom && board.h.chr === 8192) return rom.subarray(board.h.chrAt, board.h.chrAt + 8192);
-    return null;
-  }, [t, board, rom]);
+  // The tiles: the pattern memory as the chip sees it now, through the
+  // board's banks, or nothing from a board that cannot say.
+  const chr = useMemo<Uint8Array | null>(() => (t && t.chr.length >= 8192 ? t.chr : null), [t]);
   const tiles = useMemo(() => (chr ? (decodeCHR(chr) as Uint8Array[]) : null), [chr]);
   const pat = m ? (m.ppu.ctrl & 0x10 ? 0x1000 : 0) : 0;
   const filled = useMemo(() => {
@@ -208,7 +204,10 @@ export function Nametables({ lang }: { lang: Lang }) {
   };
 
   const mirroring = !board ? null : board.four ? T.four : !board.soldered ? T.switched : board.vertical ? T.vertical : T.horizontal;
-  const source = !t ? null : tiles ? (t.chrRam.length >= 8192 ? T.ram : null) : board && board.h.chr > 8192 ? T.banked(board.h.chr / 1024) : null;
+  // Where the tiles came from, when it is worth a line: the console's
+  // CHR-RAM as the game drew it, or a bank of many.
+  const sourceKind = !t || !tiles || !board ? null : board.h.chr === 0 ? "ram" : board.h.chr > 8192 ? "banked" : null;
+  const source = sourceKind === "ram" ? T.ram : sourceKind === "banked" && board ? T.banked(board.h.chr / 1024) : null;
 
   return (
     <section className="wb-page play-section nt" id="nametables" ref={box} data-nt data-nt-tiles={t ? (tiles ? "drawn" : "numbers") : undefined} data-nt-filled={t ? filled : undefined}>
@@ -229,7 +228,7 @@ export function Nametables({ lang }: { lang: Lang }) {
               ? T.hover(hover.table ? T.tableB : T.tableA, hover.col, hover.row, t.ciram[hover.table * TABLE + hover.row * COLS + hover.col], paletteOf(t.ciram, hover.table, hover.col, hover.row), hover.table * TABLE + hover.row * COLS + hover.col)
               : T.hoverNone}
           </p>
-          {source ? <p className="quiet" data-nt-source={tiles ? "ram" : "banked"}>{source}</p> : null}
+          {source ? <p className="quiet" data-nt-source={sourceKind ?? undefined}>{source}</p> : null}
           {mirroring ? <p className="quiet" data-nt-mirroring>{mirroring}</p> : null}
         </>
       )}
