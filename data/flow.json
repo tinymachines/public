@@ -1,8 +1,8 @@
 {
   "note": "Written only by scripts/build-playground-wasm.py. The flow tools for /nes/create: wasm/flow at this git tree of the roof, after its native suite passed. The files in web/public/nes/flow/ must hash to these values and are never committed (a build, not a source; the crate itself is MIT and carries no die data).",
   "repo": "https://github.com/tinymachines/public",
-  "tree": "7a29bcbcb230ba250551ae3244a261b98440fd75",
-  "built_on": "2026-09-26",
+  "tree": "7519f062fd14b574c753ee88dd52be73b3bd1262",
+  "built_on": "2026-09-30",
   "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
   "files": {
     "flow.js": {
@@ -10,8 +10,8 @@
       "bytes": 6593
     },
     "flow_bg.wasm": {
-      "sha256": "a79456ba09b5d27007278444ab19fb28c8d8d6b435538c04e686c429f9192708",
-      "bytes": 237241
+      "sha256": "2b0fe4e62b5c4e06eb6525eca5f0419a5238d93de55ff48fd115745653511c3d",
+      "bytes": 261376
     }
   }
 }
