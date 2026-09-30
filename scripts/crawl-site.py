@@ -97,7 +97,7 @@ def section(path: str) -> str:
     if path == "/":
         return "front"
     head = path.strip("/").split("/")[0]
-    return head if head in ("docs", "6502", "nes", "hotbits", "style") else "other"
+    return head if head in ("docs", "6502", "nes", "hotbits", "autopsy", "style") else "other"
 
 
 def crawl(base: str) -> dict:

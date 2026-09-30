@@ -435,5 +435,20 @@
  "Notebook": "ノート",
  "Retro": "振り返り",
  "Sections": "セクション",
- "The console from the play page with every tool for looking inside a game on one desk: the code, the CPU, the memory, the palettes, the sprites and the sprite editor, as windows you arrange.": "遊ぶページのコンソールと、ゲームの中を覗くための道具のすべてを一つの机に: コード、CPU、メモリ、パレット、スプライト、そしてスプライトのエディタを、並べ替えられるウィンドウとして。"
+ "The console from the play page with every tool for looking inside a game on one desk: the code, the CPU, the memory, the palettes, the sprites and the sprite editor, as windows you arrange.": "遊ぶページのコンソールと、ゲームの中を覗くための道具のすべてを一つの机に: コード、CPU、メモリ、パレット、スプライト、そしてスプライトのエディタを、並べ替えられるウィンドウとして。",
+ "The autopsy": "解剖",
+ "Games taken apart by running them: every routine a game entered, the patterns in its code, its tables and its memory, written down as a listing that assembles back to the cartridge.": "ゲームを走らせて分解する: ゲームが入ったすべてのルーチン、コードにあるパターン、テーブルとメモリを、カートリッジへ組み立て直せるリスティングとして書き残す。",
+ "What the autopsy is, the four steps it takes a game through, and where each one stands.": "解剖とは何か、ゲームを通す四つの段階、そしてそれぞれの現在地。",
+ "The games": "ゲーム",
+ "Games": "ゲーム",
+ "Every cartridge on our shelf after the same treatment: how much of its program ran, the routines it entered, and the patterns found in it.": "私たちの棚のカートリッジすべてに同じ処置をした結果: プログラムのどれだけが走ったか、入ったルーチン、そこに見つかったパターン。",
+ "The patterns": "パターン",
+ "Patterns": "パターン",
+ "The things games keep doing, each named by a rule over what the code did while it ran, and how many games each was found in.": "ゲームが繰り返しやること。それぞれを、コードが走っている間にしたことについての規則で名付け、いくつのゲームで見つかったかを添える。",
+ "How it is done": "やり方",
+ "Method": "方法",
+ "The listing, the crawl, the rules and the model: what each step does, what it cannot see, and what stays on our own machine.": "リスティング、クロール、規則、モデル: それぞれの段階が何をし、何が見えず、何が私たち自身の機械に留まるか。",
+ "The games, taken apart": "分解したゲーム",
+ "The patterns games repeat": "ゲームが繰り返すパターン",
+ "How the autopsy is done": "解剖のやり方"
 }

@@ -149,6 +149,26 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "A real console and the model under the same controller presses: the bridge between them as drawn and as built, and what has happened at the bench so far.",
   },
+  "/autopsy": {
+    title: "The autopsy",
+    description:
+      "Games taken apart by running them: every routine a game entered, the patterns in its code, its tables and its memory, written down as a listing that assembles back to the cartridge.",
+  },
+  "/autopsy/games": {
+    title: "The games, taken apart",
+    description:
+      "Every cartridge on our shelf after the same treatment: how much of its program ran, the routines it entered, and the patterns found in it.",
+  },
+  "/autopsy/patterns": {
+    title: "The patterns games repeat",
+    description:
+      "The things games keep doing, each named by a rule over what the code did while it ran, and how many games each was found in.",
+  },
+  "/autopsy/method": {
+    title: "How the autopsy is done",
+    description:
+      "The listing, the crawl, the rules and the model: what each step does, what it cannot see, and what stays on our own machine.",
+  },
   "/nes/cart": {
     title: "The calibration cart",
     description:

@@ -62,12 +62,13 @@ function siteMap(): Record {
 }
 
 /** Sections in the order a reader meets them, not alphabetically. */
-const ORDER = ["front", "nes", "6502", "hotbits", "docs", "style", "other"] as const;
+const ORDER = ["front", "nes", "autopsy", "6502", "hotbits", "docs", "style", "other"] as const;
 const SECTION_NAME: Record_<string, string> = {
   front: "The front page",
   nes: "The NES console",
   "6502": "The 6502",
   hotbits: "hotbits",
+  autopsy: "The autopsy",
   docs: "The documents",
   style: "The house pages",
   other: "Everything else",

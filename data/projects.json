@@ -428,6 +428,75 @@
     }
    ],
    "landing": "/nes"
+  },
+  {
+   "key": "autopsy",
+   "name": "The autopsy",
+   "what": "Games taken apart by running them: every routine a game entered, the patterns in its code, its tables and its memory, written down as a listing that assembles back to the cartridge.",
+   "silo": "style/projects/autopsy.css",
+   "status": "here",
+   "surfaces": [
+    {
+     "key": "site",
+     "name": "The autopsy",
+     "what": "What the autopsy is, the four steps it takes a game through, and where each one stands.",
+     "nav": false,
+     "nav_label": null,
+     "strip_group": "read",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/autopsy",
+     "lands_at": "/autopsy",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
+     "key": "games",
+     "name": "The games",
+     "what": "Every cartridge on our shelf after the same treatment: how much of its program ran, the routines it entered, and the patterns found in it.",
+     "nav": false,
+     "nav_label": "Games",
+     "strip_group": "read",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/autopsy/games",
+     "lands_at": "/autopsy/games",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true,
+     "strip_label": "Games"
+    },
+    {
+     "key": "patterns",
+     "name": "The patterns",
+     "what": "The things games keep doing, each named by a rule over what the code did while it ran, and how many games each was found in.",
+     "nav": false,
+     "nav_label": "Patterns",
+     "strip_group": "read",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/autopsy/patterns",
+     "lands_at": "/autopsy/patterns",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true,
+     "strip_label": "Patterns"
+    },
+    {
+     "key": "method",
+     "name": "How it is done",
+     "what": "The listing, the crawl, the rules and the model: what each step does, what it cannot see, and what stays on our own machine.",
+     "nav": false,
+     "nav_label": "Method",
+     "strip_group": "read",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/autopsy/method",
+     "lands_at": "/autopsy/method",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true,
+     "strip_label": "Method"
+    }
+   ],
+   "landing": "/autopsy"
   }
  ]
 }

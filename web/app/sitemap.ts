@@ -4,6 +4,7 @@ import { explorerPages } from "@/lib/explorer";
 import { articlePages } from "@/lib/article";
 import { LANGS, localize } from "@/lib/lang";
 import { abs } from "@/lib/seo";
+import { autopsy } from "@/lib/autopsy";
 
 /**
  * The sitemap, generated from the same sources the pages are.
@@ -62,6 +63,10 @@ const STATIC = [
   "/nes/signal/composite",
   "/nes/bench",
   "/nes/cart",
+  "/autopsy",
+  "/autopsy/games",
+  "/autopsy/patterns",
+  "/autopsy/method",
   "/style",
 ];
 
@@ -72,6 +77,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...explorerPages().map((p) => `/6502/${p.slug}`),
     // The companion articles: a tool's prose as a reading page (lib/article.ts).
     ...articlePages().map((p) => `/6502/${p.slug}/article`),
+    // One page for each game the autopsy has been over (data/autopsy.json).
+    ...autopsy().games.map((g) => `/autopsy/games/${g.key}`),
   ];
   const seen = new Set<string>();
   const out: MetadataRoute.Sitemap = [];
