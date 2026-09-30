@@ -14,12 +14,14 @@ reset:
     SEI
     LDA #$80
     STA $2000
+    STA $8000
 spin:
     JMP spin
 nmi:
     JSR poll
     JSR sound
     JSR drain
+    JSR split
     JSR engine
     .word state_a
     .word state_b
@@ -55,6 +57,13 @@ engine:
     LDA ($02),Y
     STA $05
     JMP ($0004)
+split:
+    BIT $2002
+    BVC split
+    LDA #$00
+    STA $2005
+    STA $2005
+    RTS
 sound:
     LDA #$0F
     STA $4015
@@ -99,26 +108,27 @@ fn the_matchers_name_what_the_run_saw() {
     let (image, labels) = our_rom();
     let prg = &image[16..];
     let at = |n: &str| labels[n] as usize - 0x8000;
-    let routine = |id: u64, n: &str, entry: &str, entered: u64, frames: u32, mem: serde_json::Value| {
-        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem})
+    let routine = |id: u64, n: &str, entry: &str, entered: u64, frames: u32, mem: serde_json::Value, in_frame: serde_json::Value| {
+        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame})
     };
     let mut sites = Vec::new();
-    for (n, k, count) in [("reset", 3, 1), ("spin", 1, 50000), ("nmi", 4, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10)] {
+    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 5, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10)] {
         sites.extend(seq(prg, at(n), k, count));
     }
-    let jsr_engine = at("nmi") + 9;
+    let jsr_engine = at("nmi") + 12;
     let report = serde_json::json!({
         "prg_len": 32768, "frames": 10, "instructions": 1000,
         "sites": sites,
         "routines": [
-            routine(0, "reset", "reset", 1, 10, serde_json::json!([[0x2000, 0, 1]])),
-            routine(1, "nmi", "nmi", 10, 10, serde_json::json!([])),
-            routine(2, "poll", "call", 10, 10, serde_json::json!([[0x4016, 80, 20], [0, 80, 80]])),
-            routine(3, "engine", "call", 10, 10, serde_json::json!([[2, 20, 10]])),
-            routine(4, "state_a", "dispatch", 7, 7, serde_json::json!([])),
-            routine(5, "state_c", "dispatch", 3, 3, serde_json::json!([])),
-            routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10]])),
-            routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]))
+            routine(0, "reset", "reset", 1, 10, serde_json::json!([[0x2000, 0, 1], [0x8000, 0, 1]]), serde_json::json!([[0x2000, 0, 1], [0x8000, 0, 1]])),
+            routine(1, "nmi", "nmi", 10, 10, serde_json::json!([]), serde_json::json!([])),
+            routine(2, "poll", "call", 10, 10, serde_json::json!([[0x4016, 80, 20], [0, 80, 80]]), serde_json::json!([])),
+            routine(3, "engine", "call", 10, 10, serde_json::json!([[2, 20, 10]]), serde_json::json!([])),
+            routine(4, "state_a", "dispatch", 7, 7, serde_json::json!([]), serde_json::json!([])),
+            routine(5, "state_c", "dispatch", 3, 3, serde_json::json!([]), serde_json::json!([])),
+            routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10]]), serde_json::json!([])),
+            routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]), serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]])),
+            routine(8, "split", "call", 10, 10, serde_json::json!([[0x2002, 20, 0], [0x2005, 0, 20]]), serde_json::json!([[0x2002, 20, 0], [0x2005, 20, 0]]))
         ],
         "variables": [{"addr": 0, "writers": [[2, 80]], "readers": [[3, 20]], "total": 100}],
         "loops": [{"head": at("spin"), "tail": at("spin"), "head_addr": labels["spin"], "tail_addr": labels["spin"], "kind": "idle", "iterations": 50000, "entries": 0, "on": null, "cycles": 0, "routine": 0}],
@@ -132,8 +142,10 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(&format!(";; @is idle-spin iterations=50000 per-frame=5000 by=match\n\nat_{:04X}:\n", a("spin"))), "{src}");
     assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
     assert!(src.contains(&format!(";; @is sound-driver writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("sound"))), "{src}");
-    assert!(src.contains(&format!(";; @is vram-drain writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
-    assert_eq!(src.matches(";; @is ").count(), 6, "one mark per pattern, nothing else matched");
+    assert!(src.contains(&format!(";; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
+    assert!(src.contains(&format!(";; @is sprite-0-split scroll-writes-in-picture=20 status-reads-in-picture=20 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("split"))), "{src}");
+    assert!(src.contains(";; @is bank-switch writes=1 in-picture=0 in-blank=1 by=match\n;; @routine reset kind=reset entered=1 by=run\n"), "{src}");
+    assert_eq!(src.matches(";; @is ").count(), 8, "one mark per pattern, nothing else matched");
     assert!(src.contains(&format!(";; @ram variables=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.

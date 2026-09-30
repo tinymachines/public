@@ -200,13 +200,16 @@ mark.
 | `idle-spin` | a loop of one instruction the run counted as idle: `iterations= per-frame=` |
 | `game-loop-in-nmi` | when there is an idle spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |
 | `sound-driver` | of the routines that wrote the APU (`$4000` to `$4013`, `$4015`, `$4017`), the one that wrote most among those that ran in at least half as many frames as the busiest: `writes= frames=` |
-| `vram-drain` | the same over writes of `$2007` |
+| `vram-drain` | the same over writes of `$2007`, and where the beam was for them: `in-blank= in-picture=` |
+| `sprite-0-split` | a routine that wrote `$2005` or `$2006` while the picture was drawing at least every other frame it ran, having read `$2002` there (the wait for sprite 0's hit): `scroll-writes-in-picture= status-reads-in-picture= frames=` |
+| `bank-switch` | a routine that wrote into the ROM's window, which on a board with a register is the mapper: `writes= in-picture= in-blank=` |
 
-The encyclopedia's sprite-0 split, VRAM buffer as the blank's work and
-bank switch need the scanline of each write, which the report does not
-carry per routine yet; the random byte, the object slots, the collision
-test and the scroll need the reads per instruction. They come as the
-report grows.
+The report says, per routine, how many of its accesses of each PPU
+register, of `$4014` and of the mapper fell while the picture was
+drawing (lines 0 to 239) and how many in the blank; that is what the
+three above read. The random byte, the object slots, the collision test
+and the scroll need the reads per instruction, and come as the report
+grows.
 
 ## What the static walk writes
 

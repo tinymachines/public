@@ -24,6 +24,11 @@ fn touched(r: &Routine, port: u16) -> (u64, u64) {
     r.mem.iter().find(|m| m.0 == port).map_or((0, 0), |m| (m.1 as u64, m.2 as u64))
 }
 
+/// Accesses of an address while the picture was drawing, and in the blank.
+fn beam(r: &Routine, is: impl Fn(u16) -> bool) -> (u64, u64) {
+    r.in_frame.iter().filter(|m| is(m.0)).fold((0, 0), |acc, m| (acc.0 + m.1 as u64, acc.1 + m.2 as u64))
+}
+
 /// Of the routines that wrote somewhere, the one that did it most among
 /// those that ran in at least half as many frames as the busiest of
 /// them: the driver, not one of its parts nor a one-time setup.
@@ -88,7 +93,25 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         out.push(Mark { offset, rest: format!("sound-driver writes={writes} frames={frames} by=match") });
     }
     if let Some((offset, writes, frames)) = most(run, |a| a == 0x2007) {
-        out.push(Mark { offset, rest: format!("vram-drain writes={writes} frames={frames} by=match") });
+        let r = run.routines.iter().find(|r| r.offset == offset).unwrap();
+        let (picture, blank) = beam(r, |a| a == 0x2007);
+        let when = if r.in_frame.is_empty() { String::new() } else { format!(" in-blank={blank} in-picture={picture}") };
+        out.push(Mark { offset, rest: format!("vram-drain writes={writes}{when} frames={frames} by=match") });
+    }
+    // The split: a routine that moved the scroll while the picture was
+    // drawing, having watched the PPU's status there (sprite 0's hit),
+    // at least every other frame it ran. And the bank switch: any
+    // routine that wrote into the ROM's window.
+    for r in &run.routines {
+        let (scroll, _) = beam(r, |a| a == 0x2005 || a == 0x2006);
+        let (status, _) = beam(r, |a| a == 0x2002);
+        if scroll > 0 && scroll * 2 >= r.frames as u64 && status > 0 {
+            out.push(Mark { offset: r.offset, rest: format!("sprite-0-split scroll-writes-in-picture={scroll} status-reads-in-picture={status} frames={} by=match", r.frames) });
+        }
+        let (picture, blank) = beam(r, |a| a == 0x8000);
+        if picture + blank > 0 {
+            out.push(Mark { offset: r.offset, rest: format!("bank-switch writes={} in-picture={picture} in-blank={blank} by=match", picture + blank) });
+        }
     }
     out.sort_by(|a, b| a.offset.cmp(&b.offset).then(a.rest.cmp(&b.rest)));
     out

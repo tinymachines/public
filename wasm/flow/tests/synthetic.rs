@@ -27,8 +27,14 @@ impl T {
     /// One instruction: the opcode fetch, the registers, the operand
     /// fetches, then its accesses (address, data, read).
     fn ins(&mut self, at: u16, bytes: &[u8], acc: &[(u16, u8, bool)]) {
+        self.ins_at_line(at, bytes, acc, 20);
+    }
+
+    /// The same, with the beam at a given line when the opcode was fetched.
+    fn ins_at_line(&mut self, at: u16, bytes: &[u8], acc: &[(u16, u8, bool)], line: u16) {
         self.cycle(at, bytes[0], true, true);
-        self.out.extend_from_slice(&[0, 0, 0, 0x40, self.s, 0x24, 20, 0]);
+        let [l0, l1] = line.to_le_bytes();
+        self.out.extend_from_slice(&[0, 0, 0, 0x40, self.s, 0x24, l0, l1]);
         for (i, &b) in bytes.iter().enumerate().skip(1) {
             self.cycle(at + i as u16, b, true, false);
         }
@@ -230,6 +236,22 @@ fn the_modes_part_where_the_run_changed() {
     let before = segs.iter().find(|s| s[0] == 0).unwrap()[2].clone();
     let after = segs.iter().find(|s| s[0] == MODE_SWITCH).unwrap()[2].clone();
     assert_ne!(before, after);
+}
+
+#[test]
+fn hardware_accesses_say_whether_the_picture_was_drawing() {
+    let mut t = T { out: Vec::new(), s: 0xfd };
+    t.ins(0x8000, &[0x78], &[]);
+    t.ins_at_line(0x8001, &[0x8d, 0x05, 0x20], &[(0x2005, 0, false)], 30);
+    t.ins_at_line(0x8004, &[0x8d, 0x05, 0x20], &[(0x2005, 0, false)], 250);
+    t.ins_at_line(0x8007, &[0xad, 0x02, 0x20], &[(0x2002, 0x40, true)], 100);
+    t.ins_at_line(0x800a, &[0x8d, 0x00, 0x80], &[(0x8000, 1, false)], 245);
+    t.ins(0x800d, &[0x4c, 0x0d, 0x80], &[]);
+    let mut f = flow::Flow::new(0x8000);
+    f.feed(&t.out);
+    let r: Value = serde_json::from_str(&f.report()).unwrap();
+    let reset = routine(&r, "reset", 0x8000);
+    assert_eq!(reset["in_frame"], serde_json::json!([[0x2002, 1, 0], [0x2005, 1, 1], [0x8000, 0, 1]]), "{}", reset["in_frame"]);
 }
 
 #[test]

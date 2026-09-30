@@ -28,6 +28,11 @@ pub struct Routine {
     pub frames: u32,
     /// What it read and wrote outside the ROM: address, reads, writes.
     pub mem: Vec<(u16, u32, u32)>,
+    /// The hardware it touched by where the beam was: address, accesses
+    /// while the picture was drawing, accesses in the blank (PPU
+    /// registers, $4014, the mapper as $8000). Empty from a report
+    /// written before the flow carried it.
+    pub in_frame: Vec<(u16, u32, u32)>,
 }
 
 /// A site the run saw choose its successor from a table: a jump
@@ -110,16 +115,17 @@ impl Run {
                 Value::String(s) => s.to_ascii_lowercase(),
                 other => other.to_string().to_ascii_lowercase(),
             };
-            let mem = r["mem"]
-                .as_array()
-                .unwrap_or(&none)
-                .iter()
-                .filter_map(|m| {
-                    let m = m.as_array()?;
-                    Some((u(m.first()?) as u16, u(m.get(1)?) as u32, u(m.get(2)?) as u32))
-                })
-                .collect();
-            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem });
+            let triples = |k: &str| -> Vec<(u16, u32, u32)> {
+                r[k].as_array()
+                    .unwrap_or(&none)
+                    .iter()
+                    .filter_map(|m| {
+                        let m = m.as_array()?;
+                        Some((u(m.first()?) as u16, u(m.get(1)?) as u32, u(m.get(2)?) as u32))
+                    })
+                    .collect()
+            };
+            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame") });
         }
         for d in v["dispatch"].as_array().unwrap_or(&none) {
             let key = d["key"].as_u64().unwrap_or(u64::MAX) as usize;
@@ -177,13 +183,15 @@ impl Run {
                 Some(x) => {
                     x.entered += r.entered;
                     x.frames += r.frames;
-                    for (a, rd, wr) in r.mem {
-                        match x.mem.iter_mut().find(|m| m.0 == a) {
-                            Some(m) => {
-                                m.1 += rd;
-                                m.2 += wr;
+                    for (into, from) in [(&mut x.mem, r.mem), (&mut x.in_frame, r.in_frame)] {
+                        for (a, p, q) in from {
+                            match into.iter_mut().find(|m| m.0 == a) {
+                                Some(m) => {
+                                    m.1 += p;
+                                    m.2 += q;
+                                }
+                                None => into.push((a, p, q)),
                             }
-                            None => x.mem.push((a, rd, wr)),
                         }
                     }
                 }

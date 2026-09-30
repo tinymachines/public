@@ -96,6 +96,11 @@ struct Routine {
     /// window is a mapper register and is kept here too.
     mem: HashMap<u16, (u32, u32)>,
     rom_reads: u64,
+    /// The hardware it touched, by where the beam was: PPU registers
+    /// and the sprite DMA (reads and writes alike), and the mapper (any
+    /// write into the ROM's window, as $8000): accesses while the
+    /// picture was drawing (lines 0 to 239) and in the blank.
+    in_frame: HashMap<u16, (u32, u32)>,
 }
 
 struct Frame {
@@ -276,6 +281,7 @@ impl Flow {
         }
         let routine = c.routine;
         let key = c.key;
+        let line = c.line;
         // Where the access lands, as a reader of the game thinks of it.
         let (addr, keep) = match ab {
             0x0000..=0x1fff => (ab & 0x07ff, true),
@@ -296,6 +302,15 @@ impl Flow {
                 }
             } else {
                 rt.rom_reads += 1;
+            }
+            let hardware = (0x2000..=0x2007).contains(&addr) || addr == 0x4014;
+            if hardware || (!read && ab >= 0x8000) {
+                let e = rt.in_frame.entry(if ab >= 0x8000 { 0x8000 } else { addr }).or_insert((0, 0));
+                if line < 240 {
+                    e.0 += 1;
+                } else {
+                    e.1 += 1;
+                }
             }
         }
         if let Some(site) = self.sites.get_mut(&key) {
@@ -341,6 +356,7 @@ impl Flow {
             body: HashSet::new(),
             mem: HashMap::new(),
             rom_reads: 0,
+            in_frame: HashMap::new(),
         });
         self.by_entry.insert((key, entry), i);
         i
@@ -567,6 +583,11 @@ impl Flow {
                         m.sort_by(|a, b| (b.1 + b.2).cmp(&(a.1 + a.2)).then(a.0.cmp(&b.0)));
                         m.truncate(64);
                         m
+                    },
+                    in_frame: {
+                        let mut v: Vec<(u16, u32, u32)> = r.in_frame.iter().map(|(&a, &(p, b))| (a, p, b)).collect();
+                        v.sort();
+                        v
                     },
                 }
             })
@@ -904,6 +925,10 @@ struct RoutineOut {
     /// it wrote in the ROM's window): address, reads, writes; the 64 it
     /// touched most.
     mem: Vec<(u16, u32, u32)>,
+    /// The hardware it touched by where the beam was: address, accesses
+    /// while the picture was drawing, accesses in the blank. PPU
+    /// registers, $4014, and the mapper as $8000.
+    in_frame: Vec<(u16, u32, u32)>,
 }
 
 #[derive(Serialize)]
