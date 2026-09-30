@@ -4352,3 +4352,54 @@ Open: the crawl's result, then routines from the crawl's paths, longer
 runs on the Pi (the dump's move there is the owner's call), `@table`
 and `@var`, the desk loading a listing; the owner's ergonomics
 redesign; the create spec's phone flake; the speed re-board when quiet.
+
+## Checkpoint, 2026-09-30, early
+
+Not deployed; live and beta stay at 2e8e0b0 (1.0.267). Nine commits on
+main since the night checkpoint, all in `wasm/listing` and `wasm/flow`
+and the autopsy note; none touch a page.
+
+- `326af5b`: routines from the crawl's paths. `tools/paths.py` traces
+  every script a crawl kept, reports each and folds them all onto the
+  listing: 245 routines from the multicart's fifty paths against 191
+  from the recorded run alone. Two overlay holes closed on the way: a
+  run's routine at a walk branch target takes the run's name and kind,
+  and a routine entered inside another instruction (Super Mario Bros.'
+  `BIT` skip at $8222) is marked `inside=` on the instruction it hides
+  in. The weighted RAM novelty lost its trial (5306 opcode sites to
+  5462 over 1600 steps) and is the crawl's `WEIGHT=1` switch, off
+  (nes `d8b489a`).
+- `e99927c`, `f922eb7`, `ebe7655`: the first matchers (`@is pattern
+  ... by=match`, a rule over what the run saw, never over what bytes
+  look like), the jump engine's tables as `@table` and `.word` lines
+  (the walk no longer falls through a dispatching `JSR`), the RAM
+  block (`@var`, one line per byte one routine writes and another
+  reads), and `tools/autopsy.py`, one dump end to end with a summary
+  in shape only.
+- `b8ecd43`, `77db236`, `3cb3fd2`, `eedeb2e`, `ac9117a`: the report
+  grew (per routine: where the beam was for each hardware access, where
+  each `$2007` write landed through the `$2006` latch, writes into the
+  sprite page; per instruction: the addresses read and written and
+  their reach) and the matchers with it: the sprite-0 split, the bank
+  switch, the palette and sprite writers, the random byte, `@array`
+  lines for indexed RAM. Eleven rules; 28 marks on the multicart's
+  recorded run, all where the dissection put them (the split and the
+  random byte are both in the NMI handler, the random byte at $07A7 to
+  $07AA). Two flaws in the flow found and fixed with tests: the CPU's
+  own `$4014` write is a held cycle and was skipped, and an
+  instruction's first run left no accesses on its site. A dump with two
+  interrupt entries no longer defines a label twice.
+- `12fad70`: `notes/autopsy.md` says what is built.
+
+In flight at this checkpoint: the pipeline over every dump on the shelf
+at 400 crawl steps, in the background on impera, six of nineteen done
+(4 to 13 percent executed on a cold crawl, which is the case for the
+longer runs). Its summaries were made with the report as it stood at
+launch, so the later marks are missing from them; the first survey is a
+first survey.
+
+Open: the survey's table into the note; the desk loading a listing (the
+wasm face exists, no page calls it, the crate is not in a bundle);
+longer runs on the Pi (the owner's call on moving a dump there); the
+collision test and the scroll; the owner's ergonomics work; the quiet
+machine's speed; the phone flake in `create.spec`.
