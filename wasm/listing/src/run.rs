@@ -63,6 +63,23 @@ impl Run {
         Ok(run)
     }
 
+    /// Another run folded in: counts add, routines the other run entered
+    /// are kept once (the first seen), frames and instructions add.
+    pub fn merge(&mut self, other: Run) {
+        self.frames += other.frames;
+        self.instructions += other.instructions;
+        for (k, s) in other.sites {
+            let e = self.sites.entry(k).or_insert(Site { count: 0, addr: s.addr });
+            e.count += s.count;
+        }
+        for r in other.routines {
+            match self.routines.iter_mut().find(|x| x.offset == r.offset) {
+                Some(x) => x.entered += r.entered,
+                None => self.routines.push(r),
+            }
+        }
+    }
+
     /// The sites that fall in one bank, keyed by offset within it.
     pub fn in_bank(&self, offset: usize, len: usize) -> BTreeMap<usize, &Site> {
         self.sites.range(offset..offset + len).map(|(k, s)| (k - offset, s)).collect()

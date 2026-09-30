@@ -19,12 +19,19 @@ pub fn from_rom(bytes: &[u8]) -> Result<String, String> {
     Ok(text::write(&disasm::listing(&rom)))
 }
 
-/// A ROM and a flow report of it running, to a listing with the run
-/// laid over the walk.
-pub fn from_rom_and_run(bytes: &[u8], report: &str) -> Result<String, String> {
+/// A ROM and one or more flow reports of it running (a recorded run, a
+/// crawl), to a listing with the runs laid over the walk as one.
+pub fn from_rom_and_runs(bytes: &[u8], reports: &[String]) -> Result<String, String> {
     let rom = ines::parse(bytes)?;
-    let run = run::Run::from_report(report, rom.prg.len())?;
+    let mut run = run::Run::default();
+    for r in reports {
+        run.merge(run::Run::from_report(r, rom.prg.len())?);
+    }
     Ok(text::write(&disasm::listing_with(&rom, Some(&run))))
+}
+
+pub fn from_rom_and_run(bytes: &[u8], report: &str) -> Result<String, String> {
+    from_rom_and_runs(bytes, &[report.to_string()])
 }
 
 /// Does the listing assemble to exactly this ROM? The error names the

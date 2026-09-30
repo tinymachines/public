@@ -170,3 +170,19 @@ fn a_run_lays_its_marks_over_the_walk() {
     let e = listing::from_rom_and_run(TESTCART, &serde_json::json!({"prg_len": 16384, "sites": []}).to_string()).unwrap_err();
     assert!(e.contains("16384-byte PRG"), "{e}");
 }
+
+#[test]
+fn two_runs_merge_into_one_overlay() {
+    let a = serde_json::json!({"prg_len": 32768, "frames": 5, "instructions": 3,
+        "sites": [{"key": 0, "addr": 0x8000, "count": 1}, {"key": 0x7FF1, "addr": 0xFFF1, "count": 2}],
+        "routines": [{"key": 0, "addr": 0x8000, "entry": "reset", "entered": 1}]});
+    let b = serde_json::json!({"prg_len": 32768, "frames": 7, "instructions": 4,
+        "sites": [{"key": 0, "addr": 0x8000, "count": 4}, {"key": 1, "addr": 0x8001, "count": 4}],
+        "routines": [{"key": 0, "addr": 0x8000, "entry": "reset", "entered": 2}]});
+    let src = listing::from_rom_and_runs(TESTCART, &[a.to_string(), b.to_string()]).unwrap();
+    listing::check(&src, TESTCART).unwrap();
+    assert!(src.contains(";; @run frames=12 instructions=7 executed=4 of=32768 by=run\n"), "{}", &src[..400]);
+    assert!(src.contains(";; @routine reset kind=reset entered=3 by=run\n"));
+    assert!(src.contains(";; @ran 5 by=run\n    SEI\n"), "the counts add");
+    assert!(src.contains(";; @ran 2 by=run\n    NOP\n"));
+}

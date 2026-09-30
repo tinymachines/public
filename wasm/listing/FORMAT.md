@@ -152,9 +152,12 @@ not yet know still assembles.
 
 ## What a run adds
 
-`listing from ROM.nes REPORT.json` takes the flow report of a trace
-(`wasm/flow`, from the console's replay or from the console repo's
-`script-trace` example) and lays it over the walk. Every instruction
+`listing from ROM.nes REPORT.json ...` takes the flow report of a
+trace (`wasm/flow`, from the console's replay or from the console
+repo's `script-trace` example), or the coverage a crawl wrote (the
+console repo's `crawl` example, the same shape with no routines), or
+several of them folded into one run (counts add, routines are kept
+once), and lays it over the walk. Every instruction
 the run executed is code, whatever the walk thought, and the walk goes
 on from each of them; the run's routines and how they were entered
 become `@routine ... by=run`; each stretch of instructions gets its
@@ -182,7 +185,7 @@ holds, because a name changes no bytes.
 ## The tools
 
     listing from ROM.nes           the first listing, to stdout
-    listing from ROM.nes RUN.json  the same, with a flow report's run laid over it
+    listing from ROM.nes RUN.json  the same, with one or more runs laid over it
     listing check FILE ROM.nes     assemble FILE and hold it to ROM.nes, byte for byte
     listing render FILE            FILE with addresses and bytes beside each line
     listing shape FILE             FILE's marks, labels and comments as JSON, none of its bytes
