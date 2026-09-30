@@ -319,7 +319,6 @@ impl Flow {
             }
         }
         let routine = c.routine;
-        let key = c.key;
         let line = c.line;
         // Where the access lands, as a reader of the game thinks of it.
         let (addr, keep) = match ab {

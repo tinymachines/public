@@ -151,6 +151,11 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
                 let list: Vec<String> = bytes.iter().map(|a| format!("${a:04X}")).collect();
                 out.push(Mark { offset: r.offset, rest: format!("random-byte bytes={} shifts={shifts} eors={eors} frames={} by=match", list.join(","), r.frames) });
             }
+            // The scroll: $2005 written in the blank, every frame it ran.
+            let (_, blank) = beam(r, |a| a == 0x2005);
+            if blank >= r.frames as u64 && r.frames > 0 {
+                out.push(Mark { offset: r.offset, rest: format!("scroll-writer writes-in-blank={blank} frames={} by=match", r.frames) });
+            }
         }
     }
     out.sort_by(|a, b| a.offset.cmp(&b.offset).then(a.rest.cmp(&b.rest)));

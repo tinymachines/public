@@ -206,6 +206,7 @@ mark.
 | `bank-switch` | a routine that wrote into the ROM's window, which on a board with a register is the mapper: `writes= in-picture= in-blank=` |
 | `palette-writer` | a routine that wrote `$2007` while the PPU's address was in the palette (the report follows the address latch through `$2006`): `writes= frames=` |
 | `sprite-writer` | a routine that wrote into the page of RAM the sprite DMA took most often (the page named to `$4014`): `oam-writes= frames=` |
+| `scroll-writer` | a routine that wrote `$2005` in the blank at least once every frame it ran: `writes-in-blank= frames=` |
 | `random-byte` | a routine that ran in at least half the frames and rewrote a RAM byte from itself with a shift or a rotate (the instruction read and wrote the byte) with an `EOR` somewhere in the routine: `bytes= shifts= eors= frames=` |
 
 The report says, per routine, how many of its accesses of each PPU
@@ -214,8 +215,11 @@ drawing (lines 0 to 239) and how many in the blank, where in VRAM its
 `$2007` writes landed (pattern, name table 0 to 3, palette), and how
 many bytes it wrote into the sprite page; and per instruction, the
 addresses it read and wrote below the ROM and the lowest and highest
-of them. That is what the six above and the `@array` lines read. The
-collision test and the scroll are still to come. The random byte, the object slots, the collision test
+of them. That is what the seven above and the `@array` lines read. The
+collision test is still to come: in Super Mario Bros. the two positions
+reach the comparison through zero-page temporaries another routine
+fills, so no rule over one routine's reads finds it, and it waits on the
+flow of values between routines. The random byte, the object slots, the collision test
 and the scroll need the reads per instruction, and come as the report
 grows.
 

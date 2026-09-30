@@ -149,7 +149,7 @@ fn the_matchers_name_what_the_run_saw() {
         "sites": sites,
         "routines": [
             routine(0, "reset", "reset", 1, 10, serde_json::json!([[0x2000, 0, 1], [0x8000, 0, 1]]), serde_json::json!([[0x2000, 0, 1], [0x8000, 0, 1]])),
-            routine(1, "nmi", "nmi", 10, 10, serde_json::json!([]), serde_json::json!([])),
+            routine(1, "nmi", "nmi", 10, 10, serde_json::json!([[0x2005, 0, 10]]), serde_json::json!([[0x2005, 0, 10]])),
             routine(2, "poll", "call", 10, 10, serde_json::json!([[0x4016, 80, 20], [0, 80, 80]]), serde_json::json!([])),
             routine(3, "engine", "call", 10, 10, serde_json::json!([[2, 20, 10]]), serde_json::json!([])),
             routine(4, "state_a", "dispatch", 7, 7, serde_json::json!([]), serde_json::json!([])),
@@ -169,7 +169,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n"), "{src}");
     assert!(src.contains(&format!(";; @is jump-engine tables=1 dispatches=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("engine"))), "{src}");
     assert!(src.contains(&format!(";; @is idle-spin iterations=50000 per-frame=5000 by=match\n\nat_{:04X}:\n", a("spin"))), "{src}");
-    assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
+    assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @is scroll-writer writes-in-blank=10 frames=10 by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
     assert!(src.contains(&format!(";; @is sound-driver writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("sound"))), "{src}");
     assert!(src.contains(&format!(";; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
     assert!(src.contains(&format!(";; @is sprite-0-split scroll-writes-in-picture=20 status-reads-in-picture=200 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("split"))), "{src}");
@@ -177,7 +177,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(&format!(";; @is palette-writer writes=2 frames=10 by=match\n;; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X}", a("drain"))), "{src}");
     assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n;; @is sprite-writer oam-writes=40 frames=10 by=match\n;; @routine routine_{:04X}", a("poll"))), "{src}");
     assert!(src.contains(&format!(";; @is random-byte bytes=$0010,$0011 shifts=2 eors=1 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("random"))), "{src}");
-    assert_eq!(src.matches(";; @is ").count(), 11, "one mark per pattern, nothing else matched");
+    assert_eq!(src.matches(";; @is ").count(), 12, "one mark per pattern, nothing else matched");
     assert!(src.contains(&format!(";; @ram variables=1 arrays=1 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.
