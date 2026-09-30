@@ -279,9 +279,70 @@ image it runs from.
    blocks; the Code, History, Flow, Memory, Sprites and Nametables
    windows printing them; the half-cycle view under an instruction; the
    heatmaps.
-5. **The other nineteen.** The pipeline over every dump on the shelf,
-   the union of the models, and the patterns that recur. That table of
-   contents is the toolkit's.
+5. **The other nineteen.** *First survey 2026-09-30, early: the
+   pipeline (`tools/autopsy.py`: crawl, every kept path traced and
+   folded, the listing, the model) over every dump on the shelf, at
+   400 crawl steps from power-on with no way in, on impera overnight;
+   `tools/union.py` over the nineteen models.* Shape only; the listings
+   stay where the dumps are.
+
+   | game | board | PRG executed | routines (run) | tables | arrays | variables | patterns |
+   |---|---|---|---|---|---|---|---|
+   | Battle Chess (USA) | 1 | 7626 of 262144 (3%) | 148 | 0 | 90 | 634 | 15 |
+   | Blades of Steel (USA) | 2 | 11184 of 131072 (9%) | 221 | 13 | 93 | 602 | 24 |
+   | Blaster Master (USA) | 1 | 9058 of 131072 (7%) | 194 | 0 | 66 | 649 | 18 |
+   | Defender II (USA) | 0 | 8161 of 16384 (50%) | 133 | 0 | 26 | 449 | 25 |
+   | Double Dribble (USA) (Rev 1) | 2 | 15960 of 131072 (12%) | 154 | 7 | 66 | 460 | 13 |
+   | Fester's Quest (USA) | 1 | 5843 of 131072 (4%) | 36 | 0 | 31 | 96 | 14 |
+   | Goonies II, The (USA) | 2 | 2998 of 131072 (2%) | 61 | 3 | 27 | 308 | 19 |
+   | Legend of Zelda, The (USA) (Rev 1) | 1 | 4548 of 131072 (3%) | 83 | 6 | 28 | 564 | 20 |
+   | Metroid (USA) | 1 | 6967 of 131072 (5%) | 193 | 4 | 60 | 926 | 26 |
+   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 16633 of 131072 (13%) | 181 | 6 | 49 | 330 | 46 |
+   | Ninja Gaiden (USA) | 1 | 8601 of 131072 (7%) | 123 | 2 | 45 | 364 | 31 |
+   | Paperboy (USA) | 3 | 4799 of 32768 (15%) | 138 | 0 | 51 | 689 | 12 |
+   | Q-bert (USA) | 3 | 4409 of 32768 (13%) | 123 | 9 | 60 | 262 | 15 |
+   | Super Mario Bros. + Duck Hunt (USA) | 66 | 11910 of 65536 (18%) | 247 | 13 | 75 | 719 | 39 |
+   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 9665 of 131072 (7%) | 182 | 9 | 85 | 1023 | 22 |
+   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 19069 of 262144 (7%) | 242 | 0 | 139 | 979 | 52 |
+   | Teenage Mutant Ninja Turtles (USA) | 1 | 14264 of 131072 (11%) | 293 | 11 | 73 | 696 | 38 |
+   | Tetris (USA) | 1 | 5371 of 32768 (16%) | 111 | 4 | 44 | 392 | 23 |
+   | Zelda II - The Adventure of Link (USA) | 1 | 3334 of 131072 (3%) | 70 | 5 | 25 | 660 | 21 |
+
+   What a cold 400-step crawl reaches is small (2 to 18 percent of a
+   bank-switched game, 50 percent of the one 16K game), so the routine
+   counts are a floor and the longer runs on the Pi are where the
+   numbers move. The patterns, across the nineteen:
+
+   | pattern | games | marks |
+   |---|---|---|
+   | bank-switch | 18 of 19 | 139 |
+   | idle-spin | 4 of 19 | 4 |
+   | jump-engine | 15 of 19 | 23 |
+   | pad-poll | 19 of 19 | 38 |
+   | palette-writer | 19 of 19 | 30 |
+   | random-byte | 3 of 19 | 4 |
+   | scroll-writer | 9 of 19 | 10 |
+   | sound-driver | 19 of 19 | 19 |
+   | sprite-0-split | 6 of 19 | 9 |
+   | sprite-writer | 19 of 19 | 178 |
+   | vram-drain | 19 of 19 | 19 |
+
+   Read with care: the sound driver, the VRAM drain, the palette
+   writers and the sprite writers are found in every game because the
+   rules pick "the routine that did the most of it", which always
+   exists; the poll in every game after the rule became eight port
+   reads a frame (one game's poll is entered twice a frame and reads
+   four times each); the bank switch in every game but the one NROM
+   cartridge, which is the answer the board says it should be; the
+   jump engine in fifteen, the split in six, the random byte in three,
+   the idle spin in four (most main loops wait on a RAM flag the NMI
+   handler sets, two instructions the flow calls a wait, not an idle),
+   and the game loop inside the interrupt in none of the merged
+   crawls, which says the rule (an idle spin and an NMI handler that
+   ran half the frames) is written for one run, not for forty folded
+   ones. The next rules to write are the wait-on-a-flag main loop and
+   the collision test, which needs the flow of values between
+   routines. That table of contents is the toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's
