@@ -4442,3 +4442,26 @@ owner. Open besides: the wait-on-a-flag main loop rule and the
 collision test through the flow of values; longer runs on the Pi; the
 owner's ergonomics work; the quiet machine's speed; the phone flake in
 `create.spec`.
+
+## Checkpoint, 2026-09-30, morning: a fifth project, the autopsy
+
+Not deployed; live stays at 2e8e0b0 (1.0.267). Beta serves the section.
+
+- `3fdb41a`, `b0c1547`, `c7fd38e`: **the autopsy is a project of its own
+  at /autopsy** (owner: "a completely new section for this effort").
+  The manifest gains the project with four surfaces (the landing, the
+  games, the patterns, the method), a silo that lists every lever and
+  chooses none, and a page for every game on the shelf. Every figure is
+  read from `data/autopsy.json`, written only by
+  `scripts/board-autopsy.py` from the models the pipeline wrote: shape
+  only, no byte of any ROM. Both languages; the section's own e2e
+  (`autopsy.spec.ts`) holds each page to the record. The name is the
+  owner's own word for the work and lives in one place, the manifest.
+- `f5dda9a`: the Japanese shadows follow nes-bench `3775739` (the
+  classic ESP32's drawings, the pad package at rev M).
+
+Blocking the next deploy, as before: the flow bundle's record names an
+older tree of `wasm/flow`, so `build-playground-wasm.py --check`
+refuses until flow is re-boarded (and listing boarded, for the Listing
+window). Not placed behind a door yet: the front doors' groups are the
+owner's copy ("The two projects").
