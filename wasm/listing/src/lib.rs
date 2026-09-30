@@ -1,12 +1,14 @@
 //! The listing: an NES cartridge as assemblable text with markup in its
 //! comments (FORMAT.md), the static walk that writes a first one from a
 //! ROM, the parser that loads one, the assembler that turns it back into
-//! the ROM (the check), the rendering with addresses and bytes, and the
-//! shape (everything but the bytes). `flow` lends its opcode table.
+//! the ROM (the check), the rendering with addresses and bytes, the
+//! shape (everything but the bytes), and the matchers that name what a
+//! run saw. `flow` lends its opcode table.
 
 pub mod asm;
 pub mod disasm;
 pub mod ines;
+pub mod matchers;
 pub mod model;
 pub mod render;
 pub mod run;

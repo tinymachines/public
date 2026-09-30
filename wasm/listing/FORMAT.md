@@ -131,6 +131,8 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 |---|---|
 | `@walk from reset=$8000 nmi=$8082 irq=$FFF0` | what the static walk started from in this bank; `from nothing` when no vector lands in it |
 | `@routine name kind=reset\|nmi\|irq\|brk\|call\|dispatch [entered=N] by=…` | the label that follows is a routine's entry, how it is entered, and from a run how many times; with `inside=$XXXX` no label follows: the entry is a byte inside the instruction at that address (code that overlaps itself, the `BIT` skip), which a listing of lines cannot label |
+| `@is pattern key=value ... by=match` | the label (or instruction) that follows is an instance of a pattern from the encyclopedia, with the evidence the matcher saw (below) |
+| `@table dispatch entries=N seen=M by=run` | the `.word`s that follow are a jump engine's table, `N` entries as far as the run saw them taken and `M` of them taken; a word that ran says how often |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
 | `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
 | `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
@@ -167,13 +169,45 @@ executed. The report
 must be of the same PRG size or it is refused. Code the run executed
 from RAM has no place in a listing of the ROM and is left out.
 
+A `JSR` the run saw dispatch (a jump engine's call: the report keys a
+dispatch at that site) is not fallen through by the walk, because what
+follows is the table. The words after it are written as `.word` lines
+as far as the last entry the run saw taken, each taken one saying how
+often; a word past that is never taken for an entry, and the rest stays
+bytes. A table whose bytes something claimed as code is left as it was.
+
+## What the matchers write
+
+A matcher is a rule over what the run saw, one per pattern in the
+encyclopedia, and writes `@is pattern ... by=match` before the routine
+(or the instruction) with the evidence in its `key=value`s. It never
+reads the bytes for meaning: a poll routine is one that read the pad
+port eight times, not one that looks as if it should. No evidence, no
+mark.
+
+| pattern | the rule, and the evidence written |
+|---|---|
+| `pad-poll` | a routine that read `$4016` or `$4017` a multiple of eight times per entry (one read per button): `port= reads-per-entry= strobes-per-entry=` (writes of `$4016` per entry, 0 when the strobe is elsewhere) |
+| `jump-engine` | the routine the run's dispatching `JSR`s call: `tables=` how many call sites, `dispatches=` how many times it dispatched |
+| `idle-spin` | a loop of one instruction the run counted as idle: `iterations= per-frame=` |
+| `game-loop-in-nmi` | when there is an idle spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |
+| `sound-driver` | of the routines that wrote the APU (`$4000` to `$4013`, `$4015`, `$4017`), the one that wrote most among those that ran in at least half as many frames as the busiest: `writes= frames=` |
+| `vram-drain` | the same over writes of `$2007` |
+
+The encyclopedia's sprite-0 split, VRAM buffer as the blank's work and
+bank switch need the scanline of each write, which the report does not
+carry per routine yet; the random byte, the object slots, the collision
+test and the scroll need the reads per instruction. They come as the
+report grows.
+
 ## What the static walk writes
 
 `listing from ROM.nes` reads the three vectors of each bank that holds
 them and follows control flow from there: fall-through, both sides of
 a branch, `JSR` (into the routine and past it), `JMP` to an address.
 It stops at `RTS`, `RTI`, `BRK`, `JMP (indirect)`, an undocumented
-opcode, or a byte already inside another instruction. What it reached
+opcode, a byte already inside another instruction, or (with a run laid
+over it) the `JSR` of a jump engine's call, whose table follows. What it reached
 is code; everything else is `.byte`, honestly, until a run of the game
 reaches more. So the first listing of a game is usually mostly data,
 and that is correct: it says what a walk from the vectors can know.

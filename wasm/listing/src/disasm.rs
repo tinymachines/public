@@ -5,7 +5,7 @@
 //! listed as data until a trace of the game running says otherwise; the
 //! file says which entries the walk started from.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use flow::ops::{self, Mode};
 
@@ -84,6 +84,9 @@ struct Walk<'a> {
     done: Vec<bool>,
     targets: BTreeMap<u16, &'static str>,
     entries: Vec<(u16, &'static str)>,
+    /// JSRs a run showed to be a jump engine's calls: what follows each
+    /// is its table, not code, so the walk does not fall through.
+    no_fall: BTreeSet<u16>,
 }
 
 impl<'a> Walk<'a> {
@@ -126,6 +129,9 @@ impl<'a> Walk<'a> {
                     ops::JSR => {
                         self.targets.entry(w).or_insert("routine");
                         work.push(w);
+                        if self.no_fall.contains(&at) {
+                            break;
+                        }
                     }
                     ops::JMP_ABS => {
                         self.targets.entry(w).or_insert("at");
@@ -175,10 +181,16 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
     }
     let prg = prg_banks(rom);
     let n_prg = prg.len();
+    let mut is_marks: BTreeMap<usize, Vec<String>> = BTreeMap::new();
+    for m in run.map(|r| crate::matchers::find(r, &rom.prg)).unwrap_or_default() {
+        is_marks.entry(m.offset).or_default().push(m.rest);
+    }
     for (index, Layout { org, offset, len, fixed }) in prg.into_iter().enumerate() {
         banks.push(Bank { kind: Kind::Prg, index, org, offset, len, fixed, first: items.len() });
         let bytes = &rom.prg[offset..offset + len];
-        let mut walk = Walk { bytes, org, claim: vec![0; len], done: vec![false; len], targets: BTreeMap::new(), entries: Vec::new() };
+        let dispatches: Vec<&crate::run::Dispatch> = run.map(|r| r.dispatch.iter().filter(|d| d.offset >= offset && d.offset < offset + len && bytes[d.offset - offset] == ops::JSR).collect()).unwrap_or_default();
+        let no_fall: BTreeSet<u16> = dispatches.iter().map(|d| org.wrapping_add((d.offset - offset) as u16)).collect();
+        let mut walk = Walk { bytes, org, claim: vec![0; len], done: vec![false; len], targets: BTreeMap::new(), entries: Vec::new(), no_fall };
         // The vectors, when this bank holds them.
         let has_vectors = org as usize + len == 0x10000;
         let vec_at = len.saturating_sub(6);
@@ -259,6 +271,34 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             // with more than one PRG bank each carries its bank's number.
             label_names.insert(t, if n_prg > 1 { format!("b{index}_{name}") } else { name });
         }
+        // A jump engine's table: the words after its JSR, as far as the
+        // run saw entries taken (a stray word past the last one is never
+        // mistaken for an entry), while every word is an address in this
+        // bank and none of the bytes is code.
+        let mut tables: BTreeMap<usize, (usize, BTreeMap<u16, u64>)> = BTreeMap::new();
+        for d in &dispatches {
+            let start = d.offset - offset + 3;
+            let seen: BTreeMap<u16, u64> = d.targets.iter().map(|t| (t.1, t.2)).collect();
+            let end = if has_vectors { vec_at } else { len };
+            let mut last = None;
+            for k in 0..64 {
+                if start + 2 * k + 1 >= end {
+                    break;
+                }
+                let w = u16::from_le_bytes([bytes[start + 2 * k], bytes[start + 2 * k + 1]]);
+                if walk.addr(w).is_none() {
+                    break;
+                }
+                if seen.contains_key(&w) {
+                    last = Some(k);
+                }
+            }
+            if let Some(last) = last {
+                if (start..start + 2 * (last + 1)).all(|i| walk.claim[i] == 0) {
+                    tables.insert(start, (last + 1, seen));
+                }
+            }
+        }
         items.push(Item::Directive {
             name: "walk".into(),
             rest: if walk.entries.is_empty() {
@@ -285,6 +325,9 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             if let Some(name) = label_names.get(&at) {
                 flush(&mut run_bytes, &mut items);
                 last_count = None;
+                for rest in is_marks.remove(&(offset + i)).unwrap_or_default() {
+                    items.push(Item::Directive { name: "is".into(), rest });
+                }
                 if let Some(kind) = walk.targets.get(&at) {
                     if *kind != "at" {
                         let kind_word = if *kind == "routine" { "call" } else { kind };
@@ -295,6 +338,17 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                     }
                 }
                 items.push(Item::Label(name.clone()));
+            }
+            if let Some((entries, seen)) = tables.get(&i) {
+                flush(&mut run_bytes, &mut items);
+                last_count = None;
+                items.push(Item::Directive { name: "table".into(), rest: format!("dispatch entries={entries} seen={} by=run", seen.len()) });
+                for k in 0..*entries {
+                    let w = u16::from_le_bytes([bytes[i + 2 * k], bytes[i + 2 * k + 1]]);
+                    items.push(Item::Word { value: w, label: label_names.get(&w).cloned(), comment: seen.get(&w).map(|n| format!("ran {n}")) });
+                }
+                i += 2 * entries;
+                continue;
             }
             if has_vectors && i >= vec_at {
                 flush(&mut run_bytes, &mut items);
@@ -322,6 +376,11 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 }
                 let op = bytes[i];
                 let n = ops::len(op) as usize;
+                for k in 0..n {
+                    for rest in is_marks.remove(&(offset + i + k)).unwrap_or_default() {
+                        items.push(Item::Directive { name: "is".into(), rest });
+                    }
+                }
                 // A routine the run entered at a byte inside this
                 // instruction (code that overlaps, the BIT-skip trick) has
                 // no line to hang a label on; its mark says where it hides.

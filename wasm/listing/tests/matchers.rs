@@ -1,0 +1,152 @@
+//! The matchers on a cartridge of our own: a small ROM written as a
+//! listing and assembled here, with a made-up run laid over it that
+//! says what each routine did. The check that cannot pass on nothing:
+//! every `@is` names the routine that did the thing, and the jump
+//! engine's table is words as far as the run saw it taken.
+
+use std::collections::HashMap;
+
+use listing::model::Item;
+use listing::{asm, ines, text};
+
+const SOURCE: &str = "\
+reset:
+    SEI
+    LDA #$80
+    STA $2000
+spin:
+    JMP spin
+nmi:
+    JSR poll
+    JSR sound
+    JSR drain
+    JSR engine
+    .word state_a
+    .word state_b
+    .word state_c
+state_a:
+    RTS
+state_b:
+    RTS
+state_c:
+    RTS
+poll:
+    LDA #$01
+    STA $4016
+    LDA #$00
+    STA $4016
+    LDX #$08
+poll_bit:
+    LDA $4016
+    LSR A
+    ROL $00
+    DEX
+    BNE poll_bit
+    RTS
+engine:
+    PLA
+    STA $02
+    PLA
+    STA $03
+    LDY #$01
+    LDA ($02),Y
+    STA $04
+    INY
+    LDA ($02),Y
+    STA $05
+    JMP ($0004)
+sound:
+    LDA #$0F
+    STA $4015
+    RTS
+drain:
+    LDA #$20
+    STA $2006
+    LDA #$00
+    STA $2006
+    STA $2007
+    RTS
+irq:
+    RTI
+";
+
+/// Our ROM as an iNES image, and where its labels landed.
+fn our_rom() -> (Vec<u8>, HashMap<String, u16>) {
+    let head = ";; @listing 0\n;; @rom sha256=0 mapper=0 mirroring=horizontal prg=32768 chr=0\n;; @bank prg 0 org=$8000 size=32768 fixed\n";
+    let mut src = format!("{head}{SOURCE}");
+    let used: usize = text::parse(&src).unwrap_or_else(|e| panic!("{e}")).items.iter().map(|i| i.len()).sum();
+    for _ in 0..(32768 - 6 - used) {
+        src.push_str("    .byte $FF\n");
+    }
+    src.push_str("    .word nmi\n    .word reset\n    .word irq\n");
+    let l = text::parse(&src).unwrap_or_else(|e| panic!("{e}"));
+    let rom = asm::assemble(&l).unwrap_or_else(|e| panic!("{e}"));
+    (ines::image(&rom), asm::addresses(&l).unwrap().0)
+}
+
+/// `n` instructions from an offset, as sites that ran `count` times.
+fn seq(prg: &[u8], mut at: usize, n: usize, count: u64) -> Vec<serde_json::Value> {
+    let mut v = Vec::new();
+    for _ in 0..n {
+        v.push(serde_json::json!({"key": at, "addr": 0x8000 + at, "count": count}));
+        at += flow::ops::len(prg[at]) as usize;
+    }
+    v
+}
+
+#[test]
+fn the_matchers_name_what_the_run_saw() {
+    let (image, labels) = our_rom();
+    let prg = &image[16..];
+    let at = |n: &str| labels[n] as usize - 0x8000;
+    let routine = |id: u64, n: &str, entry: &str, entered: u64, frames: u32, mem: serde_json::Value| {
+        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem})
+    };
+    let mut sites = Vec::new();
+    for (n, k, count) in [("reset", 3, 1), ("spin", 1, 50000), ("nmi", 4, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10)] {
+        sites.extend(seq(prg, at(n), k, count));
+    }
+    let jsr_engine = at("nmi") + 9;
+    let report = serde_json::json!({
+        "prg_len": 32768, "frames": 10, "instructions": 1000,
+        "sites": sites,
+        "routines": [
+            routine(0, "reset", "reset", 1, 10, serde_json::json!([[0x2000, 0, 1]])),
+            routine(1, "nmi", "nmi", 10, 10, serde_json::json!([])),
+            routine(2, "poll", "call", 10, 10, serde_json::json!([[0x4016, 80, 20], [0, 80, 80]])),
+            routine(3, "engine", "call", 10, 10, serde_json::json!([[2, 20, 10]])),
+            routine(4, "state_a", "dispatch", 7, 7, serde_json::json!([])),
+            routine(5, "state_c", "dispatch", 3, 3, serde_json::json!([])),
+            routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10]])),
+            routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]))
+        ],
+        "loops": [{"head": at("spin"), "tail": at("spin"), "head_addr": labels["spin"], "tail_addr": labels["spin"], "kind": "idle", "iterations": 50000, "entries": 0, "on": null, "cycles": 0, "routine": 0}],
+        "dispatch": [{"key": jsr_engine, "addr": 0x8000 + jsr_engine, "depth": 2, "targets": [[4, 7], [5, 3]], "timeline": [[0, 0, 0], [1, 0, 0], [2, 0, 0]]}]
+    });
+    let src = listing::from_rom_and_run(&image, &report.to_string()).unwrap();
+    listing::check(&src, &image).unwrap();
+    let a = |n: &str| labels[n];
+    assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("poll"))), "{src}");
+    assert!(src.contains(&format!(";; @is jump-engine tables=1 dispatches=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("engine"))), "{src}");
+    assert!(src.contains(&format!(";; @is idle-spin iterations=50000 per-frame=5000 by=match\n\nat_{:04X}:\n", a("spin"))), "{src}");
+    assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
+    assert!(src.contains(&format!(";; @is sound-driver writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("sound"))), "{src}");
+    assert!(src.contains(&format!(";; @is vram-drain writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
+    assert_eq!(src.matches(";; @is ").count(), 6, "one mark per pattern, nothing else matched");
+    // The table: three words, the middle one never taken (so numeric),
+    // the two the run took saying how often.
+    assert!(src.contains(";; @table dispatch entries=3 seen=2 by=run\n"), "{src}");
+    let lines: Vec<&str> = src.lines().collect();
+    let t = lines.iter().position(|l| l.starts_with(";; @table")).unwrap();
+    assert!(lines[t + 1].starts_with(&format!("    .word dispatch_{:04X}", a("state_a"))) && lines[t + 1].ends_with("; ran 7"), "{}", lines[t + 1]);
+    assert_eq!(lines[t + 2].trim(), format!(".word ${:04X}", a("state_b")));
+    assert!(lines[t + 3].starts_with(&format!("    .word dispatch_{:04X}", a("state_c"))) && lines[t + 3].ends_with("; ran 3"), "{}", lines[t + 3]);
+    // And the walk did not fall through the JSR into the table: nothing
+    // between that JSR and the first entry is an instruction.
+    let l = text::parse(&src).unwrap();
+    let engine = format!("routine_{:04X}", a("engine"));
+    let jsr = l.items.iter().position(|i| matches!(i, Item::Instr { op: 0x20, operand, .. } if operand.label.as_deref() == Some(engine.as_str()))).unwrap();
+    let first = l.items.iter().position(|i| matches!(i, Item::Label(n) if n.starts_with("dispatch_"))).unwrap();
+    assert!(jsr < first);
+    assert!(!l.items[jsr + 1..first].iter().any(|i| matches!(i, Item::Instr { .. })), "the walk decoded the table as code");
+}
