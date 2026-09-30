@@ -4312,3 +4312,43 @@ side, in nes-bench rather than here.
 
 Open: as above, plus the first flash of pad-usb from the Pi once a board
 is on a cable.
+
+## Checkpoint, 2026-09-29, night
+
+No deploy since the one earlier tonight: live and beta at `2e8e0b0`,
+1.0.267; main is ahead with the autopsy's first tools, none of them
+served yet.
+
+- `868d0ec`, `notes/autopsy.md`: the vision for the next stretch, from
+  the owner's brief (decompile, crawl, identify, label; Super Mario
+  Bros. first; only our own art; the game model, the toolkit, then NES
+  Build), set against Programme 3 of the exercise document, the Mario
+  dissection and the desk brief. Corrected the same night: dump 54 is
+  bank 0 of the multicart with the board's bank stub where the game's
+  reset was, not a cartridge to read again (nes `7b6b742`, nes-bench
+  `d7046a4`, here `2e8e0b0`), and it is off the shelf on the owner's
+  word (nineteen dumps).
+- `4c83c73`, `f9eb259`, `a148bb2`, `wasm/listing` with `FORMAT.md`: a
+  cartridge as assemblable text with marks in its comments, no
+  addresses stored; the check is that the file assembles back to the
+  ROM byte for byte (every ROM on this machine does, the nineteen
+  dumps privately and our six openly). A static walk from the vectors
+  writes the first listing; a run (a flow report, or several folded)
+  lays `@ran`, `@unreached`, `@routine ... by=run` and the coverage
+  over it. Nine tests, two of them sabotages.
+- nes `2e44b4e` `script-trace` and `fe1fbf1` `crawl`: a scripted run
+  with the trace on, and the game played automatically, new code
+  first, then new RAM values, all cores. The numbers, on the multicart
+  past its title: the dissection's 660-frame run executes 7533 of the
+  Super Mario Bros. bank's 32768 bytes (23 percent); 1600 crawl steps
+  in 555 s reach 10772 (33 percent), a superset.
+- In flight at this checkpoint: the sharper novelty measure (a new RAM
+  value worth one over the address's distinct count, after measuring
+  that fifty-five ticking addresses carried half the novelty), running
+  the same 1600-step budget for comparison; uncommitted in nes until
+  the number says whether it earned its place.
+
+Open: the crawl's result, then routines from the crawl's paths, longer
+runs on the Pi (the dump's move there is the owner's call), `@table`
+and `@var`, the desk loading a listing; the owner's ergonomics
+redesign; the create spec's phone flake; the speed re-board when quiet.
