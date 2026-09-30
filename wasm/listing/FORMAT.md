@@ -201,7 +201,7 @@ mark.
 | `game-loop-in-nmi` | when there is an idle spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |
 | `sound-driver` | of the routines that wrote the APU (`$4000` to `$4013`, `$4015`, `$4017`), the one that wrote most among those that ran in at least half as many frames as the busiest: `writes= frames=` |
 | `vram-drain` | the same over writes of `$2007`, and where the beam was for them: `in-blank= in-picture=` |
-| `sprite-0-split` | a routine that wrote `$2005` or `$2006` while the picture was drawing at least every other frame it ran, having read `$2002` there (the wait for sprite 0's hit): `scroll-writes-in-picture= status-reads-in-picture= frames=` |
+| `sprite-0-split` | a routine that read `$2002` at least eight times a frame while the picture was drawing (the wait for sprite 0's hit; a wait is many reads) and then wrote `$2005` there, at least every other frame it ran; `$2006` does not count, since a screen drawn with rendering off sets the address in the picture too: `scroll-writes-in-picture= status-reads-in-picture= frames=` |
 | `bank-switch` | a routine that wrote into the ROM's window, which on a board with a register is the mapper: `writes= in-picture= in-blank=` |
 
 The report says, per routine, how many of its accesses of each PPU

@@ -98,14 +98,16 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         let when = if r.in_frame.is_empty() { String::new() } else { format!(" in-blank={blank} in-picture={picture}") };
         out.push(Mark { offset, rest: format!("vram-drain writes={writes}{when} frames={frames} by=match") });
     }
-    // The split: a routine that moved the scroll while the picture was
-    // drawing, having watched the PPU's status there (sprite 0's hit),
-    // at least every other frame it ran. And the bank switch: any
-    // routine that wrote into the ROM's window.
+    // The split: a routine that spun on the PPU's status while the
+    // picture was drawing (sprite 0's hit: eight reads a frame at the
+    // least, a wait is many) and then moved the scroll there, at least
+    // every other frame it ran. $2006 is not the scroll here: a screen
+    // drawn with rendering off sets the address in the picture too. And
+    // the bank switch: any routine that wrote into the ROM's window.
     for r in &run.routines {
-        let (scroll, _) = beam(r, |a| a == 0x2005 || a == 0x2006);
+        let (scroll, _) = beam(r, |a| a == 0x2005);
         let (status, _) = beam(r, |a| a == 0x2002);
-        if scroll > 0 && scroll * 2 >= r.frames as u64 && status > 0 {
+        if scroll > 0 && scroll * 2 >= r.frames as u64 && status >= 8 * r.frames as u64 {
             out.push(Mark { offset: r.offset, rest: format!("sprite-0-split scroll-writes-in-picture={scroll} status-reads-in-picture={status} frames={} by=match", r.frames) });
         }
         let (picture, blank) = beam(r, |a| a == 0x8000);

@@ -128,7 +128,7 @@ fn the_matchers_name_what_the_run_saw() {
             routine(5, "state_c", "dispatch", 3, 3, serde_json::json!([]), serde_json::json!([])),
             routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10]]), serde_json::json!([])),
             routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]), serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]])),
-            routine(8, "split", "call", 10, 10, serde_json::json!([[0x2002, 20, 0], [0x2005, 0, 20]]), serde_json::json!([[0x2002, 20, 0], [0x2005, 20, 0]]))
+            routine(8, "split", "call", 10, 10, serde_json::json!([[0x2002, 200, 0], [0x2005, 0, 20]]), serde_json::json!([[0x2002, 200, 0], [0x2005, 20, 0]]))
         ],
         "variables": [{"addr": 0, "writers": [[2, 80]], "readers": [[3, 20]], "total": 100}],
         "loops": [{"head": at("spin"), "tail": at("spin"), "head_addr": labels["spin"], "tail_addr": labels["spin"], "kind": "idle", "iterations": 50000, "entries": 0, "on": null, "cycles": 0, "routine": 0}],
@@ -143,7 +143,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
     assert!(src.contains(&format!(";; @is sound-driver writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("sound"))), "{src}");
     assert!(src.contains(&format!(";; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
-    assert!(src.contains(&format!(";; @is sprite-0-split scroll-writes-in-picture=20 status-reads-in-picture=20 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("split"))), "{src}");
+    assert!(src.contains(&format!(";; @is sprite-0-split scroll-writes-in-picture=20 status-reads-in-picture=200 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("split"))), "{src}");
     assert!(src.contains(";; @is bank-switch writes=1 in-picture=0 in-blank=1 by=match\n;; @routine reset kind=reset entered=1 by=run\n"), "{src}");
     assert_eq!(src.matches(";; @is ").count(), 8, "one mark per pattern, nothing else matched");
     assert!(src.contains(&format!(";; @ram variables=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
