@@ -237,6 +237,9 @@ holds, because a name changes no bytes.
     tools/paths.py ROM.nes CRAWL OUT.lst
                                    trace every script a crawl kept, report each, and fold
                                    them all with the crawl's coverage into one listing
+    tools/autopsy.py ROM.nes OUTDIR [--steps N]
+                                   one dump end to end: crawl, paths, listing, and a
+                                   summary in shape only (OUTDIR/summary.json)
 
 The same functions are exported for the page (`listing_from_rom`,
 `listing_render`, `listing_check`), so the desk can load and render a

@@ -37,7 +37,7 @@ def main():
     ap.add_argument("rom")
     ap.add_argument("crawl_dir")
     ap.add_argument("out")
-    ap.add_argument("--nes", default=str(HERE.parent.parent.parent / "nes"))
+    ap.add_argument("--nes", default=str(HERE.parents[3] / "nes"))
     ap.add_argument("--jobs", type=int, default=2)
     a = ap.parse_args()
     nes = Path(a.nes)
