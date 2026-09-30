@@ -12,10 +12,15 @@ use serde_json::Value;
 
 /// One executed instruction: its PRG offset, how many times, and the
 /// address it ran at.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Site {
     pub count: u64,
     pub addr: u16,
+    /// The addresses it read and wrote below the ROM (the stack aside),
+    /// with counts, a few each; and the lowest and highest of them.
+    pub reads: Vec<(u16, u64)>,
+    pub writes: Vec<(u16, u64)>,
+    pub span: Option<(u16, u16)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,6 +42,8 @@ pub struct Routine {
     pub vram: Vec<(String, u32)>,
     /// Writes into the page the sprite DMA takes.
     pub oam_writes: u32,
+    /// The PRG offsets of the instructions it ran.
+    pub body: Vec<usize>,
 }
 
 /// A site the run saw choose its successor from a table: a jump
@@ -103,7 +110,18 @@ impl Run {
             if key >= prg_len {
                 continue;
             }
-            run.sites.insert(key, Site { count: u(&s["count"]), addr: u(&s["addr"]) as u16 });
+            let pairs = |k: &str| -> Vec<(u16, u64)> {
+                s[k].as_array()
+                    .unwrap_or(&Vec::new())
+                    .iter()
+                    .filter_map(|m| {
+                        let m = m.as_array()?;
+                        Some((u(m.first()?) as u16, u(m.get(1)?)))
+                    })
+                    .collect()
+            };
+            let span = s["span"].as_array().and_then(|m| Some((u(m.first()?) as u16, u(m.get(1)?) as u16)));
+            run.sites.insert(key, Site { count: u(&s["count"]), addr: u(&s["addr"]) as u16, reads: pairs("reads"), writes: pairs("writes"), span });
         }
         // The report numbers its routines; dispatch targets name them so.
         let mut by_id: BTreeMap<u64, (usize, u16)> = BTreeMap::new();
@@ -138,7 +156,8 @@ impl Run {
                     Some((m.first()?.as_str()?.to_string(), u(m.get(1)?) as u32))
                 })
                 .collect();
-            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame"), vram, oam_writes: u(&r["oam_writes"]) as u32 });
+            let body = r["body"].as_array().unwrap_or(&none).iter().map(|k| u(k) as usize).filter(|&k| k < prg_len).collect();
+            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame"), vram, oam_writes: u(&r["oam_writes"]) as u32, body });
         }
         for d in v["dispatch"].as_array().unwrap_or(&none) {
             let key = d["key"].as_u64().unwrap_or(u64::MAX) as usize;
@@ -188,8 +207,20 @@ impl Run {
         self.frames += other.frames;
         self.instructions += other.instructions;
         for (k, s) in other.sites {
-            let e = self.sites.entry(k).or_insert(Site { count: 0, addr: s.addr });
+            let e = self.sites.entry(k).or_insert(Site { addr: s.addr, ..Default::default() });
             e.count += s.count;
+            for (into, from) in [(&mut e.reads, s.reads), (&mut e.writes, s.writes)] {
+                for (a, n) in from {
+                    match into.iter_mut().find(|t| t.0 == a) {
+                        Some(t) => t.1 += n,
+                        None => into.push((a, n)),
+                    }
+                }
+            }
+            e.span = match (e.span, s.span) {
+                (Some((a, b)), Some((c, d))) => Some((a.min(c), b.max(d))),
+                (x, y) => x.or(y),
+            };
         }
         for r in other.routines {
             match self.routines.iter_mut().find(|x| x.offset == r.offset) {
@@ -197,6 +228,11 @@ impl Run {
                     x.entered += r.entered;
                     x.frames += r.frames;
                     x.oam_writes += r.oam_writes;
+                    for k in r.body {
+                        if !x.body.contains(&k) {
+                            x.body.push(k);
+                        }
+                    }
                     for (region, n) in r.vram {
                         match x.vram.iter_mut().find(|v| v.0 == region) {
                             Some(v) => v.1 += n,

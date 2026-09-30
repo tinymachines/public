@@ -9,6 +9,7 @@
 use std::collections::BTreeMap;
 
 use flow::ops;
+use flow::ops::Mode;
 
 use crate::run::{Routine, Run};
 
@@ -123,7 +124,58 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         if r.oam_writes > 0 {
             out.push(Mark { offset: r.offset, rest: format!("sprite-writer oam-writes={} frames={} by=match", r.oam_writes, r.frames) });
         }
+        // The random byte: RAM a routine that ran the frames rewrites
+        // from itself with a shift or a rotate (a read-modify-write on
+        // the byte) and an EOR somewhere in the same routine.
+        if r.frames as u64 * 2 >= run.frames {
+            let mut bytes: Vec<u16> = Vec::new();
+            let (mut shifts, mut eors) = (0u64, 0u64);
+            for &k in &r.body {
+                let (Some(&op), Some(site)) = (prg.get(k), run.sites.get(&k)) else { continue };
+                if ops::name(op) == "EOR" {
+                    eors += 1;
+                }
+                if matches!(ops::name(op), "ASL" | "LSR" | "ROL" | "ROR") && ops::mode(op) != Mode::Acc {
+                    for &(a, _) in &site.writes {
+                        if a < 0x0800 && site.reads.iter().any(|x| x.0 == a) {
+                            shifts += 1;
+                            if !bytes.contains(&a) {
+                                bytes.push(a);
+                            }
+                        }
+                    }
+                }
+            }
+            if !bytes.is_empty() && eors > 0 {
+                bytes.sort();
+                let list: Vec<String> = bytes.iter().map(|a| format!("${a:04X}")).collect();
+                out.push(Mark { offset: r.offset, rest: format!("random-byte bytes={} shifts={shifts} eors={eors} frames={} by=match", list.join(","), r.frames) });
+            }
+        }
     }
     out.sort_by(|a, b| a.offset.cmp(&b.offset).then(a.rest.cmp(&b.rest)));
     out
+}
+
+/// The arrays: RAM an indexed instruction reached across more than one
+/// byte, by base address: how many slots the run saw reached from the
+/// base, and how many instructions index it.
+pub fn arrays(run: &Run, prg: &[u8]) -> Vec<(u16, usize, usize)> {
+    let mut by_base: BTreeMap<u16, (usize, usize)> = BTreeMap::new();
+    for (&k, site) in &run.sites {
+        let (Some(&op), Some((lo, hi))) = (prg.get(k), site.span) else { continue };
+        let base = match ops::mode(op) {
+            Mode::Zpx | Mode::Zpy => prg.get(k + 1).copied().map(u16::from),
+            Mode::Abx | Mode::Aby => prg.get(k + 2).map(|&b2| u16::from_le_bytes([prg[k + 1], b2])),
+            _ => None,
+        };
+        let Some(base) = base else { continue };
+        if base >= 0x0800 || lo < base || hi <= base {
+            continue;
+        }
+        let e = by_base.entry(base).or_insert((0, 0));
+        e.0 = e.0.max((hi - base) as usize + 1);
+        e.1 += 1;
+    }
+    by_base.into_iter().map(|(b, (slots, sites))| (b, slots, sites)).collect()
 }

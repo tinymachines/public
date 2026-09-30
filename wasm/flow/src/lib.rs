@@ -77,6 +77,11 @@ struct Site {
     data_writes: u64,
     /// The addresses it read outside the ROM, most first (a few).
     reads: Vec<(u16, u32)>,
+    /// The addresses it wrote below the ROM, most first (a few).
+    writes: Vec<(u16, u32)>,
+    /// The lowest and highest address below the ROM it read or wrote
+    /// (the stack aside): an indexed instruction's reach.
+    span: Option<(u16, u16)>,
 }
 
 struct Routine {
@@ -140,6 +145,10 @@ struct Cur {
     b1: Option<u8>,
     b2: Option<u8>,
     routine: u32,
+    /// Its data accesses so far (address, read), folded into the site
+    /// when it finishes: the site does not exist until then, so an
+    /// instruction's first run would otherwise leave nothing there.
+    accesses: Vec<(u16, bool)>,
 }
 
 #[derive(Default, Clone)]
@@ -390,19 +399,9 @@ impl Flow {
                 }
             }
         }
-        if let Some(site) = self.sites.get_mut(&key) {
-            if read {
-                site.data_reads += 1;
-                if keep && !(0x0100..0x0200).contains(&addr) {
-                    if let Some(e) = site.reads.iter_mut().find(|e| e.0 == addr) {
-                        e.1 += 1;
-                    } else if site.reads.len() < 4 {
-                        site.reads.push((addr, 1));
-                    }
-                }
-            } else {
-                site.data_writes += 1;
-            }
+        if let Some(c) = self.cur.as_mut() {
+            let counted = keep && addr < 0x8000 && !(0x0100..0x0200).contains(&addr);
+            c.accesses.push((if counted { addr } else { 0xffff }, read));
         }
     }
 
@@ -410,7 +409,7 @@ impl Flow {
         if let Some(prev) = self.cur.take() {
             self.finish_instruction(prev, key);
         }
-        self.cur = Some(Cur { key, addr, op, frame: self.frame, s: None, line: 0, cycles: 1, held: 0, vector: None, b1: None, b2: None, routine: u32::MAX });
+        self.cur = Some(Cur { key, addr, op, frame: self.frame, s: None, line: 0, cycles: 1, held: 0, vector: None, b1: None, b2: None, routine: u32::MAX, accesses: Vec::new() });
     }
 
     fn routine_for(&mut self, key: u32, addr: u16, entry: Entry) -> u32 {
@@ -534,6 +533,23 @@ impl Flow {
             site.count += 1;
             site.cycles += cycles;
             site.last = frame;
+            for &(addr, read) in &c.accesses {
+                if read {
+                    site.data_reads += 1;
+                } else {
+                    site.data_writes += 1;
+                }
+                if addr == 0xffff {
+                    continue; // the stack, or the ROM
+                }
+                site.span = Some(site.span.map_or((addr, addr), |(lo, hi)| (lo.min(addr), hi.max(addr))));
+                let list = if read { &mut site.reads } else { &mut site.writes };
+                if let Some(e) = list.iter_mut().find(|e| e.0 == addr) {
+                    e.1 += 1;
+                } else if list.len() < 4 {
+                    list.push((addr, 1));
+                }
+            }
             if let Some(b) = c.b1 {
                 site.b1 = b;
             }
@@ -630,6 +646,9 @@ impl Flow {
                     first: s.first,
                     last: s.last,
                     routine: s.routine,
+                    reads: s.reads.clone(),
+                    writes: s.writes.clone(),
+                    span: s.span,
                 }
             })
             .collect();
@@ -999,6 +1018,11 @@ struct SiteOut {
     first: u32,
     last: u32,
     routine: u32,
+    /// The addresses it read and wrote below the ROM (the stack aside),
+    /// with counts, up to four each; and the lowest and highest of them.
+    reads: Vec<(u16, u32)>,
+    writes: Vec<(u16, u32)>,
+    span: Option<(u16, u16)>,
 }
 
 #[derive(Serialize)]

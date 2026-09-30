@@ -134,7 +134,8 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | `@is pattern key=value ... by=match` | the label (or instruction) that follows is an instance of a pattern from the encyclopedia, with the evidence the matcher saw (below) |
 | `@table dispatch entries=N seen=M by=run` | the `.word`s that follow are a jump engine's table, `N` entries as far as the run saw them taken and `M` of them taken; a word that ran says how often |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
-| `@ram variables=N by=run` | after the PRG banks: the RAM the routines share, one `@var` per byte |
+| `@ram variables=N arrays=M by=run` | after the PRG banks: the RAM the routines share, one `@array` per indexed base and one `@var` per byte |
+| `@array $XXXX slots=N sites=K by=run` | RAM an indexed instruction reached from this base across `N` bytes at most (as far as the run saw), `K` instructions indexing it: the object slots and the tables in RAM |
 | `@var $XXXX writers=name:N,... readers=name:N,... total=N by=run` | a RAM byte one routine writes and another reads, each side's routines by label (or by address, when the routine ran from RAM) with their counts, the busiest six and `+N` more |
 | `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
 | `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
@@ -205,13 +206,16 @@ mark.
 | `bank-switch` | a routine that wrote into the ROM's window, which on a board with a register is the mapper: `writes= in-picture= in-blank=` |
 | `palette-writer` | a routine that wrote `$2007` while the PPU's address was in the palette (the report follows the address latch through `$2006`): `writes= frames=` |
 | `sprite-writer` | a routine that wrote into the page of RAM the sprite DMA took most often (the page named to `$4014`): `oam-writes= frames=` |
+| `random-byte` | a routine that ran in at least half the frames and rewrote a RAM byte from itself with a shift or a rotate (the instruction read and wrote the byte) with an `EOR` somewhere in the routine: `bytes= shifts= eors= frames=` |
 
 The report says, per routine, how many of its accesses of each PPU
 register, of `$4014` and of the mapper fell while the picture was
 drawing (lines 0 to 239) and how many in the blank, where in VRAM its
 `$2007` writes landed (pattern, name table 0 to 3, palette), and how
-many bytes it wrote into the sprite page; that is what the five above
-read. The random byte, the object slots, the collision test
+many bytes it wrote into the sprite page; and per instruction, the
+addresses it read and wrote below the ROM and the lowest and highest
+of them. That is what the six above and the `@array` lines read. The
+collision test and the scroll are still to come. The random byte, the object slots, the collision test
 and the scroll need the reads per instruction, and come as the report
 grows.
 

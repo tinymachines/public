@@ -442,8 +442,12 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
     // routines by name (or by address, when it ran from RAM) with their
     // counts, the busiest first.
     if let Some(r) = run {
-        if !r.vars.is_empty() {
-            items.push(Item::Directive { name: "ram".into(), rest: format!("variables={} by=run", r.vars.len()) });
+        let arrays = crate::matchers::arrays(r, &rom.prg);
+        if !r.vars.is_empty() || !arrays.is_empty() {
+            items.push(Item::Directive { name: "ram".into(), rest: format!("variables={} arrays={} by=run", r.vars.len(), arrays.len()) });
+            for (base, slots, sites) in arrays {
+                items.push(Item::Directive { name: "array".into(), rest: format!("${base:04X} slots={slots} sites={sites} by=run") });
+            }
             let mut vars: Vec<&crate::run::Var> = r.vars.iter().collect();
             vars.sort_by_key(|v| v.addr);
             let side = |xs: &[(usize, u16, u64)]| -> String {

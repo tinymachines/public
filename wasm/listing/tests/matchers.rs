@@ -22,6 +22,7 @@ nmi:
     JSR sound
     JSR drain
     JSR split
+    JSR random
     JSR engine
     .word state_a
     .word state_b
@@ -63,6 +64,14 @@ split:
     LDA #$00
     STA $2005
     STA $2005
+    RTS
+random:
+    LDX #$00
+    LDA $0200,X
+    EOR $11
+    LSR A
+    ROR $10
+    ROR $11
     RTS
 sound:
     LDA #$0F
@@ -108,19 +117,33 @@ fn the_matchers_name_what_the_run_saw() {
     let (image, labels) = our_rom();
     let prg = &image[16..];
     let at = |n: &str| labels[n] as usize - 0x8000;
+    let body = |n: &str, k: usize| -> Vec<usize> { seq(prg, at(n), k, 0).iter().map(|s| s["key"].as_u64().unwrap() as usize).collect() };
     let routine = |id: u64, n: &str, entry: &str, entered: u64, frames: u32, mem: serde_json::Value, in_frame: serde_json::Value| {
         let (vram, oam) = match n {
             "drain" => (serde_json::json!([["name 0", 8], ["palette", 2]]), 0),
             "poll" => (serde_json::json!([]), 40),
             _ => (serde_json::json!([]), 0),
         };
-        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam})
+        let n_body = match n { "reset" => 4, "nmi" => 6, "poll" => 11, "engine" => 11, "sound" => 3, "drain" => 6, "split" => 6, "random" => 7, _ => 1 };
+        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam, "body": body(n, n_body)})
     };
     let mut sites = Vec::new();
-    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 5, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10)] {
+    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10)] {
         sites.extend(seq(prg, at(n), k, count));
     }
-    let jsr_engine = at("nmi") + 12;
+    // What the random routine's instructions touched: the indexed read
+    // reaching eight slots, the EOR, and the two rotates on their bytes.
+    let mut touch = |key: usize, reads: serde_json::Value, writes: serde_json::Value, span: serde_json::Value| {
+        let s = sites.iter_mut().find(|s| s["key"] == key).unwrap();
+        s["reads"] = reads;
+        s["writes"] = writes;
+        s["span"] = span;
+    };
+    touch(at("random") + 2, serde_json::json!([[0x0200, 5], [0x0207, 5]]), serde_json::json!([]), serde_json::json!([0x0200, 0x0207]));
+    touch(at("random") + 5, serde_json::json!([[0x11, 10]]), serde_json::json!([]), serde_json::json!([0x11, 0x11]));
+    touch(at("random") + 8, serde_json::json!([[0x10, 10]]), serde_json::json!([[0x10, 20]]), serde_json::json!([0x10, 0x10]));
+    touch(at("random") + 10, serde_json::json!([[0x11, 10]]), serde_json::json!([[0x11, 20]]), serde_json::json!([0x11, 0x11]));
+    let jsr_engine = at("nmi") + 15;
     let report = serde_json::json!({
         "prg_len": 32768, "frames": 10, "instructions": 1000,
         "sites": sites,
@@ -133,7 +156,8 @@ fn the_matchers_name_what_the_run_saw() {
             routine(5, "state_c", "dispatch", 3, 3, serde_json::json!([]), serde_json::json!([])),
             routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10]]), serde_json::json!([])),
             routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]), serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]])),
-            routine(8, "split", "call", 10, 10, serde_json::json!([[0x2002, 200, 0], [0x2005, 0, 20]]), serde_json::json!([[0x2002, 200, 0], [0x2005, 20, 0]]))
+            routine(8, "split", "call", 10, 10, serde_json::json!([[0x2002, 200, 0], [0x2005, 0, 20]]), serde_json::json!([[0x2002, 200, 0], [0x2005, 20, 0]])),
+            routine(9, "random", "call", 10, 10, serde_json::json!([[0x10, 10, 20], [0x11, 20, 20]]), serde_json::json!([]))
         ],
         "variables": [{"addr": 0, "writers": [[2, 80]], "readers": [[3, 20]], "total": 100}],
         "loops": [{"head": at("spin"), "tail": at("spin"), "head_addr": labels["spin"], "tail_addr": labels["spin"], "kind": "idle", "iterations": 50000, "entries": 0, "on": null, "cycles": 0, "routine": 0}],
@@ -152,8 +176,9 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(";; @is bank-switch writes=1 in-picture=0 in-blank=1 by=match\n;; @routine reset kind=reset entered=1 by=run\n"), "{src}");
     assert!(src.contains(&format!(";; @is palette-writer writes=2 frames=10 by=match\n;; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X}", a("drain"))), "{src}");
     assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n;; @is sprite-writer oam-writes=40 frames=10 by=match\n;; @routine routine_{:04X}", a("poll"))), "{src}");
-    assert_eq!(src.matches(";; @is ").count(), 10, "one mark per pattern, nothing else matched");
-    assert!(src.contains(&format!(";; @ram variables=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
+    assert!(src.contains(&format!(";; @is random-byte bytes=$0010,$0011 shifts=2 eors=1 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("random"))), "{src}");
+    assert_eq!(src.matches(";; @is ").count(), 11, "one mark per pattern, nothing else matched");
+    assert!(src.contains(&format!(";; @ram variables=1 arrays=1 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.
     assert!(src.contains(";; @table dispatch entries=3 seen=2 by=run\n"), "{src}");
