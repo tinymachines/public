@@ -219,9 +219,12 @@ image it runs from.
    script executes 7533 of the 32768 bytes of the Super Mario Bros.
    bank (23 percent) and 850 of the menu bank's; the walk alone knew
    2683 instructions of the multicart, the run makes it 9041. `@table`
-   came with the matchers (step 3), for a jump engine's tables. Not
-   yet: `@var`, and the desk loading it (the wasm face exists, no page
-   calls it, and the crate is not boarded into a bundle).
+   came with the matchers (step 3), for a jump engine's tables; `@var`
+   is the RAM block after the banks, one line per byte one routine
+   writes and another reads, with who did what how often (740 bytes on
+   the multicart's fifty-one reports). Not yet: the desk loading it
+   (the wasm face exists, no page calls it, and the crate is not
+   boarded into a bundle).
 2. **The crawl.** *Built 2026-09-29, first cut: the console repo's
    `examples/crawl`.* From a saved moment past the title, fifteen pad
    bytes held for twenty frames each and one long wait; new opcode
@@ -243,8 +246,8 @@ image it runs from.
    every step) was tried over the same 1600 steps and found less code,
    5306 sites against 5462, so it stays as a switch and the plain
    count is the rule. Not yet: longer runs on the Pi.
-3. **The matchers.** *Built 2026-09-29, first cut: six rules in
-   `wasm/listing` (`FORMAT.md`, "What the matchers write"), each a
+3. **The matchers.** *Built 2026-09-29 and 30, first cut: ten rules
+   in `wasm/listing` (`FORMAT.md`, "What the matchers write"), each a
    rule over what the run saw, never over what the bytes look like,
    each writing `@is pattern ... by=match` with its evidence.* On the
    multicart's recorded run they name the poll (three of them: the
@@ -252,19 +255,26 @@ image it runs from.
    menu's), the jump engine (eleven tables, 1921 dispatches in 660
    frames; twelve tables across the crawl's fifty paths), the idle
    spin (4588 turns a frame) and the NMI handler as the game loop, the
-   VRAM drain and the sound driver. The jump engine's tables became
-   the first `@table`: the walk no longer falls through a dispatching
-   `JSR`, and the words after it are `.word` lines as far as the run
-   saw entries taken, 102 words in eleven tables, each taken entry
-   saying how often. The test is a ROM of our own, written as a
-   listing and assembled in the test, with a made-up run over it.
-   Still to write: the sprite-0 split, the blank's VRAM work and the
-   bank switch need the scanline of each write per routine, and the
-   random byte, the object slots, the collision test and the scroll
-   need the reads per instruction; the report grows to carry them.
-   Then the ones the crawl's coverage makes findable. Each new pattern
-   is an encyclopedia entry, shape only, and a runnable example of
-   ours when we have one.
+   VRAM drain and the sound driver, the sprite-0 split (the NMI
+   handler again: a hundred status reads a frame in the picture, then
+   the scroll), the bank switch (the multicart's stub; the menu's own
+   runs from RAM, where a listing of the ROM cannot mark it), two
+   palette writers and sixteen sprite writers, the busiest writing the
+   sprite page 16317 times in 260 frames. For the last three the flow
+   report grew: per routine, where the beam was for each hardware
+   access (in the picture or in the blank), where in VRAM each `$2007`
+   write landed (the address latch followed through `$2006`), and the
+   writes into the page the sprite DMA takes. The jump engine's tables
+   became the first `@table`: the walk no longer falls through a
+   dispatching `JSR`, and the words after it are `.word` lines as far
+   as the run saw entries taken, 102 words in eleven tables, each
+   taken entry saying how often. The test is a ROM of our own, written
+   as a listing and assembled in the test, with a made-up run over it.
+   Still to write: the random byte, the object slots, the collision
+   test and the scroll need the reads per instruction; the report
+   grows to carry them. Then the ones the crawl's coverage makes
+   findable. Each new pattern is an encyclopedia entry, shape only,
+   and a runnable example of ours when we have one.
 4. **The symbol file and the desk.** Labels and comments kept beside the
    blocks; the Code, History, Flow, Memory, Sprites and Nametables
    windows printing them; the half-cycle view under an instruction; the
