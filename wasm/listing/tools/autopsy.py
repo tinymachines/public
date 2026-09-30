@@ -4,7 +4,11 @@ kept, fold them all onto the listing with the matchers, and say what
 came out as shape (counts, never bytes). The listing itself stays in
 OUTDIR, which for a commercial dump is somewhere no repository sees.
 
-    python3 tools/autopsy.py ROM.nes OUTDIR [--steps N] [--nes DIR] [--jobs N]
+    python3 tools/autopsy.py ROM.nes OUTDIR [--steps N] [--start SCRIPT] [--nes DIR] [--jobs N]
+
+--start is a pad script (`AT frame hh` lines, `# frames N`) the crawl
+plays first: the way in past a menu or a title, as the console repo's
+crawl takes it.
 
 Writes OUTDIR/crawl/ (the crawl), OUTDIR/listing.lst, OUTDIR/model.json
 (the game model the listing's marks describe, shape only), OUTDIR/summary.json
@@ -30,6 +34,7 @@ def main():
     ap.add_argument("rom")
     ap.add_argument("out")
     ap.add_argument("--steps", type=int, default=400)
+    ap.add_argument("--start")
     ap.add_argument("--nes", default=str(HERE.parents[3] / "nes"))
     ap.add_argument("--jobs", type=int, default=2)
     a = ap.parse_args()
@@ -44,7 +49,8 @@ def main():
     crawl = out / "crawl"
     if not (crawl / "crawl.json").exists():
         with open(out / "crawl.log", "w") as log:
-            subprocess.run([crawl_bin, rom, crawl, str(a.steps)], check=True, stderr=log, stdout=log)
+            cmd = [crawl_bin, rom, crawl, str(a.steps)] + ([Path(a.start).resolve()] if a.start else [])
+            subprocess.run(cmd, check=True, stderr=log, stdout=log)
     lst = out / "listing.lst"
     with open(out / "paths.log", "w") as log:
         subprocess.run([sys.executable, HERE / "paths.py", rom, crawl, lst, "--nes", nes, "--jobs", str(a.jobs)], check=True, stderr=log, stdout=log)
@@ -55,6 +61,7 @@ def main():
     summary = {
         "rom": rom.name,
         "steps": a.steps,
+        "start": Path(a.start).name if a.start else None,
         "seconds": round(time.time() - t0),
         "paths": len(list((crawl / "scripts").glob("*.txt"))) if (crawl / "scripts").exists() else 0,
     }
