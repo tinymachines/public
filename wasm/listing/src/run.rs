@@ -51,6 +51,18 @@ pub struct Loop {
     pub iterations: u64,
 }
 
+/// A RAM byte one routine writes and another reads: the report's
+/// variables. Writers and readers are (PRG offset, address, count); a
+/// routine that ran from RAM has an offset past the PRG and only its
+/// address to be named by.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Var {
+    pub addr: u16,
+    pub writers: Vec<(usize, u16, u64)>,
+    pub readers: Vec<(usize, u16, u64)>,
+    pub total: u64,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Run {
     pub frames: u64,
@@ -59,6 +71,7 @@ pub struct Run {
     pub routines: Vec<Routine>,
     pub dispatch: Vec<Dispatch>,
     pub loops: Vec<Loop>,
+    pub vars: Vec<Var>,
 }
 
 fn u(v: &Value) -> u64 {
@@ -132,6 +145,20 @@ impl Run {
             }
             run.loops.push(Loop { head, tail, head_addr: u(&l["head_addr"]) as u16, kind: l["kind"].as_str().unwrap_or("").to_string(), iterations: u(&l["iterations"]) });
         }
+        for x in v["variables"].as_array().unwrap_or(&none) {
+            let side = |k: &str| -> Vec<(usize, u16, u64)> {
+                x[k].as_array()
+                    .unwrap_or(&none)
+                    .iter()
+                    .filter_map(|t| {
+                        let t = t.as_array()?;
+                        let (k, a) = *by_id.get(&u(t.first()?))?;
+                        Some((k, a, u(t.get(1)?)))
+                    })
+                    .collect()
+            };
+            run.vars.push(Var { addr: u(&x["addr"]) as u16, writers: side("writers"), readers: side("readers"), total: u(&x["total"]) });
+        }
         Ok(run)
     }
 
@@ -181,6 +208,24 @@ impl Run {
             match self.loops.iter_mut().find(|x| x.head == l.head && x.tail == l.tail && x.kind == l.kind) {
                 Some(x) => x.iterations += l.iterations,
                 None => self.loops.push(l),
+            }
+        }
+        let fold = |into: &mut Vec<(usize, u16, u64)>, from: Vec<(usize, u16, u64)>| {
+            for (k, a, n) in from {
+                match into.iter_mut().find(|t| t.0 == k) {
+                    Some(t) => t.2 += n,
+                    None => into.push((k, a, n)),
+                }
+            }
+        };
+        for v in other.vars {
+            match self.vars.iter_mut().find(|x| x.addr == v.addr) {
+                Some(x) => {
+                    x.total += v.total;
+                    fold(&mut x.writers, v.writers);
+                    fold(&mut x.readers, v.readers);
+                }
+                None => self.vars.push(v),
             }
         }
     }

@@ -181,6 +181,8 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
     }
     let prg = prg_banks(rom);
     let n_prg = prg.len();
+    // Every label by its PRG offset, for the RAM block after the banks.
+    let mut names: BTreeMap<usize, String> = BTreeMap::new();
     let mut is_marks: BTreeMap<usize, Vec<String>> = BTreeMap::new();
     for m in run.map(|r| crate::matchers::find(r, &rom.prg)).unwrap_or_default() {
         is_marks.entry(m.offset).or_default().push(m.rest);
@@ -298,6 +300,9 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                     tables.insert(start, (last + 1, seen));
                 }
             }
+        }
+        for (&a, name) in &label_names {
+            names.insert(offset + (a.wrapping_sub(org)) as usize, name.clone());
         }
         items.push(Item::Directive {
             name: "walk".into(),
@@ -424,6 +429,29 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             }
         }
         flush(&mut run_bytes, &mut items);
+    }
+    // The RAM the routines share, after the code: a byte one routine
+    // writes and another reads, by the report's count, each side's
+    // routines by name (or by address, when it ran from RAM) with their
+    // counts, the busiest first.
+    if let Some(r) = run {
+        if !r.vars.is_empty() {
+            items.push(Item::Directive { name: "ram".into(), rest: format!("variables={} by=run", r.vars.len()) });
+            let mut vars: Vec<&crate::run::Var> = r.vars.iter().collect();
+            vars.sort_by_key(|v| v.addr);
+            let side = |xs: &[(usize, u16, u64)]| -> String {
+                let mut xs: Vec<&(usize, u16, u64)> = xs.iter().collect();
+                xs.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)));
+                let mut s: Vec<String> = xs.iter().take(6).map(|(k, a, n)| format!("{}:{n}", names.get(k).cloned().unwrap_or_else(|| format!("${a:04X}")))).collect();
+                if xs.len() > 6 {
+                    s.push(format!("+{}", xs.len() - 6));
+                }
+                s.join(",")
+            };
+            for v in vars {
+                items.push(Item::Directive { name: "var".into(), rest: format!("${:04X} writers={} readers={} total={} by=run", v.addr, side(&v.writers), side(&v.readers), v.total) });
+            }
+        }
     }
     if !rom.chr.is_empty() {
         let n = rom.chr.len() / 8192;

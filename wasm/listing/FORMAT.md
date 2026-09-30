@@ -134,6 +134,8 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | `@is pattern key=value ... by=match` | the label (or instruction) that follows is an instance of a pattern from the encyclopedia, with the evidence the matcher saw (below) |
 | `@table dispatch entries=N seen=M by=run` | the `.word`s that follow are a jump engine's table, `N` entries as far as the run saw them taken and `M` of them taken; a word that ran says how often |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
+| `@ram variables=N by=run` | after the PRG banks: the RAM the routines share, one `@var` per byte |
+| `@var $XXXX writers=name:N,... readers=name:N,... total=N by=run` | a RAM byte one routine writes and another reads, each side's routines by label (or by address, when the routine ran from RAM) with their counts, the busiest six and `+N` more |
 | `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
 | `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
 | `@ran N by=run` | the instructions from here on ran `N` times each, until the next `@ran`, `@unreached`, label or data |
@@ -168,6 +170,12 @@ instructions gets its count; the header and each bank say how much was
 executed. The report
 must be of the same PRG size or it is refused. Code the run executed
 from RAM has no place in a listing of the ROM and is left out.
+
+After the PRG banks the run's variables are listed: every RAM byte
+(zero page, `$0200` to `$07FF`, cartridge RAM) that one routine wrote
+and another read, with who did what how often. That is the model's
+"variables" table in its first form; a role (`@is` on a variable) comes
+with the matchers that need the reads per instruction.
 
 A `JSR` the run saw dispatch (a jump engine's call: the report keys a
 dispatch at that site) is not fallen through by the walk, because what

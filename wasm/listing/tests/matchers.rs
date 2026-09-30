@@ -120,6 +120,7 @@ fn the_matchers_name_what_the_run_saw() {
             routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10]])),
             routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]))
         ],
+        "variables": [{"addr": 0, "writers": [[2, 80]], "readers": [[3, 20]], "total": 100}],
         "loops": [{"head": at("spin"), "tail": at("spin"), "head_addr": labels["spin"], "tail_addr": labels["spin"], "kind": "idle", "iterations": 50000, "entries": 0, "on": null, "cycles": 0, "routine": 0}],
         "dispatch": [{"key": jsr_engine, "addr": 0x8000 + jsr_engine, "depth": 2, "targets": [[4, 7], [5, 3]], "timeline": [[0, 0, 0], [1, 0, 0], [2, 0, 0]]}]
     });
@@ -133,6 +134,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(&format!(";; @is sound-driver writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("sound"))), "{src}");
     assert!(src.contains(&format!(";; @is vram-drain writes=10 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
     assert_eq!(src.matches(";; @is ").count(), 6, "one mark per pattern, nothing else matched");
+    assert!(src.contains(&format!(";; @ram variables=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.
     assert!(src.contains(";; @table dispatch entries=3 seen=2 by=run\n"), "{src}");
