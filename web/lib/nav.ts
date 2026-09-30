@@ -3,6 +3,7 @@ import { delocalize } from "./lang";
 import { explorerPages } from "./explorer";
 import { TRACKS } from "./tracks";
 import { arrivedSurfaces, projects, read, nav as siteNav } from "./projects";
+import { autopsy } from "./autopsy";
 
 /**
  * The whole navigation model, derived at build time.
@@ -253,6 +254,9 @@ export function labels(): Record<string, string> {
   // is not in the manifest and is named from the one other place its name
   // exists: the page's own metadata title.
   out["/style/zoo"] = "Widget zoo";
+
+  // A game's page in the autopsy, named by the record that lists the games.
+  for (const g of autopsy().games) out[`/autopsy/games/${g.key}`] = g.name;
 
   // The tracks' sub-landings, from the one place they are named.
   for (const tr of TRACKS) if (!(tr.path in out)) out[tr.path] = tr.name.en;

@@ -108,10 +108,16 @@ const EVIDENCE: Record<string, Record<Lang, string>> = {
 /** One pattern's evidence as a reader's line: every measured thing with its label. */
 export function evidenceText(lang: Lang, evidence: Record<string, number | string>): string {
   const parts: string[] = [];
-  for (const [k, v] of Object.entries(evidence)) {
-    if (k === "by") continue; // who found it: the matchers, on every row
-    const label = EVIDENCE[k];
-    if (!label) throw new Error(`app/[lang]/autopsy/words.tsx has no label for the evidence ${JSON.stringify(k)}`);
+  for (const k of Object.keys(evidence)) {
+    // "by" is who found it: the matchers, on every row.
+    if (k !== "by" && !EVIDENCE[k]) throw new Error(`app/[lang]/autopsy/words.tsx has no label for the evidence ${JSON.stringify(k)}`);
+  }
+  // In the order the labels are written above, so a line reads as a
+  // sentence would ("tables 5, jumps through them 16,167") whatever order
+  // the record's keys came in.
+  for (const [k, label] of Object.entries(EVIDENCE)) {
+    const v = evidence[k];
+    if (v === undefined) continue;
     parts.push(`${label[lang]} ${typeof v === "number" ? v.toLocaleString(lang) : v}`);
   }
   return parts.join(lang === "ja" ? "、" : ", ");
