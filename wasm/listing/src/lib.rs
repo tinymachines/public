@@ -7,6 +7,7 @@
 
 pub mod asm;
 pub mod disasm;
+pub mod game;
 pub mod ines;
 pub mod matchers;
 pub mod model;

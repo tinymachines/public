@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use listing::model::Item;
+use serde_json::Value;
 use listing::{asm, ines, text};
 
 const SOURCE: &str = "\
@@ -187,6 +188,24 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(lines[t + 1].starts_with(&format!("    .word dispatch_{:04X}", a("state_a"))) && lines[t + 1].ends_with("; ran 7"), "{}", lines[t + 1]);
     assert_eq!(lines[t + 2].trim(), format!(".word ${:04X}", a("state_b")));
     assert!(lines[t + 3].starts_with(&format!("    .word dispatch_{:04X}", a("state_c"))) && lines[t + 3].ends_with("; ran 3"), "{}", lines[t + 3]);
+    // The model reads the same marks back: every routine the run
+    // entered with its patterns, the table with its words, the RAM.
+    let g = listing::game::game(&text::parse(&src).unwrap()).unwrap();
+    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 10, "{g}");
+    let poll = g["routines"].as_array().unwrap().iter().find(|r| r["name"] == format!("routine_{:04X}", a("poll"))).unwrap();
+    assert_eq!(poll["kind"], "call");
+    assert_eq!(poll["entered"], 10);
+    assert_eq!(poll["is"][0]["pattern"], "pad-poll");
+    assert_eq!(poll["is"][0]["evidence"]["reads-per-entry"], 8);
+    assert_eq!(g["patterns"].as_object().unwrap().len(), 12);
+    assert_eq!(g["patterns"]["sprite-writer"], 1);
+    assert_eq!(g["tables"][0]["entries"], 3);
+    assert_eq!(g["tables"][0]["words"][0]["ran"], 7);
+    assert_eq!(g["tables"][0]["words"][1]["ran"], Value::Null);
+    assert_eq!(g["arrays"][0]["slots"], 8);
+    assert_eq!(g["variables"][0]["writers"][0]["count"], 80);
+    assert_eq!(g["banks"][0]["of"], 32768);
+    assert_eq!(g["run"]["frames"], 10);
     // And the walk did not fall through the JSR into the table: nothing
     // between that JSR and the first entry is an instruction.
     let l = text::parse(&src).unwrap();

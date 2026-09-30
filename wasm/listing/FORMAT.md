@@ -248,6 +248,8 @@ holds, because a name changes no bytes.
     listing check FILE ROM.nes     assemble FILE and hold it to ROM.nes, byte for byte
     listing render FILE            FILE with addresses and bytes beside each line
     listing shape FILE             FILE's marks, labels and comments as JSON, none of its bytes
+    listing model FILE             the game model FILE's marks describe, as JSON: routines with
+                                   their patterns, tables, arrays, variables, coverage
     listing rom FILE OUT.nes       assemble FILE into an iNES file
     tools/paths.py ROM.nes CRAWL OUT.lst
                                    trace every script a crawl kept, report each, and fold
@@ -255,6 +257,8 @@ holds, because a name changes no bytes.
     tools/autopsy.py ROM.nes OUTDIR [--steps N]
                                    one dump end to end: crawl, paths, listing, and a
                                    summary in shape only (OUTDIR/summary.json)
+    tools/union.py MODEL.json ...  one line per game and which patterns recur, from
+                                   the model.json files the pipeline wrote
 
 The same functions are exported for the page (`listing_from_rom`,
 `listing_render`, `listing_check`), so the desk can load and render a

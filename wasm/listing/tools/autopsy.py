@@ -6,7 +6,8 @@ OUTDIR, which for a commercial dump is somewhere no repository sees.
 
     python3 tools/autopsy.py ROM.nes OUTDIR [--steps N] [--nes DIR] [--jobs N]
 
-Writes OUTDIR/crawl/ (the crawl), OUTDIR/listing.lst, OUTDIR/summary.json
+Writes OUTDIR/crawl/ (the crawl), OUTDIR/listing.lst, OUTDIR/model.json
+(the game model the listing's marks describe, shape only), OUTDIR/summary.json
 and prints the summary as one line. Needs the console repository's
 crawl and script-trace examples built in release, flow's report example
 and this crate's binary (tools/paths.py says how).
@@ -48,6 +49,9 @@ def main():
     with open(out / "paths.log", "w") as log:
         subprocess.run([sys.executable, HERE / "paths.py", rom, crawl, lst, "--nes", nes, "--jobs", str(a.jobs)], check=True, stderr=log, stdout=log)
     text = lst.read_text()
+    listing_bin = HERE / "target/release/listing"
+    model = subprocess.run([listing_bin, "model", lst], check=True, capture_output=True, text=True).stdout
+    (out / "model.json").write_text(model)
     summary = {
         "rom": rom.name,
         "steps": a.steps,
