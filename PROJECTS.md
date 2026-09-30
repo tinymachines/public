@@ -4403,3 +4403,42 @@ wasm face exists, no page calls it, the crate is not in a bundle);
 longer runs on the Pi (the owner's call on moving a dump there); the
 collision test and the scroll; the owner's ergonomics work; the quiet
 machine's speed; the phone flake in `create.spec`.
+
+## Checkpoint, 2026-09-30, before dawn
+
+Not deployed; live stays at 2e8e0b0 (1.0.267). Beta serves 4d1c2c6,
+the tip of main, with the listing bundle boarded there by hand.
+
+- `01e0a44`, `bbaa53a`, `3b51128`, `af18548`, `f5a3bb7`: the scroll
+  writer (twelve rules; the collision test declined, FORMAT.md says
+  why); `listing model FILE`, the game model read from a listing's
+  marks, and `tools/union.py` over the models; `tools/autopsy.py`
+  takes a way-in script and finds its binary from the crate; the poll
+  is eight port reads a frame, not per entry (one game's poll is
+  entered twice a frame).
+- `b6285df`, `9f1a252`: the Listing window on /nes/create: the open
+  recording's cartridge as the file, written in a worker in the
+  browser, read back through the model (coverage, patterns, every
+  routine with its patterns, a routine's lines); the desk's e2e writes
+  the test cartridge's listing and finds its NMI handler, green on
+  beta. Structure only. The bundle is `listing` in
+  build-playground-wasm.py; its record is not in main yet.
+- `4d1c2c6`: the first survey of the shelf in `notes/autopsy.md` step
+  5: all nineteen dumps through the pipeline at 400 cold steps,
+  nineteen models, one table per game and one of what recurs (the
+  poll, the drivers and the painters everywhere; the bank switch in
+  all but the NROM game; the engine in fifteen, the split in six, the
+  random byte in three).
+- The trees settled at the owner's word: nes-bench `d0f67b9` (the
+  6502 session's pad-ble work, committed with its blessing, packages
+  rebuilt clean by the hook), nes and public pushed, every sibling at
+  its remote.
+
+Blocking the next deploy: `build-playground-wasm.py --check` will
+refuse, because wasm/flow changed and data/flow.json records the tree
+it was built from. A re-board of flow (and of listing, whose record
+then joins the tree) swaps the served bundles, so it waits on the
+owner. Open besides: the wait-on-a-flag main loop rule and the
+collision test through the flow of values; longer runs on the Pi; the
+owner's ergonomics work; the quiet machine's speed; the phone flake in
+`create.spec`.
