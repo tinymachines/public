@@ -155,18 +155,22 @@ come free once the model exists:
 ## The target, and one fact about it
 
 The shelf holds two dumps under the name. `Super Mario Bros. + Duck
-Hunt (USA)` (dump 55, GxROM, 64 KiB PRG and 16 KiB CHR) draws and is
-the record the dissection was made from. `Super Mario Bros.` (dump 54,
-mapper 0, 32 KiB and 8 KiB) matched nothing in the reader's database,
-and `nes-bench/docs/cartridge.md` records why: the reader identified
-the multicart as plain Super Mario Bros. from a 512-byte window and
-read one bank of the two-bank board, the other half `FF`. The boards
-report lists it as the one dump of twenty unaccounted for and says it
-wants dumping again. Whether a standalone Super Mario Bros. cartridge
-is in the drawer, or dump 54 is the multicart misread, is the owner's
-to say; either way **the game that plays today is the one inside the
-multicart**, and in its bank its code sits at the same addresses a
-standalone cartridge would put it, so the autopsy carries over.
+Hunt (USA)` (dump 55, GxROM, 64 KiB PRG and 16 KiB CHR) is an original
+cartridge, draws, and is the record the dissection was made from.
+`Super Mario Bros.` (dump 54, mapper 0, 32 KiB and 8 KiB) matched
+nothing in the reader's database, and on 2026-09-29 the bytes said why:
+it is byte for byte bank 0 of dump 55, PRG and CHR, the reader having
+identified the board as plain Super Mario Bros. and read one bank of
+two. Its first nine bytes are the board's bank switch (`SEI`, a write
+selecting the menu's bank, a jump to itself) standing where the game's
+reset was; as an NROM image the switch has nothing to switch and the
+program loops there forever, which is the "blank screen" the boards
+report had. So there is no standalone cartridge to read again, the
+twenty dumps are accounted for, and **the patient is the game inside
+the multicart**, entered the way the menu enters it, nine bytes past
+the vector. In its bank the code sits at the addresses a standalone
+cartridge would put it, so nothing about the autopsy depends on which
+image it runs from.
 
 ## The constraints that carry
 
