@@ -172,6 +172,25 @@ fn a_run_lays_its_marks_over_the_walk() {
 }
 
 #[test]
+fn a_second_interrupt_entry_keeps_its_own_name() {
+    // A run that entered an IRQ at two addresses (an interrupt taken
+    // somewhere the vector does not point, as one dump's did): the
+    // second cannot also be `irq`, or the file defines a label twice.
+    let report = serde_json::json!({
+        "prg_len": 32768, "frames": 5, "instructions": 10,
+        "sites": [{"key": 0x11, "addr": 0x8011, "count": 2}, {"key": 0x16, "addr": 0x8016, "count": 3}],
+        "routines": [
+            {"key": 0x11, "addr": 0x8011, "entry": "irq", "entered": 2},
+            {"key": 0x16, "addr": 0x8016, "entry": "irq", "entered": 3}
+        ]
+    });
+    let src = listing::from_rom_and_run(TESTCART, &report.to_string()).unwrap();
+    listing::check(&src, TESTCART).unwrap_or_else(|e| panic!("{e}"));
+    assert!(src.contains("\nirq:\n"), "{src}");
+    assert!(src.contains("\nirq_8016:\n"), "{src}");
+}
+
+#[test]
 fn two_runs_merge_into_one_overlay() {
     let a = serde_json::json!({"prg_len": 32768, "frames": 5, "instructions": 3,
         "sites": [{"key": 0, "addr": 0x8000, "count": 1}, {"key": 0x7FF1, "addr": 0xFFF1, "count": 2}],

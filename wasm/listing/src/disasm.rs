@@ -257,6 +257,10 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         }
         // The vectors are words, never code.
         let mut label_names: BTreeMap<u16, String> = BTreeMap::new();
+        // One name, one address: a second `irq` (a run entered an
+        // interrupt somewhere the vector does not point) carries its
+        // address.
+        let mut used: BTreeSet<String> = BTreeSet::new();
         for (&t, &kind) in &walk.targets {
             let Some(i) = walk.addr(t) else { continue };
             if walk.claim[i] == 2 || in_table(t) {
@@ -271,7 +275,10 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             };
             // Labels are one namespace for the whole file, so on a board
             // with more than one PRG bank each carries its bank's number.
-            label_names.insert(t, if n_prg > 1 { format!("b{index}_{name}") } else { name });
+            let name = if n_prg > 1 { format!("b{index}_{name}") } else { name };
+            let name = if used.contains(&name) { format!("{name}_{t:04X}") } else { name };
+            used.insert(name.clone());
+            label_names.insert(t, name);
         }
         // A jump engine's table: the words after its JSR, as far as the
         // run saw entries taken (a stray word past the last one is never
