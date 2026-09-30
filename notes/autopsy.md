@@ -209,8 +209,16 @@ image it runs from.
    (all nineteen dumps and our six own ROMs do). `listing from` writes
    the first one by a static walk from the vectors (code is what the
    walk reaches, the rest is honest `.byte`), `check`, `render`, `shape`
-   (marks without bytes) and `rom`. Not yet: the trace's coverage laid
-   over it (`@ran`, `@unreached`), the flow reader's routines as marks,
+   (marks without bytes) and `rom`. *Same night: a run laid over it.*
+   `listing from ROM RUN.json` takes the flow report of a trace (the
+   console repo's `script-trace` example writes one from a pad script,
+   660 frames in 9 s) and marks every executed stretch `@ran N`, the
+   walk's code the run never touched `@unreached`, the run's routines
+   `@routine ... entered=N by=run`, and the coverage per bank and for
+   the file. **The first coverage number:** the dissection's 660-frame
+   script executes 7533 of the 32768 bytes of the Super Mario Bros.
+   bank (23 percent) and 850 of the menu bank's; the walk alone knew
+   2683 instructions of the multicart, the run makes it 9041. Not yet:
    `@table` and `@var`, and the desk loading it (the wasm face exists,
    no page calls it, and the crate is not boarded into a bundle).
 2. **The crawl.** From the title's moment, the coverage-guided search,

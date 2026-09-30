@@ -11,6 +11,7 @@ use flow::ops::{self, Mode};
 
 use crate::ines::Rom;
 use crate::model::{Bank, Header, Item, Kind, Listing, Operand};
+use crate::run::Run;
 
 /// How the board lays its PRG out, as far as a static listing can say:
 /// each bank's usual origin, its offset and length in the PRG, and
@@ -79,6 +80,8 @@ struct Walk<'a> {
     org: u16,
     /// Per byte: 0 free, 1 an opcode, 2 inside an instruction.
     claim: Vec<u8>,
+    /// Per byte: this opcode's successors have been queued already.
+    done: Vec<bool>,
     targets: BTreeMap<u16, &'static str>,
     entries: Vec<(u16, &'static str)>,
 }
@@ -99,18 +102,22 @@ impl<'a> Walk<'a> {
         while let Some(a) = work.pop() {
             let Some(mut i) = self.addr(a) else { continue };
             loop {
-                if self.claim[i] != 0 {
+                // Inside another instruction, or already walked from here.
+                if self.claim[i] == 2 || self.done[i] {
                     break;
                 }
                 let op = self.bytes[i];
                 let n = ops::len(op) as usize;
-                if i + n > self.bytes.len() || !ops::documented(op) || (1..n).any(|k| self.claim[i + k] != 0) {
-                    break;
+                if self.claim[i] == 0 {
+                    if i + n > self.bytes.len() || !ops::documented(op) || (1..n).any(|k| self.claim[i + k] != 0) {
+                        break;
+                    }
+                    self.claim[i] = 1;
+                    for k in 1..n {
+                        self.claim[i + k] = 2;
+                    }
                 }
-                self.claim[i] = 1;
-                for k in 1..n {
-                    self.claim[i + k] = 2;
-                }
+                self.done[i] = true;
                 let at = self.org.wrapping_add(i as u16);
                 let b1 = self.bytes.get(i + 1).copied().unwrap_or(0);
                 let b2 = self.bytes.get(i + 2).copied().unwrap_or(0);
@@ -143,6 +150,16 @@ impl<'a> Walk<'a> {
 }
 
 pub fn listing(rom: &Rom) -> Listing {
+    listing_with(rom, None)
+}
+
+/// The listing with a run laid over the walk: every instruction the run
+/// executed is code whatever the walk thought, its count is written as
+/// `@ran` at the start of each stretch of equal counts, code the walk
+/// found that the run never reached is marked `@unreached`, the run's
+/// routines are `@routine ... by=run`, and each bank and the file say
+/// how much of the PRG was executed.
+pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
     let header = Header {
         sha256: rom.sha256.clone(),
         mapper: rom.mapper,
@@ -152,12 +169,16 @@ pub fn listing(rom: &Rom) -> Listing {
     };
     let mut banks = Vec::new();
     let mut items = Vec::new();
+    if let Some(r) = run {
+        let executed: usize = r.sites.iter().map(|(&o, _)| ops::len(rom.prg[o]) as usize).sum();
+        items.push(Item::Directive { name: "run".into(), rest: format!("frames={} instructions={} executed={executed} of={} by=run", r.frames, r.instructions, rom.prg.len()) });
+    }
     let prg = prg_banks(rom);
     let n_prg = prg.len();
     for (index, Layout { org, offset, len, fixed }) in prg.into_iter().enumerate() {
         banks.push(Bank { kind: Kind::Prg, index, org, offset, len, fixed, first: items.len() });
         let bytes = &rom.prg[offset..offset + len];
-        let mut walk = Walk { bytes, org, claim: vec![0; len], targets: BTreeMap::new(), entries: Vec::new() };
+        let mut walk = Walk { bytes, org, claim: vec![0; len], done: vec![false; len], targets: BTreeMap::new(), entries: Vec::new() };
         // The vectors, when this bank holds them.
         let has_vectors = org as usize + len == 0x10000;
         let vec_at = len.saturating_sub(6);
@@ -174,9 +195,46 @@ pub fn listing(rom: &Rom) -> Listing {
                 }
             }
         }
+        let sites = run.map(|r| r.in_bank(offset, len)).unwrap_or_default();
+        // The run's instructions are ground truth: claim them first, one
+        // at a time (no following), so the walk cannot decode across them
+        // differently.
+        for (&o, _) in &sites {
+            if walk.claim[o] == 0 {
+                let op = bytes[o];
+                let n = ops::len(op) as usize;
+                // An undocumented opcode stays bytes even when the run
+                // executed it (FORMAT.md: the 151 are the vocabulary).
+                if ops::documented(op) && o + n <= len && (1..n).all(|k| walk.claim[o + k] == 0) {
+                    walk.claim[o] = 1;
+                    for k in 1..n {
+                        walk.claim[o + k] = 2;
+                    }
+                }
+            }
+        }
         for (v, name) in walk.entries.clone() {
             walk.targets.insert(v, name);
             walk.follow(v);
+        }
+        // And from every run site, so what a run reached statically
+        // reaches on (the targets it names get labels).
+        for (&o, _) in &sites {
+            walk.follow(org.wrapping_add(o as u16));
+        }
+        let run_routines: BTreeMap<u16, &crate::run::Routine> = run
+            .map(|r| r.routines.iter().filter(|x| x.offset >= offset && x.offset < offset + len).map(|x| (org.wrapping_add((x.offset - offset) as u16), x)).collect())
+            .unwrap_or_default();
+        for (&a, r) in &run_routines {
+            let kind: &'static str = match r.entry.as_str() {
+                "reset" => "reset",
+                "nmi" => "nmi",
+                "irq" => "irq",
+                "brk" => "brk",
+                "dispatch" => "dispatch",
+                _ => "routine",
+            };
+            walk.targets.entry(a).or_insert(kind);
         }
         // The vectors are words, never code.
         let mut label_names: BTreeMap<u16, String> = BTreeMap::new();
@@ -185,7 +243,13 @@ pub fn listing(rom: &Rom) -> Listing {
             if walk.claim[i] == 2 || in_table(t) {
                 continue; // inside an instruction: no line to hang a label on
             }
-            let name = if kind == "at" { format!("at_{t:04X}") } else if kind == "routine" { format!("routine_{t:04X}") } else { kind.to_string() };
+            let name = match kind {
+                "at" => format!("at_{t:04X}"),
+                "routine" => format!("routine_{t:04X}"),
+                "dispatch" => format!("dispatch_{t:04X}"),
+                "brk" => format!("brk_{t:04X}"),
+                _ => kind.to_string(),
+            };
             // Labels are one namespace for the whole file, so on a board
             // with more than one PRG bank each carries its bank's number.
             label_names.insert(t, if n_prg > 1 { format!("b{index}_{name}") } else { name });
@@ -198,8 +262,13 @@ pub fn listing(rom: &Rom) -> Listing {
                 format!("from {}", walk.entries.iter().map(|(v, n)| format!("{n}=${v:04X}")).collect::<Vec<_>>().join(" "))
             },
         });
+        if run.is_some() {
+            let executed: usize = sites.keys().map(|&o| ops::len(bytes[o]) as usize).sum();
+            items.push(Item::Directive { name: "coverage".into(), rest: format!("executed={executed} of={len} sites={} by=run", sites.len()) });
+        }
+        let mut last_count: Option<u64> = None;
         let mut i = 0;
-        let mut run: Vec<u8> = Vec::new();
+        let mut run_bytes: Vec<u8> = Vec::new();
         let flush = |run: &mut Vec<u8>, items: &mut Vec<Item>| {
             for chunk in run.chunks(16) {
                 items.push(Item::Bytes { bytes: chunk.to_vec(), comment: None });
@@ -209,16 +278,21 @@ pub fn listing(rom: &Rom) -> Listing {
         while i < len {
             let at = org.wrapping_add(i as u16);
             if let Some(name) = label_names.get(&at) {
-                flush(&mut run, &mut items);
+                flush(&mut run_bytes, &mut items);
+                last_count = None;
                 if let Some(kind) = walk.targets.get(&at) {
                     if *kind != "at" {
-                        items.push(Item::Directive { name: "routine".into(), rest: format!("{name} kind={} by=walk", if *kind == "routine" { "call" } else { kind }) });
+                        let kind_word = if *kind == "routine" { "call" } else { kind };
+                        match run_routines.get(&at) {
+                            Some(r) => items.push(Item::Directive { name: "routine".into(), rest: format!("{name} kind={kind_word} entered={} by=run", r.entered) }),
+                            None => items.push(Item::Directive { name: "routine".into(), rest: format!("{name} kind={kind_word} by=walk") }),
+                        }
                     }
                 }
                 items.push(Item::Label(name.clone()));
             }
             if has_vectors && i >= vec_at {
-                flush(&mut run, &mut items);
+                flush(&mut run_bytes, &mut items);
                 if i == vec_at {
                     items.push(Item::Directive { name: "vectors".into(), rest: String::new() });
                 }
@@ -229,7 +303,18 @@ pub fn listing(rom: &Rom) -> Listing {
                 continue;
             }
             if walk.claim[i] == 1 {
-                flush(&mut run, &mut items);
+                flush(&mut run_bytes, &mut items);
+                if run.is_some() {
+                    let count = sites.get(&i).map_or(0, |s| s.count);
+                    if last_count != Some(count) {
+                        if count == 0 {
+                            items.push(Item::Directive { name: "unreached".into(), rest: "by=run".into() });
+                        } else {
+                            items.push(Item::Directive { name: "ran".into(), rest: format!("{count} by=run") });
+                        }
+                        last_count = Some(count);
+                    }
+                }
                 let op = bytes[i];
                 let n = ops::len(op) as usize;
                 let b1 = bytes.get(i + 1).copied().unwrap_or(0);
@@ -251,14 +336,15 @@ pub fn listing(rom: &Rom) -> Listing {
                 items.push(Item::Instr { op, operand: Operand { mode, value, label }, comment: None });
                 i += n;
             } else {
-                run.push(bytes[i]);
+                last_count = None;
+                run_bytes.push(bytes[i]);
                 i += 1;
-                if run.len() == 16 {
-                    flush(&mut run, &mut items);
+                if run_bytes.len() == 16 {
+                    flush(&mut run_bytes, &mut items);
                 }
             }
         }
-        flush(&mut run, &mut items);
+        flush(&mut run_bytes, &mut items);
     }
     if !rom.chr.is_empty() {
         let n = rom.chr.len() / 8192;

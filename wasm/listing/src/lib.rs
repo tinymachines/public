@@ -9,6 +9,7 @@ pub mod disasm;
 pub mod ines;
 pub mod model;
 pub mod render;
+pub mod run;
 pub mod shape;
 pub mod text;
 
@@ -16,6 +17,14 @@ pub mod text;
 pub fn from_rom(bytes: &[u8]) -> Result<String, String> {
     let rom = ines::parse(bytes)?;
     Ok(text::write(&disasm::listing(&rom)))
+}
+
+/// A ROM and a flow report of it running, to a listing with the run
+/// laid over the walk.
+pub fn from_rom_and_run(bytes: &[u8], report: &str) -> Result<String, String> {
+    let rom = ines::parse(bytes)?;
+    let run = run::Run::from_report(report, rom.prg.len())?;
+    Ok(text::write(&disasm::listing_with(&rom, Some(&run))))
 }
 
 /// Does the listing assemble to exactly this ROM? The error names the

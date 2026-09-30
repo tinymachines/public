@@ -130,16 +130,37 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | mark | meaning |
 |---|---|
 | `@walk from reset=$8000 nmi=$8082 irq=$FFF0` | what the static walk started from in this bank; `from nothing` when no vector lands in it |
-| `@routine name kind=reset\|nmi\|irq\|call\|dispatch by=…` | the label that follows is a routine's entry, and how it is entered |
+| `@routine name kind=reset\|nmi\|irq\|brk\|call\|dispatch [entered=N] by=…` | the label that follows is a routine's entry, how it is entered, and from a run how many times |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
+| `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
+| `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
+| `@ran N by=run` | the instructions from here on ran `N` times each, until the next `@ran`, `@unreached`, label or data |
+| `@unreached by=run` | the instructions from here on are code the walk found and the run never executed |
+
+Coverage is the number the autopsy is measured by: `executed` counts
+the bytes of every instruction the run executed, and `of` is the whole
+bank or PRG, so a game whose data is half its ROM never reads as
+fully covered, which is the point. What the run did not reach is
+still listed as the walk left it, and the marks say which is which.
 
 Marks the autopsy will add as it learns them, in the same shape:
 `@table` (a run of data the code indexes, its width and count),
 `@var` (a RAM address, its name and width, who reads and writes it),
 `@pattern` (a stretch that matches an encyclopedia entry, with the
-evidence), `@ran` (how often a run executed a line), `@unreached`.
-Each is a comment, so a listing carrying marks a tool does not yet
-know still assembles.
+evidence). Each is a comment, so a listing carrying marks a tool does
+not yet know still assembles.
+
+## What a run adds
+
+`listing from ROM.nes REPORT.json` takes the flow report of a trace
+(`wasm/flow`, from the console's replay or from the console repo's
+`script-trace` example) and lays it over the walk. Every instruction
+the run executed is code, whatever the walk thought, and the walk goes
+on from each of them; the run's routines and how they were entered
+become `@routine ... by=run`; each stretch of instructions gets its
+count; the header and each bank say how much was executed. The report
+must be of the same PRG size or it is refused. Code the run executed
+from RAM has no place in a listing of the ROM and is left out.
 
 ## What the static walk writes
 
@@ -161,6 +182,7 @@ holds, because a name changes no bytes.
 ## The tools
 
     listing from ROM.nes           the first listing, to stdout
+    listing from ROM.nes RUN.json  the same, with a flow report's run laid over it
     listing check FILE ROM.nes     assemble FILE and hold it to ROM.nes, byte for byte
     listing render FILE            FILE with addresses and bytes beside each line
     listing shape FILE             FILE's marks, labels and comments as JSON, none of its bytes

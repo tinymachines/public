@@ -133,3 +133,40 @@ fn brk_carries_its_second_byte() {
     assert!(out.contains("    BRK #$06\n"), "{out}");
     assert_eq!(asm::assemble(&text::parse(&out).unwrap()).unwrap().prg, rom.prg);
 }
+
+#[test]
+fn a_run_lays_its_marks_over_the_walk() {
+    // A made-up report: the test cartridge's reset ran 1 time, its first
+    // three instructions ran once each, and one NOP the walk never
+    // reaches (the $EA fill before the vectors, offset $7FF1) ran 7 times.
+    let rom = ines::parse(TESTCART).unwrap();
+    let plain = disasm::listing(&rom);
+    let walked: Vec<usize> = plain.items.iter().enumerate().filter(|(_, i)| matches!(i, listing::model::Item::Instr { .. })).map(|(k, _)| k).collect();
+    assert!(walked.len() > 3);
+    let report = serde_json::json!({
+        "prg_len": 32768, "frames": 5, "instructions": 10,
+        "sites": [
+            {"key": 0, "addr": 0x8000, "count": 1},
+            {"key": 1, "addr": 0x8001, "count": 1},
+            {"key": 3, "addr": 0x8003, "count": 1},
+            {"key": 0x7FF1, "addr": 0xFFF1, "count": 7},
+            {"key": 70000, "addr": 0x0300, "count": 2}
+        ],
+        "routines": [{"key": 0, "addr": 0x8000, "entry": "reset", "entered": 1}]
+    });
+    let src = listing::from_rom_and_run(TESTCART, &report.to_string()).unwrap();
+    listing::check(&src, TESTCART).unwrap();
+    assert_eq!(rom.prg[0x7FF1], 0xEA, "the fixture's fill byte moved; pick another unreached NOP");
+    assert!(src.contains(";; @run frames=5 instructions=10 executed=7 of=32768 by=run\n"), "{}", &src[..300]);
+    assert!(src.contains(";; @coverage executed=7 of=32768 sites=4 by=run\n"));
+    assert!(src.contains(";; @routine reset kind=reset entered=1 by=run\n"));
+    assert!(src.contains(";; @ran 1 by=run\n"));
+    assert!(src.contains(";; @unreached by=run\n"));
+    assert!(src.contains(";; @ran 7 by=run\n"), "the instruction the run alone reached is code with its count");
+    let with_run = text::parse(&src).unwrap();
+    let n_run = with_run.items.iter().filter(|i| matches!(i, listing::model::Item::Instr { .. })).count();
+    assert!(n_run > walked.len(), "the run adds an instruction the walk did not have");
+    // A report of another PRG size is refused.
+    let e = listing::from_rom_and_run(TESTCART, &serde_json::json!({"prg_len": 16384, "sites": []}).to_string()).unwrap_err();
+    assert!(e.contains("16384-byte PRG"), "{e}");
+}
