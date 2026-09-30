@@ -196,7 +196,7 @@ mark.
 
 | pattern | the rule, and the evidence written |
 |---|---|
-| `pad-poll` | a routine that read `$4016` or `$4017` a multiple of eight times per entry (one read per button): `port= reads-per-entry= strobes-per-entry=` (writes of `$4016` per entry, 0 when the strobe is elsewhere) |
+| `pad-poll` | a routine that read `$4016` or `$4017` at least eight times (one per button) for every frame it ran: `port= reads-per-frame= strobes-per-frame=` (writes of `$4016` per frame, 0 when the strobe is elsewhere). Per frame, not per entry: one game's poll is entered twice a frame and reads four times each |
 | `jump-engine` | the routine the run's dispatching `JSR`s call: `tables=` how many call sites, `dispatches=` how many times it dispatched |
 | `idle-spin` | a loop of one instruction the run counted as idle: `iterations= per-frame=` |
 | `game-loop-in-nmi` | when there is an idle spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |

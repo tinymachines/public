@@ -167,7 +167,7 @@ fn the_matchers_name_what_the_run_saw() {
     let src = listing::from_rom_and_run(&image, &report.to_string()).unwrap();
     listing::check(&src, &image).unwrap();
     let a = |n: &str| labels[n];
-    assert!(src.contains(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n"), "{src}");
+    assert!(src.contains(";; @is pad-poll port=$4016 reads-per-frame=8 strobes-per-frame=2 by=match\n"), "{src}");
     assert!(src.contains(&format!(";; @is jump-engine tables=1 dispatches=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("engine"))), "{src}");
     assert!(src.contains(&format!(";; @is idle-spin iterations=50000 per-frame=5000 by=match\n\nat_{:04X}:\n", a("spin"))), "{src}");
     assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @is scroll-writer writes-in-blank=10 frames=10 by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
@@ -176,7 +176,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(&format!(";; @is sprite-0-split scroll-writes-in-picture=20 status-reads-in-picture=200 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("split"))), "{src}");
     assert!(src.contains(";; @is bank-switch writes=1 in-picture=0 in-blank=1 by=match\n;; @routine reset kind=reset entered=1 by=run\n"), "{src}");
     assert!(src.contains(&format!(";; @is palette-writer writes=2 frames=10 by=match\n;; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X}", a("drain"))), "{src}");
-    assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n;; @is sprite-writer oam-writes=40 frames=10 by=match\n;; @routine routine_{:04X}", a("poll"))), "{src}");
+    assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-frame=8 strobes-per-frame=2 by=match\n;; @is sprite-writer oam-writes=40 frames=10 by=match\n;; @routine routine_{:04X}", a("poll"))), "{src}");
     assert!(src.contains(&format!(";; @is random-byte bytes=$0010,$0011 shifts=2 eors=1 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("random"))), "{src}");
     assert_eq!(src.matches(";; @is ").count(), 12, "one mark per pattern, nothing else matched");
     assert!(src.contains(&format!(";; @ram variables=1 arrays=1 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
@@ -196,7 +196,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert_eq!(poll["kind"], "call");
     assert_eq!(poll["entered"], 10);
     assert_eq!(poll["is"][0]["pattern"], "pad-poll");
-    assert_eq!(poll["is"][0]["evidence"]["reads-per-entry"], 8);
+    assert_eq!(poll["is"][0]["evidence"]["reads-per-frame"], 8);
     assert_eq!(g["patterns"].as_object().unwrap().len(), 12);
     assert_eq!(g["patterns"]["sprite-writer"], 1);
     assert_eq!(g["tables"][0]["entries"], 3);

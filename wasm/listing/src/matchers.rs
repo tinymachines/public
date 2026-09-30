@@ -46,17 +46,21 @@ fn most(run: &Run, is: impl Fn(u16) -> bool) -> Option<(usize, u64, u32)> {
 
 pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     let mut out = Vec::new();
-    // The poll routine: eight reads of a pad port per entry (one per
-    // button), and the strobe, when it is in the same routine.
+    // The poll routine: eight reads of a pad port (one per button) for
+    // every frame it ran, and the strobe, when it is in the same
+    // routine. Per frame, not per entry: one game's poll is entered
+    // twice a frame and reads four times each, another's polls thrice
+    // over to outvote the DMC's glitch.
     for r in &run.routines {
-        if r.entered == 0 {
+        if r.frames == 0 {
             continue;
         }
+        let frames = r.frames as u64;
         for port in [0x4016u16, 0x4017] {
             let (rd, _) = touched(r, port);
-            if rd > 0 && rd % r.entered == 0 && rd / r.entered >= 8 {
-                let strobes = touched(r, 0x4016).1 / r.entered;
-                out.push(Mark { offset: r.offset, rest: format!("pad-poll port=${port:04X} reads-per-entry={} strobes-per-entry={strobes} by=match", rd / r.entered) });
+            if rd >= 8 * frames {
+                let strobes = touched(r, 0x4016).1 / frames;
+                out.push(Mark { offset: r.offset, rest: format!("pad-poll port=${port:04X} reads-per-frame={} strobes-per-frame={strobes} by=match", rd / frames) });
             }
         }
     }
