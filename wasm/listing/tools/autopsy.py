@@ -55,7 +55,7 @@ def main():
     with open(out / "paths.log", "w") as log:
         subprocess.run([sys.executable, HERE / "paths.py", rom, crawl, lst, "--nes", nes, "--jobs", str(a.jobs)], check=True, stderr=log, stdout=log)
     text = lst.read_text()
-    listing_bin = HERE / "target/release/listing"
+    listing_bin = HERE.parent / "target/release/listing"
     model = subprocess.run([listing_bin, "model", lst], check=True, capture_output=True, text=True).stdout
     (out / "model.json").write_text(model)
     summary = {
