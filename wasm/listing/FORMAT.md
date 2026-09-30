@@ -130,7 +130,7 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | mark | meaning |
 |---|---|
 | `@walk from reset=$8000 nmi=$8082 irq=$FFF0` | what the static walk started from in this bank; `from nothing` when no vector lands in it |
-| `@routine name kind=reset\|nmi\|irq\|brk\|call\|dispatch [entered=N] by=…` | the label that follows is a routine's entry, how it is entered, and from a run how many times |
+| `@routine name kind=reset\|nmi\|irq\|brk\|call\|dispatch [entered=N] by=…` | the label that follows is a routine's entry, how it is entered, and from a run how many times; with `inside=$XXXX` no label follows: the entry is a byte inside the instruction at that address (code that overlaps itself, the `BIT` skip), which a listing of lines cannot label |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
 | `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
 | `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
@@ -160,8 +160,10 @@ several of them folded into one run (counts add, routines are kept
 once), and lays it over the walk. Every instruction
 the run executed is code, whatever the walk thought, and the walk goes
 on from each of them; the run's routines and how they were entered
-become `@routine ... by=run`; each stretch of instructions gets its
-count; the header and each bank say how much was executed. The report
+become `@routine ... by=run`, and an address the walk only knew as a
+branch target takes the run's name and kind; each stretch of
+instructions gets its count; the header and each bank say how much was
+executed. The report
 must be of the same PRG size or it is refused. Code the run executed
 from RAM has no place in a listing of the ROM and is left out.
 
@@ -190,6 +192,9 @@ holds, because a name changes no bytes.
     listing render FILE            FILE with addresses and bytes beside each line
     listing shape FILE             FILE's marks, labels and comments as JSON, none of its bytes
     listing rom FILE OUT.nes       assemble FILE into an iNES file
+    tools/paths.py ROM.nes CRAWL OUT.lst
+                                   trace every script a crawl kept, report each, and fold
+                                   them all with the crawl's coverage into one listing
 
 The same functions are exported for the page (`listing_from_rom`,
 `listing_render`, `listing_check`), so the desk can load and render a

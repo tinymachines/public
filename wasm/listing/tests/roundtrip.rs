@@ -186,3 +186,33 @@ fn two_runs_merge_into_one_overlay() {
     assert!(src.contains(";; @ran 5 by=run\n    SEI\n"), "the counts add");
     assert!(src.contains(";; @ran 2 by=run\n    NOP\n"));
 }
+
+#[test]
+fn a_run_names_a_routine_the_walk_only_branched_to_and_one_hidden_inside_an_instruction() {
+    // The walk sees $8011 as a branch target (at_8011). A run that entered
+    // it as a routine knows more, and its name and mark win. $8002 is the
+    // operand byte of LDA #$40 at $8001: a routine entered there (the
+    // BIT-skip trick) has no line to hang a label on, so its mark says
+    // which instruction it hides in, and no label is emitted.
+    let report = serde_json::json!({
+        "prg_len": 32768, "frames": 5, "instructions": 10,
+        "sites": [
+            {"key": 0, "addr": 0x8000, "count": 1},
+            {"key": 1, "addr": 0x8001, "count": 1},
+            {"key": 2, "addr": 0x8002, "count": 5},
+            {"key": 0x11, "addr": 0x8011, "count": 3}
+        ],
+        "routines": [
+            {"key": 0, "addr": 0x8000, "entry": "reset", "entered": 1},
+            {"key": 0x11, "addr": 0x8011, "entry": "call", "entered": 3},
+            {"key": 2, "addr": 0x8002, "entry": "call", "entered": 5}
+        ]
+    });
+    let src = listing::from_rom_and_run(TESTCART, &report.to_string()).unwrap();
+    listing::check(&src, TESTCART).unwrap();
+    assert!(src.contains(";; @routine routine_8011 kind=call entered=3 by=run\n\nroutine_8011:\n"), "{src}");
+    assert!(src.contains("    BPL routine_8011\n"), "the branch names the routine too");
+    assert!(!src.contains("at_8011"), "the walk's name gave way");
+    assert!(src.contains(";; @routine routine_8002 kind=call entered=5 by=run inside=$8001\n"), "{src}");
+    assert!(!src.contains("routine_8002:"), "no label can sit inside an instruction");
+}

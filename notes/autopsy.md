@@ -230,10 +230,18 @@ image it runs from.
    run.json crawl.json` folds it with a recorded run. First result:
    1600 steps in 555 s reach 5055 sites of the Super Mario Bros. bank,
    every one the dissection's run reached and 1504 more; the bank goes
-   from 23 to 33 percent executed. Not yet: a smarter novelty (the
-   frame counter and the random byte count as new values every step),
-   longer runs on the Pi, and routines from the crawl's paths (run
-   `script-trace` on a kept script and the flow report has them).
+   from 23 to 33 percent executed. Second result: the fifty paths the
+   crawl kept, each traced and reported and all folded onto the
+   listing with the crawl's coverage (`wasm/listing/tools/paths.py`),
+   name 245 routines by how they were entered (198 called, 44 through
+   a dispatch table, 2 NMI, 1 reset) against 191 from the recorded run
+   alone; two of them begin inside another instruction (the `BIT`
+   skip), which the listing marks rather than labels. A sharper
+   novelty (a new RAM value worth less the more values its address has
+   shown, since the frame counter and the random byte take a new value
+   every step) was tried over the same 1600 steps and found less code,
+   5306 sites against 5462, so it stays as a switch and the plain
+   count is the rule. Not yet: longer runs on the Pi.
 3. **The matchers.** The seven patterns as code over the model, each
    with its evidence; then the ones the crawl's coverage makes findable
    (the music driver, the random number, the object slots, the

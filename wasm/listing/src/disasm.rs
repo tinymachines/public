@@ -234,7 +234,12 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 "dispatch" => "dispatch",
                 _ => "routine",
             };
-            walk.targets.entry(a).or_insert(kind);
+            // The walk may only know the address as somewhere a branch
+            // lands; a run that entered it as a routine knows more.
+            let e = walk.targets.entry(a).or_insert(kind);
+            if *e == "at" {
+                *e = kind;
+            }
         }
         // The vectors are words, never code.
         let mut label_names: BTreeMap<u16, String> = BTreeMap::new();
@@ -317,6 +322,21 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 }
                 let op = bytes[i];
                 let n = ops::len(op) as usize;
+                // A routine the run entered at a byte inside this
+                // instruction (code that overlaps, the BIT-skip trick) has
+                // no line to hang a label on; its mark says where it hides.
+                for k in 1..n {
+                    let t = at.wrapping_add(k as u16);
+                    if let Some(r) = run_routines.get(&t) {
+                        let kind_word = match r.entry.as_str() {
+                            "dispatch" => "dispatch",
+                            "brk" => "brk",
+                            _ => "call",
+                        };
+                        let name = if n_prg > 1 { format!("b{index}_routine_{t:04X}") } else { format!("routine_{t:04X}") };
+                        items.push(Item::Directive { name: "routine".into(), rest: format!("{name} kind={kind_word} entered={} by=run inside=${at:04X}", r.entered) });
+                    }
+                }
                 let b1 = bytes.get(i + 1).copied().unwrap_or(0);
                 let b2 = bytes.get(i + 2).copied().unwrap_or(0);
                 let mode = ops::mode(op);
