@@ -4465,3 +4465,28 @@ older tree of `wasm/flow`, so `build-playground-wasm.py --check`
 refuses until flow is re-boarded (and listing boarded, for the Listing
 window). Not placed behind a door yet: the front doors' groups are the
 owner's copy ("The two projects").
+
+## Checkpoint, 2026-09-30, midday: deployed
+
+Deployed as 1.0.267 (a clean tree, so the version stays); live and beta
+serve `3d119c0`. What went live: the autopsy section at /autopsy, the
+Listing window on /nes/create with the listing bundle boarded and the
+flow bundle re-boarded (`data/flow.json`, `data/listing.json`), and the
+Japanese shadows for nes-bench `3775739`.
+
+The first run stopped at verify: this host's local resolver answered a
+LAN address for `6502.tinymachines.ai`, `games` and `halfwave` that no
+longer routes (a network interface on impera took a lease on another
+segment at 12:13 that day, so the host has no address on the old one;
+the site's own nginx and the public address both answered correctly).
+The second run used a process-local curl setting to send those three
+names to this host's nginx and passed every stage. The DNS session then
+pinned the three names to loopback in the host's hosts file, as the
+apex and the other site names already were; the internal DNS records
+that still name the dead address are the owner's call.
+
+Open: the wait-on-a-flag main loop rule and the collision test through
+the flow of values between routines; longer crawls on the Pi with a way
+in per game; /autopsy behind a front door (the doors' groups are the
+owner's copy); the owner's ergonomics work; the quiet machine's speed;
+the phone flake in `create.spec`.
