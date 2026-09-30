@@ -202,13 +202,17 @@ image it runs from.
 
 ## An order that keeps every step useful on its own
 
-1. **The listing.** A Rust reader (the flow crate's sibling, or the
-   flow crate grown) that takes a recording's trace and the ROM and
-   writes the whole-PRG listing keyed by offset, code and data and
-   never-reached marked, with the routines the flow reader already
-   finds. Output: the game model, version 0, as JSON, and a coverage
-   number for the dissection's 660-frame record. Then a CLI that runs
-   the replay itself, so a trace need not cross the browser.
+1. **The listing.** *Built 2026-09-29, first cut: `wasm/listing`, the
+   flow crate's sibling, with `FORMAT.md` as the standard.* A cartridge
+   as assemblable text with marks in its comments; no addresses stored,
+   the check is that the file assembles back to the ROM byte for byte
+   (all nineteen dumps and our six own ROMs do). `listing from` writes
+   the first one by a static walk from the vectors (code is what the
+   walk reaches, the rest is honest `.byte`), `check`, `render`, `shape`
+   (marks without bytes) and `rom`. Not yet: the trace's coverage laid
+   over it (`@ran`, `@unreached`), the flow reader's routines as marks,
+   `@table` and `@var`, and the desk loading it (the wasm face exists,
+   no page calls it, and the crate is not boarded into a bundle).
 2. **The crawl.** From the title's moment, the coverage-guided search,
    with the budget and the dead-end oracle, on the workstation or the
    Pi. The gate is the coverage number rising and the unreached list
