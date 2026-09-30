@@ -203,11 +203,15 @@ mark.
 | `vram-drain` | the same over writes of `$2007`, and where the beam was for them: `in-blank= in-picture=` |
 | `sprite-0-split` | a routine that read `$2002` at least eight times a frame while the picture was drawing (the wait for sprite 0's hit; a wait is many reads) and then wrote `$2005` there, at least every other frame it ran; `$2006` does not count, since a screen drawn with rendering off sets the address in the picture too: `scroll-writes-in-picture= status-reads-in-picture= frames=` |
 | `bank-switch` | a routine that wrote into the ROM's window, which on a board with a register is the mapper: `writes= in-picture= in-blank=` |
+| `palette-writer` | a routine that wrote `$2007` while the PPU's address was in the palette (the report follows the address latch through `$2006`): `writes= frames=` |
+| `sprite-writer` | a routine that wrote into the page of RAM the sprite DMA took most often (the page named to `$4014`): `oam-writes= frames=` |
 
 The report says, per routine, how many of its accesses of each PPU
 register, of `$4014` and of the mapper fell while the picture was
-drawing (lines 0 to 239) and how many in the blank; that is what the
-three above read. The random byte, the object slots, the collision test
+drawing (lines 0 to 239) and how many in the blank, where in VRAM its
+`$2007` writes landed (pattern, name table 0 to 3, palette), and how
+many bytes it wrote into the sprite page; that is what the five above
+read. The random byte, the object slots, the collision test
 and the scroll need the reads per instruction, and come as the report
 grows.
 

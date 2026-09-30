@@ -43,6 +43,12 @@ impl T {
         }
     }
 
+    /// A cycle with the CPU held (the sprite DMA): flag 16.
+    fn held(&mut self, ab: u16, db: u8, read: bool) {
+        let [a0, a1] = ab.to_le_bytes();
+        self.out.extend_from_slice(&[a0, a1, db, (read as u8) | 16, 0, 0, 0, 0]);
+    }
+
     fn jsr(&mut self, at: u16, to: u16) {
         let s = self.s as u16;
         self.ins(at, &[0x20, to as u8, (to >> 8) as u8], &[(0x100 | s, 0, false), (0x100 | (s - 1), 0, false)]);
@@ -246,12 +252,31 @@ fn hardware_accesses_say_whether_the_picture_was_drawing() {
     t.ins_at_line(0x8004, &[0x8d, 0x05, 0x20], &[(0x2005, 0, false)], 250);
     t.ins_at_line(0x8007, &[0xad, 0x02, 0x20], &[(0x2002, 0x40, true)], 100);
     t.ins_at_line(0x800a, &[0x8d, 0x00, 0x80], &[(0x8000, 1, false)], 245);
-    t.ins(0x800d, &[0x4c, 0x0d, 0x80], &[]);
+    // The palette, through the address latch: $2006 twice, $2007 twice;
+    // then the sprite page named to $4014, and one write into it.
+    t.ins(0x800d, &[0xad, 0x02, 0x20], &[(0x2002, 0x00, true)]);
+    t.ins(0x8010, &[0x8d, 0x06, 0x20], &[(0x2006, 0x3f, false)]);
+    t.ins(0x8013, &[0x8d, 0x06, 0x20], &[(0x2006, 0x00, false)]);
+    t.ins(0x8016, &[0x8d, 0x07, 0x20], &[(0x2007, 0x0f, false)]);
+    t.ins(0x8019, &[0x8d, 0x07, 0x20], &[(0x2007, 0x30, false)]);
+    // The DMA halts the CPU on its own write of $4014, so that cycle is
+    // held; the DMA's cycles follow with the pins where they were.
+    t.ins(0x801c, &[0x8d, 0x14, 0x40], &[]);
+    t.held(0x4014, 0x02, false);
+    t.held(0x0200, 0x10, true);
+    t.held(0x2004, 0x10, false);
+    t.held(0x4014, 0x02, false);
+    t.ins(0x801f, &[0x8d, 0x00, 0x02], &[(0x0200, 0x10, false)]);
+    t.ins(0x8022, &[0x4c, 0x22, 0x80], &[]);
     let mut f = flow::Flow::new(0x8000);
     f.feed(&t.out);
     let r: Value = serde_json::from_str(&f.report()).unwrap();
     let reset = routine(&r, "reset", 0x8000);
-    assert_eq!(reset["in_frame"], serde_json::json!([[0x2002, 1, 0], [0x2005, 1, 1], [0x8000, 0, 1]]), "{}", reset["in_frame"]);
+    assert_eq!(reset["in_frame"], serde_json::json!([[0x2002, 2, 0], [0x2005, 1, 1], [0x2006, 2, 0], [0x2007, 2, 0], [0x4014, 1, 0], [0x8000, 0, 1]]), "{}", reset["in_frame"]);
+    assert_eq!(reset["vram"], serde_json::json!([["palette", 2]]), "{}", reset["vram"]);
+    assert_eq!(r["oam_page"], 2);
+    assert_eq!(reset["oam_writes"], 1);
+    assert!(!reset["mem"].as_array().unwrap().iter().any(|m| m[0] == 0x2004), "the DMA's own cycles are not the game's");
 }
 
 #[test]

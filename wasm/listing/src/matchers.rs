@@ -114,6 +114,15 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         if picture + blank > 0 {
             out.push(Mark { offset: r.offset, rest: format!("bank-switch writes={} in-picture={picture} in-blank={blank} by=match", picture + blank) });
         }
+        // Who paints: a routine that wrote $2007 while the PPU's address
+        // was in the palette, and one that wrote into the page the
+        // sprite DMA takes.
+        if let Some((_, n)) = r.vram.iter().find(|v| v.0 == "palette") {
+            out.push(Mark { offset: r.offset, rest: format!("palette-writer writes={n} frames={} by=match", r.frames) });
+        }
+        if r.oam_writes > 0 {
+            out.push(Mark { offset: r.offset, rest: format!("sprite-writer oam-writes={} frames={} by=match", r.oam_writes, r.frames) });
+        }
     }
     out.sort_by(|a, b| a.offset.cmp(&b.offset).then(a.rest.cmp(&b.rest)));
     out

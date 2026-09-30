@@ -33,6 +33,10 @@ pub struct Routine {
     /// registers, $4014, the mapper as $8000). Empty from a report
     /// written before the flow carried it.
     pub in_frame: Vec<(u16, u32, u32)>,
+    /// Writes of $2007 by VRAM region (pattern, name 0 to 3, palette).
+    pub vram: Vec<(String, u32)>,
+    /// Writes into the page the sprite DMA takes.
+    pub oam_writes: u32,
 }
 
 /// A site the run saw choose its successor from a table: a jump
@@ -125,7 +129,16 @@ impl Run {
                     })
                     .collect()
             };
-            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame") });
+            let vram = r["vram"]
+                .as_array()
+                .unwrap_or(&none)
+                .iter()
+                .filter_map(|m| {
+                    let m = m.as_array()?;
+                    Some((m.first()?.as_str()?.to_string(), u(m.get(1)?) as u32))
+                })
+                .collect();
+            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame"), vram, oam_writes: u(&r["oam_writes"]) as u32 });
         }
         for d in v["dispatch"].as_array().unwrap_or(&none) {
             let key = d["key"].as_u64().unwrap_or(u64::MAX) as usize;
@@ -183,6 +196,13 @@ impl Run {
                 Some(x) => {
                     x.entered += r.entered;
                     x.frames += r.frames;
+                    x.oam_writes += r.oam_writes;
+                    for (region, n) in r.vram {
+                        match x.vram.iter_mut().find(|v| v.0 == region) {
+                            Some(v) => v.1 += n,
+                            None => x.vram.push((region, n)),
+                        }
+                    }
                     for (into, from) in [(&mut x.mem, r.mem), (&mut x.in_frame, r.in_frame)] {
                         for (a, p, q) in from {
                             match into.iter_mut().find(|m| m.0 == a) {

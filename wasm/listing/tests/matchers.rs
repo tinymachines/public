@@ -109,7 +109,12 @@ fn the_matchers_name_what_the_run_saw() {
     let prg = &image[16..];
     let at = |n: &str| labels[n] as usize - 0x8000;
     let routine = |id: u64, n: &str, entry: &str, entered: u64, frames: u32, mem: serde_json::Value, in_frame: serde_json::Value| {
-        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame})
+        let (vram, oam) = match n {
+            "drain" => (serde_json::json!([["name 0", 8], ["palette", 2]]), 0),
+            "poll" => (serde_json::json!([]), 40),
+            _ => (serde_json::json!([]), 0),
+        };
+        serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam})
     };
     let mut sites = Vec::new();
     for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 5, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10)] {
@@ -137,7 +142,7 @@ fn the_matchers_name_what_the_run_saw() {
     let src = listing::from_rom_and_run(&image, &report.to_string()).unwrap();
     listing::check(&src, &image).unwrap();
     let a = |n: &str| labels[n];
-    assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("poll"))), "{src}");
+    assert!(src.contains(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n"), "{src}");
     assert!(src.contains(&format!(";; @is jump-engine tables=1 dispatches=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("engine"))), "{src}");
     assert!(src.contains(&format!(";; @is idle-spin iterations=50000 per-frame=5000 by=match\n\nat_{:04X}:\n", a("spin"))), "{src}");
     assert!(src.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n;; @routine nmi kind=nmi entered=10 by=run\n", a("spin"))), "{src}");
@@ -145,7 +150,9 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(&format!(";; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("drain"))), "{src}");
     assert!(src.contains(&format!(";; @is sprite-0-split scroll-writes-in-picture=20 status-reads-in-picture=200 frames=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("split"))), "{src}");
     assert!(src.contains(";; @is bank-switch writes=1 in-picture=0 in-blank=1 by=match\n;; @routine reset kind=reset entered=1 by=run\n"), "{src}");
-    assert_eq!(src.matches(";; @is ").count(), 8, "one mark per pattern, nothing else matched");
+    assert!(src.contains(&format!(";; @is palette-writer writes=2 frames=10 by=match\n;; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine routine_{:04X}", a("drain"))), "{src}");
+    assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-entry=8 strobes-per-entry=2 by=match\n;; @is sprite-writer oam-writes=40 frames=10 by=match\n;; @routine routine_{:04X}", a("poll"))), "{src}");
+    assert_eq!(src.matches(";; @is ").count(), 10, "one mark per pattern, nothing else matched");
     assert!(src.contains(&format!(";; @ram variables=1 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.

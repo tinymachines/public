@@ -101,6 +101,12 @@ struct Routine {
     /// write into the ROM's window, as $8000): accesses while the
     /// picture was drawing (lines 0 to 239) and in the blank.
     in_frame: HashMap<u16, (u32, u32)>,
+    /// Writes of $2007 by the VRAM region the PPU's address was in:
+    /// pattern, name (a table each), palette.
+    vram: HashMap<&'static str, u32>,
+    /// Writes into each page of RAM ($0000 to $07FF), to know the ones
+    /// into the page the sprite DMA takes.
+    ram_pages: [u32; 8],
 }
 
 struct Frame {
@@ -179,6 +185,16 @@ pub struct Flow {
     cycles: u64,
     held: u64,
     records: u64,
+    /// The PPU's address latch as the game drives it: the write toggle
+    /// ($2005 and $2006 share it, a read of $2002 clears it), the high
+    /// byte waiting for its low one, the address, and the step a $2007
+    /// access adds (1 or 32, from $2000 bit 2).
+    ppu_toggle: bool,
+    ppu_hi: u8,
+    vram_addr: u16,
+    vram_step: u16,
+    /// Pages named by writes of $4014, by count.
+    oam_pages: [u32; 256],
 }
 
 impl Flow {
@@ -203,6 +219,11 @@ impl Flow {
             cycles: 0,
             held: 0,
             records: 0,
+            ppu_toggle: false,
+            ppu_hi: 0,
+            vram_addr: 0,
+            vram_step: 1,
+            oam_pages: [0; 256],
         }
     }
 
@@ -231,8 +252,18 @@ impl Flow {
             }
             if flags & F_HELD != 0 {
                 self.held += 1;
+                let first = self.cur.as_ref().is_some_and(|c| c.held == 0);
                 if let Some(c) = self.cur.as_mut() {
                     c.held += 1;
+                }
+                // The CPU's own write of $4014 is the cycle the DMA halts
+                // it on: the one held cycle that is the game's and not
+                // the DMA's, which then holds the pins where they were.
+                if first && flags & F_READ == 0 && ab == 0x4014 {
+                    self.access(ab, db, false);
+                    if let Some(c) = self.cur.as_mut() {
+                        c.cycles -= 1;
+                    }
                 }
                 return;
             }
@@ -264,7 +295,6 @@ impl Flow {
     fn access(&mut self, ab: u16, db: u8, read: bool) {
         let Some(c) = self.cur.as_mut() else { return };
         c.cycles += 1;
-        let _ = db;
         if read {
             if ab >= 0xfffa {
                 c.vector.get_or_insert(ab & 0xfffe);
@@ -291,8 +321,55 @@ impl Flow {
             0x8000..=0xffff => (ab, !read),
             _ => (ab, true),
         };
+        // The PPU's address, followed so a write of $2007 lands somewhere.
+        let vram_region = match (addr, read) {
+            (0x2000, false) => {
+                self.vram_step = if db & 4 != 0 { 32 } else { 1 };
+                None
+            }
+            (0x2002, true) => {
+                self.ppu_toggle = false;
+                None
+            }
+            (0x2005, false) => {
+                self.ppu_toggle = !self.ppu_toggle;
+                None
+            }
+            (0x2006, false) => {
+                if self.ppu_toggle {
+                    self.vram_addr = u16::from_le_bytes([db, self.ppu_hi]) & 0x3fff;
+                } else {
+                    self.ppu_hi = db;
+                }
+                self.ppu_toggle = !self.ppu_toggle;
+                None
+            }
+            (0x2007, _) => {
+                let a = self.vram_addr;
+                self.vram_addr = (a + self.vram_step) & 0x3fff;
+                (!read).then(|| match a {
+                    0x3f00..=0x3fff => "palette",
+                    0x2c00..=0x3eff => "name 3",
+                    0x2800..=0x2bff => "name 2",
+                    0x2400..=0x27ff => "name 1",
+                    0x2000..=0x23ff => "name 0",
+                    _ => "pattern",
+                })
+            }
+            (0x4014, false) => {
+                self.oam_pages[db as usize] += 1;
+                None
+            }
+            _ => None,
+        };
         if routine != u32::MAX {
             let rt = &mut self.routines[routine as usize];
+            if let Some(region) = vram_region {
+                *rt.vram.entry(region).or_insert(0) += 1;
+            }
+            if !read && addr < 0x0800 {
+                rt.ram_pages[(addr >> 8) as usize] += 1;
+            }
             if keep {
                 let e = rt.mem.entry(addr).or_insert((0, 0));
                 if read {
@@ -357,6 +434,8 @@ impl Flow {
             mem: HashMap::new(),
             rom_reads: 0,
             in_frame: HashMap::new(),
+            vram: HashMap::new(),
+            ram_pages: [0; 8],
         });
         self.by_entry.insert((key, entry), i);
         i
@@ -555,6 +634,13 @@ impl Flow {
             })
             .collect();
 
+        // The page the sprite DMA took most often, when it took one; only
+
+        // the pages of RAM count, since the DMA can only see them here.
+
+        // The page the sprite DMA took most often, when it took one; only
+        // the pages of RAM count, since that is all the DMA can see here.
+        let oam_page: Option<u8> = (0..8u8).filter(|&p| self.oam_pages[p as usize] > 0).max_by_key(|&p| self.oam_pages[p as usize]);
         let routines: Vec<RoutineOut> = self
             .routines
             .iter()
@@ -589,6 +675,12 @@ impl Flow {
                         v.sort();
                         v
                     },
+                    vram: {
+                        let mut v: Vec<(&'static str, u32)> = r.vram.iter().map(|(&k, &n)| (k, n)).collect();
+                        v.sort();
+                        v
+                    },
+                    oam_writes: oam_page.map_or(0, |p| r.ram_pages[p as usize]),
                 }
             })
             .collect();
@@ -621,6 +713,7 @@ impl Flow {
             routines,
             loops,
             variables,
+            oam_page,
             dispatch,
             modes,
             input,
@@ -886,6 +979,8 @@ struct Report {
     routines: Vec<RoutineOut>,
     loops: Vec<LoopOut>,
     variables: Vec<VarOut>,
+    /// The RAM page the sprite DMA took most often, when it took one.
+    oam_page: Option<u8>,
     dispatch: Vec<DispatchOut>,
     modes: ModesOut,
     input: Vec<ButtonOut>,
@@ -929,6 +1024,10 @@ struct RoutineOut {
     /// while the picture was drawing, accesses in the blank. PPU
     /// registers, $4014, and the mapper as $8000.
     in_frame: Vec<(u16, u32, u32)>,
+    /// Writes of $2007 by VRAM region: pattern, name 0 to 3, palette.
+    vram: Vec<(&'static str, u32)>,
+    /// Writes into the page the sprite DMA takes (the report's oam_page).
+    oam_writes: u32,
 }
 
 #[derive(Serialize)]
