@@ -31,7 +31,7 @@ async function openDesk(page: Page) {
 test("the desk: a key for every window named by its own heading, the console's five and Record open, all inside the desk, the page not scrolling", async ({ page }) => {
   await openDesk(page);
   const keys = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.map((b) => (b.textContent ?? "").trim()));
-  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "History", "About this page"]);
+  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "Listing", "History", "About this page"]);
   const shown = await page.locator("[data-win]").evaluateAll((ws) => ws.filter((w) => (w as HTMLElement).offsetParent !== null).map((w) => (w as HTMLElement).dataset.win));
   expect(shown).toEqual(OPEN);
   const pressed = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => (b as HTMLElement).dataset.deskTab));
@@ -173,7 +173,7 @@ test("on a phone the windows stand one under another under the section strip, wi
   expect(await page.locator("[data-win-bar]").evaluateAll((bs) => bs.filter((b) => (b as HTMLElement).offsetParent !== null).length)).toBe(0);
   await expect
     .poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())))
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "History", "About this page", "Play"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "Listing", "History", "About this page", "Play"]);
   // Every window shows, the closed-by-default ones too, in page order.
   const tops = await page.locator("[data-win]").evaluateAll((ws) => ws.map((w) => w.getBoundingClientRect().top));
   expect(tops.every((t, i) => i === 0 || t > tops[i - 1])).toBe(true);
@@ -240,6 +240,18 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "");
   await page.locator("[data-win=record] [data-record-delete]").first().click();
   await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
+  // The same run as the file: the Listing window writes the cartridge as
+  // assemblable text with the run laid over it, and reads its marks back.
+  await page.locator("[data-desk-tab=listing]").click();
+  const lst = page.locator("[data-win=listing] [data-listing]");
+  await expect(page.locator("[data-win=listing]")).toBeVisible();
+  await lst.locator("[data-listing-build]").click();
+  await expect(lst.locator("[data-listing-coverage]")).toContainText("of the 32,768 bytes", { timeout: 60_000 });
+  await expect(page.locator("[data-listing-why]")).toHaveCount(0);
+  expect(await lst.locator("[data-listing-routines] tbody tr").allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining("each frame (NMI)")]));
+  await lst.locator("[data-listing-routine=nmi]").click();
+  await expect(lst.locator("[data-listing-lines]")).toContainText("nmi:");
+  await expect(lst.locator("[data-listing-lines]")).toContainText("@routine nmi kind=nmi");
 });
 
 test("the nametables window draws the two tables the chip holds from the calibration cartridge's own tiles, and names the tile under the pointer", async ({ page }) => {

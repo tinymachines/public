@@ -75,6 +75,14 @@ BUNDLES = {
         "record": ROOT / "data" / "flow.json",
         "what": "The flow tools for /nes/create: wasm/flow at this git tree of the roof",
     },
+    "listing": {
+        "repo": ROOT,
+        "own": True,
+        "url": "https://github.com/tinymachines/public",
+        "dest": ROOT / "web" / "public" / "nes" / "listing",
+        "record": ROOT / "data" / "listing.json",
+        "what": "The listing for /nes/create: wasm/listing at this git tree of the roof",
+    },
     "apuvoices": {
         "repo": ROOT.parent / "2a03",
         "url": "https://github.com/tinymachines/2a03",

@@ -66,6 +66,19 @@ mod wasm {
         super::from_rom(bytes)
     }
 
+    /// The listing with one run (a flow report as JSON) laid over the walk.
+    #[wasm_bindgen]
+    pub fn listing_from_rom_and_run(bytes: &[u8], report: &str) -> Result<String, String> {
+        super::from_rom_and_run(bytes, report)
+    }
+
+    /// The game model a listing's marks describe, as JSON.
+    #[wasm_bindgen]
+    pub fn listing_model(src: &str) -> Result<String, String> {
+        let l = super::text::parse(src).map_err(|e| e.to_string())?;
+        serde_json::to_string(&super::game::game(&l)?).map_err(|e| e.to_string())
+    }
+
     #[wasm_bindgen]
     pub fn listing_render(src: &str) -> Result<String, String> {
         let l = super::text::parse(src).map_err(|e| e.to_string())?;

@@ -97,7 +97,7 @@ while IFS= read -r f; do
     cp -p "$ROOT/$f" "$BETA/$f"
     copied=$((copied + 1))
   fi
-done < <(git -C "$ROOT" ls-files --others --ignored --exclude-standard -- web/public/nes/wasm web/public/ntsc/wasm web/public/nes/slow web/public/nes/voices web/public/nes/flow web/public/nes/bars.nes web/public/nes/cal.nes web/public/nes/cal.json web/public/nes/pad.nes web/public/nes/pad-dmc.nes 2>/dev/null)
+done < <(git -C "$ROOT" ls-files --others --ignored --exclude-standard -- web/public/nes/wasm web/public/ntsc/wasm web/public/nes/slow web/public/nes/voices web/public/nes/flow web/public/nes/listing web/public/nes/bars.nes web/public/nes/cal.nes web/public/nes/cal.json web/public/nes/pad.nes web/public/nes/pad-dmc.nes 2>/dev/null)
 printf '  %s file(s) carried across from this checkout\n' "$copied"
 
 # TM_BETA is read at build time: the bar on every page, and noindex on every
