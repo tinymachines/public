@@ -192,7 +192,8 @@ const DOCS = [
   { repo: "nes-bench", section: "cart", file: "calibration-plan.md", slug: "calibration-plan", code: null, kind: "plan", title: "Planning the calibration cartridge", order: 2, description: "One cartridge whose every screen is built to be measured off the real console and the model through the same reader, each frame naming itself; colour, resolution, filtering and the pad." },
   { repo: "nes-bench", section: "cart", file: "build-the-cal-cart.md", slug: "build-the-cal-cart", code: null, kind: "procedure", title: "Building the calibration cart", order: 3, description: "From the idea of a frame that names itself, through a cartridge written with a sixty-line assembler, to the ROM in the model, its checksums, and the cartridge in a console." },
   { repo: "nes-bench", section: "cart", file: "calibration-screens.md", slug: "calibration-screens", code: null, kind: "reference", title: "The calibration screens", order: 4, description: "The cartridge's screens as our own decoder sees them, the strip that names each frame, and what each screen is for; the grabber's frames join them once the cart is in a console." },
-  { repo: "nes-bench", section: "cart", file: "cart-blanks.md", slug: "cart-blanks", code: null, kind: "reference", title: "The blank boards and the programmer", order: 5, description: "Photographed and read: which board takes the calibration ROM's two chips, what the EPROM adapter is for, and what stays unknown until the chips arrive." },
+  { repo: "nes-bench", section: "cart", file: "cart-blanks.md", slug: "cart-blanks", code: null, kind: "reference", title: "The blank boards and the programmer", order: 5, description: "Photographed and read: which board takes the calibration ROM's two chips, what the EPROM adapter is for, and what is still not known." },
+  { repo: "nes-bench", section: "cart", file: "cal-cart-build.md", slug: "cal-cart-build", code: null, kind: "record", title: "The build, as it goes", order: 6, description: "The cartridge being made, one measured step at a time: the programmer on the bench, the first chip written and read back whole, the board's jumpers read off both sides, the parts it takes, and what is still open." },
   { repo: "nes-bench", file: "cartridge.md", slug: "cartridge", code: null, kind: "report", title: "A real cartridge in the model", group: "bench-experiments", order: 40, description: "Why the reader guessed the wrong game, the verified dump, and the mapper-66 board the model grew so the same bytes could run on both sides for a picture comparison." },
   { repo: "nes", file: "boards-report.md", slug: "boards", code: null, kind: "report", title: "Every cartridge on the desk has a board", group: "bench-experiments", order: 40.5, description: "The seven cartridge boards the model grew, the two that could only be tested with a console around them, the screen split that needed an interrupt to become a line, and the twentieth dump, which is the multicart's first bank read alone." },
   { repo: "nes-bench", file: "eyes-vs-scope.md", slug: "eyes-vs-scope", code: null, kind: "report", title: "Eyes versus scope", group: "bench-experiments", order: 39, description: "The console's video split to the scope and to a USB grabber, getting the grabber to work, and the grabber's picture scored against our own decode of the scope's recording." },
@@ -612,8 +613,8 @@ One cartridge of our own, whose every screen is built to be
 measured: off a console through the scope, the grabber and a camera, and
 off the model through the same decoder, with one tool reading all of
 them. This section holds the plan, the tutorial that builds the ROM and
-puts it on a board, the screens as pictures, and the blank boards
-waiting for their chips. The ROM and its manifest are served here too:
+puts it on a board, the screens as pictures, the blank boards, and
+the record of the build as it goes. The ROM and its manifest are served here too:
 [cal.nes](/nes/cal.nes) and [cal.json](/nes/cal.json), the same bytes
 the checksums in the tutorial name.
 
