@@ -232,14 +232,6 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await expect(flow.locator(".flow-seg").first()).toBeVisible();
   await flow.locator("[data-flow-view=loops]").click();
   await expect(flow.locator("[data-flow-loop]").first()).toBeVisible();
-
-  // Kept in this browser: a reload lists it, and it opens without reading again.
-  await page.reload();
-  await expect(page.locator(".desk[data-ready]")).toHaveCount(1);
-  await page.locator("[data-win=record] [data-recording-id] [data-record-open]").first().click();
-  await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "");
-  await page.locator("[data-win=record] [data-record-delete]").first().click();
-  await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
   // The same run as the file: the Listing window writes the cartridge as
   // assemblable text with the run laid over it, and reads its marks back.
   await page.locator("[data-desk-tab=listing]").click();
@@ -252,6 +244,14 @@ test("a run recorded from power-on is kept in the browser, played back to the sa
   await lst.locator("[data-listing-routine=nmi]").click();
   await expect(lst.locator("[data-listing-lines]")).toContainText("nmi:");
   await expect(lst.locator("[data-listing-lines]")).toContainText("@routine nmi kind=nmi");
+
+  // Kept in this browser: a reload lists it, and it opens without reading again.
+  await page.reload();
+  await expect(page.locator(".desk[data-ready]")).toHaveCount(1);
+  await page.locator("[data-win=record] [data-recording-id] [data-record-open]").first().click();
+  await expect(page.locator("[data-win=flow] [data-flow]")).not.toHaveAttribute("data-flow-open", "");
+  await page.locator("[data-win=record] [data-record-delete]").first().click();
+  await expect(page.locator("[data-win=record] [data-record-empty]")).toHaveCount(1);
 });
 
 test("the nametables window draws the two tables the chip holds from the calibration cartridge's own tiles, and names the tile under the pointer", async ({ page }) => {
