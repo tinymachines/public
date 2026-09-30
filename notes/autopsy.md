@@ -221,12 +221,19 @@ image it runs from.
    2683 instructions of the multicart, the run makes it 9041. Not yet:
    `@table` and `@var`, and the desk loading it (the wasm face exists,
    no page calls it, and the crate is not boarded into a bundle).
-2. **The crawl.** From the title's moment, the coverage-guided search,
-   with the budget and the dead-end oracle, on the workstation or the
-   Pi. The gate is the coverage number rising and the unreached list
-   shrinking, printed each round. Super Mario Bros. is the first patient
-   because it is small, unbanked inside its bank, and already partly
-   mapped.
+2. **The crawl.** *Built 2026-09-29, first cut: the console repo's
+   `examples/crawl`.* From a saved moment past the title, fifteen pad
+   bytes held for twenty frames each and one long wait; new opcode
+   sites first, then new RAM values written (progress shows in RAM
+   before it shows as code), deeper chains first; loops dropped; all
+   cores. Output in the flow report's shape, so `listing from ROM
+   run.json crawl.json` folds it with a recorded run. First result:
+   1600 steps in 555 s reach 5055 sites of the Super Mario Bros. bank,
+   every one the dissection's run reached and 1504 more; the bank goes
+   from 23 to 33 percent executed. Not yet: a smarter novelty (the
+   frame counter and the random byte count as new values every step),
+   longer runs on the Pi, and routines from the crawl's paths (run
+   `script-trace` on a kept script and the flow report has them).
 3. **The matchers.** The seven patterns as code over the model, each
    with its evidence; then the ones the crawl's coverage makes findable
    (the music driver, the random number, the object slots, the
