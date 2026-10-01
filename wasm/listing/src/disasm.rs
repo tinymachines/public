@@ -284,7 +284,13 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         // run saw entries taken (a stray word past the last one is never
         // mistaken for an entry), while every word is an address in this
         // bank and none of the bytes is code.
-        let mut tables: BTreeMap<usize, (usize, BTreeMap<u16, u64>, String)> = BTreeMap::new();
+        let mut tables: BTreeMap<usize, (usize, BTreeMap<u16, u64>, String, &'static str)> = BTreeMap::new();
+        // What chose, the four busiest cells, busiest first.
+        let chosen = |d: &crate::run::Dispatch| -> String {
+            let mut on = d.on.clone();
+            on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+            if on.is_empty() { String::new() } else { format!(" on={}", on.iter().take(4).map(|x| format!("${:04X}", x.0)).collect::<Vec<_>>().join(",")) }
+        };
         for d in &dispatches {
             let start = d.offset - offset + 3;
             let seen: BTreeMap<u16, u64> = d.targets.iter().map(|t| (t.1, t.2)).collect();
@@ -304,12 +310,47 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             }
             if let Some(last) = last {
                 if (start..start + 2 * (last + 1)).all(|i| walk.claim[i] == 0) {
-                    // What chose, the four busiest cells, busiest first.
-                    let mut on = d.on.clone();
-                    on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-                    let on = if on.is_empty() { String::new() } else { format!(" on={}", on.iter().take(4).map(|x| format!("${:04X}", x.0)).collect::<Vec<_>>().join(",")) };
-                    tables.insert(start, (last + 1, seen, on));
+                    tables.insert(start, (last + 1, seen, chosen(d), "dispatch"));
                 }
+            }
+        }
+        // A pointer table: the words in this bank that a JMP (ind) of
+        // its own took, from the lowest to the highest the run saw, when
+        // they sit two bytes apart and none of the bytes between is
+        // code, a vector or a jump engine's table. Two jumps whose words
+        // overlap share one table.
+        let mut pointers: Vec<(usize, usize, BTreeMap<u16, u64>, String)> = Vec::new();
+        for d in run.map(|r| r.dispatch.iter().filter(|d| rom.prg.get(d.offset) == Some(&ops::JMP_IND)).collect::<Vec<_>>()).unwrap_or_default() {
+            let took: Vec<(usize, u64)> = d.words.iter().filter(|w| w.0 >= offset && w.0 + 1 < offset + len).map(|w| (w.0 - offset, w.1)).collect();
+            let (Some(mut first), Some(last)) = (took.iter().map(|w| w.0).min(), took.iter().map(|w| w.0).max()) else { continue };
+            if took.iter().any(|w| (w.0 - first) % 2 != 0) {
+                continue;
+            }
+            let mut end = last + 2;
+            let mut seen: BTreeMap<u16, u64> = BTreeMap::new();
+            for &(k, n) in &took {
+                *seen.entry(u16::from_le_bytes([bytes[k], bytes[k + 1]])).or_insert(0) += n;
+            }
+            let mut on = chosen(d);
+            // One already found that this one overlaps, in step with it.
+            while let Some(i) = pointers.iter().position(|p| p.0 < end && first < p.1 && p.0 % 2 == first % 2) {
+                let p = pointers.remove(i);
+                first = first.min(p.0);
+                end = end.max(p.1);
+                for (w, n) in p.2 {
+                    *seen.entry(w).or_insert(0) += n;
+                }
+                if on.is_empty() {
+                    on = p.3;
+                }
+            }
+            pointers.push((first, end, seen, on));
+        }
+        for (first, end, seen, on) in pointers {
+            let entries = (end - first) / 2;
+            let clear = entries <= 256 && (!has_vectors || end <= vec_at) && (first..end).all(|i| walk.claim[i] == 0) && !tables.iter().any(|(&s, t)| s < end && first < s + 2 * t.0);
+            if clear {
+                tables.insert(first, (entries, seen, on, "pointers"));
             }
         }
         for (&a, name) in &label_names {
@@ -355,10 +396,10 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 }
                 items.push(Item::Label(name.clone()));
             }
-            if let Some((entries, seen, on)) = tables.get(&i) {
+            if let Some((entries, seen, on, kind)) = tables.get(&i) {
                 flush(&mut run_bytes, &mut items);
                 last_count = None;
-                items.push(Item::Directive { name: "table".into(), rest: format!("dispatch entries={entries} seen={}{on} by=run", seen.len()) });
+                items.push(Item::Directive { name: "table".into(), rest: format!("{kind} entries={entries} seen={}{on} by=run", seen.len()) });
                 for k in 0..*entries {
                     let w = u16::from_le_bytes([bytes[i + 2 * k], bytes[i + 2 * k + 1]]);
                     items.push(Item::Word { value: w, label: label_names.get(&w).cloned(), comment: seen.get(&w).map(|n| format!("ran {n}")) });

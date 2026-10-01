@@ -152,6 +152,13 @@ shift:
     LDA $A0,X
     LDA $C0,X
     RTS
+by_pointer:
+    JMP ($0006)
+    .word state_a
+    .word state_b
+    .word state_c
+too:
+    JMP ($0006)
 sound:
     LDA #$0F
     STA $4015
@@ -215,7 +222,7 @@ fn the_matchers_name_what_the_run_saw() {
         serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam, "body": body(n, n_body), "callers": callers})
     };
     let mut sites = Vec::new();
-    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500)] {
+    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500), ("by_pointer", 1, 8), ("too", 1, 1)] {
         sites.extend(seq(prg, at(n), k, count));
     }
     // What the random routine's instructions touched: the indexed read
@@ -296,6 +303,8 @@ fn the_matchers_name_what_the_run_saw() {
             routine(23, "hit", "call", 10, 10, serde_json::json!([[0, 10, 0], [1, 20, 0]]), serde_json::json!([])),
             routine(24, "count_down", "call", 10, 10, serde_json::json!([[0x35, 2560, 2560]]), serde_json::json!([])),
             routine(26, "shift", "call", 10, 10, serde_json::json!([]), serde_json::json!([])),
+            routine(27, "by_pointer", "call", 8, 8, serde_json::json!([]), serde_json::json!([])),
+            routine(28, "too", "call", 1, 1, serde_json::json!([]), serde_json::json!([])),
             routine(25, "count_port", "call", 1, 10, serde_json::json!([[0x2002, 500, 0], [0x36, 0, 500]]), serde_json::json!([]))
         ],
         // Two instructions in one routine where positions met: two
@@ -341,7 +350,14 @@ fn the_matchers_name_what_the_run_saw() {
         "dispatch": [{"key": jsr_engine, "addr": 0x8000 + jsr_engine, "depth": 2, "targets": [[4, 7], [5, 3]], "timeline": [[0, 0, 0], [1, 0, 0], [2, 0, 0]],
             // What chose the way: a byte of $C0, which travels with the
             // positions, and now and then a byte of $A0, which does not.
-            "on": [[0xc1, 10], [0xa1, 2]]}]
+            "on": [[0xc1, 10], [0xa1, 2]]},
+            // A jump of its own through a table of words in the ROM: the
+            // first word taken twice, the third six times.
+            {"key": at("by_pointer"), "addr": labels["by_pointer"], "depth": 1, "targets": [[4, 2], [5, 6]], "timeline": [],
+             "words": [[at("by_pointer") + 3, 2], [at("by_pointer") + 7, 6]], "on": [[0xc2, 8]]},
+            // And a second jump that took the same table's second word:
+            // one table, not two.
+            {"key": at("too"), "addr": labels["too"], "depth": 1, "targets": [], "timeline": [], "words": [[at("by_pointer") + 5, 1]], "on": []}]
     });
     let src = listing::from_rom_and_run(&image, &report.to_string()).unwrap();
     listing::check(&src, &image).unwrap();
@@ -386,10 +402,19 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(both.contains(";; @run frames=100 "), "{both}");
     let marks = |t: &str| -> Vec<String> { t.lines().filter(|l| l.starts_with(";; @is ")).map(str::to_string).collect() };
     assert_eq!(marks(&both), marks(&src));
+    // The pointer table: found by where the pointer was loaded from,
+    // written as words like the engine's, and nothing in it decoded.
+    let p = lines.iter().position(|l| l.starts_with(";; @table pointers")).expect("a pointer table");
+    assert_eq!(lines[p], ";; @table pointers entries=3 seen=3 on=$00C2 by=run");
+    assert!(lines[p - 1].trim_start().starts_with("JMP ($0006)"), "{}", lines[p - 1]);
+    assert!(lines[p + 1].starts_with(&format!("    .word dispatch_{:04X}", a("state_a"))) && lines[p + 1].ends_with("; ran 2"), "{}", lines[p + 1]);
+    assert!(lines[p + 2].contains(&format!("${:04X}", a("state_b"))) && lines[p + 2].ends_with("; ran 1"), "{}", lines[p + 2]);
+    assert!(lines[p + 3].starts_with(&format!("    .word dispatch_{:04X}", a("state_c"))) && lines[p + 3].ends_with("; ran 6"), "{}", lines[p + 3]);
+    assert_eq!(src.matches(";; @table pointers").count(), 1, "two jumps through one table are one table");
     // The model reads the same marks back: every routine the run
     // entered with its patterns, the table with its words, the RAM.
     let g = listing::game::game(&text::parse(&src).unwrap()).unwrap();
-    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 27, "{g}");
+    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 29, "{g}");
     let poll = g["routines"].as_array().unwrap().iter().find(|r| r["name"] == format!("routine_{:04X}", a("poll"))).unwrap();
     assert_eq!(poll["kind"], "call");
     assert_eq!(poll["entered"], 10);
@@ -408,6 +433,9 @@ fn the_matchers_name_what_the_run_saw() {
     assert_eq!(wait["is"][0]["evidence"]["flag"], "$0020");
     assert_eq!(g["tables"][0]["entries"], 3);
     assert_eq!(g["tables"][0]["on"], serde_json::json!(["$00C1", "$00A1"]));
+    assert_eq!(g["tables"][0]["kind"], "dispatch");
+    assert_eq!(g["tables"][1]["kind"], "pointers");
+    assert_eq!(g["tables"][1]["words"][2]["ran"], 6);
     assert_eq!(g["tables"][0]["words"][0]["ran"], 7);
     assert_eq!(g["tables"][0]["words"][1]["ran"], Value::Null);
     assert_eq!(g["arrays"][6]["slots"], 8);

@@ -60,6 +60,9 @@ pub struct Dispatch {
     pub switches: u64,
     /// The cells A was made from at the call, with how often: what chose.
     pub on: Vec<(u16, u64)>,
+    /// The words of the ROM the jump's pointer was loaded from: the PRG
+    /// offset of each, and how often it was taken.
+    pub words: Vec<(usize, u64)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -209,8 +212,9 @@ impl Run {
                     (k < prg_len).then_some((k, a, u(t.get(1)?)))
                 })
                 .collect();
+            let words = d["words"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as usize, u(m.get(1)?))) }).filter(|w| w.0 + 1 < prg_len).collect();
             let on = d["on"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as u16, u(m.get(1)?))) }).collect();
-            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on });
+            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on, words });
         }
         for l in v["loops"].as_array().unwrap_or(&none) {
             let (head, tail) = (l["head"].as_u64().unwrap_or(u64::MAX) as usize, l["tail"].as_u64().unwrap_or(u64::MAX) as usize);
@@ -322,6 +326,12 @@ impl Run {
             match self.dispatch.iter_mut().find(|x| x.offset == d.offset) {
                 Some(x) => {
                     x.switches += d.switches;
+                    for (k, n) in d.words {
+                        match x.words.iter_mut().find(|t| t.0 == k) {
+                            Some(t) => t.1 += n,
+                            None => x.words.push((k, n)),
+                        }
+                    }
                     for (a, n) in d.on {
                         match x.on.iter_mut().find(|t| t.0 == a) {
                             Some(t) => t.1 += n,
