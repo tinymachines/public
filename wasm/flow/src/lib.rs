@@ -35,7 +35,10 @@
 //! and written back). From that, two things at the end: the cells that
 //! reached a sprite's Y or X byte in the page the DMA takes, and the
 //! compares and subtracts where two such cells met that never reached
-//! the same sprite byte together. That is how two objects' positions
+//! the same sprite byte together. And one more: when a value goes back
+//! into a cell it was made from, the other cells in it are what moved
+//! that cell (a speed into a position, a pull into a speed), and each
+//! such pair is counted. That is how two objects' positions
 //! are seen to be compared when another routine staged them in
 //! temporaries first; a position against the camera is not one,
 //! because the camera reaches every sprite with the position.
@@ -274,6 +277,9 @@ pub struct Flow {
     /// higher, page of the cell stored to times four plus its address
     /// mod 4).
     together: HashSet<(u16, u16, u8)>,
+    /// A value stored back into a cell it was made from: (that cell,
+    /// another cell in the value) -> count.
+    moves: HashMap<(u16, u16), u64>,
     /// Per byte of RAM: the frame it was last touched in, the frames it
     /// was touched in, and those where the first touch was a read.
     seen: Vec<u32>,
@@ -313,6 +319,7 @@ impl Flow {
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
+            moves: HashMap::new(),
             seen: vec![u32::MAX; 0x800],
             touched: vec![0; 0x800],
             carried: vec![0; 0x800],
@@ -668,7 +675,15 @@ impl Flow {
             (Some(v), Some(cell)) => {
                 // A value made from the cell it goes back into is that
                 // cell's own (a position moved by its speed).
-                self.origin[cell as usize] = if v.cells().contains(&cell) { Src::default() } else { v };
+                let back = v.cells().contains(&cell);
+                self.origin[cell as usize] = if back { Src::default() } else { v };
+                if back {
+                    for &by in v.cells() {
+                        if by != cell && (self.moves.len() < MEETS || self.moves.contains_key(&(cell, by))) {
+                            *self.moves.entry((cell, by)).or_insert(0) += 1;
+                        }
+                    }
+                }
                 let slot = ((cell >> 8) as usize) * 4 + (cell & 3) as usize;
                 for (i, &from) in v.cells().iter().enumerate() {
                     if from != cell {
@@ -928,6 +943,9 @@ impl Flow {
             })
             .collect();
         meets.sort_by_key(|m| m.key);
+        let mut moves: Vec<(u16, u16, u64)> = self.moves.iter().map(|(&(cell, by), &n)| (cell, by, n)).collect();
+        moves.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)).then(a.1.cmp(&b.1)));
+        moves.truncate(4096);
         let modes = self.modes();
         let input = self.input();
         let mut dispatch: Vec<DispatchOut> = self
@@ -957,6 +975,7 @@ impl Flow {
             oam_page,
             sprite_feeds,
             meets,
+            moves,
             dispatch,
             modes,
             input,
@@ -1229,6 +1248,9 @@ struct Report {
     sprite_feeds: Vec<(u16, u32, u32)>,
     /// Compares and subtracts where two such cells met.
     meets: Vec<MeetOut>,
+    /// What moved what: a cell, another cell whose value was put into
+    /// it along with its own, how often; the 4096 busiest.
+    moves: Vec<(u16, u16, u64)>,
     dispatch: Vec<DispatchOut>,
     modes: ModesOut,
     input: Vec<ButtonOut>,

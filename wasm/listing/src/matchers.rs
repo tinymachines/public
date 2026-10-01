@@ -322,6 +322,9 @@ pub struct Objects {
     pub xs: Vec<u16>,
     pub ys: Vec<u16>,
     pub with: Vec<u16>,
+    /// The companions with a byte that was added into a byte of one of
+    /// the position arrays: what moves them.
+    pub adds: Vec<u16>,
 }
 
 /// What travels with a position: an array is a companion of a position
@@ -384,12 +387,18 @@ pub fn objects(run: &Run, prg: &[u8], arrays: &[(u16, usize, usize)], held: &[(u
             continue;
         }
         let pick = |x: bool| -> Vec<u16> { members.iter().map(|&a| positions[a]).filter(|&i| if x { held[i].0 > 0 } else { held[i].1 > 0 }).map(|i| arrays[i].0).collect() };
+        // A byte belongs to the tightest array around it, as a position does.
+        let home = |cell: u16| arrays.iter().filter(|a| a.0 <= cell && (cell as usize) < a.0 as usize + a.1).min_by_key(|a| (a.1, a.0)).map(|a| a.0);
+        let mut adds: Vec<u16> = run.moves.iter().filter(|m| home(m.0).is_some_and(|b| bases.contains(&b))).filter_map(|m| home(m.1)).filter(|b| others.contains(b)).collect();
+        adds.sort();
+        adds.dedup();
         out.push(Objects {
             slots: members.iter().map(|&a| arrays[positions[a]].1).max().unwrap_or(0),
             routines: reach.iter().filter(|m| bases.iter().any(|b| m.contains_key(b))).count(),
             xs: pick(true),
             ys: pick(false),
             with: others,
+            adds,
         });
     }
     out

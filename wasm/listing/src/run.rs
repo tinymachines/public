@@ -110,6 +110,9 @@ pub struct Run {
     pub loops: Vec<Loop>,
     pub vars: Vec<Var>,
     pub meets: Vec<Meet>,
+    /// What moved what: a cell, another cell whose value was put into
+    /// it along with its own, and how often.
+    pub moves: Vec<(u16, u16, u64)>,
 }
 
 fn u(v: &Value) -> u64 {
@@ -244,6 +247,11 @@ impl Run {
                 .collect();
             run.meets.push(Meet { offset: key, routine, pairs });
         }
+        for m in v["moves"].as_array().unwrap_or(&none) {
+            if let Some(m) = m.as_array().filter(|m| m.len() == 3) {
+                run.moves.push((u(&m[0]) as u16, u(&m[1]) as u16, u(&m[2])));
+            }
+        }
         Ok(run)
     }
 
@@ -329,6 +337,12 @@ impl Run {
                     x.on = x.on.or(l.on);
                 }
                 None => self.loops.push(l),
+            }
+        }
+        for (cell, by, n) in other.moves {
+            match self.moves.iter_mut().find(|m| m.0 == cell && m.1 == by) {
+                Some(m) => m.2 += n,
+                None => self.moves.push((cell, by, n)),
             }
         }
         for m in other.meets {

@@ -382,6 +382,10 @@ fn values_are_followed_to_where_two_objects_meet() {
     assert_eq!(meets[0]["addr"], 0x8203);
     assert_eq!(meets[0]["routine"], routine(&r, "call", 0x8200)["id"]);
     assert_eq!(meets[0]["pairs"], serde_json::json!([[0x86, 0x87, 1, "x"]]));
+    // What was added into a byte that kept its own value: the one-byte
+    // speed into $87. The four-byte speed into $86 is nobody's (more
+    // than four cells), and says nothing.
+    assert_eq!(r["moves"], serde_json::json!([[0x87, 0x64, 1]]), "{}", r["moves"]);
 }
 
 #[test]

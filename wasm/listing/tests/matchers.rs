@@ -144,11 +144,13 @@ hit:
     LDA $90,X
     LDA $A0,X
     LDA $B0,X
+    LDA $C0,X
     RTS
 shift:
     LDA $86,X
     LDA $90,X
     LDA $A0,X
+    LDA $C0,X
     RTS
 sound:
     LDA #$0F
@@ -201,7 +203,7 @@ fn the_matchers_name_what_the_run_saw() {
             "poll" => (serde_json::json!([]), 40),
             _ => (serde_json::json!([]), 0),
         };
-        let n_body = match n { "reset" => 4, "nmi" => 6, "poll" => 11, "engine" => 11, "sound" => 3, "drain" => 6, "split" => 6, "random" => 7, "wait" | "scan" | "other" => 3, "delay" | "hop" | "count" | "shift" => 4, "hit" => 9, "count_out" | "count_two" | "count_port" | "chore_wait" | "self_wait" => 3, "chore" | "setter" | "count_down" => 2, _ => 1 };
+        let n_body = match n { "reset" => 4, "nmi" => 6, "poll" => 11, "engine" => 11, "sound" => 3, "drain" => 6, "split" => 6, "random" => 7, "wait" | "scan" | "other" => 3, "delay" | "hop" | "count" => 4, "shift" => 5, "hit" => 10, "count_out" | "count_two" | "count_port" | "chore_wait" | "self_wait" => 3, "chore" | "setter" | "count_down" => 2, _ => 1 };
         // The NMI handler (routine 1) calls these six.
         // And each of the two waits with a call in it calls its own.
         let callers = match n {
@@ -213,7 +215,7 @@ fn the_matchers_name_what_the_run_saw() {
         serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam, "body": body(n, n_body), "callers": callers})
     };
     let mut sites = Vec::new();
-    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 9, 10), ("shift", 4, 10), ("count_down", 2, 2560), ("count_port", 3, 500)] {
+    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500)] {
         sites.extend(seq(prg, at(n), k, count));
     }
     // What the random routine's instructions touched: the indexed read
@@ -252,6 +254,8 @@ fn the_matchers_name_what_the_run_saw() {
     touch(at("hit") + 10, serde_json::json!([[0x90, 5], [0x95, 5]]), serde_json::json!([]), serde_json::json!([0x90, 0x95]));
     touch(at("hit") + 12, serde_json::json!([[0xa0, 5], [0xa5, 5]]), serde_json::json!([]), serde_json::json!([0xa0, 0xa5]));
     touch(at("hit") + 14, serde_json::json!([[0xb0, 5], [0xb5, 5]]), serde_json::json!([]), serde_json::json!([0xb0, 0xb5]));
+    touch(at("hit") + 16, serde_json::json!([[0xc0, 5], [0xc5, 5]]), serde_json::json!([]), serde_json::json!([0xc0, 0xc5]));
+    touch(at("shift") + 6, serde_json::json!([[0xc0, 5], [0xc5, 5]]), serde_json::json!([]), serde_json::json!([0xc0, 0xc5]));
     touch(at("shift"), serde_json::json!([[0x86, 5], [0x8b, 5]]), serde_json::json!([]), serde_json::json!([0x86, 0x8b]));
     touch(at("shift") + 2, serde_json::json!([[0x90, 5], [0x95, 5]]), serde_json::json!([]), serde_json::json!([0x90, 0x95]));
     touch(at("shift") + 4, serde_json::json!([[0xa0, 5], [0xa3, 5]]), serde_json::json!([]), serde_json::json!([0xa0, 0xa3]));
@@ -297,6 +301,11 @@ fn the_matchers_name_what_the_run_saw() {
         // Two instructions in one routine where positions met: two
         // pairs on X at the first, one of them again and a pair on Y at
         // the second.
+        // What was added into what: bytes of $90 into the positions at
+        // $86 (a speed); a byte of $A0 too, which does not travel with
+        // them and so is not listed with the table; and a byte of $C0,
+        // which does travel with them, into $B0, which is no position.
+        "moves": [[0x86, 0x90, 40], [0x87, 0x91, 40], [0x86, 0xa0, 3], [0xb0, 0xc0, 9]],
         "meets": [
             {"key": at("hit") + 2, "addr": labels["hit"] + 2, "routine": 23, "total": 8, "distinct": 2, "pairs": [[0x86, 0x87, 5, "x"], [0x86, 0x88, 3, "x"]]},
             {"key": at("hit") + 4, "addr": labels["hit"] + 4, "routine": 23, "total": 6, "distinct": 2, "pairs": [[0x86, 0x87, 4, "x"], [0xce, 0xcf, 2, "y"]]}
@@ -356,7 +365,7 @@ fn the_matchers_name_what_the_run_saw() {
     let quiet = listing::from_rom_and_run(&image, &no_idle.to_string()).unwrap();
     assert!(!quiet.contains("idle-spin"));
     assert!(quiet.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n", a("count"))), "{quiet}");
-    assert!(src.contains(&format!(";; @ram variables=1 arrays=7 by=run\n;; @array $0080 slots=16 sites=1 by=run\n;; @array $0086 slots=6 sites=2 x=3 by=run\n;; @array $0090 slots=6 sites=2 by=run\n;; @array $00A0 slots=6 sites=2 by=run\n;; @array $00B0 slots=6 sites=1 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @array $0300 slots=40 sites=1 by=run\n;; @objects slots=6 arrays=2 routines=2 x=$0086 with=$0090 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
+    assert!(src.contains(&format!(";; @ram variables=1 arrays=8 by=run\n;; @array $0080 slots=16 sites=1 by=run\n;; @array $0086 slots=6 sites=2 x=3 by=run\n;; @array $0090 slots=6 sites=2 by=run\n;; @array $00A0 slots=6 sites=2 by=run\n;; @array $00B0 slots=6 sites=1 by=run\n;; @array $00C0 slots=6 sites=2 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @array $0300 slots=40 sites=1 by=run\n;; @objects slots=6 arrays=3 routines=2 x=$0086 with=$0090,$00C0 adds=$0090 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.
     assert!(src.contains(";; @table dispatch entries=3 seen=2 by=run\n"), "{src}");
@@ -397,8 +406,8 @@ fn the_matchers_name_what_the_run_saw() {
     assert_eq!(g["tables"][0]["entries"], 3);
     assert_eq!(g["tables"][0]["words"][0]["ran"], 7);
     assert_eq!(g["tables"][0]["words"][1]["ran"], Value::Null);
-    assert_eq!(g["arrays"][5]["slots"], 8);
-    assert_eq!(g["objects"], serde_json::json!([{"slots": 6, "arrays": 2, "routines": 2, "x": ["$0086"], "y": [], "with": ["$0090"]}]));
+    assert_eq!(g["arrays"][6]["slots"], 8);
+    assert_eq!(g["objects"], serde_json::json!([{"slots": 6, "arrays": 3, "routines": 2, "x": ["$0086"], "y": [], "with": ["$0090", "$00C0"], "adds": ["$0090"]}]));
     assert_eq!(g["arrays"][1]["x"], 3);
     assert_eq!(g["arrays"][0]["x"], serde_json::Value::Null);
     assert_eq!(g["variables"][0]["writers"][0]["count"], 80);
