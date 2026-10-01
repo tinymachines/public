@@ -276,6 +276,33 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     out
 }
 
+/// The position bytes the run saw compared (the cells of its meets),
+/// by the coordinate they reached, and for each array how many of each
+/// it holds. A byte inside several arrays counts for the tightest one
+/// (the fewest slots; the lower base on a tie): a loop that clears a
+/// whole page reaches everything and holds nothing.
+pub fn held(run: &Run, arrays: &[(u16, usize, usize)]) -> Vec<(u32, u32)> {
+    let mut cells: BTreeMap<u16, (bool, bool)> = BTreeMap::new();
+    for m in &run.meets {
+        for (a, b, _, axis) in &m.pairs {
+            for c in [a, b] {
+                let e = cells.entry(*c).or_insert((false, false));
+                e.0 |= axis.contains('x');
+                e.1 |= axis.contains('y');
+            }
+        }
+    }
+    let mut out = vec![(0u32, 0u32); arrays.len()];
+    for (&cell, &(x, y)) in &cells {
+        let tightest = arrays.iter().enumerate().filter(|(_, a)| a.0 <= cell && (cell as usize) < a.0 as usize + a.1).min_by_key(|(_, a)| (a.1, a.0));
+        if let Some((i, _)) = tightest {
+            out[i].0 += x as u32;
+            out[i].1 += y as u32;
+        }
+    }
+    out
+}
+
 /// The arrays: RAM an indexed instruction reached across more than one
 /// byte, by base address: how many slots the run saw reached from the
 /// base, and how many instructions index it.

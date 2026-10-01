@@ -67,7 +67,15 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                         }
                     }
                     "table" => table = Some((json!({"bank": bank_name, "addr": at[i], "kind": words.first().cloned().unwrap_or_default(), "entries": kv.get("entries").cloned().unwrap_or(json!(0)), "seen": kv.get("seen").cloned().unwrap_or(json!(0))}), kv.get("entries").and_then(Value::as_u64).unwrap_or(0) as usize, Vec::new())),
-                    "array" => arrays.push(json!({"base": words.first().cloned().unwrap_or_default(), "slots": kv.get("slots").cloned().unwrap_or(json!(0)), "sites": kv.get("sites").cloned().unwrap_or(json!(0))})),
+                    "array" => {
+                        let mut a = json!({"base": words.first().cloned().unwrap_or_default(), "slots": kv.get("slots").cloned().unwrap_or(json!(0)), "sites": kv.get("sites").cloned().unwrap_or(json!(0))});
+                        for k in ["x", "y"] {
+                            if let Some(v) = kv.get(k) {
+                                a[k] = v.clone();
+                            }
+                        }
+                        arrays.push(a);
+                    }
                     "var" => {
                         let side = |k: &str| -> Vec<Value> {
                             kv.get(k)

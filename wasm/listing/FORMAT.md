@@ -135,7 +135,7 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | `@table dispatch entries=N seen=M by=run` | the `.word`s that follow are a jump engine's table, `N` entries as far as the run saw them taken and `M` of them taken; a word that ran says how often |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
 | `@ram variables=N arrays=M by=run` | after the PRG banks: the RAM the routines share, one `@array` per indexed base and one `@var` per byte |
-| `@array $XXXX slots=N sites=K by=run` | RAM an indexed instruction reached from this base across `N` bytes at most (as far as the run saw), `K` instructions indexing it: the object slots and the tables in RAM |
+| `@array $XXXX slots=N sites=K [x=N] [y=N] by=run` | RAM an indexed instruction reached from this base across `N` bytes at most (as far as the run saw), `K` instructions indexing it: the object slots and the tables in RAM. `x=` and `y=` are how many of its bytes are positions the `position-compare` rule saw compared, by the coordinate they reached; a byte inside several arrays counts for the tightest one, so the loop that clears a page holds none |
 | `@var $XXXX writers=name:N,... readers=name:N,... total=N by=run` | a RAM byte one routine writes and another reads, each side's routines by label (or by address, when the routine ran from RAM) with their counts, the busiest six and `+N` more |
 | `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
 | `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
@@ -235,8 +235,10 @@ position (`sprite_feeds`) and the instructions where two of them met
 (`meets`). In Super Mario Bros. the two positions reach the comparison
 through temporaries another routine fills, so no rule over one
 routine's reads finds it; followed by value, the player's X and an
-enemy's meet at three instructions of one routine. The object slots
-are still to come.
+enemy's meet at three instructions of one routine. An `@array` says
+how many such positions it holds, which is the first sight of a
+game's object table; the bytes that travel with a position (a speed,
+a state, a kind) are still to come.
 
 ## What the static walk writes
 

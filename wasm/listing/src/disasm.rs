@@ -445,8 +445,11 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         let arrays = crate::matchers::arrays(r, &rom.prg);
         if !r.vars.is_empty() || !arrays.is_empty() {
             items.push(Item::Directive { name: "ram".into(), rest: format!("variables={} arrays={} by=run", r.vars.len(), arrays.len()) });
-            for (base, slots, sites) in arrays {
-                items.push(Item::Directive { name: "array".into(), rest: format!("${base:04X} slots={slots} sites={sites} by=run") });
+            let held = crate::matchers::held(r, &arrays);
+            for ((base, slots, sites), (x, y)) in arrays.into_iter().zip(held) {
+                let x = if x > 0 { format!(" x={x}") } else { String::new() };
+                let y = if y > 0 { format!(" y={y}") } else { String::new() };
+                items.push(Item::Directive { name: "array".into(), rest: format!("${base:04X} slots={slots} sites={sites}{x}{y} by=run") });
             }
             let mut vars: Vec<&crate::run::Var> = r.vars.iter().collect();
             vars.sort_by_key(|v| v.addr);
