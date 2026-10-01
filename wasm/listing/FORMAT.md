@@ -267,8 +267,15 @@ and that is correct: it says what a walk from the vectors can know.
 Labels it mints: `reset`, `nmi`, `irq` for the vectors' targets,
 `routine_XXXX` for a `JSR` target, `at_XXXX` for a branch or jump
 target; on a board with more than one PRG bank every label carries its
-bank, `b1_routine_C086`. A person renames them and the check still
-holds, because a name changes no bytes.
+bank, `b1_routine_C086`. With a run, a table's target is
+`dispatch_XXXX`, and a routine or a loop a rule named is called by what
+it is: `poll_`, `engine_`, `handlers_`, `split_`, `drain_`, `sound_`,
+`random_`, `compare_`, `palette_`, `scroll_`, `sprites_`, `bank_`,
+`wait_` and `spin_`, the first of those (in that order, the most
+particular first) whose pattern marked it, so a poll that also writes
+sprites is `poll_8E5C`. A vector's handler and a table's target keep
+the names that say how they are entered. A person renames any of them
+and the check still holds, because a name changes no bytes.
 
 ## The tools
 

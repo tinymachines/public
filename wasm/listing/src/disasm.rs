@@ -95,6 +95,30 @@ pub fn placed(rom: &Rom, run: Option<&Run>) -> Vec<Layout> {
     banks
 }
 
+/// What a label is called when a rule named the routine or the loop it
+/// heads: the pattern, and the word that goes before the address. The
+/// first pattern in this order that marked it wins (the most particular
+/// first: a poll that also writes sprites is the poll). A vector's
+/// handler and a table's target keep the names that say how they are
+/// entered.
+const CALLED: [(&str, &str); 15] = [
+    ("pad-poll", "poll"),
+    ("jump-engine", "engine"),
+    ("handler-in-memory", "handlers"),
+    ("sprite-0-split", "split"),
+    ("vram-drain", "drain"),
+    ("sound-driver", "sound"),
+    ("random-byte", "random"),
+    ("position-compare", "compare"),
+    ("palette-writer", "palette"),
+    ("scroll-writer", "scroll"),
+    ("sprite-writer", "sprites"),
+    ("bank-switch", "bank"),
+    ("frame-wait", "wait"),
+    ("counting-spin", "spin"),
+    ("idle-spin", "spin"),
+];
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Layout {
     pub org: u16,
@@ -294,12 +318,17 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             if walk.claim[i] == 2 || in_table(t) {
                 continue; // inside an instruction: no line to hang a label on
             }
-            let name = match kind {
+            // A routine or a loop a rule named is called by what it is.
+            let named = is_marks.get(&(offset + t.wrapping_sub(org) as usize)).and_then(|rests| CALLED.iter().find(|(pattern, _)| rests.iter().any(|r| r.split_whitespace().next() == Some(*pattern))).map(|x| x.1));
+            let name = match (kind, named) {
+                ("at" | "routine", Some(called)) => format!("{called}_{t:04X}"),
+                _ => match kind {
                 "at" => format!("at_{t:04X}"),
                 "routine" => format!("routine_{t:04X}"),
                 "dispatch" => format!("dispatch_{t:04X}"),
                 "brk" => format!("brk_{t:04X}"),
                 _ => kind.to_string(),
+                },
             };
             // Labels are one namespace for the whole file, so on a board
             // with more than one PRG bank each carries its bank's number.
