@@ -88,3 +88,30 @@ fn the_tools_find_what_the_dissection_found() {
     // The menu, the title, the transition and play are told apart.
     assert!(r["modes"]["modes"].as_array().unwrap().len() >= 4);
 }
+
+/// Not the dissection's: what following values found on 2026-10-01, kept
+/// so it stays found. Two bytes of RAM that each reach a sprite's X
+/// byte, never the same one together, are compared in one called
+/// routine; the byte that reaches every sprite's X with them (the
+/// camera) meets nothing.
+#[test]
+#[ignore = "needs FLOW_TRACE, a trace of the owner's own cartridge"]
+fn two_positions_meet_and_the_camera_does_not() {
+    let r = report();
+    let fed_x = |cell: u64| r["sprite_feeds"].as_array().unwrap().iter().any(|f| f[0] == cell && f[2].as_u64().unwrap() > 0);
+    for cell in [0x86, 0x87, 0x071c] {
+        assert!(fed_x(cell), "${cell:04X} reaches a sprite's X");
+    }
+    let meets = r["meets"].as_array().unwrap();
+    assert!(!meets.is_empty());
+    let mut routines: Vec<u64> = Vec::new();
+    for m in meets {
+        let pairs = m["pairs"].as_array().unwrap();
+        assert!(pairs.iter().any(|p| p[0] == 0x86 && p[1] == 0x87 && p[3].as_str().unwrap().contains('x')), "{m}");
+        assert!(!pairs.iter().any(|p| p[0] == 0x071c || p[1] == 0x071c), "the camera is not an object: {m}");
+        routines.push(m["routine"].as_u64().unwrap());
+    }
+    routines.dedup();
+    assert_eq!(routines.len(), 1, "one routine holds them all");
+    assert_eq!(r["routines"][routines[0] as usize]["entry"], "call");
+}

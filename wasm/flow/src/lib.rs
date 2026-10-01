@@ -20,6 +20,26 @@
 //! went frame by frame, and the stretches of the run that look alike
 //! (modes: a title, a menu, play).
 //!
+//! **Where a value came from.** Each byte of RAM and each of A, X and Y
+//! carries the cells its value was made from: a load takes the cell's
+//! (or the cell itself, when nothing was copied into it), a store hands
+//! them on, an add or a subtract joins the two sides, a constant has
+//! none. Up to four are kept; a value made from more is nobody's, and
+//! the cell it is stored in becomes a source of its own. A value stored
+//! back into a cell it was made from leaves that cell its own too (a
+//! position moved by its speed is still the position), and the stack
+//! is never a source. Nor is scratch: a cell counts only when it carries
+//! a value from one frame into the next, which is to say that in at
+//! least half the frames it was touched, the first touch was a read (a
+//! temporary is written before it is read; a position is read, moved
+//! and written back). From that, two things at the end: the cells that
+//! reached a sprite's Y or X byte in the page the DMA takes, and the
+//! compares and subtracts where two such cells met that never reached
+//! the same sprite byte together. That is how two objects' positions
+//! are seen to be compared when another routine staged them in
+//! temporaries first; a position against the camera is not one,
+//! because the camera reaches every sprite with the position.
+//!
 //! **How the call stack is followed.** A frame is pushed when a routine is
 //! entered and lives while its way back is still on the stack: the two
 //! bytes a JSR pushed, or the three an interrupt did. The first
@@ -49,6 +69,41 @@ const F_HELD: u8 = 16;
 
 /// Code in RAM has no place in the ROM: it is keyed by its address.
 const RAM_KEY: u32 = 0x8000_0000;
+
+/// The cells a value was made from: up to four addresses in RAM.
+#[derive(Clone, Copy, Default)]
+struct Src {
+    n: u8,
+    at: [u16; 4],
+}
+
+impl Src {
+    fn of(a: u16) -> Src {
+        Src { n: 1, at: [a, 0, 0, 0] }
+    }
+
+    fn cells(&self) -> &[u16] {
+        &self.at[..self.n as usize]
+    }
+
+    /// Both sides' cells; more than four and it is nobody's.
+    fn join(&mut self, other: Src) {
+        for &a in other.cells() {
+            if self.cells().contains(&a) {
+                continue;
+            }
+            if self.n == 4 {
+                *self = Src::default();
+                return;
+            }
+            self.at[self.n as usize] = a;
+            self.n += 1;
+        }
+    }
+}
+
+/// The most meetings kept: (site, cell, cell) triples.
+const MEETS: usize = 1 << 19;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -148,7 +203,9 @@ struct Cur {
     /// Its data accesses so far (address, read), folded into the site
     /// when it finishes: the site does not exist until then, so an
     /// instruction's first run would otherwise leave nothing there.
-    accesses: Vec<(u16, bool)>,
+    /// The third is the cell, when the access was of RAM (the stack
+    /// included), for following values.
+    accesses: Vec<(u16, bool, u16)>,
 }
 
 #[derive(Default, Clone)]
@@ -204,6 +261,24 @@ pub struct Flow {
     vram_step: u16,
     /// Pages named by writes of $4014, by count.
     oam_pages: [u32; 256],
+    /// What each byte of RAM was made from (empty: itself), and A, X, Y.
+    origin: Vec<Src>,
+    made: [Src; 3],
+    /// Stores by (cell the value came from, page of the cell stored to,
+    /// that cell's address mod 4): 2048 by 32.
+    feeds: Vec<u32>,
+    /// A compare or subtract of two values made from different cells:
+    /// (site, lower cell, higher cell) -> count.
+    meets: HashMap<(u32, u16, u16), u64>,
+    /// Two cells whose values went into one store together: (lower,
+    /// higher, page of the cell stored to times four plus its address
+    /// mod 4).
+    together: HashSet<(u16, u16, u8)>,
+    /// Per byte of RAM: the frame it was last touched in, the frames it
+    /// was touched in, and those where the first touch was a read.
+    seen: Vec<u32>,
+    touched: Vec<u32>,
+    carried: Vec<u32>,
 }
 
 impl Flow {
@@ -233,6 +308,14 @@ impl Flow {
             vram_addr: 0,
             vram_step: 1,
             oam_pages: [0; 256],
+            origin: vec![Src::default(); 0x800],
+            made: [Src::default(); 3],
+            feeds: vec![0; 0x800 * 32],
+            meets: HashMap::new(),
+            together: HashSet::new(),
+            seen: vec![u32::MAX; 0x800],
+            touched: vec![0; 0x800],
+            carried: vec![0; 0x800],
         }
     }
 
@@ -400,7 +483,7 @@ impl Flow {
         }
         if let Some(c) = self.cur.as_mut() {
             let counted = keep && addr < 0x8000 && !(0x0100..0x0200).contains(&addr);
-            c.accesses.push((if counted { addr } else { 0xffff }, read));
+            c.accesses.push((if counted { addr } else { 0xffff }, read, if ab < 0x2000 { ab & 0x07ff } else { 0xffff }));
         }
     }
 
@@ -507,6 +590,111 @@ impl Flow {
         }
     }
 
+    /// Where the instruction's values came from, and went.
+    fn follow(&mut self, c: &Cur, interrupt: bool) {
+        const A: usize = 0;
+        const X: usize = 1;
+        const Y: usize = 2;
+        let name = if interrupt { "" } else { ops::name(c.op) };
+        let mode = ops::mode(c.op);
+        for &(_, read, cell) in &c.accesses {
+            if cell != 0xffff && self.seen[cell as usize] != c.frame {
+                self.seen[cell as usize] = c.frame;
+                self.touched[cell as usize] += 1;
+                self.carried[cell as usize] += read as u32;
+            }
+        }
+        // The operand: the last cell read (a dummy read comes first), or
+        // nothing for a constant, the ROM and the hardware.
+        let operand = match c.accesses.iter().rev().find(|a| a.1) {
+            Some(&(_, _, cell)) if cell != 0xffff && mode != ops::Mode::Imm => {
+                let o = self.origin[cell as usize];
+                // A cell nothing was copied into is a source itself,
+                // unless it is the stack.
+                if o.n == 0 && !(0x0100..0x0200).contains(&cell) {
+                    Src::of(cell)
+                } else {
+                    o
+                }
+            }
+            _ => Src::default(),
+        };
+        let written = c.accesses.iter().find(|a| !a.1 && a.2 != 0xffff).map(|a| a.2);
+        let (reg, stored): (Option<usize>, Option<Src>) = match name {
+            "STA" | "PHA" => (None, Some(self.made[A])),
+            "STX" => (None, Some(self.made[X])),
+            "STY" => (None, Some(self.made[Y])),
+            "SAX" => {
+                let mut v = self.made[A];
+                v.join(self.made[X]);
+                (None, Some(v))
+            }
+            "CMP" | "SBC" => (Some(A), None),
+            "CPX" => (Some(X), None),
+            "CPY" => (Some(Y), None),
+            _ => (None, None),
+        };
+        // Two values meet in a compare or a subtract.
+        if let Some(r) = reg {
+            let mine = self.made[r];
+            for &a in mine.cells() {
+                for &b in operand.cells() {
+                    if a != b {
+                        let k = (c.key, a.min(b), a.max(b));
+                        if self.meets.len() < MEETS || self.meets.contains_key(&k) {
+                            *self.meets.entry(k).or_insert(0) += 1;
+                        }
+                    }
+                }
+            }
+        }
+        match name {
+            "LDA" | "PLA" => self.made[A] = operand,
+            "LDX" => self.made[X] = operand,
+            "LDY" => self.made[Y] = operand,
+            "LAX" => {
+                self.made[A] = operand;
+                self.made[X] = operand;
+            }
+            "ADC" | "SBC" | "AND" | "ORA" | "EOR" => self.made[A].join(operand),
+            "TAX" => self.made[X] = self.made[A],
+            "TAY" => self.made[Y] = self.made[A],
+            "TXA" => self.made[A] = self.made[X],
+            "TYA" => self.made[A] = self.made[Y],
+            "TSX" => self.made[X] = Src::default(),
+            _ => {}
+        }
+        match (stored, written) {
+            (Some(v), Some(cell)) => {
+                // A value made from the cell it goes back into is that
+                // cell's own (a position moved by its speed).
+                self.origin[cell as usize] = if v.cells().contains(&cell) { Src::default() } else { v };
+                let slot = ((cell >> 8) as usize) * 4 + (cell & 3) as usize;
+                for (i, &from) in v.cells().iter().enumerate() {
+                    if from != cell {
+                        self.feeds[from as usize * 32 + slot] += 1;
+                    }
+                    for &other in &v.cells()[i + 1..] {
+                        if self.together.len() < MEETS {
+                            self.together.insert((from.min(other), from.max(other), slot as u8));
+                        }
+                    }
+                }
+            }
+            // A shift or a count in place leaves the cell what it was;
+            // anything else written (a JSR's or an interrupt's pushes) is
+            // nobody's value.
+            (None, _) if !matches!(name, "INC" | "DEC" | "ASL" | "LSR" | "ROL" | "ROR") => {
+                for &(_, read, cell) in &c.accesses {
+                    if !read && cell != 0xffff {
+                        self.origin[cell as usize] = Src::default();
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
     fn finish_instruction(&mut self, c: Cur, next: u32) {
         // An interrupt's entry fetches an opcode and throws it away: the
         // vector read says so, and the instruction did not run.
@@ -524,6 +712,7 @@ impl Flow {
         let fallthrough = c.key.wrapping_add(ops::len(c.op) as u32);
         let cycles = c.cycles as u64 + c.held as u64;
         let fr = c.frame as usize;
+        self.follow(&c, interrupt.is_some());
         if interrupt.is_none() || interrupt == Some(Entry::Brk) {
             self.instructions += 1;
             let frame = c.frame;
@@ -532,7 +721,7 @@ impl Flow {
             site.count += 1;
             site.cycles += cycles;
             site.last = frame;
-            for &(addr, read) in &c.accesses {
+            for &(addr, read, _) in &c.accesses {
                 if read {
                     site.data_reads += 1;
                 } else {
@@ -705,6 +894,40 @@ impl Flow {
 
         let loops = self.loops();
         let variables = self.variables();
+        // The cells that reached a sprite's Y or X byte, and the
+        // meetings of two of them that reached the same one.
+        let kept = |cell: u16| self.carried[cell as usize] * 2 >= self.touched[cell as usize];
+        let fed = |cell: u16| -> (u32, u32) {
+            oam_page.filter(|&p| p < 8 && kept(cell)).map_or((0, 0), |p| {
+                let at = cell as usize * 32 + p as usize * 4;
+                (self.feeds[at], self.feeds[at + 3])
+            })
+        };
+        let sprite_feeds: Vec<(u16, u32, u32)> = (0..0x800u16).map(|c| (c, fed(c).0, fed(c).1)).filter(|f| f.1 + f.2 > 0).collect();
+        let mut by_site: HashMap<u32, Vec<(u16, u16, u64, &'static str)>> = HashMap::new();
+        let apart = |a: u16, b: u16, byte: u8| oam_page.is_some_and(|p| !self.together.contains(&(a, b, p * 4 + byte)));
+        for (&(key, a, b), &n) in &self.meets {
+            let ((ay, ax), (by, bx)) = (fed(a), fed(b));
+            let axis = match (ay > 0 && by > 0 && apart(a, b, 0), ax > 0 && bx > 0 && apart(a, b, 3)) {
+                (true, true) => "xy",
+                (true, false) => "y",
+                (false, true) => "x",
+                (false, false) => continue,
+            };
+            by_site.entry(key).or_default().push((a, b, n, axis));
+        }
+        let mut meets: Vec<MeetOut> = by_site
+            .into_iter()
+            .filter_map(|(key, mut pairs)| {
+                let site = self.sites.get(&key)?;
+                pairs.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)).then(a.1.cmp(&b.1)));
+                let total = pairs.iter().map(|p| p.2).sum();
+                let distinct = pairs.len() as u32;
+                pairs.truncate(64);
+                Some(MeetOut { key, addr: site.addr, routine: site.routine, total, distinct, pairs })
+            })
+            .collect();
+        meets.sort_by_key(|m| m.key);
         let modes = self.modes();
         let input = self.input();
         let mut dispatch: Vec<DispatchOut> = self
@@ -732,6 +955,8 @@ impl Flow {
             loops,
             variables,
             oam_page,
+            sprite_feeds,
+            meets,
             dispatch,
             modes,
             input,
@@ -999,10 +1224,29 @@ struct Report {
     variables: Vec<VarOut>,
     /// The RAM page the sprite DMA took most often, when it took one.
     oam_page: Option<u8>,
+    /// The cells whose values reached a sprite's Y or X byte in that
+    /// page: cell, stores into a Y, stores into an X.
+    sprite_feeds: Vec<(u16, u32, u32)>,
+    /// Compares and subtracts where two such cells met.
+    meets: Vec<MeetOut>,
     dispatch: Vec<DispatchOut>,
     modes: ModesOut,
     input: Vec<ButtonOut>,
     timeline: TimelineOut,
+}
+
+/// A compare or a subtract whose two sides were made from different
+/// cells that both reached a sprite's position: the cells (lower
+/// first), how often, and which coordinate both reached. `distinct` is
+/// how many pairs met there; the sixty-four that met most are listed.
+#[derive(Serialize)]
+struct MeetOut {
+    key: u32,
+    addr: u16,
+    routine: u32,
+    total: u64,
+    distinct: u32,
+    pairs: Vec<(u16, u16, u64, &'static str)>,
 }
 
 #[derive(Serialize)]

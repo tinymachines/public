@@ -199,8 +199,10 @@ mark.
 | `pad-poll` | a routine that read `$4016` or `$4017` at least eight times (one per button) for every frame it ran: `port= reads-per-frame= strobes-per-frame=` (writes of `$4016` per frame, 0 when the strobe is elsewhere). Per frame, not per entry: one game's poll is entered twice a frame and reads four times each |
 | `jump-engine` | the routine the run's dispatching `JSR`s call: `tables=` how many call sites, `dispatches=` how many times it dispatched |
 | `idle-spin` | a loop of one instruction the run counted as idle: `iterations= per-frame=` |
-| `game-loop-in-nmi` | when there is an idle spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |
-| `frame-wait` | a loop the run went round whose instructions only load, test and branch, on bytes of RAM at fixed addresses, so that nothing in it can change what it tests and only an interrupt lets it out; marked when the NMI handler, or a routine the handler reached by calls, wrote the byte the loop read most: `flag=` that byte, `entries=` times the loop was entered, `iterations=` times round, `set-in-nmi=` those writes, `of=` frames. A loop that indexes, counts a register down, calls, reads the hardware, or leaves by a `JMP` anywhere but its last instruction is not one, whatever it reads |
+| `counting-spin` | an endless loop of several instructions: a straight line with no branch, call or return in it, closed by a `JMP` to its own head, that wrote one byte of RAM and read nothing but RAM: `byte= iterations= per-frame= read-elsewhere=` (reads of that byte by routines outside the loop: it is as good as a random number to them) |
+| `game-loop-in-nmi` | when there is an idle spin or a counting spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |
+| `frame-wait` | a loop the run went round whose instructions only load, test and branch, on bytes of RAM at fixed addresses, so that nothing in it can change what it tests and only an interrupt lets it out; marked when the NMI handler, or a routine the handler reached by calls, wrote the byte the loop read most: `flag=` that byte, `entries=` times the loop was entered, `iterations=` times round, `set-in-nmi=` those writes, `of=` frames. A `JSR` may sit in the loop when neither the routine it calls nor anything that one reached wrote the byte (`calls=`: a wait that does a chore each turn). A loop that indexes, counts a register down, reads the hardware, or leaves by a `JMP` anywhere but its last instruction is not one, whatever it reads |
+| `position-compare` | a routine holding a compare or a subtract whose two sides were made from different bytes of RAM that each reached a sprite's Y or X byte and never the same sprite byte together (so a position against the camera is not one), and that each carry a value from one frame into the next (so a temporary holding a constant is not one). The flow follows each value from the byte it was loaded from through registers, the stack and temporaries: `sites=` such instructions in the routine, `pairs=` different pairs of bytes, `cells=` different bytes, `meets=` times, `x=` and `y=` the bytes by the coordinate they reached (twelve at most). It is the heart of a collision test, and equally of an enemy asking which side the player is on and of a game sorting its sprites by depth; the rule does not tell them apart |
 | `sound-driver` | of the routines that wrote the APU (`$4000` to `$4013`, `$4015`, `$4017`), the one that wrote most among those that ran in at least half as many frames as the busiest: `writes= frames=` |
 | `vram-drain` | the same over writes of `$2007`, and where the beam was for them: `in-blank= in-picture=` |
 | `sprite-0-split` | a routine that read `$2002` at least eight times a frame while the picture was drawing (the wait for sprite 0's hit; a wait is many reads) and then wrote `$2005` there, at least every other frame it ran; `$2006` does not count, since a screen drawn with rendering off sets the address in the picture too: `scroll-writes-in-picture= status-reads-in-picture= frames=` |
@@ -227,10 +229,14 @@ rule that asks "in at least half the frames" asks it of the watched
 ones. (Counting the crawl's frames too halved every routine's share,
 and for a while no game had its loop in the interrupt.)
 
-The collision test is still to come: in Super Mario Bros. the two
-positions reach the comparison through zero-page temporaries another
-routine fills, so no rule over one routine's reads finds it, and it
-waits on the flow of values between routines. So do the object slots.
+Where a value came from is the flow's to say (`wasm/flow`, "Where a
+value came from"): the report lists the bytes that reached a sprite's
+position (`sprite_feeds`) and the instructions where two of them met
+(`meets`). In Super Mario Bros. the two positions reach the comparison
+through temporaries another routine fills, so no rule over one
+routine's reads finds it; followed by value, the player's X and an
+enemy's meet at three instructions of one routine. The object slots
+are still to come.
 
 ## What the static walk writes
 

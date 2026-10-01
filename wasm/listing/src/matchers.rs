@@ -81,15 +81,39 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     for (offset, (tables, dispatches)) in engines {
         out.push(Mark { offset, rest: format!("jump-engine tables={tables} dispatches={dispatches} by=match") });
     }
-    // The idle spin: a loop of one instruction the run counted as idle,
-    // and, when there is one, the NMI handler that ran the frames.
+    // The idle spin: a loop of one instruction the run counted as idle.
+    // The counting spin: an endless loop of several, a straight line
+    // closed by a JMP to its head, that wrote one byte of RAM and read
+    // nothing but RAM (one game stirs a second byte into the first).
+    // Neither can leave but by an interrupt, so when there is one, the
+    // NMI handler that ran the frames is the game.
     let spins: Vec<&crate::run::Loop> = run.loops.iter().filter(|l| l.kind == "idle" && l.head == l.tail).collect();
     for l in &spins {
         out.push(Mark { offset: l.head, rest: format!("idle-spin iterations={} per-frame={} by=match", l.iterations, l.iterations / run.watched.max(1)) });
     }
-    if let Some(spin) = spins.first() {
+    let mut spin_at = spins.first().map(|l| l.head_addr);
+    for l in run.loops.iter().filter(|l| l.head < l.tail && l.iterations > 0) {
+        let closes = prg.get(l.tail) == Some(&ops::JMP_ABS) && prg.get(l.tail + 2).is_some_and(|&hi| u16::from_le_bytes([prg[l.tail + 1], hi]) == l.head_addr);
+        let body: Vec<(&usize, &crate::run::Site)> = run.sites.range(l.head..=l.tail).collect();
+        let straight = body.iter().all(|(&k, _)| {
+            let op = prg[k];
+            k == l.tail || !(ops::is_branch(op) || matches!(op, ops::JSR | ops::JMP_ABS | ops::JMP_IND | ops::RTS | ops::RTI | ops::BRK))
+        });
+        let mut cells: Vec<u16> = body.iter().flat_map(|(_, s)| s.writes.iter().map(|x| x.0)).collect();
+        cells.sort();
+        cells.dedup();
+        let in_ram = body.iter().all(|(_, s)| s.span.is_none_or(|(_, hi)| hi < 0x0800));
+        if !(closes && straight && in_ram && cells.len() == 1) {
+            continue;
+        }
+        let byte = cells[0];
+        let elsewhere: u64 = run.routines.iter().filter(|r| !r.body.contains(&l.head)).map(|r| touched(r, byte).0).sum();
+        out.push(Mark { offset: l.head, rest: format!("counting-spin byte=${byte:04X} iterations={} per-frame={} read-elsewhere={elsewhere} by=match", l.iterations, l.iterations / run.watched.max(1)) });
+        spin_at.get_or_insert(l.head_addr);
+    }
+    if let Some(spin) = spin_at {
         for r in run.routines.iter().filter(|r| r.entry == "nmi" && r.frames as u64 * 2 >= run.watched) {
-            out.push(Mark { offset: r.offset, rest: format!("game-loop-in-nmi frames={} of={} spin=${:04X} by=match", r.frames, run.watched, spin.head_addr) });
+            out.push(Mark { offset: r.offset, rest: format!("game-loop-in-nmi frames={} of={} spin=${spin:04X} by=match", r.frames, run.watched) });
         }
     }
     // The frame wait: a loop the run went round that only loads, tests
@@ -98,29 +122,85 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     // it is marked when the NMI handler, or a routine the handler
     // reached by calls, wrote the byte it read most. A JMP may only be
     // the loop's last instruction, going back to its head: one anywhere
-    // else takes the circuit out of the range that was looked at.
-    let mut under: Vec<usize> = run.routines.iter().filter(|r| r.entry == "nmi").map(|r| r.offset).collect();
-    loop {
-        let more: Vec<usize> = run.routines.iter().filter(|r| !under.contains(&r.offset) && r.callers.iter().any(|c| under.contains(c))).map(|r| r.offset).collect();
-        if more.is_empty() {
-            break;
+    // else takes the circuit out of the range that was looked at. A JSR
+    // may sit in it when neither the routine it calls nor anything that
+    // one reached wrote the byte (a wait that does a chore each turn).
+    let below = |roots: Vec<usize>| -> Vec<usize> {
+        let mut set = roots;
+        loop {
+            let more: Vec<usize> = run.routines.iter().filter(|r| !set.contains(&r.offset) && r.callers.iter().any(|c| set.contains(c))).map(|r| r.offset).collect();
+            if more.is_empty() {
+                return set;
+            }
+            set.extend(more);
         }
-        under.extend(more);
-    }
-    for l in run.loops.iter().filter(|l| l.kind == "wait" && l.iterations > 0) {
-        let Some(flag) = l.on.filter(|&a| a < 0x0800) else { continue };
-        let still = run.sites.range(l.head..=l.tail).all(|(&k, site)| {
+    };
+    let under = below(run.routines.iter().filter(|r| r.entry == "nmi").map(|r| r.offset).collect());
+    let wrote = |set: &[usize], cell: u16| -> u64 { run.routines.iter().filter(|r| set.contains(&r.offset)).map(|r| touched(r, cell).1).sum() };
+    for l in run.loops.iter().filter(|l| l.head < l.tail && l.iterations > 0) {
+        let body: Vec<(&usize, &crate::run::Site)> = run.sites.range(l.head..=l.tail).collect();
+        let mut read: BTreeMap<u16, u64> = BTreeMap::new();
+        for (_, site) in &body {
+            for &(a, n) in &site.reads {
+                *read.entry(a).or_insert(0) += n;
+            }
+        }
+        let Some(flag) = read.iter().max_by(|a, b| a.1.cmp(b.1).then(b.0.cmp(a.0))).map(|(&a, _)| a).filter(|&a| a < 0x0800) else { continue };
+        let mut calls = 0u64;
+        let still = body.iter().all(|&(&k, site)| {
             let op = prg.get(k).copied().unwrap_or(0);
+            if op == ops::JSR && k + 2 < prg.len() {
+                // The routine called, the nearest of that address, and all it reached.
+                let target = u16::from_le_bytes([prg[k + 1], prg[k + 2]]);
+                let Some(callee) = run.routines.iter().filter(|r| r.addr == target).min_by_key(|r| r.offset.abs_diff(k)) else { return false };
+                calls += 1;
+                return wrote(&below(vec![callee.offset]), flag) == 0;
+            }
             let tests = matches!(ops::name(op), "LDA" | "LDX" | "LDY" | "CMP" | "CPX" | "CPY" | "BIT" | "AND" | "ORA" | "NOP") || ops::is_branch(op) || (op == ops::JMP_ABS && k == l.tail);
             tests && site.writes.is_empty() && site.span.is_none_or(|(lo, hi)| lo == hi && lo < 0x0800)
         });
         if !still {
             continue;
         }
-        let set: u64 = run.routines.iter().filter(|r| under.contains(&r.offset)).map(|r| touched(r, flag).1).sum();
+        let set = wrote(&under, flag);
         if set > 0 {
-            out.push(Mark { offset: l.head, rest: format!("frame-wait flag=${flag:04X} entries={} iterations={} set-in-nmi={set} of={} by=match", l.entries, l.iterations, run.watched) });
+            let chores = if calls > 0 { format!(" calls={calls}") } else { String::new() };
+            out.push(Mark { offset: l.head, rest: format!("frame-wait flag=${flag:04X} entries={} iterations={}{chores} set-in-nmi={set} of={} by=match", l.entries, l.iterations, run.watched) });
         }
+    }
+    // Where two objects are compared: a compare or a subtract whose two
+    // sides were made from different bytes of RAM that each reached a
+    // sprite's position and never the same sprite byte together (the
+    // flow follows the values through the temporaries). By the routine
+    // the instruction ran in.
+    let mut compared: BTreeMap<usize, (u64, BTreeMap<(u16, u16), (u64, bool, bool)>)> = BTreeMap::new();
+    for m in &run.meets {
+        let e = compared.entry(m.routine).or_default();
+        e.0 += 1;
+        for (a, b, n, axis) in &m.pairs {
+            let p = e.1.entry((*a, *b)).or_insert((0, false, false));
+            p.0 += n;
+            p.1 |= axis.contains('x');
+            p.2 |= axis.contains('y');
+        }
+    }
+    for (routine, (sites, pairs)) in compared {
+        let cells = |pick: fn(&(u64, bool, bool)) -> bool| -> Vec<u16> {
+            let mut v: Vec<u16> = pairs.iter().filter(|(_, p)| pick(p)).flat_map(|(&(a, b), _)| [a, b]).collect();
+            v.sort();
+            v.dedup();
+            v
+        };
+        let (xs, ys) = (cells(|p| p.1), cells(|p| p.2));
+        let list = |name: &str, v: &[u16]| if v.is_empty() { String::new() } else { format!(" {name}={}", v.iter().take(12).map(|a| format!("${a:04X}")).collect::<Vec<_>>().join(",")) };
+        let mut all = xs.clone();
+        all.extend(&ys);
+        all.sort();
+        all.dedup();
+        out.push(Mark {
+            offset: routine,
+            rest: format!("position-compare sites={sites} pairs={} cells={} meets={}{}{} by=match", pairs.len(), all.len(), pairs.values().map(|p| p.0).sum::<u64>(), list("x", &xs), list("y", &ys)),
+        });
     }
     // The sound driver and the VRAM drain: the routine that wrote the
     // APU's registers, or $2007, the most among those that ran the frames.

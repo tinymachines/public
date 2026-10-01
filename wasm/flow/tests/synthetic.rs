@@ -289,6 +289,102 @@ fn hardware_accesses_say_whether_the_picture_was_drawing() {
 }
 
 #[test]
+fn values_are_followed_to_where_two_objects_meet() {
+    let mut t = T { out: Vec::new(), s: 0xfd };
+    t.ins(0x8000, &[0x78], &[]);
+    // The sprite page is named to $4014.
+    t.ins(0x8001, &[0x8d, 0x14, 0x40], &[]);
+    t.held(0x4014, 0x02, false);
+    // Two objects' X positions at $86 and $87 go to two sprites' X
+    // bytes, each less the camera at $40, the second by way of the stack.
+    t.ins(0x8004, &[0xa5, 0x86], &[(0x0086, 0x30, true)]);
+    t.ins(0x8006, &[0xe5, 0x40], &[(0x0040, 0x01, true)]);
+    t.ins(0x8008, &[0x8d, 0x03, 0x02], &[(0x0203, 0x2f, false)]);
+    t.ins(0x800b, &[0xa5, 0x87], &[(0x0087, 0x50, true)]);
+    t.ins(0x800d, &[0xe5, 0x40], &[(0x0040, 0x01, true)]);
+    t.ins(0x800f, &[0x48], &[(0x01fd, 0x4f, false)]);
+    t.ins(0x8010, &[0x68], &[(0x01fd, 0x4f, true)]);
+    t.ins(0x8011, &[0x8d, 0x07, 0x02], &[(0x0207, 0x4f, false)]);
+    // A third byte, $50, goes only to a sprite's tile: it feeds no position.
+    t.ins(0x8014, &[0xa5, 0x50], &[(0x0050, 0x07, true)]);
+    t.ins(0x8016, &[0x8d, 0x01, 0x02], &[(0x0201, 0x07, false)]);
+    // One routine stages the two positions in temporaries...
+    t.jsr(0x8019, 0x8100);
+    t.ins(0x8100, &[0xa5, 0x86], &[(0x0086, 0x30, true)]);
+    t.ins(0x8102, &[0x85, 0x00], &[(0x0000, 0x30, false)]);
+    t.ins(0x8104, &[0xb5, 0x86], &[(0x0086, 0x30, true), (0x0087, 0x50, true)]);
+    t.ins(0x8106, &[0x85, 0x01], &[(0x0001, 0x50, false)]);
+    t.rts(0x8108);
+    // ...and another subtracts one from the other: where they meet.
+    t.jsr(0x801c, 0x8200);
+    t.ins(0x8200, &[0xa5, 0x00], &[(0x0000, 0x30, true)]);
+    t.ins(0x8202, &[0x38], &[]);
+    t.ins(0x8203, &[0xe5, 0x01], &[(0x0001, 0x50, true)]);
+    // Not meetings: a compare with a constant, with a byte that feeds no
+    // position, with the same object, with a temporary a constant has
+    // since been stored over, with the camera (which reached the same
+    // sprite byte the position did), and with a constant that went by
+    // way of the stack.
+    t.ins(0x8205, &[0xc9, 0x10], &[]);
+    t.ins(0x8207, &[0xa5, 0x86], &[(0x0086, 0x30, true)]);
+    t.ins(0x8209, &[0xc5, 0x50], &[(0x0050, 0x07, true)]);
+    t.ins(0x820b, &[0xc5, 0x86], &[(0x0086, 0x30, true)]);
+    t.ins(0x820d, &[0xa9, 0x05], &[]);
+    t.ins(0x820f, &[0x85, 0x01], &[(0x0001, 0x05, false)]);
+    t.ins(0x8211, &[0xa5, 0x86], &[(0x0086, 0x30, true)]);
+    t.ins(0x8213, &[0xc5, 0x01], &[(0x0001, 0x05, true)]);
+    t.ins(0x8215, &[0xc5, 0x40], &[(0x0040, 0x01, true)]);
+    t.ins(0x8217, &[0xa9, 0x09], &[]);
+    t.ins(0x8219, &[0x48], &[(0x01fb, 0x09, false)]);
+    t.ins(0x821a, &[0x68], &[(0x01fb, 0x09, true)]);
+    t.ins(0x821b, &[0x8d, 0x0b, 0x02], &[(0x020b, 0x09, false)]);
+    t.ins(0x821e, &[0xc5, 0x86], &[(0x0086, 0x30, true)]);
+    // A speed at $57, itself made of four bytes, moves the position:
+    // the position stays its own, and the four reach no sprite.
+    t.ins(0x8220, &[0xa5, 0x60], &[(0x0060, 1, true)]);
+    t.ins(0x8222, &[0x65, 0x61], &[(0x0061, 1, true)]);
+    t.ins(0x8224, &[0x65, 0x62], &[(0x0062, 1, true)]);
+    t.ins(0x8226, &[0x65, 0x63], &[(0x0063, 1, true)]);
+    t.ins(0x8228, &[0x65, 0x86], &[(0x0086, 0x30, true)]);
+    t.ins(0x822a, &[0x85, 0x86], &[(0x0086, 0x34, false)]);
+    t.ins(0x822c, &[0xa5, 0x86], &[(0x0086, 0x34, true)]);
+    t.ins(0x822e, &[0x8d, 0x0f, 0x02], &[(0x020f, 0x34, false)]);
+    // And a speed of one byte, $64, moves the other: the same.
+    t.ins(0x8231, &[0xa5, 0x87], &[(0x0087, 0x50, true)]);
+    t.ins(0x8233, &[0x65, 0x64], &[(0x0064, 1, true)]);
+    t.ins(0x8235, &[0x85, 0x87], &[(0x0087, 0x51, false)]);
+    t.ins(0x8237, &[0xa5, 0x87], &[(0x0087, 0x51, true)]);
+    t.ins(0x8239, &[0x8d, 0x13, 0x02], &[(0x0213, 0x51, false)]);
+    // Scratch: $03 holds a constant, reaches a sprite's X and is
+    // compared with a position. It was written before it was read, so
+    // it carries nothing from frame to frame and is nobody's position.
+    t.ins(0x823c, &[0xa9, 0x10], &[]);
+    t.ins(0x823e, &[0x85, 0x03], &[(0x0003, 0x10, false)]);
+    t.ins(0x8240, &[0xa5, 0x03], &[(0x0003, 0x10, true)]);
+    t.ins(0x8242, &[0x8d, 0x17, 0x02], &[(0x0217, 0x10, false)]);
+    t.ins(0x8245, &[0xa5, 0x86], &[(0x0086, 0x34, true)]);
+    t.ins(0x8247, &[0xc5, 0x03], &[(0x0003, 0x10, true)]);
+    t.rts(0x8249);
+    t.ins(0x801f, &[0x4c, 0x1f, 0x80], &[]);
+    let mut f = flow::Flow::new(0x8000);
+    f.feed(&t.out);
+    let r: Value = serde_json::from_str(&f.report()).unwrap();
+    assert_eq!(r["oam_page"], 2);
+    // The bytes that reached a sprite's Y or X: [cell, into Y, into X].
+    // The camera reaches both sprites' X with the positions; the stack
+    // and the speeds' bytes reach none.
+    assert_eq!(r["sprite_feeds"], serde_json::json!([[0x40, 0, 2], [0x86, 0, 2], [0x87, 0, 2]]), "{}", r["sprite_feeds"]);
+    // One meeting: the SBC at $8203, of $86 with $87, on X, in the
+    // routine at $8200.
+    let meets = r["meets"].as_array().unwrap();
+    assert_eq!(meets.len(), 1, "{meets:?}");
+    assert_eq!(meets[0]["key"], 0x0203);
+    assert_eq!(meets[0]["addr"], 0x8203);
+    assert_eq!(meets[0]["routine"], routine(&r, "call", 0x8200)["id"]);
+    assert_eq!(meets[0]["pairs"], serde_json::json!([[0x86, 0x87, 1, "x"]]));
+}
+
+#[test]
 fn chunks_that_split_records_change_nothing() {
     assert_eq!(report(3), report(1 << 16));
 }

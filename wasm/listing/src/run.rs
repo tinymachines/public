@@ -85,6 +85,17 @@ pub struct Var {
     pub total: u64,
 }
 
+/// An instruction that compared or subtracted two values made from
+/// different cells of RAM that both reached a sprite's position: its
+/// PRG offset, the routine it ran in, and the pairs (lower cell, higher
+/// cell, how often, and the coordinate both reached: x, y or xy).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Meet {
+    pub offset: usize,
+    pub routine: usize,
+    pub pairs: Vec<(u16, u16, u64, String)>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Run {
     pub frames: u64,
@@ -98,6 +109,7 @@ pub struct Run {
     pub dispatch: Vec<Dispatch>,
     pub loops: Vec<Loop>,
     pub vars: Vec<Var>,
+    pub meets: Vec<Meet>,
 }
 
 fn u(v: &Value) -> u64 {
@@ -215,6 +227,23 @@ impl Run {
             };
             run.vars.push(Var { addr: u(&x["addr"]) as u16, writers: side("writers"), readers: side("readers"), total: u(&x["total"]) });
         }
+        for m in v["meets"].as_array().unwrap_or(&none) {
+            let key = m["key"].as_u64().unwrap_or(u64::MAX) as usize;
+            let Some(&(routine, _)) = by_id.get(&u(&m["routine"])) else { continue };
+            if key >= prg_len || routine >= prg_len {
+                continue;
+            }
+            let pairs = m["pairs"]
+                .as_array()
+                .unwrap_or(&none)
+                .iter()
+                .filter_map(|p| {
+                    let p = p.as_array()?;
+                    Some((u(p.first()?) as u16, u(p.get(1)?) as u16, u(p.get(2)?), p.get(3)?.as_str()?.to_string()))
+                })
+                .collect();
+            run.meets.push(Meet { offset: key, routine, pairs });
+        }
         Ok(run)
     }
 
@@ -300,6 +329,24 @@ impl Run {
                     x.on = x.on.or(l.on);
                 }
                 None => self.loops.push(l),
+            }
+        }
+        for m in other.meets {
+            match self.meets.iter_mut().find(|x| x.offset == m.offset) {
+                Some(x) => {
+                    for (a, b, n, axis) in m.pairs {
+                        match x.pairs.iter_mut().find(|p| p.0 == a && p.1 == b) {
+                            Some(p) => {
+                                p.2 += n;
+                                if p.3 != axis {
+                                    p.3 = "xy".to_string();
+                                }
+                            }
+                            None => x.pairs.push((a, b, n, axis)),
+                        }
+                    }
+                }
+                None => self.meets.push(m),
             }
         }
         let fold = |into: &mut Vec<(usize, u16, u64)>, from: Vec<(usize, u16, u64)>| {
