@@ -200,6 +200,7 @@ mark.
 | `jump-engine` | the routine the run's dispatching `JSR`s call: `tables=` how many call sites, `dispatches=` how many times it dispatched |
 | `idle-spin` | a loop of one instruction the run counted as idle: `iterations= per-frame=` |
 | `game-loop-in-nmi` | when there is an idle spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |
+| `frame-wait` | a loop the run went round whose instructions only load, test and branch, on bytes of RAM at fixed addresses, so that nothing in it can change what it tests and only an interrupt lets it out; marked when the NMI handler, or a routine the handler reached by calls, wrote the byte the loop read most: `flag=` that byte, `entries=` times the loop was entered, `iterations=` times round, `set-in-nmi=` those writes, `of=` frames. A loop that indexes, counts a register down, calls, reads the hardware, or leaves by a `JMP` anywhere but its last instruction is not one, whatever it reads |
 | `sound-driver` | of the routines that wrote the APU (`$4000` to `$4013`, `$4015`, `$4017`), the one that wrote most among those that ran in at least half as many frames as the busiest: `writes= frames=` |
 | `vram-drain` | the same over writes of `$2007`, and where the beam was for them: `in-blank= in-picture=` |
 | `sprite-0-split` | a routine that read `$2002` at least eight times a frame while the picture was drawing (the wait for sprite 0's hit; a wait is many reads) and then wrote `$2005` there, at least every other frame it ran; `$2006` does not count, since a screen drawn with rendering off sets the address in the picture too: `scroll-writes-in-picture= status-reads-in-picture= frames=` |
@@ -215,13 +216,21 @@ drawing (lines 0 to 239) and how many in the blank, where in VRAM its
 `$2007` writes landed (pattern, name table 0 to 3, palette), and how
 many bytes it wrote into the sprite page; and per instruction, the
 addresses it read and wrote below the ROM and the lowest and highest
-of them. That is what the seven above and the `@array` lines read. The
-collision test is still to come: in Super Mario Bros. the two positions
-reach the comparison through zero-page temporaries another routine
-fills, so no rule over one routine's reads finds it, and it waits on the
-flow of values between routines. The random byte, the object slots, the collision test
-and the scroll need the reads per instruction, and come as the report
-grows.
+of them; per routine, the routines that called it; and per loop, how
+often it was entered and gone round and the address it read most. That
+is what the rules above and the `@array` lines read.
+
+"The frames" in a rule are the frames somebody watched the routines
+in: a flow report's. A crawl's own record laid over the same listing
+adds coverage and its frames to `@run`, but it names no routine, so a
+rule that asks "in at least half the frames" asks it of the watched
+ones. (Counting the crawl's frames too halved every routine's share,
+and for a while no game had its loop in the interrupt.)
+
+The collision test is still to come: in Super Mario Bros. the two
+positions reach the comparison through zero-page temporaries another
+routine fills, so no rule over one routine's reads finds it, and it
+waits on the flow of values between routines. So do the object slots.
 
 ## What the static walk writes
 

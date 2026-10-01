@@ -44,6 +44,8 @@ pub struct Routine {
     pub oam_writes: u32,
     /// The PRG offsets of the instructions it ran.
     pub body: Vec<usize>,
+    /// The routines that called it, by PRG offset.
+    pub callers: Vec<usize>,
 }
 
 /// A site the run saw choose its successor from a table: a jump
@@ -65,6 +67,10 @@ pub struct Loop {
     pub head_addr: u16,
     pub kind: String,
     pub iterations: u64,
+    /// How many times it was entered from outside itself, and, for a
+    /// wait, the address its body read most: what it waited on.
+    pub entries: u64,
+    pub on: Option<u16>,
 }
 
 /// A RAM byte one routine writes and another reads: the report's
@@ -82,6 +88,10 @@ pub struct Var {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Run {
     pub frames: u64,
+    /// The frames somebody watched the routines in: a flow report's. A
+    /// crawl's record adds coverage and frames but names no routine, so
+    /// "in half the frames" is asked of these, not of `frames`.
+    pub watched: u64,
     pub instructions: u64,
     pub sites: BTreeMap<usize, Site>,
     pub routines: Vec<Routine>,
@@ -127,9 +137,11 @@ impl Run {
         let mut by_id: BTreeMap<u64, (usize, u16)> = BTreeMap::new();
         let none = Vec::new();
         for (n, r) in v["routines"].as_array().unwrap_or(&none).iter().enumerate() {
+            by_id.insert(r["id"].as_u64().unwrap_or(n as u64), (r["key"].as_u64().unwrap_or(u64::MAX) as usize, u(&r["addr"]) as u16));
+        }
+        for r in v["routines"].as_array().unwrap_or(&none) {
             let key = r["key"].as_u64().unwrap_or(u64::MAX) as usize;
             let addr = u(&r["addr"]) as u16;
-            by_id.insert(r["id"].as_u64().unwrap_or(n as u64), (key, addr));
             if key >= prg_len {
                 continue;
             }
@@ -157,7 +169,13 @@ impl Run {
                 })
                 .collect();
             let body = r["body"].as_array().unwrap_or(&none).iter().map(|k| u(k) as usize).filter(|&k| k < prg_len).collect();
-            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame"), vram, oam_writes: u(&r["oam_writes"]) as u32, body });
+            let mut callers: Vec<usize> = r["callers"].as_array().unwrap_or(&none).iter().filter_map(|c| by_id.get(&u(c.as_array()?.first()?)).map(|x| x.0)).filter(|&k| k < prg_len).collect();
+            callers.sort();
+            callers.dedup();
+            run.routines.push(Routine { offset: key, addr, entry, entered: u(&r["entered"]), frames: u(&r["frames"]) as u32, mem: triples("mem"), in_frame: triples("in_frame"), vram, oam_writes: u(&r["oam_writes"]) as u32, body, callers });
+        }
+        if !run.routines.is_empty() {
+            run.watched = run.frames;
         }
         for d in v["dispatch"].as_array().unwrap_or(&none) {
             let key = d["key"].as_u64().unwrap_or(u64::MAX) as usize;
@@ -181,7 +199,7 @@ impl Run {
             if head >= prg_len || tail >= prg_len {
                 continue;
             }
-            run.loops.push(Loop { head, tail, head_addr: u(&l["head_addr"]) as u16, kind: l["kind"].as_str().unwrap_or("").to_string(), iterations: u(&l["iterations"]) });
+            run.loops.push(Loop { head, tail, head_addr: u(&l["head_addr"]) as u16, kind: l["kind"].as_str().unwrap_or("").to_string(), iterations: u(&l["iterations"]), entries: u(&l["entries"]), on: l["on"].as_u64().map(|a| a as u16) });
         }
         for x in v["variables"].as_array().unwrap_or(&none) {
             let side = |k: &str| -> Vec<(usize, u16, u64)> {
@@ -205,6 +223,7 @@ impl Run {
     /// dispatches and loops likewise, frames and instructions add.
     pub fn merge(&mut self, other: Run) {
         self.frames += other.frames;
+        self.watched += other.watched;
         self.instructions += other.instructions;
         for (k, s) in other.sites {
             let e = self.sites.entry(k).or_insert(Site { addr: s.addr, ..Default::default() });
@@ -231,6 +250,11 @@ impl Run {
                     for k in r.body {
                         if !x.body.contains(&k) {
                             x.body.push(k);
+                        }
+                    }
+                    for k in r.callers {
+                        if !x.callers.contains(&k) {
+                            x.callers.push(k);
                         }
                     }
                     for (region, n) in r.vram {
@@ -270,7 +294,11 @@ impl Run {
         }
         for l in other.loops {
             match self.loops.iter_mut().find(|x| x.head == l.head && x.tail == l.tail && x.kind == l.kind) {
-                Some(x) => x.iterations += l.iterations,
+                Some(x) => {
+                    x.iterations += l.iterations;
+                    x.entries += l.entries;
+                    x.on = x.on.or(l.on);
+                }
                 None => self.loops.push(l),
             }
         }

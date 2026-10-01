@@ -85,11 +85,41 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     // and, when there is one, the NMI handler that ran the frames.
     let spins: Vec<&crate::run::Loop> = run.loops.iter().filter(|l| l.kind == "idle" && l.head == l.tail).collect();
     for l in &spins {
-        out.push(Mark { offset: l.head, rest: format!("idle-spin iterations={} per-frame={} by=match", l.iterations, l.iterations / run.frames.max(1)) });
+        out.push(Mark { offset: l.head, rest: format!("idle-spin iterations={} per-frame={} by=match", l.iterations, l.iterations / run.watched.max(1)) });
     }
     if let Some(spin) = spins.first() {
-        for r in run.routines.iter().filter(|r| r.entry == "nmi" && r.frames as u64 * 2 >= run.frames) {
-            out.push(Mark { offset: r.offset, rest: format!("game-loop-in-nmi frames={} of={} spin=${:04X} by=match", r.frames, run.frames, spin.head_addr) });
+        for r in run.routines.iter().filter(|r| r.entry == "nmi" && r.frames as u64 * 2 >= run.watched) {
+            out.push(Mark { offset: r.offset, rest: format!("game-loop-in-nmi frames={} of={} spin=${:04X} by=match", r.frames, run.watched, spin.head_addr) });
+        }
+    }
+    // The frame wait: a loop the run went round that only loads, tests
+    // and branches, on bytes of RAM at fixed addresses. Nothing in such
+    // a loop can change what it tests, so only an interrupt lets it out;
+    // it is marked when the NMI handler, or a routine the handler
+    // reached by calls, wrote the byte it read most. A JMP may only be
+    // the loop's last instruction, going back to its head: one anywhere
+    // else takes the circuit out of the range that was looked at.
+    let mut under: Vec<usize> = run.routines.iter().filter(|r| r.entry == "nmi").map(|r| r.offset).collect();
+    loop {
+        let more: Vec<usize> = run.routines.iter().filter(|r| !under.contains(&r.offset) && r.callers.iter().any(|c| under.contains(c))).map(|r| r.offset).collect();
+        if more.is_empty() {
+            break;
+        }
+        under.extend(more);
+    }
+    for l in run.loops.iter().filter(|l| l.kind == "wait" && l.iterations > 0) {
+        let Some(flag) = l.on.filter(|&a| a < 0x0800) else { continue };
+        let still = run.sites.range(l.head..=l.tail).all(|(&k, site)| {
+            let op = prg.get(k).copied().unwrap_or(0);
+            let tests = matches!(ops::name(op), "LDA" | "LDX" | "LDY" | "CMP" | "CPX" | "CPY" | "BIT" | "AND" | "ORA" | "NOP") || ops::is_branch(op) || (op == ops::JMP_ABS && k == l.tail);
+            tests && site.writes.is_empty() && site.span.is_none_or(|(lo, hi)| lo == hi && lo < 0x0800)
+        });
+        if !still {
+            continue;
+        }
+        let set: u64 = run.routines.iter().filter(|r| under.contains(&r.offset)).map(|r| touched(r, flag).1).sum();
+        if set > 0 {
+            out.push(Mark { offset: l.head, rest: format!("frame-wait flag=${flag:04X} entries={} iterations={} set-in-nmi={set} of={} by=match", l.entries, l.iterations, run.watched) });
         }
     }
     // The sound driver and the VRAM drain: the routine that wrote the
@@ -131,7 +161,7 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         // The random byte: RAM a routine that ran the frames rewrites
         // from itself with a shift or a rotate (a read-modify-write on
         // the byte) and an EOR somewhere in the same routine.
-        if r.frames as u64 * 2 >= run.frames {
+        if r.frames as u64 * 2 >= run.watched {
             let mut bytes: Vec<u16> = Vec::new();
             let (mut shifts, mut eors) = (0u64, 0u64);
             for &k in &r.body {

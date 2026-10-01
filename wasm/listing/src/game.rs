@@ -1,8 +1,8 @@
 //! The game model in its first form: what a listing's marks say about
 //! the game, as JSON, with nothing of the ROM's bytes in it. Routines
 //! with how they were entered and which patterns they are, the jump
-//! engines' tables, the arrays and the shared bytes of RAM, and the
-//! coverage. The listing is the one copy of every fact here; this is a
+//! engines' tables, the loops a rule named, the arrays and the shared
+//! bytes of RAM, and the coverage. The listing is the one copy of every fact here; this is a
 //! reading of it for the union across games and for a page.
 
 use serde_json::{json, Map, Value};
@@ -30,6 +30,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
     let (_, at) = asm::addresses(l).map_err(|e| e.to_string())?;
     let mut routines = Vec::new();
     let mut tables = Vec::new();
+    let mut loops = Vec::new();
     let mut arrays = Vec::new();
     let mut variables = Vec::new();
     let mut banks = Vec::new();
@@ -85,6 +86,9 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                 if let Some(mut r) = pending_routine.take() {
                     r["name"] = json!(n);
                     routines.push(r);
+                } else if !pending_is.is_empty() {
+                    // A mark on a label that is no routine's entry: a loop's head.
+                    loops.push(json!({"name": n, "bank": bank_name, "addr": at[i], "is": std::mem::take(&mut pending_is)}));
                 }
                 pending_is.clear();
             }
@@ -111,6 +115,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
         "patterns": patterns,
         "routines": routines,
         "tables": tables,
+        "loops": loops,
         "arrays": arrays,
         "variables": variables,
     }))
