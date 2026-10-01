@@ -44,7 +44,11 @@
 //! (the fraction and the speed into the position's next byte). Anything
 //! else that sets the carry leaves it nobody's. And what A was made
 //! from at a call that turned out to be a jump engine's is kept with
-//! the dispatch: the byte that chose the way. That is how two objects' positions
+//! the dispatch: the byte that chose the way. A `JMP (ind)` of its own
+//! is followed the other way round: a byte loaded from the ROM by an
+//! index and stored remembers where in the ROM it came from and what
+//! the index was made from, and a jump through two such bytes that sat
+//! side by side in the ROM names the word it took and what chose it. That is how two objects' positions
 //! are seen to be compared when another routine staged them in
 //! temporaries first; a position against the camera is not one,
 //! because the camera reaches every sprite with the position.
@@ -215,6 +219,8 @@ struct Cur {
     /// The third is the cell, when the access was of RAM (the stack
     /// included), for following values.
     accesses: Vec<(u16, bool, u16)>,
+    /// Where in the PRG its last data read came from, when it was the ROM.
+    rom_read: Option<u32>,
 }
 
 #[derive(Default, Clone)]
@@ -234,6 +240,9 @@ struct Dispatch {
     targets: HashMap<u32, u64>,
     /// (first frame, last frame, target routine), one row per change.
     timeline: Vec<(u32, u32, u32)>,
+    /// The words of the ROM the jump's pointer was loaded from, by PRG
+    /// offset, with how often each was taken.
+    words: HashMap<u32, u64>,
     /// The cells A was made from at the call that dispatched, by count:
     /// what chose the way.
     on: HashMap<u16, u64>,
@@ -281,6 +290,13 @@ pub struct Flow {
     /// What A was made from at each JSR's latest run, by the JSR's key:
     /// should the call turn out to be a jump engine's, this chose.
     chose: HashMap<u32, Src>,
+    /// A byte loaded from the ROM by an index: where in the PRG, and
+    /// what the index was made from. For A, X and Y, and for each byte
+    /// of RAM one was stored in (u32::MAX: none).
+    rom_reg: [(u32, Src); 3],
+    rom_of: Vec<(u32, Src)>,
+    /// The word a `JMP (ind)` just took, and what indexed it.
+    jump_word: Option<(u32, Src)>,
     /// Stores by (cell the value came from, page of the cell stored to,
     /// that cell's address mod 4): 2048 by 32.
     feeds: Vec<u32>,
@@ -332,6 +348,9 @@ impl Flow {
             made: [Src::default(); 3],
             carry: Src::default(),
             chose: HashMap::new(),
+            rom_reg: [(u32::MAX, Src::default()); 3],
+            rom_of: vec![(u32::MAX, Src::default()); 0x800],
+            jump_word: None,
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
@@ -375,7 +394,7 @@ impl Flow {
                 // it on: the one held cycle that is the game's and not
                 // the DMA's, which then holds the pins where they were.
                 if first && flags & F_READ == 0 && ab == 0x4014 {
-                    self.access(ab, db, false);
+                    self.access(ab, db, false, 0);
                     if let Some(c) = self.cur.as_mut() {
                         c.cycles -= 1;
                     }
@@ -387,7 +406,7 @@ impl Flow {
                 self.begin(key, ab, db);
                 return;
             }
-            self.access(ab, db, flags & F_READ != 0);
+            self.access(ab, db, flags & F_READ != 0, prg);
         } else if kind == KIND_REGS {
             let s = r[4];
             let line = u16::from_le_bytes([r[6], r[7]]);
@@ -407,7 +426,7 @@ impl Flow {
         }
     }
 
-    fn access(&mut self, ab: u16, db: u8, read: bool) {
+    fn access(&mut self, ab: u16, db: u8, read: bool, prg: u32) {
         let Some(c) = self.cur.as_mut() else { return };
         c.cycles += 1;
         if read {
@@ -507,6 +526,9 @@ impl Flow {
         if let Some(c) = self.cur.as_mut() {
             let counted = keep && addr < 0x8000 && !(0x0100..0x0200).contains(&addr);
             c.accesses.push((if counted { addr } else { 0xffff }, read, if ab < 0x2000 { ab & 0x07ff } else { 0xffff }));
+            if read {
+                c.rom_read = (prg != 0).then(|| prg - 1);
+            }
         }
     }
 
@@ -514,7 +536,7 @@ impl Flow {
         if let Some(prev) = self.cur.take() {
             self.finish_instruction(prev, key);
         }
-        self.cur = Some(Cur { key, addr, op, frame: self.frame, s: None, line: 0, cycles: 1, held: 0, vector: None, b1: None, b2: None, routine: u32::MAX, accesses: Vec::new() });
+        self.cur = Some(Cur { key, addr, op, frame: self.frame, s: None, line: 0, cycles: 1, held: 0, vector: None, b1: None, b2: None, routine: u32::MAX, accesses: Vec::new(), rom_read: None });
     }
 
     fn routine_for(&mut self, key: u32, addr: u16, entry: Entry) -> u32 {
@@ -585,9 +607,20 @@ impl Flow {
             if let Pending::Dispatch(site, at) = pending {
                 let frame = self.frame;
                 let chose = self.chose.get(&site).copied().unwrap_or_default();
-                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), on: HashMap::new() });
+                let site_is_jump = !self.chose.contains_key(&site);
+                let word = self.jump_word.take();
+                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), words: HashMap::new(), on: HashMap::new() });
                 for &cell in chose.cells() {
                     *d.on.entry(cell).or_insert(0) += 1;
+                }
+                if let Some((word, index)) = word {
+                    *d.words.entry(word).or_insert(0) += 1;
+                    // A jump of its own was chosen by what indexed the table.
+                    if site_is_jump {
+                        for &cell in index.cells() {
+                            *d.on.entry(cell).or_insert(0) += 1;
+                        }
+                    }
                 }
                 d.depth_min = d.depth_min.min(depth);
                 *d.targets.entry(r).or_insert(0) += 1;
@@ -650,6 +683,50 @@ impl Flow {
             self.chose.insert(c.key, self.made[A]);
         }
         let written = c.accesses.iter().find(|a| !a.1 && a.2 != 0xffff).map(|a| a.2);
+        // Where a loaded byte came from in the ROM, and what indexed it.
+        const NONE: (u32, Src) = (u32::MAX, Src { n: 0, at: [0; 4] });
+        let from_rom = match (c.rom_read, c.accesses.iter().rev().find(|a| a.1)) {
+            (Some(k), Some(&(_, _, 0xffff))) if mode != ops::Mode::Imm => {
+                let index = match mode {
+                    ops::Mode::Abx | ops::Mode::Zpx | ops::Mode::Izx => self.made[X],
+                    ops::Mode::Aby | ops::Mode::Zpy | ops::Mode::Izy => self.made[Y],
+                    _ => Src::default(),
+                };
+                (k, index)
+            }
+            _ => NONE,
+        };
+        match name {
+            "LDA" => self.rom_reg[A] = from_rom,
+            "LDX" => self.rom_reg[X] = from_rom,
+            "LDY" => self.rom_reg[Y] = from_rom,
+            "TAX" => self.rom_reg[X] = self.rom_reg[A],
+            "TAY" => self.rom_reg[Y] = self.rom_reg[A],
+            "TXA" => self.rom_reg[A] = self.rom_reg[X],
+            "TYA" => self.rom_reg[A] = self.rom_reg[Y],
+            "PLA" | "ADC" | "SBC" | "AND" | "ORA" | "EOR" | "LAX" => self.rom_reg[A] = NONE,
+            "ASL" | "LSR" | "ROL" | "ROR" if mode == ops::Mode::Acc => self.rom_reg[A] = NONE,
+            "INX" | "DEX" | "TSX" => self.rom_reg[X] = NONE,
+            "INY" | "DEY" => self.rom_reg[Y] = NONE,
+            _ => {}
+        }
+        for &(_, read, cell) in &c.accesses {
+            if !read && cell != 0xffff {
+                self.rom_of[cell as usize] = match name {
+                    "STA" => self.rom_reg[A],
+                    "STX" => self.rom_reg[X],
+                    "STY" => self.rom_reg[Y],
+                    _ => NONE,
+                };
+            }
+        }
+        if c.op == ops::JMP_IND && !interrupt {
+            let mut cells = c.accesses.iter().filter(|a| a.1 && a.2 != 0xffff).map(|a| self.rom_of[a.2 as usize]);
+            self.jump_word = match (cells.next(), cells.next()) {
+                (Some(lo), Some(hi)) if lo.0 != u32::MAX && hi.0 == lo.0 + 1 => Some(lo),
+                _ => None,
+            };
+        }
         let (reg, stored): (Option<usize>, Option<Src>) = match name {
             "STA" | "PHA" => (None, Some(self.made[A])),
             "STX" => (None, Some(self.made[X])),
@@ -988,10 +1065,12 @@ impl Flow {
                 let mut targets: Vec<_> = d.targets.iter().map(|(r, n)| (*r, *n)).collect();
                 targets.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
 // Scratch chose nothing: only cells that carry a value across frames.
+                let mut words: Vec<_> = d.words.iter().map(|(k, n)| (*k, *n)).collect();
+                words.sort();
                 let mut on: Vec<_> = d.on.iter().filter(|(a, _)| self.carried[**a as usize] * 2 >= self.touched[**a as usize]).map(|(a, n)| (*a, *n)).collect();
                 on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
                 on.truncate(8);
-                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), on }
+                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), words, on }
             })
             .collect();
         dispatch.sort_by_key(|d| (d.depth, d.addr));
@@ -1385,9 +1464,13 @@ struct DispatchOut {
     depth: u32,
     targets: Vec<(u32, u64)>,
     timeline: Vec<(u32, u32, u32)>,
+    /// The words of the ROM the pointer was loaded from: PRG offset of
+    /// the low byte, times taken. Empty when the two bytes did not sit
+    /// side by side in the ROM (a table of low bytes and one of high).
+    words: Vec<(u32, u64)>,
     /// The cells A was made from at the call, by how often: what chose.
-    /// Scratch is left out, as for positions. Empty for a `JMP (ind)` of its own, whose way was chosen by
-    /// whatever indexed the pointer's table, which is not followed.
+    /// Scratch is left out, as for positions. For a `JMP (ind)` of its
+    /// own it is what the index that loaded the word was made from.
     on: Vec<(u16, u64)>,
 }
 

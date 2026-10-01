@@ -420,6 +420,43 @@ fn values_are_followed_to_where_two_objects_meet() {
 }
 
 #[test]
+fn a_pointer_table_is_found_by_where_the_pointer_was_loaded() {
+    let mut t = T { out: Vec::new(), s: 0xfd };
+    t.ins(0x8000, &[0x78], &[]);
+    // The mode at $40 indexes a table of addresses in the ROM at $9000;
+    // the word goes to $20/$21 and the game jumps through it.
+    t.ins(0x8001, &[0xa6, 0x40], &[(0x0040, 2, true)]);
+    t.ins(0x8003, &[0xbd, 0x00, 0x90], &[(0x9002, 0x00, true)]);
+    t.ins(0x8006, &[0x85, 0x20], &[(0x0020, 0x00, false)]);
+    t.ins(0x8008, &[0xbd, 0x01, 0x90], &[(0x9003, 0x84, true)]);
+    t.ins(0x800b, &[0x85, 0x21], &[(0x0021, 0x84, false)]);
+    t.ins(0x800d, &[0x6c, 0x20, 0x00], &[(0x0020, 0x00, true), (0x0021, 0x84, true)]);
+    // There: a pointer whose two bytes come from two tables (low bytes
+    // in one, high in another) names no word, and one copied from RAM
+    // names none either.
+    t.ins(0x8400, &[0xbd, 0x00, 0x91], &[(0x9102, 0x00, true)]);
+    t.ins(0x8403, &[0x85, 0x22], &[(0x0022, 0x00, false)]);
+    t.ins(0x8405, &[0xbd, 0x00, 0x92], &[(0x9202, 0x85, true)]);
+    t.ins(0x8408, &[0x85, 0x23], &[(0x0023, 0x85, false)]);
+    t.ins(0x840a, &[0x6c, 0x22, 0x00], &[(0x0022, 0x00, true), (0x0023, 0x85, true)]);
+    t.ins(0x8500, &[0xa5, 0x50], &[(0x0050, 0x00, true)]);
+    t.ins(0x8502, &[0x85, 0x24], &[(0x0024, 0x00, false)]);
+    t.ins(0x8504, &[0xa5, 0x51], &[(0x0051, 0x86, true)]);
+    t.ins(0x8506, &[0x85, 0x25], &[(0x0025, 0x86, false)]);
+    t.ins(0x8508, &[0x6c, 0x24, 0x00], &[(0x0024, 0x00, true), (0x0025, 0x86, true)]);
+    t.ins(0x8600, &[0x4c, 0x00, 0x86], &[]);
+    let mut f = flow::Flow::new(0x8000);
+    f.feed(&t.out);
+    let r: Value = serde_json::from_str(&f.report()).unwrap();
+    let at = |addr: u16| r["dispatch"].as_array().unwrap().iter().find(|d| d["addr"] == addr).unwrap_or_else(|| panic!("no dispatch at ${addr:04X}")).clone();
+    // The word at PRG offset $1002, once, chosen by the byte at $40.
+    assert_eq!(at(0x800d)["words"], serde_json::json!([[0x1002, 1]]));
+    assert_eq!(at(0x800d)["on"], serde_json::json!([[0x40, 1]]));
+    assert_eq!(at(0x840a)["words"], serde_json::json!([]));
+    assert_eq!(at(0x8508)["words"], serde_json::json!([]));
+}
+
+#[test]
 fn chunks_that_split_records_change_nothing() {
     assert_eq!(report(3), report(1 << 16));
 }
