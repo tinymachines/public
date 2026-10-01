@@ -246,6 +246,8 @@ struct Dispatch {
     /// The cells A was made from at the call that dispatched, by count:
     /// what chose the way.
     on: HashMap<u16, u64>,
+    /// The cells of RAM a `JMP (ind)`'s pointer was copied from.
+    from: HashMap<u16, u64>,
 }
 
 pub struct Flow {
@@ -298,7 +300,8 @@ pub struct Flow {
     /// The word a `JMP (ind)` just took, and what indexed it.
     jump_word: Option<(u32, Src)>,
     /// What chose a `JMP (ind)` that took no one word.
-    jump_by: Src,
+    /// And of those, the cells the pointer was copied from.
+    jump_by: (Src, Src),
     /// Stores by (cell the value came from, page of the cell stored to,
     /// that cell's address mod 4): 2048 by 32.
     feeds: Vec<u32>,
@@ -353,7 +356,7 @@ impl Flow {
             rom_reg: [(u32::MAX, Src::default()); 3],
             rom_of: vec![(u32::MAX, Src::default()); 0x800],
             jump_word: None,
-            jump_by: Src::default(),
+            jump_by: (Src::default(), Src::default()),
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
@@ -612,14 +615,17 @@ impl Flow {
                 let chose = self.chose.get(&site).copied().unwrap_or_default();
                 let site_is_jump = !self.chose.contains_key(&site);
                 let word = self.jump_word.take();
-                let by = std::mem::take(&mut self.jump_by);
-                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), words: HashMap::new(), on: HashMap::new() });
+                let (by, copied) = std::mem::take(&mut self.jump_by);
+                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), words: HashMap::new(), on: HashMap::new(), from: HashMap::new() });
                 for &cell in chose.cells() {
                     *d.on.entry(cell).or_insert(0) += 1;
                 }
                 if site_is_jump {
                     for &cell in by.cells() {
                         *d.on.entry(cell).or_insert(0) += 1;
+                    }
+                    for &cell in copied.cells() {
+                        *d.from.entry(cell).or_insert(0) += 1;
                     }
                 }
                 if let Some((word, index)) = word {
@@ -739,14 +745,19 @@ impl Flow {
             // What chose, when no one word did: the index into the tables
             // the bytes came from, or the cells of RAM the pointer was
             // copied from (a handler's address kept in memory).
-            let mut by = Src::default();
+            let (mut by, mut copied) = (Src::default(), Src::default());
             if self.jump_word.is_none() {
                 for &p in &pointer {
                     let from = self.rom_of[p as usize];
-                    by.join(if from.0 != u32::MAX { from.1 } else { self.origin[p as usize] });
+                    if from.0 != u32::MAX {
+                        by.join(from.1);
+                    } else {
+                        by.join(self.origin[p as usize]);
+                        copied.join(self.origin[p as usize]);
+                    }
                 }
             }
-            self.jump_by = by;
+            self.jump_by = (by, copied);
         }
         let (reg, stored): (Option<usize>, Option<Src>) = match name {
             "STA" | "PHA" => (None, Some(self.made[A])),
@@ -1091,7 +1102,12 @@ impl Flow {
                 let mut on: Vec<_> = d.on.iter().filter(|(a, _)| self.carried[**a as usize] * 2 >= self.touched[**a as usize]).map(|(a, n)| (*a, *n)).collect();
                 on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
                 on.truncate(8);
-                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), words, on }
+                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), words, on, from: {
+                    let mut from: Vec<_> = d.from.iter().map(|(a, n)| (*a, *n)).collect();
+                    from.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+                    from.truncate(64);
+                    from
+                } }
             })
             .collect();
         dispatch.sort_by_key(|d| (d.depth, d.addr));
@@ -1494,6 +1510,9 @@ struct DispatchOut {
     /// own it is what the index that loaded the word was made from, or
     /// the cells of RAM the pointer was copied from.
     on: Vec<(u16, u64)>,
+    /// The cells of RAM a `JMP (ind)`'s pointer was copied from, the
+    /// sixty-four busiest: a handler's address kept in memory.
+    from: Vec<(u16, u64)>,
 }
 
 #[derive(Serialize)]

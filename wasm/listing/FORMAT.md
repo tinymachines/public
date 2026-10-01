@@ -208,6 +208,7 @@ mark.
 |---|---|
 | `pad-poll` | a routine that read `$4016` or `$4017` at least eight times (one per button) for every frame it ran: `port= reads-per-frame= strobes-per-frame=` (writes of `$4016` per frame, 0 when the strobe is elsewhere). Per frame, not per entry: one game's poll is entered twice a frame and reads four times each |
 | `jump-engine` | the routine the run's dispatching `JSR`s call: `tables=` how many call sites, `dispatches=` how many times it dispatched |
+| `handler-in-memory` | a routine with a `JMP (ind)` whose pointer was copied out of RAM, not loaded from the ROM (the flow follows the pointer's two bytes back): each thing keeps the address of its own code and the routine runs it. `jumps=` times, `targets=` places it landed, `from=` the arrays those bytes sit in (the tightest around each), or the bytes themselves |
 | `idle-spin` | a loop of one instruction the run counted as idle: `iterations= per-frame=` |
 | `counting-spin` | an endless loop of several instructions: a straight line with no branch, call or return in it, closed by a `JMP` to its own head, that wrote one byte of RAM and read nothing but RAM: `byte= iterations= per-frame= read-elsewhere=` (reads of that byte by routines outside the loop: it is as good as a random number to them) |
 | `game-loop-in-nmi` | when there is an idle spin or a counting spin, an NMI handler that ran in at least half the frames: `frames= of= spin=` |

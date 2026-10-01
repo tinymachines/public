@@ -63,6 +63,8 @@ pub struct Dispatch {
     /// The words of the ROM the jump's pointer was loaded from: the PRG
     /// offset of each, and how often it was taken.
     pub words: Vec<(usize, u64)>,
+    /// The cells of RAM a `JMP (ind)`'s pointer was copied from.
+    pub from: Vec<(u16, u64)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -213,8 +215,9 @@ impl Run {
                 })
                 .collect();
             let words = d["words"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as usize, u(m.get(1)?))) }).filter(|w| w.0 + 1 < prg_len).collect();
+            let from = d["from"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as u16, u(m.get(1)?))) }).collect();
             let on = d["on"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as u16, u(m.get(1)?))) }).collect();
-            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on, words });
+            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on, words, from });
         }
         for l in v["loops"].as_array().unwrap_or(&none) {
             let (head, tail) = (l["head"].as_u64().unwrap_or(u64::MAX) as usize, l["tail"].as_u64().unwrap_or(u64::MAX) as usize);
@@ -330,6 +333,12 @@ impl Run {
                         match x.words.iter_mut().find(|t| t.0 == k) {
                             Some(t) => t.1 += n,
                             None => x.words.push((k, n)),
+                        }
+                    }
+                    for (a, n) in d.from {
+                        match x.from.iter_mut().find(|t| t.0 == a) {
+                            Some(t) => t.1 += n,
+                            None => x.from.push((a, n)),
                         }
                     }
                     for (a, n) in d.on {

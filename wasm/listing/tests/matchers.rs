@@ -159,6 +159,8 @@ by_pointer:
     .word state_c
 too:
     JMP ($0006)
+by_memory:
+    JMP ($0008)
 sound:
     LDA #$0F
     STA $4015
@@ -222,7 +224,7 @@ fn the_matchers_name_what_the_run_saw() {
         serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam, "body": body(n, n_body), "callers": callers})
     };
     let mut sites = Vec::new();
-    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500), ("by_pointer", 1, 8), ("too", 1, 1)] {
+    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500), ("by_pointer", 1, 8), ("too", 1, 1), ("by_memory", 1, 5)] {
         sites.extend(seq(prg, at(n), k, count));
     }
     // What the random routine's instructions touched: the indexed read
@@ -305,6 +307,7 @@ fn the_matchers_name_what_the_run_saw() {
             routine(26, "shift", "call", 10, 10, serde_json::json!([]), serde_json::json!([])),
             routine(27, "by_pointer", "call", 8, 8, serde_json::json!([]), serde_json::json!([])),
             routine(28, "too", "call", 1, 1, serde_json::json!([]), serde_json::json!([])),
+            routine(29, "by_memory", "call", 5, 5, serde_json::json!([]), serde_json::json!([])),
             routine(25, "count_port", "call", 1, 10, serde_json::json!([[0x2002, 500, 0], [0x36, 0, 500]]), serde_json::json!([]))
         ],
         // Two instructions in one routine where positions met: two
@@ -357,7 +360,10 @@ fn the_matchers_name_what_the_run_saw() {
              "words": [[at("by_pointer") + 3, 2], [at("by_pointer") + 7, 6]], "on": [[0xc2, 8]]},
             // And a second jump that took the same table's second word:
             // one table, not two.
-            {"key": at("too"), "addr": labels["too"], "depth": 1, "targets": [], "timeline": [], "words": [[at("by_pointer") + 5, 1]], "on": []}]
+            {"key": at("too"), "addr": labels["too"], "depth": 1, "targets": [], "timeline": [], "words": [[at("by_pointer") + 5, 1]], "on": []},
+            // A jump through a pointer copied out of two bytes of $C0: a
+            // handler's address kept in memory.
+            {"key": at("by_memory"), "addr": labels["by_memory"], "depth": 1, "targets": [[4, 5]], "timeline": [], "words": [], "on": [[0xc3, 5]], "from": [[0xc3, 3], [0xc4, 2]]}]
     });
     let src = listing::from_rom_and_run(&image, &report.to_string()).unwrap();
     listing::check(&src, &image).unwrap();
@@ -377,7 +383,8 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(";; @is counting-spin byte=$0030 iterations=40000 per-frame=4000 read-elsewhere=7 by=match\n"), "{src}");
     assert!(src.contains(&format!(";; @is frame-wait flag=$0020 entries=10 iterations=500 calls=1 set-in-nmi=10 of=10 by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("chore_wait"))), "{src}");
     assert!(src.contains(&format!(";; @is position-compare sites=2 pairs=3 cells=5 meets=14 x=$0086,$0087,$0088 y=$00CE,$00CF by=match\n;; @routine routine_{:04X} kind=call entered=10 by=run\n", a("hit"))), "{src}");
-    assert_eq!(src.matches(";; @is ").count(), 16, "one mark per pattern and the second wait, nothing else matched");
+    assert!(src.contains(&format!(";; @is handler-in-memory jumps=5 targets=1 from=$00C0 by=match\n;; @routine routine_{:04X} kind=call entered=5 by=run\n", a("by_memory"))), "{src}");
+    assert_eq!(src.matches(";; @is ").count(), 17, "one mark per pattern and the second wait, nothing else matched");
     // With no idle spin, the counting spin is what makes the NMI handler the game.
     let mut no_idle = report.clone();
     no_idle["loops"].as_array_mut().unwrap().retain(|l| l["kind"] != "idle");
@@ -414,13 +421,13 @@ fn the_matchers_name_what_the_run_saw() {
     // The model reads the same marks back: every routine the run
     // entered with its patterns, the table with its words, the RAM.
     let g = listing::game::game(&text::parse(&src).unwrap()).unwrap();
-    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 29, "{g}");
+    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 30, "{g}");
     let poll = g["routines"].as_array().unwrap().iter().find(|r| r["name"] == format!("routine_{:04X}", a("poll"))).unwrap();
     assert_eq!(poll["kind"], "call");
     assert_eq!(poll["entered"], 10);
     assert_eq!(poll["is"][0]["pattern"], "pad-poll");
     assert_eq!(poll["is"][0]["evidence"]["reads-per-frame"], 8);
-    assert_eq!(g["patterns"].as_object().unwrap().len(), 15);
+    assert_eq!(g["patterns"].as_object().unwrap().len(), 16);
     assert_eq!(g["patterns"]["sprite-writer"], 1);
     // A mark on a loop's head that is no routine's entry is kept with
     // its evidence, as a loop.

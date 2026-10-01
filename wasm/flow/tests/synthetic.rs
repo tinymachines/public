@@ -459,6 +459,10 @@ fn a_pointer_table_is_found_by_where_the_pointer_was_loaded() {
     // from two tables of the ROM, by the index into them.
     assert_eq!(at(0x8508)["on"], serde_json::json!([[0x50, 1], [0x51, 1]]));
     assert_eq!(at(0x840a)["on"], serde_json::json!([[0x40, 1]]));
+    // And only the first of those is a copy: `from` says so.
+    assert_eq!(at(0x8508)["from"], serde_json::json!([[0x50, 1], [0x51, 1]]));
+    assert_eq!(at(0x840a)["from"], serde_json::json!([]));
+    assert_eq!(at(0x800d)["from"], serde_json::json!([]));
 }
 
 #[test]

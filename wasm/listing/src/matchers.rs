@@ -274,6 +274,33 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
             }
         }
     }
+    // The handler kept in memory: a routine with a JMP (ind) whose
+    // pointer was copied out of RAM (each thing keeps the address of its
+    // own code). From the arrays those bytes sit in, the tightest
+    // around each, or the bytes themselves.
+    let all = arrays(run, prg);
+    let mut kept: BTreeMap<usize, (u64, Vec<usize>, Vec<u16>)> = BTreeMap::new();
+    for d in run.dispatch.iter().filter(|d| prg.get(d.offset) == Some(&ops::JMP_IND) && !d.from.is_empty()) {
+        let Some(r) = run.routines.iter().filter(|r| r.body.contains(&d.offset)).max_by_key(|r| r.offset) else { continue };
+        let e = kept.entry(r.offset).or_default();
+        for t in &d.targets {
+            e.0 += t.2;
+            if !e.1.contains(&t.0) {
+                e.1.push(t.0);
+            }
+        }
+        for &(cell, _) in &d.from {
+            let home = all.iter().filter(|a| a.0 <= cell && (cell as usize) < a.0 as usize + a.1).min_by_key(|a| (a.1, a.0)).map_or(cell, |a| a.0);
+            if !e.2.contains(&home) {
+                e.2.push(home);
+            }
+        }
+    }
+    for (offset, (jumps, targets, mut from)) in kept {
+        from.sort();
+        let list: Vec<String> = from.iter().take(8).map(|a| format!("${a:04X}")).collect();
+        out.push(Mark { offset, rest: format!("handler-in-memory jumps={jumps} targets={} from={} by=match", targets.len(), list.join(",")) });
+    }
     out.sort_by(|a, b| a.offset.cmp(&b.offset).then(a.rest.cmp(&b.rest)));
     out
 }
