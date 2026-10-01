@@ -8,9 +8,9 @@ crawl's own coverage.
   python3 tools/paths.py ROM.nes CRAWL_DIR OUT.lst [--nes ../../../nes] [--jobs N]
 
 CRAWL_DIR is what `crawl` wrote (scripts/NNNN.txt, crawl.json). Each
-trace is up to hundreds of megabytes and is deleted once its report is
-written; the reports (addresses and counts, no bytes) stay in
-CRAWL_DIR/reports/. Counts in the listing add across paths, and paths
+trace is hundreds of megabytes, or more for a deep path, and never
+touches the disk: the console writes it into a named pipe and the flow
+reads it from there as it comes. The reports stay in CRAWL_DIR/reports/. Counts in the listing add across paths, and paths
 share their way in, so a routine every path ran through counts once per
 path: the counts say "over these paths", not "in one play".
 """
@@ -62,9 +62,20 @@ def main():
             return out
         frames = next(int(l.split()[2]) for l in script.read_text().splitlines() if l.startswith("# frames "))
         trace = reports / (script.stem + ".trace")
-        run([trace_bin, rom, script, str(frames), trace])
-        run([report_bin, trace, str(prg_len), out])
-        trace.unlink()
+        part = reports / (script.stem + ".part")
+        if trace.exists():
+            trace.unlink()
+        os.mkfifo(trace)
+        try:
+            writer = subprocess.Popen([trace_bin, rom, script, str(frames), trace], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+            run([report_bin, trace, str(prg_len), part])
+            err = writer.communicate()[1]
+            if writer.returncode != 0:
+                sys.exit(f"script-trace {script}\n{err[-2000:]}")
+        finally:
+            trace.unlink()
+        # Whole or not at all: a report cut short would read as a short run.
+        part.rename(out)
         return out
 
     with ThreadPoolExecutor(max_workers=a.jobs) as ex:
