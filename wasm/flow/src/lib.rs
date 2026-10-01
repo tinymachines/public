@@ -297,6 +297,8 @@ pub struct Flow {
     rom_of: Vec<(u32, Src)>,
     /// The word a `JMP (ind)` just took, and what indexed it.
     jump_word: Option<(u32, Src)>,
+    /// What chose a `JMP (ind)` that took no one word.
+    jump_by: Src,
     /// Stores by (cell the value came from, page of the cell stored to,
     /// that cell's address mod 4): 2048 by 32.
     feeds: Vec<u32>,
@@ -351,6 +353,7 @@ impl Flow {
             rom_reg: [(u32::MAX, Src::default()); 3],
             rom_of: vec![(u32::MAX, Src::default()); 0x800],
             jump_word: None,
+            jump_by: Src::default(),
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
@@ -609,9 +612,15 @@ impl Flow {
                 let chose = self.chose.get(&site).copied().unwrap_or_default();
                 let site_is_jump = !self.chose.contains_key(&site);
                 let word = self.jump_word.take();
+                let by = std::mem::take(&mut self.jump_by);
                 let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), words: HashMap::new(), on: HashMap::new() });
                 for &cell in chose.cells() {
                     *d.on.entry(cell).or_insert(0) += 1;
+                }
+                if site_is_jump {
+                    for &cell in by.cells() {
+                        *d.on.entry(cell).or_insert(0) += 1;
+                    }
                 }
                 if let Some((word, index)) = word {
                     *d.words.entry(word).or_insert(0) += 1;
@@ -721,11 +730,23 @@ impl Flow {
             }
         }
         if c.op == ops::JMP_IND && !interrupt {
-            let mut cells = c.accesses.iter().filter(|a| a.1 && a.2 != 0xffff).map(|a| self.rom_of[a.2 as usize]);
+            let pointer: Vec<u16> = c.accesses.iter().filter(|a| a.1 && a.2 != 0xffff).map(|a| a.2).collect();
+            let mut cells = pointer.iter().map(|&p| self.rom_of[p as usize]);
             self.jump_word = match (cells.next(), cells.next()) {
                 (Some(lo), Some(hi)) if lo.0 != u32::MAX && hi.0 == lo.0 + 1 => Some(lo),
                 _ => None,
             };
+            // What chose, when no one word did: the index into the tables
+            // the bytes came from, or the cells of RAM the pointer was
+            // copied from (a handler's address kept in memory).
+            let mut by = Src::default();
+            if self.jump_word.is_none() {
+                for &p in &pointer {
+                    let from = self.rom_of[p as usize];
+                    by.join(if from.0 != u32::MAX { from.1 } else { self.origin[p as usize] });
+                }
+            }
+            self.jump_by = by;
         }
         let (reg, stored): (Option<usize>, Option<Src>) = match name {
             "STA" | "PHA" => (None, Some(self.made[A])),
@@ -1470,7 +1491,8 @@ struct DispatchOut {
     words: Vec<(u32, u64)>,
     /// The cells A was made from at the call, by how often: what chose.
     /// Scratch is left out, as for positions. For a `JMP (ind)` of its
-    /// own it is what the index that loaded the word was made from.
+    /// own it is what the index that loaded the word was made from, or
+    /// the cells of RAM the pointer was copied from.
     on: Vec<(u16, u64)>,
 }
 

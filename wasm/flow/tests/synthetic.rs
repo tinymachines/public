@@ -454,6 +454,11 @@ fn a_pointer_table_is_found_by_where_the_pointer_was_loaded() {
     assert_eq!(at(0x800d)["on"], serde_json::json!([[0x40, 1]]));
     assert_eq!(at(0x840a)["words"], serde_json::json!([]));
     assert_eq!(at(0x8508)["words"], serde_json::json!([]));
+    // The pointer copied from RAM was chosen by the bytes it was copied
+    // from (a handler's address kept in memory); the one put together
+    // from two tables of the ROM, by the index into them.
+    assert_eq!(at(0x8508)["on"], serde_json::json!([[0x50, 1], [0x51, 1]]));
+    assert_eq!(at(0x840a)["on"], serde_json::json!([[0x40, 1]]));
 }
 
 #[test]
