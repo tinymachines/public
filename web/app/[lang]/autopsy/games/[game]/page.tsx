@@ -54,8 +54,12 @@ const PROSE = {
         looks like.
       </>
     ),
-    acols: ["from", "bytes reached", "instructions"],
-    arraysH: "The longest reaches through an index",
+    acols: ["from", "bytes reached", "instructions", "positions it holds"],
+    arraysH: "Reaches through an index: those that hold positions, then the longest",
+    holds: (x: string, y: string) => [x && `${x} across`, y && `${y} down`].filter(Boolean).join(", "),
+    objectsH: "What travels with a position",
+    objectsWhat: "Arrays that at least two routines step through together with an array of positions, across the same range. That is what a table of the things on the screen looks like in memory: one array for each property, one slot for each thing. We can say which arrays hold positions; what the others hold is not named yet.",
+    ocols: ["slots", "arrays", "routines", "positions across", "positions down", "travelling with them"],
     vcols: ["byte", "reads and writes", "routines writing", "routines reading"],
     varsH: (kept: string) => `The ${kept} busiest shared bytes`,
     not: "This page shows none of the game's bytes. The listing these figures were read from stays with the cartridge.",
@@ -88,8 +92,12 @@ const PROSE = {
         あるルーチンが書き、別のルーチンが読んだメモリは <b>{variables}</b> バイト。添字を通して届いた場所は <b>{arrays}</b> か所で、メモリの中のテーブルや、物体の枠の並びはそう見える。
       </>
     ),
-    acols: ["起点", "届いたバイト", "命令"],
-    arraysH: "添字で届いた、最も長い範囲",
+    acols: ["起点", "届いたバイト", "命令", "含まれる位置"],
+    arraysH: "添字で届いた範囲: 位置を含むもの、次いで最も長いもの",
+    holds: (x: string, y: string) => [x && `横 ${x}`, y && `縦 ${y}`].filter(Boolean).join("、"),
+    objectsH: "位置と一緒に動くもの",
+    objectsWhat: "少なくとも二つのルーチンが、位置の配列と一緒に、同じ範囲をたどった配列。画面上のものの表は、メモリの中ではこう見える: 性質ごとに配列が一つ、ものごとに枠が一つ。どの配列が位置を持つかは言える。ほかの配列が何を持つかは、まだ名付けていない。",
+    ocols: ["枠", "配列", "ルーチン", "横の位置", "縦の位置", "一緒に動く配列"],
     vcols: ["バイト", "読み書き", "書くルーチン", "読むルーチン"],
     varsH: (kept: string) => `最も忙しい共有バイト ${kept} 個`,
     not: "このページはゲームのバイトを一つも見せない。これらの数を読み取ったリスティングは、カートリッジと一緒に留まる。",
@@ -121,7 +129,10 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
     (a, b) => Number(b.is.length > 0) - Number(a.is.length > 0) || (b.entered ?? 0) - (a.entered ?? 0) || a.addr - b.addr,
   );
   const named = ORDER.filter((p) => g.patterns[p]);
-  const arrays = [...g.array_list].sort((a, b) => b.slots - a.slots || b.sites - a.sites).slice(0, 12);
+  // Every array that holds a compared position, then the longest, twelve rows at least.
+  const held = (a: { x?: number; y?: number }) => (a.x ?? 0) + (a.y ?? 0);
+  const sorted = [...g.array_list].sort((a, b) => Number(held(b) > 0) - Number(held(a) > 0) || b.slots - a.slots || b.sites - a.sites);
+  const arrays = sorted.slice(0, Math.max(12, sorted.filter((a) => held(a) > 0).length));
   const steps = n(g.steps);
 
   return (
@@ -238,10 +249,38 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
                   </thead>
                   <tbody>
                     {arrays.map((x) => (
-                      <tr key={x.base}>
+                      <tr key={x.base} data-autopsy-holds={held(x) > 0 ? held(x) : undefined}>
                         <td>{x.base}</td>
                         <td>{n(x.slots)}</td>
                         <td>{n(x.sites)}</td>
+                        <td>{S.holds(x.x ? n(x.x) : "", x.y ? n(x.y) : "")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : null}
+        {g.object_list.length ? (
+          <>
+            <h3>{S.objectsH}</h3>
+            <p>{S.objectsWhat}</p>
+            <div className="ledger">
+              <div className="scroller">
+                <table data-autopsy-objects>
+                  <thead>
+                    <tr>{S.ocols.map((c) => <th key={c}>{c}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {g.object_list.map((x) => (
+                      <tr key={[...x.x, ...x.y].join()} data-autopsy-object-arrays={x.arrays}>
+                        <td>{n(x.slots)}</td>
+                        <td>{n(x.arrays)}</td>
+                        <td>{n(x.routines)}</td>
+                        <td>{x.x.join(", ")}</td>
+                        <td>{x.y.join(", ")}</td>
+                        <td>{x.with.join(", ")}</td>
                       </tr>
                     ))}
                   </tbody>

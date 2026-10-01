@@ -15,7 +15,7 @@ import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from
 
 const RECORD = path.join(__dirname, "..", "..", "data", "autopsy.json");
 
-type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: unknown[]; loop_list: { is: unknown[] }[] };
+type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: unknown[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number }[] };
 
 function record(): { games: Game[]; patterns: string[] } {
   const r = JSON.parse(fs.readFileSync(RECORD, "utf8")) as { games: Game[]; patterns: string[] };
@@ -62,6 +62,33 @@ test("a game's page shows the loops the rules named, each with its evidence", as
   if (none) {
     await open(page, `/autopsy/games/${none.key}`, 200);
     await expect(page.locator("[data-autopsy-loops]"), `${none.name}: no table for no loops`).toHaveCount(0);
+  }
+});
+
+test("a game's page shows every array that holds a compared position", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const r = record();
+  const holding = (g: Game) => g.array_list.filter((a) => (a.x ?? 0) + (a.y ?? 0) > 0);
+  const most = [...r.games].sort((a, b) => holding(b).length - holding(a).length)[0];
+  expect(holding(most).length, "some game in the record has an array holding positions").toBeGreaterThan(0);
+  await open(page, `/autopsy/games/${most.key}`, 200);
+  const shown = await page.locator("[data-autopsy-arrays] tbody tr[data-autopsy-holds]").evaluateAll((rows) => rows.map((r) => Number((r as HTMLElement).dataset.autopsyHolds)));
+  expect(shown.length, `${most.name}: arrays holding positions`).toBe(holding(most).length);
+  expect(shown.reduce((a, b) => a + b, 0), `${most.name}: positions held`).toBe(holding(most).reduce((n, a) => n + (a.x ?? 0) + (a.y ?? 0), 0));
+});
+
+test("a game's page shows the arrays that travel with its positions", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const r = record();
+  const most = [...r.games].sort((a, b) => b.object_list.length - a.object_list.length)[0];
+  expect(most.object_list.length, "some game in the record has an object table").toBeGreaterThan(0);
+  await open(page, `/autopsy/games/${most.key}`, 200);
+  const shown = await page.locator("[data-autopsy-objects] tbody tr").evaluateAll((rows) => rows.map((r) => Number((r as HTMLElement).dataset.autopsyObjectArrays)));
+  expect(shown, `${most.name}: its tables, by how many arrays each has`).toEqual(most.object_list.map((o) => o.arrays));
+  const none = r.games.find((g) => g.object_list.length === 0);
+  if (none) {
+    await open(page, `/autopsy/games/${none.key}`, 200);
+    await expect(page.locator("[data-autopsy-objects]"), `${none.name}: no table for none`).toHaveCount(0);
   }
 });
 

@@ -2,7 +2,7 @@
  "note": "Written only by scripts/board-autopsy.py from the models wasm/listing/tools/autopsy.py wrote. Shape only: addresses, labels, counts and pattern names; no byte of any ROM.",
  "boarded_on": "2026-10-01",
  "repo": "https://github.com/tinymachines/public",
- "listing_tree": "689af12534331a0ec2577056fd92169aa4fa84ef",
+ "listing_tree": "236d9c922ced36d59e979c0fa621d8d96af7bb92",
  "flow_tree": "329aec8a9cf719a715cd704b7dd95924b6b80b5d",
  "console_commit": "d8b489a21f27b821ef056cece9bb3e9598657b43",
  "steps": 400,
@@ -2092,6 +2092,7 @@
      "slots": 57
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0663",
@@ -4564,12 +4565,14 @@
     {
      "base": "$0312",
      "sites": 5,
-     "slots": 13
+     "slots": 13,
+     "y": 2
     },
     {
      "base": "$0313",
      "sites": 1,
-     "slots": 10
+     "slots": 10,
+     "y": 10
     },
     {
      "base": "$0324",
@@ -4649,7 +4652,8 @@
     {
      "base": "$03CF",
      "sites": 10,
-     "slots": 12
+     "slots": 12,
+     "y": 10
     },
     {
      "base": "$03D9",
@@ -4920,6 +4924,55 @@
      "base": "$07E2",
      "sites": 1,
      "slots": 8
+    }
+   ],
+   "object_list": [
+    {
+     "arrays": 4,
+     "routines": 3,
+     "slots": 13,
+     "with": [
+      "$0300",
+      "$0324",
+      "$0336"
+     ],
+     "x": [],
+     "y": [
+      "$0312"
+     ]
+    },
+    {
+     "arrays": 23,
+     "routines": 9,
+     "slots": 12,
+     "with": [
+      "$0301",
+      "$0337",
+      "$035A",
+      "$0367",
+      "$0381",
+      "$038E",
+      "$039B",
+      "$03A8",
+      "$03B5",
+      "$03C2",
+      "$03E9",
+      "$0403",
+      "$0410",
+      "$042A",
+      "$0437",
+      "$0444",
+      "$0451",
+      "$049F",
+      "$04D3",
+      "$04ED",
+      "$0514",
+      "$0589"
+     ],
+     "x": [],
+     "y": [
+      "$03CF"
+     ]
     }
    ],
    "variable_list": [
@@ -7265,6 +7318,7 @@
      "slots": 7
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0012",
@@ -8830,7 +8884,8 @@
     {
      "base": "$001D",
      "sites": 6,
-     "slots": 11
+     "slots": 11,
+     "y": 1
     },
     {
      "base": "$0040",
@@ -8925,9 +8980,12 @@
     {
      "base": "$0560",
      "sites": 1,
-     "slots": 117
+     "slots": 117,
+     "x": 2,
+     "y": 4
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0000",
@@ -10828,7 +10886,8 @@
     {
      "base": "$03C0",
      "sites": 17,
-     "slots": 16
+     "slots": 16,
+     "y": 11
     },
     {
      "base": "$03D0",
@@ -10838,7 +10897,8 @@
     {
      "base": "$03E0",
      "sites": 2,
-     "slots": 12
+     "slots": 12,
+     "y": 1
     },
     {
      "base": "$03F0",
@@ -10853,7 +10913,8 @@
     {
      "base": "$0410",
      "sites": 7,
-     "slots": 15
+     "slots": 15,
+     "y": 1
     },
     {
      "base": "$0430",
@@ -10964,6 +11025,45 @@
      "base": "$07F8",
      "sites": 1,
      "slots": 2
+    }
+   ],
+   "object_list": [
+    {
+     "arrays": 11,
+     "routines": 13,
+     "slots": 16,
+     "with": [
+      "$0300",
+      "$0320",
+      "$0330",
+      "$0350",
+      "$0360",
+      "$0370",
+      "$03B0",
+      "$03D0",
+      "$0460"
+     ],
+     "x": [],
+     "y": [
+      "$03C0",
+      "$0410"
+     ]
+    },
+    {
+     "arrays": 6,
+     "routines": 3,
+     "slots": 12,
+     "with": [
+      "$0390",
+      "$03A0",
+      "$03F0",
+      "$0430",
+      "$0440"
+     ],
+     "x": [],
+     "y": [
+      "$03E0"
+     ]
     }
    ],
    "variable_list": [
@@ -11812,6 +11912,7 @@
      "slots": 4
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$00F5",
@@ -12916,6 +13017,7 @@
      "slots": 256
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$000F",
@@ -14236,6 +14338,7 @@
      "slots": 6
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0000",
@@ -16636,6 +16739,7 @@
      "slots": 79
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$001A",
@@ -19168,6 +19272,7 @@
      "slots": 13
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$00E1",
@@ -20952,6 +21057,7 @@
      "slots": 23
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0028",
@@ -22417,7 +22523,8 @@
     {
      "base": "$000D",
      "sites": 12,
-     "slots": 25
+     "slots": 25,
+     "x": 13
     },
     {
      "base": "$0026",
@@ -22663,6 +22770,22 @@
      "base": "$07EB",
      "sites": 1,
      "slots": 4
+    }
+   ],
+   "object_list": [
+    {
+     "arrays": 4,
+     "routines": 11,
+     "slots": 25,
+     "with": [
+      "$0026",
+      "$003F",
+      "$0058"
+     ],
+     "x": [
+      "$000D"
+     ],
+     "y": []
     }
    ],
    "variable_list": [
@@ -24377,6 +24500,7 @@
      "slots": 7
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0000",
@@ -27130,7 +27254,9 @@
     {
      "base": "$002A",
      "sites": 2,
-     "slots": 9
+     "slots": 9,
+     "x": 1,
+     "y": 1
     },
     {
      "base": "$002B",
@@ -27140,7 +27266,9 @@
     {
      "base": "$0030",
      "sites": 4,
-     "slots": 80
+     "slots": 80,
+     "x": 1,
+     "y": 1
     },
     {
      "base": "$0040",
@@ -27478,6 +27606,7 @@
      "slots": 24
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0020",
@@ -29598,7 +29727,8 @@
     {
      "base": "$0028",
      "sites": 4,
-     "slots": 11
+     "slots": 11,
+     "x": 3
     },
     {
      "base": "$0029",
@@ -29608,7 +29738,8 @@
     {
      "base": "$0032",
      "sites": 2,
-     "slots": 6
+     "slots": 6,
+     "y": 1
     },
     {
      "base": "$0033",
@@ -29633,7 +29764,8 @@
     {
      "base": "$0047",
      "sites": 6,
-     "slots": 5
+     "slots": 5,
+     "y": 2
     },
     {
      "base": "$0050",
@@ -29928,7 +30060,8 @@
     {
      "base": "$04D6",
      "sites": 1,
-     "slots": 5
+     "slots": 5,
+     "y": 2
     },
     {
      "base": "$051D",
@@ -29969,6 +30102,40 @@
      "base": "$06F7",
      "sites": 1,
      "slots": 6
+    }
+   ],
+   "object_list": [
+    {
+     "arrays": 7,
+     "routines": 4,
+     "slots": 11,
+     "with": [
+      "$0014",
+      "$001E",
+      "$003C",
+      "$0407",
+      "$04CB"
+     ],
+     "x": [
+      "$0028"
+     ],
+     "y": [
+      "$0032"
+     ]
+    },
+    {
+     "arrays": 4,
+     "routines": 3,
+     "slots": 5,
+     "with": [
+      "$005B",
+      "$006F",
+      "$009F"
+     ],
+     "x": [],
+     "y": [
+      "$0047"
+     ]
     }
    ],
    "variable_list": [
@@ -32939,7 +33106,8 @@
     {
      "base": "$0075",
      "sites": 9,
-     "slots": 129
+     "slots": 129,
+     "y": 2
     },
     {
      "base": "$0077",
@@ -32949,7 +33117,8 @@
     {
      "base": "$0079",
      "sites": 4,
-     "slots": 2
+     "slots": 2,
+     "x": 2
     },
     {
      "base": "$007D",
@@ -32974,7 +33143,8 @@
     {
      "base": "$0087",
      "sites": 9,
-     "slots": 6
+     "slots": 6,
+     "x": 2
     },
     {
      "base": "$008D",
@@ -33019,7 +33189,9 @@
     {
      "base": "$00A5",
      "sites": 2,
-     "slots": 16
+     "slots": 16,
+     "x": 1,
+     "y": 1
     },
     {
      "base": "$00B5",
@@ -33544,7 +33716,8 @@
     {
      "base": "$0722",
      "sites": 1,
-     "slots": 2
+     "slots": 2,
+     "x": 1
     },
     {
      "base": "$0724",
@@ -33575,6 +33748,43 @@
      "base": "$07F2",
      "sites": 1,
      "slots": 9
+    }
+   ],
+   "object_list": [
+    {
+     "arrays": 6,
+     "routines": 10,
+     "slots": 129,
+     "with": [
+      "$0077",
+      "$0085",
+      "$0095",
+      "$00B7"
+     ],
+     "x": [
+      "$0079"
+     ],
+     "y": [
+      "$0075"
+     ]
+    },
+    {
+     "arrays": 8,
+     "routines": 12,
+     "slots": 6,
+     "with": [
+      "$0077",
+      "$008F",
+      "$0097",
+      "$009F",
+      "$00D2",
+      "$00D8",
+      "$051F"
+     ],
+     "x": [
+      "$0087"
+     ],
+     "y": []
     }
    ],
    "variable_list": [
@@ -36695,7 +36905,8 @@
     {
      "base": "$004F",
      "sites": 1,
-     "slots": 4
+     "slots": 4,
+     "y": 1
     },
     {
      "base": "$0073",
@@ -36825,7 +37036,8 @@
     {
      "base": "$0460",
      "sites": 18,
-     "slots": 16
+     "slots": 16,
+     "y": 2
     },
     {
      "base": "$0470",
@@ -36835,7 +37047,8 @@
     {
      "base": "$0480",
      "sites": 17,
-     "slots": 16
+     "slots": 16,
+     "x": 5
     },
     {
      "base": "$0490",
@@ -36845,7 +37058,8 @@
     {
      "base": "$04B0",
      "sites": 6,
-     "slots": 16
+     "slots": 16,
+     "y": 1
     },
     {
      "base": "$04C0",
@@ -37011,6 +37225,44 @@
      "base": "$0700",
      "sites": 2,
      "slots": 256
+    }
+   ],
+   "object_list": [
+    {
+     "arrays": 25,
+     "routines": 23,
+     "slots": 16,
+     "with": [
+      "$0400",
+      "$0410",
+      "$0420",
+      "$0430",
+      "$0440",
+      "$0450",
+      "$0470",
+      "$0490",
+      "$04C0",
+      "$04E0",
+      "$04F0",
+      "$0500",
+      "$0510",
+      "$0520",
+      "$0530",
+      "$0540",
+      "$0550",
+      "$0560",
+      "$0570",
+      "$0580",
+      "$0630",
+      "$0640"
+     ],
+     "x": [
+      "$0480"
+     ],
+     "y": [
+      "$0460",
+      "$04B0"
+     ]
     }
    ],
    "variable_list": [
@@ -38640,6 +38892,7 @@
      "slots": 3
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0000",
@@ -39818,6 +40071,7 @@
      "slots": 256
     }
    ],
+   "object_list": [],
    "variable_list": [
     {
      "addr": "$0736",

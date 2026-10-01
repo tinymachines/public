@@ -50,7 +50,10 @@ export interface AutopsyGame {
   table_list: { bank: string; addr: number; entries: number; seen: number }[];
   /** The loops a rule named that are no routine's entry: where the game waits. */
   loop_list: { name: string; bank: string; addr: number; is: AutopsyPattern[] }[];
-  array_list: { base: string; slots: number; sites: number }[];
+  /** `x` and `y`: how many of its bytes are positions a rule saw compared. */
+  array_list: { base: string; slots: number; sites: number; x?: number; y?: number }[];
+  /** Arrays the runs saw indexed together with an array of positions. */
+  object_list: { slots: number; arrays: number; routines: number; x: string[]; y: string[]; with: string[] }[];
   variable_list: { addr: string; total: number; writers: number; readers: number }[];
 }
 

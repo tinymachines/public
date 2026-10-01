@@ -392,10 +392,22 @@ image it runs from.
    one frame into the next). What the rule cannot say is what the
    comparison is for: Blades of Steel's and Double Dribble's compare
    ten or more Y positions pairwise, which reads like a sort by depth,
-   not a collision. The cells it lists are the first sight of each
-   game's object table, and the object slots are the next rule: the
-   cells grouped into arrays, with the bytes that travel with them.
-   That table of contents is the toolkit's.
+   not a collision.
+
+   The cells it lists are the first sight of each game's object
+   table, and the same day's last two steps follow them there. An
+   `@array` says how many compared positions it holds (the tightest
+   array around each, so the loop that clears a page holds none):
+   eight games, 24 arrays. And `@objects` lists what travels with
+   them: an array that at least two routines indexed across the same
+   range as a position array. Six games, ten tables, 98 arrays; the
+   largest is Teenage Mutant Ninja Turtles', 25 arrays of sixteen
+   slots, and Blades of Steel's has 23 of twelve. Paperboy's four
+   arrays of 25 sit 25 bytes apart, which nobody told the rule to
+   look for. What each companion holds (a speed, a state, a kind) is
+   the next question, and following values answers part of it
+   already: a companion whose value is added into a position is a
+   speed. That table of contents is the toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's

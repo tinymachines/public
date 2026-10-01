@@ -83,6 +83,7 @@ def main() -> int:
             # A mark on a loop's head that is no routine's entry: where the game waits.
             "loop_list": [{k: l[k] for k in ("name", "bank", "addr", "is")} for l in g.get("loops", [])],
             "array_list": g["arrays"],
+            "object_list": g.get("objects", []),
             "variable_list": [
                 {"addr": v["addr"], "total": v["total"], "writers": len(v["writers"]), "readers": len(v["readers"])}
                 for v in variables
