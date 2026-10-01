@@ -67,7 +67,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                             pending_routine = Some(r);
                         }
                     }
-                    "table" => table = Some((json!({"bank": bank_name, "addr": at[i], "kind": words.first().cloned().unwrap_or_default(), "entries": kv.get("entries").cloned().unwrap_or(json!(0)), "seen": kv.get("seen").cloned().unwrap_or(json!(0))}), kv.get("entries").and_then(Value::as_u64).unwrap_or(0) as usize, Vec::new())),
+                    "table" => table = Some((json!({"bank": bank_name, "addr": at[i], "kind": words.first().cloned().unwrap_or_default(), "entries": kv.get("entries").cloned().unwrap_or(json!(0)), "seen": kv.get("seen").cloned().unwrap_or(json!(0)), "on": kv.get("on").and_then(Value::as_str).map(|s| s.split(',').map(Value::from).collect::<Vec<_>>()).unwrap_or_default()}), kv.get("entries").and_then(Value::as_u64).unwrap_or(0) as usize, Vec::new())),
                     "array" => {
                         let mut a = json!({"base": words.first().cloned().unwrap_or_default(), "slots": kv.get("slots").cloned().unwrap_or(json!(0)), "sites": kv.get("sites").cloned().unwrap_or(json!(0))});
                         for k in ["x", "y"] {
@@ -79,7 +79,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                     }
                     "objects" => {
                         let list = |k: &str| -> Vec<Value> { kv.get(k).and_then(Value::as_str).map(|s| s.split(',').map(Value::from).collect()).unwrap_or_default() };
-                        objects.push(json!({"slots": kv.get("slots").cloned().unwrap_or(json!(0)), "arrays": kv.get("arrays").cloned().unwrap_or(json!(0)), "routines": kv.get("routines").cloned().unwrap_or(json!(0)), "x": list("x"), "y": list("y"), "with": list("with"), "adds": list("adds")}));
+                        objects.push(json!({"slots": kv.get("slots").cloned().unwrap_or(json!(0)), "arrays": kv.get("arrays").cloned().unwrap_or(json!(0)), "routines": kv.get("routines").cloned().unwrap_or(json!(0)), "x": list("x"), "y": list("y"), "with": list("with"), "adds": list("adds"), "chooses": list("chooses")}));
                     }
                     "var" => {
                         let side = |k: &str| -> Vec<Value> {

@@ -325,6 +325,8 @@ pub struct Objects {
     /// The companions with a byte that was added into a byte of one of
     /// the position arrays: what moves them.
     pub adds: Vec<u16>,
+    /// The companions with a byte that chose a jump engine's way.
+    pub chooses: Vec<u16>,
 }
 
 /// What travels with a position: an array is a companion of a position
@@ -392,6 +394,9 @@ pub fn objects(run: &Run, prg: &[u8], arrays: &[(u16, usize, usize)], held: &[(u
         let mut adds: Vec<u16> = run.moves.iter().filter(|m| home(m.0).is_some_and(|b| bases.contains(&b))).filter_map(|m| home(m.1)).filter(|b| others.contains(b)).collect();
         adds.sort();
         adds.dedup();
+        let mut chooses: Vec<u16> = run.dispatch.iter().flat_map(|d| d.on.iter()).filter_map(|x| home(x.0)).filter(|b| others.contains(b)).collect();
+        chooses.sort();
+        chooses.dedup();
         out.push(Objects {
             slots: members.iter().map(|&a| arrays[positions[a]].1).max().unwrap_or(0),
             routines: reach.iter().filter(|m| bases.iter().any(|b| m.contains_key(b))).count(),
@@ -399,6 +404,7 @@ pub fn objects(run: &Run, prg: &[u8], arrays: &[(u16, usize, usize)], held: &[(u
             ys: pick(false),
             with: others,
             adds,
+            chooses,
         });
     }
     out

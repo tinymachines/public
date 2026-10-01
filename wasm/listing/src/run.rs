@@ -58,6 +58,8 @@ pub struct Dispatch {
     pub targets: Vec<(usize, u16, u64)>,
     /// How many times the choice changed over the run.
     pub switches: u64,
+    /// The cells A was made from at the call, with how often: what chose.
+    pub on: Vec<(u16, u64)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -207,7 +209,8 @@ impl Run {
                     (k < prg_len).then_some((k, a, u(t.get(1)?)))
                 })
                 .collect();
-            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64) });
+            let on = d["on"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as u16, u(m.get(1)?))) }).collect();
+            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on });
         }
         for l in v["loops"].as_array().unwrap_or(&none) {
             let (head, tail) = (l["head"].as_u64().unwrap_or(u64::MAX) as usize, l["tail"].as_u64().unwrap_or(u64::MAX) as usize);
@@ -319,6 +322,12 @@ impl Run {
             match self.dispatch.iter_mut().find(|x| x.offset == d.offset) {
                 Some(x) => {
                     x.switches += d.switches;
+                    for (a, n) in d.on {
+                        match x.on.iter_mut().find(|t| t.0 == a) {
+                            Some(t) => t.1 += n,
+                            None => x.on.push((a, n)),
+                        }
+                    }
                     for (k, a, n) in d.targets {
                         match x.targets.iter_mut().find(|t| t.0 == k) {
                             Some(t) => t.2 += n,

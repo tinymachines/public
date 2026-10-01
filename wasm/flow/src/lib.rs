@@ -42,7 +42,9 @@
 //! add or a subtract leaves the carry made from its two sides, and an
 //! add or a subtract of a constant right after takes those cells in
 //! (the fraction and the speed into the position's next byte). Anything
-//! else that sets the carry leaves it nobody's. That is how two objects' positions
+//! else that sets the carry leaves it nobody's. And what A was made
+//! from at a call that turned out to be a jump engine's is kept with
+//! the dispatch: the byte that chose the way. That is how two objects' positions
 //! are seen to be compared when another routine staged them in
 //! temporaries first; a position against the camera is not one,
 //! because the camera reaches every sprite with the position.
@@ -232,6 +234,9 @@ struct Dispatch {
     targets: HashMap<u32, u64>,
     /// (first frame, last frame, target routine), one row per change.
     timeline: Vec<(u32, u32, u32)>,
+    /// The cells A was made from at the call that dispatched, by count:
+    /// what chose the way.
+    on: HashMap<u16, u64>,
 }
 
 pub struct Flow {
@@ -273,6 +278,9 @@ pub struct Flow {
     made: [Src; 3],
     /// What the carry was made from, when an add or a subtract set it.
     carry: Src,
+    /// What A was made from at each JSR's latest run, by the JSR's key:
+    /// should the call turn out to be a jump engine's, this chose.
+    chose: HashMap<u32, Src>,
     /// Stores by (cell the value came from, page of the cell stored to,
     /// that cell's address mod 4): 2048 by 32.
     feeds: Vec<u32>,
@@ -323,6 +331,7 @@ impl Flow {
             origin: vec![Src::default(); 0x800],
             made: [Src::default(); 3],
             carry: Src::default(),
+            chose: HashMap::new(),
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
@@ -575,7 +584,11 @@ impl Flow {
             self.stack.push(Frame { routine: r, s_gone: if entry == Entry::Reset { back } else { s as i32 + back }, site });
             if let Pending::Dispatch(site, at) = pending {
                 let frame = self.frame;
-                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new() });
+                let chose = self.chose.get(&site).copied().unwrap_or_default();
+                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), on: HashMap::new() });
+                for &cell in chose.cells() {
+                    *d.on.entry(cell).or_insert(0) += 1;
+                }
                 d.depth_min = d.depth_min.min(depth);
                 *d.targets.entry(r).or_insert(0) += 1;
                 match d.timeline.last_mut() {
@@ -633,6 +646,9 @@ impl Flow {
             }
             _ => Src::default(),
         };
+        if c.op == ops::JSR && !interrupt {
+            self.chose.insert(c.key, self.made[A]);
+        }
         let written = c.accesses.iter().find(|a| !a.1 && a.2 != 0xffff).map(|a| a.2);
         let (reg, stored): (Option<usize>, Option<Src>) = match name {
             "STA" | "PHA" => (None, Some(self.made[A])),
@@ -971,7 +987,10 @@ impl Flow {
             .map(|d| {
                 let mut targets: Vec<_> = d.targets.iter().map(|(r, n)| (*r, *n)).collect();
                 targets.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone() }
+let mut on: Vec<_> = d.on.iter().map(|(a, n)| (*a, *n)).collect();
+                on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+                on.truncate(8);
+                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), on }
             })
             .collect();
         dispatch.sort_by_key(|d| (d.depth, d.addr));
@@ -1365,6 +1384,10 @@ struct DispatchOut {
     depth: u32,
     targets: Vec<(u32, u64)>,
     timeline: Vec<(u32, u32, u32)>,
+    /// The cells A was made from at the call, by how often: what chose.
+    /// Empty for a `JMP (ind)` of its own, whose way was chosen by
+    /// whatever indexed the pointer's table, which is not followed.
+    on: Vec<(u16, u64)>,
 }
 
 #[derive(Serialize)]

@@ -284,7 +284,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         // run saw entries taken (a stray word past the last one is never
         // mistaken for an entry), while every word is an address in this
         // bank and none of the bytes is code.
-        let mut tables: BTreeMap<usize, (usize, BTreeMap<u16, u64>)> = BTreeMap::new();
+        let mut tables: BTreeMap<usize, (usize, BTreeMap<u16, u64>, String)> = BTreeMap::new();
         for d in &dispatches {
             let start = d.offset - offset + 3;
             let seen: BTreeMap<u16, u64> = d.targets.iter().map(|t| (t.1, t.2)).collect();
@@ -304,7 +304,11 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             }
             if let Some(last) = last {
                 if (start..start + 2 * (last + 1)).all(|i| walk.claim[i] == 0) {
-                    tables.insert(start, (last + 1, seen));
+                    // What chose, the four busiest cells, busiest first.
+                    let mut on = d.on.clone();
+                    on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+                    let on = if on.is_empty() { String::new() } else { format!(" on={}", on.iter().take(4).map(|x| format!("${:04X}", x.0)).collect::<Vec<_>>().join(",")) };
+                    tables.insert(start, (last + 1, seen, on));
                 }
             }
         }
@@ -351,10 +355,10 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 }
                 items.push(Item::Label(name.clone()));
             }
-            if let Some((entries, seen)) = tables.get(&i) {
+            if let Some((entries, seen, on)) = tables.get(&i) {
                 flush(&mut run_bytes, &mut items);
                 last_count = None;
-                items.push(Item::Directive { name: "table".into(), rest: format!("dispatch entries={entries} seen={} by=run", seen.len()) });
+                items.push(Item::Directive { name: "table".into(), rest: format!("dispatch entries={entries} seen={}{on} by=run", seen.len()) });
                 for k in 0..*entries {
                     let w = u16::from_le_bytes([bytes[i + 2 * k], bytes[i + 2 * k + 1]]);
                     items.push(Item::Word { value: w, label: label_names.get(&w).cloned(), comment: seen.get(&w).map(|n| format!("ran {n}")) });
@@ -455,7 +459,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             for o in objects {
                 let list = |name: &str, v: &[u16]| if v.is_empty() { String::new() } else { format!(" {name}={}", v.iter().map(|a| format!("${a:04X}")).collect::<Vec<_>>().join(",")) };
                 let arrays = o.xs.iter().chain(&o.ys).chain(&o.with).collect::<std::collections::BTreeSet<_>>().len();
-                items.push(Item::Directive { name: "objects".into(), rest: format!("slots={} arrays={arrays} routines={}{}{}{}{} by=run", o.slots, o.routines, list("x", &o.xs), list("y", &o.ys), list("with", &o.with), list("adds", &o.adds)) });
+                items.push(Item::Directive { name: "objects".into(), rest: format!("slots={} arrays={arrays} routines={}{}{}{}{}{} by=run", o.slots, o.routines, list("x", &o.xs), list("y", &o.ys), list("with", &o.with), list("adds", &o.adds), list("chooses", &o.chooses)) });
             }
             let mut vars: Vec<&crate::run::Var> = r.vars.iter().collect();
             vars.sort_by_key(|v| v.addr);

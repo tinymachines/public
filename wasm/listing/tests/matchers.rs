@@ -338,7 +338,10 @@ fn the_matchers_name_what_the_run_saw() {
             {"head": at("other"), "tail": at("other") + 2, "head_addr": labels["other"], "tail_addr": labels["other"] + 2, "kind": "wait", "iterations": 30000, "entries": 10, "on": 0x21, "cycles": 0, "routine": 13},
             {"head": at("spin"), "tail": at("spin"), "head_addr": labels["spin"], "tail_addr": labels["spin"], "kind": "idle", "iterations": 50000, "entries": 0, "on": null, "cycles": 0, "routine": 0}
         ],
-        "dispatch": [{"key": jsr_engine, "addr": 0x8000 + jsr_engine, "depth": 2, "targets": [[4, 7], [5, 3]], "timeline": [[0, 0, 0], [1, 0, 0], [2, 0, 0]]}]
+        "dispatch": [{"key": jsr_engine, "addr": 0x8000 + jsr_engine, "depth": 2, "targets": [[4, 7], [5, 3]], "timeline": [[0, 0, 0], [1, 0, 0], [2, 0, 0]],
+            // What chose the way: a byte of $C0, which travels with the
+            // positions, and now and then a byte of $A0, which does not.
+            "on": [[0xc1, 10], [0xa1, 2]]}]
     });
     let src = listing::from_rom_and_run(&image, &report.to_string()).unwrap();
     listing::check(&src, &image).unwrap();
@@ -365,10 +368,10 @@ fn the_matchers_name_what_the_run_saw() {
     let quiet = listing::from_rom_and_run(&image, &no_idle.to_string()).unwrap();
     assert!(!quiet.contains("idle-spin"));
     assert!(quiet.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n", a("count"))), "{quiet}");
-    assert!(src.contains(&format!(";; @ram variables=1 arrays=8 by=run\n;; @array $0080 slots=16 sites=1 by=run\n;; @array $0086 slots=6 sites=2 x=3 by=run\n;; @array $0090 slots=6 sites=2 by=run\n;; @array $00A0 slots=6 sites=2 by=run\n;; @array $00B0 slots=6 sites=1 by=run\n;; @array $00C0 slots=6 sites=2 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @array $0300 slots=40 sites=1 by=run\n;; @objects slots=6 arrays=3 routines=2 x=$0086 with=$0090,$00C0 adds=$0090 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
+    assert!(src.contains(&format!(";; @ram variables=1 arrays=8 by=run\n;; @array $0080 slots=16 sites=1 by=run\n;; @array $0086 slots=6 sites=2 x=3 by=run\n;; @array $0090 slots=6 sites=2 by=run\n;; @array $00A0 slots=6 sites=2 by=run\n;; @array $00B0 slots=6 sites=1 by=run\n;; @array $00C0 slots=6 sites=2 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @array $0300 slots=40 sites=1 by=run\n;; @objects slots=6 arrays=3 routines=2 x=$0086 with=$0090,$00C0 adds=$0090 chooses=$00C0 by=run\n;; @var $0000 writers=routine_{:04X}:80 readers=routine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.
-    assert!(src.contains(";; @table dispatch entries=3 seen=2 by=run\n"), "{src}");
+    assert!(src.contains(";; @table dispatch entries=3 seen=2 on=$00C1,$00A1 by=run\n"), "{src}");
     let lines: Vec<&str> = src.lines().collect();
     let t = lines.iter().position(|l| l.starts_with(";; @table")).unwrap();
     assert!(lines[t + 1].starts_with(&format!("    .word dispatch_{:04X}", a("state_a"))) && lines[t + 1].ends_with("; ran 7"), "{}", lines[t + 1]);
@@ -404,10 +407,11 @@ fn the_matchers_name_what_the_run_saw() {
     assert_eq!(wait["is"][0]["pattern"], "frame-wait");
     assert_eq!(wait["is"][0]["evidence"]["flag"], "$0020");
     assert_eq!(g["tables"][0]["entries"], 3);
+    assert_eq!(g["tables"][0]["on"], serde_json::json!(["$00C1", "$00A1"]));
     assert_eq!(g["tables"][0]["words"][0]["ran"], 7);
     assert_eq!(g["tables"][0]["words"][1]["ran"], Value::Null);
     assert_eq!(g["arrays"][6]["slots"], 8);
-    assert_eq!(g["objects"], serde_json::json!([{"slots": 6, "arrays": 3, "routines": 2, "x": ["$0086"], "y": [], "with": ["$0090", "$00C0"], "adds": ["$0090"]}]));
+    assert_eq!(g["objects"], serde_json::json!([{"slots": 6, "arrays": 3, "routines": 2, "x": ["$0086"], "y": [], "with": ["$0090", "$00C0"], "adds": ["$0090"], "chooses": ["$00C0"]}]));
     assert_eq!(g["arrays"][1]["x"], 3);
     assert_eq!(g["arrays"][0]["x"], serde_json::Value::Null);
     assert_eq!(g["variables"][0]["writers"][0]["count"], 80);
