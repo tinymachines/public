@@ -4490,3 +4490,67 @@ the flow of values between routines; longer crawls on the Pi with a way
 in per game; /autopsy behind a front door (the doors' groups are the
 owner's copy); the owner's ergonomics work; the quiet machine's speed;
 the phone flake in `create.spec`.
+
+## Checkpoint, 2026-10-01: the autopsy follows values
+
+Live and beta serve `778934c` (1.0.267, a clean tree each time). Three
+deploys since the last checkpoint: the bench's build record for the
+calibration cart (nes-bench `5a52db9`, a fifth page in the cart section
+with its Japanese shadow and nine photographs), the first night's rule,
+and this one.
+
+The autopsy, from thirteen patterns to fifteen and from what a routine
+touched to where a value came from:
+
+- **A fault in every earlier count.** A crawl's own record, laid over
+  the reports for coverage, added its frames to the run's total, so
+  every rule asking "in at least half the frames" asked it of twice the
+  frames anyone watched. The run keeps the watched frames apart now.
+  The game loop inside the interrupt went from no games to eight, the
+  random byte from three to eight, the scroll writer from nine to all
+  nineteen. `notes/autopsy.md` says what the first count had wrong.
+- **Every game's frame rhythm is named.** The wait for the frame (a
+  loop that only tests fixed bytes of RAM, marked when the NMI handler
+  or what it calls wrote the byte; a `JSR` may sit in it when nothing
+  the callee reached wrote the byte): twelve games. The counting spin
+  (an endless straight-line loop that writes one byte): the four Konami
+  games. With the four idle spins, nineteen of nineteen.
+- **`wasm/flow` follows values.** Each byte of RAM and each register
+  carries the cells its value was made from. The report gains the cells
+  that reached a sprite's position, the instructions where two of them
+  met, what was added into a byte that kept its own value (the carry
+  followed one step), and what `A` was made from at a call that turned
+  out to be a jump engine's. Ruled out, each a decoy in the tests: the
+  stack, scratch (a cell must carry a value from one frame into the
+  next), the camera (two cells that ever fed one sprite byte together
+  are not two objects), a value made from more than four cells.
+- **`wasm/listing` reads them.** `position-compare` (eight games,
+  eighteen routines; a collision test, an enemy asking which side the
+  player is on, or a sort by depth, and the rule says it cannot tell);
+  `@array` says how many compared positions it holds; `@objects` lists
+  the arrays at least two routines index across the same range as a
+  position array (six games, ten tables, 98 arrays), with the ones
+  added into positions (nine) and the ones that chose a jump (three);
+  `@table` says which byte chose the way (77 of 92).
+- **The record and the pages.** `data/autopsy.json`: 557 marks. A
+  game's page gains where it waits, the positions an array holds, what
+  travels with a position, and the byte behind each jump table; the
+  patterns and method pages follow in both languages; the spec holds
+  each new table to the record.
+
+How a count is re-made (the listings and reports hold instruction text
+of the owner's dumps, so they are made in the scratchpad and deleted
+after): rebuild `wasm/flow`'s `report` example first, trace and report
+every kept path of every game (about twenty minutes at two games by two
+traces; the disk is nearly full), `tools/autopsy.py` per game for the
+model, `scripts/board-autopsy.py` for the record. A change to
+`wasm/flow` or `wasm/listing` needs both bundles re-boarded before the
+next deploy.
+
+Open: what the rest of an object table holds (a companion compared
+with a constant reads like a timer or a health); what chose a
+`JMP (ind)` of its own; longer crawls with a way in per game, which
+every count here waits on; /autopsy behind a front door (the doors'
+groups are the owner's copy); the owner's ergonomics work; the quiet
+machine's speed; the phone flake in `create.spec`, and one on the
+Japanese game page that passed six of six on repeat.
