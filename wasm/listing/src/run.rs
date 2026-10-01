@@ -120,6 +120,8 @@ pub struct Run {
     /// What moved what: a cell, another cell whose value was put into
     /// it along with its own, and how often.
     pub moves: Vec<(u16, u16, u64)>,
+    /// The bytes stepped in place: cell, times up (INC), times down (DEC).
+    pub steps: Vec<(u16, u64, u64)>,
 }
 
 fn u(v: &Value) -> u64 {
@@ -257,6 +259,11 @@ impl Run {
                 .collect();
             run.meets.push(Meet { offset: key, routine, pairs });
         }
+        for m in v["steps"].as_array().unwrap_or(&none) {
+            if let Some(m) = m.as_array().filter(|m| m.len() == 3) {
+                run.steps.push((u(&m[0]) as u16, u(&m[1]), u(&m[2])));
+            }
+        }
         for m in v["moves"].as_array().unwrap_or(&none) {
             if let Some(m) = m.as_array().filter(|m| m.len() == 3) {
                 run.moves.push((u(&m[0]) as u16, u(&m[1]) as u16, u(&m[2])));
@@ -365,6 +372,15 @@ impl Run {
                     x.on = x.on.or(l.on);
                 }
                 None => self.loops.push(l),
+            }
+        }
+        for (cell, up, down) in other.steps {
+            match self.steps.iter_mut().find(|m| m.0 == cell) {
+                Some(m) => {
+                    m.1 += up;
+                    m.2 += down;
+                }
+                None => self.steps.push((cell, up, down)),
             }
         }
         for (cell, by, n) in other.moves {

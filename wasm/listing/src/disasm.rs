@@ -560,7 +560,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             for o in objects {
                 let list = |name: &str, v: &[u16]| if v.is_empty() { String::new() } else { format!(" {name}={}", v.iter().map(|a| format!("${a:04X}")).collect::<Vec<_>>().join(",")) };
                 let arrays = o.xs.iter().chain(&o.ys).chain(&o.with).collect::<std::collections::BTreeSet<_>>().len();
-                items.push(Item::Directive { name: "objects".into(), rest: format!("slots={} arrays={arrays} routines={}{}{}{}{}{} by=run", o.slots, o.routines, list("x", &o.xs), list("y", &o.ys), list("with", &o.with), list("adds", &o.adds), list("chooses", &o.chooses)) });
+                items.push(Item::Directive { name: "objects".into(), rest: format!("slots={} arrays={arrays} routines={}{}{}{}{}{}{} by=run", o.slots, o.routines, list("x", &o.xs), list("y", &o.ys), list("with", &o.with), list("adds", &o.adds), list("chooses", &o.chooses), list("down", &o.down)) });
             }
             let mut vars: Vec<&crate::run::Var> = r.vars.iter().collect();
             vars.sort_by_key(|v| v.addr);

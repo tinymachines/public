@@ -318,6 +318,10 @@ fn the_matchers_name_what_the_run_saw() {
         // them and so is not listed with the table; and a byte of $C0,
         // which does travel with them, into $B0, which is no position.
         "moves": [[0x86, 0x90, 40], [0x87, 0x91, 40], [0x86, 0xa0, 3], [0xb0, 0xc0, 9]],
+        // Stepped in place: a byte of $90 only ever down (a countdown), a
+        // byte of $C0 both ways, and a byte of $A0 down, which does not
+        // travel with the positions.
+        "steps": [[0x92, 0, 9], [0xc1, 3, 3], [0xa2, 0, 5]],
         "meets": [
             {"key": at("hit") + 2, "addr": labels["hit"] + 2, "routine": 23, "total": 8, "distinct": 2, "pairs": [[0x86, 0x87, 5, "x"], [0x86, 0x88, 3, "x"]]},
             {"key": at("hit") + 4, "addr": labels["hit"] + 4, "routine": 23, "total": 6, "distinct": 2, "pairs": [[0x86, 0x87, 4, "x"], [0xce, 0xcf, 2, "y"]]}
@@ -391,7 +395,7 @@ fn the_matchers_name_what_the_run_saw() {
     let quiet = listing::from_rom_and_run(&image, &no_idle.to_string()).unwrap();
     assert!(!quiet.contains("idle-spin"));
     assert!(quiet.contains(&format!(";; @is game-loop-in-nmi frames=10 of=10 spin=${:04X} by=match\n", a("count"))), "{quiet}");
-    assert!(src.contains(&format!(";; @ram variables=1 arrays=8 by=run\n;; @array $0080 slots=16 sites=1 by=run\n;; @array $0086 slots=6 sites=2 x=3 by=run\n;; @array $0090 slots=6 sites=2 by=run\n;; @array $00A0 slots=6 sites=2 by=run\n;; @array $00B0 slots=6 sites=1 by=run\n;; @array $00C0 slots=6 sites=2 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @array $0300 slots=40 sites=1 by=run\n;; @objects slots=6 arrays=3 routines=2 x=$0086 with=$0090,$00C0 adds=$0090 chooses=$00C0 by=run\n;; @var $0000 writers=poll_{:04X}:80 readers=engine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
+    assert!(src.contains(&format!(";; @ram variables=1 arrays=8 by=run\n;; @array $0080 slots=16 sites=1 by=run\n;; @array $0086 slots=6 sites=2 x=3 by=run\n;; @array $0090 slots=6 sites=2 by=run\n;; @array $00A0 slots=6 sites=2 by=run\n;; @array $00B0 slots=6 sites=1 by=run\n;; @array $00C0 slots=6 sites=2 by=run\n;; @array $0200 slots=8 sites=1 by=run\n;; @array $0300 slots=40 sites=1 by=run\n;; @objects slots=6 arrays=3 routines=2 x=$0086 with=$0090,$00C0 adds=$0090 chooses=$00C0 down=$0090 by=run\n;; @var $0000 writers=poll_{:04X}:80 readers=engine_{:04X}:20 total=100 by=run\n", a("poll"), a("engine"))), "{src}");
     // The table: three words, the middle one never taken (so numeric),
     // the two the run took saying how often.
     assert!(src.contains(";; @table dispatch entries=3 seen=2 on=$00C1,$00A1 by=run\n"), "{src}");
@@ -446,7 +450,7 @@ fn the_matchers_name_what_the_run_saw() {
     assert_eq!(g["tables"][0]["words"][0]["ran"], 7);
     assert_eq!(g["tables"][0]["words"][1]["ran"], Value::Null);
     assert_eq!(g["arrays"][6]["slots"], 8);
-    assert_eq!(g["objects"], serde_json::json!([{"slots": 6, "arrays": 3, "routines": 2, "x": ["$0086"], "y": [], "with": ["$0090", "$00C0"], "adds": ["$0090"], "chooses": ["$00C0"]}]));
+    assert_eq!(g["objects"], serde_json::json!([{"slots": 6, "arrays": 3, "routines": 2, "x": ["$0086"], "y": [], "with": ["$0090", "$00C0"], "adds": ["$0090"], "chooses": ["$00C0"], "down": ["$0090"]}]));
     assert_eq!(g["arrays"][1]["x"], 3);
     assert_eq!(g["arrays"][0]["x"], serde_json::Value::Null);
     assert_eq!(g["variables"][0]["writers"][0]["count"], 80);

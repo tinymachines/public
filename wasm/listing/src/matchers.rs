@@ -356,6 +356,9 @@ pub struct Objects {
     pub adds: Vec<u16>,
     /// The companions with a byte that chose a jump engine's way.
     pub chooses: Vec<u16>,
+    /// The companions with a byte only ever stepped down in place: a
+    /// countdown.
+    pub down: Vec<u16>,
 }
 
 /// What travels with a position: an array is a companion of a position
@@ -426,6 +429,9 @@ pub fn objects(run: &Run, prg: &[u8], arrays: &[(u16, usize, usize)], held: &[(u
         let mut chooses: Vec<u16> = run.dispatch.iter().flat_map(|d| d.on.iter()).filter_map(|x| home(x.0)).filter(|b| others.contains(b)).collect();
         chooses.sort();
         chooses.dedup();
+        let mut down: Vec<u16> = run.steps.iter().filter(|s| s.2 > 0 && s.1 == 0).filter_map(|s| home(s.0)).filter(|b| others.contains(b)).collect();
+        down.sort();
+        down.dedup();
         out.push(Objects {
             slots: members.iter().map(|&a| arrays[positions[a]].1).max().unwrap_or(0),
             routines: reach.iter().filter(|m| bases.iter().any(|b| m.contains_key(b))).count(),
@@ -434,6 +440,7 @@ pub fn objects(run: &Run, prg: &[u8], arrays: &[(u16, usize, usize)], held: &[(u
             with: others,
             adds,
             chooses,
+            down,
         });
     }
     out
