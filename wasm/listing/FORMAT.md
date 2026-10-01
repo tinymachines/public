@@ -136,6 +136,7 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
 | `@ram variables=N arrays=M by=run` | after the PRG banks: the RAM the routines share, one `@array` per indexed base and one `@var` per byte |
 | `@array $XXXX slots=N sites=K [x=N] [y=N] by=run` | RAM an indexed instruction reached from this base across `N` bytes at most (as far as the run saw), `K` instructions indexing it: the object slots and the tables in RAM. `x=` and `y=` are how many of its bytes are positions the `position-compare` rule saw compared, by the coordinate they reached; a byte inside several arrays counts for the tightest one, so the loop that clears a page holds none |
+| `@objects slots=N arrays=M routines=R [x=$XXXX,...] [y=$XXXX,...] [with=$XXXX,...] by=run` | after the `@array` lines: arrays that travel together. `x=` and `y=` are arrays that hold compared positions; `with=` are their companions, each an array that at least two routines indexed across the same range of indexes as one of the position arrays. Position arrays that are each other's companions are one table. `slots` is the longest position array's, `arrays` how many there are in all, `routines` how many index a position array. It is what the run saw indexed together, not a claim about what each array means |
 | `@var $XXXX writers=name:N,... readers=name:N,... total=N by=run` | a RAM byte one routine writes and another reads, each side's routines by label (or by address, when the routine ran from RAM) with their counts, the busiest six and `+N` more |
 | `@run frames=N instructions=N executed=B of=P by=run` | after the header: a run was laid over the file; it executed `B` of the `P` PRG bytes |
 | `@coverage executed=B of=L sites=N by=run` | after a bank's `@walk`: the same for this bank |
@@ -236,9 +237,10 @@ position (`sprite_feeds`) and the instructions where two of them met
 through temporaries another routine fills, so no rule over one
 routine's reads finds it; followed by value, the player's X and an
 enemy's meet at three instructions of one routine. An `@array` says
-how many such positions it holds, which is the first sight of a
-game's object table; the bytes that travel with a position (a speed,
-a state, a kind) are still to come.
+how many such positions it holds, and `@objects` lists the arrays
+indexed together with it: the first sight of a game's object table.
+What each companion means (a speed, a state, a kind) is still to
+come.
 
 ## What the static walk writes
 
@@ -266,7 +268,7 @@ holds, because a name changes no bytes.
     listing render FILE            FILE with addresses and bytes beside each line
     listing shape FILE             FILE's marks, labels and comments as JSON, none of its bytes
     listing model FILE             the game model FILE's marks describe, as JSON: routines with
-                                   their patterns, tables, arrays, variables, coverage
+                                   their patterns, tables, arrays, object tables, variables, coverage
     listing rom FILE OUT.nes       assemble FILE into an iNES file
     tools/paths.py ROM.nes CRAWL OUT.lst
                                    trace every script a crawl kept, report each, and fold

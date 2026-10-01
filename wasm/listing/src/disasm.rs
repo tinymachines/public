@@ -446,10 +446,16 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         if !r.vars.is_empty() || !arrays.is_empty() {
             items.push(Item::Directive { name: "ram".into(), rest: format!("variables={} arrays={} by=run", r.vars.len(), arrays.len()) });
             let held = crate::matchers::held(r, &arrays);
+            let objects = crate::matchers::objects(r, &rom.prg, &arrays, &held);
             for ((base, slots, sites), (x, y)) in arrays.into_iter().zip(held) {
                 let x = if x > 0 { format!(" x={x}") } else { String::new() };
                 let y = if y > 0 { format!(" y={y}") } else { String::new() };
                 items.push(Item::Directive { name: "array".into(), rest: format!("${base:04X} slots={slots} sites={sites}{x}{y} by=run") });
+            }
+            for o in objects {
+                let list = |name: &str, v: &[u16]| if v.is_empty() { String::new() } else { format!(" {name}={}", v.iter().map(|a| format!("${a:04X}")).collect::<Vec<_>>().join(",")) };
+                let arrays = o.xs.iter().chain(&o.ys).chain(&o.with).collect::<std::collections::BTreeSet<_>>().len();
+                items.push(Item::Directive { name: "objects".into(), rest: format!("slots={} arrays={arrays} routines={}{}{}{} by=run", o.slots, o.routines, list("x", &o.xs), list("y", &o.ys), list("with", &o.with)) });
             }
             let mut vars: Vec<&crate::run::Var> = r.vars.iter().collect();
             vars.sort_by_key(|v| v.addr);

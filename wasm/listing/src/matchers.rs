@@ -303,20 +303,106 @@ pub fn held(run: &Run, arrays: &[(u16, usize, usize)]) -> Vec<(u32, u32)> {
     out
 }
 
+/// The base an indexed instruction counts from, when it is in RAM.
+fn base_of(prg: &[u8], k: usize) -> Option<u16> {
+    let base = match ops::mode(*prg.get(k)?) {
+        Mode::Zpx | Mode::Zpy => prg.get(k + 1).copied().map(u16::from),
+        Mode::Abx | Mode::Aby => prg.get(k + 2).map(|&b2| u16::from_le_bytes([prg[k + 1], b2])),
+        _ => None,
+    }?;
+    (base < 0x0800).then_some(base)
+}
+
+/// Arrays that travel together: a position array (or several that
+/// travel with each other) and the arrays indexed with it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Objects {
+    pub slots: usize,
+    pub routines: usize,
+    pub xs: Vec<u16>,
+    pub ys: Vec<u16>,
+    pub with: Vec<u16>,
+}
+
+/// What travels with a position: an array is a companion of a position
+/// array when, in at least two routines that index both, the two were
+/// reached across the same range of indexes. Position arrays that are
+/// each other's companions are one table, with every companion of any
+/// of them.
+pub fn objects(run: &Run, prg: &[u8], arrays: &[(u16, usize, usize)], held: &[(u32, u32)]) -> Vec<Objects> {
+    // Per routine, each base's reach as (lowest, highest) index.
+    let mut reach: Vec<BTreeMap<u16, (u16, u16)>> = Vec::new();
+    for r in &run.routines {
+        let mut m: BTreeMap<u16, (u16, u16)> = BTreeMap::new();
+        for &k in &r.body {
+            let (Some(base), Some((lo, hi))) = (base_of(prg, k), run.sites.get(&k).and_then(|s| s.span)) else { continue };
+            if lo < base || hi <= base {
+                continue;
+            }
+            let e = m.entry(base).or_insert((lo - base, hi - base));
+            *e = (e.0.min(lo - base), e.1.max(hi - base));
+        }
+        reach.push(m);
+    }
+    let positions: Vec<usize> = (0..arrays.len()).filter(|&i| held[i].0 + held[i].1 > 0).collect();
+    let companions = |p: u16| -> Vec<u16> {
+        let mut n: BTreeMap<u16, u32> = BTreeMap::new();
+        for m in &reach {
+            let Some(mine) = m.get(&p) else { continue };
+            for (&b, range) in m {
+                if b != p && range == mine {
+                    *n.entry(b).or_insert(0) += 1;
+                }
+            }
+        }
+        n.into_iter().filter(|x| x.1 >= 2).map(|x| x.0).collect()
+    };
+    let with: Vec<Vec<u16>> = positions.iter().map(|&i| companions(arrays[i].0)).collect();
+    // Position arrays that are companions of one another are one table.
+    let mut group: Vec<usize> = (0..positions.len()).collect();
+    for a in 0..positions.len() {
+        for b in 0..positions.len() {
+            if with[a].contains(&arrays[positions[b]].0) {
+                let (ga, gb) = (group[a], group[b]);
+                for g in group.iter_mut().filter(|g| **g == gb) {
+                    *g = ga;
+                }
+            }
+        }
+    }
+    let mut out = Vec::new();
+    for g in 0..positions.len() {
+        let members: Vec<usize> = (0..positions.len()).filter(|&a| group[a] == g).collect();
+        if members.is_empty() {
+            continue;
+        }
+        let bases: Vec<u16> = members.iter().map(|&a| arrays[positions[a]].0).collect();
+        let mut others: Vec<u16> = members.iter().flat_map(|&a| with[a].iter().copied()).filter(|b| !bases.contains(b)).collect();
+        others.sort();
+        others.dedup();
+        if others.is_empty() && members.len() < 2 {
+            continue;
+        }
+        let pick = |x: bool| -> Vec<u16> { members.iter().map(|&a| positions[a]).filter(|&i| if x { held[i].0 > 0 } else { held[i].1 > 0 }).map(|i| arrays[i].0).collect() };
+        out.push(Objects {
+            slots: members.iter().map(|&a| arrays[positions[a]].1).max().unwrap_or(0),
+            routines: reach.iter().filter(|m| bases.iter().any(|b| m.contains_key(b))).count(),
+            xs: pick(true),
+            ys: pick(false),
+            with: others,
+        });
+    }
+    out
+}
+
 /// The arrays: RAM an indexed instruction reached across more than one
 /// byte, by base address: how many slots the run saw reached from the
 /// base, and how many instructions index it.
 pub fn arrays(run: &Run, prg: &[u8]) -> Vec<(u16, usize, usize)> {
     let mut by_base: BTreeMap<u16, (usize, usize)> = BTreeMap::new();
     for (&k, site) in &run.sites {
-        let (Some(&op), Some((lo, hi))) = (prg.get(k), site.span) else { continue };
-        let base = match ops::mode(op) {
-            Mode::Zpx | Mode::Zpy => prg.get(k + 1).copied().map(u16::from),
-            Mode::Abx | Mode::Aby => prg.get(k + 2).map(|&b2| u16::from_le_bytes([prg[k + 1], b2])),
-            _ => None,
-        };
-        let Some(base) = base else { continue };
-        if base >= 0x0800 || lo < base || hi <= base {
+        let (Some(base), Some((lo, hi))) = (base_of(prg, k), site.span) else { continue };
+        if lo < base || hi <= base {
             continue;
         }
         let e = by_base.entry(base).or_insert((0, 0));

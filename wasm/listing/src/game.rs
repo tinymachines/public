@@ -32,6 +32,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
     let mut tables = Vec::new();
     let mut loops = Vec::new();
     let mut arrays = Vec::new();
+    let mut objects = Vec::new();
     let mut variables = Vec::new();
     let mut banks = Vec::new();
     let mut run = Value::Null;
@@ -75,6 +76,10 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                             }
                         }
                         arrays.push(a);
+                    }
+                    "objects" => {
+                        let list = |k: &str| -> Vec<Value> { kv.get(k).and_then(Value::as_str).map(|s| s.split(',').map(Value::from).collect()).unwrap_or_default() };
+                        objects.push(json!({"slots": kv.get("slots").cloned().unwrap_or(json!(0)), "arrays": kv.get("arrays").cloned().unwrap_or(json!(0)), "routines": kv.get("routines").cloned().unwrap_or(json!(0)), "x": list("x"), "y": list("y"), "with": list("with")}));
                     }
                     "var" => {
                         let side = |k: &str| -> Vec<Value> {
@@ -125,6 +130,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
         "tables": tables,
         "loops": loops,
         "arrays": arrays,
+        "objects": objects,
         "variables": variables,
     }))
 }
