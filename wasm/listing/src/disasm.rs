@@ -341,7 +341,10 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         // run saw entries taken (a stray word past the last one is never
         // mistaken for an entry), while every word is an address in this
         // bank and none of the bytes is code.
-        let mut tables: BTreeMap<usize, (usize, BTreeMap<u16, u64>, String, &'static str)> = BTreeMap::new();
+        // By where it starts: entries, the targets seen with how often,
+        // what chose, and the kind.
+        type Table = (usize, BTreeMap<u16, u64>, String, &'static str);
+        let mut tables: BTreeMap<usize, Table> = BTreeMap::new();
         // What chose, the four busiest cells, busiest first.
         let chosen = |d: &crate::run::Dispatch| -> String {
             let mut on = d.on.clone();
