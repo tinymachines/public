@@ -118,10 +118,17 @@ fn trace() -> Vec<u8> {
         t.ins(0x8200, &[0xad, 0x16, 0x40], &[(0x4016, 0x41 | pad, true)]);
         t.ins(0x8203, &[0x85, 0x10], &[(0x0010, pad, false)]);
         t.rts(0x8205);
-        // The mode at $30 goes to A, doubled, and the engine is called.
-        t.jsr(0x8103, 0x817d);
-        t.ins(0x817d, &[0xa5, 0x30], &[(0x0030, 0, true)]);
-        t.ins(0x817f, &[0x0a], &[]);
+        // The mode at $30 goes to A with a scratch byte at $31 (written
+        // just before, so it carries nothing), doubled, and the engine
+        // is called.
+        t.jsr(0x8103, 0x8175);
+        t.ins(0x8175, &[0xa9, 0x00], &[]);
+        t.ins(0x8177, &[0x85, 0x31], &[(0x0031, 0, false)]);
+        t.ins(0x8179, &[0xa5, 0x30], &[(0x0030, 0, true)]);
+        t.ins(0x817b, &[0x05, 0x31], &[(0x0031, 0, true)]);
+        t.ins(0x817d, &[0x0a], &[]);
+        t.ins(0x817e, &[0xea], &[]);
+        t.ins(0x817f, &[0xea], &[]);
         t.jsr(0x8180, 0x8300);
         // The engine: pull the return address, jump through the table.
         t.pla(0x8300);
@@ -187,7 +194,8 @@ fn a_jump_engine_dispatches_from_the_call_that_reached_it() {
     let d = r["dispatch"].as_array().unwrap();
     assert_eq!(d.len(), 1, "{d:?}");
     assert_eq!(d[0]["addr"], 0x8180, "keyed by the JSR that reached the engine, not the engine's JMP");
-    // What chose: A at the call was made from the byte at $30, every time.
+    // What chose: A at the call was made from the byte at $30, every
+    // time. The scratch byte that went in with it is not a chooser.
     assert_eq!(d[0]["on"], serde_json::json!([[0x30, FRAMES]]));
     let wait = routine(&r, "dispatch", 0x8400)["id"].as_u64().unwrap();
     let work = routine(&r, "dispatch", 0x8500)["id"].as_u64().unwrap();

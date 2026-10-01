@@ -987,7 +987,8 @@ impl Flow {
             .map(|d| {
                 let mut targets: Vec<_> = d.targets.iter().map(|(r, n)| (*r, *n)).collect();
                 targets.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-let mut on: Vec<_> = d.on.iter().map(|(a, n)| (*a, *n)).collect();
+// Scratch chose nothing: only cells that carry a value across frames.
+                let mut on: Vec<_> = d.on.iter().filter(|(a, _)| self.carried[**a as usize] * 2 >= self.touched[**a as usize]).map(|(a, n)| (*a, *n)).collect();
                 on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
                 on.truncate(8);
                 DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), on }
@@ -1385,7 +1386,7 @@ struct DispatchOut {
     targets: Vec<(u32, u64)>,
     timeline: Vec<(u32, u32, u32)>,
     /// The cells A was made from at the call, by how often: what chose.
-    /// Empty for a `JMP (ind)` of its own, whose way was chosen by
+    /// Scratch is left out, as for positions. Empty for a `JMP (ind)` of its own, whose way was chosen by
     /// whatever indexed the pointer's table, which is not followed.
     on: Vec<(u16, u64)>,
 }
