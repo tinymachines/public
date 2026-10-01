@@ -2,8 +2,8 @@
  "note": "Written only by scripts/board-autopsy.py from the models wasm/listing/tools/autopsy.py wrote. Shape only: addresses, labels, counts and pattern names; no byte of any ROM.",
  "boarded_on": "2026-10-01",
  "repo": "https://github.com/tinymachines/public",
- "listing_tree": "236d9c922ced36d59e979c0fa621d8d96af7bb92",
- "flow_tree": "329aec8a9cf719a715cd704b7dd95924b6b80b5d",
+ "listing_tree": "4eaf8ac5539b02334ee1206deb289d2ed2205389",
+ "flow_tree": "c7dab4f0d6608bec9f0b8ba5d8836ea075d823c7",
  "console_commit": "d8b489a21f27b821ef056cece9bb3e9598657b43",
  "steps": 400,
  "variables_kept": 24,
@@ -4928,6 +4928,7 @@
    ],
    "object_list": [
     {
+     "adds": [],
      "arrays": 4,
      "routines": 3,
      "slots": 13,
@@ -4942,6 +4943,9 @@
      ]
     },
     {
+     "adds": [
+      "$0410"
+     ],
      "arrays": 23,
      "routines": 9,
      "slots": 12,
@@ -11029,6 +11033,7 @@
    ],
    "object_list": [
     {
+     "adds": [],
      "arrays": 11,
      "routines": 13,
      "slots": 16,
@@ -11050,6 +11055,7 @@
      ]
     },
     {
+     "adds": [],
      "arrays": 6,
      "routines": 3,
      "slots": 12,
@@ -22774,6 +22780,7 @@
    ],
    "object_list": [
     {
+     "adds": [],
      "arrays": 4,
      "routines": 11,
      "slots": 25,
@@ -30106,6 +30113,10 @@
    ],
    "object_list": [
     {
+     "adds": [
+      "$003C",
+      "$04CB"
+     ],
      "arrays": 7,
      "routines": 4,
      "slots": 11,
@@ -30124,6 +30135,7 @@
      ]
     },
     {
+     "adds": [],
      "arrays": 4,
      "routines": 3,
      "slots": 5,
@@ -33752,6 +33764,7 @@
    ],
    "object_list": [
     {
+     "adds": [],
      "arrays": 6,
      "routines": 10,
      "slots": 129,
@@ -33769,6 +33782,9 @@
      ]
     },
     {
+     "adds": [
+      "$0097"
+     ],
      "arrays": 8,
      "routines": 12,
      "slots": 6,
@@ -37229,6 +37245,9 @@
    ],
    "object_list": [
     {
+     "adds": [
+      "$04E0"
+     ],
      "arrays": 25,
      "routines": 23,
      "slots": 16,

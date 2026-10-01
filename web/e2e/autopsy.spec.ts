@@ -15,7 +15,7 @@ import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from
 
 const RECORD = path.join(__dirname, "..", "..", "data", "autopsy.json");
 
-type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: unknown[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number }[] };
+type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: unknown[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number; adds?: string[] }[] };
 
 function record(): { games: Game[]; patterns: string[] } {
   const r = JSON.parse(fs.readFileSync(RECORD, "utf8")) as { games: Game[]; patterns: string[] };
@@ -85,6 +85,8 @@ test("a game's page shows the arrays that travel with its positions", async ({ p
   await open(page, `/autopsy/games/${most.key}`, 200);
   const shown = await page.locator("[data-autopsy-objects] tbody tr").evaluateAll((rows) => rows.map((r) => Number((r as HTMLElement).dataset.autopsyObjectArrays)));
   expect(shown, `${most.name}: its tables, by how many arrays each has`).toEqual(most.object_list.map((o) => o.arrays));
+  const adds = await page.locator("[data-autopsy-objects] tbody td[data-autopsy-object-adds]").evaluateAll((tds) => tds.map((t) => Number((t as HTMLElement).dataset.autopsyObjectAdds)));
+  expect(adds, `${most.name}: the arrays added into positions, by table`).toEqual(most.object_list.map((o) => (o.adds ?? []).length));
   const none = r.games.find((g) => g.object_list.length === 0);
   if (none) {
     await open(page, `/autopsy/games/${none.key}`, 200);

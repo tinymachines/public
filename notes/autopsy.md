@@ -405,9 +405,17 @@ image it runs from.
    slots, and Blades of Steel's has 23 of twelve. Paperboy's four
    arrays of 25 sit 25 bytes apart, which nobody told the rule to
    look for. What each companion holds (a speed, a state, a kind) is
-   the next question, and following values answers part of it
-   already: a companion whose value is added into a position is a
-   speed. That table of contents is the toolkit's.
+   the next question, and following values answers the first part:
+   the flow counts what was added into a byte that kept its own value
+   (`moves`), and `@objects` lists the companions added into a
+   position array (`adds=`). Four of the ten tables have one, five
+   arrays in all. It is fewer than there are speeds, and the reason
+   is known: a game that keeps a fraction beside each position adds
+   the speed to the fraction and only the carry reaches the position,
+   and a carry has no cell to have come from. Following the carry is
+   the next step there; after it, the companions a jump engine is
+   indexed by (a state or a kind). That table of contents is the
+   toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's
