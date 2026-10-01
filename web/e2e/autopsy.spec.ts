@@ -15,7 +15,7 @@ import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from
 
 const RECORD = path.join(__dirname, "..", "..", "data", "autopsy.json");
 
-type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: unknown[] };
+type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: unknown[]; loop_list: { is: unknown[] }[] };
 
 function record(): { games: Game[]; patterns: string[] } {
   const r = JSON.parse(fs.readFileSync(RECORD, "utf8")) as { games: Game[]; patterns: string[] };
@@ -45,6 +45,23 @@ test("a game's page shows every routine and table the record holds for it", asyn
     await expect(page.locator("[data-autopsy-routines] tbody tr"), `${g.name}: its routines`).toHaveCount(g.routine_list.length);
     await expect(page.locator("[data-autopsy-tables] tbody tr"), `${g.name}: its tables`).toHaveCount(g.table_list.length);
     await expect(page.locator("[data-autopsy-found] li"), `${g.name}: the patterns named`).toHaveCount(Object.keys(g.patterns).length);
+  }
+});
+
+test("a game's page shows the loops the rules named, each with its evidence", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const r = record();
+  // The game that waits in the most places, and one that waits in none.
+  const most = [...r.games].sort((a, b) => b.loop_list.length - a.loop_list.length)[0];
+  expect(most.loop_list.length, "some game in the record has a named loop").toBeGreaterThan(0);
+  await open(page, `/autopsy/games/${most.key}`, 200);
+  await expect(page.locator("[data-autopsy-loops] tbody tr"), `${most.name}: its loops`).toHaveCount(most.loop_list.length);
+  const marks = most.loop_list.reduce((n, l) => n + l.is.length, 0);
+  await expect(page.locator("[data-autopsy-loops] tbody tr td:last-child div"), `${most.name}: a line of evidence for each mark`).toHaveCount(marks);
+  const none = r.games.find((g) => g.loop_list.length === 0);
+  if (none) {
+    await open(page, `/autopsy/games/${none.key}`, 200);
+    await expect(page.locator("[data-autopsy-loops]"), `${none.name}: no table for no loops`).toHaveCount(0);
   }
 });
 

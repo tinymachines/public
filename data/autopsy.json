@@ -2,13 +2,15 @@
  "note": "Written only by scripts/board-autopsy.py from the models wasm/listing/tools/autopsy.py wrote. Shape only: addresses, labels, counts and pattern names; no byte of any ROM.",
  "boarded_on": "2026-09-30",
  "repo": "https://github.com/tinymachines/public",
- "listing_tree": "52a553c8e1c4cc4b3015c180e0f1ec2d55128dcd",
+ "listing_tree": "8ec9a348ac3c9d59e35c640ae9e2e6f165f52da0",
  "flow_tree": "7519f062fd14b574c753ee88dd52be73b3bd1262",
  "console_commit": "d8b489a21f27b821ef056cece9bb3e9598657b43",
  "steps": 400,
  "variables_kept": 24,
  "patterns": [
   "bank-switch",
+  "frame-wait",
+  "game-loop-in-nmi",
   "idle-spin",
   "jump-engine",
   "pad-poll",
@@ -25,7 +27,7 @@
   "prg": 2277376,
   "executed": 170400,
   "routines": 2933,
-  "marks": 473,
+  "marks": 520,
   "tables": 92,
   "table_words": 599
  },
@@ -149,8 +151,10 @@
    },
    "patterns": {
     "bank-switch": 3,
+    "frame-wait": 8,
     "pad-poll": 2,
     "palette-writer": 2,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 6,
     "vram-drain": 1
@@ -702,7 +706,19 @@
      "addr": 50015,
      "kind": "call",
      "entered": 1540,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 1538,
+        "flag": "$0030",
+        "iterations": 3941011,
+        "of": 13029,
+        "set-in-nmi": 14052
+       },
+       "pattern": "frame-wait"
+      }
+     ]
     },
     {
      "name": "b15_routine_C367",
@@ -734,7 +750,16 @@
      "addr": 50415,
      "kind": "nmi",
      "entered": 11271,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 11414,
+        "writes-in-blank": 18154
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b15_routine_C567",
@@ -1485,6 +1510,134 @@
     }
    ],
    "table_list": [],
+   "loop_list": [
+    {
+     "name": "b15_at_C150",
+     "bank": "prg15",
+     "addr": 49488,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 1790,
+        "flag": "$03E9",
+        "iterations": 6623410,
+        "of": 13029,
+        "set-in-nmi": 18110
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b15_at_C3B9",
+     "bank": "prg15",
+     "addr": 50105,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 28,
+        "flag": "$0030",
+        "iterations": 10692043,
+        "of": 13029,
+        "set-in-nmi": 14052
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b15_at_C3C0",
+     "bank": "prg15",
+     "addr": 50112,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 26,
+        "flag": "$0030",
+        "iterations": 5429565,
+        "of": 13029,
+        "set-in-nmi": 14052
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b15_at_C3CA",
+     "bank": "prg15",
+     "addr": 50122,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 26,
+        "flag": "$0663",
+        "iterations": 1907047,
+        "of": 13029,
+        "set-in-nmi": 178432
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b15_at_C568",
+     "bank": "prg15",
+     "addr": 50536,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 3454,
+        "flag": "$002B",
+        "iterations": 2557546,
+        "of": 13029,
+        "set-in-nmi": 2101
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b15_at_D82A",
+     "bank": "prg15",
+     "addr": 55338,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 392,
+        "flag": "$002B",
+        "iterations": 1199685,
+        "of": 13029,
+        "set-in-nmi": 2101
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b15_at_DA9B",
+     "bank": "prg15",
+     "addr": 55963,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 825,
+        "flag": "$002B",
+        "iterations": 1265075,
+        "of": 13029,
+        "set-in-nmi": 2101
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -2157,6 +2310,7 @@
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 2,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 1,
     "sprite-writer": 5,
@@ -3496,7 +3650,16 @@
      "addr": 49832,
      "kind": "call",
      "entered": 13247,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 13220,
+        "writes-in-blank": 26438
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b7_routine_C2B5",
@@ -4246,6 +4409,7 @@
      "seen": 3
     }
    ],
+   "loop_list": [],
    "array_list": [
     {
      "base": "$0000",
@@ -4930,6 +5094,7 @@
    },
    "patterns": {
     "bank-switch": 6,
+    "frame-wait": 1,
     "pad-poll": 2,
     "palette-writer": 1,
     "scroll-writer": 1,
@@ -6665,6 +6830,26 @@
     }
    ],
    "table_list": [],
+   "loop_list": [
+    {
+     "name": "b7_at_E93A",
+     "bank": "prg7",
+     "addr": 59706,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 28183,
+        "flag": "$0012",
+        "iterations": 94159591,
+        "of": 29048,
+        "set-in-nmi": 233721
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -8480,6 +8665,7 @@
     }
    ],
    "table_list": [],
+   "loop_list": [],
    "array_list": [
     {
      "base": "$0000",
@@ -8832,6 +9018,7 @@
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 1,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 4,
     "vram-drain": 1
@@ -10185,7 +10372,16 @@
      "addr": 54096,
      "kind": "call",
      "entered": 7307,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 7307,
+        "writes-in-blank": 13946
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b7_routine_D371",
@@ -10240,6 +10436,7 @@
      "seen": 10
     }
    ],
+   "loop_list": [],
    "array_list": [
     {
      "base": "$0000",
@@ -10788,6 +10985,7 @@
    },
    "patterns": {
     "bank-switch": 4,
+    "frame-wait": 1,
     "pad-poll": 2,
     "palette-writer": 1,
     "scroll-writer": 1,
@@ -11221,6 +11419,26 @@
     }
    ],
    "table_list": [],
+   "loop_list": [
+    {
+     "name": "b7_at_C004",
+     "bank": "prg7",
+     "addr": 49156,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 14003,
+        "flag": "$00F0",
+        "iterations": 61079258,
+        "of": 14129,
+        "set-in-nmi": 13984
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -11598,6 +11816,8 @@
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 1,
+    "random-byte": 1,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 9,
     "vram-drain": 1
@@ -11777,7 +11997,16 @@
      "addr": 49422,
      "kind": "call",
      "entered": 2512,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 2511,
+        "writes-in-blank": 5022
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b7_routine_C19A",
@@ -12153,6 +12382,16 @@
         "strobes-per-frame": 4
        },
        "pattern": "pad-poll"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$006C,$006D",
+        "eors": 1,
+        "frames": 2513,
+        "shifts": 2
+       },
+       "pattern": "random-byte"
       }
      ]
     },
@@ -12293,6 +12532,7 @@
      "seen": 5
     }
    ],
+   "loop_list": [],
    "array_list": [
     {
      "base": "$0000",
@@ -12647,10 +12887,13 @@
    },
    "patterns": {
     "bank-switch": 3,
+    "game-loop-in-nmi": 1,
     "idle-spin": 1,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 1,
+    "random-byte": 3,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 10,
     "vram-drain": 1
@@ -13311,7 +13554,35 @@
      "addr": 58500,
      "kind": "nmi",
      "entered": 2616,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 2729,
+        "of": 3378,
+        "spin": "$E45B"
+       },
+       "pattern": "game-loop-in-nmi"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0018,$0019,$001A",
+        "eors": 1,
+        "frames": 2729,
+        "shifts": 3
+       },
+       "pattern": "random-byte"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 2729,
+        "writes-in-blank": 8082
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b7_routine_E580",
@@ -13386,6 +13657,16 @@
         "strobes-per-frame": 6
        },
        "pattern": "pad-poll"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0000,$00F8,$00F9",
+        "eors": 1,
+        "frames": 2695,
+        "shifts": 3
+       },
+       "pattern": "random-byte"
       }
      ]
     },
@@ -13404,6 +13685,16 @@
         "strobes-per-frame": 4
        },
        "pattern": "pad-poll"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0000,$00F8,$00F9",
+        "eors": 1,
+        "frames": 2615,
+        "shifts": 3
+       },
+       "pattern": "random-byte"
       }
      ]
     },
@@ -13538,6 +13829,23 @@
      "addr": 59683,
      "entries": 2,
      "seen": 3
+    }
+   ],
+   "loop_list": [
+    {
+     "name": "b7_at_E45B",
+     "bank": "prg7",
+     "addr": 58459,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "iterations": 19870380,
+        "per-frame": 5882
+       },
+       "pattern": "idle-spin"
+      }
+     ]
     }
    ],
    "array_list": [
@@ -13899,9 +14207,11 @@
    },
    "patterns": {
     "bank-switch": 11,
+    "frame-wait": 2,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 2,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 1,
     "sprite-writer": 7,
@@ -14910,7 +15220,16 @@
      "addr": 49818,
      "kind": "call",
      "entered": 1940,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 1936,
+        "writes-in-blank": 3828
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b7_routine_C2A8",
@@ -15731,6 +16050,44 @@
      "seen": 1
     }
    ],
+   "loop_list": [
+    {
+     "name": "b7_at_C42F",
+     "bank": "prg7",
+     "addr": 50223,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 34,
+        "flag": "$001A",
+        "iterations": 20860,
+        "of": 2302,
+        "set-in-nmi": 1976
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b7_at_C442",
+     "bank": "prg7",
+     "addr": 50242,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 114,
+        "flag": "$001A",
+        "iterations": 410730,
+        "of": 2302,
+        "set-in-nmi": 1976
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -16286,6 +16643,7 @@
    },
    "patterns": {
     "bank-switch": 21,
+    "frame-wait": 1,
     "jump-engine": 3,
     "pad-poll": 2,
     "palette-writer": 1,
@@ -18221,6 +18579,26 @@
      "seen": 1
     }
    ],
+   "loop_list": [
+    {
+     "name": "b13_at_AF06",
+     "bank": "prg13",
+     "addr": 44806,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 13653,
+        "flag": "$001F",
+        "iterations": 164891623,
+        "of": 47611,
+        "set-in-nmi": 74942
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -18685,6 +19063,7 @@
    },
    "patterns": {
     "bank-switch": 12,
+    "frame-wait": 3,
     "jump-engine": 2,
     "pad-poll": 1,
     "palette-writer": 1,
@@ -19022,7 +19401,19 @@
      "addr": 33339,
      "kind": "call",
      "entered": 8693,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 8692,
+        "flag": "$001F",
+        "iterations": 12877382,
+        "of": 14396,
+        "set-in-nmi": 14057
+       },
+       "pattern": "frame-wait"
+      }
+     ]
     },
     {
      "name": "b4_routine_82E0",
@@ -19038,7 +19429,19 @@
      "addr": 33537,
      "kind": "call",
      "entered": 269,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 269,
+        "flag": "$001F",
+        "iterations": 756096,
+        "of": 14396,
+        "set-in-nmi": 14057
+       },
+       "pattern": "frame-wait"
+      }
+     ]
     },
     {
      "name": "b4_routine_8328",
@@ -19665,7 +20068,19 @@
      "addr": 61700,
      "kind": "call",
      "entered": 5096,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 5116,
+        "flag": "$001F",
+        "iterations": 16857610,
+        "of": 14396,
+        "set-in-nmi": 14057
+       },
+       "pattern": "frame-wait"
+      }
+     ]
     },
     {
      "name": "b7_routine_F10D",
@@ -19987,6 +20402,7 @@
      "seen": 1
     }
    ],
+   "loop_list": [],
    "array_list": [
     {
      "base": "$0004",
@@ -20389,10 +20805,13 @@
    },
    "patterns": {
     "bank-switch": 1,
+    "game-loop-in-nmi": 1,
     "idle-spin": 1,
     "jump-engine": 5,
     "pad-poll": 1,
     "palette-writer": 1,
+    "random-byte": 1,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 1,
     "vram-drain": 1
@@ -20408,7 +20827,25 @@
      "addr": 32774,
      "kind": "nmi",
      "entered": 6766,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 6766,
+        "of": 6817,
+        "spin": "$80A1"
+       },
+       "pattern": "game-loop-in-nmi"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 6766,
+        "writes-in-blank": 13068
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "routine_8044",
@@ -20485,6 +20922,16 @@
         "strobes-per-frame": 4
        },
        "pattern": "pad-poll"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0000",
+        "eors": 1,
+        "frames": 5062,
+        "shifts": 1
+       },
+       "pattern": "random-byte"
       }
      ]
     },
@@ -21610,6 +22057,23 @@
     }
    ],
    "table_list": [],
+   "loop_list": [
+    {
+     "name": "at_80A1",
+     "bank": "prg0",
+     "addr": 32929,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "iterations": 48914261,
+        "per-frame": 7175
+       },
+       "pattern": "idle-spin"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0009",
@@ -22043,10 +22507,13 @@
    },
    "patterns": {
     "bank-switch": 3,
+    "game-loop-in-nmi": 1,
     "idle-spin": 1,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 1,
+    "random-byte": 1,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 5,
     "vram-drain": 1
@@ -22062,7 +22529,18 @@
      "addr": 32768,
      "kind": "call",
      "entered": 10097,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$003C,$003D",
+        "eors": 1,
+        "frames": 9935,
+        "shifts": 2
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "dispatch_802D",
@@ -22639,7 +23117,17 @@
      "addr": 51957,
      "kind": "nmi",
      "entered": 10138,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 10138,
+        "of": 10257,
+        "spin": "$CAF2"
+       },
+       "pattern": "game-loop-in-nmi"
+      }
+     ]
     },
     {
      "name": "routine_CB53",
@@ -22655,7 +23143,16 @@
      "addr": 52073,
      "kind": "call",
      "entered": 10109,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 10109,
+        "writes-in-blank": 20218
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "routine_CB89",
@@ -23227,6 +23724,23 @@
      "seen": 3
     }
    ],
+   "loop_list": [
+    {
+     "name": "at_CAF2",
+     "bank": "prg0",
+     "addr": 51954,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "iterations": 74970040,
+        "per-frame": 7309
+       },
+       "pattern": "idle-spin"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -23710,10 +24224,14 @@
    },
    "patterns": {
     "bank-switch": 1,
+    "frame-wait": 2,
+    "game-loop-in-nmi": 1,
     "idle-spin": 1,
     "jump-engine": 2,
     "pad-poll": 4,
     "palette-writer": 3,
+    "random-byte": 1,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 2,
     "sprite-writer": 24,
@@ -25093,7 +25611,17 @@
      "addr": 49286,
      "kind": "nmi",
      "entered": 9359,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 9359,
+        "of": 10479,
+        "spin": "$8057"
+       },
+       "pattern": "game-loop-in-nmi"
+      }
+     ]
     },
     {
      "name": "b1_routine_C0B3",
@@ -25261,7 +25789,16 @@
      "addr": 50113,
      "kind": "call",
      "entered": 7994,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 7974,
+        "writes-in-blank": 15948
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b1_routine_C426",
@@ -25293,7 +25830,18 @@
      "addr": 50568,
      "kind": "call",
      "entered": 1957668,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$05EC,$05ED,$05EE,$05EF",
+        "eors": 1,
+        "frames": 7842,
+        "shifts": 4
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "b1_dispatch_C5AA",
@@ -26133,6 +26681,59 @@
      "seen": 3
     }
    ],
+   "loop_list": [
+    {
+     "name": "b0_at_8057",
+     "bank": "prg0",
+     "addr": 32855,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "iterations": 5174858,
+        "per-frame": 493
+       },
+       "pattern": "idle-spin"
+      }
+     ]
+    },
+    {
+     "name": "b1_at_813D",
+     "bank": "prg1",
+     "addr": 33085,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 1385,
+        "flag": "$0020",
+        "iterations": 3486089,
+        "of": 10479,
+        "set-in-nmi": 9380
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b1_at_C5DC",
+     "bank": "prg1",
+     "addr": 50652,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 198,
+        "flag": "$0020",
+        "iterations": 735103,
+        "of": 10479,
+        "set-in-nmi": 9380
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -26769,6 +27370,7 @@
    },
    "patterns": {
     "bank-switch": 6,
+    "frame-wait": 2,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 3,
@@ -28500,6 +29102,44 @@
      "seen": 1
     }
    ],
+   "loop_list": [
+    {
+     "name": "b0_at_961A",
+     "bank": "prg0",
+     "addr": 38426,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 686,
+        "flag": "$00EB",
+        "iterations": 2926371,
+        "of": 13911,
+        "set-in-nmi": 27506
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b14_at_EAC3",
+     "bank": "prg14",
+     "addr": 60099,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 12872,
+        "flag": "$00EB",
+        "iterations": 49070935,
+        "of": 13911,
+        "set-in-nmi": 27506
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -29283,6 +29923,7 @@
    },
    "patterns": {
     "bank-switch": 13,
+    "frame-wait": 3,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 2,
@@ -31718,6 +32359,62 @@
     }
    ],
    "table_list": [],
+   "loop_list": [
+    {
+     "name": "b24_at_881C",
+     "bank": "prg24",
+     "addr": 34844,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 13199,
+        "flag": "$0010",
+        "iterations": 56343449,
+        "of": 28220,
+        "set-in-nmi": 53478
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b28_at_804B",
+     "bank": "prg28",
+     "addr": 32843,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 3,
+        "flag": "$04E0",
+        "iterations": 3,
+        "of": 28220,
+        "set-in-nmi": 859
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b30_at_D6FB",
+     "bank": "prg30",
+     "addr": 55035,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 13579,
+        "flag": "$0010",
+        "iterations": 49905908,
+        "of": 28220,
+        "set-in-nmi": 53478
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -35427,6 +36124,7 @@
      "seen": 4
     }
    ],
+   "loop_list": [],
    "array_list": [
     {
      "base": "$0000",
@@ -35975,6 +36673,7 @@
    },
    "patterns": {
     "bank-switch": 7,
+    "frame-wait": 2,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 3,
@@ -37122,6 +37821,44 @@
      "seen": 7
     }
    ],
+   "loop_list": [
+    {
+     "name": "b0_at_AA37",
+     "bank": "prg0",
+     "addr": 43575,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 21338,
+        "flag": "$0033",
+        "iterations": 86515130,
+        "of": 21813,
+        "set-in-nmi": 21661
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    },
+    {
+     "name": "b0_at_AA4D",
+     "bank": "prg0",
+     "addr": 43597,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 323,
+        "flag": "$0033",
+        "iterations": 1223757,
+        "of": 21813,
+        "set-in-nmi": 21661
+       },
+       "pattern": "frame-wait"
+      }
+     ]
+    }
+   ],
    "array_list": [
     {
      "base": "$0000",
@@ -37561,9 +38298,11 @@
    },
    "patterns": {
     "bank-switch": 7,
+    "frame-wait": 1,
     "jump-engine": 1,
     "pad-poll": 2,
     "palette-writer": 1,
+    "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 8,
     "vram-drain": 1
@@ -38088,7 +38827,16 @@
      "addr": 49275,
      "kind": "nmi",
      "entered": 2431,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 2431,
+        "writes-in-blank": 9606
+       },
+       "pattern": "scroll-writer"
+      }
+     ]
     },
     {
      "name": "b7_routine_D168",
@@ -38362,6 +39110,26 @@
      "addr": 46037,
      "entries": 3,
      "seen": 3
+    }
+   ],
+   "loop_list": [
+    {
+     "name": "b7_at_C010",
+     "bank": "prg7",
+     "addr": 49168,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "entries": 19,
+        "flag": "$0736",
+        "iterations": 3680259,
+        "of": 2603,
+        "set-in-nmi": 174
+       },
+       "pattern": "frame-wait"
+      }
+     ]
     }
    ],
    "array_list": [

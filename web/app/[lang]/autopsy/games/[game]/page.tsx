@@ -39,6 +39,9 @@ const PROSE = {
     rcols: ["at", "entered by", "times", "what it is, and the evidence"],
     bank: (b: string) => `bank ${b}`,
     inside: "inside another instruction",
+    loopsH: "Where it waits",
+    loopsWhat: "Loops a rule named that sit inside a routine and are not themselves a place the code is entered.",
+    lcols: ["at", "what it is, and the evidence"],
     tablesH: "The jump engine's tables",
     tablesWhat: "Each table sits right after a call to the engine. An entry is counted as far as the runs saw one taken; the true table may be longer.",
     tcols: ["at", "entries", "taken"],
@@ -73,6 +76,9 @@ const PROSE = {
     rcols: ["場所", "入り方", "回数", "何であるか、その証拠"],
     bank: (b: string) => `バンク ${b}`,
     inside: "別の命令の内側",
+    loopsH: "待つ場所",
+    loopsWhat: "規則が名付けたループのうち、ルーチンの内側にあって、それ自身はコードの入口ではないもの。",
+    lcols: ["場所", "何であるか、その証拠"],
     tablesH: "ジャンプエンジンのテーブル",
     tablesWhat: "テーブルはそれぞれ、エンジンへの呼び出しの直後にある。項目は、走行が選ぶのを見た所までを数える。本当のテーブルはもっと長いかもしれない。",
     tcols: ["場所", "項目", "選ばれた数"],
@@ -163,6 +169,36 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
             </table>
           </div>
         </div>
+
+        {g.loop_list.length ? (
+          <>
+            <h2>{S.loopsH}</h2>
+            <p>{S.loopsWhat}</p>
+            <div className="ledger">
+              <div className="scroller">
+                <table data-autopsy-loops>
+                  <thead>
+                    <tr>{S.lcols.map((c) => <th key={c}>{c}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {g.loop_list.map((x) => (
+                      <tr key={`${x.bank}:${x.addr}`}>
+                        <td>{at(x.bank, x.addr)}</td>
+                        <td>
+                          {x.is.map((i, k) => (
+                            <div key={k}>
+                              <b>{patternWords(lang, i.pattern).name}</b>: {evidenceText(lang, i.evidence)}
+                            </div>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : null}
 
         {g.table_list.length ? (
           <>

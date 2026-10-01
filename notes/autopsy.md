@@ -246,7 +246,8 @@ image it runs from.
    every step) was tried over the same 1600 steps and found less code,
    5306 sites against 5462, so it stays as a switch and the plain
    count is the rule. Not yet: longer runs on the Pi.
-3. **The matchers.** *Built 2026-09-29 and 30, first cut: ten rules
+3. **The matchers.** *Built 2026-09-29 and 30, thirteen rules by the
+   evening of the 30th (the count below is the first cut's): ten rules
    in `wasm/listing` (`FORMAT.md`, "What the matchers write"), each a
    rule over what the run saw, never over what the bytes look like,
    each writing `@is pattern ... by=match` with its evidence.* On the
@@ -288,25 +289,25 @@ image it runs from.
 
    | game | board | PRG executed | routines (run) | tables | arrays | variables | patterns |
    |---|---|---|---|---|---|---|---|
-   | Battle Chess (USA) | 1 | 7626 of 262144 (3%) | 148 | 0 | 90 | 634 | 15 |
-   | Blades of Steel (USA) | 2 | 11184 of 131072 (9%) | 221 | 13 | 93 | 602 | 24 |
-   | Blaster Master (USA) | 1 | 9058 of 131072 (7%) | 194 | 0 | 66 | 649 | 18 |
+   | Battle Chess (USA) | 1 | 7626 of 262144 (3%) | 148 | 0 | 90 | 634 | 24 |
+   | Blades of Steel (USA) | 2 | 11184 of 131072 (9%) | 221 | 13 | 93 | 602 | 25 |
+   | Blaster Master (USA) | 1 | 9058 of 131072 (7%) | 194 | 0 | 66 | 649 | 19 |
    | Defender II (USA) | 0 | 8161 of 16384 (50%) | 133 | 0 | 26 | 449 | 25 |
-   | Double Dribble (USA) (Rev 1) | 2 | 15960 of 131072 (12%) | 154 | 7 | 66 | 460 | 13 |
-   | Fester's Quest (USA) | 1 | 5843 of 131072 (4%) | 36 | 0 | 31 | 96 | 14 |
-   | Goonies II, The (USA) | 2 | 2998 of 131072 (2%) | 61 | 3 | 27 | 308 | 19 |
-   | Legend of Zelda, The (USA) (Rev 1) | 1 | 4548 of 131072 (3%) | 83 | 6 | 28 | 564 | 20 |
-   | Metroid (USA) | 1 | 6967 of 131072 (5%) | 193 | 4 | 60 | 926 | 26 |
-   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 16633 of 131072 (13%) | 181 | 6 | 49 | 330 | 46 |
-   | Ninja Gaiden (USA) | 1 | 8601 of 131072 (7%) | 123 | 2 | 45 | 364 | 31 |
-   | Paperboy (USA) | 3 | 4799 of 32768 (15%) | 138 | 0 | 51 | 689 | 12 |
-   | Q-bert (USA) | 3 | 4409 of 32768 (13%) | 123 | 9 | 60 | 262 | 15 |
-   | Super Mario Bros. + Duck Hunt (USA) | 66 | 11910 of 65536 (18%) | 247 | 13 | 75 | 719 | 39 |
-   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 9665 of 131072 (7%) | 182 | 9 | 85 | 1023 | 22 |
-   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 19069 of 262144 (7%) | 242 | 0 | 139 | 979 | 52 |
+   | Double Dribble (USA) (Rev 1) | 2 | 15960 of 131072 (12%) | 154 | 7 | 66 | 460 | 14 |
+   | Fester's Quest (USA) | 1 | 5843 of 131072 (4%) | 36 | 0 | 31 | 96 | 15 |
+   | Goonies II, The (USA) | 2 | 2998 of 131072 (2%) | 61 | 3 | 27 | 308 | 21 |
+   | Legend of Zelda, The (USA) (Rev 1) | 1 | 4548 of 131072 (3%) | 83 | 6 | 28 | 564 | 25 |
+   | Metroid (USA) | 1 | 6967 of 131072 (5%) | 193 | 4 | 60 | 926 | 29 |
+   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 16633 of 131072 (13%) | 181 | 6 | 49 | 330 | 47 |
+   | Ninja Gaiden (USA) | 1 | 8601 of 131072 (7%) | 123 | 2 | 45 | 364 | 34 |
+   | Paperboy (USA) | 3 | 4799 of 32768 (15%) | 138 | 0 | 51 | 689 | 15 |
+   | Q-bert (USA) | 3 | 4409 of 32768 (13%) | 123 | 9 | 60 | 262 | 18 |
+   | Super Mario Bros. + Duck Hunt (USA) | 66 | 11910 of 65536 (18%) | 247 | 13 | 75 | 719 | 44 |
+   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 9665 of 131072 (7%) | 182 | 9 | 85 | 1023 | 24 |
+   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 19069 of 262144 (7%) | 242 | 0 | 139 | 979 | 55 |
    | Teenage Mutant Ninja Turtles (USA) | 1 | 14264 of 131072 (11%) | 293 | 11 | 73 | 696 | 38 |
-   | Tetris (USA) | 1 | 5371 of 32768 (16%) | 111 | 4 | 44 | 392 | 23 |
-   | Zelda II - The Adventure of Link (USA) | 1 | 3334 of 131072 (3%) | 70 | 5 | 25 | 660 | 21 |
+   | Tetris (USA) | 1 | 5371 of 32768 (16%) | 111 | 4 | 44 | 392 | 25 |
+   | Zelda II - The Adventure of Link (USA) | 1 | 3334 of 131072 (3%) | 70 | 5 | 25 | 660 | 23 |
 
    What a cold 400-step crawl reaches is small (2 to 18 percent of a
    bank-switched game, 50 percent of the one 16K game), so the routine
@@ -316,12 +317,14 @@ image it runs from.
    | pattern | games | marks |
    |---|---|---|
    | bank-switch | 18 of 19 | 139 |
+   | frame-wait | 11 of 19 | 26 |
+   | game-loop-in-nmi | 4 of 19 | 4 |
    | idle-spin | 4 of 19 | 4 |
    | jump-engine | 15 of 19 | 23 |
    | pad-poll | 19 of 19 | 38 |
    | palette-writer | 19 of 19 | 30 |
-   | random-byte | 3 of 19 | 4 |
-   | scroll-writer | 9 of 19 | 10 |
+   | random-byte | 8 of 19 | 11 |
+   | scroll-writer | 19 of 19 | 20 |
    | sound-driver | 19 of 19 | 19 |
    | sprite-0-split | 6 of 19 | 9 |
    | sprite-writer | 19 of 19 | 178 |
@@ -334,15 +337,35 @@ image it runs from.
    reads a frame (one game's poll is entered twice a frame and reads
    four times each); the bank switch in every game but the one NROM
    cartridge, which is the answer the board says it should be; the
-   jump engine in fifteen, the split in six, the random byte in three,
-   the idle spin in four (most main loops wait on a RAM flag the NMI
-   handler sets, two instructions the flow calls a wait, not an idle),
-   and the game loop inside the interrupt in none of the merged
-   crawls, which says the rule (an idle spin and an NMI handler that
-   ran half the frames) is written for one run, not for forty folded
-   ones. The next rules to write are the wait-on-a-flag main loop and
-   the collision test, which needs the flow of values between
-   routines. That table of contents is the toolkit's.
+   jump engine in fifteen and the split in six.
+
+   *Corrected 2026-09-30, evening: both tables above are the second
+   count.* The first had the random byte in three games, the scroll
+   writer in nine and the game loop inside the interrupt in none, and
+   this note blamed the last on a rule "written for one run". That was
+   wrong. A crawl's own record, laid over the reports for its
+   coverage, added its frames to the run's total though it names no
+   routine, so every rule that asks "ran in at least half the frames"
+   was asking it of twice the frames anyone watched. With the watched
+   frames kept apart the loop inside the interrupt is in all four
+   games that have an idle spin, the random byte in eight, the scroll
+   writer in all nineteen.
+
+   The thirteenth rule, written the same evening, is the wait for the
+   frame: a loop that only loads, tests and branches on fixed bytes of
+   RAM, which nothing but an interrupt can let out, marked when the
+   NMI handler or a routine it calls wrote the byte. Eleven games, 26
+   marks: one wait in Fester's Quest, Punch-Out, Blaster Master and
+   Zelda II, two or three in the Marios, Metroid, Tetris and Ninja
+   Gaiden, eight in Battle Chess on four bytes the handler writes. With the four that spin, fourteen of the nineteen now have
+   their frame's rhythm named. The five that do not are the four
+   Konami games (Blades of Steel, Double Dribble, The Goonies II,
+   Teenage Mutant Ninja Turtles) and Defender II; the one looked at
+   waits in a loop that tests a flag and the PPU's status together,
+   which the rule declines because it reads the hardware. That is the
+   next rule's shape. After it, the collision test, which needs the
+   flow of values between routines. That table of contents is the
+   toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's

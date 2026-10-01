@@ -80,6 +80,8 @@ def main() -> int:
                 for r in routines
             ],
             "table_list": [{k: t[k] for k in ("bank", "addr", "entries", "seen")} for t in g["tables"]],
+            # A mark on a loop's head that is no routine's entry: where the game waits.
+            "loop_list": [{k: l[k] for k in ("name", "bank", "addr", "is")} for l in g.get("loops", [])],
             "array_list": g["arrays"],
             "variable_list": [
                 {"addr": v["addr"], "total": v["total"], "writers": len(v["writers"]), "readers": len(v["readers"])}

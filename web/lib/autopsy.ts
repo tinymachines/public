@@ -48,6 +48,8 @@ export interface AutopsyGame {
   variables: number;
   routine_list: AutopsyRoutine[];
   table_list: { bank: string; addr: number; entries: number; seen: number }[];
+  /** The loops a rule named that are no routine's entry: where the game waits. */
+  loop_list: { name: string; bank: string; addr: number; is: AutopsyPattern[] }[];
   array_list: { base: string; slots: number; sites: number }[];
   variable_list: { addr: string; total: number; writers: number; readers: number }[];
 }

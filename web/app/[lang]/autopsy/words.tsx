@@ -14,6 +14,7 @@ export const ORDER = [
   "pad-poll",
   "idle-spin",
   "game-loop-in-nmi",
+  "frame-wait",
   "jump-engine",
   "bank-switch",
   "vram-drain",
@@ -37,6 +38,10 @@ const PATTERNS: Record<string, Record<Lang, { name: string; what: string }>> = {
   "game-loop-in-nmi": {
     en: { name: "The game inside the interrupt", what: "When the main program only spins, the whole game runs in the handler of the interrupt the picture chip raises once a frame. We name that handler when there is an idle spin and the handler ran in at least half the frames." },
     ja: { name: "割り込みの中のゲーム", what: "メインのプログラムが待つだけのとき、ゲームのすべては、映像チップがフレームごとに一度起こす割り込みのハンドラの中で走る。待機のループがあり、ハンドラがフレームの半分以上で走ったとき、そのハンドラをこう名付ける。" },
+  },
+  "frame-wait": {
+    en: { name: "The wait for the frame", what: "A loop that only reads a byte of memory and tests it, over and over. Nothing in the loop can change that byte, so the game stays there until the interrupt the picture chip raises once a frame changes it. We name the loop when that interrupt's handler, or a routine the handler calls, wrote the byte. A game may wait like this in several places, on a flag or on a counter the handler runs down." },
+    ja: { name: "フレーム待ち", what: "メモリの一バイトを読んで調べることだけを繰り返すループ。ループの中の何ものもそのバイトを変えられないので、映像チップがフレームごとに一度起こす割り込みがそれを変えるまで、ゲームはそこに留まる。その割り込みのハンドラ、またはハンドラが呼ぶルーチンがそのバイトに書いたとき、ループをこう名付ける。ゲームはこうした待ちを何か所にも持つことがあり、待つ相手は旗のこともあれば、ハンドラが減らしていくカウンタのこともある。" },
   },
   "jump-engine": {
     en: { name: "The jump engine", what: "A routine other code calls to choose where to go next. The call is followed by a table of addresses, and the engine jumps through it by a number. We name it as the routine those calls reach, and write each table down as far as the runs saw entries taken." },
@@ -88,8 +93,11 @@ const EVIDENCE: Record<string, Record<Lang, string>> = {
   "strobes-per-frame": { en: "strobes a frame", ja: "一フレームのストローブ" },
   tables: { en: "tables", ja: "テーブル" },
   dispatches: { en: "jumps through them", ja: "そこを通った跳躍" },
+  flag: { en: "waits on the byte at", ja: "待つ相手のバイト" },
+  entries: { en: "times entered", ja: "入った回数" },
   iterations: { en: "turns", ja: "周回" },
   "per-frame": { en: "turns a frame", ja: "一フレームの周回" },
+  "set-in-nmi": { en: "writes of it under the frame interrupt", ja: "フレーム割り込みの下での書き込み" },
   frames: { en: "frames it ran in", ja: "走ったフレーム" },
   of: { en: "frames in all", ja: "全フレーム" },
   spin: { en: "the spin is at", ja: "待機の場所" },
