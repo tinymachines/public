@@ -2,8 +2,8 @@
  "note": "Written only by scripts/board-autopsy.py from the models wasm/listing/tools/autopsy.py wrote. Shape only: addresses, labels, counts and pattern names; no byte of any ROM.",
  "boarded_on": "2026-10-01",
  "repo": "https://github.com/tinymachines/public",
- "listing_tree": "4eaf8ac5539b02334ee1206deb289d2ed2205389",
- "flow_tree": "c7dab4f0d6608bec9f0b8ba5d8836ea075d823c7",
+ "listing_tree": "e8f4cfc324d45b21d5f9cecd95f4ff73443e5157",
+ "flow_tree": "81e643926b9eeb2f36dfd2dc99dfb231639fbec6",
  "console_commit": "d8b489a21f27b821ef056cece9bb3e9598657b43",
  "steps": 400,
  "variables_kept": 24,
@@ -4362,79 +4362,121 @@
      "bank": "prg0",
      "addr": 33042,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0036"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 42351,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0367",
+      "$0369",
+      "$036B",
+      "$036D"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 43144,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0373"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 32785,
      "entries": 6,
-     "seen": 6
+     "seen": 6,
+     "on": [
+      "$0080"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 34596,
      "entries": 11,
-     "seen": 8
+     "seen": 8,
+     "on": [
+      "$0060"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 34727,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0061"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 34840,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0061"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 34934,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0061"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 35028,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0061"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 35890,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0061"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 36552,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0367"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 50298,
      "entries": 5,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0018"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 52395,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0030"
+     ]
     }
    ],
    "loop_list": [
@@ -4930,6 +4972,7 @@
     {
      "adds": [],
      "arrays": 4,
+     "chooses": [],
      "routines": 3,
      "slots": 13,
      "with": [
@@ -4947,6 +4990,9 @@
       "$0410"
      ],
      "arrays": 23,
+     "chooses": [
+      "$0367"
+     ],
      "routines": 9,
      "slots": 12,
      "with": [
@@ -10638,43 +10684,70 @@
      "bank": "prg0",
      "addr": 35264,
      "entries": 13,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0347",
+      "$0348",
+      "$0349",
+      "$034A"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 40704,
      "entries": 19,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0342"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 40988,
      "entries": 54,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0342",
+      "$0343",
+      "$0344",
+      "$0345"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 44177,
      "entries": 11,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0340"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 42197,
      "entries": 4,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0480"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 49561,
      "entries": 6,
-     "seen": 5
+     "seen": 5,
+     "on": [
+      "$0018"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 52649,
      "entries": 9,
-     "seen": 10
+     "seen": 10,
+     "on": [
+      "$002A"
+     ]
     }
    ],
    "loop_list": [
@@ -11035,6 +11108,7 @@
     {
      "adds": [],
      "arrays": 11,
+     "chooses": [],
      "routines": 13,
      "slots": 16,
      "with": [
@@ -11057,6 +11131,7 @@
     {
      "adds": [],
      "arrays": 6,
+     "chooses": [],
      "routines": 3,
      "slots": 12,
      "with": [
@@ -12852,19 +12927,28 @@
      "bank": "prg7",
      "addr": 52492,
      "entries": 4,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0000"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 52519,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0001"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 52774,
      "entries": 7,
-     "seen": 5
+     "seen": 5,
+     "on": [
+      "$0001"
+     ]
     }
    ],
    "loop_list": [
@@ -14152,37 +14236,56 @@
      "bank": "prg2",
      "addr": 36878,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$042D"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 36917,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0013"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 37082,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$042D"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 41618,
      "entries": 7,
-     "seen": 5
+     "seen": 5,
+     "on": [
+      "$0013"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 42390,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0013"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 59683,
      "entries": 2,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0012",
+      "$0016"
+     ]
     }
    ],
    "loop_list": [
@@ -16384,25 +16487,33 @@
      "bank": "prg0",
      "addr": 32810,
      "entries": 28,
-     "seen": 9
+     "seen": 9,
+     "on": [
+      "$001F"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 49473,
      "entries": 9,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$001E"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 59932,
      "entries": 5,
-     "seen": 3
+     "seen": 3,
+     "on": []
     },
     {
      "bank": "prg7",
      "addr": 60132,
      "entries": 2,
-     "seen": 1
+     "seen": 1,
+     "on": []
     }
    ],
    "loop_list": [
@@ -18902,37 +19013,45 @@
      "bank": "prg7",
      "addr": 35522,
      "entries": 1,
-     "seen": 6
+     "seen": 6,
+     "on": []
     },
     {
      "bank": "prg11",
      "addr": 33592,
      "entries": 15,
-     "seen": 3
+     "seen": 3,
+     "on": []
     },
     {
      "bank": "prg11",
      "addr": 33714,
      "entries": 12,
-     "seen": 3
+     "seen": 3,
+     "on": []
     },
     {
      "bank": "prg13",
      "addr": 46399,
      "entries": 4,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0000"
+     ]
     },
     {
      "bank": "prg13",
      "addr": 50530,
      "entries": 16,
-     "seen": 4
+     "seen": 4,
+     "on": []
     },
     {
      "bank": "prg13",
      "addr": 50980,
      "entries": 3,
-     "seen": 1
+     "seen": 1,
+     "on": []
     }
    ],
    "loop_list": [
@@ -20826,13 +20945,15 @@
      "bank": "prg5",
      "addr": 49078,
      "entries": 3,
-     "seen": 2
+     "seen": 2,
+     "on": []
     },
     {
      "bank": "prg6",
      "addr": 49078,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": []
     }
    ],
    "loop_list": [],
@@ -22782,6 +22903,7 @@
     {
      "adds": [],
      "arrays": 4,
+     "chooses": [],
      "routines": 11,
      "slots": 25,
      "with": [
@@ -24137,55 +24259,82 @@
      "bank": "prg0",
      "addr": 32795,
      "entries": 9,
-     "seen": 7
+     "seen": 7,
+     "on": [
+      "$0018"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 33145,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0090"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 40074,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0034"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 40161,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0090"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 49656,
      "entries": 11,
-     "seen": 5
+     "seen": 5,
+     "on": [
+      "$0053"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 58645,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$008E"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 58783,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$008F"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 58841,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$008F"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 59525,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$002E"
+     ]
     }
    ],
    "loop_list": [
@@ -27085,79 +27234,116 @@
      "bank": "prg0",
      "addr": 33304,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0770"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 33335,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0772"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 34157,
      "entries": 15,
-     "seen": 14
+     "seen": 14,
+     "on": [
+      "$073C"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 37579,
      "entries": 8,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$071F"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 38503,
      "entries": 25,
-     "seen": 2
+     "seen": 2,
+     "on": []
     },
     {
      "bank": "prg0",
      "addr": 44770,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0772"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 45135,
      "entries": 9,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$000E"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 45905,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$001D"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 49448,
      "entries": 17,
-     "seen": 5
+     "seen": 5,
+     "on": [
+      "$0025"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 49703,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0026"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 51463,
      "entries": 4,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$0031",
+      "$0301"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 52398,
      "entries": 19,
-     "seen": 11
+     "seen": 11,
+     "on": [
+      "$0031",
+      "$03A1"
+     ]
     },
     {
      "bank": "prg1",
      "addr": 52838,
      "entries": 6,
-     "seen": 3
+     "seen": 3,
+     "on": []
     }
    ],
    "loop_list": [
@@ -29591,55 +29777,81 @@
      "bank": "prg0",
      "addr": 35375,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0050"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 38096,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0534"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 33346,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0051",
+      "$0052",
+      "$0053",
+      "$0054"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 33376,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$00EC"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 33715,
      "entries": 21,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0093",
+      "$0094"
+     ]
     },
     {
      "bank": "prg2",
      "addr": 35420,
      "entries": 8,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$0093",
+      "$0094"
+     ]
     },
     {
      "bank": "prg6",
      "addr": 34971,
      "entries": 10,
-     "seen": 1
+     "seen": 1,
+     "on": []
     },
     {
      "bank": "prg6",
      "addr": 35000,
      "entries": 12,
-     "seen": 1
+     "seen": 1,
+     "on": []
     },
     {
      "bank": "prg6",
      "addr": 35038,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": []
     }
    ],
    "loop_list": [
@@ -30115,9 +30327,11 @@
     {
      "adds": [
       "$003C",
+      "$0407",
       "$04CB"
      ],
      "arrays": 7,
+     "chooses": [],
      "routines": 4,
      "slots": 11,
      "with": [
@@ -30137,6 +30351,7 @@
     {
      "adds": [],
      "arrays": 4,
+     "chooses": [],
      "routines": 3,
      "slots": 5,
      "with": [
@@ -33766,6 +33981,7 @@
     {
      "adds": [],
      "arrays": 6,
+     "chooses": [],
      "routines": 10,
      "slots": 129,
      "with": [
@@ -33786,6 +34002,9 @@
       "$0097"
      ],
      "arrays": 8,
+     "chooses": [
+      "$00D8"
+     ],
      "routines": 12,
      "slots": 6,
      "with": [
@@ -36790,67 +37009,101 @@
      "bank": "prg0",
      "addr": 32892,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$001E"
+     ]
     },
     {
      "bank": "prg3",
      "addr": 43300,
      "entries": 9,
-     "seen": 9
+     "seen": 9,
+     "on": [
+      "$00D0"
+     ]
     },
     {
      "bank": "prg3",
      "addr": 44524,
      "entries": 1,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$008E"
+     ]
     },
     {
      "bank": "prg3",
      "addr": 44870,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": []
     },
     {
      "bank": "prg4",
      "addr": 40115,
      "entries": 13,
-     "seen": 6
+     "seen": 6,
+     "on": [
+      "$0510"
+     ]
     },
     {
      "bank": "prg4",
      "addr": 43551,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0510"
+     ]
     },
     {
      "bank": "prg6",
      "addr": 39970,
      "entries": 2,
-     "seen": 1
+     "seen": 1,
+     "on": [
+      "$005E"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 50520,
      "entries": 5,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$001B"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 50537,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$001C"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 52006,
      "entries": 7,
-     "seen": 7
+     "seen": 7,
+     "on": [
+      "$0034",
+      "$0617"
+     ]
     },
     {
      "bank": "prg7",
      "addr": 55753,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$004F",
+      "$0051",
+      "$00A4"
+     ]
     }
    ],
    "loop_list": [
@@ -37246,9 +37499,15 @@
    "object_list": [
     {
      "adds": [
+      "$0470",
+      "$0490",
+      "$04C0",
       "$04E0"
      ],
      "arrays": 25,
+     "chooses": [
+      "$0510"
+     ],
      "routines": 23,
      "slots": 16,
      "with": [
@@ -38592,25 +38851,37 @@
      "bank": "prg0",
      "addr": 32848,
      "entries": 4,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$00BD"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 33126,
      "entries": 6,
-     "seen": 5
+     "seen": 5,
+     "on": [
+      "$00C0"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 33184,
      "entries": 9,
-     "seen": 9
+     "seen": 9,
+     "on": [
+      "$00A7"
+     ]
     },
     {
      "bank": "prg0",
      "addr": 33207,
      "entries": 9,
-     "seen": 7
+     "seen": 7,
+     "on": [
+      "$0068"
+     ]
     }
    ],
    "loop_list": [
@@ -39916,31 +40187,46 @@
      "bank": "prg5",
      "addr": 42719,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$076C"
+     ]
     },
     {
      "bank": "prg5",
      "addr": 42757,
      "entries": 4,
-     "seen": 4
+     "seen": 4,
+     "on": [
+      "$0736"
+     ]
     },
     {
      "bank": "prg5",
      "addr": 45622,
      "entries": 2,
-     "seen": 2
+     "seen": 2,
+     "on": [
+      "$0736"
+     ]
     },
     {
      "bank": "prg5",
      "addr": 45640,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$073B"
+     ]
     },
     {
      "bank": "prg5",
      "addr": 46037,
      "entries": 3,
-     "seen": 3
+     "seen": 3,
+     "on": [
+      "$073B"
+     ]
     }
    ],
    "loop_list": [

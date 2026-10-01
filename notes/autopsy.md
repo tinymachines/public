@@ -408,13 +408,30 @@ image it runs from.
    the next question, and following values answers the first part:
    the flow counts what was added into a byte that kept its own value
    (`moves`), and `@objects` lists the companions added into a
-   position array (`adds=`). Four of the ten tables have one, five
-   arrays in all. It is fewer than there are speeds, and the reason
-   is known: a game that keeps a fraction beside each position adds
-   the speed to the fraction and only the carry reaches the position,
-   and a carry has no cell to have come from. Following the carry is
-   the next step there; after it, the companions a jump engine is
-   indexed by (a state or a kind). That table of contents is the
+   position array (`adds=`). The first count had five such arrays
+   in four of the ten tables, fewer than there are speeds, for a
+   reason: a game that keeps a fraction beside each position adds the
+   speed to the fraction and only the carry reaches the position, and
+   a carry had no cell to have come from. So the carry is followed
+   one step (an add of a constant right after an add takes the first
+   add's cells in), and the count is nine arrays in the same four
+   tables; Teenage Mutant Ninja Turtles' table went from one to four.
+
+   The other half is what chose. The flow keeps what `A` was made
+   from at every `JSR`, and when the call turns out to be a jump
+   engine's the table says which byte chose the way (`@table ...
+   on=`): 77 of the 92 tables, in twelve of the thirteen games that
+   have one. Scratch is left out as it is for positions, which took
+   the temporaries out of three games' lists and left two games
+   whose mode really does live at the bottom of the zero page. In
+   `@objects`, `chooses=` are the companions a byte of which chose a
+   jump: three tables have one, an object's state or kind. So an
+   object table now reads as positions, what moves them, what picks
+   their code, and the rest. Still to come: the rest (a companion
+   compared against a constant and then cleared reads like a timer or
+   a health), `JMP (ind)` dispatches (chosen by whatever indexed the
+   pointer table, which is not followed), and longer crawls, which
+   every count here waits on. That table of contents is the
    toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a

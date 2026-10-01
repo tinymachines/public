@@ -67,7 +67,9 @@ const PROSE = {
         which calls chose their destination from a table. We also follow
         every value from the byte of memory it was loaded from, through
         whatever the game copies it into, so we can say which bytes end up
-        as a position on the screen and where two of them are compared.
+        as a position on the screen, where two of them are compared, what
+        gets added into a position, and which byte picked the way through
+        a jump table.
       </>
     ),
     rulesH: "The rules read what ran",
@@ -137,7 +139,7 @@ const PROSE = {
     runH: "走行が、それぞれのルーチンのしたことを語る",
     run: (
       <>
-        クロールが残した道筋はどれも、プロセッサのすべてのアクセスをコンソールが記録する状態で、もう一度再生する。そこから分かるのは、それぞれのルーチンがどこでどう入られたか、触れたメモリとハードウェア、触れたときに画面のどこをビームが走っていたか、そしてどの呼び出しが行き先をテーブルから選んだかだ。さらに、すべての値を、読み込まれた元のメモリのバイトから、ゲームが写していく先々を通して追う。だから、どのバイトが画面上の位置になり、そのうちの二つがどこで比べられるかを言える。
+        クロールが残した道筋はどれも、プロセッサのすべてのアクセスをコンソールが記録する状態で、もう一度再生する。そこから分かるのは、それぞれのルーチンがどこでどう入られたか、触れたメモリとハードウェア、触れたときに画面のどこをビームが走っていたか、そしてどの呼び出しが行き先をテーブルから選んだかだ。さらに、すべての値を、読み込まれた元のメモリのバイトから、ゲームが写していく先々を通して追う。だから、どのバイトが画面上の位置になり、そのうちの二つがどこで比べられ、何が位置に足し込まれ、どのバイトがジャンプのテーブルの行き先を選んだかを言える。
       </>
     ),
     rulesH: "規則は、走ったものを読む",
