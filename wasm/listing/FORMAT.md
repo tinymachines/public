@@ -106,8 +106,16 @@ board has, as the writer lays them out:
 | NROM (0), CNROM (3) | one: 32 KiB at $8000, or 16 KiB at $C000 (mirrored) |
 | GxROM (66) | 32 KiB each at $8000 |
 | MMC1 (1), UxROM (2) | 16 KiB at $8000, the last fixed at $C000 |
-| MMC3 (4) | 8 KiB at $8000, the last 16 KiB fixed at $C000 |
+| MMC3 (4) | 8 KiB at $8000, the last two fixed at $C000 and $E000 |
 | MMC2 (9) | 8 KiB at $8000, the last 24 KiB fixed at $A000 |
+
+That is where a bank usually is. When a run is laid over the listing,
+a bank any instruction ran in is put where its instructions ran (the
+origin most of them ran at): an MMC3 game may switch the $C000 window
+and keep the second to last bank at $8000 instead, and one such game's
+banks ran at $A000 and $C000, where no absolute address inside them
+resolved while the listing had them at $8000. A bank nothing ran in
+stays where the board usually puts it.
 
 Any other board is refused by name: a guessed layout would give every
 label a wrong address.

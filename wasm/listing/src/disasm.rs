@@ -17,13 +17,18 @@ use crate::run::Run;
 /// each bank's usual origin, its offset and length in the PRG, and
 /// whether the board keeps it fixed. A switched bank is shown at the
 /// origin the board gives it most of the time; the file says which.
+/// When a run is laid over the listing, a bank any code ran in is put
+/// where that code ran (`placed`): a board that can map one bank at
+/// several places leaves the usual one a guess.
 ///
 /// - NROM (0) and CNROM (3): one bank, 32 KiB at $8000 or 16 KiB at
 ///   $C000 (a 16 KiB PRG is mirrored, and the vectors are read there).
 /// - GxROM (66): 32 KiB banks, each at $8000.
 /// - MMC1 (1) and UxROM (2): 16 KiB banks at $8000, the last fixed at
 ///   $C000.
-/// - MMC3 (4): 8 KiB banks at $8000, the last 16 KiB fixed at $C000.
+/// - MMC3 (4): 8 KiB banks at $8000, the last two fixed at $C000 and
+///   $E000 (two banks, since the board can put the first of them at
+///   $8000 instead and switch the $C000 window).
 /// - MMC2 (9): 8 KiB banks at $8000, the last 24 KiB fixed at $A000.
 pub fn prg_banks(rom: &Rom) -> Vec<Layout> {
     let total = rom.prg.len();
@@ -53,7 +58,12 @@ pub fn prg_banks(rom: &Rom) -> Vec<Layout> {
             for i in 0..switched {
                 push(0x8000, i * 8192, 8192, false);
             }
-            push(0xC000, switched * 8192, total - switched * 8192, true);
+            if total >= 16384 {
+                push(0xC000, switched * 8192, 8192, true);
+                push(0xE000, switched * 8192 + 8192, 8192, true);
+            } else {
+                push(0xC000, switched * 8192, total - switched * 8192, true);
+            }
         }
         9 => {
             let switched = total.saturating_sub(24576) / 8192;
@@ -65,6 +75,24 @@ pub fn prg_banks(rom: &Rom) -> Vec<Layout> {
         _ => push(0x8000, 0, total.min(32768), true),
     }
     out
+}
+
+/// The banks where a run saw them: each bank any instruction ran in is
+/// moved to the origin most of its instructions ran at, when the whole
+/// bank fits in the ROM's window from there.
+pub fn placed(rom: &Rom, run: Option<&Run>) -> Vec<Layout> {
+    let mut banks = prg_banks(rom);
+    let Some(run) = run else { return banks };
+    for l in banks.iter_mut() {
+        let mut at: BTreeMap<u16, usize> = BTreeMap::new();
+        for (&k, s) in run.sites.range(l.offset..l.offset + l.len) {
+            *at.entry(s.addr.wrapping_sub((k - l.offset) as u16)).or_insert(0) += 1;
+        }
+        if let Some((&org, _)) = at.iter().filter(|(&o, _)| o >= 0x8000 && o as usize + l.len <= 0x10000).max_by(|a, b| a.1.cmp(b.1).then(b.0.cmp(a.0))) {
+            l.org = org;
+        }
+    }
+    banks
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -179,7 +207,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         let executed: usize = r.sites.iter().map(|(&o, _)| ops::len(rom.prg[o]) as usize).sum();
         items.push(Item::Directive { name: "run".into(), rest: format!("frames={} instructions={} executed={executed} of={} by=run", r.frames, r.instructions, rom.prg.len()) });
     }
-    let prg = prg_banks(rom);
+    let prg = placed(rom, run);
     let n_prg = prg.len();
     // Every label by its PRG offset, for the RAM block after the banks.
     let mut names: BTreeMap<usize, String> = BTreeMap::new();
