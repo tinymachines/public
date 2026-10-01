@@ -315,6 +315,9 @@ pub struct Flow {
     /// A value stored back into a cell it was made from: (that cell,
     /// another cell in the value) -> count.
     moves: HashMap<(u16, u16), u64>,
+    /// Per byte of RAM: the times an INC stepped it up in place, and the
+    /// times a DEC stepped it down.
+    stepped: Vec<(u32, u32)>,
     /// Per byte of RAM: the frame it was last touched in, the frames it
     /// was touched in, and those where the first touch was a read.
     seen: Vec<u32>,
@@ -361,6 +364,7 @@ impl Flow {
             meets: HashMap::new(),
             together: HashSet::new(),
             moves: HashMap::new(),
+            stepped: vec![(0, 0); 0x800],
             seen: vec![u32::MAX; 0x800],
             touched: vec![0; 0x800],
             carried: vec![0; 0x800],
@@ -696,6 +700,14 @@ impl Flow {
         };
         if c.op == ops::JSR && !interrupt {
             self.chose.insert(c.key, self.made[A]);
+        }
+        if let ("INC" | "DEC", Some(&(_, _, cell))) = (name, c.accesses.iter().find(|a| !a.1 && a.2 != 0xffff)) {
+            let e = &mut self.stepped[cell as usize];
+            if name == "INC" {
+                e.0 += 1;
+            } else {
+                e.1 += 1;
+            }
         }
         let written = c.accesses.iter().find(|a| !a.1 && a.2 != 0xffff).map(|a| a.2);
         // Where a loaded byte came from in the ROM, and what indexed it.
@@ -1085,6 +1097,7 @@ impl Flow {
             })
             .collect();
         meets.sort_by_key(|m| m.key);
+        let steps: Vec<(u16, u32, u32)> = (0..0x800u16).filter(|&c| kept(c)).map(|c| (c, self.stepped[c as usize].0, self.stepped[c as usize].1)).filter(|s| s.1 + s.2 > 0).collect();
         let mut moves: Vec<(u16, u16, u64)> = self.moves.iter().map(|(&(cell, by), &n)| (cell, by, n)).collect();
         moves.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)).then(a.1.cmp(&b.1)));
         moves.truncate(4096);
@@ -1129,6 +1142,7 @@ impl Flow {
             sprite_feeds,
             meets,
             moves,
+            steps,
             dispatch,
             modes,
             input,
@@ -1404,6 +1418,10 @@ struct Report {
     /// What moved what: a cell, another cell whose value was put into
     /// it along with its own, how often; the 4096 busiest.
     moves: Vec<(u16, u16, u64)>,
+    /// The bytes stepped in place: cell, times an INC took it up, times
+    /// a DEC took it down. One that only ever goes down is a countdown.
+    /// Scratch is left out.
+    steps: Vec<(u16, u32, u32)>,
     dispatch: Vec<DispatchOut>,
     modes: ModesOut,
     input: Vec<ButtonOut>,

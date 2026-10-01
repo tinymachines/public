@@ -394,7 +394,14 @@ fn values_are_followed_to_where_two_objects_meet() {
     t.ins(0x825c, &[0xa5, 0x89], &[(0x0089, 0x40, true)]);
     t.ins(0x825e, &[0x69, 0x00], &[]);
     t.ins(0x8260, &[0x85, 0x89], &[(0x0089, 0x40, false)]);
-    t.rts(0x8262);
+    // A byte counted down in place twice, one counted up once, and one
+    // that goes both ways.
+    t.ins(0x8262, &[0xc6, 0x66], &[(0x0066, 9, true), (0x0066, 8, false)]);
+    t.ins(0x8264, &[0xc6, 0x66], &[(0x0066, 8, true), (0x0066, 7, false)]);
+    t.ins(0x8266, &[0xe6, 0x67], &[(0x0067, 0, true), (0x0067, 1, false)]);
+    t.ins(0x8268, &[0xe6, 0x68], &[(0x0068, 0, true), (0x0068, 1, false)]);
+    t.ins(0x826a, &[0xc6, 0x68], &[(0x0068, 1, true), (0x0068, 0, false)]);
+    t.rts(0x826c);
     t.ins(0x801f, &[0x4c, 0x1f, 0x80], &[]);
     let mut f = flow::Flow::new(0x8000);
     f.feed(&t.out);
@@ -415,6 +422,8 @@ fn values_are_followed_to_where_two_objects_meet() {
     // What was added into a byte that kept its own value: the one-byte
     // speed into $87. The four-byte speed into $86 is nobody's (more
     // than four cells), and says nothing.
+    // The bytes stepped in place: [cell, times up, times down].
+    assert_eq!(r["steps"], serde_json::json!([[0x66, 0, 2], [0x67, 1, 0], [0x68, 1, 1]]), "{}", r["steps"]);
     // And the carry out of a fraction, with the speed that made it.
     assert_eq!(r["moves"], serde_json::json!([[0x70, 0x71, 1], [0x72, 0x73, 1], [0x87, 0x64, 1], [0x88, 0x70, 1], [0x88, 0x71, 1]]), "{}", r["moves"]);
 }
