@@ -1,8 +1,8 @@
 {
   "note": "Written only by scripts/build-playground-wasm.py. The listing for /nes/create: wasm/listing at this git tree of the roof, after its native suite passed. The files in web/public/nes/listing/ must hash to these values and are never committed (a build, not a source; the crate itself is MIT and carries no die data).",
   "repo": "https://github.com/tinymachines/public",
-  "tree": "52a553c8e1c4cc4b3015c180e0f1ec2d55128dcd",
-  "built_on": "2026-09-30",
+  "tree": "8ec9a348ac3c9d59e35c640ae9e2e6f165f52da0",
+  "built_on": "2026-10-01",
   "built_with": "wasm-pack 0.13.1; rustc 1.97.1 (8bab26f4f 2026-07-14); RUSTFLAGS -C target-feature=+simd128",
   "files": {
     "listing.js": {
@@ -10,8 +10,8 @@
       "bytes": 11844
     },
     "listing_bg.wasm": {
-      "sha256": "e5aeabcda524bd8fdf4f5476dcd02d4e47a0ebb8f310a88ffd236c12107e0c45",
-      "bytes": 555754
+      "sha256": "2920600481d11583508d179c26a599e4d9f4c240c7aed04c10dee77099f890bf",
+      "bytes": 568194
     }
   }
 }
