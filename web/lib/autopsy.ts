@@ -48,7 +48,7 @@ export interface AutopsyGame {
   variables: number;
   routine_list: AutopsyRoutine[];
   /** `on`: the bytes of memory that chose the way through it. */
-  table_list: { bank: string; addr: number; entries: number; seen: number; on?: string[] }[];
+  table_list: { bank: string; addr: number; kind?: string; entries: number; seen: number; on?: string[] }[];
   /** The loops a rule named that are no routine's entry: where the game waits. */
   loop_list: { name: string; bank: string; addr: number; is: AutopsyPattern[] }[];
   /** `x` and `y`: how many of its bytes are positions a rule saw compared. */

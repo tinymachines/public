@@ -290,47 +290,49 @@ image it runs from.
 
    | game | board | PRG executed | routines (run) | tables | arrays | variables | patterns |
    |---|---|---|---|---|---|---|---|
-   | Battle Chess (USA) | 1 | 7626 of 262144 (3%) | 148 | 0 | 90 | 634 | 24 |
-   | Blades of Steel (USA) | 2 | 11184 of 131072 (9%) | 221 | 13 | 93 | 602 | 28 |
-   | Blaster Master (USA) | 1 | 9058 of 131072 (7%) | 194 | 0 | 66 | 649 | 21 |
-   | Defender II (USA) | 0 | 8161 of 16384 (50%) | 133 | 0 | 26 | 449 | 28 |
-   | Double Dribble (USA) (Rev 1) | 2 | 15960 of 131072 (12%) | 154 | 7 | 66 | 460 | 19 |
-   | Fester's Quest (USA) | 1 | 5843 of 131072 (4%) | 36 | 0 | 31 | 96 | 16 |
-   | Goonies II, The (USA) | 2 | 2998 of 131072 (2%) | 61 | 3 | 27 | 308 | 23 |
-   | Legend of Zelda, The (USA) (Rev 1) | 1 | 4548 of 131072 (3%) | 83 | 6 | 28 | 564 | 25 |
-   | Metroid (USA) | 1 | 6967 of 131072 (5%) | 193 | 4 | 60 | 926 | 29 |
-   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 16633 of 131072 (13%) | 181 | 6 | 49 | 330 | 51 |
-   | Ninja Gaiden (USA) | 1 | 8601 of 131072 (7%) | 123 | 2 | 45 | 364 | 34 |
-   | Paperboy (USA) | 3 | 4799 of 32768 (15%) | 138 | 0 | 51 | 689 | 16 |
-   | Q-bert (USA) | 3 | 4409 of 32768 (13%) | 123 | 9 | 60 | 262 | 18 |
-   | Super Mario Bros. + Duck Hunt (USA) | 66 | 11910 of 65536 (18%) | 247 | 13 | 75 | 719 | 46 |
-   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 9665 of 131072 (7%) | 182 | 9 | 85 | 1023 | 27 |
-   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 19069 of 262144 (7%) | 242 | 0 | 139 | 979 | 60 |
-   | Teenage Mutant Ninja Turtles (USA) | 1 | 14264 of 131072 (11%) | 293 | 11 | 73 | 696 | 42 |
-   | Tetris (USA) | 1 | 5371 of 32768 (16%) | 111 | 4 | 44 | 392 | 27 |
-   | Zelda II - The Adventure of Link (USA) | 1 | 3334 of 131072 (3%) | 70 | 5 | 25 | 660 | 23 |
+   | Battle Chess (USA) | 1 | 8270 of 262144 (3%) | 158 | 1 | 91 | 671 | 27 |
+   | Blades of Steel (USA) | 2 | 28200 of 131072 (22%) | 398 | 26 | 130 | 739 | 49 |
+   | Blaster Master (USA) | 1 | 10418 of 131072 (8%) | 230 | 1 | 66 | 712 | 22 |
+   | Defender II (USA) | 0 | 9255 of 16384 (56%) | 136 | 0 | 29 | 505 | 30 |
+   | Double Dribble (USA) (Rev 1) | 2 | 28209 of 131072 (22%) | 270 | 8 | 82 | 638 | 36 |
+   | Fester's Quest (USA) | 1 | 11740 of 131072 (9%) | 76 | 2 | 49 | 352 | 19 |
+   | Goonies II, The (USA) | 2 | 11241 of 131072 (9%) | 229 | 9 | 59 | 711 | 35 |
+   | Legend of Zelda, The (USA) (Rev 1) | 1 | 5493 of 131072 (4%) | 98 | 8 | 34 | 834 | 28 |
+   | Metroid (USA) | 1 | 13908 of 131072 (11%) | 420 | 13 | 92 | 1116 | 43 |
+   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 21003 of 131072 (16%) | 252 | 10 | 59 | 394 | 58 |
+   | Ninja Gaiden (USA) | 1 | 10926 of 131072 (8%) | 147 | 7 | 56 | 473 | 44 |
+   | Paperboy (USA) | 3 | 8347 of 32768 (25%) | 163 | 0 | 52 | 741 | 22 |
+   | Q-bert (USA) | 3 | 7881 of 32768 (24%) | 208 | 18 | 72 | 551 | 22 |
+   | Super Mario Bros. + Duck Hunt (USA) | 66 | 15604 of 65536 (24%) | 304 | 16 | 89 | 795 | 57 |
+   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 16830 of 131072 (13%) | 250 | 13 | 104 | 1325 | 34 |
+   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 22787 of 262144 (9%) | 260 | 23 | 145 | 1070 | 67 |
+   | Teenage Mutant Ninja Turtles (USA) | 1 | 15612 of 131072 (12%) | 314 | 18 | 73 | 712 | 46 |
+   | Tetris (USA) | 1 | 5718 of 32768 (17%) | 111 | 5 | 46 | 424 | 27 |
+   | Zelda II - The Adventure of Link (USA) | 1 | 4298 of 131072 (3%) | 85 | 7 | 28 | 711 | 25 |
 
-   What a cold 400-step crawl reaches is small (2 to 18 percent of a
-   bank-switched game, 50 percent of the one 16K game), so the routine
-   counts are a floor and the longer runs on the Pi are where the
-   numbers move. The patterns, across the nineteen:
+   (Both tables are the fourth count's, 1600 steps a game; see the
+   end of this step.) What a cold crawl reaches is still small (3 to
+   25 percent of a bank-switched game, 56 percent of the one 16K
+   game), so the routine counts are a floor. The patterns, across the
+   nineteen:
 
    | pattern | games | marks |
    |---|---|---|
-   | bank-switch | 18 of 19 | 139 |
+   | bank-switch | 18 of 19 | 150 |
    | counting-spin | 4 of 19 | 4 |
-   | frame-wait | 12 of 19 | 37 |
+   | frame-wait | 13 of 19 | 44 |
    | game-loop-in-nmi | 8 of 19 | 8 |
+   | handler-in-memory | 3 of 19 | 5 |
    | idle-spin | 4 of 19 | 4 |
-   | jump-engine | 15 of 19 | 23 |
-   | pad-poll | 19 of 19 | 38 |
+   | jump-engine | 16 of 19 | 26 |
+   | pad-poll | 19 of 19 | 40 |
    | palette-writer | 19 of 19 | 30 |
-   | position-compare | 8 of 19 | 18 |
-   | random-byte | 8 of 19 | 11 |
+   | position-compare | 13 of 19 | 72 |
+   | random-byte | 12 of 19 | 18 |
    | scroll-writer | 19 of 19 | 20 |
    | sound-driver | 19 of 19 | 19 |
-   | sprite-0-split | 6 of 19 | 9 |
-   | sprite-writer | 19 of 19 | 178 |
+   | sprite-0-split | 8 of 19 | 12 |
+   | sprite-writer | 19 of 19 | 220 |
    | vram-drain | 19 of 19 | 19 |
 
    Read with care: the sound driver, the VRAM drain, the palette
@@ -342,8 +344,9 @@ image it runs from.
    cartridge, which is the answer the board says it should be; the
    jump engine in fifteen and the split in six.
 
-   *Corrected 2026-09-30, evening, and counted a third time on
-   2026-10-01 (further down): both tables above are the third count.* The first had the random byte in three games, the scroll
+   *Corrected 2026-09-30, evening, counted a third time on
+   2026-10-01 and a fourth that night (further down): the figures in
+   the next paragraphs are each count's own, the tables the fourth's.* The first had the random byte in three games, the scroll
    writer in nine and the game loop inside the interrupt in none, and
    this note blamed the last on a rule "written for one run". That was
    wrong. A crawl's own record, laid over the reports for its
@@ -428,12 +431,44 @@ image it runs from.
    `@objects`, `chooses=` are the companions a byte of which chose a
    jump: three tables have one, an object's state or kind. So an
    object table now reads as positions, what moves them, what picks
-   their code, and the rest. Still to come: the rest (a companion
-   compared against a constant and then cleared reads like a timer or
-   a health), `JMP (ind)` dispatches (chosen by whatever indexed the
-   pointer table, which is not followed), and longer crawls, which
-   every count here waits on. That table of contents is the
-   toolkit's.
+   their code, and the rest.
+
+   *The fourth count, 2026-10-01, night: 1600 steps a game.* The
+   longer crawl was the first thing tried and the first thing to
+   fail: at 1600 steps one game's crawl took 52 GB and the kernel
+   killed it. A saved state carries the console's finished frames
+   and the crawl never dropped them, so every moment held every
+   picture since power-on. Cleared before a state is taken (nes
+   `ae9f7d5`), the same crawl peaks at 271 MB with the same sites,
+   and 1600 steps take four minutes a game where 400 had taken two.
+   The traces of the deeper paths go through a named pipe, never the
+   disk. Across the nineteen: 255,740 bytes executed where it was
+   170,400, 4109 routines where it was 2933, 691 marks where it was
+   557. Blades of Steel went from 9 to 22 percent, Double Dribble 12
+   to 22, Q-bert 13 to 24, Paperboy 15 to 25, Metroid 5 to 11 with
+   420 routines where it had 193; the games stuck on a screen moved a
+   point or none. The position comparison is in thirteen games, 72
+   routines; the object tables are 25 in twelve games, 259 arrays, 19
+   of them added into positions and 17 choosing a jump.
+
+   Three things about tables came with it. A bank is put where the
+   run saw its code: the listing had assumed the window the board
+   usually maps a bank at, Super Mario Bros. 3 maps them at $A000 and
+   $C000, and at $8000 not one absolute address inside them resolved
+   and none of its engine's tables was found; placed, it has 23. A
+   table of addresses a `JMP (ind)` of its own went through is found
+   by where the pointer's two bytes were loaded from and written as
+   `@table pointers`: 20 of the 185 tables, in nine games. And a jump
+   through a pointer copied out of RAM is the sixteenth pattern,
+   `handler-in-memory` (three games, five routines): each thing keeps
+   the address of its own code. 135 of the 185 tables say what chose.
+
+   Still to come: the rest of an object table (a companion compared
+   with a constant and then cleared reads like a timer or a health);
+   a table of low bytes and one of high (found as chosen, not written
+   as a table); a way in per game for the ones that sit on a screen,
+   which is where the next points of coverage are. That table of
+   contents is the toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's

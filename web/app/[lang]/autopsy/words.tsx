@@ -17,6 +17,7 @@ export const ORDER = [
   "game-loop-in-nmi",
   "frame-wait",
   "jump-engine",
+  "handler-in-memory",
   "bank-switch",
   "vram-drain",
   "palette-writer",
@@ -52,6 +53,10 @@ const PATTERNS: Record<string, Record<Lang, { name: string; what: string }>> = {
   "jump-engine": {
     en: { name: "The jump engine", what: "A routine other code calls to choose where to go next. The call is followed by a table of addresses, and the engine jumps through it by a number. We name it as the routine those calls reach, and write each table down as far as the runs saw entries taken." },
     ja: { name: "ジャンプエンジン", what: "次にどこへ行くかを選ぶために、ほかのコードが呼ぶルーチン。呼び出しの直後にアドレスのテーブルが続き、エンジンは番号でそこを通って跳ぶ。そうした呼び出しが届くルーチンとして名付け、それぞれのテーブルは、走行が項目を選ぶのを見た範囲まで書き出す。" },
+  },
+  "handler-in-memory": {
+    en: { name: "The handler kept in memory", what: "A routine that jumps through an address it copied out of memory, where a jump engine would look one up in the cartridge. Each thing on the screen keeps the address of its own code beside its position, and this routine runs them in turn. We follow the address back to the bytes it was copied from." },
+    ja: { name: "メモリに置かれたハンドラ", what: "メモリから写したアドレスを通って跳ぶルーチン。ジャンプエンジンならカートリッジの中で引くところだ。画面上のものそれぞれが、自分のコードのアドレスを位置の隣に持っていて、このルーチンがそれらを順に走らせる。アドレスは、写された元のバイトまでたどる。" },
   },
   "bank-switch": {
     en: { name: "The bank switch", what: "A routine that wrote into the cartridge's own address range. On a board with a register there, that write selects which part of the program the console sees." },
@@ -102,6 +107,9 @@ const EVIDENCE: Record<string, Record<Lang, string>> = {
   "reads-per-frame": { en: "reads a frame", ja: "一フレームの読み" },
   "strobes-per-frame": { en: "strobes a frame", ja: "一フレームのストローブ" },
   tables: { en: "tables", ja: "テーブル" },
+  jumps: { en: "jumps", ja: "跳躍" },
+  targets: { en: "places it landed", ja: "着地した場所" },
+  from: { en: "address copied from", ja: "アドレスの写し元" },
   dispatches: { en: "jumps through them", ja: "そこを通った跳躍" },
   flag: { en: "waits on the byte at", ja: "待つ相手のバイト" },
   byte: { en: "counts in the byte at", ja: "数えるバイト" },

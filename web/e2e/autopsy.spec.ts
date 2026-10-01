@@ -15,7 +15,7 @@ import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from
 
 const RECORD = path.join(__dirname, "..", "..", "data", "autopsy.json");
 
-type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: { on?: string[] }[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number; adds?: string[] }[] };
+type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: { on?: string[]; kind?: string }[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number; adds?: string[] }[] };
 
 function record(): { games: Game[]; patterns: string[] } {
   const r = JSON.parse(fs.readFileSync(RECORD, "utf8")) as { games: Game[]; patterns: string[] };
@@ -46,6 +46,8 @@ test("a game's page shows every routine and table the record holds for it", asyn
     await expect(page.locator("[data-autopsy-tables] tbody tr"), `${g.name}: its tables`).toHaveCount(g.table_list.length);
     const on = await page.locator("[data-autopsy-tables] tbody td[data-autopsy-table-on]").evaluateAll((tds) => tds.map((t) => Number((t as HTMLElement).dataset.autopsyTableOn)));
     expect(on, `${g.name}: the bytes that chose, by table`).toEqual(g.table_list.map((t) => (t.on ?? []).length));
+    const kinds = await page.locator("[data-autopsy-tables] tbody td[data-autopsy-table-kind]").evaluateAll((tds) => tds.map((t) => (t as HTMLElement).dataset.autopsyTableKind));
+    expect(kinds, `${g.name}: how each table is reached`).toEqual(g.table_list.map((t) => t.kind ?? "dispatch"));
     await expect(page.locator("[data-autopsy-found] li"), `${g.name}: the patterns named`).toHaveCount(Object.keys(g.patterns).length);
   }
 });
