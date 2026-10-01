@@ -422,8 +422,9 @@ image it runs from.
    engine's the table says which byte chose the way (`@table ...
    on=`): 77 of the 92 tables, in twelve of the thirteen games that
    have one. Scratch is left out as it is for positions, which took
-   the temporaries out of three games' lists and left two games
-   whose mode really does live at the bottom of the zero page. In
+   a byte or two out of four games' lists (81 tables had a chooser
+   before, four of them only scratch) and left two games whose mode
+   really does live at the bottom of the zero page. In
    `@objects`, `chooses=` are the companions a byte of which chose a
    jump: three tables have one, an object's state or kind. So an
    object table now reads as positions, what moves them, what picks
