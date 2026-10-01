@@ -173,7 +173,9 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     // sprite's position and never the same sprite byte together (the
     // flow follows the values through the temporaries). By the routine
     // the instruction ran in.
-    let mut compared: BTreeMap<usize, (u64, BTreeMap<(u16, u16), (u64, bool, bool)>)> = BTreeMap::new();
+    // A pair of cells to (times met, on x, on y).
+    type Pairs = BTreeMap<(u16, u16), (u64, bool, bool)>;
+    let mut compared: BTreeMap<usize, (u64, Pairs)> = BTreeMap::new();
     for m in &run.meets {
         let e = compared.entry(m.routine).or_default();
         e.0 += 1;
