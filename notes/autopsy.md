@@ -247,7 +247,8 @@ image it runs from.
    5306 sites against 5462, so it stays as a switch and the plain
    count is the rule. Not yet: longer runs on the Pi.
 3. **The matchers.** *Built 2026-09-29 and 30, thirteen rules by the
-   evening of the 30th (the count below is the first cut's): ten rules
+   evening of the 30th and fifteen on 2026-10-01 (the count below is
+   the first cut's): ten rules
    in `wasm/listing` (`FORMAT.md`, "What the matchers write"), each a
    rule over what the run saw, never over what the bytes look like,
    each writing `@is pattern ... by=match` with its evidence.* On the
@@ -290,23 +291,23 @@ image it runs from.
    | game | board | PRG executed | routines (run) | tables | arrays | variables | patterns |
    |---|---|---|---|---|---|---|---|
    | Battle Chess (USA) | 1 | 7626 of 262144 (3%) | 148 | 0 | 90 | 634 | 24 |
-   | Blades of Steel (USA) | 2 | 11184 of 131072 (9%) | 221 | 13 | 93 | 602 | 25 |
-   | Blaster Master (USA) | 1 | 9058 of 131072 (7%) | 194 | 0 | 66 | 649 | 19 |
-   | Defender II (USA) | 0 | 8161 of 16384 (50%) | 133 | 0 | 26 | 449 | 25 |
-   | Double Dribble (USA) (Rev 1) | 2 | 15960 of 131072 (12%) | 154 | 7 | 66 | 460 | 14 |
-   | Fester's Quest (USA) | 1 | 5843 of 131072 (4%) | 36 | 0 | 31 | 96 | 15 |
-   | Goonies II, The (USA) | 2 | 2998 of 131072 (2%) | 61 | 3 | 27 | 308 | 21 |
+   | Blades of Steel (USA) | 2 | 11184 of 131072 (9%) | 221 | 13 | 93 | 602 | 28 |
+   | Blaster Master (USA) | 1 | 9058 of 131072 (7%) | 194 | 0 | 66 | 649 | 21 |
+   | Defender II (USA) | 0 | 8161 of 16384 (50%) | 133 | 0 | 26 | 449 | 28 |
+   | Double Dribble (USA) (Rev 1) | 2 | 15960 of 131072 (12%) | 154 | 7 | 66 | 460 | 19 |
+   | Fester's Quest (USA) | 1 | 5843 of 131072 (4%) | 36 | 0 | 31 | 96 | 16 |
+   | Goonies II, The (USA) | 2 | 2998 of 131072 (2%) | 61 | 3 | 27 | 308 | 23 |
    | Legend of Zelda, The (USA) (Rev 1) | 1 | 4548 of 131072 (3%) | 83 | 6 | 28 | 564 | 25 |
    | Metroid (USA) | 1 | 6967 of 131072 (5%) | 193 | 4 | 60 | 926 | 29 |
-   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 16633 of 131072 (13%) | 181 | 6 | 49 | 330 | 47 |
+   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 16633 of 131072 (13%) | 181 | 6 | 49 | 330 | 51 |
    | Ninja Gaiden (USA) | 1 | 8601 of 131072 (7%) | 123 | 2 | 45 | 364 | 34 |
-   | Paperboy (USA) | 3 | 4799 of 32768 (15%) | 138 | 0 | 51 | 689 | 15 |
+   | Paperboy (USA) | 3 | 4799 of 32768 (15%) | 138 | 0 | 51 | 689 | 16 |
    | Q-bert (USA) | 3 | 4409 of 32768 (13%) | 123 | 9 | 60 | 262 | 18 |
-   | Super Mario Bros. + Duck Hunt (USA) | 66 | 11910 of 65536 (18%) | 247 | 13 | 75 | 719 | 44 |
-   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 9665 of 131072 (7%) | 182 | 9 | 85 | 1023 | 24 |
-   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 19069 of 262144 (7%) | 242 | 0 | 139 | 979 | 55 |
-   | Teenage Mutant Ninja Turtles (USA) | 1 | 14264 of 131072 (11%) | 293 | 11 | 73 | 696 | 38 |
-   | Tetris (USA) | 1 | 5371 of 32768 (16%) | 111 | 4 | 44 | 392 | 25 |
+   | Super Mario Bros. + Duck Hunt (USA) | 66 | 11910 of 65536 (18%) | 247 | 13 | 75 | 719 | 46 |
+   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 9665 of 131072 (7%) | 182 | 9 | 85 | 1023 | 27 |
+   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 19069 of 262144 (7%) | 242 | 0 | 139 | 979 | 60 |
+   | Teenage Mutant Ninja Turtles (USA) | 1 | 14264 of 131072 (11%) | 293 | 11 | 73 | 696 | 42 |
+   | Tetris (USA) | 1 | 5371 of 32768 (16%) | 111 | 4 | 44 | 392 | 27 |
    | Zelda II - The Adventure of Link (USA) | 1 | 3334 of 131072 (3%) | 70 | 5 | 25 | 660 | 23 |
 
    What a cold 400-step crawl reaches is small (2 to 18 percent of a
@@ -317,12 +318,14 @@ image it runs from.
    | pattern | games | marks |
    |---|---|---|
    | bank-switch | 18 of 19 | 139 |
-   | frame-wait | 11 of 19 | 26 |
-   | game-loop-in-nmi | 4 of 19 | 4 |
+   | counting-spin | 4 of 19 | 4 |
+   | frame-wait | 12 of 19 | 37 |
+   | game-loop-in-nmi | 8 of 19 | 8 |
    | idle-spin | 4 of 19 | 4 |
    | jump-engine | 15 of 19 | 23 |
    | pad-poll | 19 of 19 | 38 |
    | palette-writer | 19 of 19 | 30 |
+   | position-compare | 8 of 19 | 18 |
    | random-byte | 8 of 19 | 11 |
    | scroll-writer | 19 of 19 | 20 |
    | sound-driver | 19 of 19 | 19 |
@@ -339,8 +342,8 @@ image it runs from.
    cartridge, which is the answer the board says it should be; the
    jump engine in fifteen and the split in six.
 
-   *Corrected 2026-09-30, evening: both tables above are the second
-   count.* The first had the random byte in three games, the scroll
+   *Corrected 2026-09-30, evening, and counted a third time on
+   2026-10-01 (further down): both tables above are the third count.* The first had the random byte in three games, the scroll
    writer in nine and the game loop inside the interrupt in none, and
    this note blamed the last on a rule "written for one run". That was
    wrong. A crawl's own record, laid over the reports for its
@@ -357,15 +360,42 @@ image it runs from.
    NMI handler or a routine it calls wrote the byte. Eleven games, 26
    marks: one wait in Fester's Quest, Punch-Out, Blaster Master and
    Zelda II, two or three in the Marios, Metroid, Tetris and Ninja
-   Gaiden, eight in Battle Chess on four bytes the handler writes. With the four that spin, fourteen of the nineteen now have
-   their frame's rhythm named. The five that do not are the four
-   Konami games (Blades of Steel, Double Dribble, The Goonies II,
-   Teenage Mutant Ninja Turtles) and Defender II; the one looked at
-   waits in a loop that tests a flag and the PPU's status together,
-   which the rule declines because it reads the hardware. That is the
-   next rule's shape. After it, the collision test, which needs the
-   flow of values between routines. That table of contents is the
-   toolkit's.
+   Gaiden, eight in Battle Chess on four bytes the handler writes. With the four that spin,
+   fourteen of the nineteen had their frame's rhythm named that
+   night. (The count of 26 was that night's; the rule has since
+   widened, below.)
+
+   *The third count, 2026-10-01.* The five left over were looked at
+   and none waits the way this note guessed. The four Konami games
+   (Blades of Steel, Double Dribble, The Goonies II, Teenage Mutant
+   Ninja Turtles) idle in an endless loop that does arithmetic on one
+   byte of RAM and jumps back, with the game in the NMI handler: the
+   counting spin, `counting-spin`, four games, and with it the game
+   loop inside the interrupt is in eight. Defender II waits on a flag
+   with a call inside the loop, so the wait for the frame now takes a
+   `JSR` when nothing the callee reached wrote the flag: twelve games,
+   37 marks. All nineteen have their frame's rhythm named.
+
+   The comparison of two positions is found, by following values
+   (`wasm/flow`, "Where a value came from"): each byte and register
+   carries the cells its value was made from, the report says which
+   cells reached a sprite's Y or X byte and where two of them met,
+   and `position-compare` marks the routine. Eight games, 18
+   routines. On the multicart's recorded run it is one routine with
+   three such instructions, one byte against the next, both reaching
+   sprite X bytes. Four things had to be ruled out before the result
+   was clean, each a decoy in the test now: the stack as a source, a
+   value made from more than four cells, the camera (it reaches every
+   sprite with the position, so two cells that ever fed one sprite
+   byte together are not two objects), and scratch (a temporary
+   holding a constant; a cell counts only if it carries a value from
+   one frame into the next). What the rule cannot say is what the
+   comparison is for: Blades of Steel's and Double Dribble's compare
+   ten or more Y positions pairwise, which reads like a sort by depth,
+   not a collision. The cells it lists are the first sight of each
+   game's object table, and the object slots are the next rule: the
+   cells grouped into arrays, with the bytes that travel with them.
+   That table of contents is the toolkit's.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's

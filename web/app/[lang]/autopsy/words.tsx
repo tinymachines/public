@@ -13,6 +13,7 @@ import type { Lang } from "@/lib/lang";
 export const ORDER = [
   "pad-poll",
   "idle-spin",
+  "counting-spin",
   "game-loop-in-nmi",
   "frame-wait",
   "jump-engine",
@@ -24,6 +25,7 @@ export const ORDER = [
   "sprite-0-split",
   "sound-driver",
   "random-byte",
+  "position-compare",
 ] as const;
 
 const PATTERNS: Record<string, Record<Lang, { name: string; what: string }>> = {
@@ -35,13 +37,17 @@ const PATTERNS: Record<string, Record<Lang, { name: string; what: string }>> = {
     en: { name: "The idle spin", what: "One instruction that jumps to itself. The main program has nothing to do until the next frame, and this is where it waits." },
     ja: { name: "待機のループ", what: "自分自身へ跳ぶ一つの命令。メインのプログラムは次のフレームまですることが無く、ここで待つ。" },
   },
+  "counting-spin": {
+    en: { name: "The counting spin", what: "A few instructions in a circle with no way out, that do nothing but change one byte of memory. The main program sits here between frames, as it does in an idle spin, and the byte is as good as a random number to anything that reads it, because how far it got depends on how long the frame's work took." },
+    ja: { name: "数える待機ループ", what: "出口の無い輪になった数個の命令で、メモリの一バイトを変えることしかしない。待機のループと同じく、メインのプログラムはフレームの間ここに居る。そのバイトは、読む側にとっては乱数も同然だ。どこまで進んだかは、そのフレームの仕事にかかった時間で決まるからだ。" },
+  },
   "game-loop-in-nmi": {
-    en: { name: "The game inside the interrupt", what: "When the main program only spins, the whole game runs in the handler of the interrupt the picture chip raises once a frame. We name that handler when there is an idle spin and the handler ran in at least half the frames." },
-    ja: { name: "割り込みの中のゲーム", what: "メインのプログラムが待つだけのとき、ゲームのすべては、映像チップがフレームごとに一度起こす割り込みのハンドラの中で走る。待機のループがあり、ハンドラがフレームの半分以上で走ったとき、そのハンドラをこう名付ける。" },
+    en: { name: "The game inside the interrupt", what: "When the main program only spins, the whole game runs in the handler of the interrupt the picture chip raises once a frame. We name that handler when there is an idle spin or a counting spin and the handler ran in at least half the frames." },
+    ja: { name: "割り込みの中のゲーム", what: "メインのプログラムが待つだけのとき、ゲームのすべては、映像チップがフレームごとに一度起こす割り込みのハンドラの中で走る。待機のループか数える待機ループがあり、ハンドラがフレームの半分以上で走ったとき、そのハンドラをこう名付ける。" },
   },
   "frame-wait": {
-    en: { name: "The wait for the frame", what: "A loop that only reads a byte of memory and tests it, over and over. Nothing in the loop can change that byte, so the game stays there until the interrupt the picture chip raises once a frame changes it. We name the loop when that interrupt's handler, or a routine the handler calls, wrote the byte. A game may wait like this in several places, on a flag or on a counter the handler runs down." },
-    ja: { name: "フレーム待ち", what: "メモリの一バイトを読んで調べることだけを繰り返すループ。ループの中の何ものもそのバイトを変えられないので、映像チップがフレームごとに一度起こす割り込みがそれを変えるまで、ゲームはそこに留まる。その割り込みのハンドラ、またはハンドラが呼ぶルーチンがそのバイトに書いたとき、ループをこう名付ける。ゲームはこうした待ちを何か所にも持つことがあり、待つ相手は旗のこともあれば、ハンドラが減らしていくカウンタのこともある。" },
+    en: { name: "The wait for the frame", what: "A loop that only reads a byte of memory and tests it, over and over. Nothing in the loop can change that byte, so the game stays there until the interrupt the picture chip raises once a frame changes it. We name the loop when that interrupt's handler, or a routine the handler calls, wrote the byte. A game may wait like this in several places, on a flag or on a counter the handler runs down, and some do a small chore on each turn of the wait." },
+    ja: { name: "フレーム待ち", what: "メモリの一バイトを読んで調べることだけを繰り返すループ。ループの中の何ものもそのバイトを変えられないので、映像チップがフレームごとに一度起こす割り込みがそれを変えるまで、ゲームはそこに留まる。その割り込みのハンドラ、またはハンドラが呼ぶルーチンがそのバイトに書いたとき、ループをこう名付ける。ゲームはこうした待ちを何か所にも持つことがあり、待つ相手は旗のこともあれば、ハンドラが減らしていくカウンタのこともある。待ちの一周ごとに小さな用事を済ませるゲームもある。" },
   },
   "jump-engine": {
     en: { name: "The jump engine", what: "A routine other code calls to choose where to go next. The call is followed by a table of addresses, and the engine jumps through it by a number. We name it as the routine those calls reach, and write each table down as far as the runs saw entries taken." },
@@ -75,6 +81,10 @@ const PATTERNS: Record<string, Record<Lang, { name: string; what: string }>> = {
     en: { name: "The sound driver", what: "Of the routines that wrote the sound chip's registers, the one that wrote the most among those that ran in most frames." },
     ja: { name: "サウンドドライバ", what: "音源チップのレジスタへ書いたルーチンのうち、ほとんどのフレームで走ったものの中で最も多く書いたもの。" },
   },
+  "position-compare": {
+    en: { name: "Where two things are compared", what: "A routine that compares or subtracts the positions of two different things on the screen. We follow each value from the byte of memory it was loaded from, through whatever the game copies it into, to see which bytes end up as a sprite's position; then we name the routine where two of those bytes meet. That is the heart of a collision test. It is also how an enemy finds which side the player is on, and how a game sorts what it draws by depth, and the rule does not tell these apart." },
+    ja: { name: "二つのものを比べる所", what: "画面上の別々の二つのものの位置を、比べるか引き算するルーチン。それぞれの値を、読み込まれた元のメモリのバイトから、ゲームが写していく先々を通して追い、どのバイトがスプライトの位置になるかを見る。そのうえで、そうしたバイトの二つが出会うルーチンを名付ける。当たり判定の心臓部だ。敵がプレイヤーはどちら側かを知る方法でもあり、ゲームが描くものを奥行きの順に並べる方法でもある。この規則はそれらを区別しない。" },
+  },
   "random-byte": {
     en: { name: "The random byte", what: "Memory that a routine rewrites from itself every frame, with a rotate on the byte and an exclusive-or somewhere in the same routine. These are the game's dice." },
     ja: { name: "乱数のバイト", what: "ルーチンが毎フレーム、自分自身から書き直すメモリ。そのバイトへの回転と、同じルーチンのどこかにある排他的論理和を伴う。ゲームのさいころだ。" },
@@ -94,9 +104,18 @@ const EVIDENCE: Record<string, Record<Lang, string>> = {
   tables: { en: "tables", ja: "テーブル" },
   dispatches: { en: "jumps through them", ja: "そこを通った跳躍" },
   flag: { en: "waits on the byte at", ja: "待つ相手のバイト" },
+  byte: { en: "counts in the byte at", ja: "数えるバイト" },
+  sites: { en: "instructions", ja: "命令" },
+  pairs: { en: "pairs of bytes", ja: "バイトの組" },
+  cells: { en: "bytes in all", ja: "バイトの総数" },
+  meets: { en: "times compared", ja: "比べた回数" },
+  x: { en: "across, the bytes at", ja: "横の位置のバイト" },
+  y: { en: "down, the bytes at", ja: "縦の位置のバイト" },
   entries: { en: "times entered", ja: "入った回数" },
   iterations: { en: "turns", ja: "周回" },
   "per-frame": { en: "turns a frame", ja: "一フレームの周回" },
+  "read-elsewhere": { en: "reads of it from outside the loop", ja: "ループの外からの読み" },
+  calls: { en: "calls on each turn", ja: "一周ごとの呼び出し" },
   "set-in-nmi": { en: "writes of it under the frame interrupt", ja: "フレーム割り込みの下での書き込み" },
   frames: { en: "frames it ran in", ja: "走ったフレーム" },
   of: { en: "frames in all", ja: "全フレーム" },

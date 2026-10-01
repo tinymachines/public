@@ -64,7 +64,10 @@ const PROSE = {
         recording every access the processor made. From that we know where
         each routine was entered and how, the memory and the hardware it
         touched, where the beam was on the screen when it touched them, and
-        which calls chose their destination from a table.
+        which calls chose their destination from a table. We also follow
+        every value from the byte of memory it was loaded from, through
+        whatever the game copies it into, so we can say which bytes end up
+        as a position on the screen and where two of them are compared.
       </>
     ),
     rulesH: "The rules read what ran",
@@ -98,7 +101,7 @@ const PROSE = {
       "A short crawl from power-on reaches a small part of a big game. Longer crawls, started past the title screen, are what move the numbers.",
       "Code a game copies into memory and runs there has no place in a listing of the cartridge, so it is left out.",
       "A routine reached by returning to an address the game put on the stack itself is followed as a return, not as a jump through a table.",
-      "The test for two things touching is not named. Its two positions reach the comparison through scratch memory another routine fills, and no rule over one routine finds it.",
+      "We name the routine where two positions are compared, but not what the comparison is for. A test for two things touching, an enemy asking which side the player is on and a sort by depth all look the same to the rule.",
     ],
     yoursH: "The desk does this to a run of your own",
     yours: (create: React.ReactNode) => (
@@ -134,7 +137,7 @@ const PROSE = {
     runH: "走行が、それぞれのルーチンのしたことを語る",
     run: (
       <>
-        クロールが残した道筋はどれも、プロセッサのすべてのアクセスをコンソールが記録する状態で、もう一度再生する。そこから分かるのは、それぞれのルーチンがどこでどう入られたか、触れたメモリとハードウェア、触れたときに画面のどこをビームが走っていたか、そしてどの呼び出しが行き先をテーブルから選んだかだ。
+        クロールが残した道筋はどれも、プロセッサのすべてのアクセスをコンソールが記録する状態で、もう一度再生する。そこから分かるのは、それぞれのルーチンがどこでどう入られたか、触れたメモリとハードウェア、触れたときに画面のどこをビームが走っていたか、そしてどの呼び出しが行き先をテーブルから選んだかだ。さらに、すべての値を、読み込まれた元のメモリのバイトから、ゲームが写していく先々を通して追う。だから、どのバイトが画面上の位置になり、そのうちの二つがどこで比べられるかを言える。
       </>
     ),
     rulesH: "規則は、走ったものを読む",
@@ -161,7 +164,7 @@ const PROSE = {
       "電源投入からの短いクロールが届くのは、大きなゲームのごく一部だ。数を動かすのは、タイトル画面の先から始める、もっと長いクロールだ。",
       "ゲームがメモリへ写してそこで走らせるコードは、カートリッジのリスティングの中に居場所が無いので、入れていない。",
       "ゲームが自分でスタックに置いたアドレスへ戻ることで届くルーチンは、テーブル経由のジャンプではなく、戻りとして扱う。",
-      "二つのものが触れたかどうかの判定は、名付けていない。二つの位置は、別のルーチンが埋める作業用のメモリを通って比較に届くので、一つのルーチンについての規則では見つからない。",
+      "二つの位置を比べるルーチンは名付けるが、その比較が何のためかは名付けない。二つのものが触れたかどうかの判定も、敵がプレイヤーはどちら側かを尋ねるのも、奥行きの順に並べるのも、この規則には同じに見える。",
     ],
     yoursH: "机は、あなた自身の走行にも同じことをする",
     yours: (create: React.ReactNode) => (
