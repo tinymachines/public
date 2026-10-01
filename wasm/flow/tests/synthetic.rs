@@ -364,7 +364,24 @@ fn values_are_followed_to_where_two_objects_meet() {
     t.ins(0x8242, &[0x8d, 0x17, 0x02], &[(0x0217, 0x10, false)]);
     t.ins(0x8245, &[0xa5, 0x86], &[(0x0086, 0x34, true)]);
     t.ins(0x8247, &[0xc5, 0x03], &[(0x0003, 0x10, true)]);
-    t.rts(0x8249);
+    // A fraction at $70 takes a speed at $71, and the carry goes on
+    // into the position at $88 by an add of nothing: both moved it.
+    t.ins(0x8249, &[0xa5, 0x70], &[(0x0070, 0xf0, true)]);
+    t.ins(0x824b, &[0x65, 0x71], &[(0x0071, 0x20, true)]);
+    t.ins(0x824d, &[0x85, 0x70], &[(0x0070, 0x10, false)]);
+    t.ins(0x824f, &[0xa5, 0x88], &[(0x0088, 0x40, true)]);
+    t.ins(0x8251, &[0x69, 0x00], &[]);
+    t.ins(0x8253, &[0x85, 0x88], &[(0x0088, 0x41, false)]);
+    // The same with the carry cleared in between: the add of nothing
+    // adds nothing, and the position at $89 was moved by no one.
+    t.ins(0x8255, &[0xa5, 0x72], &[(0x0072, 0xf0, true)]);
+    t.ins(0x8257, &[0x65, 0x73], &[(0x0073, 0x20, true)]);
+    t.ins(0x8259, &[0x85, 0x72], &[(0x0072, 0x10, false)]);
+    t.ins(0x825b, &[0x18], &[]);
+    t.ins(0x825c, &[0xa5, 0x89], &[(0x0089, 0x40, true)]);
+    t.ins(0x825e, &[0x69, 0x00], &[]);
+    t.ins(0x8260, &[0x85, 0x89], &[(0x0089, 0x40, false)]);
+    t.rts(0x8262);
     t.ins(0x801f, &[0x4c, 0x1f, 0x80], &[]);
     let mut f = flow::Flow::new(0x8000);
     f.feed(&t.out);
@@ -385,7 +402,8 @@ fn values_are_followed_to_where_two_objects_meet() {
     // What was added into a byte that kept its own value: the one-byte
     // speed into $87. The four-byte speed into $86 is nobody's (more
     // than four cells), and says nothing.
-    assert_eq!(r["moves"], serde_json::json!([[0x87, 0x64, 1]]), "{}", r["moves"]);
+    // And the carry out of a fraction, with the speed that made it.
+    assert_eq!(r["moves"], serde_json::json!([[0x70, 0x71, 1], [0x72, 0x73, 1], [0x87, 0x64, 1], [0x88, 0x70, 1], [0x88, 0x71, 1]]), "{}", r["moves"]);
 }
 
 #[test]

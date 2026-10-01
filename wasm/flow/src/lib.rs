@@ -38,7 +38,11 @@
 //! the same sprite byte together. And one more: when a value goes back
 //! into a cell it was made from, the other cells in it are what moved
 //! that cell (a speed into a position, a pull into a speed), and each
-//! such pair is counted. That is how two objects' positions
+//! such pair is counted. The carry is followed one step for this: an
+//! add or a subtract leaves the carry made from its two sides, and an
+//! add or a subtract of a constant right after takes those cells in
+//! (the fraction and the speed into the position's next byte). Anything
+//! else that sets the carry leaves it nobody's. That is how two objects' positions
 //! are seen to be compared when another routine staged them in
 //! temporaries first; a position against the camera is not one,
 //! because the camera reaches every sprite with the position.
@@ -267,6 +271,8 @@ pub struct Flow {
     /// What each byte of RAM was made from (empty: itself), and A, X, Y.
     origin: Vec<Src>,
     made: [Src; 3],
+    /// What the carry was made from, when an add or a subtract set it.
+    carry: Src,
     /// Stores by (cell the value came from, page of the cell stored to,
     /// that cell's address mod 4): 2048 by 32.
     feeds: Vec<u32>,
@@ -316,6 +322,7 @@ impl Flow {
             oam_pages: [0; 256],
             origin: vec![Src::default(); 0x800],
             made: [Src::default(); 3],
+            carry: Src::default(),
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
@@ -663,7 +670,17 @@ impl Flow {
                 self.made[A] = operand;
                 self.made[X] = operand;
             }
-            "ADC" | "SBC" | "AND" | "ORA" | "EOR" => self.made[A].join(operand),
+            "ADC" | "SBC" => {
+                // An add of a constant is an add of the carry.
+                let constant = mode == ops::Mode::Imm;
+                self.made[A].join(operand);
+                if constant {
+                    self.made[A].join(self.carry);
+                }
+                self.carry = self.made[A];
+            }
+            "AND" | "ORA" | "EOR" => self.made[A].join(operand),
+            "CLC" | "SEC" | "CMP" | "CPX" | "CPY" | "ASL" | "LSR" | "ROL" | "ROR" | "PLP" | "RTI" => self.carry = Src::default(),
             "TAX" => self.made[X] = self.made[A],
             "TAY" => self.made[Y] = self.made[A],
             "TXA" => self.made[A] = self.made[X],
