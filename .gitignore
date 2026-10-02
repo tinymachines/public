@@ -135,3 +135,6 @@ web/public/nes/voices/
 # repository's own crate; data/flow.json records its tree and hashes.
 web/public/nes/flow/
 web/public/nes/listing/
+
+# A lesson's cartridge and whole listing, built by lessons/build.py.
+lessons/*/build/

@@ -1,0 +1,15 @@
+{
+ "title": "A jump that feels like Mario's",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "three.txt",
+ "frames": 600,
+ "grabs": [100, 215, 330, 430],
+ "presses": [[200, 204], [300, 320], [400, 480]],
+ "walk_from": 60,
+ "memory": {"air": "$03", "x": "$11", "speed_x": ["$12", "$13"], "y": "$15"},
+ "ground": 176
+}
