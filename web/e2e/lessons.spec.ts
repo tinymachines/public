@@ -30,10 +30,19 @@ for (const l of record()) {
   test(`${l.key}: the page's figures are the record's, beside the game's`, async ({ page }) => {
     await page.setViewportSize(DESK);
     await open(page, `/autopsy/lessons/${l.key}`, 200);
-    expect(l.against, "the jump lesson carries its comparison").toBeTruthy();
-    const rows = await page.locator('tr[data-lesson-row="jump"]').evaluateAll((rs) => rs.map((r) => [(r as HTMLElement).dataset.lessonOurs, (r as HTMLElement).dataset.lessonTheirs]));
-    expect(rows).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${l.against!.jumps[i].frames},${l.against!.jumps[i].risen}`]));
-    await expect(page.locator('tr[data-lesson-row="walk"] td').nth(1)).toHaveText(String(l.measures.full_speed_after));
+    expect(l.against, "every lesson so far carries its comparison").toBeTruthy();
+    const rows = await page.locator("tr[data-lesson-row]").evaluateAll((rs) => rs.map((r) => [(r as HTMLElement).dataset.lessonRow, (r as HTMLElement).dataset.lessonOurs, (r as HTMLElement).dataset.lessonTheirs]));
+    expect(rows.length, "a table of measures").toBeGreaterThan(2);
+    for (const [k, ours, theirs] of rows) expect(ours && theirs, `${k}: both sides filled`).toBeTruthy();
+    if (l.kind === "jump") {
+      const a = l.against as typeof l.measures;
+      expect(rows.filter((r) => r[0] === "jump").map((r) => [r[1], r[2]])).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${a.jumps[i].frames},${a.jumps[i].risen}`]));
+      expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.full_speed_after));
+    } else {
+      const a = l.against as typeof l.measures;
+      expect(rows.find((r) => r[0] === "strips")?.slice(1)).toEqual([String(l.measures.strips), String(a.strips)]);
+      expect(rows.find((r) => r[0] === "tiles")?.slice(1)).toEqual([l.measures.tiles.join(" / "), a.tiles.join(" / ")]);
+    }
     await expect(page.locator("[data-lesson-pictures] img")).toHaveCount(l.pictures.length);
   });
 

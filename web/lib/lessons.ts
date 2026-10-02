@@ -14,20 +14,46 @@ export interface Jump {
   risen: number;
 }
 
-export interface Lesson {
+export interface JumpMeasures {
+  full_speed_after: number;
+  full_speed: number;
+  jumps: Jump[];
+}
+
+/** How the picture is kept ahead of the camera (scripts/board-lessons.py scroll_measures). */
+export interface ScrollMeasures {
+  strips: number;
+  every_min: number;
+  every_max: number;
+  every_mean: number;
+  /** Each a list of the values seen, as text: one value means every strip agreed. */
+  frames: string[];
+  columns: string[];
+  tiles: number[];
+  colours: string[];
+  ahead_min: number;
+  ahead_max: number;
+  column_frames: string[];
+  last_write: string[];
+}
+
+interface Base {
   key: string;
   title: string;
+  description: string;
   tree: string;
   sha256: string;
   code_bytes: number;
   instructions: number;
   /** The cartridge, base64. */
   rom: string;
-  measures: { full_speed_after: number; full_speed: number; jumps: Jump[] };
-  /** The same measures off a commercial game's runs: counts only. */
-  against?: { game: string; full_speed_after: number; full_speed: number; jumps: Jump[] } | null;
   pictures: { frame: number; png: string }[];
 }
+
+/** A lesson and the same measures off a commercial game's runs: counts only. */
+export type Lesson =
+  | (Base & { kind: "jump"; measures: JumpMeasures; against?: (JumpMeasures & { game: string }) | null })
+  | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null });
 
 const ROOT = path.join(process.cwd(), "..");
 let cached: Lesson[] | null = null;
