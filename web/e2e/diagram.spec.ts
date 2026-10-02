@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { DESK, PHONE, open } from "./lib";
+import { DESK, PHONE, open, JA_FLOOR, jaShare } from "./lib";
 
 /**
  * A drawing in a document (a mermaid fence, components/Diagram.tsx): drawn
@@ -78,6 +78,8 @@ test("the drawings stack on a phone without widening the page, and speak Japanes
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(wide, "the page scrolls sideways").toBeLessThanOrEqual(0);
   await expect(page.locator("figure.diagram figcaption").first()).toContainText("(全画面)");
-  // The body is English until translated, and the page says so.
-  await expect(page.locator(".untranslated")).toHaveCount(1);
+  // The document speaks Japanese (since d8cdfbb), so nothing says it is English.
+  const body = await page.locator("main").textContent();
+  expect(jaShare(body ?? ""), "the document's body under /ja").toBeGreaterThanOrEqual(JA_FLOOR);
+  await expect(page.locator(".untranslated")).toHaveCount(0);
 });
