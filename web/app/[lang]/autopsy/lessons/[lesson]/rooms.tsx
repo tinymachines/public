@@ -12,10 +12,12 @@ import type { RoomsMeasures } from "@/lib/lessons";
 /** "32 across": 23 as words; the record keeps runs of eight or more. */
 function runs(lang: Lang, w: Record<string, number>): string {
   const n = (v: number) => v.toLocaleString(lang);
-  const parts = Object.entries(w).map(([k, count]) => {
+  // The most first; one row is a row.
+  const parts = Object.entries(w).sort((x, y) => y[1] - x[1]).map(([k, count]) => {
     const [tiles, way] = k.split(" ");
     if (lang === "ja") return `${n(Number(tiles))} タイルの${way === "down" ? "列" : "行"}を ${n(count)} 本`;
-    return `${n(count)} ${way === "down" ? "columns" : "rows"} of ${n(Number(tiles))} tiles ${way}`;
+    const noun = way === "down" ? (count === 1 ? "column" : "columns") : count === 1 ? "row" : "rows";
+    return `${n(count)} ${noun} of ${n(Number(tiles))} tiles ${way}`;
   });
   if (!parts.length) return lang === "ja" ? "なし" : "none";
   return parts.join(lang === "ja" ? "、" : ", ");
