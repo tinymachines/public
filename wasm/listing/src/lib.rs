@@ -44,7 +44,9 @@ pub fn check(src: &str, rom_bytes: &[u8]) -> Result<(), String> {
     let rom = ines::parse(rom_bytes)?;
     let built = asm::assemble(&l).map_err(|e| e.to_string())?;
     if l.header.sha256 != rom.sha256 {
-        return Err(format!("the listing is of {} and the ROM is {}", &l.header.sha256[..12], &rom.sha256[..12]));
+        // A listing written by hand may carry any digest, a short one too.
+        let short = |h: &str| h.chars().take(12).collect::<String>();
+        return Err(format!("the listing is of {} and the ROM is {}", short(&l.header.sha256), short(&rom.sha256)));
     }
     for (name, a, b) in [("PRG", &built.prg, &rom.prg), ("CHR", &built.chr, &rom.chr)] {
         if a.len() != b.len() {

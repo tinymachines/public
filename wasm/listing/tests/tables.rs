@@ -266,3 +266,17 @@ fn an_address_kept_in_memory_and_returned_to_is_a_handler_in_memory() {
     assert!(src.contains(&format!(";; @is handler-in-memory jumps=5 targets=1 from=$00C3,$00C4 by=match\n;; @routine handlers_{:04X} kind=call entered=5 by=run\n", labels["kept"])), "{src}");
     assert_eq!(src.matches("handler-in-memory").count(), 1);
 }
+
+#[test]
+fn a_listing_written_by_hand_is_refused_with_a_reason_not_a_panic() {
+    // Our test cartridge says sha256=0; checked against its own image the
+    // digests differ, and the answer is a sentence.
+    let (image, _) = our_rom();
+    let head = ";; @listing 0\n;; @rom sha256=0 mapper=0 mirroring=horizontal prg=16384 chr=0\n;; @bank prg 0 org=$C000 size=16384 fixed\n";
+    let mut src = head.to_string();
+    for _ in 0..16384 {
+        src.push_str("    .byte $00\n");
+    }
+    let e = listing::check(&src, &image).unwrap_err();
+    assert!(e.starts_with("the listing is of 0 and the ROM is "), "{e}");
+}
