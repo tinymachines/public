@@ -39,7 +39,8 @@ pub fn render(l: &Listing) -> Result<String, asm::AsmError> {
             Item::Note(t) => format!("; {t}"),
             Item::Instr { op, operand, comment } => with_comment(&format!("    {}", instr_text(*op, operand)), comment),
             Item::Bytes { bytes, comment } => with_comment(&format!("    .byte {}", bytes.iter().map(|x| format!("${x:02X}")).collect::<Vec<_>>().join(",")), comment),
-            Item::Word { value, label, comment } => with_comment(&format!("    .word {}", label.clone().unwrap_or_else(|| format!("${value:04X}"))), comment),
+            Item::Word { value, label, less, comment } => with_comment(&format!("    .word {}", label.as_ref().map(|l| crate::model::less_text(l, *less)).unwrap_or_else(|| format!("${value:04X}"))), comment),
+            Item::Half { label, high, less, comment } => with_comment(&format!("    .byte {}{}", if *high { '>' } else { '<' }, crate::model::less_text(label, *less)), comment),
         };
         if n == 0 {
             if matches!(item, Item::Label(_)) {

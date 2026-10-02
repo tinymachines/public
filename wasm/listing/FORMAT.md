@@ -44,7 +44,8 @@ instruction: labels start in column one, code and data are indented.
 | `name:` | a label; `name` is a letter or underscore, then letters, digits, underscores; one namespace for the whole file |
 | `    MNEM operand   ; comment` | an instruction, one of the 151 documented ones |
 | `    .byte $00,$01  ; comment` | bytes, as many as the line lists |
-| `    .word $FFFC    ; comment` | a little-endian word; may name a label |
+| `    .word $FFFC    ; comment` | a little-endian word; may name a label, and may take a number off it: `.word name-1` |
+| `    .byte <name    ; comment` | one byte: the low byte of a label's address (`>name` the high byte); `<name-1` and `>name-1` are the halves of the address less one |
 | blank | nothing |
 
 A comment after code starts at `;` and runs to the end of the line.
@@ -141,7 +142,10 @@ vectors), `run` (a trace of the game running), a matcher's name, or
 | `@routine name kind=reset\|nmi\|irq\|brk\|call\|dispatch [entered=N] by=…` | the label that follows is a routine's entry, how it is entered, and from a run how many times; with `inside=$XXXX` no label follows: the entry is a byte inside the instruction at that address (code that overlaps itself, the `BIT` skip), which a listing of lines cannot label |
 | `@is pattern key=value ... by=match` | the label (or instruction) that follows is an instance of a pattern from the encyclopedia, with the evidence the matcher saw (below) |
 | `@table dispatch entries=N seen=M [on=$XXXX,...] by=run` | the `.word`s that follow are a jump engine's table, `N` entries as far as the run saw them taken and `M` of them taken; a word that ran says how often. `on=` are the bytes of RAM that `A` was made from at the call (the four that chose most often, busiest first): the game's mode, or an object's state. Absent when `A` came from a constant or the ROM |
-| `@table pointers entries=N seen=M [on=$XXXX,...] by=run` | the `.word`s that follow are a table of addresses a `JMP (ind)` of its own went through: found by where the pointer's two bytes were loaded from (the flow's `words`), from the lowest word the run saw taken to the highest, when the two bytes sat side by side in the ROM. `on=` is what the index that loaded the word was made from. A table of low bytes and another of high is not found this way |
+| `@table pointers entries=N seen=M [on=$XXXX,...] by=run` | the `.word`s that follow are a table of addresses a `JMP (ind)` of its own went through: found by where the pointer's two bytes were loaded from (the flow's `words`), from the lowest word the run saw taken to the highest, when the two bytes sat side by side in the ROM. `on=` is what the index that loaded the word was made from. A table of low bytes and another of high is not found this way (it is the two lines below) |
+| `@table returns entries=N seen=M [on=$XXXX,...] by=run` | the same for a return to an address the game pushed itself (`PHA`, `PHA`, `RTS`): each word is one less than where the return lands, so an entry with a label is written `.word name-1` |
+| `@table low entries=N seen=M high=$XXXX [on=$XXXX,...] [returns] by=run` | a table kept as two. The `N` lines that follow are the low bytes of its addresses, each `.byte <name` where the address has a label (a plain `.byte` where it has none); `high=` is where the high bytes are. Found when the two bytes of the address were loaded from the ROM and did not sit side by side: every pair the run saw taken the same distance apart, the two runs of bytes in one bank, not lying over each other, and none of it code or another table. With `returns` the jump was a return, and every entry is one less: `.byte <name-1` |
+| `@table high entries=N low=$XXXX [returns] by=run` | the other half: the `N` lines that follow are the high bytes, `.byte >name`, and `low=` is where the low bytes are. The counts are said once, beside the low bytes |
 | `@vectors` | the three words that follow are the NMI, reset and IRQ vectors |
 | `@ram variables=N arrays=M by=run` | after the PRG banks: the RAM the routines share, one `@array` per indexed base and one `@var` per byte |
 | `@array $XXXX slots=N sites=K [x=N] [y=N] by=run` | RAM an indexed instruction reached from this base across `N` bytes at most (as far as the run saw), `K` instructions indexing it: the object slots and the tables in RAM. `x=` and `y=` are how many of its bytes are positions the `position-compare` rule saw compared, by the coordinate they reached; a byte inside several arrays counts for the tightest one, so the loop that clears a page holds none |
@@ -194,6 +198,15 @@ follows is the table. The words after it are written as `.word` lines
 as far as the last entry the run saw taken, each taken one saying how
 often; a word past that is never taken for an entry, and the rest stays
 bytes. A table whose bytes something claimed as code is left as it was.
+
+A return to a pushed address is a jump through a table only when the
+address was not a call coming back. Two shapes are calls coming back,
+and the flow does not report them: a call made by hand (where to come
+back to is pushed, the routine is jumped to, and its `RTS` lands right
+after that `JMP`), and a return address taken off the stack, kept in
+memory and put back, which is how a game that runs several tasks gives
+one of them the processor again (the return lands right after a `JSR`
+that ran, and the address did not come out of the ROM).
 
 ## What the matchers write
 

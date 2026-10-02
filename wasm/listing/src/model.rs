@@ -64,7 +64,18 @@ pub enum Item {
     Note(String),
     Instr { op: u8, operand: Operand, comment: Option<String> },
     Bytes { bytes: Vec<u8>, comment: Option<String> },
-    Word { value: u16, label: Option<String>, comment: Option<String> },
+    /// `.word $1234`, `.word name` or `.word name-1`. `less` is what is
+    /// taken off the label's address: a table a return goes through holds
+    /// one less than where the return lands.
+    Word { value: u16, label: Option<String>, less: u16, comment: Option<String> },
+    /// `.byte <name` or `.byte >name`: the low or the high byte of a
+    /// label's address (less `less`), one entry of a table kept as two.
+    Half { label: String, high: bool, less: u16, comment: Option<String> },
+}
+
+/// How a label is written where something is taken off it: `name`, `name-1`.
+pub fn less_text(label: &str, less: u16) -> String {
+    if less == 0 { label.to_string() } else { format!("{label}-{less}") }
 }
 
 impl Item {
@@ -74,6 +85,7 @@ impl Item {
             Item::Instr { op, .. } => flow::ops::len(*op) as usize,
             Item::Bytes { bytes, .. } => bytes.len(),
             Item::Word { .. } => 2,
+            Item::Half { .. } => 1,
             _ => 0,
         }
     }

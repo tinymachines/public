@@ -39,7 +39,7 @@ pub fn shape(l: &Listing) -> Shape {
             Item::Directive { name, rest } => push("directive", format!("@{name} {rest}").trim_end().to_string()),
             Item::Prose(t) => push("prose", t.clone()),
             Item::Note(t) => push("note", t.clone()),
-            Item::Instr { comment: Some(c), .. } | Item::Bytes { comment: Some(c), .. } | Item::Word { comment: Some(c), .. } => push("comment", c.clone()),
+            Item::Instr { comment: Some(c), .. } | Item::Bytes { comment: Some(c), .. } | Item::Word { comment: Some(c), .. } | Item::Half { comment: Some(c), .. } => push("comment", c.clone()),
             _ => {}
         }
         off += item.len();

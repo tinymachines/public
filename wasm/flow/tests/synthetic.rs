@@ -61,6 +61,12 @@ impl T {
         self.s += 2;
     }
 
+    fn pha(&mut self, at: u16, v: u8) {
+        let s = self.s as u16;
+        self.ins(at, &[0x48], &[(0x100 | s, v, false)]);
+        self.s -= 1;
+    }
+
     fn pla(&mut self, at: u16) {
         let s = self.s as u16;
         self.ins(at, &[0x68], &[(0x100 | (s + 1), 0, true)]);
@@ -477,6 +483,131 @@ fn a_pointer_table_is_found_by_where_the_pointer_was_loaded() {
     assert_eq!(at(0x8508)["from"], serde_json::json!([[0x50, 1], [0x51, 1]]));
     assert_eq!(at(0x840a)["from"], serde_json::json!([]));
     assert_eq!(at(0x800d)["from"], serde_json::json!([]));
+    // The pointer put together from two tables says which two bytes it
+    // took: the low one at PRG $1102 and the high one at $1202. The
+    // others took no such pair, and none of the three was a return.
+    assert_eq!(at(0x840a)["halves"], serde_json::json!([[0x1102, 0x1202, 1]]));
+    assert_eq!(at(0x800d)["halves"], serde_json::json!([]));
+    assert_eq!(at(0x8508)["halves"], serde_json::json!([]));
+    for a in [0x800d, 0x840a, 0x8508] {
+        assert_eq!(at(a)["ret"], false, "${a:04X}");
+    }
+}
+
+#[test]
+fn a_return_to_a_pushed_address_is_a_jump_through_a_table() {
+    let mut t = T { out: Vec::new(), s: 0xfd };
+    t.ins(0x8000, &[0x78], &[]);
+    // A routine that pushes an address from a table of words and
+    // returns to it: the word at $9002 holds $83FF, one less than where
+    // the return lands. The mode at $40 picks the word.
+    t.jsr(0x8001, 0x8100);
+    t.ins(0x8100, &[0xa6, 0x40], &[(0x0040, 2, true)]);
+    t.ins(0x8102, &[0xbd, 0x01, 0x90], &[(0x9003, 0x83, true)]);
+    t.pha(0x8105, 0x83);
+    t.ins(0x8106, &[0xbd, 0x00, 0x90], &[(0x9002, 0xff, true)]);
+    t.pha(0x8109, 0xff);
+    t.rts(0x810a);
+    // Where it lands is a routine of its own, and its RTS goes back to
+    // whoever called the one that pushed.
+    t.ins(0x8400, &[0xe6, 0x11], &[(0x0011, 1, true), (0x0011, 2, false)]);
+    t.rts(0x8402);
+    // The same from a table of high bytes at $9200 and one of low bytes
+    // at $9100.
+    t.jsr(0x8004, 0x8200);
+    t.ins(0x8200, &[0xa6, 0x40], &[(0x0040, 2, true)]);
+    t.ins(0x8202, &[0xbd, 0x00, 0x92], &[(0x9202, 0x84, true)]);
+    t.pha(0x8205, 0x84);
+    t.ins(0x8206, &[0xbd, 0x00, 0x91], &[(0x9102, 0xff, true)]);
+    t.pha(0x8209, 0xff);
+    t.rts(0x820a);
+    t.rts(0x8500);
+    // Not one: a byte pushed and pulled, then a call whose own return
+    // address lands on the byte the PHA wrote. That RTS goes back where
+    // it was called from.
+    t.ins(0x8007, &[0xa9, 0x01], &[]);
+    t.pha(0x8009, 0x01);
+    t.pla(0x800a);
+    t.pha(0x800b, 0x01);
+    t.pha(0x800c, 0x01);
+    t.pla(0x800d);
+    t.pla(0x800e);
+    t.jsr(0x800f, 0x8600);
+    t.rts(0x8600);
+    // Not one either: a call made by hand. Where to come back to is
+    // pushed, the routine is jumped to, and its RTS lands right after
+    // that JMP.
+    t.ins(0x8012, &[0xa9, 0x80], &[]);
+    t.pha(0x8014, 0x80);
+    t.ins(0x8015, &[0xa9, 0x1a], &[]);
+    t.pha(0x8017, 0x1a);
+    t.ins(0x8018, &[0x4c, 0x00, 0x87], &[]);
+    t.ins(0x8700, &[0xea], &[]);
+    t.rts(0x8701);
+    // Nor this: a routine that takes its own return address off the
+    // stack, keeps it in memory, puts it back and returns. That is the
+    // call at $801B coming back, as a task switcher does it.
+    t.jsr(0x801b, 0x8800);
+    t.pla(0x8800);
+    t.ins(0x8801, &[0x85, 0x60], &[(0x0060, 0x1d, false)]);
+    t.pla(0x8803);
+    t.ins(0x8804, &[0x85, 0x61], &[(0x0061, 0x80, false)]);
+    t.ins(0x8806, &[0xa5, 0x61], &[(0x0061, 0x80, true)]);
+    t.pha(0x8808, 0x80);
+    t.ins(0x8809, &[0xa5, 0x60], &[(0x0060, 0x1d, true)]);
+    t.pha(0x880b, 0x1d);
+    t.rts(0x880c);
+    // But a table's entry may sit right after a call too. The routine
+    // at $83F0 ends in a call at $83FD and falls into $8400; taken
+    // through the table once more after that call has run, it is still
+    // the table's.
+    t.jsr(0x801e, 0x83f0);
+    t.ins(0x83f0, &[0xea], &[]);
+    t.jsr(0x83fd, 0x8600);
+    t.rts(0x8600);
+    t.ins(0x8400, &[0xe6, 0x11], &[(0x0011, 2, true), (0x0011, 3, false)]);
+    t.rts(0x8402);
+    t.jsr(0x8021, 0x8100);
+    t.ins(0x8100, &[0xa6, 0x40], &[(0x0040, 2, true)]);
+    t.ins(0x8102, &[0xbd, 0x01, 0x90], &[(0x9003, 0x83, true)]);
+    t.pha(0x8105, 0x83);
+    t.ins(0x8106, &[0xbd, 0x00, 0x90], &[(0x9002, 0xff, true)]);
+    t.pha(0x8109, 0xff);
+    t.rts(0x810a);
+    t.ins(0x8400, &[0xe6, 0x11], &[(0x0011, 3, true), (0x0011, 4, false)]);
+    t.rts(0x8402);
+    t.ins(0x8024, &[0x4c, 0x24, 0x80], &[]);
+    let mut f = flow::Flow::new(0x8000);
+    f.feed(&t.out);
+    let r: Value = serde_json::from_str(&f.report()).unwrap();
+    let all = r["dispatch"].as_array().unwrap();
+    let at = |addr: u16| all.iter().find(|d| d["addr"] == addr).unwrap_or_else(|| panic!("no dispatch at ${addr:04X}")).clone();
+    // Two returns were jumps, and only two: the calls' own were not.
+    assert_eq!(all.len(), 2, "{all:?}");
+    // The word at PRG $1002, chosen by the byte at $40, taken by a
+    // return: twice, the second time after a call had run just before
+    // where it lands.
+    assert_eq!(at(0x810a)["words"], serde_json::json!([[0x1002, 2]]));
+    assert_eq!(at(0x810a)["on"], serde_json::json!([[0x40, 2]]));
+    assert_eq!(at(0x810a)["ret"], true);
+    assert_eq!(at(0x810a)["halves"], serde_json::json!([]));
+    // The two tables: the low byte at PRG $1102, the high at $1202.
+    assert_eq!(at(0x820a)["words"], serde_json::json!([]));
+    assert_eq!(at(0x820a)["halves"], serde_json::json!([[0x1102, 0x1202, 1]]));
+    assert_eq!(at(0x820a)["on"], serde_json::json!([[0x40, 1]]));
+    assert_eq!(at(0x820a)["ret"], true);
+    // Where each landed is a routine entered through a table, once, and
+    // the routines that pushed were entered by their calls.
+    for (a, n) in [(0x8400, 2), (0x8500, 1)] {
+        assert_eq!(routine(&r, "dispatch", a)["entered"], n, "${a:04X}");
+    }
+    for (a, n) in [(0x8100, 2), (0x8200, 1), (0x8600, 2), (0x8800, 1), (0x83f0, 1)] {
+        assert_eq!(routine(&r, "call", a)["entered"], n, "${a:04X}");
+    }
+    // The call stack came through whole: the loop at the end runs in
+    // the routine the reset entered, not in something left open.
+    let reset = routine(&r, "reset", 0x8000);
+    assert!(r["sites"].as_array().unwrap().iter().any(|s| s["addr"] == 0x8024 && s["routine"] == reset["id"]), "the last instruction is not the reset routine's");
 }
 
 #[test]

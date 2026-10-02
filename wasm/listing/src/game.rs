@@ -67,7 +67,19 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                             pending_routine = Some(r);
                         }
                     }
-                    "table" => table = Some((json!({"bank": bank_name, "addr": at[i], "kind": words.first().cloned().unwrap_or_default(), "entries": kv.get("entries").cloned().unwrap_or(json!(0)), "seen": kv.get("seen").cloned().unwrap_or(json!(0)), "on": kv.get("on").and_then(Value::as_str).map(|s| s.split(',').map(Value::from).collect::<Vec<_>>()).unwrap_or_default()}), kv.get("entries").and_then(Value::as_u64).unwrap_or(0) as usize, Vec::new())),
+                    // The high bytes of a table kept as two are the other
+                    // half of the table its low bytes already named.
+                    "table" if words.first().map(String::as_str) == Some("high") => table = None,
+                    "table" => {
+                        let mut t = json!({"bank": bank_name, "addr": at[i], "kind": words.first().cloned().unwrap_or_default(), "entries": kv.get("entries").cloned().unwrap_or(json!(0)), "seen": kv.get("seen").cloned().unwrap_or(json!(0)), "on": kv.get("on").and_then(Value::as_str).map(|s| s.split(',').map(Value::from).collect::<Vec<_>>()).unwrap_or_default()});
+                        if let Some(high) = kv.get("high") {
+                            t["high"] = high.clone();
+                        }
+                        if words.iter().any(|w| w == "returns") {
+                            t["returns"] = json!(true);
+                        }
+                        table = Some((t, kv.get("entries").and_then(Value::as_u64).unwrap_or(0) as usize, Vec::new()));
+                    }
                     "array" => {
                         let mut a = json!({"base": words.first().cloned().unwrap_or_default(), "slots": kv.get("slots").cloned().unwrap_or(json!(0)), "sites": kv.get("sites").cloned().unwrap_or(json!(0))});
                         for k in ["x", "y"] {
@@ -105,7 +117,7 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                 }
                 pending_is.clear();
             }
-            Item::Word { value, label, comment } => {
+            Item::Word { value, label, comment, .. } => {
                 if let Some((_, n, words)) = table.as_mut() {
                     words.push(json!({"addr": value, "label": label, "ran": comment.as_deref().and_then(|c| c.strip_prefix("ran ")).and_then(|c| c.parse::<u64>().ok())}));
                     if words.len() == *n {
@@ -113,6 +125,25 @@ pub fn game(l: &Listing) -> Result<Value, String> {
                         t["words"] = Value::Array(words);
                         tables.push(t);
                     }
+                }
+            }
+            // An entry of a table kept as two: the low byte of a label's
+            // address, or a plain byte where the target has no label.
+            Item::Half { .. } | Item::Bytes { .. } if table.as_ref().is_some_and(|t| t.0["kind"] == "low") => {
+                let (label, comment) = match item {
+                    Item::Half { label, comment, .. } => (Some(label.clone()), comment),
+                    Item::Bytes { bytes, comment } if bytes.len() == 1 => (None, comment),
+                    _ => {
+                        table = None;
+                        continue;
+                    }
+                };
+                let (_, n, words) = table.as_mut().unwrap();
+                words.push(json!({"label": label, "ran": comment.as_deref().and_then(|c| c.strip_prefix("ran ")).and_then(|c| c.parse::<u64>().ok())}));
+                if words.len() == *n {
+                    let (mut t, _, words) = table.take().unwrap();
+                    t["words"] = Value::Array(words);
+                    tables.push(t);
                 }
             }
             _ => {}

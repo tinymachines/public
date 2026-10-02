@@ -60,10 +60,16 @@
 //! they were taken off. That survives the tricks a game plays with its
 //! stack: a jump engine that pulls its own return address and jumps
 //! through a table leaves its frame at the second pull, and the table's
-//! target is a frame of its own that the caller's RTS ends. A return that goes somewhere other than
-//! where it was called from (the "RTS trick", pushing an address and
-//! returning to it) is followed as a return and NOT seen as a dispatch;
-//! that is a gap, said here and in the page.
+//! target is a frame of its own that the caller's RTS ends. A return to
+//! an address the game pushed itself (the "RTS trick": two PHAs and an
+//! RTS) is a dispatch like a `JMP (ind)`, with one difference the report
+//! says (`ret`): what the ROM holds is one less than where it lands. It
+//! is told from a call coming back, which pushes too: a call made by
+//! hand lands right after the JMP that followed the pushes, and a
+//! return address a task switcher saved and put back lands right after
+//! a JSR that ran, with an address that did not come out of the ROM.
+//! Neither is reported. An address put together from a table of low
+//! bytes and one of high bytes is reported as the pair it was (`halves`).
 //!
 //! No die data is embedded here, so this crate is MIT, like halfphi.
 
@@ -248,6 +254,14 @@ struct Dispatch {
     on: HashMap<u16, u64>,
     /// The cells of RAM a `JMP (ind)`'s pointer was copied from.
     from: HashMap<u16, u64>,
+    /// The two bytes of the ROM the address was loaded from when they
+    /// did not sit side by side: (the low byte's PRG offset, the high
+    /// byte's), with how often each pair was taken. A table of low
+    /// bytes and one of high bytes.
+    halves: HashMap<(u32, u32), u64>,
+    /// The way was taken by a return to a pushed address, so what the
+    /// ROM holds is one less than where it went.
+    ret: bool,
 }
 
 pub struct Flow {
@@ -302,6 +316,22 @@ pub struct Flow {
     /// What chose a `JMP (ind)` that took no one word.
     /// And of those, the cells the pointer was copied from.
     jump_by: (Src, Src),
+    /// The two bytes it took instead, when both came from the ROM and
+    /// were not neighbours there.
+    jump_halves: Option<(u32, u32)>,
+    /// Which bytes of the stack page a PHA wrote last, by the number of
+    /// the instruction that did (0: something else wrote it): an address
+    /// a return finds there was put there by the game, not by a call.
+    pha: [u64; 256],
+    /// The last JMP run at each height of the stack: its number, and the
+    /// address after it.
+    jumped: [(u64, u16); 256],
+    /// The RTS just run returned to such an address.
+    returned_to_pushed: bool,
+    /// And a JMP ran at that height after the pushes: the address after
+    /// it. A return that lands there is a call made by hand coming back
+    /// (push where to come back to, jump to the routine), not a jump.
+    came_back_to: Option<u16>,
     /// Stores by (cell the value came from, page of the cell stored to,
     /// that cell's address mod 4): 2048 by 32.
     feeds: Vec<u32>,
@@ -360,6 +390,11 @@ impl Flow {
             rom_of: vec![(u32::MAX, Src::default()); 0x800],
             jump_word: None,
             jump_by: (Src::default(), Src::default()),
+            jump_halves: None,
+            pha: [0; 256],
+            jumped: [(0, 0); 256],
+            returned_to_pushed: false,
+            came_back_to: None,
             feeds: vec![0; 0x800 * 32],
             meets: HashMap::new(),
             together: HashSet::new(),
@@ -595,6 +630,25 @@ impl Flow {
             Pending::Interrupt(e) => Some((e, None)),
             Pending::Dispatch(site, at) => Some((Entry::Dispatch, Some((site, at)))),
         };
+        // A return to a pushed address is not a jump through a table when
+        // it is a call coming back: one made by hand (where to come back
+        // to was pushed, then the routine jumped to), or a JSR whose
+        // return address the game took off the stack, kept in memory and
+        // put back (a task given the processor again). The second is
+        // told by a JSR having run just before where the return lands,
+        // and by the address not having come out of the ROM.
+        let saved_return = self.jump_word.is_none() && self.jump_halves.is_none() && self.chose.contains_key(&key.wrapping_sub(3));
+        let entered = match entered {
+            Some((Entry::Dispatch, _)) if self.returned_to_pushed && (self.came_back_to == Some(addr) || saved_return) => {
+                self.pending = Pending::None;
+                self.returned_to_pushed = false;
+                self.jump_word = None;
+                self.jump_halves = None;
+                self.jump_by = (Src::default(), Src::default());
+                None
+            }
+            e => e,
+        };
         let pending = std::mem::replace(&mut self.pending, Pending::None);
         if let Some((entry, from)) = entered {
             if entry == Entry::Reset {
@@ -620,7 +674,12 @@ impl Flow {
                 let site_is_jump = !self.chose.contains_key(&site);
                 let word = self.jump_word.take();
                 let (by, copied) = std::mem::take(&mut self.jump_by);
-                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), words: HashMap::new(), on: HashMap::new(), from: HashMap::new() });
+                let halves = self.jump_halves.take();
+                let ret = std::mem::take(&mut self.returned_to_pushed);
+                let d = self.dispatch.entry(site).or_insert(Dispatch { key: site, addr: at, depth_min: depth, targets: HashMap::new(), timeline: Vec::new(), words: HashMap::new(), on: HashMap::new(), from: HashMap::new(), halves: HashMap::new(), ret });
+                if let Some(pair) = halves {
+                    *d.halves.entry(pair).or_insert(0) += 1;
+                }
                 for &cell in chose.cells() {
                     *d.on.entry(cell).or_insert(0) += 1;
                 }
@@ -740,18 +799,51 @@ impl Flow {
         for &(_, read, cell) in &c.accesses {
             if !read && cell != 0xffff {
                 self.rom_of[cell as usize] = match name {
-                    "STA" => self.rom_reg[A],
+                    "STA" | "PHA" => self.rom_reg[A],
                     "STX" => self.rom_reg[X],
                     "STY" => self.rom_reg[Y],
                     _ => NONE,
                 };
+                if (0x0100..0x0200).contains(&cell) {
+                    self.pha[(cell & 0xff) as usize] = if name == "PHA" { self.instructions.max(1) } else { 0 };
+                }
             }
         }
-        if c.op == ops::JMP_IND && !interrupt {
-            let pointer: Vec<u16> = c.accesses.iter().filter(|a| a.1 && a.2 != 0xffff).map(|a| a.2).collect();
+        // Where an indirect jump's address was read from: the pointer of
+        // a `JMP (ind)`, or the two bytes an RTS pulled when the game
+        // pushed them itself (low byte first on the way up).
+        let pointer: Option<Vec<u16>> = if interrupt {
+            None
+        } else if c.op == ops::JMP_IND {
+            Some(c.accesses.iter().filter(|a| a.1 && a.2 != 0xffff).map(|a| a.2).collect())
+        } else if c.op == ops::RTS {
+            let pulled: Vec<u16> = c.accesses.iter().filter(|a| a.1 && (0x0100..0x0200).contains(&a.2)).map(|a| a.2).collect();
+            let two = &pulled[pulled.len().saturating_sub(2)..];
+            (two.len() == 2 && two.iter().all(|&p| self.pha[(p & 0xff) as usize] != 0)).then(|| two.to_vec())
+        } else {
+            None
+        };
+        if let (false, "JMP", Some(s)) = (interrupt, name, c.s) {
+            self.jumped[s as usize] = (self.instructions.max(1), c.addr.wrapping_add(3));
+        }
+        self.returned_to_pushed = c.op == ops::RTS && pointer.is_some();
+        self.came_back_to = match (&pointer, c.s) {
+            (Some(p), Some(s)) if self.returned_to_pushed => {
+                let pushed = p.iter().map(|&p| self.pha[(p & 0xff) as usize]).max().unwrap_or(0);
+                let (when, next) = self.jumped[s as usize];
+                (when > pushed).then_some(next)
+            }
+            _ => None,
+        };
+        if let Some(pointer) = pointer {
             let mut cells = pointer.iter().map(|&p| self.rom_of[p as usize]);
-            self.jump_word = match (cells.next(), cells.next()) {
+            let (lo, hi) = (cells.next(), cells.next());
+            self.jump_word = match (lo, hi) {
                 (Some(lo), Some(hi)) if lo.0 != u32::MAX && hi.0 == lo.0 + 1 => Some(lo),
+                _ => None,
+            };
+            self.jump_halves = match (lo, hi) {
+                (Some(lo), Some(hi)) if self.jump_word.is_none() && lo.0 != u32::MAX && hi.0 != u32::MAX => Some((lo.0, hi.0)),
                 _ => None,
             };
             // What chose, when no one word did: the index into the tables
@@ -965,7 +1057,7 @@ impl Flow {
             Pending::Interrupt(e)
         } else if c.op == ops::JSR {
             Pending::Call(c.key, c.addr)
-        } else if c.op == ops::JMP_IND {
+        } else if c.op == ops::JMP_IND || self.returned_to_pushed {
             match self.orphan.take() {
                 Some((site, at, n)) if self.instructions - n < 64 => Pending::Dispatch(site, at),
                 _ => Pending::Dispatch(c.key, c.addr),
@@ -1116,7 +1208,9 @@ impl Flow {
                 let mut on: Vec<_> = d.on.iter().filter(|(a, _)| self.carried[**a as usize] * 2 >= self.touched[**a as usize]).map(|(a, n)| (*a, *n)).collect();
                 on.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
                 on.truncate(8);
-                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), words, on, from: {
+                let mut halves: Vec<_> = d.halves.iter().map(|(k, n)| (k.0, k.1, *n)).collect();
+                halves.sort();
+                DispatchOut { key: d.key, addr: d.addr, depth: d.depth_min, targets, timeline: d.timeline.clone(), words, on, halves, ret: d.ret, from: {
                     let mut from: Vec<_> = d.from.iter().map(|(a, n)| (*a, *n)).collect();
                     from.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
                     from.truncate(64);
@@ -1537,6 +1631,13 @@ struct DispatchOut {
     /// The cells of RAM a `JMP (ind)`'s pointer was copied from, the
     /// sixty-four busiest: a handler's address kept in memory.
     from: Vec<(u16, u64)>,
+    /// The pairs of bytes the address was loaded from when it came from
+    /// a table of low bytes and one of high bytes: (PRG offset of the
+    /// low byte, of the high byte, times taken).
+    halves: Vec<(u32, u32, u64)>,
+    /// The way was taken by a return to an address the game pushed
+    /// itself. What the ROM holds is then one less than the target.
+    ret: bool,
 }
 
 #[derive(Serialize)]

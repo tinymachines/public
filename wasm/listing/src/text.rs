@@ -52,9 +52,17 @@ pub fn write(l: &Listing) -> String {
                 out.push_str(&s);
                 out.push('\n');
             }
-            Item::Word { value, label, comment } => {
-                let v = label.clone().unwrap_or_else(|| format!("${value:04X}"));
+            Item::Word { value, label, less, comment } => {
+                let v = label.as_ref().map(|l| crate::model::less_text(l, *less)).unwrap_or_else(|| format!("${value:04X}"));
                 let mut s = format!("    .word {v}");
+                if let Some(c) = comment {
+                    s = format!("{s:<32}; {c}");
+                }
+                out.push_str(&s);
+                out.push('\n');
+            }
+            Item::Half { label, high, less, comment } => {
+                let mut s = format!("    .byte {}{}", if *high { '>' } else { '<' }, crate::model::less_text(label, *less));
                 if let Some(c) = comment {
                     s = format!("{s:<32}; {c}");
                 }
@@ -124,6 +132,19 @@ fn number(s: &str, line: usize) -> Result<u16, ParseError> {
     } else {
         s.parse::<u16>().map_err(|_| err(line, format!("not a number: {s}")))
     }
+}
+
+/// A label, or a label with a number taken off it: `name`, `name-1`.
+fn label_less(tok: &str, line: usize) -> Result<(String, u16), ParseError> {
+    let tok = tok.trim();
+    let (name, less) = match tok.split_once('-') {
+        Some((name, n)) => (name, n.parse::<u16>().map_err(|_| err(line, format!("what is taken off a label is a number: {tok}")))?),
+        None => (tok, 0),
+    };
+    if !is_label(name) {
+        return Err(err(line, format!("not a label name: {name}")));
+    }
+    Ok((name.to_string(), less))
 }
 
 fn is_label(s: &str) -> bool {
@@ -310,6 +331,13 @@ pub fn parse(src: &str) -> Result<Listing, ParseError> {
         }
         let (body, comment) = split_comment(s.trim());
         if let Some(list) = body.strip_prefix(".byte") {
+            // One half of a label's address: `<name` the low byte, `>name` the high.
+            let half = list.trim();
+            if let Some(high) = half.chars().next().and_then(|c| match c { '<' => Some(false), '>' => Some(true), _ => None }) {
+                let (label, less) = label_less(&half[1..], line)?;
+                items.push(Item::Half { label, high, less, comment });
+                continue;
+            }
             let mut bytes = Vec::new();
             for tok in list.split(',') {
                 let v = number(tok, line)?;
@@ -326,11 +354,16 @@ pub fn parse(src: &str) -> Result<Listing, ParseError> {
         }
         if let Some(w) = body.strip_prefix(".word") {
             let w = w.trim();
-            let (value, label) = match addr(w, line)? {
-                Addr::Zp(v) | Addr::Abs(v) => (v, None),
-                Addr::Label(l) => (0, Some(l)),
+            let (value, label, less) = if w.starts_with('$') {
+                match addr(w, line)? {
+                    Addr::Zp(v) | Addr::Abs(v) => (v, None, 0),
+                    Addr::Label(l) => (0, Some(l), 0),
+                }
+            } else {
+                let (l, less) = label_less(w, line)?;
+                (0, Some(l), less)
             };
-            items.push(Item::Word { value, label, comment });
+            items.push(Item::Word { value, label, less, comment });
             continue;
         }
         let (mnem, rest) = body.split_once(char::is_whitespace).unwrap_or((body, ""));

@@ -65,6 +65,13 @@ pub struct Dispatch {
     pub words: Vec<(usize, u64)>,
     /// The cells of RAM a `JMP (ind)`'s pointer was copied from.
     pub from: Vec<(u16, u64)>,
+    /// The two bytes the address was loaded from when they did not sit
+    /// side by side: the PRG offset of the low byte, of the high byte,
+    /// and how often the pair was taken. A table kept as two.
+    pub halves: Vec<(usize, usize, u64)>,
+    /// The way was taken by a return to a pushed address: what the ROM
+    /// holds is one less than where it went.
+    pub ret: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -226,7 +233,8 @@ impl Run {
             let words = d["words"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as usize, u(m.get(1)?))) }).filter(|w| w.0 + 1 < prg_len).collect();
             let from = d["from"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as u16, u(m.get(1)?))) }).collect();
             let on = d["on"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as u16, u(m.get(1)?))) }).collect();
-            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on, words, from });
+            let halves = d["halves"].as_array().unwrap_or(&none).iter().filter_map(|m| { let m = m.as_array()?; Some((u(m.first()?) as usize, u(m.get(1)?) as usize, u(m.get(2)?))) }).filter(|h| h.0 < prg_len && h.1 < prg_len).collect();
+            run.dispatch.push(Dispatch { offset: key, addr: u(&d["addr"]) as u16, targets, switches: d["timeline"].as_array().map_or(0, |t| t.len() as u64), on, words, from, halves, ret: d["ret"].as_bool().unwrap_or(false) });
         }
         for l in v["loops"].as_array().unwrap_or(&none) {
             let (head, tail) = (l["head"].as_u64().unwrap_or(u64::MAX) as usize, l["tail"].as_u64().unwrap_or(u64::MAX) as usize);
@@ -349,6 +357,13 @@ impl Run {
                         match x.words.iter_mut().find(|t| t.0 == k) {
                             Some(t) => t.1 += n,
                             None => x.words.push((k, n)),
+                        }
+                    }
+                    x.ret |= d.ret;
+                    for (lo, hi, n) in d.halves {
+                        match x.halves.iter_mut().find(|t| t.0 == lo && t.1 == hi) {
+                            Some(t) => t.2 += n,
+                            None => x.halves.push((lo, hi, n)),
                         }
                     }
                     for (a, n) in d.from {

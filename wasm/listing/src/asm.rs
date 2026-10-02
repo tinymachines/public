@@ -120,8 +120,15 @@ pub fn assemble(l: &Listing) -> Result<Rom, AsmError> {
                 }
                 out[base..base + bytes.len()].copy_from_slice(bytes);
             }
-            Item::Word { value, label, .. } => {
-                let v = resolve(label, *value)?;
+            Item::Half { label, high, less, .. } => {
+                let v = resolve(&Some(label.clone()), 0)?.wrapping_sub(*less);
+                if base + 1 > out.len() {
+                    return Err(AsmError { item: i, what: "byte runs past the ROM".into() });
+                }
+                out[base] = if *high { (v >> 8) as u8 } else { v as u8 };
+            }
+            Item::Word { value, label, less, .. } => {
+                let v = resolve(label, *value)?.wrapping_sub(if label.is_some() { *less } else { 0 });
                 if base + 2 > out.len() {
                     return Err(AsmError { item: i, what: "word runs past the ROM".into() });
                 }

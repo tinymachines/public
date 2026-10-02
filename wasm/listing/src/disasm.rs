@@ -343,7 +343,9 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         // bank and none of the bytes is code.
         // By where it starts: entries, the targets seen with how often,
         // what chose, and the kind.
-        type Table = (usize, BTreeMap<u16, u64>, String, &'static str);
+        // And what is taken off: a table a return goes through holds one
+        // less than each target.
+        type Table = (usize, BTreeMap<u16, u64>, String, &'static str, u16);
         let mut tables: BTreeMap<usize, Table> = BTreeMap::new();
         // What chose, the four busiest cells, busiest first.
         let chosen = |d: &crate::run::Dispatch| -> String {
@@ -353,6 +355,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         };
         for d in &dispatches {
             let start = d.offset - offset + 3;
+            let less = d.ret as u16;
             let seen: BTreeMap<u16, u64> = d.targets.iter().map(|t| (t.1, t.2)).collect();
             let end = if has_vectors { vec_at } else { len };
             let mut last = None;
@@ -360,7 +363,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 if start + 2 * k + 1 >= end {
                     break;
                 }
-                let w = u16::from_le_bytes([bytes[start + 2 * k], bytes[start + 2 * k + 1]]);
+                let w = u16::from_le_bytes([bytes[start + 2 * k], bytes[start + 2 * k + 1]]).wrapping_add(less);
                 if walk.addr(w).is_none() {
                     break;
                 }
@@ -370,7 +373,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             }
             if let Some(last) = last {
                 if (start..start + 2 * (last + 1)).all(|i| walk.claim[i] == 0) {
-                    tables.insert(start, (last + 1, seen, chosen(d), "dispatch"));
+                    tables.insert(start, (last + 1, seen, chosen(d), "dispatch", less));
                 }
             }
         }
@@ -379,8 +382,14 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
         // they sit two bytes apart and none of the bytes between is
         // code, a vector or a jump engine's table. Two jumps whose words
         // overlap share one table.
-        let mut pointers: Vec<(usize, usize, BTreeMap<u16, u64>, String)> = Vec::new();
-        for d in run.map(|r| r.dispatch.iter().filter(|d| rom.prg.get(d.offset) == Some(&ops::JMP_IND)).collect::<Vec<_>>()).unwrap_or_default() {
+        // A return to a pushed address goes through such a table too,
+        // and that table holds one less than each target (`returns`).
+        // From, to, the targets seen, what chose, what is taken off.
+        type Pointers = (usize, usize, BTreeMap<u16, u64>, String, u16);
+        let mut pointers: Vec<Pointers> = Vec::new();
+        let own = |d: &&crate::run::Dispatch| matches!(rom.prg.get(d.offset), Some(&ops::JMP_IND) | Some(&ops::RTS));
+        for d in run.map(|r| r.dispatch.iter().filter(own).collect::<Vec<_>>()).unwrap_or_default() {
+            let less = d.ret as u16;
             let took: Vec<(usize, u64)> = d.words.iter().filter(|w| w.0 >= offset && w.0 + 1 < offset + len).map(|w| (w.0 - offset, w.1)).collect();
             let (Some(mut first), Some(last)) = (took.iter().map(|w| w.0).min(), took.iter().map(|w| w.0).max()) else { continue };
             if took.iter().any(|w| (w.0 - first) % 2 != 0) {
@@ -389,11 +398,11 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
             let mut end = last + 2;
             let mut seen: BTreeMap<u16, u64> = BTreeMap::new();
             for &(k, n) in &took {
-                *seen.entry(u16::from_le_bytes([bytes[k], bytes[k + 1]])).or_insert(0) += n;
+                *seen.entry(u16::from_le_bytes([bytes[k], bytes[k + 1]]).wrapping_add(less)).or_insert(0) += n;
             }
             let mut on = chosen(d);
             // One already found that this one overlaps, in step with it.
-            while let Some(i) = pointers.iter().position(|p| p.0 < end && first < p.1 && p.0 % 2 == first % 2) {
+            while let Some(i) = pointers.iter().position(|p| p.0 < end && first < p.1 && p.0 % 2 == first % 2 && p.4 == less) {
                 let p = pointers.remove(i);
                 first = first.min(p.0);
                 end = end.max(p.1);
@@ -404,13 +413,70 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                     on = p.3;
                 }
             }
-            pointers.push((first, end, seen, on));
+            pointers.push((first, end, seen, on, less));
         }
-        for (first, end, seen, on) in pointers {
+        for (first, end, seen, on, less) in pointers {
             let entries = (end - first) / 2;
             let clear = entries <= 256 && (!has_vectors || end <= vec_at) && (first..end).all(|i| walk.claim[i] == 0) && !tables.iter().any(|(&s, t)| s < end && first < s + 2 * t.0);
             if clear {
-                tables.insert(first, (entries, seen, on, "pointers"));
+                tables.insert(first, (entries, seen, on, if less == 0 { "pointers" } else { "returns" }, less));
+            }
+        }
+        // A table kept as two: the low bytes of the addresses in one run
+        // of bytes and the high bytes in another, the same distance apart
+        // for every entry the run saw taken. From the lowest entry to
+        // the highest seen, when both runs are in this bank, neither
+        // overlaps the other, and nothing in them is code, a vector or
+        // another table. Two jumps through the same pair
+        // share it. By where the low bytes start: entries, where the
+        // high bytes start, the targets seen, what chose, what is taken off.
+        type Split = (usize, usize, usize, BTreeMap<u16, u64>, String, u16);
+        let mut split: Vec<Split> = Vec::new();
+        for d in run.map(|r| r.dispatch.iter().filter(|d| !d.halves.is_empty()).collect::<Vec<_>>()).unwrap_or_default() {
+            let less = d.ret as u16;
+            let here = |k: usize| k >= offset && k < offset + len;
+            if !d.halves.iter().all(|h| here(h.0) && here(h.1)) {
+                continue;
+            }
+            let apart = d.halves[0].1 as isize - d.halves[0].0 as isize;
+            if d.halves.iter().any(|h| h.1 as isize - h.0 as isize != apart) {
+                continue;
+            }
+            let mut first = d.halves.iter().map(|h| h.0 - offset).min().unwrap();
+            let mut end = d.halves.iter().map(|h| h.0 - offset).max().unwrap() + 1;
+            let mut seen: BTreeMap<u16, u64> = BTreeMap::new();
+            for &(lo, hi, n) in &d.halves {
+                *seen.entry(u16::from_le_bytes([rom.prg[lo], rom.prg[hi]]).wrapping_add(less)).or_insert(0) += n;
+            }
+            let mut on = chosen(d);
+            while let Some(i) = split.iter().position(|p| p.0 <= end && first <= p.0 + p.1 && (p.2 as isize - p.0 as isize) == apart && p.5 == less) {
+                let p = split.remove(i);
+                first = first.min(p.0);
+                end = end.max(p.0 + p.1);
+                for (w, n) in p.3 {
+                    *seen.entry(w).or_insert(0) += n;
+                }
+                if on.is_empty() {
+                    on = p.4;
+                }
+            }
+            split.push((first, end - first, (first as isize + apart) as usize, seen, on, less));
+        }
+        // Each run by where it starts: entries, where the other run starts,
+        // whether this is the high one, then as above.
+        type Half = (usize, usize, bool, BTreeMap<u16, u64>, String, u16);
+        let mut halves: BTreeMap<usize, Half> = BTreeMap::new();
+        for (low, entries, high, seen, on, less) in split {
+            let free = |from: usize| {
+                from + entries <= if has_vectors { vec_at } else { len }
+                    && (from..from + entries).all(|i| walk.claim[i] == 0)
+                    && !tables.iter().any(|(&s, t)| s < from + entries && from < s + 2 * t.0)
+                    && !halves.iter().any(|(&s, t)| s < from + entries && from < s + t.0)
+            };
+            let apart = low.abs_diff(high);
+            if entries <= 256 && apart >= entries && free(low) && free(high) {
+                halves.insert(low, (entries, high, false, seen.clone(), on, less));
+                halves.insert(high, (entries, low, true, seen, String::new(), less));
             }
         }
         for (&a, name) in &label_names {
@@ -456,15 +522,39 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 }
                 items.push(Item::Label(name.clone()));
             }
-            if let Some((entries, seen, on, kind)) = tables.get(&i) {
+            if let Some((entries, seen, on, kind, less)) = tables.get(&i) {
                 flush(&mut run_bytes, &mut items);
                 last_count = None;
                 items.push(Item::Directive { name: "table".into(), rest: format!("{kind} entries={entries} seen={}{on} by=run", seen.len()) });
                 for k in 0..*entries {
                     let w = u16::from_le_bytes([bytes[i + 2 * k], bytes[i + 2 * k + 1]]);
-                    items.push(Item::Word { value: w, label: label_names.get(&w).cloned(), comment: seen.get(&w).map(|n| format!("ran {n}")) });
+                    let t = w.wrapping_add(*less);
+                    let label = label_names.get(&t).cloned();
+                    items.push(Item::Word { value: w, less: if label.is_some() { *less } else { 0 }, label, comment: seen.get(&t).map(|n| format!("ran {n}")) });
                 }
                 i += 2 * entries;
+                continue;
+            }
+            if let Some((entries, other, high, seen, on, less)) = halves.get(&i) {
+                flush(&mut run_bytes, &mut items);
+                last_count = None;
+                let pair = format!("${:04X}", org.wrapping_add(*other as u16));
+                let returns = if *less == 0 { "" } else { " returns" };
+                items.push(Item::Directive {
+                    name: "table".into(),
+                    rest: if *high { format!("high entries={entries} low={pair}{returns} by=run") } else { format!("low entries={entries} seen={} high={pair}{on}{returns} by=run", seen.len()) },
+                });
+                let (low_at, high_at) = if *high { (*other, i) } else { (i, *other) };
+                for k in 0..*entries {
+                    let t = u16::from_le_bytes([bytes[low_at + k], bytes[high_at + k]]).wrapping_add(*less);
+                    // The count is said once, beside the low byte.
+                    let comment = if *high { None } else { seen.get(&t).map(|n| format!("ran {n}")) };
+                    match label_names.get(&t) {
+                        Some(label) => items.push(Item::Half { label: label.clone(), high: *high, less: *less, comment }),
+                        None => items.push(Item::Bytes { bytes: vec![bytes[i + k]], comment }),
+                    }
+                }
+                i += entries;
                 continue;
             }
             if has_vectors && i >= vec_at {
@@ -474,7 +564,7 @@ pub fn listing_with(rom: &Rom, run: Option<&Run>) -> Listing {
                 }
                 let v = u16::from_le_bytes([bytes[i], bytes[i + 1]]);
                 let label = label_names.get(&v).cloned();
-                items.push(Item::Word { value: v, label, comment: Some(["nmi", "reset", "irq"][(i - vec_at) / 2].into()) });
+                items.push(Item::Word { value: v, label, less: 0, comment: Some(["nmi", "reset", "irq"][(i - vec_at) / 2].into()) });
                 i += 2;
                 continue;
             }
