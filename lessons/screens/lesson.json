@@ -1,0 +1,26 @@
+{
+ "title": "One byte chooses the screen, the way Mario's does",
+ "kind": "screens",
+ "description": "A cartridge of our own with a title, play and a pause chosen by one byte through a jump table after a call, the way Super Mario Bros. was measured choosing its screens, and what our own autopsy says of it.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "vertical",
+ "script": "start.txt",
+ "frames": 900,
+ "grabs": [
+  100,
+  250,
+  420,
+  600
+ ],
+ "memory": {
+  "screen": "$40"
+ },
+ "start_presses": [
+  120,
+  330,
+  500
+ ]
+}
