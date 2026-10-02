@@ -37,6 +37,22 @@ export interface ScrollMeasures {
   last_write: string[];
 }
 
+/** The first walk out of a room (scripts/board-lessons.py rooms_measures). */
+export interface RoomsMeasures {
+  before: number;
+  after: number;
+  wait: number;
+  slide: number;
+  travel: number;
+  step: number;
+  /** Runs of eight or more writes, "<tiles> across|down": how many. */
+  written_before: Record<string, number>;
+  written_during: Record<string, number>;
+  column_every: number[];
+  columns_from: number | null;
+  columns: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -53,7 +69,8 @@ interface Base {
 /** A lesson and the same measures off a commercial game's runs: counts only. */
 export type Lesson =
   | (Base & { kind: "jump"; measures: JumpMeasures; against?: (JumpMeasures & { game: string }) | null })
-  | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null });
+  | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null })
+  | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string; up?: { before: number; after: number } }) | null });
 
 const ROOT = path.join(process.cwd(), "..");
 let cached: Lesson[] | null = null;

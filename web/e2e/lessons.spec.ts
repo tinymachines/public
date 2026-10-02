@@ -38,6 +38,10 @@ for (const l of record()) {
       const a = l.against as typeof l.measures;
       expect(rows.filter((r) => r[0] === "jump").map((r) => [r[1], r[2]])).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${a.jumps[i].frames},${a.jumps[i].risen}`]));
       expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.full_speed_after));
+    } else if (l.kind === "rooms") {
+      const a = l.against as typeof l.measures;
+      expect(rows.find((r) => r[0] === "slide")?.slice(1)).toEqual([String(l.measures.slide), String(a.slide)]);
+      expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
     } else {
       const a = l.against as typeof l.measures;
       expect(rows.find((r) => r[0] === "strips")?.slice(1)).toEqual([String(l.measures.strips), String(a.strips)]);
