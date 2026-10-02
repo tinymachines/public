@@ -71,6 +71,11 @@ def corpus() -> str:
     # heading already names the project), which the tsx scan sees on its own;
     # the synthesizer that built "<name> overview" strings retired with the
     # template.
+    # A lesson's title and line ship from its own lesson.json (the page and
+    # the record read them there); their translations read as dead on
+    # 2026-10-02, the first deploy with lessons, until this looked.
+    for j in (ROOT / "lessons").glob("*/lesson.json"):
+        parts.append(j.read_text())
     for md in docs_files():
         parts.append(md.read_text(errors="replace"))
     parts.append((ROOT.parent / "6502" / "web" / "site-menu.js").read_text(errors="replace"))
