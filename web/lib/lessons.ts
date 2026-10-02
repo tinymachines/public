@@ -53,6 +53,17 @@ export interface RoomsMeasures {
   columns: number;
 }
 
+/** One byte choosing the screen (scripts/board-lessons.py screens_measures). */
+export interface ScreensMeasures {
+  values: number[];
+  changes: number;
+  stretches: number;
+  met: number;
+  engine: boolean;
+  table: { entries: number; seen: number } | null;
+  pause: { before: number; during: number; frames: number } | null;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -70,6 +81,7 @@ interface Base {
 export type Lesson =
   | (Base & { kind: "jump"; measures: JumpMeasures; against?: (JumpMeasures & { game: string }) | null })
   | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null })
+  | (Base & { kind: "screens"; measures: ScreensMeasures; against?: (ScreensMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string; up?: { before: number; after: number } }) | null });
 
 const ROOT = path.join(process.cwd(), "..");
