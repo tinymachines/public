@@ -38,6 +38,10 @@ for (const l of record()) {
       const a = l.against as typeof l.measures;
       expect(rows.filter((r) => r[0] === "jump").map((r) => [r[1], r[2]])).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${a.jumps[i].frames},${a.jumps[i].risen}`]));
       expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.full_speed_after));
+    } else if (l.kind === "stomp") {
+      expect(l.measures.compare?.some((c) => c.is_touch), "our own autopsy names our own touch test").toBe(true);
+      await expect(page.locator("[data-lesson-found]")).toHaveCount(1);
+      expect(rows.find((r) => r[0] === "flat")?.[1]).toBe(String(l.measures.stomp.flat));
     } else if (l.kind === "screens") {
       expect(rows.find((r) => r[0] === "values")?.[1]).toBe(l.measures.values.join(", "));
       expect(l.measures.engine, "our own autopsy finds our own jump engine").toBe(true);

@@ -10,6 +10,7 @@ import { JUMP, JumpPart } from "./jump";
 import { SCROLL, ScrollPart } from "./scroll";
 import { ROOMS, RoomsPart } from "./rooms";
 import { SCREENS, ScreensPart } from "./screens";
+import { STOMP, StompPart } from "./stomp";
 
 /**
  * /autopsy/lessons/<key>: one lesson. Every figure is read from
@@ -50,7 +51,7 @@ const PROSE = {
 } as const;
 
 /** The labels the shown part of each kind's program runs between. */
-const SHOWN = { jump: ["jump", "draw"], scroll: ["strips", "prepcol"], rooms: ["slide", "prepcol"], screens: ["screen", "pressed"] } as const;
+const SHOWN = { jump: ["jump", "draw"], scroll: ["strips", "prepcol"], rooms: ["slide", "prepcol"], screens: ["screen", "pressed"], stomp: ["touch", "hit"] } as const;
 
 export default async function LessonPage({ params }: { params: Promise<{ lang: Lang; lesson: string }> }) {
   const { lang, lesson: key } = await params;
@@ -58,7 +59,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lang: L
   if (!l) notFound();
   const S = PROSE[lang];
   const n = (v: number) => v.toLocaleString(lang);
-  const what = { jump: JUMP, scroll: SCROLL, rooms: ROOMS, screens: SCREENS }[l.kind][lang].what(n(l.code_bytes), n(l.instructions));
+  const what = { jump: JUMP, scroll: SCROLL, rooms: ROOMS, screens: SCREENS, stomp: STOMP }[l.kind][lang].what(n(l.code_bytes), n(l.instructions));
   const [from, to] = SHOWN[l.kind];
   return (
     <Shell lang={lang} die="NES" title={t(lang, l.title)}>
@@ -79,7 +80,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lang: L
           ))}
         </div>
 
-        {l.kind === "jump" ? <JumpPart lang={lang} m={l.measures} a={l.against} /> : l.kind === "scroll" ? <ScrollPart lang={lang} m={l.measures} a={l.against} /> : l.kind === "rooms" ? <RoomsPart lang={lang} m={l.measures} a={l.against} /> : <ScreensPart lang={lang} m={l.measures} a={l.against} />}
+        {l.kind === "jump" ? <JumpPart lang={lang} m={l.measures} a={l.against} /> : l.kind === "scroll" ? <ScrollPart lang={lang} m={l.measures} a={l.against} /> : l.kind === "rooms" ? <RoomsPart lang={lang} m={l.measures} a={l.against} /> : l.kind === "screens" ? <ScreensPart lang={lang} m={l.measures} a={l.against} /> : <StompPart lang={lang} m={l.measures} a={l.against} />}
 
         <h2>{S.codeH}</h2>
         <p>

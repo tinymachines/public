@@ -64,6 +64,25 @@ export interface ScreensMeasures {
   pause: { before: number; during: number; frames: number } | null;
 }
 
+/** Where the two were the frame before they touched (scripts/board-lessons.py touch_event). */
+export interface Touch {
+  frame: number;
+  dx: number;
+  dy: number;
+  fall: number;
+  after: number;
+  state: [number, number];
+}
+
+/** A walker, a stomp and a hit (stomp_measures, mario_touches). */
+export interface StompMeasures {
+  walk: number;
+  stomp: Touch & { flat: number };
+  hit: Touch;
+  /** The routines our own autopsy marked as comparing positions; only ours has it. */
+  compare?: { name: string; is_touch: boolean; x: string; y: string }[];
+}
+
 interface Base {
   key: string;
   title: string;
@@ -82,6 +101,7 @@ export type Lesson =
   | (Base & { kind: "jump"; measures: JumpMeasures; against?: (JumpMeasures & { game: string }) | null })
   | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null })
   | (Base & { kind: "screens"; measures: ScreensMeasures; against?: (ScreensMeasures & { game: string }) | null })
+  | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string; up?: { before: number; after: number } }) | null });
 
 const ROOT = path.join(process.cwd(), "..");

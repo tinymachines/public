@@ -188,6 +188,70 @@ def autopsy_of(rom: Path, script: Path, frames: int, out: Path):
     return json.loads((out / "report.json").read_text()), json.loads(build.listing("model", out / "autopsy.s"))
 
 
+def sg(v: int) -> int:
+    return v - 256 if v > 127 else v
+
+
+def touch_event(cell, f, px, py, pv, ex, ey, state_before, state_after):
+    """Where the two were the frame before a touch, and the player's speed down then and after."""
+    return {"frame": f, "dx": ex(f - 1) - px(f - 1), "dy": ey(f - 1) - py(f - 1), "fall": pv(f - 1), "after": pv(f), "state": [state_before, state_after]}
+
+
+def stomp_measures(cell, frames: int, mm: dict, after: int):
+    """Our walker: its speed, the first stomp and the first hit."""
+    h = lambda k: int(mm[k][1:], 16)
+    px = lambda f: cell(f, h("x"))
+    py = lambda f: cell(f, h("y"))
+    pv = lambda f: round(sg(cell(f, h("speed_down")[1] if False else int(mm["speed_down"][1][1:], 16))) + cell(f, int(mm["speed_down"][0][1:], 16)) / 256, 2)
+    ex = lambda f: cell(f, h("walker_x")) + cell(f, h("walker_x") + 1) / 256
+    ey = lambda f: cell(f, h("walker_y"))
+    st = lambda f: cell(f, h("walker_state"))
+    walking = [f for f in range(after, frames) if st(f) == 0 and st(f - 1) == 0 and ex(f) < ex(f - 1)]
+    speed = round(sum(ex(f - 1) - ex(f) for f in walking) / len(walking), 2)
+    stomp = next(f for f in range(after, frames) if cell(f, h("stomps")) != cell(f - 1, h("stomps")))
+    hit = next(f for f in range(after, frames) if cell(f, h("hits")) != cell(f - 1, h("hits")))
+    back = next(f for f in range(stomp, frames) if st(f) == 0)
+    s = touch_event(cell, stomp, px, py, pv, ex, ey, st(stomp - 1), st(stomp))
+    s["flat"] = back - stomp
+    s["dx"] = round(s["dx"])
+    t = touch_event(cell, hit, px, py, pv, ex, ey, st(hit - 1), st(hit))
+    t["dx"] = round(t["dx"])
+    return {"walk": speed, "stomp": s, "hit": t}
+
+
+def mario_touches(dirpath: Path):
+    """The same off Super Mario Bros.: a Goomba's walk, the first stomp in the
+    longer run, the first hit in the first run. Slots 1 to 5: x at $0086+i
+    (page $006D+i), y at $00CE+i, state at $001E+i-1; Mario's speed down
+    $009F with its fraction at $0433; the player's state at $000E."""
+    def load(d):
+        r = (dirpath / d / "ram.bin").read_bytes()
+        return frames_of(r), len(r) // 2048
+    cell, n = load("run")
+    X = lambda f, i: cell(f, 0x6D + i) * 256 + cell(f, 0x86 + i)
+    pv = lambda f, c=cell: round(sg(c(f, 0x9F)) + c(f, 0x433) / 256, 2)
+    steps = []
+    for i in range(1, 6):
+        run = [f for f in range(600, min(n, 1500)) if cell(f, 0x0F + i - 1) and cell(f, 0x1E + i - 1) == 0 and cell(f - 1, 0x1E + i - 1) == 0]
+        seg = []
+        for f in run:
+            if seg and f != seg[-1] + 1:
+                if len(seg) > 30 and X(seg[-1], i) < X(seg[0], i):
+                    steps.append((X(seg[0], i) - X(seg[-1], i)) / (seg[-1] - seg[0]))
+                seg = []
+            seg.append(f)
+    stomp = next((f, i) for f in range(600, n) for i in range(1, 6) if cell(f, 0x0F + i - 1) and cell(f - 1, 0x1E + i - 1) in (0, 1) and cell(f, 0x1E + i - 1) not in (0, 1) and sg(cell(f - 1, 0x9F)) > 0)
+    f, i = stomp
+    back = next(g for g in range(f, n) if not cell(g, 0x0F + i - 1) or cell(g, 0x1E + i - 1) in (0, 1))
+    s = {"frame": f, "dx": X(f - 1, i) - X(f - 1, 0), "dy": cell(f - 1, 0xCE + i) - cell(f - 1, 0xCE), "fall": pv(f - 1), "after": pv(f), "state": [cell(f - 1, 0x1E + i - 1), cell(f, 0x1E + i - 1)], "flat": back - f}
+    c2, n2 = load("board")
+    X2 = lambda f, i: c2(f, 0x6D + i) * 256 + c2(f, 0x86 + i)
+    hf = next(g for g in range(600, n2) if c2(g - 1, 0x0E) == 8 and c2(g, 0x0E) not in (8,) and c2(g - 1, 0xCE) < 230)
+    near = min((i for i in range(1, 6) if c2(hf - 1, 0x0F + i - 1)), key=lambda i: abs(X2(hf - 1, i) - X2(hf - 1, 0)))
+    t = {"frame": hf, "dx": X2(hf - 1, near) - X2(hf - 1, 0), "dy": c2(hf - 1, 0xCE + near) - c2(hf - 1, 0xCE), "fall": pv(hf - 1, c2), "after": pv(hf, c2), "state": [8, c2(hf, 0x0E)]}
+    return {"game": "Super Mario Bros.", "walk": round(sum(steps) / len(steps), 2), "stomp": s, "hit": t}
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -246,6 +310,16 @@ def main():
         if kind == "jump":
             measures = jump_measures(cell, meta, meta["presses"])
             against = mario(Path(compare[name])) if name in compare else prev.get("against")
+        elif kind == "stomp":
+            measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
+            # What our own autopsy calls the routine that tells the two apart, and
+            # whether it is the one written as `touch` (its address in the listing).
+            _, model = autopsy_of(b["rom"], d / meta["script"], meta["frames"], run)
+            rendered = build.listing("render", b["listing"])
+            at = next(int(l.split()[0][1:], 16) for i, l in enumerate(rendered.splitlines()) if l.startswith("$") and rendered.splitlines()[i - 1].strip() == "touch:")
+            named = [(x, i["evidence"]) for x in model["routines"] for i in x["is"] if i["pattern"] == "position-compare"]
+            measures["compare"] = [{"name": x["name"], "is_touch": x["addr"] == at, "x": ev.get("x", ""), "y": ev.get("y", "")} for x, ev in named]
+            against = mario_touches(Path(compare[name])) if name in compare else prev.get("against")
         elif kind == "screens":
             h = lambda a: int(a[1:], 16)
             rep, model = autopsy_of(b["rom"], d / meta["script"], meta["frames"], run)
