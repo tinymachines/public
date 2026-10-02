@@ -1097,6 +1097,7 @@ impl Flow {
             })
             .collect();
         meets.sort_by_key(|m| m.key);
+        let carried: Vec<u16> = (0..0x800u16).filter(|&c| self.touched[c as usize] > 0 && kept(c)).collect();
         let steps: Vec<(u16, u32, u32)> = (0..0x800u16).filter(|&c| kept(c)).map(|c| (c, self.stepped[c as usize].0, self.stepped[c as usize].1)).filter(|s| s.1 + s.2 > 0).collect();
         let mut moves: Vec<(u16, u16, u64)> = self.moves.iter().map(|(&(cell, by), &n)| (cell, by, n)).collect();
         moves.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)).then(a.1.cmp(&b.1)));
@@ -1143,6 +1144,7 @@ impl Flow {
             meets,
             moves,
             steps,
+            carried,
             dispatch,
             modes,
             input,
@@ -1422,6 +1424,10 @@ struct Report {
     /// a DEC took it down. One that only ever goes down is a countdown.
     /// Scratch is left out.
     steps: Vec<(u16, u32, u32)>,
+    /// The bytes of RAM that carry a value from one frame into the next
+    /// (in at least half the frames one was touched, the first touch
+    /// was a read): state, where the rest is scratch.
+    carried: Vec<u16>,
     dispatch: Vec<DispatchOut>,
     modes: ModesOut,
     input: Vec<ButtonOut>,

@@ -240,10 +240,16 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         if r.oam_writes > 0 {
             out.push(Mark { offset: r.offset, rest: format!("sprite-writer oam-writes={} frames={} by=match", r.oam_writes, r.frames) });
         }
-        // The random byte: RAM a routine that ran the frames rewrites
-        // from itself with a shift or a rotate (a read-modify-write on
-        // the byte) and an EOR somewhere in the same routine.
-        if r.frames as u64 * 2 >= run.watched {
+        // The random byte: RAM a routine rewrites from itself with a
+        // shift or a rotate (a read-modify-write on the byte) and an EOR
+        // somewhere in the same routine, where the byte carries its
+        // value from one frame into the next (a multiply stirs scratch
+        // the same way). A report from before the flow said which bytes
+        // are carried is held to the older test: the routine ran in at
+        // least half the frames, which is a fact about the run's mix of
+        // menus and play and came and went between counts.
+        let often = r.frames as u64 * 2 >= run.watched;
+        {
             let mut bytes: Vec<u16> = Vec::new();
             let (mut shifts, mut eors) = (0u64, 0u64);
             for &k in &r.body {
@@ -253,7 +259,8 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
                 }
                 if matches!(ops::name(op), "ASL" | "LSR" | "ROL" | "ROR") && ops::mode(op) != Mode::Acc {
                     for &(a, _) in &site.writes {
-                        if a < 0x0800 && site.reads.iter().any(|x| x.0 == a) {
+                        let state = if run.carried.is_empty() { often } else { run.carried.contains(&a) };
+                        if state && a < 0x0800 && site.reads.iter().any(|x| x.0 == a) {
                             shifts += 1;
                             if !bytes.contains(&a) {
                                 bytes.push(a);
@@ -267,6 +274,8 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
                 let list: Vec<String> = bytes.iter().map(|a| format!("${a:04X}")).collect();
                 out.push(Mark { offset: r.offset, rest: format!("random-byte bytes={} shifts={shifts} eors={eors} frames={} by=match", list.join(","), r.frames) });
             }
+        }
+        if often {
             // The scroll: $2005 written in the blank, every frame it ran.
             let (_, blank) = beam(r, |a| a == 0x2005);
             if blank >= r.frames as u64 && r.frames > 0 {

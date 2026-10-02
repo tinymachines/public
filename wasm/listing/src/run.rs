@@ -122,6 +122,9 @@ pub struct Run {
     pub moves: Vec<(u16, u16, u64)>,
     /// The bytes stepped in place: cell, times up (INC), times down (DEC).
     pub steps: Vec<(u16, u64, u64)>,
+    /// The bytes that carry a value from one frame into the next, when
+    /// the report says (empty from a report written before it did).
+    pub carried: Vec<u16>,
 }
 
 fn u(v: &Value) -> u64 {
@@ -259,6 +262,7 @@ impl Run {
                 .collect();
             run.meets.push(Meet { offset: key, routine, pairs });
         }
+        run.carried = v["carried"].as_array().unwrap_or(&none).iter().map(|c| u(c) as u16).collect();
         for m in v["steps"].as_array().unwrap_or(&none) {
             if let Some(m) = m.as_array().filter(|m| m.len() == 3) {
                 run.steps.push((u(&m[0]) as u16, u(&m[1]), u(&m[2])));
@@ -372,6 +376,11 @@ impl Run {
                     x.on = x.on.or(l.on);
                 }
                 None => self.loops.push(l),
+            }
+        }
+        for c in other.carried {
+            if !self.carried.contains(&c) {
+                self.carried.push(c);
             }
         }
         for (cell, up, down) in other.steps {

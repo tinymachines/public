@@ -221,7 +221,7 @@ mark.
 | `palette-writer` | a routine that wrote `$2007` while the PPU's address was in the palette (the report follows the address latch through `$2006`): `writes= frames=` |
 | `sprite-writer` | a routine that wrote into the page of RAM the sprite DMA took most often (the page named to `$4014`): `oam-writes= frames=` |
 | `scroll-writer` | a routine that wrote `$2005` in the blank at least once every frame it ran: `writes-in-blank= frames=` |
-| `random-byte` | a routine that ran in at least half the frames and rewrote a RAM byte from itself with a shift or a rotate (the instruction read and wrote the byte) with an `EOR` somewhere in the routine: `bytes= shifts= eors= frames=` |
+| `random-byte` | a routine that rewrote a RAM byte from itself with a shift or a rotate (the instruction read and wrote the byte) with an `EOR` somewhere in the routine, where the byte carries its value from one frame into the next (the flow's `carried`; a multiply stirs scratch the same way): `bytes= shifts= eors= frames=`. With a report from before the flow said which bytes are carried, the older test stands in: the routine ran in at least half the frames |
 
 The report says, per routine, how many of its accesses of each PPU
 register, of `$4014` and of the mapper fell while the picture was

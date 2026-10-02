@@ -152,6 +152,11 @@ shift:
     LDA $A0,X
     LDA $C0,X
     RTS
+mixer:
+    LDA $39
+    EOR #$1D
+    ROR $38
+    RTS
 by_pointer:
     JMP ($0006)
     .word state_a
@@ -212,7 +217,7 @@ fn the_matchers_name_what_the_run_saw() {
             "poll" => (serde_json::json!([]), 40),
             _ => (serde_json::json!([]), 0),
         };
-        let n_body = match n { "reset" => 4, "nmi" => 6, "poll" => 11, "engine" => 11, "sound" => 3, "drain" => 6, "split" => 6, "random" => 7, "wait" | "scan" | "other" => 3, "delay" | "hop" | "count" => 4, "shift" => 5, "hit" => 10, "count_out" | "count_two" | "count_port" | "chore_wait" | "self_wait" => 3, "chore" | "setter" | "count_down" => 2, _ => 1 };
+        let n_body = match n { "reset" => 4, "nmi" => 6, "poll" => 11, "engine" => 11, "sound" => 3, "drain" => 6, "split" => 6, "random" => 7, "wait" | "scan" | "other" => 3, "delay" | "hop" | "count" | "mixer" => 4, "shift" => 5, "hit" => 10, "count_out" | "count_two" | "count_port" | "chore_wait" | "self_wait" => 3, "chore" | "setter" | "count_down" => 2, _ => 1 };
         // The NMI handler (routine 1) calls these six.
         // And each of the two waits with a call in it calls its own.
         let callers = match n {
@@ -224,7 +229,7 @@ fn the_matchers_name_what_the_run_saw() {
         serde_json::json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": frames, "mem": mem, "in_frame": in_frame, "vram": vram, "oam_writes": oam, "body": body(n, n_body), "callers": callers})
     };
     let mut sites = Vec::new();
-    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500), ("by_pointer", 1, 8), ("too", 1, 1), ("by_memory", 1, 5)] {
+    for (n, k, count) in [("reset", 4, 1), ("spin", 1, 50000), ("nmi", 6, 10), ("poll", 11, 10), ("engine", 11, 10), ("state_a", 1, 7), ("state_c", 1, 3), ("sound", 3, 10), ("drain", 6, 10), ("split", 6, 10), ("random", 7, 10), ("wait", 3, 10), ("scan", 3, 10), ("delay", 4, 10), ("other", 3, 10), ("hop", 3, 10), ("count", 4, 40000), ("count_out", 3, 500), ("count_two", 3, 500), ("chore_wait", 3, 500), ("chore", 2, 500), ("self_wait", 3, 500), ("setter", 2, 500), ("hit", 10, 10), ("shift", 5, 10), ("count_down", 2, 2560), ("count_port", 3, 500), ("by_pointer", 1, 8), ("too", 1, 1), ("by_memory", 1, 5), ("mixer", 4, 10)] {
         sites.extend(seq(prg, at(n), k, count));
     }
     // What the random routine's instructions touched: the indexed read
@@ -268,6 +273,9 @@ fn the_matchers_name_what_the_run_saw() {
     touch(at("shift"), serde_json::json!([[0x86, 5], [0x8b, 5]]), serde_json::json!([]), serde_json::json!([0x86, 0x8b]));
     touch(at("shift") + 2, serde_json::json!([[0x90, 5], [0x95, 5]]), serde_json::json!([]), serde_json::json!([0x90, 0x95]));
     touch(at("shift") + 4, serde_json::json!([[0xa0, 5], [0xa3, 5]]), serde_json::json!([]), serde_json::json!([0xa0, 0xa3]));
+    // A routine that runs every frame and stirs a byte nothing keeps:
+    // the same instructions as the random routine, on scratch.
+    touch(at("mixer") + 4, serde_json::json!([[0x38, 10]]), serde_json::json!([[0x38, 20]]), serde_json::json!([0x38, 0x38]));
     touch(at("random") + 2, serde_json::json!([[0x0200, 5], [0x0207, 5]]), serde_json::json!([]), serde_json::json!([0x0200, 0x0207]));
     touch(at("random") + 5, serde_json::json!([[0x11, 10]]), serde_json::json!([]), serde_json::json!([0x11, 0x11]));
     touch(at("random") + 8, serde_json::json!([[0x10, 10]]), serde_json::json!([[0x10, 20]]), serde_json::json!([0x10, 0x10]));
@@ -286,7 +294,10 @@ fn the_matchers_name_what_the_run_saw() {
             routine(6, "sound", "call", 10, 10, serde_json::json!([[0x4015, 0, 10], [0x20, 0, 10], [0x0300, 0, 10], [0x30, 7, 0]]), serde_json::json!([])),
             routine(7, "drain", "call", 10, 10, serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]]), serde_json::json!([[0x2006, 0, 20], [0x2007, 0, 10]])),
             routine(8, "split", "call", 10, 10, serde_json::json!([[0x2002, 200, 0], [0x2005, 0, 20]]), serde_json::json!([[0x2002, 200, 0], [0x2005, 20, 0]])),
-            routine(9, "random", "call", 10, 10, serde_json::json!([[0x10, 10, 20], [0x11, 20, 20]]), serde_json::json!([])),
+            // The random routine ran in two frames of the ten: what makes
+            // it one is that its bytes keep their value between frames.
+            routine(9, "random", "call", 2, 2, serde_json::json!([[0x10, 10, 20], [0x11, 20, 20]]), serde_json::json!([])),
+            routine(30, "mixer", "call", 10, 10, serde_json::json!([[0x38, 10, 20], [0x39, 10, 0]]), serde_json::json!([])),
             routine(10, "wait", "call", 10, 10, serde_json::json!([[0x20, 30000, 0]]), serde_json::json!([])),
             routine(11, "scan", "call", 10, 10, serde_json::json!([[0x0300, 400, 0]]), serde_json::json!([])),
             routine(12, "delay", "call", 10, 10, serde_json::json!([[0x20, 2550, 0]]), serde_json::json!([])),
@@ -322,6 +333,8 @@ fn the_matchers_name_what_the_run_saw() {
         // byte of $C0 both ways, and a byte of $A0 down, which does not
         // travel with the positions.
         "steps": [[0x92, 0, 9], [0xc1, 3, 3], [0xa2, 0, 5]],
+        // The bytes that carry a value from frame to frame.
+        "carried": [0x10, 0x11, 0x20, 0x30, 0x86, 0x87, 0x88, 0xce, 0xcf],
         "meets": [
             {"key": at("hit") + 2, "addr": labels["hit"] + 2, "routine": 23, "total": 8, "distinct": 2, "pairs": [[0x86, 0x87, 5, "x"], [0x86, 0x88, 3, "x"]]},
             {"key": at("hit") + 4, "addr": labels["hit"] + 4, "routine": 23, "total": 6, "distinct": 2, "pairs": [[0x86, 0x87, 4, "x"], [0xce, 0xcf, 2, "y"]]}
@@ -382,13 +395,20 @@ fn the_matchers_name_what_the_run_saw() {
     assert!(src.contains(";; @is bank-switch writes=1 in-picture=0 in-blank=1 by=match\n;; @routine reset kind=reset entered=1 by=run\n"), "{src}");
     assert!(src.contains(&format!(";; @is palette-writer writes=2 frames=10 by=match\n;; @is vram-drain writes=10 in-blank=10 in-picture=0 frames=10 by=match\n;; @routine drain_{:04X}", a("drain"))), "{src}");
     assert!(src.contains(&format!(";; @is pad-poll port=$4016 reads-per-frame=8 strobes-per-frame=2 by=match\n;; @is sprite-writer oam-writes=40 frames=10 by=match\n;; @routine poll_{:04X}", a("poll"))), "{src}");
-    assert!(src.contains(&format!(";; @is random-byte bytes=$0010,$0011 shifts=2 eors=1 frames=10 by=match\n;; @routine random_{:04X} kind=call entered=10 by=run\n", a("random"))), "{src}");
+    assert!(src.contains(&format!(";; @is random-byte bytes=$0010,$0011 shifts=2 eors=1 frames=2 by=match\n;; @routine random_{:04X} kind=call entered=2 by=run\n", a("random"))), "{src}");
     assert!(src.contains(&format!(";; @is frame-wait flag=$0020 entries=10 iterations=30000 set-in-nmi=10 of=10 by=match\n;; @routine wait_{:04X} kind=call entered=10 by=run\n", a("wait"))), "{src}");
     assert!(src.contains(";; @is counting-spin byte=$0030 iterations=40000 per-frame=4000 read-elsewhere=7 by=match\n"), "{src}");
     assert!(src.contains(&format!(";; @is frame-wait flag=$0020 entries=10 iterations=500 calls=1 set-in-nmi=10 of=10 by=match\n;; @routine wait_{:04X} kind=call entered=10 by=run\n", a("chore_wait"))), "{src}");
     assert!(src.contains(&format!(";; @is position-compare sites=2 pairs=3 cells=5 meets=14 x=$0086,$0087,$0088 y=$00CE,$00CF by=match\n;; @routine compare_{:04X} kind=call entered=10 by=run\n", a("hit"))), "{src}");
     assert!(src.contains(&format!(";; @is handler-in-memory jumps=5 targets=1 from=$00C0 by=match\n;; @routine handlers_{:04X} kind=call entered=5 by=run\n", a("by_memory"))), "{src}");
     assert_eq!(src.matches(";; @is ").count(), 17, "one mark per pattern and the second wait, nothing else matched");
+    // A report from before the flow said which bytes are carried falls
+    // back on how often the routine ran: the every-frame stir is marked
+    // then and the true one is not, which is why the flow says it now.
+    let mut old = report.clone();
+    old.as_object_mut().unwrap().remove("carried");
+    let old = listing::from_rom_and_run(&image, &old.to_string()).unwrap();
+    assert!(old.contains(";; @is random-byte bytes=$0038 ") && !old.contains("random-byte bytes=$0010"), "the fallback");
     // With no idle spin, the counting spin is what makes the NMI handler the game.
     let mut no_idle = report.clone();
     no_idle["loops"].as_array_mut().unwrap().retain(|l| l["kind"] != "idle");
@@ -425,7 +445,7 @@ fn the_matchers_name_what_the_run_saw() {
     // The model reads the same marks back: every routine the run
     // entered with its patterns, the table with its words, the RAM.
     let g = listing::game::game(&text::parse(&src).unwrap()).unwrap();
-    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 30, "{g}");
+    assert_eq!(g["routines"].as_array().unwrap().iter().filter(|r| r["by"] == "run").count(), 31, "{g}");
     let poll = g["routines"].as_array().unwrap().iter().find(|r| r["name"] == format!("poll_{:04X}", a("poll"))).unwrap();
     assert_eq!(poll["kind"], "call");
     assert_eq!(poll["entered"], 10);

@@ -422,6 +422,11 @@ fn values_are_followed_to_where_two_objects_meet() {
     // What was added into a byte that kept its own value: the one-byte
     // speed into $87. The four-byte speed into $86 is nobody's (more
     // than four cells), and says nothing.
+    // The cells that carry a value from frame to frame: the positions
+    // are among them, the scratch byte is not.
+    let carried: Vec<u64> = r["carried"].as_array().unwrap().iter().map(|c| c.as_u64().unwrap()).collect();
+    assert!(carried.contains(&0x86) && carried.contains(&0x87) && carried.contains(&0x40), "{carried:x?}");
+    assert!(!carried.contains(&0x03) && !carried.contains(&0x00), "{carried:x?}");
     // The bytes stepped in place: [cell, times up, times down].
     assert_eq!(r["steps"], serde_json::json!([[0x66, 0, 2], [0x67, 1, 0], [0x68, 1, 1]]), "{}", r["steps"]);
     // And the carry out of a fraction, with the speed that made it.
