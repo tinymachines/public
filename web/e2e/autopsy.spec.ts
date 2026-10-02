@@ -15,7 +15,7 @@ import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from
 
 const RECORD = path.join(__dirname, "..", "..", "data", "autopsy.json");
 
-type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: unknown[]; table_list: { on?: string[]; kind?: string }[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number; adds?: string[] }[] };
+type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: { name: string; is: unknown[] }[]; table_list: { on?: string[]; kind?: string }[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number; adds?: string[] }[] };
 
 function record(): { games: Game[]; patterns: string[] } {
   const r = JSON.parse(fs.readFileSync(RECORD, "utf8")) as { games: Game[]; patterns: string[] };
@@ -96,6 +96,32 @@ test("a game's page shows the arrays that travel with its positions", async ({ p
     await open(page, `/autopsy/games/${none.key}`, 200);
     await expect(page.locator("[data-autopsy-objects]"), `${none.name}: no table for none`).toHaveCount(0);
   }
+});
+
+test("a game's page names the routines a rule identified, as the listing does", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const r = record();
+  const g = [...r.games].sort((a, b) => b.routine_list.filter((x) => x.is.length).length - a.routine_list.filter((x) => x.is.length).length)[0];
+  const named = g.routine_list.filter((x) => x.is.length).map((x) => x.name);
+  expect(named.length, "some routine in the record carries a mark").toBeGreaterThan(0);
+  await open(page, `/autopsy/games/${g.key}`, 200);
+  const shown = await page.locator("[data-autopsy-routines] td[data-autopsy-name] code").evaluateAll((cs) => cs.map((c) => c.textContent ?? ""));
+  expect(shown.sort(), `${g.name}: the names shown`).toEqual([...named].sort());
+  // A name says what the routine is: at least one is not the plain "routine_" or "dispatch_".
+  expect(shown.some((n) => !/(routine|dispatch)_[0-9A-F]{4}$/.test(n)), `${g.name}: a name from a pattern`).toBe(true);
+});
+
+test("a game's object tables are drawn, a column for each array", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const r = record();
+  const g = [...r.games].sort((a, b) => b.object_list.length - a.object_list.length)[0];
+  await open(page, `/autopsy/games/${g.key}`, 200);
+  const drawn = await page.locator("figure[data-autopsy-object-drawing]").evaluateAll((fs) => fs.map((f) => [Number((f as HTMLElement).dataset.autopsyObjectDrawing), f.querySelectorAll("g[data-autopsy-array]").length] as const));
+  expect(drawn.map((d) => d[0]), `${g.name}: a drawing for each table, by its arrays`).toEqual(g.object_list.map((o) => o.arrays));
+  for (const [arrays, columns] of drawn) expect(columns, "a column drawn for every array").toBe(arrays);
+  // The roles are drawn into the columns: as many marked "+" as the record says are added into positions.
+  const plus = await page.locator('figure[data-autopsy-object-drawing] g[data-autopsy-marks*="+"]').count();
+  expect(plus, `${g.name}: the columns marked as added into positions`).toBe(g.object_list.reduce((n, o) => n + (o.adds ?? []).length, 0));
 });
 
 test("the patterns page tells every pattern, with the number of games the record gives", async ({ page }) => {

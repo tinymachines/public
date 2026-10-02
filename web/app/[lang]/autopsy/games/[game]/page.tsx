@@ -7,6 +7,7 @@ import { localize } from "@/lib/i18n";
 import { autopsy, boardName, game, percent, type AutopsyRoutine } from "@/lib/autopsy";
 import { Shell } from "@/app/components/SiteFrame";
 import { evidenceText, hex4, kindWords, ORDER, patternWords } from "../../words";
+import { ObjectTable } from "./ObjectTable";
 
 /**
  * /autopsy/games/<key>: one game, as the record has it. The key is the
@@ -35,13 +36,13 @@ const PROSE = {
     found: (name: string, count: string) => `${name}: ${count}`,
     none: "No rule named anything in this game.",
     routinesH: (count: string) => `The ${count} routines the runs entered`,
-    routinesWhat: "Every place the game's code was entered, by a call, an interrupt or a jump through a table. The ones a rule named come first, with what the rule saw.",
-    rcols: ["at", "entered by", "times", "what it is, and the evidence"],
+    routinesWhat: "Every place the game's code was entered, by a call, an interrupt or a jump through a table. The ones a rule named come first, with what the rule saw, and their names in the listing say what they are: a poll, an engine, a drain.",
+    rcols: ["at", "its name in the listing", "entered by", "times", "what it is, and the evidence"],
     bank: (b: string) => `bank ${b}`,
     inside: "inside another instruction",
     loopsH: "Where it waits",
     loopsWhat: "Loops a rule named that sit inside a routine and are not themselves a place the code is entered.",
-    lcols: ["at", "what it is, and the evidence"],
+    lcols: ["at", "its name in the listing", "what it is, and the evidence"],
     tablesH: "The tables it jumps through",
     tablesWhat: "A table of addresses the game picks one from. Some sit right after a call to a jump engine; others are anywhere in the cartridge, and we find them by where the address the game jumped through was loaded from. An entry is counted as far as the runs saw one taken; the true table may be longer. The last column is the byte of memory whose value picked the entry, where we could follow it: the game's mode, or what one of its objects is doing.",
     tcols: ["at", "reached", "entries", "taken", "chosen by the byte at"],
@@ -77,13 +78,13 @@ const PROSE = {
     found: (name: string, count: string) => `${name}: ${count}`,
     none: "このゲームでは、どの規則も何も名付けなかった。",
     routinesH: (count: string) => `走行が入った ${count} 個のルーチン`,
-    routinesWhat: "ゲームのコードに入った場所のすべて。呼び出し、割り込み、テーブル経由のジャンプのどれかで入る。規則が名付けたものを先に、規則が見たものと一緒に並べる。",
-    rcols: ["場所", "入り方", "回数", "何であるか、その証拠"],
+    routinesWhat: "ゲームのコードに入った場所のすべて。呼び出し、割り込み、テーブル経由のジャンプのどれかで入る。規則が名付けたものを先に、規則が見たものと一緒に並べる。それらのリスティングでの名前は、何であるかを言う: poll (読み取り)、engine (エンジン)、drain (書き出し)。",
+    rcols: ["場所", "リスティングでの名前", "入り方", "回数", "何であるか、その証拠"],
     bank: (b: string) => `バンク ${b}`,
     inside: "別の命令の内側",
     loopsH: "待つ場所",
     loopsWhat: "規則が名付けたループのうち、ルーチンの内側にあって、それ自身はコードの入口ではないもの。",
-    lcols: ["場所", "何であるか、その証拠"],
+    lcols: ["場所", "リスティングでの名前", "何であるか、その証拠"],
     tablesH: "ジャンプに使うテーブル",
     tablesWhat: "ゲームがその中から一つを選ぶ、アドレスのテーブル。ジャンプエンジンへの呼び出しの直後にあるものもあれば、カートリッジのどこかにあるものもある。後者は、ゲームが通って跳んだアドレスがどこから読み込まれたかで見つける。項目は、走行が選ぶのを見た所までを数える。本当のテーブルはもっと長いかもしれない。最後の列は、その値が項目を選んだメモリのバイトで、追えた場合だけ書いてある: ゲームのモードか、物体の一つが今していることだ。",
     tcols: ["場所", "届き方", "項目", "選ばれた数", "選んだバイト"],
@@ -167,6 +168,7 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
                 {routines.map((x) => (
                   <tr key={`${x.bank}:${x.addr}:${x.name}`}>
                     <td>{at(x.bank, x.addr)}{x.inside !== undefined ? ` (${S.inside})` : ""}</td>
+                    <td data-autopsy-name>{x.is.length ? <code>{x.name}</code> : null}</td>
                     <td>{kindWords(lang, x.kind)}</td>
                     <td>{x.entered !== undefined ? n(x.entered) : ""}</td>
                     <td>
@@ -197,6 +199,7 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
                     {g.loop_list.map((x) => (
                       <tr key={`${x.bank}:${x.addr}`}>
                         <td>{at(x.bank, x.addr)}</td>
+                        <td data-autopsy-name><code>{x.name}</code></td>
                         <td>
                           {x.is.map((i, k) => (
                             <div key={k}>
@@ -270,6 +273,9 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
           <>
             <h3>{S.objectsH}</h3>
             <p>{S.objectsWhat}</p>
+            {g.object_list.map((x, k) => (
+              <ObjectTable key={k} lang={lang} g={g} table={x} id={`objects-${k}`} />
+            ))}
             <div className="ledger">
               <div className="scroller">
                 <table data-autopsy-objects>
