@@ -135,6 +135,59 @@ def rooms_measures(cell, vram_path: Path, room: int, scroll: int, frames: int, a
     }
 
 
+def screens_measures(cell, pad: bytes, report: dict, model: dict, screen: int, frames: int, after: int = 0):
+    """One byte choosing the screen: the values it took, the table the
+    autopsy's rules found chosen by it, whether the flow's stretches (cut
+    by which routines ran, knowing nothing of screens) begin where the byte
+    changed, and how still memory is while paused."""
+    changes = [f for f in range(max(after, 1), frames) if cell(f, screen) != cell(f - 1, screen)]
+    values = [cell(max(after, 0), screen)] + [cell(f, screen) for f in changes]
+    starts = [a for a, _, _ in report["modes"]["segments"]][1:]
+    met = sum(1 for f in changes if any(abs(f - b) <= 2 for b in starts))
+    addr = f"${screen:04X}"
+    tables = [t for t in model["tables"] if addr in t.get("on", [])]
+    engine = any(i["pattern"] == "jump-engine" for x in model["routines"] for i in x["is"])
+    moving = lambda f: sum(1 for a in range(0x800) if not 0x100 <= a < 0x300 and cell(f, a) != cell(f - 1, a))
+    # Paused: a press of Start in play, and the next one.
+    presses = [f for f in range(max(after, 1), frames) if pad[f] & 0x08 and not pad[f - 1] & 0x08]
+    play = [f for f in presses if cell(f - 1, screen) == values[1] if len(values) > 1]
+    pause = None
+    later = [f for f in presses if play and f > play[0]]
+    if play and later:
+        p0, p1 = play[0], later[0]
+        mid = sorted(moving(f) for f in range(p0 + 5, p1 - 1))
+        pre = sorted(moving(f) for f in range(p0 - 20, p0))
+        pause = {"before": pre[len(pre) // 2], "during": mid[len(mid) // 2], "frames": p1 - p0}
+    return {
+        "values": values, "changes": len(changes), "stretches": len(report["modes"]["segments"]), "met": met,
+        "engine": engine, "table": ({k: tables[0][k] for k in ("entries", "seen")} if tables else None), "pause": pause,
+    }
+
+
+def autopsy_of(rom: Path, script: Path, frames: int, out: Path):
+    """Our own autopsy of our own cartridge: trace the script, report it with
+    the flow tool, list it with its run, and read the model back."""
+    trace_bin = ROOT.parent / "nes" / "target" / "release" / "examples" / "script-trace"
+    report_bin = ROOT / "wasm" / "flow" / "target" / "release" / "examples" / "report"
+    for b in (trace_bin, report_bin):
+        if not b.exists():
+            sys.exit(f"board-lessons: {b} is not built")
+    fifo = out / "t.fifo"
+    if fifo.exists():
+        fifo.unlink()
+    import os
+    os.mkfifo(fifo)
+    try:
+        w = subprocess.Popen([str(trace_bin), str(rom), str(script), str(frames), str(fifo)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run([str(report_bin), str(fifo), str(rom.read_bytes()[4] * 16384), str(out / "report.json")], check=True, capture_output=True)
+        w.wait()
+    finally:
+        fifo.unlink()
+    (out / "autopsy.s").write_text(build.listing("from", rom, out / "report.json"))
+    build.listing("check", out / "autopsy.s", rom)
+    return json.loads((out / "report.json").read_text()), json.loads(build.listing("model", out / "autopsy.s"))
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -193,6 +246,17 @@ def main():
         if kind == "jump":
             measures = jump_measures(cell, meta, meta["presses"])
             against = mario(Path(compare[name])) if name in compare else prev.get("against")
+        elif kind == "screens":
+            h = lambda a: int(a[1:], 16)
+            rep, model = autopsy_of(b["rom"], d / meta["script"], meta["frames"], run)
+            measures = screens_measures(cell, (run / "pad.bin").read_bytes(), rep, model, h(meta["memory"]["screen"]), meta["frames"])
+            if name in compare:
+                dd = Path(compare[name])
+                mr = (dd / "board" / "ram.bin").read_bytes()
+                # Mario: the screen at $0770; its run's report and model are the private ones beside it.
+                against = {"game": "Super Mario Bros.", **screens_measures(frames_of(mr), (dd / "board" / "pad.bin").read_bytes(), json.loads((dd / "report.json").read_text()), json.loads((dd / "model.json").read_text()), 0x770, len(mr) // 2048, after=15)}
+            else:
+                against = prev.get("against")
         elif kind == "rooms":
             h = lambda a: int(a[1:], 16)
             mm = meta["memory"]
