@@ -1,5 +1,7 @@
 {
  "title": "A jump that feels like Mario's",
+ "kind": "jump",
+ "description": "A cartridge of our own whose square walks and jumps with the numbers read off Super Mario Bros., measured beside it, with its program.",
  "board": "NROM",
  "prg": 16384,
  "org": "$C000",
@@ -7,9 +9,35 @@
  "mirroring": "horizontal",
  "script": "three.txt",
  "frames": 600,
- "grabs": [100, 215, 330, 430],
- "presses": [[200, 204], [300, 320], [400, 480]],
+ "grabs": [
+  100,
+  215,
+  330,
+  430
+ ],
+ "presses": [
+  [
+   200,
+   204
+  ],
+  [
+   300,
+   320
+  ],
+  [
+   400,
+   480
+  ]
+ ],
  "walk_from": 60,
- "memory": {"air": "$03", "x": "$11", "speed_x": ["$12", "$13"], "y": "$15"},
+ "memory": {
+  "air": "$03",
+  "x": "$11",
+  "speed_x": [
+   "$12",
+   "$13"
+  ],
+  "y": "$15"
+ },
  "ground": 176
 }

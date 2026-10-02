@@ -1,0 +1,31 @@
+{
+ "title": "A picture that scrolls the way Mario's does",
+ "kind": "scroll",
+ "description": "A cartridge of our own whose picture follows the square and builds the land ahead in strips, the way Super Mario Bros. was measured doing it, measured beside it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "vertical",
+ "script": "right.txt",
+ "frames": 1500,
+ "grabs": [
+  100,
+  400,
+  800,
+  1200
+ ],
+ "walk_from": 60,
+ "memory": {
+  "camera": [
+   "$20",
+   "$21"
+  ],
+  "countdown": "$23",
+  "x": "$11",
+  "speed_x": [
+   "$12",
+   "$13"
+  ]
+ }
+}
