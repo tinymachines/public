@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { test, expect } from "@playwright/test";
 import { DESK, open } from "./lib";
 
@@ -169,3 +171,34 @@ test("the open items carry no section about the host", async ({ page }) => {
   expect(text).not.toContain("python3.10");
   expect(text).not.toContain("user site");
 });
+
+/**
+ * A part page lists its documents by title and one line. Those were
+ * printed in English on both spellings long after the documents had
+ * Japanese bodies, and the cart page read as an English page the day its
+ * sixth document arrived (2026-10-02). Each title the overlay can say is
+ * held to the overlay here, by route, so a list going back to English
+ * fails on the row and not on a share of letters.
+ */
+const JA = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "data", "ja.json"), "utf8")) as Record<string, string>;
+
+for (const part of ["/nes/cart", "/nes/bench", "/nes/console"]) {
+  test(`${part} lists its documents in Japanese where the overlay has them`, async ({ page }) => {
+    await page.setViewportSize(DESK);
+    const rows = (p: string) =>
+      page.goto(p, { waitUntil: "load" }).then(() =>
+        page.locator(".nes-shelf li").evaluateAll((lis) =>
+          lis.map((li) => ({ href: li.querySelector("a")?.getAttribute("href") ?? "", title: li.querySelector("a")?.textContent ?? "", line: li.textContent ?? "" }))));
+    const en = await rows(part);
+    const ja = await rows(`/ja${part}`);
+    expect(ja.length, "the Japanese page lists the same documents").toBe(en.length);
+    const sayable = en.filter((r) => JA[r.title]);
+    // A list with nothing the overlay can say would pass on nothing.
+    expect(sayable.length, `${part}: titles the overlay can say`).toBeGreaterThan(2);
+    for (const r of sayable) {
+      const twin = ja.find((j) => j.href === `/ja${r.href}`);
+      expect(twin?.title, `${r.href} on /ja${part}`).toBe(JA[r.title]);
+      expect(twin?.line, `${r.href}: its line still reads in English`).not.toContain(r.line.slice(r.line.indexOf(": ") + 2));
+    }
+  });
+}
