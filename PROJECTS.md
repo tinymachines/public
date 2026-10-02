@@ -4554,3 +4554,92 @@ every count here waits on; /autopsy behind a front door (the doors'
 groups are the owner's copy); the owner's ergonomics work; the quiet
 machine's speed; the phone flake in `create.spec`, and one on the
 Japanese game page that passed six of six on repeat.
+
+## Checkpoint, 2026-10-02: longer crawls, tables, and an object table drawn
+
+Live serves `778934c` (1.0.267); beta serves main, seventeen commits on
+from the last checkpoint, none of it deployed. The next deploy re-boards
+both bundles first (`wasm/flow` and `wasm/listing` both moved).
+
+The crawl, in the console's repository (`nes`, three commits):
+
+- **A state does not carry the pictures.** A saved state holds the
+  console's finished frames and the crawl never dropped them, so each
+  moment carried every frame since power-on. A 1600-step crawl reached
+  52 GB and the kernel killed it, and a browser on the host with it.
+  Cleared before a state is taken: 271 MB at the peak, the same sites.
+- **Several moments at a time** (`BATCH`): one moment's sixteen actions
+  left most of the cores waiting on its one long wait. Eight at a time
+  the same crawl takes well under half the time, and results are folded
+  in moment then action order, so a crawl is the same on any machine.
+- **Tried and turned down:** keeping a step that ended on a picture not
+  seen before (`PICTURE`) found one to four percent more on two games
+  that had run their frontier dry. It is a switch, off.
+
+The counts (`notes/autopsy.md` has each): 1600 steps a game, then 6400
+with three plain recordings of 5400 frames beside each crawl (touch
+nothing, so the game's demonstration plays; Start and wait; tap through
+the menus and hold Right). One deeper crawl reached less than its
+shallower one (what a step is kept for depends on what has been seen,
+so the order moments are taken in changes where a crawl can go), and a
+count must not lose what an earlier one found: seven games carry their
+1600-step crawl folded in. Traces go through a named pipe and never
+touch the disk.
+
+| | at the last checkpoint | now |
+|---|---|---|
+| bytes executed, of 2,277,376 | 170,400 | 312,716 |
+| routines | 2933 | 5057 |
+| marks | 557 | 797 |
+| patterns | 15 | 16 |
+| jump tables | 92 | 219 (20 through pointers; 172 say what chose) |
+| object tables | 10 in 6 games | 31 in 13 games, 323 arrays |
+
+What the tools learned to see:
+
+- **A bank is where the run saw its code.** The listing had each bank
+  at the window the board usually maps it to; an MMC3 game maps them
+  elsewhere, and at the wrong origin nothing inside resolved. One game
+  went from no jump tables to 23.
+- **Pointer tables** (`@table pointers`): the words a `JMP (ind)` of its
+  own went through, found by where the pointer's bytes were loaded from.
+- **The handler kept in memory**, the sixteenth pattern: a jump through
+  a pointer copied out of RAM, in four games.
+- **Countdowns** (`@objects ... down=`): the companions with a byte only
+  ever stepped down in place. 42 arrays; with 22 added into positions
+  and 23 choosing a jump, an object table reads as positions, what
+  moves them, what picks their code, what counts down, and the rest.
+- **Names**: a routine or a loop a rule named is called by what it is
+  in the listing (`poll_8E5C`, `engine_8E04`, `drain_`, `sound_`,
+  `compare_`, `wait_`, `spin_`).
+- **The random byte** no longer asks how often its routine ran, which
+  came and went with the run's mix of menus and play. The byte must
+  carry its value between frames by most of the reports, the routine
+  must look at it besides shifting it and must not read the pad (a poll
+  has the same shape), and of the routines a stir ran in the tightest
+  keeps the mark. Twenty routines in fourteen games.
+
+On a game's page (beta): each object table is drawn, a column for each
+array at its address and a row for each slot, positions filled and
+darker where a rule saw the slot compared, the rest told apart by form
+and a letter, in the page's own ink; the routines and loops a rule
+identified show the name the listing gives them; each jump table says
+how it is reached and which byte chose. The spec holds every one of
+those to the record (ten tests).
+
+How a count is re-made now: `private/regen3.sh` in the scratchpad
+(reports and models for the nineteen, about eight hours overnight at
+this depth), then `scripts/board-autopsy.py`. With the reports on disk
+`relist3.sh` re-makes every model in under a minute, so a rule that
+reads only the listing's side can be tried against all nineteen games
+before the reports are deleted.
+
+Open: several games run the frontier dry before the budget, so the next
+coverage comes from a way in per game, not more steps; a pointer whose
+two bytes come from a table of low bytes and one of high is seen as
+chosen and not written as a table; the rest of an object table; a
+drawing of where an object table sits in the whole of RAM; /autopsy
+behind a front door (the doors' groups are the owner's copy); the
+owner's ergonomics work; the quiet machine's speed; the phone flake in
+`create.spec`, and one on a Japanese game page right after a beta
+restart that passes on repeat.
