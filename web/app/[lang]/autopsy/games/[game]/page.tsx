@@ -45,9 +45,10 @@ const PROSE = {
     loopsWhat: "Loops a rule named that sit inside a routine and are not themselves a place the code is entered.",
     lcols: ["at", "its name in the listing", "what it is, and the evidence"],
     tablesH: "The tables it jumps through",
-    tablesWhat: "A table of addresses the game picks one from. Some sit right after a call to a jump engine; others are anywhere in the cartridge, and we find them by where the address the game jumped through was loaded from. An entry is counted as far as the runs saw one taken; the true table may be longer. The last column is the byte of memory whose value picked the entry, where we could follow it: the game's mode, or what one of its objects is doing.",
+    tablesWhat: "A table of addresses the game picks one from. Some sit right after a call to a jump engine; others are anywhere in the cartridge, and we find them by where the address the game jumped through was loaded from. Some games jump by pushing an address and returning to it, and some keep a table as two, the low bytes of its addresses in one place and the high bytes in another; both are found the same way. An entry is counted as far as the runs saw one taken; the true table may be longer. The last column is the byte of memory whose value picked the entry, where we could follow it: the game's mode, or what one of its objects is doing.",
     tcols: ["at", "reached", "entries", "taken", "chosen by the byte at"],
-    tkind: (k: string) => (k === "pointers" ? "through a pointer" : "after a call"),
+    tkind: (k: string, returns: boolean) =>
+      k === "low" ? (returns ? "by a return, low and high bytes apart" : "through a pointer, low and high bytes apart") : k === "returns" ? "by a return" : k === "pointers" ? "through a pointer" : "after a call",
     ramH: "The memory its routines share",
     ram: (variables: string, arrays: string) => (
       <>
@@ -87,9 +88,10 @@ const PROSE = {
     loopsWhat: "規則が名付けたループのうち、ルーチンの内側にあって、それ自身はコードの入口ではないもの。",
     lcols: ["場所", "リスティングでの名前", "何であるか、その証拠"],
     tablesH: "ジャンプに使うテーブル",
-    tablesWhat: "ゲームがその中から一つを選ぶ、アドレスのテーブル。ジャンプエンジンへの呼び出しの直後にあるものもあれば、カートリッジのどこかにあるものもある。後者は、ゲームが通って跳んだアドレスがどこから読み込まれたかで見つける。項目は、走行が選ぶのを見た所までを数える。本当のテーブルはもっと長いかもしれない。最後の列は、その値が項目を選んだメモリのバイトで、追えた場合だけ書いてある: ゲームのモードか、物体の一つが今していることだ。",
+    tablesWhat: "ゲームがその中から一つを選ぶ、アドレスのテーブル。ジャンプエンジンへの呼び出しの直後にあるものもあれば、カートリッジのどこかにあるものもある。後者は、ゲームが通って跳んだアドレスがどこから読み込まれたかで見つける。アドレスを積んでそこへ戻ることで跳ぶゲームもあれば、テーブルを二つに分けて、アドレスの下位バイトをある場所に、上位バイトを別の場所に置くゲームもある。どちらも同じやり方で見つける。項目は、走行が選ぶのを見た所までを数える。本当のテーブルはもっと長いかもしれない。最後の列は、その値が項目を選んだメモリのバイトで、追えた場合だけ書いてある: ゲームのモードか、物体の一つが今していることだ。",
     tcols: ["場所", "届き方", "項目", "選ばれた数", "選んだバイト"],
-    tkind: (k: string) => (k === "pointers" ? "ポインタ経由" : "呼び出しの直後"),
+    tkind: (k: string, returns: boolean) =>
+      k === "low" ? (returns ? "戻りで、下位と上位が別々" : "ポインタ経由、下位と上位が別々") : k === "returns" ? "戻りで" : k === "pointers" ? "ポインタ経由" : "呼び出しの直後",
     ramH: "ルーチンが共有するメモリ",
     ram: (variables: string, arrays: string) => (
       <>
@@ -231,7 +233,7 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
                     {g.table_list.map((x) => (
                       <tr key={`${x.bank}:${x.addr}`}>
                         <td>{at(x.bank, x.addr)}</td>
-                        <td data-autopsy-table-kind={x.kind ?? "dispatch"}>{S.tkind(x.kind ?? "dispatch")}</td>
+                        <td data-autopsy-table-kind={x.kind ?? "dispatch"}>{S.tkind(x.kind ?? "dispatch", x.returns === true)}</td>
                         <td>{n(x.entries)}</td>
                         <td>{n(x.seen)}</td>
                         <td data-autopsy-table-on={(x.on ?? []).length}>{(x.on ?? []).join(", ")}</td>

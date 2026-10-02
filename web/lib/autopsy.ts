@@ -47,8 +47,14 @@ export interface AutopsyGame {
   arrays: number;
   variables: number;
   routine_list: AutopsyRoutine[];
-  /** `on`: the bytes of memory that chose the way through it. */
-  table_list: { bank: string; addr: number; kind?: string; entries: number; seen: number; on?: string[] }[];
+  /**
+   * `on`: the bytes of memory that chose the way through it. `kind` is how
+   * the game reaches it: after a call (`dispatch`), through a pointer
+   * (`pointers`), by a return to a pushed address (`returns`), or `low`
+   * for a table kept as two, whose high bytes are at `high`; `returns`
+   * on one of those says the jump was a return.
+   */
+  table_list: { bank: string; addr: number; kind?: string; entries: number; seen: number; on?: string[]; high?: string; returns?: boolean }[];
   /** The loops a rule named that are no routine's entry: where the game waits. */
   loop_list: { name: string; bank: string; addr: number; is: AutopsyPattern[] }[];
   /** `x` and `y`: how many of its bytes are positions a rule saw compared. */
