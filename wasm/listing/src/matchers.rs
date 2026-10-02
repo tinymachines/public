@@ -221,6 +221,7 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     // every other frame it ran. $2006 is not the scroll here: a screen
     // drawn with rendering off sets the address in the picture too. And
     // the bank switch: any routine that wrote into the ROM's window.
+    let mut random: Vec<(usize, usize, Vec<usize>, String)> = Vec::new();
     for r in &run.routines {
         let (scroll, _) = beam(r, |a| a == 0x2005);
         let (status, _) = beam(r, |a| a == 0x2002);
@@ -252,15 +253,23 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
         {
             let mut bytes: Vec<u16> = Vec::new();
             let (mut shifts, mut eors) = (0u64, 0u64);
+            let mut consulted: Vec<u16> = Vec::new();
+            let mut stirs: Vec<usize> = Vec::new();
             for &k in &r.body {
                 let (Some(&op), Some(site)) = (prg.get(k), run.sites.get(&k)) else { continue };
                 if ops::name(op) == "EOR" {
                     eors += 1;
                 }
+                if matches!(ops::name(op), "LDA" | "LDX" | "LDY" | "EOR" | "AND" | "ORA" | "BIT" | "CMP" | "ADC" | "SBC") {
+                    consulted.extend(site.reads.iter().map(|x| x.0));
+                }
                 if matches!(ops::name(op), "ASL" | "LSR" | "ROL" | "ROR") && ops::mode(op) != Mode::Acc {
                     for &(a, _) in &site.writes {
-                        let state = if run.carried.is_empty() { often } else { run.carried.contains(&a) };
+                        let state = run.is_carried(a).unwrap_or(often);
                         if state && a < 0x0800 && site.reads.iter().any(|x| x.0 == a) {
+                            if !stirs.contains(&k) {
+                                stirs.push(k);
+                            }
                             shifts += 1;
                             if !bytes.contains(&a) {
                                 bytes.push(a);
@@ -269,10 +278,16 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
                     }
                 }
             }
-            if !bytes.is_empty() && eors > 0 {
+            // The feedback: the routine also looks at one of the bytes it
+            // stirs (a bit of the old value decides the new). And it does
+            // not read the pad: a poll shifts the buttons into a byte and
+            // EORs it with the last frame's, which is the same shape.
+            let feedback = bytes.iter().any(|b| consulted.contains(b));
+            let pad = touched(r, 0x4016).0 + touched(r, 0x4017).0 > 0;
+            if !bytes.is_empty() && eors > 0 && feedback && !pad {
                 bytes.sort();
                 let list: Vec<String> = bytes.iter().map(|a| format!("${a:04X}")).collect();
-                out.push(Mark { offset: r.offset, rest: format!("random-byte bytes={} shifts={shifts} eors={eors} frames={} by=match", list.join(","), r.frames) });
+                random.push((r.offset, r.body.len(), stirs, format!("random-byte bytes={} shifts={shifts} eors={eors} frames={} by=match", list.join(","), r.frames)));
             }
         }
         if often {
@@ -281,6 +296,16 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
             if blank >= r.frames as u64 && r.frames > 0 {
                 out.push(Mark { offset: r.offset, rest: format!("scroll-writer writes-in-blank={blank} frames={} by=match", r.frames) });
             }
+        }
+    }
+    // A stir belongs to one routine. Code several routines jump into ran
+    // in each of them, so each would be marked for it: of the routines
+    // that share a stirring instruction, the tightest (the fewest
+    // instructions ran in it; the lower address on a tie) keeps the mark.
+    for (i, (offset, size, stirs, rest)) in random.iter().enumerate() {
+        let tighter = random.iter().enumerate().any(|(j, o)| j != i && (o.1, o.0) < (*size, *offset) && o.2.iter().any(|k| stirs.contains(k)));
+        if !tighter {
+            out.push(Mark { offset: *offset, rest: rest.clone() });
         }
     }
     // The handler kept in memory: a routine with a JMP (ind) whose

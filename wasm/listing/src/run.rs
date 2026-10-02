@@ -122,9 +122,13 @@ pub struct Run {
     pub moves: Vec<(u16, u16, u64)>,
     /// The bytes stepped in place: cell, times up (INC), times down (DEC).
     pub steps: Vec<(u16, u64, u64)>,
-    /// The bytes that carry a value from one frame into the next, when
-    /// the report says (empty from a report written before it did).
-    pub carried: Vec<u16>,
+    /// The bytes that carry a value from one frame into the next, each
+    /// with the number of reports that said so, and how many reports
+    /// said anything (none, from reports written before the flow did).
+    /// One path can read a temporary before it writes it; state is
+    /// carried in most.
+    pub carried: Vec<(u16, u32)>,
+    pub carried_of: u32,
 }
 
 fn u(v: &Value) -> u64 {
@@ -262,7 +266,8 @@ impl Run {
                 .collect();
             run.meets.push(Meet { offset: key, routine, pairs });
         }
-        run.carried = v["carried"].as_array().unwrap_or(&none).iter().map(|c| u(c) as u16).collect();
+        run.carried = v["carried"].as_array().unwrap_or(&none).iter().map(|c| (u(c) as u16, 1)).collect();
+        run.carried_of = v["carried"].is_array() as u32;
         for m in v["steps"].as_array().unwrap_or(&none) {
             if let Some(m) = m.as_array().filter(|m| m.len() == 3) {
                 run.steps.push((u(&m[0]) as u16, u(&m[1]), u(&m[2])));
@@ -378,9 +383,11 @@ impl Run {
                 None => self.loops.push(l),
             }
         }
-        for c in other.carried {
-            if !self.carried.contains(&c) {
-                self.carried.push(c);
+        self.carried_of += other.carried_of;
+        for (c, n) in other.carried {
+            match self.carried.iter_mut().find(|x| x.0 == c) {
+                Some(x) => x.1 += n,
+                None => self.carried.push((c, n)),
             }
         }
         for (cell, up, down) in other.steps {
@@ -434,6 +441,12 @@ impl Run {
                 None => self.vars.push(v),
             }
         }
+    }
+
+    /// Does the byte carry its value from frame to frame, by at least
+    /// half the reports that said which bytes do? None when none said.
+    pub fn is_carried(&self, cell: u16) -> Option<bool> {
+        (self.carried_of > 0).then(|| self.carried.iter().any(|x| x.0 == cell && x.1 * 2 >= self.carried_of))
     }
 
     /// The sites that fall in one bank, keyed by offset within it.
