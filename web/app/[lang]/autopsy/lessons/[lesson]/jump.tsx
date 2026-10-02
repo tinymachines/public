@@ -110,8 +110,8 @@ export function JumpPart({ lang, m, a }: { lang: Lang; m: JumpMeasures; a?: (Jum
                   <tr>{S.cols(game).map((c, i) => <th key={i}>{c}</th>)}</tr>
                 </thead>
                 <tbody>
-                  <tr data-lesson-row="walk"><td>{S.walkRow}</td><td>{n(m.full_speed_after)}</td><td>{n(a.full_speed_after)}</td></tr>
-                  <tr data-lesson-row="top"><td>{S.topRow}</td><td>{n(m.full_speed)}</td><td>{n(a.full_speed)}</td></tr>
+                  <tr data-lesson-row="walk" data-lesson-ours={String(m.full_speed_after)} data-lesson-theirs={String(a.full_speed_after)}><td>{S.walkRow}</td><td>{n(m.full_speed_after)}</td><td>{n(a.full_speed_after)}</td></tr>
+                  <tr data-lesson-row="top" data-lesson-ours={String(m.full_speed)} data-lesson-theirs={String(a.full_speed)}><td>{S.topRow}</td><td>{n(m.full_speed)}</td><td>{n(a.full_speed)}</td></tr>
                   {m.jumps.map((j, i) => (
                     <tr key={i} data-lesson-row="jump" data-lesson-ours={`${j.frames},${j.risen}`} data-lesson-theirs={a.jumps[i] ? `${a.jumps[i].frames},${a.jumps[i].risen}` : ""}>
                       <td>{S.jumpRow(a.jumps[i] && a.jumps[i].held !== j.held ? `${n(j.held)} (${n(a.jumps[i].held)})` : n(j.held))}</td>
