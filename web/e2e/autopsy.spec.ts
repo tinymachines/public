@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from "./lib";
+import type { AutopsyGame } from "../lib/autopsy";
 
 /**
  * The autopsy section, held to its record.
@@ -15,7 +16,8 @@ import { BASE, DESK, JA_FLOOR, jaShare, open, PHONE, overflow, servedBody } from
 
 const RECORD = path.join(__dirname, "..", "..", "data", "autopsy.json");
 
-type Game = { key: string; name: string; patterns: Record<string, number>; routine_list: { name: string; is: unknown[] }[]; table_list: { on?: string[]; kind?: string }[]; loop_list: { is: unknown[] }[]; array_list: { x?: number; y?: number }[]; object_list: { arrays: number; adds?: string[] }[] };
+/** The record's own shape, as the pages read it. */
+type Game = AutopsyGame;
 
 function record(): { games: Game[]; patterns: string[] } {
   const r = JSON.parse(fs.readFileSync(RECORD, "utf8")) as { games: Game[]; patterns: string[] };
@@ -122,6 +124,43 @@ test("a game's object tables are drawn, a column for each array", async ({ page 
   // The roles are drawn into the columns: as many marked "+" as the record says are added into positions.
   const plus = await page.locator('figure[data-autopsy-object-drawing] g[data-autopsy-marks*="+"]').count();
   expect(plus, `${g.name}: the columns marked as added into positions`).toBe(g.object_list.reduce((n, o) => n + (o.adds ?? []).length, 0));
+});
+
+test("every game's memory map puts its tables, compared positions and busiest bytes at their addresses", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize(DESK);
+  const r = record();
+  const num = (b: string) => parseInt(b.slice(1), 16);
+  const hex4 = (v: number) => `$${v.toString(16).toUpperCase().padStart(4, "0")}`;
+  const seen = { tables: 0, compared: 0, busy: 0, overlapping: 0 };
+  for (const g of r.games) {
+    await open(page, `/autopsy/games/${g.key}`, 100);
+    const map = page.locator("figure[data-autopsy-memory-map]");
+    await expect(map, `${g.name}: one map`).toHaveCount(1);
+    expect(Number(await map.getAttribute("data-autopsy-memory-map")), `${g.name}: the tables the map says it holds`).toBe(g.object_list.length);
+    // Every table is on the map under its own number, starting where its first array does.
+    const spans = await map.locator("g[data-autopsy-map-table]").evaluateAll((gs) => gs.map((e) => [Number((e as HTMLElement).dataset.autopsyMapTable), (e as HTMLElement).dataset.autopsyMapFrom ?? ""] as const));
+    expect([...new Set(spans.map((x) => x[0]))].sort((a, b) => a - b), `${g.name}: a numbered span for each table`).toEqual(g.object_list.map((_, k) => k + 1));
+    for (const [k, o] of g.object_list.entries()) {
+      const first = [...o.x, ...o.y, ...o.with].map(num).sort((a, b) => a - b)[0];
+      expect(spans.filter((x) => x[0] === k + 1).map((x) => x[1]), `${g.name}: table ${k + 1} starts at its first array`).toContain(hex4(first));
+    }
+    // The compared positions, from the evidence, and the busiest bytes that are in the console's own memory.
+    const compared = new Set<number>();
+    for (const x of g.routine_list) for (const i of x.is) if (i.pattern === "position-compare") for (const axis of ["x", "y"]) for (const c of String(i.evidence[axis] ?? "").split(",")) if (c && num(c) < 0x800) compared.add(num(c));
+    expect(await map.locator("[data-autopsy-map-compared]").count(), `${g.name}: a square for each compared position`).toBe(compared.size);
+    const busy = g.variable_list.filter((v) => num(v.addr) < 0x800).length;
+    expect(await map.locator("[data-autopsy-map-busy]").count(), `${g.name}: a tick for each busy byte in the console's memory`).toBe(busy);
+    seen.tables += g.object_list.length;
+    seen.compared += compared.size;
+    seen.busy += busy;
+    seen.overlapping += await map.locator("[data-autopsy-map-mark]").count();
+  }
+  // None of the above may pass on nothing: the record has tables of both shapes, compared positions and busy bytes.
+  expect(seen.tables, "tables across the games").toBeGreaterThan(10);
+  expect(seen.compared, "compared positions across the games").toBeGreaterThan(10);
+  expect(seen.busy, "busy bytes across the games").toBeGreaterThan(100);
+  expect(seen.overlapping, "marks inside tables whose columns overlap").toBeGreaterThan(0);
 });
 
 test("the patterns page tells every pattern, with the number of games the record gives", async ({ page }) => {

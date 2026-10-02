@@ -7,6 +7,7 @@ import { localize } from "@/lib/i18n";
 import { autopsy, boardName, game, percent, type AutopsyRoutine } from "@/lib/autopsy";
 import { Shell } from "@/app/components/SiteFrame";
 import { evidenceText, hex4, kindWords, ORDER, patternWords } from "../../words";
+import { MemoryMap } from "./MemoryMap";
 import { ObjectTable } from "./ObjectTable";
 
 /**
@@ -245,6 +246,7 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
 
         <h2>{S.ramH}</h2>
         <p>{S.ram(n(g.variables), n(g.arrays))}</p>
+        <MemoryMap lang={lang} g={g} />
         {arrays.length ? (
           <>
             <h3>{S.arraysH}</h3>
@@ -274,7 +276,7 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
             <h3>{S.objectsH}</h3>
             <p>{S.objectsWhat}</p>
             {g.object_list.map((x, k) => (
-              <ObjectTable key={k} lang={lang} g={g} table={x} id={`objects-${k}`} />
+              <ObjectTable key={k} lang={lang} g={g} table={x} id={`objects-${k}`} ordinal={k + 1} />
             ))}
             <div className="ledger">
               <div className="scroller">

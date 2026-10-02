@@ -19,16 +19,16 @@ type Table = AutopsyGame["object_list"][number];
 
 const WORDS = {
   en: {
-    caption: (arrays: string, slots: string, routines: string) =>
-      `${arrays} arrays of up to ${slots} slots that ${routines} routines step through together. Each column is an array at its address and each row a slot, so one thing on the screen is one row across all of them.`,
+    caption: (ordinal: string, arrays: string, slots: string, routines: string) =>
+      `Table ${ordinal}: ${arrays} arrays of up to ${slots} slots that ${routines} routines step through together. Each column is an array at its address and each row a slot, so one thing on the screen is one row across all of them.`,
     cut: (shown: string, slots: string) => ` The first ${shown} of ${slots} slots are drawn.`,
     more: " A number under a column is how many more bytes that array was reached across than the table is long.",
     key: "X and Y are positions, and the darker squares are the slots a rule saw compared. + is added into a position, which is what a speed does. → chose a jump, which is what a state or a kind does. ↓ is only ever counted down, which is what a timer does. A plain outline travels with them and is not named yet.",
     label: (arrays: string, slots: string) => `An object table drawn as ${arrays} columns of up to ${slots} slots`,
   },
   ja: {
-    caption: (arrays: string, slots: string, routines: string) =>
-      `${routines} 個のルーチンが一緒にたどる、最大 ${slots} 枠の配列 ${arrays} 本。列はそれぞれのアドレスにある配列、行は枠で、画面上のもの一つが、すべての列を横切る一行になる。`,
+    caption: (ordinal: string, arrays: string, slots: string, routines: string) =>
+      `表 ${ordinal}: ${routines} 個のルーチンが一緒にたどる、最大 ${slots} 枠の配列 ${arrays} 本。列はそれぞれのアドレスにある配列、行は枠で、画面上のもの一つが、すべての列を横切る一行になる。`,
     cut: (shown: string, slots: string) => ` ${slots} 枠のうち最初の ${shown} 枠を描いてある。`,
     more: " 列の下の数は、その配列が表の長さを超えて届いたバイト数。",
     key: "X と Y は位置で、濃い四角は規則が比較を見た枠。+ は位置に足し込まれる配列で、速度がすることだ。→ はジャンプを選んだ配列で、状態や種類がすることだ。↓ は減らされる一方の配列で、タイマーがすることだ。輪郭だけの列は一緒に動くが、まだ名付けていない。",
@@ -41,7 +41,7 @@ const num = (base: string) => parseInt(base.slice(1), 16);
 /** The most rows drawn: a table longer than this is cut, and says so. */
 const ROWS = 32;
 
-export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame; table: Table; id: string }) {
+export function ObjectTable({ lang, g, table, id, ordinal }: { lang: Lang; g: AutopsyGame; table: Table; id: string; ordinal: number }) {
   const S = WORDS[lang];
   const n = (v: number) => v.toLocaleString(lang);
   const bases = [...new Set([...table.x, ...table.y, ...table.with])].sort((a, b) => num(a) - num(b));
@@ -73,7 +73,7 @@ export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame
   const every = rows <= 16 ? 1 : 4;
 
   return (
-    <figure className="diagram autopsy-object-table" data-autopsy-object-drawing={bases.length}>
+    <figure className="diagram autopsy-object-table" data-autopsy-object-drawing={bases.length} data-autopsy-object-ordinal={ordinal}>
       <div className="ledger">
         <div className="scroller">
           <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={S.label(n(bases.length), n(most))} style={{ display: "block", maxWidth: "none", color: "inherit" }}>
@@ -138,7 +138,7 @@ export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame
         </div>
       </div>
       <figcaption>
-        {S.caption(n(bases.length), n(most), n(table.routines))}
+        {S.caption(n(ordinal), n(bases.length), n(most), n(table.routines))}
         {most > rows ? S.cut(n(rows), n(most)) : ""}
         {longer ? S.more : ""} {S.key}
       </figcaption>
