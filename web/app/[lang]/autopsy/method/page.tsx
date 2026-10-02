@@ -55,6 +55,10 @@ const PROSE = {
         values it had not held, because a level has to be walked through
         before its next routine runs. Every position it keeps comes with the
         button presses that reach it, so any finding can be played again.
+        Three plain recordings ride along with each crawl: one that touches
+        nothing, so the game&rsquo;s own demonstration plays; one that presses
+        Start and waits; and one that taps through the menus and then holds
+        Right.
       </>
     ),
     runH: "A run says what each routine did",
@@ -133,7 +137,7 @@ const PROSE = {
     crawlH: "クロールが私たちの代わりにゲームを遊ぶ",
     crawl: (
       <>
-        カートリッジを開始アドレスから読むと、そのアドレスが導く先しか見つからない。そしてゲームの大部分は、読むだけでは追えないテーブルを通って届く。だからプログラムが遊ぶ。保存した場面から、ボタンの組み合わせを一つずつ少しの間押し、どの命令が走ったかを見て、まだ一度も走っていなかったものがあればその場面を残す。新しいものが何も走らないときは、メモリがそれまで持ったことのない値を取った場面を選ぶ。面は、次のルーチンが走る前に歩き通さなければならないからだ。残した場面にはどれも、そこへ届くボタン操作が付いているので、どの発見ももう一度再生できる。
+        カートリッジを開始アドレスから読むと、そのアドレスが導く先しか見つからない。そしてゲームの大部分は、読むだけでは追えないテーブルを通って届く。だからプログラムが遊ぶ。保存した場面から、ボタンの組み合わせを一つずつ少しの間押し、どの命令が走ったかを見て、まだ一度も走っていなかったものがあればその場面を残す。新しいものが何も走らないときは、メモリがそれまで持ったことのない値を取った場面を選ぶ。面は、次のルーチンが走る前に歩き通さなければならないからだ。残した場面にはどれも、そこへ届くボタン操作が付いているので、どの発見ももう一度再生できる。クロールにはそれぞれ、素朴な記録が三つ付いて行く: 何も触らないもの (ゲーム自身のデモが流れる)、スタートを押して待つもの、メニューを連打で抜けてから右を押し続けるもの。
       </>
     ),
     runH: "走行が、それぞれのルーチンのしたことを語る",
@@ -182,7 +186,11 @@ export default async function AutopsyMethodPage({ params }: { params: Promise<{ 
   const { lang } = await params;
   const S = PROSE[lang];
   const r = autopsy();
-  const steps = typeof r.steps === "number" ? r.steps.toLocaleString(lang) : r.steps.map((s) => s.toLocaleString(lang)).join(", ");
+  // One figure, or the least and the most when games had different budgets.
+  const steps =
+    typeof r.steps === "number"
+      ? r.steps.toLocaleString(lang)
+      : `${Math.min(...r.steps).toLocaleString(lang)}${lang === "ja" ? " から " : " to "}${Math.max(...r.steps).toLocaleString(lang)}`;
   return (
     <Shell lang={lang} die="NES" title={t(lang, surface("autopsy", "method").name)}>
       <div className="prose">

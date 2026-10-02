@@ -54,7 +54,7 @@ export interface AutopsyGame {
   /** `x` and `y`: how many of its bytes are positions a rule saw compared. */
   array_list: { base: string; slots: number; sites: number; x?: number; y?: number }[];
   /** Arrays the runs saw indexed together with an array of positions. */
-  object_list: { slots: number; arrays: number; routines: number; x: string[]; y: string[]; with: string[]; adds?: string[]; chooses?: string[] }[];
+  object_list: { slots: number; arrays: number; routines: number; x: string[]; y: string[]; with: string[]; adds?: string[]; chooses?: string[]; down?: string[] }[];
   variable_list: { addr: string; total: number; writers: number; readers: number }[];
 }
 

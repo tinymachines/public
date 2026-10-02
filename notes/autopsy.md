@@ -290,49 +290,49 @@ image it runs from.
 
    | game | board | PRG executed | routines (run) | tables | arrays | variables | patterns |
    |---|---|---|---|---|---|---|---|
-   | Battle Chess (USA) | 1 | 8270 of 262144 (3%) | 158 | 1 | 91 | 671 | 27 |
-   | Blades of Steel (USA) | 2 | 28200 of 131072 (22%) | 398 | 26 | 130 | 739 | 49 |
-   | Blaster Master (USA) | 1 | 10418 of 131072 (8%) | 230 | 1 | 66 | 712 | 22 |
-   | Defender II (USA) | 0 | 9255 of 16384 (56%) | 136 | 0 | 29 | 505 | 30 |
-   | Double Dribble (USA) (Rev 1) | 2 | 28209 of 131072 (22%) | 270 | 8 | 82 | 638 | 36 |
-   | Fester's Quest (USA) | 1 | 11740 of 131072 (9%) | 76 | 2 | 49 | 352 | 19 |
-   | Goonies II, The (USA) | 2 | 11241 of 131072 (9%) | 229 | 9 | 59 | 711 | 35 |
-   | Legend of Zelda, The (USA) (Rev 1) | 1 | 5493 of 131072 (4%) | 98 | 8 | 34 | 834 | 28 |
-   | Metroid (USA) | 1 | 13908 of 131072 (11%) | 420 | 13 | 92 | 1116 | 43 |
-   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 21003 of 131072 (16%) | 252 | 10 | 59 | 394 | 58 |
-   | Ninja Gaiden (USA) | 1 | 10926 of 131072 (8%) | 147 | 7 | 56 | 473 | 44 |
-   | Paperboy (USA) | 3 | 8347 of 32768 (25%) | 163 | 0 | 52 | 741 | 22 |
-   | Q-bert (USA) | 3 | 7881 of 32768 (24%) | 208 | 18 | 72 | 551 | 22 |
-   | Super Mario Bros. + Duck Hunt (USA) | 66 | 15604 of 65536 (24%) | 304 | 16 | 89 | 795 | 57 |
-   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 16830 of 131072 (13%) | 250 | 13 | 104 | 1325 | 34 |
-   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 22787 of 262144 (9%) | 260 | 23 | 145 | 1070 | 67 |
-   | Teenage Mutant Ninja Turtles (USA) | 1 | 15612 of 131072 (12%) | 314 | 18 | 73 | 712 | 46 |
-   | Tetris (USA) | 1 | 5718 of 32768 (17%) | 111 | 5 | 46 | 424 | 27 |
-   | Zelda II - The Adventure of Link (USA) | 1 | 4298 of 131072 (3%) | 85 | 7 | 28 | 711 | 25 |
+   | Battle Chess (USA) | 1 | 9181 of 262144 (4%) | 186 | 1 | 99 | 714 | 27 |
+   | Blades of Steel (USA) | 2 | 31083 of 131072 (24%) | 453 | 30 | 159 | 790 | 52 |
+   | Blaster Master (USA) | 1 | 13581 of 131072 (10%) | 280 | 1 | 69 | 821 | 22 |
+   | Defender II (USA) | 0 | 9444 of 16384 (58%) | 136 | 0 | 29 | 547 | 30 |
+   | Double Dribble (USA) (Rev 1) | 2 | 31512 of 131072 (24%) | 279 | 8 | 82 | 649 | 37 |
+   | Fester's Quest (USA) | 1 | 13207 of 131072 (10%) | 82 | 2 | 49 | 390 | 21 |
+   | Goonies II, The (USA) | 2 | 17460 of 131072 (13%) | 342 | 18 | 62 | 854 | 43 |
+   | Legend of Zelda, The (USA) (Rev 1) | 1 | 14209 of 131072 (11%) | 304 | 16 | 64 | 1373 | 51 |
+   | Metroid (USA) | 1 | 15464 of 131072 (12%) | 458 | 13 | 96 | 1248 | 50 |
+   | Mike Tyson's Punch-Out!! (Japan, USA) (En) | 9 | 25519 of 131072 (19%) | 319 | 10 | 72 | 498 | 68 |
+   | Ninja Gaiden (USA) | 1 | 12425 of 131072 (9%) | 177 | 8 | 83 | 599 | 47 |
+   | Paperboy (USA) | 3 | 9018 of 32768 (28%) | 198 | 0 | 52 | 762 | 24 |
+   | Q-bert (USA) | 3 | 8718 of 32768 (27%) | 227 | 19 | 73 | 567 | 22 |
+   | Super Mario Bros. + Duck Hunt (USA) | 66 | 18801 of 65536 (29%) | 360 | 17 | 136 | 918 | 64 |
+   | Super Mario Bros. 2 (USA) (Rev 1) | 4 | 19286 of 131072 (15%) | 253 | 13 | 105 | 1634 | 36 |
+   | Super Mario Bros. 3 (USA) (Rev 1) | 4 | 26553 of 262144 (10%) | 264 | 23 | 148 | 1127 | 68 |
+   | Teenage Mutant Ninja Turtles (USA) | 1 | 17970 of 131072 (14%) | 372 | 19 | 75 | 785 | 58 |
+   | Tetris (USA) | 1 | 6318 of 32768 (19%) | 121 | 5 | 47 | 449 | 27 |
+   | Zelda II - The Adventure of Link (USA) | 1 | 12967 of 131072 (10%) | 246 | 16 | 96 | 1470 | 48 |
 
-   (Both tables are the fourth count's, 1600 steps a game; see the
-   end of this step.) What a cold crawl reaches is still small (3 to
-   25 percent of a bank-switched game, 56 percent of the one 16K
+   (Both tables are the fifth count's, 6400 steps a game; see the
+   end of this step.) What a cold crawl reaches is still small (4 to
+   29 percent of a game of 32K or more, 58 percent of the one 16K
    game), so the routine counts are a floor. The patterns, across the
    nineteen:
 
    | pattern | games | marks |
    |---|---|---|
-   | bank-switch | 18 of 19 | 150 |
+   | bank-switch | 18 of 19 | 178 |
    | counting-spin | 4 of 19 | 4 |
-   | frame-wait | 13 of 19 | 44 |
+   | frame-wait | 13 of 19 | 49 |
    | game-loop-in-nmi | 8 of 19 | 8 |
-   | handler-in-memory | 3 of 19 | 5 |
+   | handler-in-memory | 4 of 19 | 7 |
    | idle-spin | 4 of 19 | 4 |
-   | jump-engine | 16 of 19 | 26 |
+   | jump-engine | 16 of 19 | 29 |
    | pad-poll | 19 of 19 | 40 |
-   | palette-writer | 19 of 19 | 30 |
-   | position-compare | 13 of 19 | 72 |
+   | palette-writer | 19 of 19 | 31 |
+   | position-compare | 14 of 19 | 91 |
    | random-byte | 12 of 19 | 18 |
-   | scroll-writer | 19 of 19 | 20 |
+   | scroll-writer | 19 of 19 | 21 |
    | sound-driver | 19 of 19 | 19 |
-   | sprite-0-split | 8 of 19 | 12 |
-   | sprite-writer | 19 of 19 | 220 |
+   | sprite-0-split | 11 of 19 | 16 |
+   | sprite-writer | 19 of 19 | 261 |
    | vram-drain | 19 of 19 | 19 |
 
    Read with care: the sound driver, the VRAM drain, the palette
@@ -346,7 +346,7 @@ image it runs from.
 
    *Corrected 2026-09-30, evening, counted a third time on
    2026-10-01 and a fourth that night (further down): the figures in
-   the next paragraphs are each count's own, the tables the fourth's.* The first had the random byte in three games, the scroll
+   the next paragraphs are each count's own, the tables the fifth's.* The first had the random byte in three games, the scroll
    writer in nine and the game loop inside the interrupt in none, and
    this note blamed the last on a rule "written for one run". That was
    wrong. A crawl's own record, laid over the reports for its
@@ -462,6 +462,58 @@ image it runs from.
    through a pointer copied out of RAM is the sixteenth pattern,
    `handler-in-memory` (three games, five routines): each thing keeps
    the address of its own code. 135 of the 185 tables say what chose.
+
+   *The fifth count, 2026-10-01, late: 6400 steps a game, and three plain
+   scripts.* Three things were tried on the crawl itself. Several
+   moments at a time (BATCH, nes `442f043`): one moment's sixteen
+   actions left most of the cores waiting on its one long wait, and
+   eight at a time the same 1600 steps took 170 s where they had
+   taken 432; the fold is in moment then action order now, so a crawl
+   is the same crawl on any machine, which it was not. A step kept
+   for ending on a picture not seen before (PICTURE, nes `b7e9ccd`):
+   on two games that had run their frontier dry it found one to four
+   percent more for the rest of the budget, so it is a switch and
+   off. And three plain scripts of 5400 frames laid beside each
+   game's crawl as extra paths (touch nothing, so the game's own
+   demonstration plays; Start once and wait; tap through the menus
+   and hold Right): alone they reach 8.7 percent more sites than the
+   1600-step crawls, half again as much for The Goonies II, a quarter
+   for Blaster Master.
+
+   At 6400 steps the two games that had sat on a screen moved most:
+   The Legend of Zelda from 98 routines to 304 and Zelda II from 85 to
+   246, each from about 4 percent of its program to about 10. Several
+   others ran the frontier dry before the budget, which more steps
+   will not mend. And one went backwards: Paperboy's deeper crawl
+   stopped at 848 steps having reached a quarter of what its
+   1600-step crawl had, because what a step is kept for depends on
+   what has been seen, so the order moments are taken in changes
+   where the crawl can go. A count must not lose what an earlier one
+   found, so for the seven games where the shallower crawl had sites
+   the deeper lacked, its paths and coverage are folded in (their
+   `steps` reads 8000). Across the nineteen: 312,716 bytes
+   executed where it was 255,740, 5057 routines where it was 4109,
+   795 marks where it was 691, 219 tables (172 saying what chose),
+   31 object tables in 13 games.
+
+   Two more things are written now. A routine or a loop a rule named
+   is called by what it is in the listing (`poll_8E5C`,
+   `engine_8E04`, `drain_`, `sound_`, `compare_`, `wait_`, `spin_`):
+   the label step of this note's first paragraph, begun. And the flow
+   counts the bytes an `INC` or a `DEC` steps in place (`steps`), so
+   `@objects` lists the companions with a byte only ever stepped
+   down, a countdown: 42 arrays in 17 of the 31 tables. An object
+   table now reads as positions, what moves them (22 arrays), what
+   picks their code (23), what counts down, and the rest.
+
+   One rule is shown up by the longer runs: `random-byte` asks that
+   the routine ran in half the frames, which is a fact about the mix
+   of menus and play in the run, not about the routine: between
+   counts one game lost its mark and one gained one, and two others
+   went from three to two and from one to two. The flow already
+   knows the better question (does the byte carry its value from one
+   frame into the next), and the rule should ask that; it needs the
+   reports re-made, so it waits for the next count.
 
    Still to come: the rest of an object table (a companion compared
    with a constant and then cleared reads like a timer or a health);

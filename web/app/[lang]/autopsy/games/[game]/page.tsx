@@ -59,8 +59,8 @@ const PROSE = {
     arraysH: "Reaches through an index: those that hold positions, then the longest",
     holds: (x: string, y: string) => [x && `${x} across`, y && `${y} down`].filter(Boolean).join(", "),
     objectsH: "What travels with a position",
-    objectsWhat: "Arrays that at least two routines step through together with an array of positions, across the same range. That is what a table of the things on the screen looks like in memory: one array for each property, one slot for each thing. We can say which arrays hold positions, which of the others get added into them, which is what a speed does, and which pick the way through a jump table, which is what a state or a kind does. What the rest hold is not named yet.",
-    ocols: ["slots", "arrays", "routines", "positions across", "positions down", "added into them", "choosing a jump", "travelling with them"],
+    objectsWhat: "Arrays that at least two routines step through together with an array of positions, across the same range. That is what a table of the things on the screen looks like in memory: one array for each property, one slot for each thing. We can say which arrays hold positions, which of the others get added into them, which is what a speed does, which pick the way through a jump table, which is what a state or a kind does, and which are only ever counted down, which is what a timer does. What the rest hold is not named yet.",
+    ocols: ["slots", "arrays", "routines", "positions across", "positions down", "added into them", "choosing a jump", "counted down", "travelling with them"],
     vcols: ["byte", "reads and writes", "routines writing", "routines reading"],
     varsH: (kept: string) => `The ${kept} busiest shared bytes`,
     not: "This page shows none of the game's bytes. The listing these figures were read from stays with the cartridge.",
@@ -98,8 +98,8 @@ const PROSE = {
     arraysH: "添字で届いた範囲: 位置を含むもの、次いで最も長いもの",
     holds: (x: string, y: string) => [x && `横 ${x}`, y && `縦 ${y}`].filter(Boolean).join("、"),
     objectsH: "位置と一緒に動くもの",
-    objectsWhat: "少なくとも二つのルーチンが、位置の配列と一緒に、同じ範囲をたどった配列。画面上のものの表は、メモリの中ではこう見える: 性質ごとに配列が一つ、ものごとに枠が一つ。どの配列が位置を持つかは言える。ほかの配列のうち、どれが位置に足し込まれるか (速度がすること) と、どれがジャンプのテーブルの行き先を選ぶか (状態や種類がすること) も言える。残りが何を持つかは、まだ名付けていない。",
-    ocols: ["枠", "配列", "ルーチン", "横の位置", "縦の位置", "位置に足し込まれる配列", "ジャンプを選ぶ配列", "一緒に動く配列"],
+    objectsWhat: "少なくとも二つのルーチンが、位置の配列と一緒に、同じ範囲をたどった配列。画面上のものの表は、メモリの中ではこう見える: 性質ごとに配列が一つ、ものごとに枠が一つ。どの配列が位置を持つかは言える。ほかの配列のうち、どれが位置に足し込まれるか (速度がすること) と、どれがジャンプのテーブルの行き先を選ぶか (状態や種類がすること)、どれが減らされる一方か (タイマーがすること) も言える。残りが何を持つかは、まだ名付けていない。",
+    ocols: ["枠", "配列", "ルーチン", "横の位置", "縦の位置", "位置に足し込まれる配列", "ジャンプを選ぶ配列", "減らされる一方の配列", "一緒に動く配列"],
     vcols: ["バイト", "読み書き", "書くルーチン", "読むルーチン"],
     varsH: (kept: string) => `最も忙しい共有バイト ${kept} 個`,
     not: "このページはゲームのバイトを一つも見せない。これらの数を読み取ったリスティングは、カートリッジと一緒に留まる。",
@@ -286,6 +286,7 @@ export default async function AutopsyGamePage({ params }: { params: Promise<{ la
                         <td>{x.y.join(", ")}</td>
                         <td data-autopsy-object-adds={(x.adds ?? []).length}>{(x.adds ?? []).join(", ")}</td>
                         <td>{(x.chooses ?? []).join(", ")}</td>
+                        <td>{(x.down ?? []).join(", ")}</td>
                         <td>{x.with.join(", ")}</td>
                       </tr>
                     ))}
