@@ -231,6 +231,12 @@ python3 scripts/board-engine.py --check || fail "board-engine: not the boarded e
 say "2f. The playground's chips"
 python3 scripts/build-playground-wasm.py --check || fail "the playground's bundles are not what the records say"
 
+say "2g. The lessons"
+# Each lesson's cartridge is rebuilt from lessons/ with our own assembler
+# and held to data/lessons.json, which the lesson pages and the cartridge
+# they serve are read from. The listing crate builds with rustup's cargo.
+PATH="$HOME/.cargo/bin:$PATH" python3 scripts/board-lessons.py --check || fail "a lesson does not build to the cartridge its record serves"
+
 # On the interpreter the service unit runs, not whichever python3 the
 # shell finds first. On 2026-09-11 the tests passed on a pyenv python
 # while /usr/bin/python3 had lost uvicorn (its user site-packages had

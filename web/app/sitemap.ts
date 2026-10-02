@@ -5,6 +5,7 @@ import { articlePages } from "@/lib/article";
 import { LANGS, localize } from "@/lib/lang";
 import { abs } from "@/lib/seo";
 import { autopsy } from "@/lib/autopsy";
+import { lessons } from "@/lib/lessons";
 
 /**
  * The sitemap, generated from the same sources the pages are.
@@ -67,6 +68,7 @@ const STATIC = [
   "/autopsy/games",
   "/autopsy/patterns",
   "/autopsy/method",
+  "/autopsy/lessons",
   "/style",
 ];
 
@@ -79,6 +81,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...articlePages().map((p) => `/6502/${p.slug}/article`),
     // One page for each game the autopsy has been over (data/autopsy.json).
     ...autopsy().games.map((g) => `/autopsy/games/${g.key}`),
+    // One page for each lesson (data/lessons.json).
+    ...lessons().map((l) => `/autopsy/lessons/${l.key}`),
   ];
   const seen = new Set<string>();
   const out: MetadataRoute.Sitemap = [];

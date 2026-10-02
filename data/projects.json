@@ -494,6 +494,21 @@
      "status": "here",
      "prerendered": true,
      "strip_label": "Method"
+    },
+    {
+     "key": "lessons",
+     "name": "The lessons",
+     "what": "Cartridges of our own that do what the autopsy found the games doing, measured the same way and set beside them, with their programs.",
+     "nav": false,
+     "nav_label": "Lessons",
+     "strip_group": "read",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/autopsy/lessons",
+     "lands_at": "/autopsy/lessons",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true,
+     "strip_label": "Lessons"
     }
    ],
    "landing": "/autopsy"

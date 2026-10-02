@@ -164,6 +164,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The things games keep doing, each named by a rule over what the code did while it ran, and how many games each was found in.",
   },
+  "/autopsy/lessons": {
+    title: "The lessons",
+    description:
+      "Cartridges of our own that do what the autopsy found the games doing, measured the same way and set beside them, with their programs.",
+  },
   "/autopsy/method": {
     title: "How the autopsy is done",
     description:
