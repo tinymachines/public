@@ -10,6 +10,8 @@ import type { ScrollMeasures } from "@/lib/lessons";
  */
 
 const one = (v: string[]) => (v.length === 1 ? v[0] : v.join(" / "));
+/** A list the record keeps as text ("[2, 3, 6, 7]"), as the frames themselves. */
+const frames = (v: string[]) => v.map((x) => (JSON.parse(x) as number[]).join(", ")).join(" / ");
 
 export const SCROLL = {
   en: {
@@ -51,7 +53,7 @@ export const SCROLL = {
     lagH: "One frame later",
     lag: (ours: string, theirs: string, game: string) => (
       <>
-        This cartridge writes each column one frame later in its strip ({ours}) than {game} does ({theirs}). It
+        This cartridge writes each column one frame later in its strip (frames {ours}) than {game} does (frames {theirs}). It
         works out the column in its main loop and the picture chip takes it in the next blank; {game} runs its
         whole game inside the blank&rsquo;s interrupt, which the autopsy marks as the loop inside the interrupt.
       </>
@@ -85,7 +87,7 @@ export const SCROLL = {
     lagH: "一フレーム遅れて",
     lag: (ours: string, theirs: string, game: string) => (
       <>
-        このカートリッジは、各列を帯の中で {game} より一フレーム遅く書く (このカートリッジは {ours}、{game} は {theirs})。列をメインループで用意し、絵のチップは次のブランクでそれを受け取るからだ。{game} はゲーム全体をブランクの割り込みの中で走らせる。解剖はそれを、割り込みの中のループと印している。
+        このカートリッジは、各列を帯の中で {game} より一フレーム遅く書く (このカートリッジは {ours} フレーム目、{game} は {theirs} フレーム目)。列をメインループで用意し、絵のチップは次のブランクでそれを受け取るからだ。{game} はゲーム全体をブランクの割り込みの中で走らせる。解剖はそれを、割り込みの中のループと印している。
       </>
     ),
   },
@@ -103,7 +105,7 @@ export function ScrollPart({ lang, m, a }: { lang: Lang; m: ScrollMeasures; a?: 
     ["tiles", (x) => x.tiles.map(n).join(" / ")],
     ["colours", (x) => one(x.colours)],
     ["ahead", (x) => S.range(n(x.ahead_min), n(x.ahead_max))],
-    ["when", (x) => one(x.column_frames)],
+    ["when", (x) => frames(x.column_frames)],
   ];
   return (
     <>
@@ -130,7 +132,7 @@ export function ScrollPart({ lang, m, a }: { lang: Lang; m: ScrollMeasures; a?: 
       {a && one(m.column_frames) !== one(a.column_frames) ? (
         <>
           <h3>{S.lagH}</h3>
-          <p>{S.lag(one(m.column_frames), one(a.column_frames), game)}</p>
+          <p>{S.lag(frames(m.column_frames), frames(a.column_frames), game)}</p>
         </>
       ) : null}
     </>
