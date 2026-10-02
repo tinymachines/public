@@ -37,6 +37,7 @@ const WORDS = {
     outside: (count: string) => ` ${count} of those are in memory on the cartridge and are not on this map.`,
     stack: " The second row is the page the processor keeps its stack in.",
     rest: " Reaches through an index that belong to no table are not drawn: the loops that clear memory reach nearly every byte.",
+    crowded: (count: string) => ` ${count} labels are left out where columns sit too close to name each one; the drawings below name them all.`,
   },
   ja: {
     label: (bytes: string, tables: string) => `コンソールのメモリ ${bytes} バイトと、それぞれのアドレスに置いた ${tables} 個の物体の表`,
@@ -48,6 +49,7 @@ const WORDS = {
     outside: (count: string) => ` そのうち ${count} 個はカートリッジ側のメモリにあり、この図には無い。`,
     stack: " 二行目は、プロセッサがスタックを置くページだ。",
     rest: " 添字で届いた範囲のうち、どの表にも属さないものは描いていない: メモリを消すループは、ほとんどすべてのバイトに届くからだ。",
+    crowded: (count: string) => ` 列が近すぎて一つずつ名前を書けない所では、ラベルを ${count} 個省いた。下の図にはすべての名前がある。`,
   },
 } as const;
 
@@ -58,12 +60,12 @@ type Span = { table: number; from: number; to: number; marks: string; fill: stri
 type Mark = { table: number; at: number; marks: string };
 
 /** One span, cut where it crosses a row and where the console's memory ends. */
-function rows(from: number, to: number): { page: number; x0: number; x1: number; head: boolean }[] {
+function rows(from: number, to: number): { page: number; x0: number; x1: number }[] {
   const out = [];
   for (let a = from; a < Math.min(to, RAM); ) {
     const page = Math.floor(a / PAGE);
     const end = Math.min(to, (page + 1) * PAGE, RAM);
-    out.push({ page, x0: a - page * PAGE, x1: end - page * PAGE, head: a === from });
+    out.push({ page, x0: a - page * PAGE, x1: end - page * PAGE });
     a = end;
   }
   return out;
@@ -76,6 +78,16 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
 
   const spans: Span[] = [];
   const marks: Mark[] = [];
+  // What is written over a span's first byte: the tables that start a
+  // column there and what the rules said of it. Two tables can share a
+  // column, so the labels are gathered by address before any is drawn.
+  const named = new Map<number, { tables: Set<number>; marks: string }>();
+  const name = (at: number, table: number, role: string) => {
+    const l = named.get(at) ?? { tables: new Set<number>(), marks: "" };
+    l.tables.add(table + 1);
+    for (const c of role) if (!l.marks.includes(c)) l.marks += c;
+    named.set(at, l);
+  };
   g.object_list.forEach((t, k) => {
     const has = (list: string[] | undefined, b: string) => (list ?? []).includes(b);
     const role = (b: string) => [has(t.x, b) && "X", has(t.y, b) && "Y", has(t.adds, b) && "+", has(t.chooses, b) && "→", has(t.down, b) && "↓"].filter(Boolean).join("");
@@ -85,12 +97,15 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
     if (overlapping) {
       spans.push({ table: k, from: num(bases[0]), to: num(bases[bases.length - 1]) + t.slots, marks: "", fill: "none", opacity: 1, outline: true });
       for (const b of bases) marks.push({ table: k, at: num(b), marks: role(b) });
+      // Its properties start a byte or two apart, so they are named once, in address order, at its start.
+      name(num(bases[0]), k, bases.map(role).join(""));
       return;
     }
     bases.forEach((b) => {
       const position = has(t.x, b) || has(t.y, b);
       const fill = position ? "currentColor" : has(t.adds, b) ? `url(#${id}-adds)` : has(t.chooses, b) ? `url(#${id}-chooses)` : has(t.down, b) ? `url(#${id}-down)` : "none";
       spans.push({ table: k, from: num(b), to: num(b) + t.slots, marks: role(b), fill, opacity: position ? 0.16 : 1, outline: false });
+      name(num(b), k, role(b));
     });
   });
 
@@ -117,6 +132,23 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
   const H = TOP + PAGES * PITCH;
   const y = (page: number) => TOP + page * PITCH + BAND;
   const x = (offset: number) => LEFT + offset * BW;
+
+  // Left to right along each row, a label is kept only where the one before it has ended.
+  const CHAR = 6.5;
+  const labels: { at: number; text: string }[] = [];
+  let crowded = 0;
+  let edge = { page: -1, x: 0 };
+  for (const [at, l] of [...named].sort((a, b) => a[0] - b[0])) {
+    const page = Math.floor(at / PAGE);
+    const text = `${[...l.tables].sort((a, b) => a - b).join(",")}${l.marks}`;
+    const at0 = x(at - page * PAGE);
+    if (edge.page === page && at0 < edge.x) {
+      crowded += 1;
+      continue;
+    }
+    labels.push({ at, text });
+    edge = { page, x: at0 + text.length * CHAR + 3 };
+  }
 
   return (
     <figure className="diagram autopsy-memory-map" data-autopsy-memory-map={g.object_list.length}>
@@ -156,7 +188,6 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
               <g key={i} className="autopsy-map-span" data-autopsy-map-table={s.table + 1} data-autopsy-map-from={hex4(s.from)} data-autopsy-marks={s.marks}>
                 {rows(s.from, s.to).map((r) => {
                   const w = (r.x1 - r.x0) * BW;
-                  const tag = `${s.table + 1}${s.marks}`;
                   return (
                     <g key={r.page}>
                       <rect
@@ -171,11 +202,6 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
                         strokeWidth={s.outline ? 1.5 : 1}
                         strokeDasharray={s.outline ? "4 2" : undefined}
                       />
-                      {r.head && (s.outline || w >= tag.length * 7) ? (
-                        <text x={x(r.x0)} y={y(r.page) - (s.outline ? 12 : 3)} fontSize="10" fontWeight="700" fill="currentColor">
-                          {tag}
-                        </text>
-                      ) : null}
                     </g>
                   );
                 })}
@@ -188,12 +214,17 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
                 return (
                   <g key={`${m.table}-${m.at}`} data-autopsy-map-mark={hex4(m.at)}>
                     <line x1={x(o) + BW / 2} y1={y(page) - 2} x2={x(o) + BW / 2} y2={y(page) + SH} stroke="currentColor" strokeWidth="1" />
-                    {m.marks ? (
-                      <text x={x(o)} y={y(page) - 3} fontSize="9" fontWeight="700" fill="currentColor">
-                        {m.marks}
-                      </text>
-                    ) : null}
                   </g>
+                );
+              })}
+            </g>
+            <g className="autopsy-map-labels" fontSize="10" fontWeight="700" fill="currentColor">
+              {labels.map((l) => {
+                const page = Math.floor(l.at / PAGE);
+                return (
+                  <text key={l.at} data-autopsy-map-label={hex4(l.at)} x={x(l.at - page * PAGE)} y={y(page) - 3}>
+                    {l.text}
+                  </text>
                 );
               })}
             </g>
@@ -222,6 +253,7 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
         {busy.length && busy.length < g.variable_list.length ? S.outside(n(g.variable_list.length - busy.length)) : ""}
         {S.stack}
         {S.rest}
+        {crowded ? S.crowded(n(crowded)) : ""}
       </figcaption>
     </figure>
   );
