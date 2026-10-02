@@ -53,7 +53,7 @@ const PROSE = {
       </>
     ),
     sideH: "The two, played the same way",
-    side: (game: string) => <>The same presses, played on this cartridge and on {game}:</>,
+    side: (game: string) => <>The same presses, played on this cartridge and on {game}, frame for frame.</>,
     cols: (game: string) => ["", "this cartridge", game],
     walkRow: "frames of Right to full speed",
     topRow: "full speed, pixels a frame",
@@ -70,7 +70,7 @@ const PROSE = {
     left: (rows: { held: string; ours: string; theirs: string }[], game: string) => (
       <>
         {rows.length
-          ? rows.map((r) => `With A held ${r.held} frames this cartridge gives ${r.ours} and ${game} ${r.theirs}. `)
+          ? rows.map((r) => `What is left: with A held ${r.held} frames, this cartridge gives ${r.ours} and ${game} gives ${r.theirs}. `)
           : ""}
       </>
     ),
@@ -106,7 +106,7 @@ const PROSE = {
       </>
     ),
     left: (rows: { held: string; ours: string; theirs: string }[], game: string) => (
-      <>{rows.map((r) => `A を ${r.held} フレーム押すと、このカートリッジは ${r.ours}、${game} は ${r.theirs}。`).join("")}</>
+      <>{rows.map((r) => `残る違い: A を ${r.held} フレーム押すと、このカートリッジは ${r.ours}、${game} は ${r.theirs}。`).join("")}</>
     ),
     codeH: "書いたとおりのジャンプ",
     code: "ジャンプのために毎フレーム一度走るルーチン。プログラム全体は、ただのテキストファイルだ:",
