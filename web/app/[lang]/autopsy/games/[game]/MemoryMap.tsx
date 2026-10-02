@@ -37,7 +37,7 @@ const WORDS = {
     outside: (count: string) => ` ${count} of those are in memory on the cartridge and are not on this map.`,
     stack: " The second row is the page the processor keeps its stack in.",
     rest: " Reaches through an index that belong to no table are not drawn: the loops that clear memory reach nearly every byte.",
-    crowded: (count: string) => ` ${count} labels are left out where columns sit too close to name each one; the drawings below name them all.`,
+    crowded: (count: string, one: boolean) => ` ${count} ${one ? "label is" : "labels are"} left out where columns sit too close to name each one; the drawings below name them all.`,
   },
   ja: {
     label: (bytes: string, tables: string) => `コンソールのメモリ ${bytes} バイトと、それぞれのアドレスに置いた ${tables} 個の物体の表`,
@@ -253,7 +253,7 @@ export function MemoryMap({ lang, g }: { lang: Lang; g: AutopsyGame }) {
         {busy.length && busy.length < g.variable_list.length ? S.outside(n(g.variable_list.length - busy.length)) : ""}
         {S.stack}
         {S.rest}
-        {crowded ? S.crowded(n(crowded)) : ""}
+        {crowded ? S.crowded(n(crowded), crowded === 1) : ""}
       </figcaption>
     </figure>
   );
