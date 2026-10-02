@@ -59,6 +59,10 @@ across:
     JMP ($000C)
     .byte $00
     .byte $00
+kept:
+    PHA
+    PHA
+    RTS
 state_a:
     RTS
 state_b:
@@ -231,4 +235,34 @@ fn two_runs_that_took_different_entries_share_the_table() {
     let both = listing::from_rom_and_runs(&image, &[first.clone(), third]).unwrap();
     listing::check(&both, &image).unwrap();
     assert!(both.contains(";; @table low entries=3 seen=2"), "{both}");
+}
+
+#[test]
+fn an_address_kept_in_memory_and_returned_to_is_a_handler_in_memory() {
+    let (image, labels) = our_rom();
+    let at = |n: &str| labels[n] as usize - 0x8000;
+    let (kept, br) = (at("kept"), at("by_return"));
+    let site = |k: usize, count: u64| json!({"key": k, "addr": 0x8000 + k, "count": count});
+    let routine = |id: u64, n: &str, entry: &str, entered: u64, body: Vec<usize>| json!({"id": id, "key": at(n), "addr": labels[n], "entry": entry, "entered": entered, "frames": 1, "mem": [], "body": body});
+    let report = json!({
+        "prg_len": 32768, "frames": 10, "instructions": 100,
+        "sites": [site(kept, 5), site(kept + 1, 5), site(kept + 2, 5), site(br, 6), site(br + 1, 6), site(br + 2, 6), site(at("state_a"), 11)],
+        "routines": [
+            routine(0, "kept", "call", 5, vec![kept, kept + 1, kept + 2]),
+            routine(1, "by_return", "call", 6, vec![br, br + 1, br + 2]),
+            routine(2, "state_a", "dispatch", 11, vec![at("state_a")]),
+        ],
+        "dispatch": [
+            // The address was copied out of two bytes of memory, pushed
+            // and returned to.
+            {"key": kept + 2, "addr": 0x8000 + kept + 2, "depth": 1, "targets": [[2, 5]], "timeline": [], "words": [], "on": [[0xc3, 5]], "from": [[0xc3, 3], [0xc4, 2]], "halves": [], "ret": true},
+            // Not one: the return that went through a table in the ROM.
+            {"key": br + 2, "addr": 0x8000 + br + 2, "depth": 1, "targets": [[2, 6]], "timeline": [], "words": [[br + 4, 6]], "on": [[0xc2, 6]], "from": [], "halves": [], "ret": true},
+        ]
+    })
+    .to_string();
+    let src = listing::from_rom_and_run(&image, &report).unwrap();
+    listing::check(&src, &image).unwrap();
+    assert!(src.contains(&format!(";; @is handler-in-memory jumps=5 targets=1 from=$00C3,$00C4 by=match\n;; @routine handlers_{:04X} kind=call entered=5 by=run\n", labels["kept"])), "{src}");
+    assert_eq!(src.matches("handler-in-memory").count(), 1);
 }

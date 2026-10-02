@@ -310,11 +310,13 @@ pub fn find(run: &Run, prg: &[u8]) -> Vec<Mark> {
     }
     // The handler kept in memory: a routine with a JMP (ind) whose
     // pointer was copied out of RAM (each thing keeps the address of its
-    // own code). From the arrays those bytes sit in, the tightest
-    // around each, or the bytes themselves.
+    // own code), or one that pushes such an address and returns to it.
+    // From the arrays those bytes sit in, the tightest around each, or
+    // the bytes themselves.
     let all = arrays(run, prg);
     let mut kept: BTreeMap<usize, (u64, Vec<usize>, Vec<u16>)> = BTreeMap::new();
-    for d in run.dispatch.iter().filter(|d| prg.get(d.offset) == Some(&ops::JMP_IND) && !d.from.is_empty()) {
+    let jumps = |d: &&crate::run::Dispatch| prg.get(d.offset) == Some(&ops::JMP_IND) || (d.ret && prg.get(d.offset) == Some(&ops::RTS));
+    for d in run.dispatch.iter().filter(jumps).filter(|d| !d.from.is_empty()) {
         let Some(r) = run.routines.iter().filter(|r| r.body.contains(&d.offset)).max_by_key(|r| r.offset) else { continue };
         let e = kept.entry(r.offset).or_default();
         for t in &d.targets {
