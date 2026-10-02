@@ -531,12 +531,34 @@ image it runs from.
    Nintendo used across several of these) the bytes named are its
    bytes. Everything else in the count is unchanged: 797 marks.
 
+   *The sixth count, 2026-10-02, evening: two more ways to jump.* The
+   flow followed a return to an address the game pushed itself as a
+   plain return, and an address put together from a table of low bytes
+   and one of high named no table. Now the first is a dispatch with a
+   table of its own (`@table returns`, each word one less than where it
+   lands), told from two things that push too: a call made by hand
+   coming back, and a task switcher putting a saved return address back
+   (one game does that fifty times in a path). The second is followed
+   as the pair of bytes it was (`halves`) and written as `@table low`
+   and `@table high` when every pair sits the same distance apart. The
+   same crawls, every report re-made: 5 return tables in three games
+   (The Goonies II 3, Metroid 1, Paperboy 1), 5139 routines where it
+   was 5057 (Paperboy 78 of them, its returns now entering routines
+   that had none), 224 tables, and `handler-in-memory` 9 where it was
+   7, since an address kept in memory may be returned to as well. No
+   table kept as low and high bytes was found in any game: the pairs
+   seen were a low byte from one word and a high from another, or low
+   bytes alone with one high byte for all of them, which still names
+   no table. Coverage is unchanged (312,716 bytes), as it should be
+   with the same crawls.
+
    Still to come: the rest of an object table (a companion compared
    with a constant and then cleared reads like a timer or a health);
-   a table of low bytes and one of high (found as chosen, not written
-   as a table); a way in per game for the ones that sit on a screen,
-   which is where the next points of coverage are. That table of
-   contents is the toolkit's.
+   the low-bytes-only table; a way in per game for the ones that sit
+   on a screen, which is where the next points of coverage are. That
+   table of contents is the toolkit's. The lessons (`lessons/`, on the
+   site at /autopsy/lessons) are the first of it built: four
+   cartridges of ours, each measured beside the game it learned from.
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's

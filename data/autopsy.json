@@ -2,9 +2,9 @@
  "note": "Written only by scripts/board-autopsy.py from the models wasm/listing/tools/autopsy.py wrote. Shape only: addresses, labels, counts and pattern names; no byte of any ROM.",
  "boarded_on": "2026-10-02",
  "repo": "https://github.com/tinymachines/public",
- "listing_tree": "d10d9115758ae6d5704be2684a45998d0300dfd2",
- "flow_tree": "642718fbc10d1d8b469b2213b7d7b9342b2c3f5c",
- "console_commit": "b7e9ccd356eb4485f082c9ade17cd66977b07d22",
+ "listing_tree": "7c7baf4860f68b5cea99492db33b0382469151a2",
+ "flow_tree": "f99bc38a75083675ef6b78f7a78ad3e458595531",
+ "console_commit": "1f8d5790102111a0f572f7b8690136e3c37d3814",
  "steps": [
   6400,
   8000
@@ -32,10 +32,10 @@
   "games": 19,
   "prg": 2277376,
   "executed": 312716,
-  "routines": 5057,
-  "marks": 797,
-  "tables": 219,
-  "table_words": 1745
+  "routines": 5139,
+  "marks": 799,
+  "tables": 224,
+  "table_words": 1756
  },
  "games": [
   {
@@ -18126,7 +18126,7 @@
    ],
    "routines": {
     "call": 244,
-    "dispatch": 96,
+    "dispatch": 99,
     "reset": 1,
     "nmi": 1
    },
@@ -18146,8 +18146,8 @@
     "sprite-writer": 16,
     "vram-drain": 1
    },
-   "tables": 18,
-   "table_words": 154,
+   "tables": 21,
+   "table_words": 157,
    "arrays": 62,
    "variables": 854,
    "routine_list": [
@@ -18157,6 +18157,14 @@
      "addr": 32806,
      "kind": "call",
      "entered": 51548,
+     "is": []
+    },
+    {
+     "name": "b0_dispatch_80CC",
+     "bank": "prg0",
+     "addr": 32972,
+     "kind": "dispatch",
+     "entered": 69981,
      "is": []
     },
     {
@@ -19393,6 +19401,14 @@
      "is": []
     },
     {
+     "name": "b6_dispatch_813B",
+     "bank": "prg6",
+     "addr": 33083,
+     "kind": "dispatch",
+     "entered": 51133,
+     "is": []
+    },
+    {
      "name": "b6_routine_8141",
      "bank": "prg6",
      "addr": 33089,
@@ -19592,6 +19608,14 @@
      "addr": 37689,
      "kind": "call",
      "entered": 51548,
+     "is": []
+    },
+    {
+     "name": "b6_dispatch_9366",
+     "bank": "prg6",
+     "addr": 37734,
+     "kind": "dispatch",
+     "entered": 1302,
      "is": []
     },
     {
@@ -21315,6 +21339,15 @@
     },
     {
      "bank": "prg0",
+     "addr": 32970,
+     "kind": "returns",
+     "entries": 1,
+     "seen": 1,
+     "on": [],
+     "returns": true
+    },
+    {
+     "bank": "prg0",
      "addr": 33270,
      "kind": "dispatch",
      "entries": 2,
@@ -21435,6 +21468,15 @@
     },
     {
      "bank": "prg6",
+     "addr": 33081,
+     "kind": "returns",
+     "entries": 1,
+     "seen": 1,
+     "on": [],
+     "returns": true
+    },
+    {
+     "bank": "prg6",
      "addr": 37718,
      "kind": "dispatch",
      "entries": 2,
@@ -21442,6 +21484,15 @@
      "on": [
       "$03C7"
      ]
+    },
+    {
+     "bank": "prg6",
+     "addr": 37732,
+     "kind": "returns",
+     "entries": 1,
+     "seen": 1,
+     "on": [],
+     "returns": true
     },
     {
      "bank": "prg7",
@@ -25800,7 +25851,7 @@
    ],
    "routines": {
     "dispatch": 89,
-    "call": 367,
+    "call": 368,
     "nmi": 1,
     "irq": 1
    },
@@ -25818,8 +25869,8 @@
     "sprite-writer": 24,
     "vram-drain": 1
    },
-   "tables": 13,
-   "table_words": 98,
+   "tables": 14,
+   "table_words": 105,
    "arrays": 96,
    "variables": 1248,
    "routine_list": [
@@ -26787,11 +26838,19 @@
      "is": []
     },
     {
+     "name": "b1_routine_83F5",
+     "bank": "prg1",
+     "addr": 33781,
+     "kind": "call",
+     "entered": 3847,
+     "is": []
+    },
+    {
      "name": "b1_routine_844B",
      "bank": "prg1",
      "addr": 33867,
      "kind": "call",
-     "entered": 576,
+     "entered": 15546,
      "is": []
     },
     {
@@ -26799,7 +26858,7 @@
      "bank": "prg1",
      "addr": 33959,
      "kind": "call",
-     "entered": 174,
+     "entered": 14515,
      "is": []
     },
     {
@@ -26807,7 +26866,7 @@
      "bank": "prg1",
      "addr": 34046,
      "kind": "call",
-     "entered": 66,
+     "entered": 4408,
      "is": []
     },
     {
@@ -29976,6 +30035,18 @@
      "on": [
       "$001F"
      ]
+    },
+    {
+     "bank": "prg1",
+     "addr": 32840,
+     "kind": "returns",
+     "entries": 7,
+     "seen": 4,
+     "on": [
+      "$044A",
+      "$045A"
+     ],
+     "returns": true
     },
     {
      "bank": "prg1",
@@ -37555,12 +37626,12 @@
     "nmi": 1,
     "call": 108,
     "reset": 1,
-    "dispatch": 88
+    "dispatch": 166
    },
    "patterns": {
     "bank-switch": 1,
     "game-loop-in-nmi": 1,
-    "handler-in-memory": 1,
+    "handler-in-memory": 3,
     "idle-spin": 1,
     "jump-engine": 8,
     "pad-poll": 2,
@@ -37572,8 +37643,8 @@
     "sprite-writer": 1,
     "vram-drain": 1
    },
-   "tables": 0,
-   "table_words": 0,
+   "tables": 1,
+   "table_words": 1,
    "arrays": 52,
    "variables": 762,
    "routine_list": [
@@ -37617,16 +37688,23 @@
      "addr": 32840,
      "kind": "reset",
      "entered": 39,
-     "is": [
-      {
-       "evidence": {
-        "by": "match",
-        "frames": 38892,
-        "writes": 117
-       },
-       "pattern": "sound-driver"
-      }
-     ]
+     "is": []
+    },
+    {
+     "name": "dispatch_8092",
+     "bank": "prg0",
+     "addr": 32914,
+     "kind": "dispatch",
+     "entered": 39,
+     "is": []
+    },
+    {
+     "name": "dispatch_809A",
+     "bank": "prg0",
+     "addr": 32922,
+     "kind": "dispatch",
+     "entered": 39,
+     "is": []
     },
     {
      "name": "bank_80A4",
@@ -38184,6 +38262,14 @@
      "is": []
     },
     {
+     "name": "dispatch_8782",
+     "bank": "prg0",
+     "addr": 34690,
+     "kind": "dispatch",
+     "entered": 41,
+     "is": []
+    },
+    {
      "name": "dispatch_8785",
      "bank": "prg0",
      "addr": 34693,
@@ -38208,9 +38294,89 @@
      "is": []
     },
     {
+     "name": "dispatch_87BC",
+     "bank": "prg0",
+     "addr": 34748,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_87CA",
+     "bank": "prg0",
+     "addr": 34762,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_87D9",
+     "bank": "prg0",
+     "addr": 34777,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_87F1",
+     "bank": "prg0",
+     "addr": 34801,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_8813",
+     "bank": "prg0",
+     "addr": 34835,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_882D",
+     "bank": "prg0",
+     "addr": 34861,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_883E",
+     "bank": "prg0",
+     "addr": 34878,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_885C",
+     "bank": "prg0",
+     "addr": 34908,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_8861",
+     "bank": "prg0",
+     "addr": 34913,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
      "name": "dispatch_8868",
      "bank": "prg0",
      "addr": 34920,
+     "kind": "dispatch",
+     "entered": 42,
+     "is": []
+    },
+    {
+     "name": "dispatch_887B",
+     "bank": "prg0",
+     "addr": 34939,
      "kind": "dispatch",
      "entered": 42,
      "is": []
@@ -38224,6 +38390,14 @@
      "is": []
     },
     {
+     "name": "dispatch_889C",
+     "bank": "prg0",
+     "addr": 34972,
+     "kind": "dispatch",
+     "entered": 33,
+     "is": []
+    },
+    {
      "name": "dispatch_88A4",
      "bank": "prg0",
      "addr": 34980,
@@ -38232,9 +38406,33 @@
      "is": []
     },
     {
+     "name": "dispatch_88C8",
+     "bank": "prg0",
+     "addr": 35016,
+     "kind": "dispatch",
+     "entered": 36,
+     "is": []
+    },
+    {
+     "name": "dispatch_88F0",
+     "bank": "prg0",
+     "addr": 35056,
+     "kind": "dispatch",
+     "entered": 13,
+     "is": []
+    },
+    {
      "name": "dispatch_88FB",
      "bank": "prg0",
      "addr": 35067,
+     "kind": "dispatch",
+     "entered": 8,
+     "is": []
+    },
+    {
+     "name": "dispatch_890F",
+     "bank": "prg0",
+     "addr": 35087,
      "kind": "dispatch",
      "entered": 8,
      "is": []
@@ -38253,6 +38451,14 @@
      "addr": 35100,
      "kind": "dispatch",
      "entered": 4,
+     "is": []
+    },
+    {
+     "name": "dispatch_8927",
+     "bank": "prg0",
+     "addr": 35111,
+     "kind": "dispatch",
+     "entered": 27,
      "is": []
     },
     {
@@ -38280,10 +38486,50 @@
      "is": []
     },
     {
+     "name": "dispatch_8979",
+     "bank": "prg0",
+     "addr": 35193,
+     "kind": "dispatch",
+     "entered": 2,
+     "is": []
+    },
+    {
+     "name": "dispatch_89CC",
+     "bank": "prg0",
+     "addr": 35276,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
+     "name": "dispatch_89D1",
+     "bank": "prg0",
+     "addr": 35281,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
+     "name": "dispatch_89D6",
+     "bank": "prg0",
+     "addr": 35286,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
      "name": "routine_89DC",
      "bank": "prg0",
      "addr": 35292,
      "kind": "call",
+     "entered": 27,
+     "is": []
+    },
+    {
+     "name": "dispatch_8A09",
+     "bank": "prg0",
+     "addr": 35337,
+     "kind": "dispatch",
      "entered": 27,
      "is": []
     },
@@ -38293,6 +38539,14 @@
      "addr": 35338,
      "kind": "call",
      "entered": 11498,
+     "is": []
+    },
+    {
+     "name": "dispatch_8A52",
+     "bank": "prg0",
+     "addr": 35410,
+     "kind": "dispatch",
+     "entered": 8,
      "is": []
     },
     {
@@ -38361,6 +38615,14 @@
      "is": []
     },
     {
+     "name": "dispatch_8A94",
+     "bank": "prg0",
+     "addr": 35476,
+     "kind": "dispatch",
+     "entered": 12,
+     "is": []
+    },
+    {
      "name": "routine_8AA8",
      "bank": "prg0",
      "addr": 35496,
@@ -38369,9 +38631,25 @@
      "is": []
     },
     {
+     "name": "dispatch_8AB0",
+     "bank": "prg0",
+     "addr": 35504,
+     "kind": "dispatch",
+     "entered": 10,
+     "is": []
+    },
+    {
      "name": "dispatch_8AB1",
      "bank": "prg0",
      "addr": 35505,
+     "kind": "dispatch",
+     "entered": 10,
+     "is": []
+    },
+    {
+     "name": "dispatch_8AB6",
+     "bank": "prg0",
+     "addr": 35510,
      "kind": "dispatch",
      "entered": 10,
      "is": []
@@ -38385,9 +38663,51 @@
      "is": []
     },
     {
+     "name": "dispatch_8AD1",
+     "bank": "prg0",
+     "addr": 35537,
+     "kind": "dispatch",
+     "entered": 4,
+     "is": []
+    },
+    {
+     "name": "dispatch_8AF7",
+     "bank": "prg0",
+     "addr": 35575,
+     "kind": "dispatch",
+     "entered": 5,
+     "is": []
+    },
+    {
      "name": "dispatch_8D05",
      "bank": "prg0",
      "addr": 36101,
+     "kind": "dispatch",
+     "entered": 4,
+     "is": []
+    },
+    {
+     "name": "dispatch_8D16",
+     "bank": "prg0",
+     "addr": 36118,
+     "kind": "dispatch",
+     "entered": 4,
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "from": "$009D,$009E",
+        "jumps": 404,
+        "targets": 13
+       },
+       "pattern": "handler-in-memory"
+      }
+     ]
+    },
+    {
+     "name": "dispatch_8D27",
+     "bank": "prg0",
+     "addr": 36135,
      "kind": "dispatch",
      "entered": 4,
      "is": []
@@ -38414,6 +38734,22 @@
      "addr": 36237,
      "kind": "dispatch",
      "entered": 681,
+     "is": []
+    },
+    {
+     "name": "dispatch_8DA0",
+     "bank": "prg0",
+     "addr": 36256,
+     "kind": "dispatch",
+     "entered": 1,
+     "is": []
+    },
+    {
+     "name": "dispatch_8DB5",
+     "bank": "prg0",
+     "addr": 36277,
+     "kind": "dispatch",
+     "entered": 2,
      "is": []
     },
     {
@@ -38476,6 +38812,14 @@
      "is": []
     },
     {
+     "name": "dispatch_9054",
+     "bank": "prg0",
+     "addr": 36948,
+     "kind": "dispatch",
+     "entered": 11,
+     "is": []
+    },
+    {
      "name": "dispatch_9057",
      "bank": "prg0",
      "addr": 36951,
@@ -38484,11 +38828,27 @@
      "is": []
     },
     {
+     "name": "dispatch_9063",
+     "bank": "prg0",
+     "addr": 36963,
+     "kind": "dispatch",
+     "entered": 11,
+     "is": []
+    },
+    {
      "name": "dispatch_9066",
      "bank": "prg0",
      "addr": 36966,
      "kind": "dispatch",
      "entered": 104,
+     "is": []
+    },
+    {
+     "name": "dispatch_9072",
+     "bank": "prg0",
+     "addr": 36978,
+     "kind": "dispatch",
+     "entered": 10,
      "is": []
     },
     {
@@ -38516,11 +38876,27 @@
      "is": []
     },
     {
+     "name": "dispatch_90A2",
+     "bank": "prg0",
+     "addr": 37026,
+     "kind": "dispatch",
+     "entered": 28,
+     "is": []
+    },
+    {
      "name": "dispatch_90A5",
      "bank": "prg0",
      "addr": 37029,
      "kind": "dispatch",
      "entered": 426,
+     "is": []
+    },
+    {
+     "name": "dispatch_90AF",
+     "bank": "prg0",
+     "addr": 37039,
+     "kind": "dispatch",
+     "entered": 26,
      "is": []
     },
     {
@@ -38560,6 +38936,22 @@
      "is": []
     },
     {
+     "name": "dispatch_916E",
+     "bank": "prg0",
+     "addr": 37230,
+     "kind": "dispatch",
+     "entered": 13,
+     "is": []
+    },
+    {
+     "name": "dispatch_917B",
+     "bank": "prg0",
+     "addr": 37243,
+     "kind": "dispatch",
+     "entered": 13,
+     "is": []
+    },
+    {
      "name": "routine_91B1",
      "bank": "prg0",
      "addr": 37297,
@@ -38592,6 +38984,14 @@
      "is": []
     },
     {
+     "name": "dispatch_9493",
+     "bank": "prg0",
+     "addr": 38035,
+     "kind": "dispatch",
+     "entered": 21,
+     "is": []
+    },
+    {
      "name": "dispatch_9494",
      "bank": "prg0",
      "addr": 38036,
@@ -38600,9 +39000,41 @@
      "is": []
     },
     {
+     "name": "dispatch_94CE",
+     "bank": "prg0",
+     "addr": 38094,
+     "kind": "dispatch",
+     "entered": 154,
+     "is": []
+    },
+    {
+     "name": "dispatch_94E3",
+     "bank": "prg0",
+     "addr": 38115,
+     "kind": "dispatch",
+     "entered": 92,
+     "is": []
+    },
+    {
+     "name": "dispatch_94EB",
+     "bank": "prg0",
+     "addr": 38123,
+     "kind": "dispatch",
+     "entered": 62,
+     "is": []
+    },
+    {
      "name": "dispatch_94F0",
      "bank": "prg0",
      "addr": 38128,
+     "kind": "dispatch",
+     "entered": 149,
+     "is": []
+    },
+    {
+     "name": "dispatch_94F5",
+     "bank": "prg0",
+     "addr": 38133,
      "kind": "dispatch",
      "entered": 149,
      "is": []
@@ -38624,11 +39056,27 @@
      "is": []
     },
     {
+     "name": "dispatch_9527",
+     "bank": "prg0",
+     "addr": 38183,
+     "kind": "dispatch",
+     "entered": 127,
+     "is": []
+    },
+    {
      "name": "dispatch_952A",
      "bank": "prg0",
      "addr": 38186,
      "kind": "dispatch",
      "entered": 762,
+     "is": []
+    },
+    {
+     "name": "dispatch_953A",
+     "bank": "prg0",
+     "addr": 38202,
+     "kind": "dispatch",
+     "entered": 127,
      "is": []
     },
     {
@@ -38678,6 +39126,14 @@
      "addr": 38308,
      "kind": "dispatch",
      "entered": 1623,
+     "is": []
+    },
+    {
+     "name": "dispatch_95BA",
+     "bank": "prg0",
+     "addr": 38330,
+     "kind": "dispatch",
+     "entered": 3,
      "is": []
     },
     {
@@ -38737,11 +39193,27 @@
      "is": []
     },
     {
+     "name": "dispatch_9883",
+     "bank": "prg0",
+     "addr": 39043,
+     "kind": "dispatch",
+     "entered": 140,
+     "is": []
+    },
+    {
      "name": "dispatch_9899",
      "bank": "prg0",
      "addr": 39065,
      "kind": "dispatch",
      "entered": 3355,
+     "is": []
+    },
+    {
+     "name": "dispatch_98A1",
+     "bank": "prg0",
+     "addr": 39073,
+     "kind": "dispatch",
+     "entered": 831,
      "is": []
     },
     {
@@ -38753,6 +39225,14 @@
      "is": []
     },
     {
+     "name": "dispatch_98AC",
+     "bank": "prg0",
+     "addr": 39084,
+     "kind": "dispatch",
+     "entered": 807,
+     "is": []
+    },
+    {
      "name": "dispatch_98B2",
      "bank": "prg0",
      "addr": 39090,
@@ -38761,11 +39241,27 @@
      "is": []
     },
     {
+     "name": "dispatch_98BA",
+     "bank": "prg0",
+     "addr": 39098,
+     "kind": "dispatch",
+     "entered": 783,
+     "is": []
+    },
+    {
      "name": "dispatch_98BD",
      "bank": "prg0",
      "addr": 39101,
      "kind": "dispatch",
      "entered": 2980,
+     "is": []
+    },
+    {
+     "name": "dispatch_98C5",
+     "bank": "prg0",
+     "addr": 39109,
+     "kind": "dispatch",
+     "entered": 760,
      "is": []
     },
     {
@@ -38786,6 +39282,22 @@
      ]
     },
     {
+     "name": "dispatch_9975",
+     "bank": "prg0",
+     "addr": 39285,
+     "kind": "dispatch",
+     "entered": 1,
+     "is": []
+    },
+    {
+     "name": "dispatch_999C",
+     "bank": "prg0",
+     "addr": 39324,
+     "kind": "dispatch",
+     "entered": 2,
+     "is": []
+    },
+    {
      "name": "dispatch_9A84",
      "bank": "prg0",
      "addr": 39556,
@@ -38798,7 +39310,15 @@
      "bank": "prg0",
      "addr": 39585,
      "kind": "dispatch",
-     "entered": 16,
+     "entered": 31,
+     "is": []
+    },
+    {
+     "name": "dispatch_9AAF",
+     "bank": "prg0",
+     "addr": 39599,
+     "kind": "dispatch",
+     "entered": 34,
      "is": []
     },
     {
@@ -38907,6 +39427,14 @@
      ]
     },
     {
+     "name": "dispatch_9C29",
+     "bank": "prg0",
+     "addr": 39977,
+     "kind": "dispatch",
+     "entered": 1,
+     "is": []
+    },
+    {
      "name": "routine_9D37",
      "bank": "prg0",
      "addr": 40247,
@@ -38923,11 +39451,27 @@
      "is": []
     },
     {
+     "name": "dispatch_9E4D",
+     "bank": "prg0",
+     "addr": 40525,
+     "kind": "dispatch",
+     "entered": 36,
+     "is": []
+    },
+    {
      "name": "dispatch_9E50",
      "bank": "prg0",
      "addr": 40528,
      "kind": "dispatch",
      "entered": 2121,
+     "is": []
+    },
+    {
+     "name": "dispatch_9E5F",
+     "bank": "prg0",
+     "addr": 40543,
+     "kind": "dispatch",
+     "entered": 43,
      "is": []
     },
     {
@@ -38939,11 +39483,27 @@
      "is": []
     },
     {
+     "name": "dispatch_9E74",
+     "bank": "prg0",
+     "addr": 40564,
+     "kind": "dispatch",
+     "entered": 36,
+     "is": []
+    },
+    {
      "name": "dispatch_9E7A",
      "bank": "prg0",
      "addr": 40570,
      "kind": "dispatch",
      "entered": 1662,
+     "is": []
+    },
+    {
+     "name": "dispatch_9E89",
+     "bank": "prg0",
+     "addr": 40585,
+     "kind": "dispatch",
+     "entered": 34,
      "is": []
     },
     {
@@ -38982,6 +39542,14 @@
      "name": "dispatch_9F31",
      "bank": "prg0",
      "addr": 40753,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
+     "name": "dispatch_9F36",
+     "bank": "prg0",
+     "addr": 40758,
      "kind": "dispatch",
      "entered": 29,
      "is": []
@@ -39035,11 +39603,27 @@
      "is": []
     },
     {
+     "name": "dispatch_A1AC",
+     "bank": "prg0",
+     "addr": 41388,
+     "kind": "dispatch",
+     "entered": 13,
+     "is": []
+    },
+    {
      "name": "dispatch_A1AF",
      "bank": "prg0",
      "addr": 41391,
      "kind": "dispatch",
      "entered": 193,
+     "is": []
+    },
+    {
+     "name": "dispatch_A1B9",
+     "bank": "prg0",
+     "addr": 41401,
+     "kind": "dispatch",
+     "entered": 12,
      "is": []
     },
     {
@@ -39059,11 +39643,27 @@
      "is": []
     },
     {
+     "name": "dispatch_A1C5",
+     "bank": "prg0",
+     "addr": 41413,
+     "kind": "dispatch",
+     "entered": 1,
+     "is": []
+    },
+    {
      "name": "dispatch_A1D6",
      "bank": "prg0",
      "addr": 41430,
      "kind": "dispatch",
      "entered": 894,
+     "is": []
+    },
+    {
+     "name": "dispatch_A1F3",
+     "bank": "prg0",
+     "addr": 41459,
+     "kind": "dispatch",
+     "entered": 15,
      "is": []
     },
     {
@@ -39075,11 +39675,27 @@
      "is": []
     },
     {
+     "name": "dispatch_A205",
+     "bank": "prg0",
+     "addr": 41477,
+     "kind": "dispatch",
+     "entered": 14,
+     "is": []
+    },
+    {
      "name": "dispatch_A208",
      "bank": "prg0",
      "addr": 41480,
      "kind": "dispatch",
      "entered": 110,
+     "is": []
+    },
+    {
+     "name": "dispatch_A218",
+     "bank": "prg0",
+     "addr": 41496,
+     "kind": "dispatch",
+     "entered": 7,
      "is": []
     },
     {
@@ -39091,6 +39707,14 @@
      "is": []
     },
     {
+     "name": "dispatch_A225",
+     "bank": "prg0",
+     "addr": 41509,
+     "kind": "dispatch",
+     "entered": 7,
+     "is": []
+    },
+    {
      "name": "dispatch_A228",
      "bank": "prg0",
      "addr": 41512,
@@ -39099,11 +39723,27 @@
      "is": []
     },
     {
+     "name": "dispatch_A232",
+     "bank": "prg0",
+     "addr": 41522,
+     "kind": "dispatch",
+     "entered": 6,
+     "is": []
+    },
+    {
      "name": "dispatch_A235",
      "bank": "prg0",
      "addr": 41525,
      "kind": "dispatch",
      "entered": 48,
+     "is": []
+    },
+    {
+     "name": "dispatch_A23F",
+     "bank": "prg0",
+     "addr": 41535,
+     "kind": "dispatch",
+     "entered": 6,
      "is": []
     },
     {
@@ -39180,6 +39820,22 @@
      "is": []
     },
     {
+     "name": "dispatch_A4BD",
+     "bank": "prg0",
+     "addr": 42173,
+     "kind": "dispatch",
+     "entered": 198,
+     "is": []
+    },
+    {
+     "name": "dispatch_A4C9",
+     "bank": "prg0",
+     "addr": 42185,
+     "kind": "dispatch",
+     "entered": 2,
+     "is": []
+    },
+    {
      "name": "routine_A4CD",
      "bank": "prg0",
      "addr": 42189,
@@ -39212,12 +39868,38 @@
      "is": []
     },
     {
-     "name": "routine_A50B",
+     "name": "dispatch_A502",
+     "bank": "prg0",
+     "addr": 42242,
+     "kind": "dispatch",
+     "entered": 83,
+     "is": []
+    },
+    {
+     "name": "dispatch_A50A",
+     "bank": "prg0",
+     "addr": 42250,
+     "kind": "dispatch",
+     "entered": 83,
+     "is": []
+    },
+    {
+     "name": "handlers_A50B",
      "bank": "prg0",
      "addr": 42251,
      "kind": "call",
      "entered": 42,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "from": "$0002,$0003",
+        "jumps": 223,
+        "targets": 6
+       },
+       "pattern": "handler-in-memory"
+      }
+     ]
     },
     {
      "name": "routine_A512",
@@ -39332,6 +40014,30 @@
      "is": []
     },
     {
+     "name": "dispatch_A7DC",
+     "bank": "prg0",
+     "addr": 42972,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
+     "name": "dispatch_A7E3",
+     "bank": "prg0",
+     "addr": 42979,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
+     "name": "dispatch_A7EA",
+     "bank": "prg0",
+     "addr": 42986,
+     "kind": "dispatch",
+     "entered": 29,
+     "is": []
+    },
+    {
      "name": "dispatch_A805",
      "bank": "prg0",
      "addr": 43013,
@@ -39377,7 +40083,16 @@
      "addr": 43411,
      "kind": "dispatch",
      "entered": 1729,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "frames": 1825,
+        "writes": 4436
+       },
+       "pattern": "sound-driver"
+      }
+     ]
     },
     {
      "name": "routine_E100",
@@ -39388,7 +40103,17 @@
      "is": []
     }
    ],
-   "table_list": [],
+   "table_list": [
+    {
+     "bank": "prg0",
+     "addr": 39082,
+     "kind": "returns",
+     "entries": 1,
+     "seen": 1,
+     "on": [],
+     "returns": true
+    }
+   ],
    "loop_list": [
     {
      "name": "spin_80A1",
@@ -39713,8 +40438,8 @@
     {
      "addr": "$0450",
      "total": 1548190,
-     "writers": 2,
-     "readers": 3
+     "writers": 3,
+     "readers": 4
     },
     {
      "addr": "$0094",
@@ -39743,7 +40468,7 @@
     {
      "addr": "$0451",
      "total": 594190,
-     "writers": 6,
+     "writers": 5,
      "readers": 6
     },
     {
