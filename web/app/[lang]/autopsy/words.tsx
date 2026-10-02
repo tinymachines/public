@@ -91,8 +91,8 @@ const PATTERNS: Record<string, Record<Lang, { name: string; what: string }>> = {
     ja: { name: "二つのものを比べる所", what: "画面上の別々の二つのものの位置を、比べるか引き算するルーチン。それぞれの値を、読み込まれた元のメモリのバイトから、ゲームが写していく先々を通して追い、どのバイトがスプライトの位置になるかを見る。そのうえで、そうしたバイトの二つが出会うルーチンを名付ける。当たり判定の心臓部だ。敵がプレイヤーはどちら側かを知る方法でもあり、ゲームが描くものを奥行きの順に並べる方法でもある。この規則はそれらを区別しない。" },
   },
   "random-byte": {
-    en: { name: "The random byte", what: "Memory that a routine rewrites from itself every frame, with a rotate on the byte and an exclusive-or somewhere in the same routine. These are the game's dice." },
-    ja: { name: "乱数のバイト", what: "ルーチンが毎フレーム、自分自身から書き直すメモリ。そのバイトへの回転と、同じルーチンのどこかにある排他的論理和を伴う。ゲームのさいころだ。" },
+    en: { name: "The random byte", what: "Memory that a routine rewrites from itself, with a rotate on the byte and an exclusive-or in the same routine, where the routine also looks at the old value and the byte keeps its value from one frame to the next. These are the game's dice." },
+    ja: { name: "乱数のバイト", what: "ルーチンが自分自身から書き直すメモリ。そのバイトへの回転と、同じルーチンの中の排他的論理和を伴い、ルーチンは古い値も見て、バイトはフレームからフレームへ値を保つ。ゲームのさいころだ。" },
   },
 };
 

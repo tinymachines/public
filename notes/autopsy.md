@@ -515,6 +515,22 @@ image it runs from.
    frame into the next), and the rule should ask that; it needs the
    reports re-made, so it waits for the next count.
 
+   *The same count re-made, 2026-10-02, for that rule.* Asking only
+   whether the byte is carried was too loose: 48 marks in sixteen
+   games where there had been 18 in twelve. Three more things were
+   wrong, each a decoy in the test now. A temporary is "carried" in
+   any one path that happens to read it first, so a byte is state
+   when most of the reports say so. A pad poll has the same shape (it
+   shifts the buttons into a byte and EORs it with the last reading),
+   so the routine must not read the pad, and it must look at one of
+   the bytes it stirs besides shifting it (the feedback). And code
+   that several routines jump into ran in each of them, which gave
+   one game seven routines for one byte: the tightest routine a
+   stirring instruction ran in keeps the mark. Twenty marks in
+   fourteen games, and where a game's generator is known (the one
+   Nintendo used across several of these) the bytes named are its
+   bytes. Everything else in the count is unchanged: 797 marks.
+
    Still to come: the rest of an object table (a companion compared
    with a constant and then cleared reads like a timer or a health);
    a table of low bytes and one of high (found as chosen, not written

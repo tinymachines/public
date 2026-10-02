@@ -1,9 +1,9 @@
 {
  "note": "Written only by scripts/board-autopsy.py from the models wasm/listing/tools/autopsy.py wrote. Shape only: addresses, labels, counts and pattern names; no byte of any ROM.",
- "boarded_on": "2026-10-01",
+ "boarded_on": "2026-10-02",
  "repo": "https://github.com/tinymachines/public",
- "listing_tree": "f17e1a5748a9ba589b548f63be52aa0be0471df1",
- "flow_tree": "3a14946b2137b5b54a86c9856762b0761fe79317",
+ "listing_tree": "d10d9115758ae6d5704be2684a45998d0300dfd2",
+ "flow_tree": "642718fbc10d1d8b469b2213b7d7b9342b2c3f5c",
  "console_commit": "b7e9ccd356eb4485f082c9ade17cd66977b07d22",
  "steps": [
   6400,
@@ -33,7 +33,7 @@
   "prg": 2277376,
   "executed": 312716,
   "routines": 5057,
-  "marks": 795,
+  "marks": 797,
   "tables": 219,
   "table_words": 1745
  },
@@ -161,6 +161,7 @@
     "handler-in-memory": 1,
     "pad-poll": 2,
     "palette-writer": 2,
+    "random-byte": 1,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 7,
@@ -690,6 +691,16 @@
      "kind": "call",
      "entered": 16986,
      "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0690",
+        "eors": 1,
+        "frames": 16985,
+        "shifts": 1
+       },
+       "pattern": "random-byte"
+      },
       {
        "evidence": {
         "by": "match",
@@ -2718,7 +2729,6 @@
     "pad-poll": 2,
     "palette-writer": 2,
     "position-compare": 17,
-    "random-byte": 1,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 1,
@@ -5023,23 +5033,12 @@
      "is": []
     },
     {
-     "name": "b6_random_82BD",
+     "name": "b6_routine_82BD",
      "bank": "prg6",
      "addr": 33469,
      "kind": "call",
      "entered": 1110842,
-     "is": [
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$00EE,$00EF",
-        "eors": 1,
-        "frames": 376906,
-        "shifts": 2
-       },
-       "pattern": "random-byte"
-      }
-     ]
+     "is": []
     },
     {
      "name": "b6_routine_84F1",
@@ -12034,23 +12033,12 @@
      "is": []
     },
     {
-     "name": "random_D2CF",
+     "name": "routine_D2CF",
      "bank": "prg0",
      "addr": 53967,
      "kind": "call",
      "entered": 59272,
-     "is": [
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$0002",
-        "eors": 1,
-        "frames": 59272,
-        "shifts": 2
-       },
-       "pattern": "random-byte"
-      }
-     ]
+     "is": []
     },
     {
      "name": "routine_D449",
@@ -12577,12 +12565,23 @@
      "is": []
     },
     {
-     "name": "routine_E4D8",
+     "name": "random_E4D8",
      "bank": "prg0",
      "addr": 58584,
      "kind": "call",
      "entered": 26342,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0005,$0006",
+        "eors": 1,
+        "frames": 26322,
+        "shifts": 10
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "routine_E5A8",
@@ -14026,7 +14025,7 @@
      "is": []
     },
     {
-     "name": "b0_compare_9D2D",
+     "name": "b0_random_9D2D",
      "bank": "prg0",
      "addr": 40237,
      "kind": "call",
@@ -14043,6 +14042,16 @@
         "y": "$03C0,$03C2,$03C3,$03C4,$03C5,$03C6,$03C7,$03C8,$03C9,$03CA,$03CB,$05D2"
        },
        "pattern": "position-compare"
+      },
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$000E,$0010,$0011,$0012,$0013",
+        "eors": 2,
+        "frames": 61338,
+        "shifts": 6
+       },
+       "pattern": "random-byte"
       }
      ]
     },
@@ -14781,16 +14790,6 @@
      "kind": "call",
      "entered": 194712,
      "is": [
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$00BC,$00BD",
-        "eors": 1,
-        "frames": 82859,
-        "shifts": 2
-       },
-       "pattern": "random-byte"
-      },
       {
        "evidence": {
         "by": "match",
@@ -18289,7 +18288,7 @@
      "is": []
     },
     {
-     "name": "b0_random_83BA",
+     "name": "b0_compare_83BA",
      "bank": "prg0",
      "addr": 33722,
      "kind": "call",
@@ -18306,16 +18305,6 @@
         "y": "$0059,$0336,$033E,$0340,$0341"
        },
        "pattern": "position-compare"
-      },
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$0072",
-        "eors": 2,
-        "frames": 51548,
-        "shifts": 1
-       },
-       "pattern": "random-byte"
       }
      ]
     },
@@ -20235,16 +20224,6 @@
         "strobes-per-frame": 4
        },
        "pattern": "pad-poll"
-      },
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$006C,$006D",
-        "eors": 1,
-        "frames": 94401,
-        "shifts": 2
-       },
-       "pattern": "random-byte"
       }
      ]
     },
@@ -21194,20 +21173,42 @@
      "is": []
     },
     {
-     "name": "b7_routine_EEA6",
+     "name": "b7_random_EEA6",
      "bank": "prg7",
      "addr": 61094,
      "kind": "call",
      "entered": 98,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$006C,$0511",
+        "eors": 1,
+        "frames": 98,
+        "shifts": 4
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
-     "name": "b7_routine_EF49",
+     "name": "b7_random_EF49",
      "bank": "prg7",
      "addr": 61257,
      "kind": "call",
      "entered": 252,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$006C,$0511",
+        "eors": 2,
+        "frames": 252,
+        "shifts": 4
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "b7_routine_F014",
@@ -22142,7 +22143,7 @@
     "pad-poll": 2,
     "palette-writer": 1,
     "position-compare": 6,
-    "random-byte": 3,
+    "random-byte": 1,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 1,
@@ -24387,16 +24388,6 @@
         "strobes-per-frame": 6
        },
        "pattern": "pad-poll"
-      },
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$0000,$00F8,$00F9",
-        "eors": 1,
-        "frames": 110023,
-        "shifts": 3
-       },
-       "pattern": "random-byte"
       }
      ]
     },
@@ -24415,16 +24406,6 @@
         "strobes-per-frame": 4
        },
        "pattern": "pad-poll"
-      },
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$0000,$00F8,$00F9",
-        "eors": 1,
-        "frames": 108659,
-        "shifts": 3
-       },
-       "pattern": "random-byte"
       }
      ]
     },
@@ -25830,6 +25811,7 @@
     "pad-poll": 2,
     "palette-writer": 2,
     "position-compare": 3,
+    "random-byte": 2,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 1,
@@ -28243,12 +28225,22 @@
      ]
     },
     {
-     "name": "b7_sprites_CD6D",
+     "name": "b7_random_CD6D",
      "bank": "prg7",
      "addr": 52589,
      "kind": "call",
      "entered": 12117,
      "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$006B",
+        "eors": 1,
+        "frames": 12145,
+        "shifts": 2
+       },
+       "pattern": "random-byte"
+      },
       {
        "evidence": {
         "by": "match",
@@ -28725,12 +28717,23 @@
      "is": []
     },
     {
-     "name": "b7_routine_DCC3",
+     "name": "b7_random_DCC3",
      "bank": "prg7",
      "addr": 56515,
      "kind": "call",
      "entered": 51038,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$006B",
+        "eors": 1,
+        "frames": 24564,
+        "shifts": 1
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "b7_routine_DCFC",
@@ -34914,6 +34917,7 @@
     "pad-poll": 1,
     "palette-writer": 1,
     "position-compare": 6,
+    "random-byte": 1,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 3,
@@ -35431,12 +35435,23 @@
      "is": []
     },
     {
-     "name": "b4_routine_880F",
+     "name": "b4_random_880F",
      "bank": "prg4",
      "addr": 34831,
      "kind": "call",
      "entered": 246,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$001D",
+        "eors": 1,
+        "frames": 246,
+        "shifts": 2
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "b4_routine_BF98",
@@ -37672,16 +37687,6 @@
         "strobes-per-frame": 5
        },
        "pattern": "pad-poll"
-      },
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$0000",
-        "eors": 1,
-        "frames": 30945,
-        "shifts": 1
-       },
-       "pattern": "random-byte"
       }
      ]
     },
@@ -38428,12 +38433,23 @@
      "is": []
     },
     {
-     "name": "routine_8E3C",
+     "name": "random_8E3C",
      "bank": "prg0",
      "addr": 36412,
      "kind": "call",
      "entered": 2395,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$00C8",
+        "eors": 1,
+        "frames": 3325,
+        "shifts": 2
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "routine_8F86",
@@ -42694,7 +42710,7 @@
     "pad-poll": 5,
     "palette-writer": 3,
     "position-compare": 3,
-    "random-byte": 1,
+    "random-byte": 2,
     "scroll-writer": 2,
     "sound-driver": 1,
     "sprite-0-split": 2,
@@ -45288,12 +45304,23 @@
      "is": []
     },
     {
-     "name": "b1_routine_C588",
+     "name": "b1_random_C588",
      "bank": "prg1",
      "addr": 50568,
      "kind": "call",
      "entered": 8510911,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$05EC,$05ED,$05EE,$05EF",
+        "eors": 1,
+        "frames": 34995,
+        "shifts": 4
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "b1_dispatch_C5AA",
@@ -48124,23 +48151,12 @@
      "is": []
     },
     {
-     "name": "b2_random_820E",
+     "name": "b2_routine_820E",
      "bank": "prg2",
      "addr": 33294,
      "kind": "call",
      "entered": 1018724,
-     "is": [
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$05AD",
-        "eors": 1,
-        "frames": 113276,
-        "shifts": 1
-       },
-       "pattern": "random-byte"
-      }
-     ]
+     "is": []
     },
     {
      "name": "b2_random_8214",
@@ -48338,7 +48354,18 @@
      "addr": 38001,
      "kind": "dispatch",
      "entered": 84718,
-     "is": []
+     "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$0040,$0041,$0068,$0069",
+        "eors": 3,
+        "frames": 59821,
+        "shifts": 10
+       },
+       "pattern": "random-byte"
+      }
+     ]
     },
     {
      "name": "b2_routine_95D4",
@@ -51049,7 +51076,7 @@
     "pad-poll": 2,
     "palette-writer": 2,
     "position-compare": 7,
-    "random-byte": 2,
+    "random-byte": 1,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-writer": 35,
@@ -53701,16 +53728,6 @@
         "x": "$00B1,$0722"
        },
        "pattern": "position-compare"
-      },
-      {
-       "evidence": {
-        "by": "match",
-        "bytes": "$0000",
-        "eors": 2,
-        "frames": 110242,
-        "shifts": 2
-       },
-       "pattern": "random-byte"
       },
       {
        "evidence": {
@@ -61291,7 +61308,7 @@
     "jump-engine": 2,
     "pad-poll": 2,
     "palette-writer": 1,
-    "random-byte": 1,
+    "random-byte": 2,
     "scroll-writer": 1,
     "sound-driver": 1,
     "sprite-0-split": 2,
@@ -61442,12 +61459,22 @@
      ]
     },
     {
-     "name": "b0_sprites_96A8",
+     "name": "b0_random_96A8",
      "bank": "prg0",
      "addr": 38568,
      "kind": "call",
      "entered": 62,
      "is": [
+      {
+       "evidence": {
+        "by": "match",
+        "bytes": "$074F",
+        "eors": 1,
+        "frames": 31,
+        "shifts": 2
+       },
+       "pattern": "random-byte"
+      },
       {
        "evidence": {
         "by": "match",
