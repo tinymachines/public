@@ -82,3 +82,17 @@ for (const l of record()) {
     expect(o.out, `${o.px}px sideways`).toEqual([]);
   });
 }
+
+test("a lesson's play button opens the play page with its cartridge in", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const l = record()[0];
+  await open(page, `/autopsy/lessons/${l.key}`, 200);
+  const href = await page.locator("[data-lesson-play]").getAttribute("href");
+  expect(href).toBe(`/nes/play?lesson=${l.key}`);
+  await open(page, href!, 500);
+  await expect(page.locator("[data-play-status]")).toContainText(`${l.key}.nes`, { timeout: 20_000 });
+  // A name that is not a lesson's loads nothing and says nothing went wrong.
+  await open(page, "/nes/play?lesson=no-such-lesson", 1500);
+  await expect(page.locator("[data-play-status]")).not.toContainText("no-such-lesson");
+  await expect(page.locator("[data-play-why]")).toHaveCount(0);
+});

@@ -173,6 +173,21 @@ export function Screen({ lang, stage = true }: { lang: Lang; stage?: boolean }) 
 export function Cartridge({ lang, brief = false }: { lang: Lang; brief?: boolean }) {
   const T = S[lang];
   const s = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  // ?lesson=<name> loads that lesson's cartridge from this site
+  // (/autopsy/lessons/<name>.nes, our own), so a lesson's page can say
+  // "play it here". Only a lesson's name is taken, never an address.
+  const asked = useRef(false);
+  useEffect(() => {
+    if (asked.current) return;
+    asked.current = true;
+    const name = new URLSearchParams(window.location.search).get("lesson");
+    if (!name || !/^[a-z0-9-]{1,32}$/.test(name)) return;
+    void (async () => {
+      const r = await fetch(`/autopsy/lessons/${name}.nes`);
+      if (!r.ok) return;
+      await load(new File([await r.arrayBuffer()], `${name}.nes`, { type: "application/octet-stream" }));
+    })();
+  }, []);
   return (
     <section className="wb-page play-section" id="cartridge">
       <h2 className="eyebrow">{T.cartH}</h2>
