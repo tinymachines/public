@@ -22,6 +22,7 @@ const WORDS = {
     caption: (arrays: string, slots: string, routines: string) =>
       `${arrays} arrays of up to ${slots} slots that ${routines} routines step through together. Each column is an array at its address and each row a slot, so one thing on the screen is one row across all of them.`,
     cut: (shown: string, slots: string) => ` The first ${shown} of ${slots} slots are drawn.`,
+    more: " A number under a column is how many more bytes that array was reached across than the table is long.",
     key: "X and Y are positions, and the darker squares are the slots a rule saw compared. + is added into a position, which is what a speed does. → chose a jump, which is what a state or a kind does. ↓ is only ever counted down, which is what a timer does. A plain outline travels with them and is not named yet.",
     label: (arrays: string, slots: string) => `An object table drawn as ${arrays} columns of up to ${slots} slots`,
   },
@@ -29,6 +30,7 @@ const WORDS = {
     caption: (arrays: string, slots: string, routines: string) =>
       `${routines} 個のルーチンが一緒にたどる、最大 ${slots} 枠の配列 ${arrays} 本。列はそれぞれのアドレスにある配列、行は枠で、画面上のもの一つが、すべての列を横切る一行になる。`,
     cut: (shown: string, slots: string) => ` ${slots} 枠のうち最初の ${shown} 枠を描いてある。`,
+    more: " 列の下の数は、その配列が表の長さを超えて届いたバイト数。",
     key: "X と Y は位置で、濃い四角は規則が比較を見た枠。+ は位置に足し込まれる配列で、速度がすることだ。→ はジャンプを選んだ配列で、状態や種類がすることだ。↓ は減らされる一方の配列で、タイマーがすることだ。輪郭だけの列は一緒に動くが、まだ名付けていない。",
     label: (arrays: string, slots: string) => `最大 ${slots} 枠の列 ${arrays} 本として描いた物体の表`,
   },
@@ -55,7 +57,10 @@ export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame
     }
   }
   const has = (list: string[] | undefined, b: string) => (list ?? []).includes(b);
-  const most = Math.max(table.slots, ...bases.map((b) => slotsOf.get(b) ?? 0));
+  // The table is as long as its position arrays. A companion reached
+  // further (a loop that clears the whole page reaches every array on
+  // it) is drawn to the same depth and says how much more there was.
+  const most = table.slots;
   const rows = Math.min(most, ROWS);
 
   const CW = 24;
@@ -63,7 +68,8 @@ export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame
   const LEFT = 30;
   const TOP = 66;
   const W = LEFT + bases.length * CW + 8;
-  const H = TOP + rows * RH + (most > rows ? 18 : 6);
+  const longer = bases.some((b) => (slotsOf.get(b) ?? table.slots) > rows);
+  const H = TOP + rows * RH + (longer ? 18 : 6);
   const every = rows <= 16 ? 1 : 4;
 
   return (
@@ -103,7 +109,7 @@ export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame
                   <text x={x + CW / 2 + 3} y={TOP - 20} fontSize="10" fill="currentColor" transform={`rotate(-90 ${x + CW / 2 + 3} ${TOP - 20})`}>
                     {b}
                   </text>
-                  <text x={x + (CW - 2) / 2} y={TOP - 5} fontSize="10" fontWeight="700" fill="currentColor" textAnchor="middle">
+                  <text x={x + (CW - 2) / 2} y={TOP - 5} fontSize="12" fontWeight="700" fill="currentColor" textAnchor="middle">
                     {marks}
                   </text>
                   {Array.from({ length: drawn }, (_, r) => (
@@ -133,7 +139,8 @@ export function ObjectTable({ lang, g, table, id }: { lang: Lang; g: AutopsyGame
       </div>
       <figcaption>
         {S.caption(n(bases.length), n(most), n(table.routines))}
-        {most > rows ? S.cut(n(rows), n(most)) : ""} {S.key}
+        {most > rows ? S.cut(n(rows), n(most)) : ""}
+        {longer ? S.more : ""} {S.key}
       </figcaption>
     </figure>
   );
