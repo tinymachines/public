@@ -116,7 +116,33 @@ def rooms_measures(cell, vram_path: Path, room: int, scroll: int, frames: int, a
         last += 1 if last + 1 in moved else 2
     # Pixels a frame over the whole slide (a frame read early shows 0 and
     # the next twice the step, so the steps one by one would mislead).
-    travel = sum(min((cell(f, scroll) - cell(f - 1, scroll)) % 256, (cell(f - 1, scroll) - cell(f, scroll)) % 256) for f in range(first, last + 1))
+    # The slide as the picture chip was told it: the last $2005 pair each
+    # frame (scroll.txt beside the writes), which no read of memory can
+    # catch early. Without the file, memory's own reads, which can.
+    # Per frame: the last pair written while the picture was drawing (a
+    # split sets the scroll for what is under it, as Zelda's does below
+    # its status bar), or else the last pair written in the blank.
+    told = {}
+    sp = vram_path.with_name("scroll.txt")
+    if sp.exists():
+        split = {}
+        for line in sp.read_text().splitlines():
+            f, at, x, _ = map(int, line.split())
+            (split if at < 240 else told)[f] = x
+        told.update(split)
+    if told:
+        xs = {}
+        last_x = 0
+        for f in range(change - 5, min(change + 200, frames)):
+            last_x = told.get(f, last_x)
+            xs[f] = last_x
+        moved = [f for f in range(change, min(change + 199, frames)) if xs[f] != xs[f - 1]]
+        first, last = moved[0], moved[-1]
+        moves = [min((xs[f] - xs[f - 1]) % 256, (xs[f - 1] - xs[f]) % 256) for f in range(first, last + 1)]
+    else:
+        moves = [min((cell(f, scroll) - cell(f - 1, scroll)) % 256, (cell(f - 1, scroll) - cell(f, scroll)) % 256) for f in range(first, last + 1)]
+    travel = sum(moves)
+    usual = max(set(m for m in moves if m), key=moves.count)
     def runs(a, b):
         out = {}
         for f in range(a, b):
@@ -128,7 +154,7 @@ def rooms_measures(cell, vram_path: Path, room: int, scroll: int, frames: int, a
     during = [f for f in range(first, last + 2) if any(n >= 8 and st == 32 for _, n, st in writes.get(f, []))]
     return {
         "before": cell(change - 1, room), "after": cell(change, room),
-        "wait": first - change, "slide": last - first + 1, "travel": travel, "step": round(travel / (last - first + 1), 2),
+        "wait": first - change, "slide": len([m for m in moves if m]), "travel": travel, "step": usual,
         "written_before": runs(change, first), "written_during": runs(first, last + 2),
         "column_every": sorted({b - a for a, b in zip(during, during[1:])}),
         "columns_from": during[0] - first if during else None, "columns": len(during),
@@ -259,6 +285,26 @@ def mario_touches(dirpath: Path):
     return {"game": "Super Mario Bros.", "walk": round(sum(steps) / len(steps), 2), "stomp": s, "hit": t}
 
 
+def rooms_up(cell, vram_path: Path, room: int, frames: int, after: int):
+    """The first step up after `after`: the room's number, and the rows
+    written across into the picture chip's memory after it changed."""
+    writes = {}
+    for line in vram_path.read_text().splitlines():
+        f, a, n, st = line.split()
+        writes.setdefault(int(f), []).append((int(a, 16), int(n), int(st)))
+    t = next(f for f in range(max(after, 1), frames) if cell(f, room) != cell(f - 1, room))
+    rows = [(f, a, n) for f in range(t, min(t + 120, frames)) for a, n, st in writes.get(f, []) if st == 1 and n >= 24 and (a & 0x3FF) < 0x3C0]
+    frames_of_rows = [f for f, _, _ in rows]
+    addrs = [a for _, a, _ in rows]
+    return {
+        "before": cell(t - 1, room), "after": cell(t, room), "rows": len(rows),
+        "tiles": sorted({n for _, _, n in rows}), "first": frames_of_rows[0] - t if rows else None,
+        "every": sorted({b - a for a, b in zip(frames_of_rows, frames_of_rows[1:])}),
+        "upward": all(b < a for a, b in zip(addrs, addrs[1:])),
+        "from_row": (addrs[0] & 0x3FF) // 32 if rows else None, "to_row": (addrs[-1] & 0x3FF) // 32 if rows else None,
+    }
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -342,17 +388,17 @@ def main():
             h = lambda a: int(a[1:], 16)
             mm = meta["memory"]
             measures = rooms_measures(cell, run / "vram.txt", h(mm["room"]), h(mm["scroll"][0]), meta["frames"], after=meta["walk_from"])
+            measures["up"] = rooms_up(cell, run / "vram.txt", h(mm["room"]), meta["frames"], meta["up_from"])
             if name in compare:
                 other = Path(compare[name])
                 zr = (other / "vr" / "ram.bin").read_bytes()
                 # Zelda: the room at $00EB, the slide's scroll at $00FD; the first walk out is past the menus.
                 against = {"game": "The Legend of Zelda", **rooms_measures(frames_of(zr), other / "vr" / "vram.txt", 0xEB, 0xFD, len(zr) // 2048, after=700)}
                 # A second run that walks up out of the first room: the room's number before and after.
-                if (other / "up" / "ram.bin").exists():
-                    ur = (other / "up" / "ram.bin").read_bytes()
-                    uc = frames_of(ur)
-                    t = next(f for f in range(700, len(ur) // 2048) if uc(f, 0xEB) != uc(f - 1, 0xEB))
-                    against["up"] = {"before": uc(t - 1, 0xEB), "after": uc(t, 0xEB)}
+                # A second run that walks up out of the first room, its writes logged.
+                if (other / "upvr" / "ram.bin").exists():
+                    ur = (other / "upvr" / "ram.bin").read_bytes()
+                    against["up"] = rooms_up(frames_of(ur), other / "upvr" / "vram.txt", 0xEB, len(ur) // 2048, 700)
             else:
                 against = prev.get("against")
         else:

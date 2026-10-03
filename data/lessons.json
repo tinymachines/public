@@ -104,9 +104,9 @@
     "before": 103,
     "after": 102,
     "wait": 2,
-    "slide": 63,
+    "slide": 64,
     "travel": 256,
-    "step": 4.06,
+    "step": 4,
     "written_before": {},
     "written_during": {
      "30 down": 32
@@ -136,22 +136,22 @@
     "game": "The Legend of Zelda",
     "before": 119,
     "after": 118,
-    "wait": 30,
+    "wait": 31,
     "slide": 64,
     "travel": 256,
-    "step": 4.0,
+    "step": 4,
     "written_before": {
      "24 across": 2,
      "32 across": 23
     },
     "written_during": {
      "22 down": 32,
-     "24 across": 1
+     "24 across": 2
     },
     "column_every": [
      1
     ],
-    "columns_from": 32,
+    "columns_from": 31,
     "columns": 32,
     "up": {
      "before": 119,
