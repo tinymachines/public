@@ -1,0 +1,26 @@
+{
+ "title": "A status bar that stays still, the way Mario's does",
+ "kind": "status",
+ "description": "A cartridge of our own whose level scrolls under a bar that does not move, split where sprite 0 meets the bar's bottom line, with a timer written only when it changes, the way Super Mario Bros. was measured doing it, measured beside it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "vertical",
+ "script": "right.txt",
+ "frames": 1500,
+ "grabs": [
+  100,
+  400,
+  800,
+  1200
+ ],
+ "walk_from": 60,
+ "memory": {
+  "camera": [
+   "$20",
+   "$21"
+  ],
+  "countdown": "$23"
+ }
+}
