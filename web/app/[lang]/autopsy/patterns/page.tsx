@@ -7,6 +7,7 @@ import { surface } from "@/lib/projects";
 import { autopsy, found } from "@/lib/autopsy";
 import { Shell } from "@/app/components/SiteFrame";
 import { ORDER, patternWords } from "../words";
+import { lessons } from "@/lib/lessons";
 
 /**
  * /autopsy/patterns: the things games keep doing, each with the rule that
@@ -31,6 +32,7 @@ const PROSE = {
     ),
     every: (games: string, marks: string) => `Found in all ${games} games, ${marks} routines.`,
     some: (count: string, games: string, marks: string) => `Found in ${count} of the ${games} games, ${marks} routines:`,
+    ours: "Shown in a cartridge of our own, where the same rule finds it:",
     none: "Not found in this survey. The rule was written for one run of one game, and a crawl folds many runs together; it needs rewriting for that.",
     caution: (
       <>
@@ -49,6 +51,7 @@ const PROSE = {
     ),
     every: (games: string, marks: string) => `${games} 本すべてのゲームで見つかった。ルーチンは ${marks} 個。`,
     some: (count: string, games: string, marks: string) => `${games} 本のうち ${count} 本で見つかった。ルーチンは ${marks} 個:`,
+    ours: "私たち自身のカートリッジでも見られる。同じ規則がそこに見つける:",
     none: "この調査では見つからなかった。規則は一本のゲームの一回の走行に向けて書かれたもので、クロールは多くの走行を重ね合わせる。そのための書き直しが要る。",
     caution: (
       <>
@@ -63,6 +66,8 @@ export default async function AutopsyPatternsPage({ params }: { params: Promise<
   const S = PROSE[lang];
   const r = autopsy();
   const n = (v: number) => v.toLocaleString(lang);
+  // The lessons our own autopsy found a pattern in (data/lessons.json).
+  const mine = (p: string) => lessons().filter((l) => (l.patterns ?? {})[p]);
   // Every pattern the record holds must be one this page tells.
   for (const p of r.patterns) {
     if (!(ORDER as readonly string[]).includes(p)) throw new Error(`data/autopsy.json holds the pattern ${JSON.stringify(p)}, which /autopsy/patterns does not tell; add it to words.tsx`);
@@ -95,6 +100,17 @@ export default async function AutopsyPatternsPage({ params }: { params: Promise<
                   </ul>
                 </>
               )}
+              {mine(p).length ? (
+                <p data-autopsy-pattern-lessons={mine(p).length}>
+                  {S.ours}{" "}
+                  {mine(p).map((l, i) => (
+                    <span key={l.key}>
+                      {i ? (lang === "ja" ? "、" : ", ") : ""}
+                      <Link href={localize(lang, `/autopsy/lessons/${l.key}`)}>{t(lang, l.title)}</Link>
+                    </span>
+                  ))}
+                </p>
+              ) : null}
             </section>
           );
         })}

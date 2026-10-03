@@ -94,6 +94,8 @@ interface Base {
   /** The cartridge, base64. */
   rom: string;
   pictures: { frame: number; png: string }[];
+  /** What our own autopsy's rules named in the cartridge: pattern, routines. */
+  patterns?: Record<string, number>;
 }
 
 /** A lesson and the same measures off a commercial game's runs: counts only. */

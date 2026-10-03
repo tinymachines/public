@@ -178,9 +178,16 @@ def autopsy_of(rom: Path, script: Path, frames: int, out: Path):
     import os
     os.mkfifo(fifo)
     try:
-        w = subprocess.Popen([str(trace_bin), str(rom), str(script), str(frames), str(fifo)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run([str(report_bin), str(fifo), str(rom.read_bytes()[4] * 16384), str(out / "report.json")], check=True, capture_output=True)
-        w.wait()
+        w = subprocess.Popen([str(trace_bin), str(rom), str(script), str(frames), str(fifo)], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        r = subprocess.Popen([str(report_bin), str(fifo), str(rom.read_bytes()[4] * 16384), str(out / "report.json")], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        # A trace that dies before it opens the pipe leaves the report
+        # waiting on it for good: watch the writer, and stop the reader.
+        err = w.communicate()[1]
+        if w.returncode != 0:
+            r.kill()
+            sys.exit(f"board-lessons: script-trace {script} failed: {err.strip()[-500:]}")
+        if r.wait() != 0:
+            sys.exit(f"board-lessons: the flow report of {script} failed: {r.stderr.read()[-500:]}")
     finally:
         fifo.unlink()
     (out / "autopsy.s").write_text(build.listing("from", rom, out / "report.json"))
@@ -336,13 +343,13 @@ def main():
             mm = meta["memory"]
             measures = rooms_measures(cell, run / "vram.txt", h(mm["room"]), h(mm["scroll"][0]), meta["frames"], after=meta["walk_from"])
             if name in compare:
-                d = Path(compare[name])
-                zr = (d / "vr" / "ram.bin").read_bytes()
+                other = Path(compare[name])
+                zr = (other / "vr" / "ram.bin").read_bytes()
                 # Zelda: the room at $00EB, the slide's scroll at $00FD; the first walk out is past the menus.
-                against = {"game": "The Legend of Zelda", **rooms_measures(frames_of(zr), d / "vr" / "vram.txt", 0xEB, 0xFD, len(zr) // 2048, after=700)}
+                against = {"game": "The Legend of Zelda", **rooms_measures(frames_of(zr), other / "vr" / "vram.txt", 0xEB, 0xFD, len(zr) // 2048, after=700)}
                 # A second run that walks up out of the first room: the room's number before and after.
-                if (d / "up" / "ram.bin").exists():
-                    ur = (d / "up" / "ram.bin").read_bytes()
+                if (other / "up" / "ram.bin").exists():
+                    ur = (other / "up" / "ram.bin").read_bytes()
                     uc = frames_of(ur)
                     t = next(f for f in range(700, len(ur) // 2048) if uc(f, 0xEB) != uc(f - 1, 0xEB))
                     against["up"] = {"before": uc(t - 1, 0xEB), "after": uc(t, 0xEB)}
@@ -353,13 +360,24 @@ def main():
             h = lambda a: int(a[1:], 16)
             measures = scroll_measures(cell, run / "vram.txt", h(mm["camera"][0]), h(mm["camera"][1]), h(mm["countdown"]), meta["frames"])
             if name in compare:
-                d = Path(compare[name])
-                mr = (d / "run" / "ram.bin").read_bytes()
+                other = Path(compare[name])
+                mr = (other / "run" / "ram.bin").read_bytes()
                 # Mario: the camera at $071C (pixel) and $071A (page), the countdown at $071F.
-                against = {"game": "Super Mario Bros.", **scroll_measures(frames_of(mr), d / "vr" / "vram.txt", 0x71C, 0x71A, 0x71F, min(len(mr) // 2048, 1700))}
+                against = {"game": "Super Mario Bros.", **scroll_measures(frames_of(mr), other / "vr" / "vram.txt", 0x71C, 0x71A, 0x71F, min(len(mr) // 2048, 1700))}
             else:
                 against = prev.get("against")
+        # Every lesson through our own autopsy: the patterns its rules name
+        # in it, so the patterns page can point at a cartridge of ours.
+        if not (run / "autopsy.s").exists() or kind not in ("screens", "stomp"):
+            autopsy_of(b["rom"], d / meta["script"], meta["frames"], run)
+        found = {}
+        model_all = json.loads(build.listing("model", run / "autopsy.s"))
+        # Routines and the loops a rule named inside them (where it waits).
+        for x in model_all["routines"] + model_all.get("loops", []):
+            for i in x["is"]:
+                found[i["pattern"]] = found.get(i["pattern"], 0) + 1
         lessons.append({
+            "patterns": dict(sorted(found.items())),
             "key": name, "kind": meta.get("kind", "jump"), "title": meta["title"], "description": meta["description"], "tree": git("rev-parse", f"HEAD:lessons/{name}"),
             "sha256": sha, "code_bytes": b["code_bytes"], "instructions": b["instructions"],
             "rom": base64.b64encode(b["rom"].read_bytes()).decode(),

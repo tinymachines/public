@@ -5,6 +5,7 @@ import { pageMeta } from "@/lib/seo";
 import { localize, t } from "@/lib/i18n";
 import { surface } from "@/lib/projects";
 import { lessons } from "@/lib/lessons";
+import { ORDER, patternWords } from "../words";
 import { Shell } from "@/app/components/SiteFrame";
 
 /**
@@ -28,6 +29,7 @@ const PROSE = {
         cartridge is yours to play.
       </>
     ),
+    found: "Our own autopsy, run over it, names:",
   },
   ja: {
     intro: (
@@ -35,6 +37,7 @@ const PROSE = {
         ゲームを分解すると、それが何をしているかが分かる。レッスンはその反対側だ: 測ったことから書いた、同じことをする私たち自身の小さなカートリッジで、同じやり方でもう一度測るので、二つを並べて比べられる。プログラムは私たちのものなので丸ごと見せられ、カートリッジは自由に遊べる。
       </>
     ),
+    found: "それを私たち自身の解剖にかけると、名付けられるのは:",
   },
 } as const;
 
@@ -48,7 +51,20 @@ export default async function LessonsPage({ params }: { params: Promise<{ lang: 
         <ul data-lessons>
           {lessons().map((l) => (
             <li key={l.key}>
-              <Link href={localize(lang, `/autopsy/lessons/${l.key}`)}>{t(lang, l.title)}</Link>
+              <Link href={localize(lang, `/autopsy/lessons/${l.key}`)}>{t(lang, l.title)}</Link>: {t(lang, l.description)}
+              {Object.keys(l.patterns ?? {}).length ? (
+                <>
+                  {" "}
+                  {S.found}{" "}
+                  {ORDER.filter((p) => (l.patterns ?? {})[p]).map((p, i) => (
+                    <span key={p}>
+                      {i ? (lang === "ja" ? "、" : ", ") : ""}
+                      <Link href={`${localize(lang, "/autopsy/patterns")}#${p}`}>{patternWords(lang, p).name}</Link>
+                    </span>
+                  ))}
+                  {lang === "ja" ? "。" : "."}
+                </>
+              ) : null}
             </li>
           ))}
         </ul>

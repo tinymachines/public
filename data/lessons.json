@@ -3,6 +3,14 @@
  "boarded_on": "2026-10-02",
  "lessons": [
   {
+   "patterns": {
+    "frame-wait": 1,
+    "pad-poll": 1,
+    "palette-writer": 1,
+    "scroll-writer": 1,
+    "sprite-writer": 2,
+    "vram-drain": 1
+   },
    "key": "jump",
    "kind": "jump",
    "title": "A jump that feels like Mario's",
@@ -75,6 +83,14 @@
    ]
   },
   {
+   "patterns": {
+    "frame-wait": 1,
+    "pad-poll": 1,
+    "palette-writer": 1,
+    "scroll-writer": 1,
+    "sprite-writer": 2,
+    "vram-drain": 1
+   },
    "key": "rooms",
    "kind": "rooms",
    "title": "Rooms that slide in the way Zelda's do",
@@ -147,6 +163,15 @@
    ]
   },
   {
+   "patterns": {
+    "frame-wait": 1,
+    "jump-engine": 1,
+    "pad-poll": 1,
+    "palette-writer": 1,
+    "scroll-writer": 1,
+    "sprite-writer": 2,
+    "vram-drain": 1
+   },
    "key": "screens",
    "kind": "screens",
    "title": "One byte chooses the screen, the way Mario's does",
@@ -219,6 +244,14 @@
    ]
   },
   {
+   "patterns": {
+    "frame-wait": 1,
+    "pad-poll": 1,
+    "palette-writer": 1,
+    "scroll-writer": 1,
+    "sprite-writer": 2,
+    "vram-drain": 1
+   },
    "key": "scroll",
    "kind": "scroll",
    "title": "A picture that scrolls the way Mario's does",
@@ -301,6 +334,15 @@
    ]
   },
   {
+   "patterns": {
+    "frame-wait": 1,
+    "pad-poll": 1,
+    "palette-writer": 1,
+    "position-compare": 1,
+    "scroll-writer": 1,
+    "sprite-writer": 2,
+    "vram-drain": 1
+   },
    "key": "stomp",
    "kind": "stomp",
    "title": "A stomp and a hit, told apart the way Mario does",

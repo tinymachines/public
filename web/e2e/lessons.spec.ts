@@ -96,3 +96,17 @@ test("a lesson's play button opens the play page with its cartridge in", async (
   await expect(page.locator("[data-play-status]")).not.toContainText("no-such-lesson");
   await expect(page.locator("[data-play-why]")).toHaveCount(0);
 });
+
+test("each pattern our own autopsy found in a lesson points at that lesson", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await open(page, "/autopsy/patterns", 200);
+  const told = await page.locator("[data-autopsy-pattern]").evaluateAll((ss) =>
+    ss.map((s) => [(s as HTMLElement).dataset.autopsyPattern, [...s.querySelectorAll("[data-autopsy-pattern-lessons] a")].map((a) => a.getAttribute("href"))] as const));
+  const want = new Map<string, string[]>();
+  for (const l of record()) for (const p of Object.keys(l.patterns ?? {})) want.set(p, [...(want.get(p) ?? []), `/autopsy/lessons/${l.key}`]);
+  expect(want.size, "the lessons hold patterns").toBeGreaterThan(2);
+  for (const [p, hrefs] of told) expect(hrefs, String(p)).toEqual(want.get(String(p)) ?? []);
+  // The two a lesson was written for are among them.
+  expect(want.get("jump-engine")).toContain("/autopsy/lessons/screens");
+  expect(want.get("position-compare")).toContain("/autopsy/lessons/stomp");
+});
