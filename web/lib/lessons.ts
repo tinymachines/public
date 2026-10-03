@@ -39,6 +39,8 @@ export interface ScrollMeasures {
 
 /** The first walk out of a room (scripts/board-lessons.py rooms_measures). */
 export interface RoomsMeasures {
+  /** Which name tables sit side by side: fixed by our board; switched by the game's. */
+  mirroring?: { playing: string; fixed?: boolean; slide?: string; switched?: number; back?: number } | null;
   before: number;
   after: number;
   wait: number;

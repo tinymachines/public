@@ -152,7 +152,17 @@ def rooms_measures(cell, vram_path: Path, room: int, scroll: int, frames: int, a
                     out[k] = out.get(k, 0) + 1
         return dict(sorted(out.items()))
     during = [f for f in range(first, last + 2) if any(n >= 8 and st == 32 for _, n, st in writes.get(f, []))]
+    mirroring = None
+    mp = vram_path.with_name("mapper.txt")
+    if mp.exists():
+        seen = mmc1_mirroring(mp)
+        playing = next((m for f, m in reversed(seen) if f < change), None)
+        switch = next(((f, m) for f, m in seen if change <= f <= last + 10 and m != playing), None)
+        back = next((f for f, m in seen if switch and f > switch[0] and m == playing), None)
+        if playing and switch and back:
+            mirroring = {"playing": playing, "slide": switch[1], "switched": switch[0] - first, "back": back - last}
     return {
+        "mirroring": mirroring,
         "before": cell(change - 1, room), "after": cell(change, room),
         "wait": first - change, "slide": len([m for m in moves if m]), "travel": travel, "step": usual,
         "written_before": runs(change, first), "written_during": runs(first, last + 2),
@@ -421,6 +431,31 @@ def sound_measures(dirpath: Path, after: int, end: int):
     }
 
 
+def mmc1_mirroring(path: Path):
+    """An MMC1 board's mirroring as the game set it, frame by frame, from the
+    log of writes into the cartridge's range: five writes of one bit each
+    make a register, the address of the fifth picks which (the control
+    register at $8000 to $9FFF holds the mirroring in its low two bits),
+    and a write with its top bit set starts over."""
+    names = {0: "one screen", 1: "one screen", 2: "vertical", 3: "horizontal"}
+    out, shift, n = [], 0, 0
+    for line in path.read_text().splitlines():
+        f, a, v = line.split()
+        f, a, v = int(f), int(a, 16), int(v)
+        if v & 0x80:
+            shift, n = 0, 0
+            continue
+        shift |= (v & 1) << n
+        n += 1
+        if n == 5:
+            if (a >> 13) & 3 == 0:
+                m = names[shift & 3]
+                if not out or out[-1][1] != m:
+                    out.append((f, m))
+            shift, n = 0, 0
+    return out
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -515,6 +550,8 @@ def main():
             mm = meta["memory"]
             measures = rooms_measures(cell, run / "vram.txt", h(mm["room"]), h(mm["scroll"][0]), meta["frames"], after=meta["walk_from"])
             measures["up"] = rooms_up(cell, run / "vram.txt", h(mm["room"]), meta["frames"], meta["up_from"])
+            # Ours is soldered: the board's mirroring cannot change.
+            measures["mirroring"] = {"playing": meta["mirroring"], "fixed": True}
             if name in compare:
                 other = Path(compare[name])
                 zr = (other / "vr" / "ram.bin").read_bytes()

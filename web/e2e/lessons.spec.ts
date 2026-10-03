@@ -66,6 +66,10 @@ for (const l of record()) {
       const a = l.against as typeof l.measures;
       expect(rows.find((r) => r[0] === "slide")?.slice(1)).toEqual([String(l.measures.slide), String(a.slide)]);
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+      // Ours is soldered; the game switches its mirroring around the slide, and the page says what for.
+      expect(l.measures.mirroring?.fixed).toBe(true);
+      expect(a.mirroring?.slide).toBe("vertical");
+      await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
     } else {
       const a = l.against as typeof l.measures;
       expect(rows.find((r) => r[0] === "strips")?.slice(1)).toEqual([String(l.measures.strips), String(a.strips)]);

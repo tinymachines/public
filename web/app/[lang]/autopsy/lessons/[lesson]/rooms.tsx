@@ -49,6 +49,7 @@ export const ROOMS = {
     cols: (game: string) => ["", "this cartridge", game],
     rows: {
       room: "the room's number, before and after a step left",
+      mirror: "which name tables sit side by side",
       wait: "frames from the number changing to the picture moving",
       slide: "frames the slide takes",
       step: "pixels moved, and pixels a frame",
@@ -64,14 +65,28 @@ export const ROOMS = {
     },
     room: (a: string, b: string) => `${a} to ${b}`,
     step: (travel: string, step: string) => `${travel}, ${step} a frame`,
+    fixed: (m: string) => `${m}, fixed by the board`,
+    switched: (m: string, s: string, before: string, after: string) => `${m} while playing; ${s} from ${before} frames before the slide to ${after} after it`,
+    mirrors: { vertical: "side by side", horizontal: "one above the other" } as Record<string, string>,
     diffH: "Where the two part ways",
     diff: (game: string, before: string, wait: string, from: string) => (
       <>
         {game} writes {before} before the picture moves, which takes it {wait} frames, and writes nothing
         for the first half of the slide; its columns come from frame {from} of the slide on, one a frame.
         This cartridge writes nothing beforehand and draws the incoming room through the whole slide, a
-        column every second frame, each just ahead of the edge coming into sight. What {game}&rsquo;s rows
-        are for has not been read yet.
+        column every second frame, each just ahead of the edge coming into sight.
+      </>
+    ),
+    why: (game: string) => (
+      <>
+        What {game}&rsquo;s rows are for came out of a log of its writes to the cartridge&rsquo;s own
+        registers. Its board lets the program choose which of the two name tables sit side by side. While
+        Link walks, they sit one above the other, so the rows go into the table below the screen, out of
+        sight. Just before the slide the game turns them side by side, which puts that new room beside the
+        one on the screen, and the slide scrolls across into it. Meanwhile the columns copy the new room
+        into the first table, and just after the slide the tables go back one above the other with the new
+        room on the screen. This cartridge&rsquo;s board cannot do that: its tables are soldered side by side,
+        so it draws the new room as it goes.
       </>
     ),
     upH: "Up and down, written over the room on the screen",
@@ -93,6 +108,7 @@ export const ROOMS = {
     cols: (game: string) => ["", "このカートリッジ", game],
     rows: {
       room: "左へ一歩出る前と後の部屋の番号",
+      mirror: "どのネームテーブルが隣り合うか",
       wait: "番号が変わってから絵が動き出すまでのフレーム数",
       slide: "滑るのにかかるフレーム数",
       step: "動いたピクセル、1 フレームあたりのピクセル",
@@ -108,10 +124,18 @@ export const ROOMS = {
     },
     room: (a: string, b: string) => `${a} から ${b}`,
     step: (travel: string, step: string) => `${travel}、1 フレームあたり ${step}`,
+    fixed: (m: string) => `${m}、基板で決まっている`,
+    switched: (m: string, s: string, before: string, after: string) => `遊んでいる間は${m}。滑る ${before} フレーム前から滑った ${after} フレーム後まで${s}`,
+    mirrors: { vertical: "横に並ぶ", horizontal: "縦に並ぶ" } as Record<string, string>,
     diffH: "二つが分かれるところ",
     diff: (game: string, before: string, wait: string, from: string) => (
       <>
-        {game} は、絵が動く前に {before} を書き、それに {wait} フレームかかる。滑りの前半には何も書かず、列は滑り始めから {from} フレーム目以降、1 フレームに一本ずつ来る。このカートリッジは前もっては何も書かず、滑っている間ずっと入ってくる部屋を描く。2 フレームに一列ずつ、見えてくる端のすぐ先に。{game} の行が何のためのものかは、まだ読んでいない。
+        {game} は、絵が動く前に {before} を書き、それに {wait} フレームかかる。滑りの前半には何も書かず、列は滑り始めから {from} フレーム目以降、1 フレームに一本ずつ来る。このカートリッジは前もっては何も書かず、滑っている間ずっと入ってくる部屋を描く。2 フレームに一列ずつ、見えてくる端のすぐ先に。
+      </>
+    ),
+    why: (game: string) => (
+      <>
+        {game} の行が何のためのものかは、カートリッジ自身のレジスタへの書き込みを記録して分かった。その基板では、二つのネームテーブルをどう並べるかをプログラムが選べる。リンクが歩いている間は縦に並び、行は画面の下の、見えないテーブルに入る。滑る直前にゲームはそれを横並びに変え、その新しい部屋が画面の部屋の隣に来て、滑りがそこへ横に入っていく。その間に列が新しい部屋を一つ目のテーブルへ写し、滑りが終わるとすぐにテーブルは縦並びに戻り、新しい部屋が画面にある。このカートリッジの基板にはそれができない: テーブルは横並びに作り付けなので、進みながら新しい部屋を描く。
       </>
     ),
     upH: "上下は、画面上の部屋に上書きする",
@@ -124,7 +148,15 @@ export function RoomsPart({ lang, m, a }: { lang: Lang; m: RoomsMeasures; a?: (R
   const S = ROOMS[lang];
   const n = (v: number) => v.toLocaleString(lang);
   const game = a ? t(lang, a.game) : "";
+  const mirror = (x: RoomsMeasures) => {
+    const mm = x.mirroring;
+    if (!mm) return "";
+    const name = (k: string) => S.mirrors[k] ?? k;
+    if (mm.fixed) return S.fixed(name(mm.playing));
+    return S.switched(name(mm.playing), name(mm.slide ?? ""), n(-(mm.switched ?? 0)), n(mm.back ?? 0));
+  };
   const rows: [keyof typeof S.rows, (x: RoomsMeasures) => string][] = [
+    ["mirror", mirror],
     ["room", (x) => S.room(n(x.before), n(x.after))],
     ["wait", (x) => n(x.wait)],
     ["slide", (x) => n(x.slide)],
@@ -165,6 +197,7 @@ export function RoomsPart({ lang, m, a }: { lang: Lang; m: RoomsMeasures; a?: (R
         <>
           <h3>{S.diffH}</h3>
           <p>{S.diff(game, runs(lang, a.written_before), n(a.wait), a.columns_from === null ? "" : n(a.columns_from))}</p>
+          {a.mirroring && !a.mirroring.fixed ? <p data-lesson-why>{S.why(game)}</p> : null}
         </>
       ) : null}
       <h3>{S.upH}</h3>
