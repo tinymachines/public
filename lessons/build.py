@@ -44,7 +44,9 @@ def size(line: str) -> int:
     o = p[1]
     if p[0] in ("BPL", "BMI", "BVC", "BVS", "BCC", "BCS", "BNE", "BEQ") or o.startswith("#"):
         return 2
-    if re.fullmatch(r"\$[0-9A-Fa-f]{2}(,[XY])?", o) or re.fullmatch(r"\(\$[0-9A-Fa-f]{2}(,X\)|\),Y)", o):
+    # zero page, zero page by X, and by Y only for LDX and STX: the 6502
+    # has no other zero-page-by-Y, so the assembler writes those absolute.
+    if re.fullmatch(r"\$[0-9A-Fa-f]{2}(,X)?", o) or (re.fullmatch(r"\$[0-9A-Fa-f]{2},Y", o) and p[0] in ("LDX", "STX")) or re.fullmatch(r"\(\$[0-9A-Fa-f]{2}(,X\)|\),Y)", o):
         return 2
     return 3
 

@@ -4,22 +4,32 @@
 ;; frame, 64 frames for the screen's 256 pixels, carrying the square
 ;; with it. The new room is drawn as it comes: one column every second
 ;; frame, each written one column ahead of the edge that is sliding in,
-;; which is how Zelda was seen to do it in the log of its writes. The rooms are a grid 16
-;; wide, numbered along its rows: a step left takes one off the room's
-;; number and a step right adds one. This first cut goes left and right;
-;; up and down stop at the edge.
+;; which is how Zelda was seen to do it in the log of its writes. The
+;; rooms are a grid 16 wide, numbered along its rows: a step left takes
+;; one off the room's number, a step right adds one, a step up takes 16
+;; off and a step down adds 16.
 ;;
-;; The two name tables sit side by side (vertical mirroring). The room
-;; on the screen is in one, the next is drawn into the other in the
-;; blank, and the slide is the scroll moving from one to the other.
+;; The two name tables sit side by side (vertical mirroring). Across,
+;; the room on the screen is in one, the next is drawn into the other in
+;; the blank, and the slide is the scroll moving from one to the other.
+;; Up and down there is no second table to draw into, so the new room is
+;; written over the old one in the same table, a row every second frame,
+;; each row just before the scroll brings it into sight: 60 frames of 4
+;; pixels for the screen's 240 lines. That is what Zelda was seen doing
+;; for a step up: rows of 32 tiles across, from the bottom row up, one
+;; every second frame, into the table on the screen. The row being
+;; written is also, for those frames, the one leaving at the other edge,
+;; so an 8-line band there shows the new room early; on most
+;; televisions those lines are outside the picture.
 ;;
 ;; Memory: $00 the frame flag, $01 the pad, $02 the pad a frame ago,
 ;; $10/$11 x (fraction, pixel), $14/$15 y, $30 the room, $31 what is
-;; happening (0 walking, 2 sliding), $32 which way (0 left, 1 right),
-;; $34 the slide's
-;; steps, $35 the name table on the screen, $36/$37 the scroll (pixel,
-;; page), $38 a column waiting for the NMI, $39/$3A its address, $3B
-;; the room being drawn, $40 to $5D the column.
+;; happening (0 walking, 2 sliding across, 3 sliding up or down), $32
+;; which way (0 left, 1 right, 2 up, 3 down), $34 the slide's steps, $35
+;; the name table on the screen, $36/$37 the scroll across (pixel,
+;; page), $3C the scroll down, $38 what waits for the NMI (1 a column, 2
+;; a row), $39/$3A its address, $3B the room being drawn, $0D the row,
+;; $40 to $5F the column or the row.
 reset:
     SEI
     CLD
@@ -119,7 +129,12 @@ main:
     JSR readpad
     LDA $31
     BEQ walking
+    CMP #$03
+    BEQ upright
     JSR slide
+    JMP shown
+upright:
+    JSR rise
     JMP shown
 walking:
     JSR walk
@@ -143,7 +158,8 @@ readbit:
     BNE readbit
     RTS
 ;; Walking: 1 and 85/256 pixels a frame in any of the four directions.
-;; Out of the left or right side, the next room begins.
+;; Out of a side, or out of the top or bottom through the gap in the
+;; middle, the next room begins; elsewhere the top and bottom stop it.
 walk:
     LDA $01
     AND #$02
@@ -180,7 +196,12 @@ noright:
     BEQ noup
     LDA $15
     CMP #$12
+    BCS goup
+    JSR ingap
     BCC noup
+    LDA #$02
+    JMP leave
+goup:
     SEC
     LDA $14
     SBC #$55
@@ -194,7 +215,12 @@ noup:
     BEQ nodown
     LDA $15
     CMP #$D0
-    BCS nodown
+    BCC godown
+    JSR ingap
+    BCC nodown
+    LDA #$03
+    JMP leave
+godown:
     CLC
     LDA $14
     ADC #$55
@@ -204,10 +230,26 @@ noup:
     STA $15
 nodown:
     RTS
-;; Leaving: A is the way (0 left, 1 right). The room's number changes
-;; and the slide begins.
+;; Whether the square is inside the gap in the top and bottom rows
+;; (columns 14 to 17, x from 112 to 128): carry set if so.
+ingap:
+    LDA $11
+    CMP #$70
+    BCC outside
+    CMP #$81
+    BCS outside
+    SEC
+    RTS
+outside:
+    CLC
+    RTS
+;; Leaving: A is the way (0 left, 1 right, 2 up, 3 down). The room's
+;; number changes and the slide begins.
 leave:
     STA $32
+    CMP #$02
+    BCS vertical
+    CMP #$00
     BEQ west
     INC $30
     JMP begun
@@ -220,6 +262,91 @@ begun:
     STA $34
     LDA #$02
     STA $31
+    RTS
+vertical:
+    BNE south
+    SEC
+    LDA $30
+    SBC #$10
+    STA $30
+    JMP risen
+south:
+    CLC
+    LDA $30
+    ADC #$10
+    STA $30
+risen:
+    LDA $30
+    STA $3B
+    LDA #$00
+    STA $34
+    LDA #$03
+    STA $31
+    RTS
+;; Sliding up or down: on every second step a row of the new room into
+;; the table on the screen, the next to come into sight (from its bottom
+;; row going up, from its top going down); then the scroll moves 4 lines,
+;; the square goes with the picture, and after 60 steps the new room is
+;; the whole screen.
+rise:
+    LDA $34
+    AND #$01
+    BNE moved
+    LDA $34
+    LSR A
+    LDX $32
+    CPX #$03
+    BEQ fromtop
+    STA $0D
+    LDA #$1D
+    SEC
+    SBC $0D
+fromtop:
+    JSR preprow
+    LDA #$02
+    STA $38
+moved:
+    LDA $32
+    CMP #$03
+    BEQ southward
+    SEC
+    LDA $3C
+    SBC #$04
+    BCS upnow
+    ADC #$F0
+upnow:
+    STA $3C
+    LDA $15
+    CMP #$CC
+    BCS lifted
+    CLC
+    ADC #$04
+    STA $15
+    JMP lifted
+southward:
+    CLC
+    LDA $3C
+    ADC #$04
+    CMP #$F0
+    BCC downnow
+    SBC #$F0
+downnow:
+    STA $3C
+    LDA $15
+    CMP #$14
+    BCC lifted
+    SEC
+    SBC #$04
+    STA $15
+lifted:
+    INC $34
+    LDA $34
+    CMP #$3C
+    BNE rising
+    LDA #$00
+    STA $3C
+    STA $31
+rising:
     RTS
 ;; Sliding: on every second step a column of the new room, the next to
 ;; come into sight (from its right side going left, from its left going
@@ -292,22 +419,16 @@ carried:
     STA $31
 sliding:
     RTS
-;; One column of a room, A = the column (0 to 31), for the room in $3B,
-;; into $40 to $5D, with its address in name table 0 in $39/$3A. Trees
-;; along the top and bottom two rows and down both sides, with a gap in
-;; the middle of each side to walk out by; inside, a tree wherever the
-;; room's number and the place agree on it, so each room is different.
-prepcol:
-    STA $05
-    STA $3A
-    LDA #$20
-    STA $39
-    LDX #$00
-row:
+;; What tile is at a place in a room: the column in $05, the row in X,
+;; the room in $3B; the tile comes back in A and X is kept. Trees along
+;; the top and bottom two rows and down both sides, with a gap in the
+;; middle of each to walk out by; inside, a tree wherever the room's
+;; number and the place agree on it, so each room is different.
+tileat:
     CPX #$02
-    BCC tree
+    BCC edge
     CPX #$1C
-    BCS tree
+    BCS edge
     LDA $05
     BEQ side
     CMP #$1F
@@ -341,6 +462,13 @@ row:
     AND #$1F
     BEQ tree
     JMP sand
+edge:
+    LDA $05
+    CMP #$0E
+    BCC tree
+    CMP #$12
+    BCS tree
+    JMP sand
 side:
     CPX #$0C
     BCC tree
@@ -348,14 +476,69 @@ side:
     BCS tree
 sand:
     LDA #$00
-    JMP put
+    RTS
 tree:
     LDA #$03
-put:
+    RTS
+;; One column of the room in $3B, A = the column (0 to 31), into $40 to
+;; $5D, with its address in name table 0 in $39/$3A.
+prepcol:
+    STA $05
+    STA $3A
+    LDA #$20
+    STA $39
+    LDX #$00
+down30:
+    JSR tileat
     STA $40,X
     INX
     CPX #$1E
-    BNE row
+    BNE down30
+    RTS
+;; One row of the room in $3B, A = the row (0 to 29), into $40 to $5F,
+;; with its address in the name table on the screen in $39/$3A.
+preprow:
+    STA $0D
+    LSR A
+    LSR A
+    LSR A
+    STA $39
+    LDA $35
+    ASL A
+    ASL A
+    ORA #$20
+    ORA $39
+    STA $39
+    LDA $0D
+    ASL A
+    ASL A
+    ASL A
+    ASL A
+    ASL A
+    STA $3A
+    LDY #$00
+across:
+    STY $05
+    LDX $0D
+    JSR tileat
+    STA $40,Y
+    INY
+    CPY #$20
+    BNE across
+    RTS
+;; A row into the picture chip, going across.
+putrow:
+    LDA $39
+    STA $2006
+    LDA $3A
+    STA $2006
+    LDX #$00
+along:
+    LDA $40,X
+    STA $2007
+    INX
+    CPX #$20
+    BNE along
     RTS
 ;; A column into the picture chip, going down. $06 is what $2000 holds
 ;; otherwise, so an NMI cannot turn the step back to 1 halfway down.
@@ -406,7 +589,7 @@ sprite:
     STA $0207
     STA $020F
     RTS
-;; In the blank: the sprites, a waiting column, then the scroll.
+;; In the blank: the sprites, a waiting column or row, then the scroll.
 nmi:
     PHA
     TXA
@@ -417,7 +600,13 @@ nmi:
     STA $4014
     LDA $38
     BEQ nocol
+    CMP #$02
+    BEQ arow
     JSR putcol
+    JMP written
+arow:
+    JSR putrow
+written:
     LDA #$00
     STA $38
 nocol:
@@ -426,7 +615,7 @@ nocol:
     STA $2000
     LDA $36
     STA $2005
-    LDA #$00
+    LDA $3C
     STA $2005
     LDA #$01
     STA $00

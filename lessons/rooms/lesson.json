@@ -1,19 +1,19 @@
 {
  "title": "Rooms that slide in the way Zelda's do",
  "kind": "rooms",
- "description": "A cartridge of our own that holds the picture still and slides the next room in when the square walks out of one, the way The Legend of Zelda was measured doing it, measured beside it, with its program.",
+ "description": "A cartridge of our own that holds the picture still and brings the next room in when the square walks out of one, sliding across and writing over itself up and down, the way The Legend of Zelda was measured doing it, measured beside it, with its program.",
  "board": "NROM",
  "prg": 16384,
  "org": "$C000",
  "chr": 8192,
  "mirroring": "vertical",
  "script": "left.txt",
- "frames": 900,
+ "frames": 1300,
  "grabs": [
-  200,
-  300,
-  330,
-  360
+  120,
+  140,
+  160,
+  180
  ],
  "memory": {
   "room": "$30",
@@ -23,5 +23,6 @@
   ],
   "x": "$11"
  },
- "walk_from": 60
+ "walk_from": 360,
+ "up_from": 60
 }
