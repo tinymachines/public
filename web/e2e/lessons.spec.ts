@@ -20,7 +20,7 @@ function record(): Lesson[] {
 test("the lessons page lists every lesson, and the autopsy's front door lists the lessons", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/autopsy/lessons", 200);
-  const hrefs = await page.locator("[data-lessons] a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+  const hrefs = await page.locator("[data-lessons] > li > a:first-child").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
   expect(hrefs).toEqual(record().map((l) => `/autopsy/lessons/${l.key}`));
   await open(page, "/autopsy", 200);
   await expect(page.locator('[data-parts] a[href="/autopsy/lessons"]')).toHaveCount(1);
