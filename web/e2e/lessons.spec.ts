@@ -44,6 +44,16 @@ for (const l of record()) {
       expect(a.music_before, "and the game's does").toBeGreaterThan(0);
       expect(l.measures.sweep_settings).toBeGreaterThan(0);
       expect(l.measures.music_back, "our tune comes back").toBeGreaterThan(0);
+    } else if (l.kind === "pause") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A press too soon was tried and ignored, A was pressed, and still nothing moved or was drawn.
+        expect(x.ignored_after.length, `${x === a ? "the game" : "ours"}: a second Start was tried`).toBe(1);
+        expect(x.ignored_after[0]).toBeLessThan(x.wait);
+        expect([x.a_pressed, x.held, x.drawn, x.same_picture, x.cut]).toEqual([true, true, 0, true, true]);
+        expect(x.chime_notes).toBeGreaterThan(1);
+      }
+      expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
     } else if (l.kind === "status") {
       const a = l.against as typeof l.measures;
       expect(l.measures.split_line).toBe(a.split_line);

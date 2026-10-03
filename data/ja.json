@@ -483,5 +483,7 @@
  "A status bar that stays still, the way Mario's does": "マリオのように、動かないステータスバー",
  "A cartridge of our own whose level scrolls under a bar that does not move, split where sprite 0 meets the bar's bottom line, with a timer written only when it changes, the way Super Mario Bros. was measured doing it, measured beside it, with its program.": "動かない帯の下でレベルがスクロールする、私たち自身のカートリッジ。スプライト 0 が帯の下の線に重なるところで絵を分け、タイマーは変わったときだけ書く。スーパーマリオブラザーズがそうしていると測ったやり方で、マリオと並べて測り、プログラムも添える。",
  "A jump sound that borrows the music's channel, the way Mario's does": "マリオのように、曲のチャンネルを借りるジャンプの音",
- "A cartridge of our own with a tune and a jump sound, both ours, sharing one square channel the way Super Mario Bros. was seen sharing it, compared by that shape only, with its program.": "どちらも私たちが作った曲とジャンプの音が、一つの矩形波チャンネルを、スーパーマリオブラザーズがそうしていたように分け合う、私たち自身のカートリッジ。比べるのはその形だけで、プログラムも添える。"
+ "A cartridge of our own with a tune and a jump sound, both ours, sharing one square channel the way Super Mario Bros. was seen sharing it, compared by that shape only, with its program.": "どちらも私たちが作った曲とジャンプの音が、一つの矩形波チャンネルを、スーパーマリオブラザーズがそうしていたように分け合う、私たち自身のカートリッジ。比べるのはその形だけで、プログラムも添える。",
+ "A pause that holds the world still, the way Mario's does": "マリオのように、世界を止めておくポーズ",
+ "A cartridge of our own whose Start button pauses it: the square holds, nothing is drawn, the tune is cut for a chime of our own, and Start is ignored for a while, compared by that shape with how Super Mario Bros. was seen pausing, with its program.": "スタートボタンで止まる、私たち自身のカートリッジ。四角はその場にとどまり、何も描かれず、曲は切れて私たちのチャイムが鳴り、しばらくスタートは受け付けない。スーパーマリオブラザーズがそう止まるのを見たその形で比べ、プログラムも添える。"
 }

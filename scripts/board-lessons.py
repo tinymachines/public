@@ -431,6 +431,46 @@ def sound_measures(dirpath: Path, after: int, end: int):
     }
 
 
+def pause_measures(dirpath: Path, x: int, wait: int, after: int, chime: str, music: set, grabs: tuple):
+    """A pause, from a run that holds Right throughout and presses Start
+    (pause), Start again too soon, A, then Start (unpause): which presses
+    stopped or started the world (the position at x moving or not), how
+    long Start was ignored (the game's own count at `wait`), whether
+    anything was drawn while paused (writes to the picture; two pictures
+    taken while paused, compared byte for byte), and from the sound chip's
+    log the shape of the sound: everything cut on the press, the notes of
+    the chime on the channel whose period-high register is `chime`, and
+    the frames from the unpause to the music's first write (to `music`)."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    pad = (dirpath / "pad.bin").read_bytes()
+    cell = frames_of(ram)
+    moving = lambda f: cell(f, x) != cell(f - 1, x)
+    starts = [f for f in range(max(after, 1), len(pad)) if pad[f] & 0x08 and not pad[f - 1] & 0x08]
+    took = [f for f in starts if moving(f - 1) != moving(f + 3)]
+    if len(took) != 2:
+        sys.exit(f"board-lessons: expected one pause and one unpause in {dirpath}, saw {len(took)} of {len(starts)} presses take effect")
+    on, off = took
+    ignored = [f - on for f in starts if f not in took and on < f < off]
+    stops = next(f for f in range(on, off) if not moving(f)) - on
+    starts = next(f for f in range(off, len(pad)) if moving(f)) - off
+    held = all(not moving(f) for f in range(on + stops, off + starts))
+    count = next(f for f in range(on, off) if cell(f, wait) == 0) - on
+    a = next((f for f in range(on + 1, off) if pad[f] & 0x01 and not pad[f - 1] & 0x01), None)
+    vram = sum(1 for l in (dirpath / "vram.txt").read_text().splitlines() if on + 1 <= int(l.split()[0]) <= off)
+    same = (dirpath / f"frame-{grabs[0]:05}.ppm").read_bytes() == (dirpath / f"frame-{grabs[1]:05}.ppm").read_bytes()
+    writes = [l.split() for l in (dirpath / "apu.txt").read_text().splitlines()]
+    writes = [(int(f), r, int(v)) for f, r, v in writes]
+    cut = any(f in (on, on + 1) and r == "15" and v == 0 for f, r, v in writes)
+    notes = sorted({f for f, r, v in writes if r == chime and on <= f < on + count})
+    back = next((f for f, r, v in writes if f > off and r in music), None)
+    return {
+        "ignored_after": ignored, "a_pressed": a is not None, "stops": stops, "starts": starts, "held": held, "wait": count,
+        "drawn": vram, "same_picture": same, "cut": cut,
+        "chime_notes": len(notes), "chime_every": sorted({b - a for a, b in zip(notes, notes[1:])}),
+        "music_back": None if back is None else back - off,
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -524,6 +564,14 @@ def main():
         elif kind == "sound":
             measures = sound_measures(run, meta["walk_from"], meta["frames"])
             against = ({"game": "Super Mario Bros.", **sound_measures(Path(compare[name]) / "snd", 520, 700)} if name in compare else prev.get("against"))
+        elif kind == "pause":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            # Ours: the tune on the first square, the chime on the second.
+            measures = pause_measures(run, h(mm["x"]), h(mm["wait"]), meta["walk_from"], "07", {"00", "01", "02", "03"}, tuple(meta["grabs"][1:3]))
+            # Mario: x on screen at $0086, the wait at $0777; its chime on the
+            # first square, its music back on the second and the triangle.
+            against = ({"game": "Super Mario Bros.", **pause_measures(Path(compare[name]) / "pause2", 0x86, 0x777, 520, "03", {"04", "05", "06", "07", "08", "0A", "0B"}, (650, 710))} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

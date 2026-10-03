@@ -137,6 +137,23 @@ export interface SoundMeasures {
   music_back?: number | null;
 }
 
+/** A pause, measured the same on both (pause_measures): which presses
+ * took, how long Start is ignored, what was drawn, the sound's shape. */
+export interface PauseMeasures {
+  ignored_after: number[];
+  a_pressed: boolean;
+  stops: number;
+  starts: number;
+  held: boolean;
+  wait: number;
+  drawn: number;
+  same_picture: boolean;
+  cut: boolean;
+  chime_notes: number;
+  chime_every: number[];
+  music_back: number | null;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -160,6 +177,7 @@ export type Lesson =
   | (Base & { kind: "run"; measures: RunMeasures; against?: (RunMeasures & { game: string }) | null })
   | (Base & { kind: "status"; measures: StatusMeasures; against?: (StatusMeasures & { game: string }) | null })
   | (Base & { kind: "sound"; measures: SoundMeasures; against?: (SoundMeasures & { game: string }) | null })
+  | (Base & { kind: "pause"; measures: PauseMeasures; against?: (PauseMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
