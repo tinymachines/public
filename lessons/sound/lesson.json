@@ -1,0 +1,15 @@
+{
+ "title": "A jump sound that borrows the music's channel, the way Mario's does",
+ "kind": "sound",
+ "description": "A cartridge of our own with a tune and a jump sound, both ours, sharing one square channel the way Super Mario Bros. was seen sharing it, compared by that shape only, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "hop.txt",
+ "frames": 400,
+ "grabs": [100, 155, 165, 200],
+ "walk_from": 60,
+ "memory": {}
+}
