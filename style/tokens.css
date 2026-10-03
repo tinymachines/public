@@ -209,6 +209,25 @@
 
   --radius-hair: 2px;   /* the only radius on paper                     */
   --radius-mod:  4px;   /* module corners inside a panel                */
+
+  /* The Meatball Labs family (2026-10-02). Meatball Labs is the parent of a
+     small family of sites; each wears one hue from the same muted palette at
+     the same lightness and softness, so they read as related without
+     dressing alike (source: meatball.ai/styleguide.html, OKLCH L 0.54,
+     C 0.085, hue varied). Identity marks for the family footer strip
+     (.family in components.css) and nothing else: not chart series, not
+     status, not accents. The order is the colour wheel, warm to cool, and it
+     is fixed. Clay is Meatball Labs, Steel is bradley.io, Iris is
+     tinymachines.ai; the other six are open for sites still on the stove. */
+  --color-family-clay:   #995d48;
+  --color-family-ochre:  #89692f;
+  --color-family-moss:   #68763a;
+  --color-family-sage:   #427d59;
+  --color-family-spruce: #1b7d82;
+  --color-family-steel:  #41749d;
+  --color-family-iris:   #6a679e;
+  --color-family-plum:   #8b5c86;
+  --color-family-rose:   #995963;
 }
 
 /* ---------------------------------------------------------------------------

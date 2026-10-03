@@ -8,6 +8,7 @@ import { abs, BETA, ORIGIN } from "@/lib/seo";
 import { LangSwitch } from "./LangSwitch";
 import { Menu } from "./Menu";
 import { VersionFooter } from "./VersionFooter";
+import { Family } from "./Family";
 import { AppMetrics } from "./AppMetrics";
 
 /**
@@ -97,6 +98,9 @@ export function SiteFooter({ lang, floor = false }: {
   return (
     <footer className={floor ? "crumb site-foot wb-foot" : "crumb site-foot"}>
       <Link href={localize(lang, "/")}>tinymachines.ai</Link>
+      {/* The Meatball Labs family: the same strip on every family site, this
+          site's dot marked (owner's call, 2026-10-02). */}
+      <Family me="iris" />
       {/* What is running, asked of the running process rather than baked in.
           Renders nothing at all when the API cannot answer. */}
       <VersionFooter />

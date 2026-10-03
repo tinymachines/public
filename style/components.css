@@ -1213,6 +1213,66 @@ h2.display { font-size: var(--text-h2); }
   border-top: 1px solid var(--color-rule);
 }
 
+/* The family strip. Meatball Labs is the parent of a small family of sites,
+   and each one carries the same row of dots in its footer, its own dot
+   marked, so the sites read as related without sharing a logo. The rule
+   comes from the family's style guide (meatball.ai/styleguide.html). The
+   order is the colour wheel and fixed; a site that exists is a link, a hue
+   still open is a plain dot. Colours are the --color-family-* tokens and
+   nothing else may borrow them.
+
+     <nav class="family" aria-label="Meatball Labs and family">
+       <a class="family-dot" data-hue="clay" href="https://meatball.ai"
+          aria-label="Meatball Labs" title="Meatball Labs"></a>
+       ...
+       <span class="family-dot is-me" data-hue="iris"
+          aria-current="page" title="tinymachines.ai (you are here)"></span>
+       <span class="family-dot" data-hue="rose" aria-hidden="true"></span>
+     </nav>
+
+   A dot is 8px; the marked one is 11px with a ring in the page's own ground
+   and muted ink, as the style guide draws it. A linked dot's hit area is
+   16px (the ::after), which is why the gap is 2u: neighbouring targets
+   touch but never overlap. */
+.family {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  flex-wrap: wrap;
+}
+.family-dot {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+a.family-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+.family-dot.is-me {
+  width: 11px;
+  height: 11px;
+  box-shadow: 0 0 0 2px var(--color-paper), 0 0 0 3px var(--color-ink-muted);
+}
+a.family-dot:hover,
+a.family-dot:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-paper), 0 0 0 3px var(--color-ink);
+}
+.family-dot[data-hue="clay"]   { background: var(--color-family-clay); }
+.family-dot[data-hue="ochre"]  { background: var(--color-family-ochre); }
+.family-dot[data-hue="moss"]   { background: var(--color-family-moss); }
+.family-dot[data-hue="sage"]   { background: var(--color-family-sage); }
+.family-dot[data-hue="spruce"] { background: var(--color-family-spruce); }
+.family-dot[data-hue="steel"]  { background: var(--color-family-steel); }
+.family-dot[data-hue="iris"]   { background: var(--color-family-iris); }
+.family-dot[data-hue="plum"]   { background: var(--color-family-plum); }
+.family-dot[data-hue="rose"]   { background: var(--color-family-rose); }
+
 /* The masthead's title is a display h1, but .prose > h1 does not reach it:
    the masthead sits outside the prose column. Stated here so the two cannot
    drift to different sizes.
@@ -2368,6 +2428,9 @@ html[lang="ja"] .crumb { word-break: keep-all; line-break: strict; }
    mobile sweep of 2026-08-25), so the run drops whole to a second line. The
    footer's height is measured live, so the main region's padding follows. */
 .app-foot .foot-run { white-space: nowrap; }
+/* The family strip sits between the name and the run. It holds no text, so it
+   has no baseline to share with them: centre it on the band instead. */
+.app-foot .site-foot .family { align-self: center; }
 .app-main { padding-bottom: calc(var(--app-foot-h, 3rem) + var(--u) * 6); }
 
 /* Where the content owns the h1, the page head's title is a section label,
