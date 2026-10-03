@@ -1,0 +1,41 @@
+{
+ "title": "Running, and why a running jump goes higher",
+ "kind": "run",
+ "description": "A cartridge of our own where B makes the square run, and the jump it takes depends on how fast it was going, with the speeds and pulls read off Super Mario Bros., measured beside it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "both.txt",
+ "frames": 700,
+ "grabs": [
+  150,
+  170,
+  430,
+  445
+ ],
+ "walk_from": 60,
+ "memory": {
+  "air": "$03",
+  "y": "$15",
+  "speed_x": [
+   "$12",
+   "$13"
+  ],
+  "speed_down": [
+   "$16",
+   "$17"
+  ]
+ },
+ "presses": [
+  [
+   160,
+   180
+  ],
+  [
+   470,
+   490
+  ]
+ ]
+}
