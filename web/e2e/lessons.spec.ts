@@ -38,6 +38,11 @@ for (const l of record()) {
       const a = l.against as typeof l.measures;
       expect(rows.filter((r) => r[0] === "jump").map((r) => [r[1], r[2]])).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${a.jumps[i].frames},${a.jumps[i].risen}`]));
       expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.full_speed_after));
+    } else if (l.kind === "status") {
+      const a = l.against as typeof l.measures;
+      expect(l.measures.split_line).toBe(a.split_line);
+      expect(l.measures.other_bar_writes).toBe(0);
+      expect(l.patterns?.["sprite-0-split"], "our own autopsy names our split").toBeTruthy();
     } else if (l.kind === "run") {
       const a = l.against as typeof l.measures;
       expect(l.measures.light_max).toBeLessThan(25);

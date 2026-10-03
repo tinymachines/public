@@ -371,6 +371,35 @@ def mario_run(dirpath: Path):
             "light_max": tiers["light"]["speed_max"], "strong_min": tiers["strong"]["speed_min"]}
 
 
+def status_measures(dirpath: Path, start: int, end: int):
+    """A bar that stays still over a level that scrolls, from the logs of
+    scroll pairs and picture-memory writes between two frames: where the
+    picture is split, what the bar's scroll is, and what of the bar is
+    rewritten and how often."""
+    from collections import Counter
+    split, blank = Counter(), Counter()
+    for line in (dirpath / "scroll.txt").read_text().splitlines():
+        f, at, x, y = map(int, line.split())
+        if start <= f < end:
+            (split if at < 240 else blank)[at if at < 240 else (x, y)] += 1
+    bar = Counter()
+    times = {}
+    for line in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, n, st = line.split()
+        f, a, n = int(f), int(a, 16), int(n)
+        if start <= f < end and 0x2000 <= a < 0x2080:
+            bar[(a, n)] += 1
+            times.setdefault((a, n), []).append(f)
+    (a, n), count = bar.most_common(1)[0]
+    fs = times[(a, n)]
+    return {
+        "split_line": split.most_common(1)[0][0], "split_frames": split.most_common(1)[0][1], "frames": end - start,
+        "bar_scroll": list(blank.most_common(1)[0][0]),
+        "timer": {"row": (a & 0x3FF) // 32, "column": a & 31, "tiles": n, "writes": count, "every": sorted({y - x for x, y in zip(fs, fs[1:])})},
+        "other_bar_writes": sum(bar.values()) - count,
+    }
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -432,6 +461,10 @@ def main():
         elif kind == "run":
             measures = run_measures(cell, (run / "pad.bin").read_bytes(), b["rom"], run, meta)
             against = mario_run(Path(compare[name])) if name in compare else prev.get("against")
+        elif kind == "status":
+            measures = status_measures(run, meta["walk_from"], meta["frames"])
+            # Mario: the private run with its writes logged (snd), from Right to the end.
+            against = ({"game": "Super Mario Bros.", **status_measures(Path(compare[name]) / "snd", 520, 700)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

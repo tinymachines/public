@@ -116,6 +116,16 @@ export interface RunMeasures {
   strong_min: number;
 }
 
+/** A bar that stays still (scripts/board-lessons.py status_measures). */
+export interface StatusMeasures {
+  split_line: number;
+  split_frames: number;
+  frames: number;
+  bar_scroll: number[];
+  timer: { row: number; column: number; tiles: number; writes: number; every: number[] };
+  other_bar_writes: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -137,6 +147,7 @@ export type Lesson =
   | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null })
   | (Base & { kind: "screens"; measures: ScreensMeasures; against?: (ScreensMeasures & { game: string }) | null })
   | (Base & { kind: "run"; measures: RunMeasures; against?: (RunMeasures & { game: string }) | null })
+  | (Base & { kind: "status"; measures: StatusMeasures; against?: (StatusMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
