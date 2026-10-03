@@ -17,7 +17,7 @@ type Hue = "clay" | "ochre" | "moss" | "sage" | "spruce" | "steel" | "iris" | "p
 /** The colour wheel, warm to cool. Fixed order; a new site takes an open hue. */
 const FAMILY: { hue: Hue; name?: string; href?: string }[] = [
   { hue: "clay", name: "Meatball Labs", href: "https://meatball.ai" },
-  { hue: "ochre" },
+  { hue: "ochre", name: "SysForge", href: "https://sysforge.ai" },
   { hue: "moss" },
   { hue: "sage" },
   { hue: "spruce" },
