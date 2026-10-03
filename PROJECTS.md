@@ -4643,3 +4643,57 @@ behind a front door (the doors' groups are the owner's copy); the
 owner's ergonomics work; the quiet machine's speed; the phone flake in
 `create.spec`, and one on a Japanese game page right after a beta
 restart that passes on repeat.
+
+## Checkpoint, 2026-10-03: the lessons, and the cart that runs
+
+Live serves `ac219c7` (1.0.267), level with main, beta and GitHub;
+every sibling repository is pushed. Forty-five commits since the last
+checkpoint, deployed in seven goes on the owner's word.
+
+**The first of the studio: six lessons** (`lessons/`, on the site at
+/autopsy/lessons). Each is a cartridge of our own, written in the
+listing's own text and built by our own assembler (`lessons/build.py`,
+which holds the cartridge to its listing), then played on our console
+and measured beside the game it learned from. `scripts/board-lessons.py`
+writes `data/lessons.json`; the deploy rebuilds every lesson and refuses
+one that no longer makes its recorded cartridge (stage 2g). Each lesson
+page leads with "Play it here" (`/nes/play?lesson=<name>` loads it).
+
+| lesson | learned from | what matched |
+|---|---|---|
+| jump | Super Mario Bros. | a tap, a 20-frame press: frames in the air and pixels risen exactly; held to the ground one frame long |
+| scroll | Super Mario Bros. | a 32-pixel strip every 31 to 33 pixels of camera, 4 columns of 26 tiles, 7 colour bytes; ours a frame later in its strip (it works in its main loop, Mario in its interrupt) |
+| rooms | The Legend of Zelda | the room grid 16 wide; a slide of 64 frames of 4 pixels; a step up written over the screen a row every second frame. Zelda's rows before a sideways slide are not read yet |
+| screens | Super Mario Bros. | one byte choosing the screen through a jump engine; our autopsy finds the engine and the table, and its stretches begin where the byte changed |
+| stomp | Super Mario Bros. | a walker at half a pixel a frame, a stomp from 6 across, a bounce of -4, 25 frames flat; our autopsy names our touch test |
+| run | Super Mario Bros. | running tops at 2.5 after 45 frames; two jumps (4, 30, 96 and 5, 40, 144) chosen by the speed, the line at 25/16 |
+
+Every lesson is run through our own autopsy too, and the patterns page
+points each pattern at the lessons that show it.
+
+**How the measuring was done.** `storyboard` (nes) plays a script and
+keeps the console's memory after every frame, pictures of chosen frames,
+and with `VRAM=1` every run of writes to the picture chip and every
+scroll pair with its picture line. Measures read off memory can catch a
+game before its frame's work is done; slides are measured from what the
+picture chip was told. Grabs and memory of a commercial cartridge stay
+on this machine: the private storyboards for Mario and Zelda are the
+owner's alone, and the site carries counts.
+
+**The autopsy's sixth count**: a return to an address the game pushed
+itself is a jump through a table (`@table returns`), told from a call
+made by hand and from a task switcher putting a saved address back; an
+address put together from a table of low bytes and one of high is
+followed as the pair it was (`@table low`/`high`; none found in the
+nineteen). 5139 routines, 799 marks, 224 tables, coverage unchanged.
+Each game's page draws its memory with its object tables at their
+addresses.
+
+**The calibration cart** (nes-bench, carried): the second board reads
+the right checksum on the reader and runs in the console, and its strip
+is read off twelve grabbed fields.
+
+Open: Zelda's rows before a sideways slide; the low-bytes-only table;
+a way in per game for the ones that sit on a screen; the rest of an
+object table; sound (every game has a driver, no lesson yet); the
+owner's design for /autopsy and the lessons.
