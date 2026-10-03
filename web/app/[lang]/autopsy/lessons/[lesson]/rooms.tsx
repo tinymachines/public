@@ -56,6 +56,11 @@ export const ROOMS = {
       during: "written while it slides",
       from: "frame of the slide the first column is written in",
       every: "frames between columns",
+      upRoom: "the room's number, before and after a step up",
+      upRows: "a step up: rows written across, tiles in each",
+      upSpan: "from row, to row",
+      upFirst: "frames from the number changing to the first row",
+      upEvery: "frames between rows",
     },
     room: (a: string, b: string) => `${a} to ${b}`,
     step: (travel: string, step: string) => `${travel}, ${step} a frame`,
@@ -69,8 +74,9 @@ export const ROOMS = {
         are for has not been read yet.
       </>
     ),
-    upH: "Not yet",
-    up: "Up and down stop at the edge here: the slide is across only. In the game a step up slides the screen down; that is the next cut.",
+    upH: "Up and down, written over the room on the screen",
+    up: (game: string) =>
+      `Across, there is a second name table to draw the new room into. Up and down there is not, so both write the new room over the old one in the table on the screen, a row at a time, each just before the picture brings it into sight. The row being written is, for those frames, also the one leaving at the other edge, so an eight-line band there shows the new room a moment early; on most televisions those lines are outside the picture. ${game} writes fewer rows because its top rows are its status bar, which stays put.`,
   },
   ja: {
     what: (bytes: string, n: string) => (
@@ -94,6 +100,11 @@ export const ROOMS = {
       during: "滑っている間に書いたもの",
       from: "最初の列を書いた、滑り始めから何フレーム目か",
       every: "列と列の間のフレーム数",
+      upRoom: "上へ一歩出る前と後の部屋の番号",
+      upRows: "上へ一歩: 横に書いた行の数、一行のタイルの数",
+      upSpan: "何行目から、何行目まで",
+      upFirst: "番号が変わってから最初の行までのフレーム数",
+      upEvery: "行と行の間のフレーム数",
     },
     room: (a: string, b: string) => `${a} から ${b}`,
     step: (travel: string, step: string) => `${travel}、1 フレームあたり ${step}`,
@@ -103,12 +114,13 @@ export const ROOMS = {
         {game} は、絵が動く前に {before} を書き、それに {wait} フレームかかる。滑りの前半には何も書かず、列は滑り始めから {from} フレーム目以降、1 フレームに一本ずつ来る。このカートリッジは前もっては何も書かず、滑っている間ずっと入ってくる部屋を描く。2 フレームに一列ずつ、見えてくる端のすぐ先に。{game} の行が何のためのものかは、まだ読んでいない。
       </>
     ),
-    upH: "まだのこと",
-    up: "ここでは上下は端で止まる: 滑るのは横だけだ。ゲームで上へ一歩出ると、画面が縦に滑る。それが次の版だ。",
+    upH: "上下は、画面上の部屋に上書きする",
+    up: (game: string) =>
+      `横には、新しい部屋を描き込むもう一つのネームテーブルがある。上下には無いので、どちらも画面上のテーブルの古い部屋に新しい部屋を一行ずつ上書きする。それぞれ、絵がそれを見せる直前に。書いている行はその間、反対の端から出ていく行でもあるので、そこの 8 ライン幅の帯が新しい部屋を一瞬早く見せる。たいていのテレビでは、その数ラインは絵の外だ。${game} の行が少ないのは、上の数行が動かないステータスバーだからだ。`,
   },
 } as const;
 
-export function RoomsPart({ lang, m, a }: { lang: Lang; m: RoomsMeasures; a?: (RoomsMeasures & { game: string; up?: { before: number; after: number } }) | null }) {
+export function RoomsPart({ lang, m, a }: { lang: Lang; m: RoomsMeasures; a?: (RoomsMeasures & { game: string }) | null }) {
   const S = ROOMS[lang];
   const n = (v: number) => v.toLocaleString(lang);
   const game = a ? t(lang, a.game) : "";
@@ -121,6 +133,11 @@ export function RoomsPart({ lang, m, a }: { lang: Lang; m: RoomsMeasures; a?: (R
     ["during", (x) => runs(lang, x.written_during)],
     ["from", (x) => (x.columns_from === null ? "" : n(x.columns_from))],
     ["every", (x) => x.column_every.map(n).join(" / ")],
+    ["upRoom", (x) => (x.up ? S.room(n(x.up.before), n(x.up.after)) : "")],
+    ["upRows", (x) => (x.up ? `${n(x.up.rows)}, ${x.up.tiles.map(n).join(" / ")}` : "")],
+    ["upSpan", (x) => (x.up && x.up.from_row !== null && x.up.to_row !== null ? `${n(x.up.from_row)}, ${n(x.up.to_row)}` : "")],
+    ["upFirst", (x) => (x.up && x.up.first !== null ? n(x.up.first) : "")],
+    ["upEvery", (x) => (x.up ? x.up.every.map(n).join(" / ") : "")],
   ];
   return (
     <>
@@ -151,7 +168,7 @@ export function RoomsPart({ lang, m, a }: { lang: Lang; m: RoomsMeasures; a?: (R
         </>
       ) : null}
       <h3>{S.upH}</h3>
-      <p>{S.up}</p>
+      <p>{S.up(game)}</p>
     </>
   );
 }

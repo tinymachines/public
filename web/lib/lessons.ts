@@ -51,6 +51,20 @@ export interface RoomsMeasures {
   column_every: number[];
   columns_from: number | null;
   columns: number;
+  /** The first step up (rooms_up): rows written across after the number changed. */
+  up?: RoomsUp;
+}
+
+export interface RoomsUp {
+  before: number;
+  after: number;
+  rows: number;
+  tiles: number[];
+  first: number | null;
+  every: number[];
+  upward: boolean;
+  from_row: number | null;
+  to_row: number | null;
 }
 
 /** One byte choosing the screen (scripts/board-lessons.py screens_measures). */
@@ -104,7 +118,7 @@ export type Lesson =
   | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null })
   | (Base & { kind: "screens"; measures: ScreensMeasures; against?: (ScreensMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
-  | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string; up?: { before: number; after: number } }) | null });
+  | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
 const ROOT = path.join(process.cwd(), "..");
 let cached: Lesson[] | null = null;
