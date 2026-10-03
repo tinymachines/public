@@ -400,6 +400,27 @@ def status_measures(dirpath: Path, start: int, end: int):
     }
 
 
+def sound_measures(dirpath: Path, after: int, end: int):
+    """The shape of a jump sound sharing the music's channel, from the log
+    of every write to the sound chip: never the values, only which
+    channel, when, how many settings with the pitch sweep on, and when the
+    music writes to the channel again."""
+    pad = (dirpath / "pad.bin").read_bytes()
+    press = next(f for f in range(max(after, 1), end) if pad[f] & 1 and not pad[f - 1] & 1)
+    writes = [tuple(l.split()) for l in (dirpath / "apu.txt").read_text().splitlines()]
+    writes = [(int(f), r, int(v)) for f, r, v in writes]
+    before = sum(1 for f, r, v in writes if press - 60 <= f < press and r in ("00", "01", "02", "03"))
+    sweep_on = [f for f, r, v in writes if press <= f < press + 60 and r == "01" and v & 0x80]
+    if not sweep_on:
+        return {"music_before": before, "sweep_settings": 0}
+    back = next((f for f, r, v in writes if f > sweep_on[-1] and f < press + 120 and r == "01" and not v & 0x80), None)
+    return {
+        "music_before": before, "starts": sweep_on[0] - press, "sweep_settings": len(sweep_on),
+        "sweep_frames": sorted({f - sweep_on[0] for f in sweep_on}),
+        "music_back": None if back is None else back - sweep_on[0],
+    }
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -465,6 +486,9 @@ def main():
             measures = status_measures(run, meta["walk_from"], meta["frames"])
             # Mario: the private run with its writes logged (snd), from Right to the end.
             against = ({"game": "Super Mario Bros.", **status_measures(Path(compare[name]) / "snd", 520, 700)} if name in compare else prev.get("against"))
+        elif kind == "sound":
+            measures = sound_measures(run, meta["walk_from"], meta["frames"])
+            against = ({"game": "Super Mario Bros.", **sound_measures(Path(compare[name]) / "snd", 520, 700)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

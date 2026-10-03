@@ -126,6 +126,15 @@ export interface StatusMeasures {
   other_bar_writes: number;
 }
 
+/** A jump sound sharing the music's channel, shape only (sound_measures). */
+export interface SoundMeasures {
+  music_before: number;
+  starts?: number;
+  sweep_settings: number;
+  sweep_frames?: number[];
+  music_back?: number | null;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -148,6 +157,7 @@ export type Lesson =
   | (Base & { kind: "screens"; measures: ScreensMeasures; against?: (ScreensMeasures & { game: string }) | null })
   | (Base & { kind: "run"; measures: RunMeasures; against?: (RunMeasures & { game: string }) | null })
   | (Base & { kind: "status"; measures: StatusMeasures; against?: (StatusMeasures & { game: string }) | null })
+  | (Base & { kind: "sound"; measures: SoundMeasures; against?: (SoundMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

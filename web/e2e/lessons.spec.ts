@@ -38,6 +38,12 @@ for (const l of record()) {
       const a = l.against as typeof l.measures;
       expect(rows.filter((r) => r[0] === "jump").map((r) => [r[1], r[2]])).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${a.jumps[i].frames},${a.jumps[i].risen}`]));
       expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.full_speed_after));
+    } else if (l.kind === "sound") {
+      const a = l.against as typeof l.measures;
+      expect(l.measures.music_before, "our tune plays on the channel before the jump").toBeGreaterThan(0);
+      expect(a.music_before, "and the game's does").toBeGreaterThan(0);
+      expect(l.measures.sweep_settings).toBeGreaterThan(0);
+      expect(l.measures.music_back, "our tune comes back").toBeGreaterThan(0);
     } else if (l.kind === "status") {
       const a = l.against as typeof l.measures;
       expect(l.measures.split_line).toBe(a.split_line);
