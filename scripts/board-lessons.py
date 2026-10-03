@@ -305,6 +305,72 @@ def rooms_up(cell, vram_path: Path, room: int, frames: int, after: int):
     }
 
 
+def jump_of(cell, press: int, until: int, air: int, y: int, vy_hi, vy_lo, a_held):
+    """One jump from a press: the first speed down, the pull while A is held
+    and rising and after it, and how far it rose to its top before it first
+    landed (a landing on something higher ends it too)."""
+    V = lambda f: sg(cell(f, vy_hi)) * 256 + cell(f, vy_lo)
+    flight = []
+    for f in range(press, until):
+        if cell(f, air):
+            flight.append(f)
+        elif flight:
+            break
+    t0 = flight[0]
+    pulls = [(V(f) - V(f - 1), a_held(f) and V(f - 1) < 0) for f in range(t0 + 1, flight[-1] + 1) if V(f) > V(f - 1)]
+    held = sorted({d for d, h in pulls if h})
+    released = sorted({d for d, h in pulls if not h and d < 1024})
+    return {"first": round(V(t0) / 256 - (held[0] if held else 0) / 256, 2), "held": held[0] if held else None,
+            "released": max(set(d for d, h in pulls if not h), key=[d for d, h in pulls if not h].count) if released else None,
+            "rose": cell(t0 - 1, y) - min(cell(f, y) for f in flight)}
+
+
+def run_measures(cell, pad, rom: Path, out: Path, meta: dict):
+    """Walking and running tops, the two jumps, and the speed at which the
+    jump changes, found by jumping after more and more frames of running."""
+    sx = lambda f: (cell(f, 0x13) * 256 + cell(f, 0x12)) / 256
+    walk_top = max(sx(f) for f in range(60, 160))
+    run_from = next(f for f in range(1, meta["frames"]) if pad[f] & 0x02 and not pad[f - 1] & 0x02)
+    run_top = max(sx(f) for f in range(run_from, run_from + 120))
+    after = next(f for f in range(run_from, run_from + 120) if sx(f) == run_top) - run_from
+    jumps = [jump_of(cell, p, p + 120, 0x03, 0x15, 0x17, 0x16, lambda f: pad[f] & 0x01) for p, _ in meta["presses"]]
+    light, strong = [], []
+    for k in range(0, 40):
+        sc = out / "sweep.txt"
+        sc.write_text(f"# frames 200\nAT 20 82\nAT {20 + k} 83\nAT {40 + k} 82\n")
+        subprocess.run([str(STORYBOARD), str(rom), str(sc), "200", str(out / "sweep")], check=True, capture_output=True)
+        c2 = frames_of((out / "sweep" / "ram.bin").read_bytes())
+        t0 = next(f for f in range(20 + k, 200) if c2(f, 0x03))
+        # In sixteenths, as Mario keeps it, with the fraction ours has beside.
+        speed = round((c2(t0 - 1, 0x13) * 256 + c2(t0 - 1, 0x12)) * 16 / 256, 2)
+        (strong if c2(t0, 0x17) == 0xFB else light).append(speed)
+    return {"walk_top": walk_top, "run_top": run_top, "run_after": after, "walk_jump": jumps[0], "run_jump": jumps[1],
+            "light_max": max(light), "strong_min": min(strong)}
+
+
+def mario_run(dirpath: Path):
+    """Mario's side, counts only: its tops (speed at $0057 in sixteenths), the
+    walking jump of the first run and the running jump of `runb`, and the
+    sweep of jumps at running speeds kept as tiers.json."""
+    def load(d):
+        r = (dirpath / d / "ram.bin").read_bytes()
+        return frames_of(r), (dirpath / d / "pad.bin").read_bytes()
+    c, p = load("board")
+    right = next(f for f in range(500, len(p)) if p[f] & 0x80)
+    walk_top = max(c(f, 0x57) for f in range(right, right + 120)) / 16
+    press = next(f for f in range(right, len(p)) if p[f] & 1)
+    walk = jump_of(c, press, press + 120, 0x1D, 0xCE, 0x9F, 0x433, lambda f, p=p: p[f] & 1)
+    c2, p2 = load("runb")
+    run_from = next(f for f in range(500, len(p2)) if p2[f] & 0x02)
+    run_top = max(c2(f, 0x57) for f in range(run_from, run_from + 80))
+    after = next(f for f in range(run_from, run_from + 80) if c2(f, 0x57) == run_top) - run_from
+    press2 = next(f for f in range(run_from, len(p2)) if p2[f] & 1)
+    run = jump_of(c2, press2, press2 + 120, 0x1D, 0xCE, 0x9F, 0x433, lambda f, p=p2: p[f] & 1)
+    tiers = json.loads((dirpath / "tiers.json").read_text())
+    return {"game": "Super Mario Bros.", "walk_top": walk_top, "run_top": run_top / 16, "run_after": after, "walk_jump": walk, "run_jump": run,
+            "light_max": tiers["light"]["speed_max"], "strong_min": tiers["strong"]["speed_min"]}
+
+
 def mario(dirpath: Path):
     """Mario's walk and three jumps, from the private runs: counts only."""
     def load(d):
@@ -363,6 +429,9 @@ def main():
         if kind == "jump":
             measures = jump_measures(cell, meta, meta["presses"])
             against = mario(Path(compare[name])) if name in compare else prev.get("against")
+        elif kind == "run":
+            measures = run_measures(cell, (run / "pad.bin").read_bytes(), b["rom"], run, meta)
+            against = mario_run(Path(compare[name])) if name in compare else prev.get("against")
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

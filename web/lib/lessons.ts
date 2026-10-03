@@ -97,6 +97,25 @@ export interface StompMeasures {
   compare?: { name: string; is_touch: boolean; x: string; y: string }[];
 }
 
+/** One jump (scripts/board-lessons.py jump_of): speeds in pixels a frame, pulls in 256ths. */
+export interface OneJump {
+  first: number;
+  held: number | null;
+  released: number | null;
+  rose: number;
+}
+
+/** Walking, running and the jump each takes (run_measures, mario_run). */
+export interface RunMeasures {
+  walk_top: number;
+  run_top: number;
+  run_after: number;
+  walk_jump: OneJump;
+  run_jump: OneJump;
+  light_max: number;
+  strong_min: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -117,6 +136,7 @@ export type Lesson =
   | (Base & { kind: "jump"; measures: JumpMeasures; against?: (JumpMeasures & { game: string }) | null })
   | (Base & { kind: "scroll"; measures: ScrollMeasures; against?: (ScrollMeasures & { game: string }) | null })
   | (Base & { kind: "screens"; measures: ScreensMeasures; against?: (ScreensMeasures & { game: string }) | null })
+  | (Base & { kind: "run"; measures: RunMeasures; against?: (RunMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

@@ -477,5 +477,7 @@
  "One byte chooses the screen, the way Mario's does": "マリオのように、一つのバイトが画面を選ぶ",
  "A cartridge of our own with a title, play and a pause chosen by one byte through a jump table after a call, the way Super Mario Bros. was measured choosing its screens, and what our own autopsy says of it.": "タイトル、遊ぶ画面、一時停止を、呼び出しの後のジャンプテーブルを通して一つのバイトで選ぶ、私たち自身のカートリッジ。スーパーマリオブラザーズが画面を選ぶのを測ったやり方で、私たち自身の解剖がそれについて言うことも添える。",
  "A stomp and a hit, told apart the way Mario does": "マリオのように見分ける、踏みつけとぶつかり",
- "A cartridge of our own where touching a walker from above, falling, flattens it and bounces, and any other touch is a hit, the way Super Mario Bros. was measured telling them apart, measured beside it, with its program.": "上から落ちて歩くものに触れれば潰して跳ね返り、それ以外の触れ方はぶつかりになる、私たち自身のカートリッジ。スーパーマリオブラザーズがそれを見分けると測ったやり方で、マリオと並べて測り、プログラムも添える。"
+ "A cartridge of our own where touching a walker from above, falling, flattens it and bounces, and any other touch is a hit, the way Super Mario Bros. was measured telling them apart, measured beside it, with its program.": "上から落ちて歩くものに触れれば潰して跳ね返り、それ以外の触れ方はぶつかりになる、私たち自身のカートリッジ。スーパーマリオブラザーズがそれを見分けると測ったやり方で、マリオと並べて測り、プログラムも添える。",
+ "Running, and why a running jump goes higher": "走ること、そして走ってのジャンプが高く上がるわけ",
+ "A cartridge of our own where B makes the square run, and the jump it takes depends on how fast it was going, with the speeds and pulls read off Super Mario Bros., measured beside it, with its program.": "B で四角が走り、跳ぶジャンプがそのときの速さで決まる、私たち自身のカートリッジ。速さと引きはスーパーマリオブラザーズから読み取り、マリオと並べて測り、プログラムも添える。"
 }

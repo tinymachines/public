@@ -38,6 +38,12 @@ for (const l of record()) {
       const a = l.against as typeof l.measures;
       expect(rows.filter((r) => r[0] === "jump").map((r) => [r[1], r[2]])).toEqual(l.measures.jumps.map((j, i) => [`${j.frames},${j.risen}`, `${a.jumps[i].frames},${a.jumps[i].risen}`]));
       expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.full_speed_after));
+    } else if (l.kind === "run") {
+      const a = l.against as typeof l.measures;
+      expect(l.measures.light_max).toBeLessThan(25);
+      expect(l.measures.strong_min).toBeGreaterThanOrEqual(25);
+      expect([a.light_max, a.strong_min]).toEqual([24, 25]);
+      expect(rows.find((r) => r[0] === "walk")?.[1]).toBe(String(l.measures.walk_top));
     } else if (l.kind === "stomp") {
       expect(l.measures.compare?.some((c) => c.is_touch), "our own autopsy names our own touch test").toBe(true);
       await expect(page.locator("[data-lesson-found]")).toHaveCount(1);
