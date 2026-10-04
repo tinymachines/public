@@ -54,6 +54,15 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "about") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // It crawled a long way, one row written per 8 pixels, no split, no other tile.
+        expect(x.crawled).toBeGreaterThan(240);
+        expect(x.rows).toBeGreaterThan(30);
+        expect([x.row_pixels, x.split, x.other]).toEqual([8, false, 0]);
+      }
+      expect(rows.find((r) => r[0] === "row_pixels")?.slice(1)).toEqual(["8", "8"]);
     } else if (l.kind === "splash") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

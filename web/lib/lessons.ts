@@ -206,6 +206,20 @@ export interface SplashMeasures {
   loop: number | null;
 }
 
+/** Words that crawl up the screen (about_measures). */
+export interface AboutMeasures {
+  step: number | null;
+  every: number | null;
+  crawled: number;
+  split: boolean;
+  rows: number;
+  row_every: number | null;
+  row_pixels: number | null;
+  colours: number;
+  other: number;
+  frames: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -234,6 +248,7 @@ export type Lesson =
   | (Base & { kind: "items"; measures: ItemsMeasures; against?: (ItemsMeasures & { game: string }) | null })
   | (Base & { kind: "menu"; measures: MenuMeasures; against?: (MenuMeasures & { game: string }) | null })
   | (Base & { kind: "splash"; measures: SplashMeasures; against?: (SplashMeasures & { game: string }) | null })
+  | (Base & { kind: "about"; measures: AboutMeasures; against?: (AboutMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

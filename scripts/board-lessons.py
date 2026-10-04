@@ -732,6 +732,52 @@ def splash_measures(dirpath: Path, after: int):
     }
 
 
+def about_measures(dirpath: Path, after: int):
+    """Words crawling up the screen, from a run that touches nothing,
+    from the first full row (32 tiles) written after `after` to the run's
+    end. From the scroll log, the frame's last pair: the most common step
+    down (counted round 240, where the scroll passes into the other
+    screen) and frames between steps, the pixels crawled, and whether a
+    pair was written during the picture (a split). From the writes to the
+    picture: the full rows, how many frames apart and so how many pixels
+    of crawl each stands for, the colour bytes (attribute tables), and
+    any other tile written."""
+    pad = (dirpath / "pad.bin").read_bytes()
+    n = len(pad)
+    rows, colours, other = [], 0, 0
+    writes = []
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, c, step = l.split()
+        writes.append((int(f), int(a, 16), int(c), int(step)))
+    start = next(f for f, a, c, s in writes if f > after and 0x2000 <= a < 0x3000 and c == 32 and s == 1 and a % 32 == 0)
+    for f, a, c, s in writes:
+        if f < start or not 0x2000 <= a < 0x3000:
+            continue
+        if (a & 0x3FF) >= 0x3C0:
+            colours += c
+        elif c == 32 and s == 1 and a % 32 == 0:
+            rows.append(f)
+        else:
+            other += c
+    y, split = {}, False
+    for l in (dirpath / "scroll.txt").read_text().splitlines():
+        f, line, _, v = map(int, l.split())
+        if f >= start:
+            y[f] = v
+            split = split or line < 240
+    fs = sorted(y)
+    moves = [(b, (y[b] - y[a]) % 240) for a, b in zip(fs, fs[1:]) if y[b] != y[a]]
+    mode = lambda v: max(set(v), key=v.count) if v else None
+    step = mode([d for _, d in moves])
+    every = mode([b[0] - a[0] for a, b in zip(moves, moves[1:])])
+    gap = mode([b - a for a, b in zip(rows, rows[1:])])
+    return {
+        "step": step, "every": every, "crawled": sum(d for _, d in moves), "split": split,
+        "rows": len(rows), "row_every": gap, "row_pixels": None if not (gap and every) else gap * step // every,
+        "colours": colours, "other": other, "frames": n - start,
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -871,6 +917,11 @@ def main():
             measures = splash_measures(run, 0)
             # Zelda: a private run from power on, untouched; its title is drawn by frame 60.
             against = ({"game": "The Legend of Zelda", **splash_measures(Path(compare[name]) / "idle", 60)} if name in compare else prev.get("against"))
+        elif kind == "about":
+            measures = about_measures(run, meta["walk_from"])
+            # Zelda: the untouched private run; its story is drawn at 984 and
+            # writes its first new row at 1722.
+            against = ({"game": "The Legend of Zelda", **about_measures(Path(compare[name]) / "idle", 1000)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and
