@@ -1,0 +1,2 @@
+# frames 600
+# Touch nothing: the walkers meet, turn, walk to the walls, turn, meet again.

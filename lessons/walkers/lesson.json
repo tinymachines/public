@@ -1,0 +1,15 @@
+{
+ "title": "Walkers that turn at walls and at each other, the way Mario's Goombas do",
+ "kind": "walkers",
+ "description": "A cartridge of our own with two walkers that go a pixel every second frame, turn around when they walk into a wall, and both turn when they meet, compared by that shape with how Super Mario Bros. was seen moving its Goombas, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "watch.txt",
+ "frames": 600,
+ "grabs": [30, 60, 200, 420],
+ "walk_from": 0,
+ "memory": {"x": ["$40", "$41"], "step": ["$42", "$43"]}
+}
