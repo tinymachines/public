@@ -674,6 +674,64 @@ def menu_measures(dirpath: Path, cell: int, after: int):
     }
 
 
+def splash_measures(dirpath: Path, after: int):
+    """A splash screen, from a run that touches nothing: the palette
+    writes of a few colours (the turning colours) and how many frames
+    apart; the fade, the first run of whole-palette writes (32) each
+    within 10 frames of the last, its steps and frames; the frames shown
+    between the first turn and the fade; every tile written meanwhile;
+    and the falling column: in the column of sprites whose heights change
+    most, the most common step down a frame and how many frames apart it
+    jumps back up."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    n = len(ram) // 2048
+    small, whole, tiles = [], [], {}
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, c, _ = l.split()
+        f, a, c = int(f), int(a, 16), int(c)
+        if f <= after:
+            continue
+        if 0x3F00 <= a < 0x4000:
+            (whole if c == 32 else small).append(f)
+        else:
+            tiles[f] = tiles.get(f, 0) + c
+    if not small:
+        sys.exit(f"board-lessons: no colours turned in {dirpath}")
+    turn = small[0]
+    fade = []
+    for f in whole:
+        if f < turn:
+            continue
+        if fade and f - fade[-1] > 10:
+            if len(fade) >= 3:
+                break
+            fade = []
+        fade.append(f)
+    gaps = [b - a for a, b in zip(small, small[1:]) if b < fade[0]]
+    def column(f, x):
+        return sorted(ram[f * 2048 + 0x200 + i * 4] for i in range(64) if ram[f * 2048 + 0x200 + i * 4] < 0xEF and ram[f * 2048 + 0x203 + i * 4] == x)
+    moves = {}
+    for f in range(turn, fade[0] - 1):
+        xs = {ram[f * 2048 + 0x203 + i * 4] for i in range(64) if ram[f * 2048 + 0x200 + i * 4] < 0xEF}
+        for x in xs:
+            a, b = column(f, x), column(f + 1, x)
+            if len(a) == len(b):
+                d = [q - p for p, q in zip(a, b) if q != p]
+                if d:
+                    moves.setdefault(x, []).append((f, d))
+    x = max(moves, key=lambda k: len(moves[k]))
+    down = [v for _, d in moves[x] for v in d if v > 0]
+    back = [f for f, d in moves[x] if any(v < 0 for v in d)]
+    loops = [b - a for a, b in zip(back, back[1:])]
+    mode = lambda v: max(set(v), key=v.count) if v else None
+    return {
+        "shown": fade[0] - turn, "tiles": sum(c for f, c in tiles.items() if turn <= f <= fade[-1]),
+        "turn_every": mode(gaps), "turns": len([f for f in small if f < fade[0]]),
+        "fade_steps": len(fade), "fade_frames": fade[-1] - fade[0],
+        "fall": mode(down), "loop": mode(loops),
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -809,6 +867,10 @@ def main():
             # Zelda: a private run to its register screen (there by frame 300),
             # the cell under the cursor at $041F.
             against = ({"game": "The Legend of Zelda", **menu_measures(Path(compare[name]) / "name", 0x41F, 300)} if name in compare else prev.get("against"))
+        elif kind == "splash":
+            measures = splash_measures(run, 0)
+            # Zelda: a private run from power on, untouched; its title is drawn by frame 60.
+            against = ({"game": "The Legend of Zelda", **splash_measures(Path(compare[name]) / "idle", 60)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

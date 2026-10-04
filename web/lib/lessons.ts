@@ -194,6 +194,18 @@ export interface MenuMeasures {
   clicks: number;
 }
 
+/** A splash screen that moves without drawing (splash_measures). */
+export interface SplashMeasures {
+  shown: number;
+  tiles: number;
+  turn_every: number | null;
+  turns: number;
+  fade_steps: number;
+  fade_frames: number;
+  fall: number | null;
+  loop: number | null;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -221,6 +233,7 @@ export type Lesson =
   | (Base & { kind: "title"; measures: TitleMeasures; against?: (TitleMeasures & { game: string }) | null })
   | (Base & { kind: "items"; measures: ItemsMeasures; against?: (ItemsMeasures & { game: string }) | null })
   | (Base & { kind: "menu"; measures: MenuMeasures; against?: (MenuMeasures & { game: string }) | null })
+  | (Base & { kind: "splash"; measures: SplashMeasures; against?: (SplashMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

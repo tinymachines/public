@@ -54,6 +54,17 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "splash") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // It showed, its colours turned many times and sprites fell in a loop, and still no tile was written.
+        expect(x.shown).toBeGreaterThan(100);
+        expect(x.turns).toBeGreaterThan(10);
+        expect(x.fall && x.loop).toBeTruthy();
+        expect(x.fade_steps).toBeGreaterThanOrEqual(3);
+        expect(x.tiles).toBe(0);
+      }
+      expect(rows.find((r) => r[0] === "tiles")?.slice(1)).toEqual(["0", "0"]);
     } else if (l.kind === "menu") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {
