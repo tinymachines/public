@@ -1,0 +1,4 @@
+# frames 1500
+# Right held throughout: the square walks into a walker, loses a life,
+# starts again, and so on until the game is over and begins again.
+AT 20 80
