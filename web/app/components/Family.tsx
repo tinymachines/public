@@ -42,6 +42,10 @@ export function Family({ me }: { me: FamilyHue }) {
             />
           );
         }
+        // A hue held for a site that is not answering: named, not linked.
+        if (f.reserved && f.name) {
+          return <span key={f.hue} className="family-dot" data-hue={f.hue} role="img" aria-label={`${f.name}, coming`} title={`${f.name} (coming)`} />;
+        }
         return <span key={f.hue} className="family-dot" data-hue={f.hue} aria-hidden="true" />;
       })}
     </nav>

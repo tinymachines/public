@@ -9,6 +9,8 @@ export interface FamilyMember {
   name?: string
   href?: string
   role?: "lab" | "home"
+  /** A hue held for a site that is not answering yet: named, not linked. */
+  reserved?: boolean
 }
 
 export const FAMILY_LABEL = "Meatball Labs and family"
@@ -18,10 +20,10 @@ export const FAMILY: readonly FamilyMember[] = [
   { hue: "clay", hex: "#995d48", name: "Meatball Labs", href: "https://meatball.ai", role: "lab" },
   { hue: "ochre", hex: "#89692f", name: "SysForge", href: "https://sysforge.ai", role: "lab" },
   { hue: "moss", hex: "#68763a" },
-  { hue: "sage", hex: "#427d59" },
-  { hue: "spruce", hex: "#1b7d82" },
+  { hue: "sage", hex: "#427d59", name: "hotbits", href: "https://tinymachines.ai/hotbits", role: "lab" },
+  { hue: "spruce", hex: "#1b7d82", name: "amy.io", href: "https://amy.io", role: "lab" },
   { hue: "steel", hex: "#41749d", name: "bradley.io", href: "https://bradley.io", role: "home" },
   { hue: "iris", hex: "#6a679e", name: "tinymachines.ai", href: "https://tinymachines.ai", role: "lab" },
   { hue: "plum", hex: "#8b5c86" },
-  { hue: "rose", hex: "#995963" },
+  { hue: "rose", hex: "#995963", name: "snailmail.ai", role: "lab", reserved: true },
 ]
