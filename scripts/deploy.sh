@@ -237,6 +237,12 @@ say "2g. The lessons"
 # they serve are read from. The listing crate builds with rustup's cargo.
 PATH="$HOME/.cargo/bin:$PATH" python3 scripts/board-lessons.py --check || fail "a lesson does not build to the cartridge its record serves"
 
+say "2h. The family"
+# The footer's dots are the family's one registry (meatball-labs/family),
+# copied in as web/lib/family-data.ts; a copy behind the registry would
+# show this site a family the others no longer agree with.
+bash scripts/sync-family.sh --check || fail "the footer's family list is not the registry's; run scripts/sync-family.sh"
+
 # On the interpreter the service unit runs, not whichever python3 the
 # shell finds first. On 2026-09-11 the tests passed on a pyenv python
 # while /usr/bin/python3 had lost uvicorn (its user site-packages had
