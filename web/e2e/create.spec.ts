@@ -31,7 +31,7 @@ async function openDesk(page: Page) {
 test("the desk: a key for every window named by its own heading, the console's five and Record open, all inside the desk, the page not scrolling", async ({ page }) => {
   await openDesk(page);
   const keys = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.map((b) => (b.textContent ?? "").trim()));
-  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "Listing", "History", "About this page"]);
+  expect(keys).toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "Listing", "History", "Program", "About this page"]);
   const shown = await page.locator("[data-win]").evaluateAll((ws) => ws.filter((w) => (w as HTMLElement).offsetParent !== null).map((w) => (w as HTMLElement).dataset.win));
   expect(shown).toEqual(OPEN);
   const pressed = await page.locator("[data-desk-tab]").evaluateAll((bs) => bs.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => (b as HTMLElement).dataset.deskTab));
@@ -173,7 +173,7 @@ test("on a phone the windows stand one under another under the section strip, wi
   expect(await page.locator("[data-win-bar]").evaluateAll((bs) => bs.filter((b) => (b as HTMLElement).offsetParent !== null).length)).toBe(0);
   await expect
     .poll(() => page.evaluate(() => [...document.querySelectorAll(".wb-strip a")].map((a) => (a.textContent ?? "").trim())))
-    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "Listing", "History", "About this page", "Play"]);
+    .toEqual(["Screen", "Cartridge", "Code", "CPU", "Memory", "Palettes", "Sprites on screen", "Nametables", "Sprites", "Readouts", "Record", "Flow", "Listing", "History", "Program", "About this page", "Play"]);
   // Every window shows, the closed-by-default ones too, in page order.
   const tops = await page.locator("[data-win]").evaluateAll((ws) => ws.map((w) => w.getBoundingClientRect().top));
   expect(tops.every((t, i) => i === 0 || t > tops[i - 1])).toBe(true);

@@ -46,21 +46,19 @@ const S = {
   },
 } as const;
 
-export function Program({ lang, lessons, onOpen }: { lang: Lang; lessons: { key: string; title: string }[]; onOpen: () => void }) {
+export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string; title: string }[] }) {
   const T = S[lang];
   const p = useSyncExternalStore(program.subscribe, program.snapshot, program.serverSnapshot);
   // ?lesson=<name> opens that lesson's program here, the way the cartridge
-  // window loads its cartridge, and brings this window forward.
+  // window loads its cartridge; the desk brings this window forward when it
+  // has (Create.tsx).
   const asked = useRef(false);
   useEffect(() => {
     if (asked.current) return;
     asked.current = true;
     const name = new URLSearchParams(window.location.search).get("lesson");
-    if (name && lessons.some((l) => l.key === name)) {
-      void program.open(name);
-      onOpen();
-    }
-  }, [lessons, onOpen]);
+    if (name && lessons.some((l) => l.key === name)) void program.open(name);
+  }, [lessons]);
   const n = (v: number) => v.toLocaleString(lang);
   const key = p.parts?.key ?? "";
   return (

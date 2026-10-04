@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Lang } from "@/lib/lang";
 import { Desk, Window, useDesk, type DeskLabels, type WinSpec } from "@/app/components/Desk";
 import { Cartridge, Readouts, Screen } from "../play/Play";
@@ -14,6 +14,7 @@ import { Program } from "./Program";
 import { History } from "./History";
 import { Nametables } from "./Nametables";
 import * as flow from "./flowEngine";
+import * as program from "./programEngine";
 
 /**
  * The create desk: the play page's console and every tool it has, each in
@@ -88,12 +89,19 @@ function Windows({ lang, about, lessons }: { lang: Lang; about: ReactNode; lesso
   // A recording read or opened comes up in the Flow window, brought forward.
   const opened = useSyncExternalStore(flow.subscribe, () => flow.snapshot().open?.meta.id ?? null, () => null);
   const { show } = desk;
-  const openProgram = useCallback(() => show("program"), [show]);
+  // A lesson's program opened (from ?lesson= or the window's own choice)
+  // comes up in the Program window, brought forward, the way Flow does.
+  const programFor = useSyncExternalStore(program.subscribe, () => program.snapshot().parts?.key ?? null, () => null);
   useEffect(() => {
     if (opened) show("flow");
     // Only when another recording opens, not whenever the desk moves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
+  useEffect(() => {
+    if (programFor) show("program");
+    // Only when another lesson's program opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programFor]);
   return (
     <>
       <Window id="screen"><Screen lang={lang} stage={desk.mode !== "float"} /></Window>
@@ -110,7 +118,7 @@ function Windows({ lang, about, lessons }: { lang: Lang; about: ReactNode; lesso
       <Window id="flow"><Flow lang={lang} /></Window>
       <Window id="listing"><Listing lang={lang} /></Window>
       <Window id="history"><History lang={lang} /></Window>
-      <Window id="program"><Program lang={lang} lessons={lessons} onOpen={openProgram} /></Window>
+      <Window id="program"><Program lang={lang} lessons={lessons} /></Window>
       <Window id="about">{about}</Window>
     </>
   );
