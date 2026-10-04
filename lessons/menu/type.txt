@@ -1,0 +1,21 @@
+# frames 300
+# Right, Right, Down, A (types), Left, A, Up, A, then Left held for a
+# second.
+AT 20 80
+AT 24 00
+AT 40 80
+AT 44 00
+AT 60 20
+AT 64 00
+AT 80 01
+AT 84 00
+AT 100 40
+AT 104 00
+AT 120 01
+AT 124 00
+AT 140 10
+AT 144 00
+AT 160 01
+AT 164 00
+AT 200 40
+AT 260 00
