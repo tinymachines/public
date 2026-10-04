@@ -1,0 +1,4 @@
+# frames 240
+# The order kept for two seconds, then Select turns it, for two more.
+AT 120 04
+AT 124 00

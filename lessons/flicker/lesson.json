@@ -1,0 +1,15 @@
+{
+ "title": "Too many sprites on a line flicker rather than vanish, the way Mario's do",
+ "kind": "flicker",
+ "description": "A cartridge of our own with ten figures on one line, two more than the console draws, where Select turns the order they are written in from frame to frame, the way Super Mario Bros. was seen moving its sprites about, so that no figure is always the one left out, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "watch.txt",
+ "frames": 240,
+ "grabs": [60, 61, 180, 181],
+ "walk_from": 0,
+ "memory": {}
+}
