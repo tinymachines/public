@@ -63,6 +63,15 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "walkers") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // Turns at walls and at least one meeting were seen, and the pace was read.
+        expect(x.wall_turns).toBeGreaterThan(1);
+        expect(x.meetings).toBeGreaterThan(0);
+        expect(x.pixels && x.every).toBeTruthy();
+      }
+      expect(rows.find((r) => r[0] === "pace")?.slice(1)).toEqual([`${l.measures.pixels}, every ${l.measures.every}`, `${a.pixels}, every ${a.every}`]);
     } else if (l.kind === "solid") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

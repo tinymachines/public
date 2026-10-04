@@ -233,6 +233,16 @@ export interface SolidMeasures {
   pushing_frames: number;
 }
 
+/** Walkers that turn at walls and at each other (walker_measures). */
+export interface WalkersMeasures {
+  pixels: number | null;
+  every: number | null;
+  wall_turns: number;
+  inside: boolean[];
+  meetings: number;
+  overlap: number[];
+}
+
 interface Base {
   key: string;
   title: string;
@@ -263,6 +273,7 @@ export type Lesson =
   | (Base & { kind: "splash"; measures: SplashMeasures; against?: (SplashMeasures & { game: string }) | null })
   | (Base & { kind: "about"; measures: AboutMeasures; against?: (AboutMeasures & { game: string }) | null })
   | (Base & { kind: "solid"; measures: SolidMeasures; against?: (SolidMeasures & { game: string }) | null })
+  | (Base & { kind: "walkers"; measures: WalkersMeasures; against?: (WalkersMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

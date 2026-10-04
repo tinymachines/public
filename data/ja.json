@@ -501,5 +501,7 @@
  "Sound: two sounds on one channel": "音: 一つのチャンネルに二つの音",
  "How a character moves: jumping, running, landing on things, bumping into them": "キャラクターの動き方: 跳ぶ、走る、上に乗る、ぶつかる",
  "Ground, a block and a wall, solid the way Mario's are": "マリオのように固い、地面とブロックと壁",
- "A cartridge of our own whose square looks the level up at its own edges: it stands on the ground, bumps a block from below and stops at a wall, compared by that shape with how Super Mario Bros. was seen doing it, with its program.": "四角が自分の縁でレベルを調べる、私たち自身のカートリッジ。地面に立ち、ブロックを下から突き上げ、壁で止まる。スーパーマリオブラザーズがそうしているのを見たその形で比べ、プログラムも添える。"
+ "A cartridge of our own whose square looks the level up at its own edges: it stands on the ground, bumps a block from below and stops at a wall, compared by that shape with how Super Mario Bros. was seen doing it, with its program.": "四角が自分の縁でレベルを調べる、私たち自身のカートリッジ。地面に立ち、ブロックを下から突き上げ、壁で止まる。スーパーマリオブラザーズがそうしているのを見たその形で比べ、プログラムも添える。",
+ "Walkers that turn at walls and at each other, the way Mario's Goombas do": "マリオのクリボーのように、壁でも互いにでも向きを変える歩き手",
+ "A cartridge of our own with two walkers that go a pixel every second frame, turn around when they walk into a wall, and both turn when they meet, compared by that shape with how Super Mario Bros. was seen moving its Goombas, with its program.": "二フレームに一ピクセルずつ進み、壁に歩き当たると向きを変え、出会うと二人とも向きを変える二つの歩き手を持つ、私たち自身のカートリッジ。スーパーマリオブラザーズがクリボーをそう動かしているのを見たその形で比べ、プログラムも添える。"
 }

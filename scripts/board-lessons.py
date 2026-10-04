@@ -825,6 +825,54 @@ def solid_measures(dirpath: Path, x: int, y: int, vy: int, speed: int, after: in
     }
 
 
+def walker_measures(dirpath: Path, slots: list, start: int, end: int):
+    """Walkers, from memory: `slots` gives each walker's x, whether it is
+    walking right, and whether it is there at all, as functions of a frame
+    and the run's cells. A turn is a frame its direction differs from the
+    frame before, with the walker there on both; two walkers turning on
+    the same frame within 24 pixels of each other met, and any other turn
+    was at a wall. For each: its
+    pace (pixels a move and frames between moves, over stretches with no
+    turn), at a wall whether the frame before the turn shows it a pixel
+    further on than it settles (a frame spent inside the wall), and at a
+    meeting how far the two overlap (16 less the distance between)."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = min(end, len(ram) // 2048)
+    turns = []
+    for i, s in enumerate(slots):
+        for f in range(start + 1, n):
+            if s["there"](c, f) and s["there"](c, f - 1) and s["right"](c, f) != s["right"](c, f - 1):
+                turns.append((f, i))
+    at = {}
+    for f, i in turns:
+        at.setdefault(f, []).append(i)
+    x = lambda i, f: slots[i]["x"](c, f)
+    # Two that turn on one frame within 24 pixels of each other met; turns at
+    # two walls on one frame are two turns at walls.
+    near = lambda f, ii: len(ii) == 2 and abs(x(ii[0], f) - x(ii[1], f)) < 24
+    meets = [(f, sorted(ii)) for f, ii in at.items() if near(f, ii)]
+    walls = [(f, i) for f, ii in at.items() if not near(f, ii) for i in ii]
+    if not meets or not walls:
+        sys.exit(f"board-lessons: {dirpath} shows {len(meets)} meetings and {len(walls)} turns at walls; it needs both")
+    inside = []
+    for f, i in walls:
+        before = 1 if slots[i]["right"](c, f - 1) else -1
+        inside.append(x(i, f - 1) - x(i, f) == before)
+    overlap = sorted({16 - abs(x(a, f) - x(b, f)) for f, (a, b, *_) in meets})
+    # Pace: moves of the first walker where neither it nor the frame before turned.
+    turned = {f for f, _ in turns}
+    moves = [f for f in range(start + 2, n) if slots[0]["there"](c, f) and slots[0]["there"](c, f - 1) and f not in turned and x(0, f) != x(0, f - 1)]
+    gaps = [b - a for a, b in zip(moves, moves[1:]) if not any(a <= t <= b for t in turned)]
+    steps = [abs(x(0, f) - x(0, f - 1)) for f in moves]
+    mode = lambda v: max(set(v), key=v.count) if v else None
+    return {
+        "pixels": mode(steps), "every": mode(gaps),
+        "wall_turns": len(walls), "inside": sorted(set(inside)),
+        "meetings": len(meets), "overlap": overlap,
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -988,6 +1036,18 @@ def main():
             # the first Goomba and walks into the first pipe; x on its page
             # at $0086, y at $00CE, the speed down at $009F, across at $0057.
             against = ({"game": "Super Mario Bros.", **solid_measures(Path(compare[name]) / "wall704", 0x86, 0xCE, 0x9F, 0x57, 600)} if name in compare else prev.get("against"))
+        elif kind == "walkers":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            ours = [{"x": (lambda c, f, a=h(xa): c(f, a)), "right": (lambda c, f, a=h(sa): c(f, a) == 1), "there": (lambda c, f: True)} for xa, sa in zip(mm["x"], mm["step"])]
+            measures = walker_measures(run, ours, 10, meta["frames"])
+            # Mario: the private run that runs on past the second pipe; enemy
+            # slots 0 to 4, x on its page at $006E+s/$0087+s, walking right
+            # when $0046+s is 1, there when $000F+s is set and $0016+s is 6
+            # (a Goomba); up to frame 1400, before Mario is caught.
+            goombas = [{"x": (lambda c, f, s=s: c(f, 0x6E + s) * 256 + c(f, 0x87 + s)), "right": (lambda c, f, s=s: c(f, 0x46 + s) == 1),
+                        "there": (lambda c, f, s=s: c(f, 0x0F + s) != 0 and c(f, 0x16 + s) == 6)} for s in range(5)]
+            against = ({"game": "Super Mario Bros.", **walker_measures(Path(compare[name]) / "hop50", goombas, 830, 1400)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and
