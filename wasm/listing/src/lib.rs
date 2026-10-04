@@ -9,6 +9,7 @@ pub mod asm;
 pub mod disasm;
 pub mod game;
 pub mod ines;
+pub mod lesson;
 pub mod matchers;
 pub mod model;
 pub mod render;
@@ -90,5 +91,21 @@ mod wasm {
     #[wasm_bindgen]
     pub fn listing_check(src: &str, rom: &[u8]) -> Result<(), String> {
         super::check(src, rom)
+    }
+
+    /// A listing assembled into an iNES file.
+    #[wasm_bindgen]
+    pub fn listing_assemble(src: &str) -> Result<Vec<u8>, String> {
+        let l = super::text::parse(src).map_err(|e| e.to_string())?;
+        Ok(super::ines::image(&super::asm::assemble(&l).map_err(|e| e.to_string())?))
+    }
+
+    /// A lesson's parts to its whole listing, as lessons/build.py makes it:
+    /// JSON with the listing (`src`), its digest and its counts. The
+    /// cartridge is `listing_assemble` of the listing.
+    #[wasm_bindgen]
+    pub fn listing_lesson(prg: &str, chr: &str, mirroring: &str, prg_size: usize, org: &str, chr_size: usize) -> Result<String, String> {
+        let b = super::lesson::build(prg, chr, &super::lesson::Board { mirroring, prg: prg_size, org, chr: chr_size })?;
+        Ok(serde_json::json!({"src": b.src, "sha256": b.sha256, "code_bytes": b.code_bytes, "instructions": b.instructions}).to_string())
     }
 }

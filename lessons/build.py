@@ -6,11 +6,11 @@
 A lesson is a directory: prg.s (the program, in the listing's text),
 chr.s (the tiles), lesson.json (the board, sizes and what to measure).
 This writes lessons/<name>/build/<name>.s (the whole listing: header,
-program, fill, vectors, tiles) and <name>.nes, stamps the listing with
-the cartridge's digest and holds the one to the other with `listing
-check`. build/ is not committed: a clone builds it.
+program, fill, vectors, tiles) and <name>.nes, by way of the listing's
+`lesson` verb, which stamps the listing with the cartridge's digest and
+holds the one to the other. build/ is not committed: a clone builds it.
 """
-import json, os, re, subprocess, sys
+import json, os, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,50 +29,17 @@ def listing(*args, text=True):
     return r.stdout
 
 
-def size(line: str) -> int:
-    """The bytes one line of the program takes."""
-    t = line.split(";")[0].strip()
-    if not t or t.endswith(":"):
-        return 0
-    if t.startswith(".byte"):
-        return len(t[5:].split(","))
-    if t.startswith(".word"):
-        return 2
-    p = t.split(None, 1)
-    if len(p) == 1 or p[1] == "A":
-        return 1
-    o = p[1]
-    if p[0] in ("BPL", "BMI", "BVC", "BVS", "BCC", "BCS", "BNE", "BEQ") or o.startswith("#"):
-        return 2
-    # zero page, zero page by X, and by Y only for LDX and STX: the 6502
-    # has no other zero-page-by-Y, so the assembler writes those absolute.
-    if re.fullmatch(r"\$[0-9A-Fa-f]{2}(,X)?", o) or (re.fullmatch(r"\$[0-9A-Fa-f]{2},Y", o) and p[0] in ("LDX", "STX")) or re.fullmatch(r"\(\$[0-9A-Fa-f]{2}(,X\)|\),Y)", o):
-        return 2
-    return 3
-
-
 def build(name: str) -> dict:
     d = ROOT / "lessons" / name
     meta = json.loads((d / "lesson.json").read_text())
-    prg, chr_ = (d / "prg.s").read_text(), (d / "chr.s").read_text()
-    used = sum(size(l) for l in prg.splitlines())
-    tiles = sum(size(l) for l in chr_.splitlines())
-    if used > meta["prg"] - 6 or tiles > meta["chr"]:
-        sys.exit(f"{name}: {used} bytes of program and {tiles} of tiles do not fit")
-    head = (f";; @listing 0\n;; @rom sha256=0 mapper=0 mirroring={meta['mirroring']} prg={meta['prg']} chr={meta['chr']}\n"
-            f";; @bank prg 0 org={meta['org']} size={meta['prg']} fixed\n")
-    src = head + prg + "    .byte $FF\n" * (meta["prg"] - 6 - used) + "    .word nmi\n    .word reset\n    .word irq\n"
-    src += f";; @bank chr 0 size={meta['chr']}\n" + chr_ + "    .byte $00\n" * (meta["chr"] - tiles)
     out = d / "build"
     out.mkdir(exist_ok=True)
     s, rom = out / f"{name}.s", out / f"{name}.nes"
-    s.write_text(src)
-    listing("rom", s, rom)
-    # The header names the cartridge it assembles to.
-    sha = next(l for l in listing("from", rom).splitlines() if l.startswith(";; @rom ")).split("sha256=")[1].split()[0]
-    s.write_text(src.replace("sha256=0 ", f"sha256={sha} ", 1))
-    listing("check", s, rom)
-    return {"rom": rom, "listing": s, "sha256": sha, "code_bytes": used, "instructions": sum(1 for l in prg.splitlines() if size(l) and not l.strip().startswith("."))}
+    # The listing's own `lesson` verb puts the parts together, assembles,
+    # stamps the digest and checks the one against the other: the same
+    # code the desk runs in the page (wasm/listing/src/lesson.rs).
+    got = json.loads(listing("lesson", d / "prg.s", d / "chr.s", meta["mirroring"], meta["prg"], meta["org"], meta["chr"], s, rom))
+    return {"rom": rom, "listing": s, "sha256": got["sha256"], "code_bytes": got["code_bytes"], "instructions": got["instructions"]}
 
 
 if __name__ == "__main__":
