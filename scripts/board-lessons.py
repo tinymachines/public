@@ -557,6 +557,56 @@ def title_measures(dirpath: Path, x: int, after: int):
     return out
 
 
+def items_measures(dirpath: Path, after: int):
+    """An item screen the picture slides away to show, from a run that
+    presses Start (open), Start again while it slides, and Start (close).
+    From the scroll log, the frame's last pair (the one the picture is
+    drawn with): how many pixels a frame and how far it slides, frames
+    from each Start to the slide's end, whether the Start in between
+    changed the step, and whether any pair was written during the picture
+    (a split). From the writes to the picture: the full rows written into
+    the lower name table ($2800 to $2BBF) while it opened and while it
+    closed, whether they went from the bottom up, and how many frames
+    apart."""
+    pad = (dirpath / "pad.bin").read_bytes()
+    n = len(pad)
+    starts = [f for f in range(max(after, 1), n) if pad[f] & 0x08 and not pad[f - 1] & 0x08]
+    if len(starts) != 3:
+        sys.exit(f"board-lessons: expected three presses of Start in {dirpath}, saw {len(starts)}")
+    opened, between, closed = starts
+    y, split = {}, False
+    for l in (dirpath / "scroll.txt").read_text().splitlines():
+        f, line, _, v = map(int, l.split())
+        y[f] = v
+        if opened <= f and line < 240:
+            split = True
+    at = lambda f: y.get(f, y.get(max((g for g in y if g < f), default=0), 0))
+    held = at(closed - 1)
+    open_end = next(f for f in range(opened, closed) if at(f) == held)
+    back = next(f for f in range(closed, n) if at(f) == 0)
+    steps = [abs(at(f) - at(f - 1)) for f in range(opened + 1, open_end + 1) if at(f) != at(f - 1) and at(f - 1) != 0]
+    close_steps = [abs(at(f) - at(f - 1)) for f in range(closed + 1, back) if at(f) != at(f - 1)]
+    rows = {}
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, c, step = l.split()
+        f, a = int(f), int(a, 16)
+        if 0x2800 <= a < 0x2BC0 and c == "32" and step == "1" and a % 32 == 0:
+            rows.setdefault("open" if opened <= f <= open_end else "close" if closed <= f <= back else "other", []).append((f, a))
+    opening = rows.get("open", [])
+    gaps = [g - f for (f, _), (g, _) in zip(opening, opening[1:])]
+    return {
+        "step": max(set(steps), key=steps.count), "travel": 240 - held,
+        "open_frames": open_end - opened, "close_frames": back - closed,
+        "close_step": max(set(close_steps), key=close_steps.count),
+        # The Start pressed mid-slide: the slide went on up the same way.
+        "ignored": between < open_end and all(at(f - 1) - at(f) in (0, max(set(steps), key=steps.count)) for f in range(between, open_end + 1)),
+        "split": split,
+        "rows": len(opening), "bottom_up": all(b < a for (_, a), (_, b) in zip(opening, opening[1:])),
+        "every": max(set(gaps), key=gaps.count) if gaps else None,
+        "rows_closing": len(rows.get("close", [])),
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -669,6 +719,22 @@ def main():
                 for r in ("idle", "late", "title"):
                     for k, v in title_measures(Path(compare[name]) / r, 0x86, 205).items():
                         against.setdefault(k, v)
+            else:
+                against = prev.get("against")
+        elif kind == "items":
+            measures = items_measures(run, meta["walk_from"])
+            # Ours is soldered: the board's mirroring cannot change.
+            measures["mirroring"] = {"fixed": True, "changes": 0}
+            if name in compare:
+                # Zelda: a private run into the first room (its menus pass by
+                # frame 700) that opens, presses Start mid-slide, and closes.
+                dd = Path(compare[name]) / "inv2"
+                pad = (dd / "pad.bin").read_bytes()
+                against = {"game": "The Legend of Zelda", **items_measures(dd, 700)}
+                # Changes of mirroring from the Start that opens it to the run's end.
+                first = next(f for f in range(701, len(pad)) if pad[f] & 0x08 and not pad[f - 1] & 0x08)
+                changes = [f for f, _ in mmc1_mirroring(dd / "mapper.txt") if f >= first]
+                against["mirroring"] = {"fixed": False, "changes": len(changes)}
             else:
                 against = prev.get("against")
         elif kind == "stomp":

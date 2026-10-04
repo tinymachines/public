@@ -54,6 +54,17 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "items") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // Rows were drawn bottom up while it opened and none on the way back; the mid-slide Start
+        // was pressed (the measure refuses a run without it) and changed nothing; no split.
+        expect(x.rows, "rows were drawn while it opened").toBeGreaterThan(10);
+        expect([x.bottom_up, x.ignored, x.split, x.rows_closing]).toEqual([true, true, false, 0]);
+        expect(x.travel).toBeGreaterThan(160);
+      }
+      expect(a.mirroring).toEqual({ fixed: false, changes: 0 });
+      expect(rows.find((r) => r[0] === "step")?.slice(1)).toEqual([String(l.measures.step), String(a.step)]);
     } else if (l.kind === "title") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

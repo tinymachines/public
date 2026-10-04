@@ -164,6 +164,22 @@ export interface TitleMeasures {
   start_title?: number;
 }
 
+/** An item screen the picture slides away to show (items_measures). */
+export interface ItemsMeasures {
+  step: number;
+  travel: number;
+  open_frames: number;
+  close_frames: number;
+  close_step: number;
+  ignored: boolean;
+  split: boolean;
+  rows: number;
+  bottom_up: boolean;
+  every: number | null;
+  rows_closing: number;
+  mirroring: { fixed: boolean; changes: number };
+}
+
 interface Base {
   key: string;
   title: string;
@@ -189,6 +205,7 @@ export type Lesson =
   | (Base & { kind: "sound"; measures: SoundMeasures; against?: (SoundMeasures & { game: string }) | null })
   | (Base & { kind: "pause"; measures: PauseMeasures; against?: (PauseMeasures & { game: string }) | null })
   | (Base & { kind: "title"; measures: TitleMeasures; against?: (TitleMeasures & { game: string }) | null })
+  | (Base & { kind: "items"; measures: ItemsMeasures; against?: (ItemsMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
