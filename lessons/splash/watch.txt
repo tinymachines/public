@@ -1,0 +1,3 @@
+# frames 1000
+# Power on and touch nothing: the splash, its fade, the dark, and the
+# splash again.

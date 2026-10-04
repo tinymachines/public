@@ -1,0 +1,15 @@
+{
+ "title": "A splash screen that moves without drawing, the way Zelda's does",
+ "kind": "splash",
+ "description": "A cartridge of our own whose splash screen writes not one tile while it shows: drops of water that are sprites falling in a loop, a word whose colours turn by rewriting the palette, and a fade to black by palette, compared by that shape with how The Legend of Zelda's title was seen doing it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "watch.txt",
+ "frames": 1000,
+ "grabs": [100, 108, 116, 406],
+ "walk_from": 0,
+ "memory": {}
+}
