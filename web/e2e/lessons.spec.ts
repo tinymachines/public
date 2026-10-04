@@ -54,6 +54,19 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "menu") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // Three letters typed, one tile each; the held direction repeated and went round the grid;
+        // the cursor is behind the letters, blinks, and every move clicked.
+        expect(x.typed.map((t) => t[1])).toEqual([1, 1, 1]);
+        expect(x.wait && x.every && x.wait > x.every).toBe(true);
+        expect(x.wraps_to).toBeGreaterThan(x.width);
+        expect(x.behind).toBe(true);
+        expect(x.blink.every((k) => k > 0)).toBe(true);
+        expect(x.clicks).toBe(x.moves);
+      }
+      expect(rows.find((r) => r[0] === "width")?.slice(1)).toEqual([String(l.measures.width), String(a.width)]);
     } else if (l.kind === "items") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

@@ -180,6 +180,20 @@ export interface ItemsMeasures {
   mirroring: { fixed: boolean; changes: number };
 }
 
+/** Typing a name from a grid (menu_measures). */
+export interface MenuMeasures {
+  after_press: number[];
+  wait: number | null;
+  every: number | null;
+  width: number;
+  wraps_to: number | null;
+  typed: [number, number][];
+  behind: boolean;
+  blink: [number, number];
+  moves: number;
+  clicks: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -206,6 +220,7 @@ export type Lesson =
   | (Base & { kind: "pause"; measures: PauseMeasures; against?: (PauseMeasures & { game: string }) | null })
   | (Base & { kind: "title"; measures: TitleMeasures; against?: (TitleMeasures & { game: string }) | null })
   | (Base & { kind: "items"; measures: ItemsMeasures; against?: (ItemsMeasures & { game: string }) | null })
+  | (Base & { kind: "menu"; measures: MenuMeasures; against?: (MenuMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

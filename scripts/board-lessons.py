@@ -607,6 +607,73 @@ def items_measures(dirpath: Path, after: int):
     }
 
 
+def menu_measures(dirpath: Path, cell: int, after: int):
+    """Typing a name from a grid, from a run that presses Right, Right,
+    Down, A, Left, A, Up, A and then holds Left: the cell under the cursor
+    (the game's own byte at `cell`), the frames from each press to the
+    move, the moves while the direction is held (the wait, then the
+    beat), what a step down adds (the grid's width), where a step left
+    from the first cell goes (the grid's size), the writes to the picture
+    after each A, whether the cursor's sprites are drawn behind the
+    background and how they blink, and a write to a sound channel
+    (anything but $4015 and $4017) within two frames of each move."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    pad = (dirpath / "pad.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(pad)
+    dirs = 0xF0
+    presses = [f for f in range(max(after, 1), n) if pad[f] & dirs and not pad[f - 1] & dirs]
+    types = [f for f in range(max(after, 1), n) if pad[f] & 0x01 and not pad[f - 1] & 0x01]
+    moves = [f for f in range(max(after, 1), n) if c(f, cell) != c(f - 1, cell)]
+    if len(presses) < 5 or len(types) < 3:
+        sys.exit(f"board-lessons: {dirpath} does not press the directions and A the menu run needs")
+    first = [next(m for m in moves if m >= p) - p for p in presses]
+    # The held press: the last, held for the longest.
+    hp = presses[-1]
+    release = next((f for f in range(hp, n) if not pad[f] & dirs), n)
+    held = [m for m in moves if hp <= m < release]
+    gaps = [b - a for a, b in zip(held, held[1:])]
+    down = next(p for p in presses if pad[p] & 0x20)
+    dm = next(m for m in moves if m >= down)
+    wrap = next((m for m in moves if c(m - 1, cell) == 0 and c(m, cell) > 1), None)
+    nt = {}
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, cnt, _ = l.split()
+        if 0x2000 <= int(a, 16) < 0x3000:
+            nt.setdefault(int(f), []).append(int(cnt))
+    typed = []
+    for p in types:
+        w = next((f for f in range(p, p + 4) if f in nt), None)
+        typed.append(None if w is None else (w - p, sum(nt[w])))
+    # The cursor's sprites: those drawn behind the background (attribute bit 5).
+    behind = lambda f: sum(1 for i in range(64) if ram[f * 2048 + 0x200 + i * 4] < 0xEF and ram[f * 2048 + 0x202 + i * 4] & 0x20)
+    runs, cur, k = [], behind(after + 1) > 0, 0
+    for f in range(after + 1, n):
+        v = behind(f) > 0
+        if v == cur:
+            k += 1
+        else:
+            runs.append((cur, k))
+            cur, k = v, 1
+    whole = runs[1:]
+    on = [k for v, k in whole if v]
+    off = [k for v, k in whole if not v]
+    sound = {}
+    for l in (dirpath / "apu.txt").read_text().splitlines():
+        f, r, _ = l.split()
+        if r not in ("15", "17"):
+            sound.setdefault(int(f), set()).add(r)
+    clicks = sum(1 for m in moves if any(f in sound for f in range(m, m + 3)))
+    return {
+        "after_press": sorted(set(first)), "wait": gaps[0] if gaps else None,
+        "every": max(set(gaps[1:]), key=gaps[1:].count) if len(gaps) > 1 else None,
+        "width": c(dm, cell) - c(dm - 1, cell), "wraps_to": None if wrap is None else c(wrap, cell),
+        "typed": [t for t in typed if t], "behind": bool(on),
+        "blink": [max(set(on), key=on.count) if on else 0, max(set(off), key=off.count) if off else 0],
+        "moves": len(moves), "clicks": clicks,
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -737,6 +804,11 @@ def main():
                 against["mirroring"] = {"fixed": False, "changes": len(changes)}
             else:
                 against = prev.get("against")
+        elif kind == "menu":
+            measures = menu_measures(run, int(meta["memory"]["cell"][1:], 16), 0)
+            # Zelda: a private run to its register screen (there by frame 300),
+            # the cell under the cursor at $041F.
+            against = ({"game": "The Legend of Zelda", **menu_measures(Path(compare[name]) / "name", 0x41F, 300)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and
