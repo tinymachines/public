@@ -1,0 +1,25 @@
+{
+ "title": "Ground, a block and a wall, solid the way Mario's are",
+ "kind": "solid",
+ "description": "A cartridge of our own whose square looks the level up at its own edges: it stands on the ground, bumps a block from below and stops at a wall, compared by that shape with how Super Mario Bros. was seen doing it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "bump.txt",
+ "frames": 300,
+ "grabs": [
+  70,
+  88,
+  104,
+  250
+ ],
+ "walk_from": 20,
+ "memory": {
+  "x": "$11",
+  "y": "$15",
+  "vy": "$17",
+  "speed": "$12"
+ }
+}
