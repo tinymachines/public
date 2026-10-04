@@ -22,6 +22,14 @@ test("the lessons page lists every lesson, and the autopsy's front door lists th
   await open(page, "/autopsy/lessons", 200);
   const hrefs = await page.locator("[data-lessons] > li > a:first-child").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
   expect(hrefs).toEqual(record().map((l) => `/autopsy/lessons/${l.key}`));
+  // Each group under its heading, in the record's order, every lesson once.
+  const groups = (JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { topics: { key: string; lessons: string[] }[] }).topics;
+  expect(groups.length, "the record holds groups").toBeGreaterThan(1);
+  for (const g of groups) {
+    const inside = await page.locator(`[data-topic="${g.key}"] [data-lessons] > li > a:first-child`).evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+    expect(inside).toEqual(g.lessons.map((k) => `/autopsy/lessons/${k}`));
+    await expect(page.locator(`[data-topic="${g.key}"] h2`)).toHaveCount(1);
+  }
   await open(page, "/autopsy", 200);
   await expect(page.locator('[data-parts] a[href="/autopsy/lessons"]')).toHaveCount(1);
 });

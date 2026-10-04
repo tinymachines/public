@@ -1,0 +1,9 @@
+{
+ "note": "The lessons in groups, each in the order to read it. scripts/board-lessons.py refuses a lesson that is in no group or in two, and a name here that is no lesson.",
+ "topics": [
+  {"key": "moving", "title": "How a character moves: jumping, running, landing on things", "lessons": ["jump", "run", "stomp"]},
+  {"key": "world", "title": "How the world goes by: scrolling, rooms, screens and a bar that stays", "lessons": ["scroll", "rooms", "screens", "status"]},
+  {"key": "screens", "title": "The screens around the game: splash, title, menu, pause, items and the story", "lessons": ["splash", "title", "menu", "pause", "items", "about"]},
+  {"key": "sound", "title": "Sound: two sounds on one channel", "lessons": ["sound"]}
+ ]
+}

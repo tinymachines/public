@@ -837,7 +837,18 @@ def main():
     compare = dict(x.split("=", 1) for x in a.compare)
     old = json.loads(OUT.read_text()) if OUT.exists() else {"lessons": []}
     lessons = []
-    for d in sorted(p for p in (ROOT / "lessons").iterdir() if (p / "lesson.json").exists()):
+    # The groups and their order: every lesson in exactly one, and no name
+    # that is not a lesson. The record keeps the lessons in this order.
+    topics = json.loads((ROOT / "lessons" / "topics.json").read_text())["topics"]
+    dirs = {p.name: p for p in (ROOT / "lessons").iterdir() if (p / "lesson.json").exists()}
+    listed = [k for t in topics for k in t["lessons"]]
+    if sorted(listed) != sorted(dirs):
+        twice = sorted({k for k in listed if listed.count(k) > 1})
+        sys.exit(f"board-lessons: lessons/topics.json and lessons/ disagree: in no group {sorted(set(dirs) - set(listed))}, "
+                 f"in two {twice}, not a lesson {sorted(set(listed) - set(dirs))}")
+    if any(not t["lessons"] for t in topics):
+        sys.exit("board-lessons: a group in lessons/topics.json has no lessons")
+    for d in (dirs[k] for k in listed):
         name = d.name
         b = build.build(name)
         sha = b["sha256"]
@@ -997,6 +1008,7 @@ def main():
     OUT.write_text(json.dumps({
         "note": "Written only by scripts/board-lessons.py. Our own cartridges, built from lessons/ and measured on our console; a comparison with a commercial game carries counts only.",
         "boarded_on": datetime.date.today().isoformat(),
+        "topics": [{"key": t["key"], "title": t["title"], "lessons": t["lessons"]} for t in topics],
         "lessons": lessons,
     }, indent=1) + "\n")
     print(f"board-lessons: {len(lessons)} lesson(s); {OUT.relative_to(ROOT)} written ({OUT.stat().st_size} bytes)")

@@ -4,13 +4,14 @@ import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import { localize, t } from "@/lib/i18n";
 import { surface } from "@/lib/projects";
-import { lessons } from "@/lib/lessons";
+import { lesson, topics } from "@/lib/lessons";
 import { ORDER, patternWords } from "../words";
 import { Shell } from "@/app/components/SiteFrame";
 
 /**
  * /autopsy/lessons: the cartridges of our own that the autopsy's findings
- * turn into, one a lesson. Each is built from lessons/ in the repository.
+ * turn into, one a lesson, in the groups lessons/topics.json gives them.
+ * Each is built from lessons/ in the repository.
  */
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -48,26 +49,31 @@ export default async function LessonsPage({ params }: { params: Promise<{ lang: 
     <Shell lang={lang} die="NES" title={t(lang, surface("autopsy", "lessons").name)}>
       <div className="prose">
         <p>{S.intro}</p>
-        <ul data-lessons>
-          {lessons().map((l) => (
-            <li key={l.key}>
-              <Link href={localize(lang, `/autopsy/lessons/${l.key}`)}>{t(lang, l.title)}</Link>: {t(lang, l.description)}
-              {Object.keys(l.patterns ?? {}).length ? (
-                <>
-                  {" "}
-                  {S.found}{" "}
-                  {ORDER.filter((p) => (l.patterns ?? {})[p]).map((p, i) => (
-                    <span key={p}>
-                      {i ? (lang === "ja" ? "、" : ", ") : ""}
-                      <Link href={`${localize(lang, "/autopsy/patterns")}#${p}`}>{patternWords(lang, p).name}</Link>
-                    </span>
-                  ))}
-                  {lang === "ja" ? "。" : "."}
-                </>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        {topics().map((g) => (
+          <section key={g.key} data-topic={g.key}>
+            <h2>{t(lang, g.title)}</h2>
+            <ul data-lessons>
+              {g.lessons.map((key) => lesson(key)!).map((l) => (
+                <li key={l.key}>
+                  <Link href={localize(lang, `/autopsy/lessons/${l.key}`)}>{t(lang, l.title)}</Link>: {t(lang, l.description)}
+                  {Object.keys(l.patterns ?? {}).length ? (
+                    <>
+                      {" "}
+                      {S.found}{" "}
+                      {ORDER.filter((p) => (l.patterns ?? {})[p]).map((p, i) => (
+                        <span key={p}>
+                          {i ? (lang === "ja" ? "、" : ", ") : ""}
+                          <Link href={`${localize(lang, "/autopsy/patterns")}#${p}`}>{patternWords(lang, p).name}</Link>
+                        </span>
+                      ))}
+                      {lang === "ja" ? "。" : "."}
+                    </>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     </Shell>
   );

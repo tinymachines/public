@@ -252,17 +252,34 @@ export type Lesson =
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
-const ROOT = path.join(process.cwd(), "..");
-let cached: Lesson[] | null = null;
+/** A group of lessons, in the order to read them (lessons/topics.json). */
+export interface Topic {
+  key: string;
+  title: string;
+  lessons: string[];
+}
 
-export function lessons(): Lesson[] {
+const ROOT = path.join(process.cwd(), "..");
+let cached: { lessons: Lesson[]; topics: Topic[] } | null = null;
+
+function record() {
   if (!cached) {
-    const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+    const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[]; topics?: Topic[] };
     // A section of lessons with none in it would read as a design choice.
     if (!r.lessons?.length) throw new Error("data/lessons.json holds no lessons; scripts/board-lessons.py writes it");
-    cached = r.lessons;
+    if (!r.topics?.length) throw new Error("data/lessons.json holds no groups; scripts/board-lessons.py writes them from lessons/topics.json");
+    cached = { lessons: r.lessons, topics: r.topics };
   }
   return cached;
+}
+
+/** The lessons, in the groups' order. */
+export function lessons(): Lesson[] {
+  return record().lessons;
+}
+
+export function topics(): Topic[] {
+  return record().topics;
 }
 
 export function lesson(key: string): Lesson | undefined {
