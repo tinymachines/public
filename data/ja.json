@@ -496,12 +496,14 @@
  "A cartridge of our own whose splash screen writes not one tile while it shows: drops of water that are sprites falling in a loop, a word whose colours turn by rewriting the palette, and a fade to black by palette, compared by that shape with how The Legend of Zelda's title was seen doing it, with its program.": "見せている間はタイルを一つも書かないスプラッシュ画面を持つ、私たち自身のカートリッジ。輪になって落ち続けるスプライトの水滴、パレットを書き直して色が巡る言葉、パレットによる黒への暗転がある。ゼルダの伝説のタイトルがそうしているのを見たその形で比べ、プログラムも添える。",
  "Words that crawl up the screen, the way Zelda's story does": "ゼルダの物語のように、画面を這い上がる言葉",
  "A cartridge of our own whose about screen crawls our own words up the screen a pixel every second frame, writing one row each time the words have moved up a row, through both stacked screens and round again, compared by that shape with how The Legend of Zelda tells its story, with its program.": "私たち自身の言葉が二フレームに一ピクセルずつ画面を這い上がる「について」の画面を持つ、私たち自身のカートリッジ。言葉が一行ぶん上がるたびに一行を書き、積まれた二画面を通ってまた初めに戻る。ゼルダの伝説が物語を語るその形で比べ、プログラムも添える。",
- "How the world goes by: scrolling, rooms, screens and a bar that stays": "世界の流れ方: スクロール、部屋、画面、動かない帯",
  "The screens around the game: splash, title, menu, pause, items and the story": "ゲームのまわりの画面: スプラッシュ、タイトル、メニュー、ポーズ、アイテム、物語",
  "Sound: two sounds on one channel": "音: 一つのチャンネルに二つの音",
  "How a character moves: jumping, running, landing on things, bumping into them": "キャラクターの動き方: 跳ぶ、走る、上に乗る、ぶつかる",
  "Ground, a block and a wall, solid the way Mario's are": "マリオのように固い、地面とブロックと壁",
  "A cartridge of our own whose square looks the level up at its own edges: it stands on the ground, bumps a block from below and stops at a wall, compared by that shape with how Super Mario Bros. was seen doing it, with its program.": "四角が自分の縁でレベルを調べる、私たち自身のカートリッジ。地面に立ち、ブロックを下から突き上げ、壁で止まる。スーパーマリオブラザーズがそうしているのを見たその形で比べ、プログラムも添える。",
  "Walkers that turn at walls and at each other, the way Mario's Goombas do": "マリオのクリボーのように、壁でも互いにでも向きを変える歩き手",
- "A cartridge of our own with two walkers that go a pixel every second frame, turn around when they walk into a wall, and both turn when they meet, compared by that shape with how Super Mario Bros. was seen moving its Goombas, with its program.": "二フレームに一ピクセルずつ進み、壁に歩き当たると向きを変え、出会うと二人とも向きを変える二つの歩き手を持つ、私たち自身のカートリッジ。スーパーマリオブラザーズがクリボーをそう動かしているのを見たその形で比べ、プログラムも添える。"
+ "A cartridge of our own with two walkers that go a pixel every second frame, turn around when they walk into a wall, and both turn when they meet, compared by that shape with how Super Mario Bros. was seen moving its Goombas, with its program.": "二フレームに一ピクセルずつ進み、壁に歩き当たると向きを変え、出会うと二人とも向きを変える二つの歩き手を持つ、私たち自身のカートリッジ。スーパーマリオブラザーズがクリボーをそう動かしているのを見たその形で比べ、プログラムも添える。",
+ "How the picture is made: scrolling, rooms, screens, a bar that stays and sprites that flicker": "絵の作り方: スクロール、部屋、画面、動かない帯、ちらつくスプライト",
+ "Too many sprites on a line flicker rather than vanish, the way Mario's do": "マリオのように、一行に多すぎるスプライトは消えずにちらつく",
+ "A cartridge of our own with ten figures on one line, two more than the console draws, where Select turns the order they are written in from frame to frame, the way Super Mario Bros. was seen moving its sprites about, so that no figure is always the one left out, with its program.": "一行に十の姿を置く、私たち自身のカートリッジ。コンソールが描くより二つ多い。セレクトで書く順番をフレームごとに回すようにでき、スーパーマリオブラザーズがスプライトを動かして回しているのを見たように、いつも同じ姿が描かれずに残ることはなくなる。プログラムも添える。"
 }

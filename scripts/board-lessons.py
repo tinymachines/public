@@ -873,6 +873,42 @@ def walker_measures(dirpath: Path, slots: list, start: int, end: int):
     }
 
 
+def flicker_measures(dirpath: Path, start: int, end: int, tracked):
+    """Sprites on a line, from the sprite memory the game hands the
+    picture chip each frame (page $0200, the page both games copy from):
+    on each line the chip draws the first eight sprites it finds, so the
+    rest are left out. Over the frames start to end: the most sprites on
+    one line, how many of them were left out, which sprites (by their x)
+    were never drawn in the window, and for the sprites `tracked` picks
+    (a function of y, tile, attributes and x) the first sprite-memory slot
+    they sit in each frame and the frames before that comes round again
+    (1 if it never moves), the shortest cycle held on nine frames in ten."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    end = min(end, len(ram) // 2048)
+    most, left, seen, drawn, slots = 0, 0, set(), set(), []
+    for f in range(start, end):
+        oam = [tuple(ram[f * 2048 + 0x200 + i * 4: f * 2048 + 0x204 + i * 4]) for i in range(64)]
+        lines = {}
+        for i, (y, t, a, x) in enumerate(oam):
+            if y >= 0xEF:
+                continue
+            seen.add(x)
+            # A sprite with y in memory is drawn on lines y+1 to y+8.
+            for line in range(y + 1, y + 9):
+                lines.setdefault(line, []).append((i, x))
+        for line, on in lines.items():
+            most = max(most, len(on))
+            left = max(left, len(on) - 8)
+            drawn.update(x for _, x in sorted(on)[:8])
+        mine = [i for i, s in enumerate(oam) if s[0] < 0xEF and tracked(*s)]
+        if mine:
+            slots.append(min(mine))
+    # The shortest cycle the slots keep on nine frames in ten (a second
+    # object with the same tiles coming and going breaks it now and then).
+    period = next((p for p in range(1, len(slots) // 2) if sum(slots[k] == slots[k + p] for k in range(len(slots) - p)) >= 0.9 * (len(slots) - p)), None)
+    return {"most": most, "left_out": left, "never_drawn": len(seen - drawn), "cycle": period, "frames": end - start}
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -1048,6 +1084,14 @@ def main():
             goombas = [{"x": (lambda c, f, s=s: c(f, 0x6E + s) * 256 + c(f, 0x87 + s)), "right": (lambda c, f, s=s: c(f, 0x46 + s) == 1),
                         "there": (lambda c, f, s=s: c(f, 0x0F + s) != 0 and c(f, 0x16 + s) == 6)} for s in range(5)]
             against = ({"game": "Super Mario Bros.", **walker_measures(Path(compare[name]) / "hop50", goombas, 830, 1400)} if name in compare else prev.get("against"))
+        elif kind == "flicker":
+            # Ours: the order kept until Select (frame 120), turning after.
+            first = lambda y, t, a, x: t == 6 and x == 0x14
+            measures = {"kept": flicker_measures(run, 10, 120, first), "turned": flicker_measures(run, 130, meta["frames"], first)}
+            # Mario: the run past the second pipe, before he is caught; the
+            # Goombas' sprites are tiles $70 to $73.
+            goomba = lambda y, t, a, x: 0x70 <= t <= 0x73
+            against = ({"game": "Super Mario Bros.", **flicker_measures(Path(compare[name]) / "hop50", 830, 1400, goomba)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

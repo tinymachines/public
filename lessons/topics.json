@@ -14,12 +14,13 @@
   },
   {
    "key": "world",
-   "title": "How the world goes by: scrolling, rooms, screens and a bar that stays",
+   "title": "How the picture is made: scrolling, rooms, screens, a bar that stays and sprites that flicker",
    "lessons": [
     "scroll",
     "rooms",
     "screens",
-    "status"
+    "status",
+    "flicker"
    ]
   },
   {

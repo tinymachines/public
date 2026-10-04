@@ -63,6 +63,14 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "flicker") {
+      const a = l.against as unknown as { most: number; left_out: number; never_drawn: number; cycle: number | null };
+      const m = l.measures as unknown as { kept: typeof a; turned: typeof a };
+      // Ten on a line, two left out each frame; kept, two never drawn; turning, none; Mario's turn in a cycle.
+      expect([m.kept.most, m.kept.left_out, m.kept.never_drawn, m.kept.cycle]).toEqual([10, 2, 2, 1]);
+      expect([m.turned.never_drawn, m.turned.cycle]).toEqual([0, 10]);
+      expect(a.cycle).toBeGreaterThan(1);
+      expect(a.never_drawn).toBe(0);
     } else if (l.kind === "walkers") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

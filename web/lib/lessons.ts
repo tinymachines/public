@@ -243,6 +243,21 @@ export interface WalkersMeasures {
   overlap: number[];
 }
 
+/** Sprites on a line, from sprite memory (flicker_measures). */
+export interface FlickerOne {
+  most: number;
+  left_out: number;
+  never_drawn: number;
+  cycle: number | null;
+  frames: number;
+}
+
+/** Ours, with the order kept and with it turning. */
+export interface FlickerMeasures {
+  kept: FlickerOne;
+  turned: FlickerOne;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -274,6 +289,7 @@ export type Lesson =
   | (Base & { kind: "about"; measures: AboutMeasures; against?: (AboutMeasures & { game: string }) | null })
   | (Base & { kind: "solid"; measures: SolidMeasures; against?: (SolidMeasures & { game: string }) | null })
   | (Base & { kind: "walkers"; measures: WalkersMeasures; against?: (WalkersMeasures & { game: string }) | null })
+  | (Base & { kind: "flicker"; measures: FlickerMeasures; against?: (FlickerOne & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
