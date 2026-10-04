@@ -6,7 +6,7 @@
  * console. A module-scope store like the listing's.
  */
 
-import { load } from "../play/playEngine";
+import { load, snapshot as console_, toggleRun } from "../play/playEngine";
 
 export interface Parts {
   key: string;
@@ -111,6 +111,9 @@ export async function assemble() {
     const b = JSON.parse(answer.built) as Built & { src: string };
     set({ busy: false, built: { sha256: b.sha256, code_bytes: b.code_bytes, instructions: b.instructions } });
     await load(new File([answer.rom], `${p.key}${b.sha256 === p.sha256 ? "" : "-yours"}.nes`, { type: "application/octet-stream" }));
+    // And play, as the button says: a cartridge loads stopped.
+    const c = console_();
+    if (c.loaded && c.powered && !c.running) toggleRun();
   } catch (e) {
     set({ busy: false, why: String((e as Error)?.message ?? e) });
   } finally {

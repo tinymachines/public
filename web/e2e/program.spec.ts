@@ -36,6 +36,9 @@ test("a lesson's page opens its program on the desk, and unchanged it assembles 
   await expect(built).toHaveCount(1, { timeout: 30000 });
   await expect(built).toHaveAttribute("data-program-sha", record().sha256);
   await expect(built).toHaveAttribute("data-program-same", "true");
+  // And it plays: the console's frames move without a press of Play.
+  const frames = async () => Number(((await page.locator("[data-play-pos]").textContent()) ?? "").match(/frame\s+(\d+)/)?.[1] ?? -1);
+  await expect.poll(frames, { timeout: 15_000 }).toBeGreaterThan(30);
 });
 
 test("a changed program is the reader's own cartridge, and a broken one says why and builds nothing", async ({ page }) => {
