@@ -258,6 +258,17 @@ export interface FlickerMeasures {
   turned: FlickerOne;
 }
 
+/** Losing a life and starting again (lives_measures). */
+export interface LivesMeasures {
+  hang: number;
+  rise: number;
+  to_life: number;
+  clear_after: number;
+  screen: number;
+  from_start: boolean;
+  lives: number[];
+}
+
 interface Base {
   key: string;
   title: string;
@@ -290,6 +301,7 @@ export type Lesson =
   | (Base & { kind: "solid"; measures: SolidMeasures; against?: (SolidMeasures & { game: string }) | null })
   | (Base & { kind: "walkers"; measures: WalkersMeasures; against?: (WalkersMeasures & { game: string }) | null })
   | (Base & { kind: "flicker"; measures: FlickerMeasures; against?: (FlickerOne & { game: string }) | null })
+  | (Base & { kind: "lives"; measures: LivesMeasures; against?: (LivesMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

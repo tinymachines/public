@@ -909,6 +909,42 @@ def flicker_measures(dirpath: Path, start: int, end: int, tracked):
     return {"most": most, "left_out": left, "never_drawn": len(seen - drawn), "cycle": period, "frames": end - start}
 
 
+def lives_measures(dirpath: Path, start: int, x, y, lives, dying, playing):
+    """Losing a life, from memory and the writes to the picture, with the
+    game's own bytes and states given as functions of the cells and a
+    frame: the first touch after `start` (the first frame `dying`), the
+    frames the player hangs there (y unchanged), how high the hop goes
+    (from the height at the touch to the highest point before the fall),
+    the frames from the touch to the life being taken, the frames from
+    that to the picture being cleared (a thousand writes or more in a
+    frame and the next), the frames from the clear to playing again, and whether play
+    begins again at the x the level began at in this run."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    begun = next(f for f in range(start, n) if playing(c, f))
+    x0 = x(c, begun)
+    touch = next(f for f in range(begun, n) if dying(c, f) and not dying(c, f - 1))
+    y0 = y(c, touch)
+    moved = next(f for f in range(touch + 1, n) if y(c, f) != y0)
+    top = min(y(c, f) for f in range(moved, moved + 60) if y(c, f) <= y0)
+    taken = next(f for f in range(touch, n) if lives(c, f) != lives(c, touch))
+    writes = {}
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, k, _ = l.split()
+        if not a.startswith("3F"):
+            writes[int(f)] = writes.get(int(f), 0) + int(k)
+    # A clear with the picture off can outlast a frame, so two neighbouring
+    # frames are counted together.
+    cleared = next(f for f in range(taken, n) if writes.get(f, 0) + writes.get(f + 1, 0) >= 1000)
+    again = next(f for f in range(cleared, n) if playing(c, f))
+    return {
+        "hang": moved - touch, "rise": y0 - top, "to_life": taken - touch,
+        "clear_after": cleared - taken, "screen": again - cleared,
+        "from_start": x(c, again) == x0, "lives": [lives(c, touch), lives(c, taken)],
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -1092,6 +1128,17 @@ def main():
             # Goombas' sprites are tiles $70 to $73.
             goomba = lambda y, t, a, x: 0x70 <= t <= 0x73
             against = ({"game": "Super Mario Bros.", **flicker_measures(Path(compare[name]) / "hop50", 830, 1400, goomba)} if name in compare else prev.get("against"))
+        elif kind == "lives":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            measures = lives_measures(run, 10, lambda c, f: c(f, h(mm["x"])), lambda c, f: c(f, h(mm["y"])), lambda c, f: c(f, h(mm["lives"])),
+                                      lambda c, f: c(f, h(mm["round"])) == 1, lambda c, f: c(f, h(mm["round"])) == 0 and c(f, h(mm["lives"])) > 0)
+            # Mario: the private run that runs straight into the first Goomba
+            # (hop): dying is state 11 at $000E, playing is the level's task
+            # ($0772 = 3) with Mario walking (state 8), lives at $075A.
+            against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
+                                                                    lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
+                       if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

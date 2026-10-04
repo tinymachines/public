@@ -63,6 +63,17 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "lives") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A hang, a hop, a life taken (one fewer), a screen up for a while, and the level from its start.
+        expect(x.hang).toBeGreaterThan(5);
+        expect(x.rise).toBeGreaterThan(5);
+        expect(x.lives[0] - x.lives[1]).toBe(1);
+        expect(x.screen).toBeGreaterThan(30);
+        expect(x.from_start).toBe(true);
+      }
+      expect(rows.find((r) => r[0] === "hang")?.slice(1)).toEqual([String(l.measures.hang), String(a.hang)]);
     } else if (l.kind === "flicker") {
       const a = l.against as unknown as { most: number; left_out: number; never_drawn: number; cycle: number | null };
       const m = l.measures as unknown as { kept: typeof a; turned: typeof a };

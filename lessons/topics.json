@@ -25,12 +25,13 @@
   },
   {
    "key": "screens",
-   "title": "The screens around the game: splash, title, menu, pause, items and the story",
+   "title": "The screens around the game: splash, title, menu, pause, items, the story and a life lost",
    "lessons": [
     "splash",
     "title",
     "menu",
     "pause",
+    "lives",
     "items",
     "about"
    ]
