@@ -155,6 +155,20 @@ function scope(css: string): string {
 }
 
 /**
+ * The 6502 site served each tool at /<tool>/, so its pages say "./" for the
+ * tool itself and "archive/" for the archive. Here a tool is /6502/<tool>,
+ * with no trailing slash, and its article one segment deeper, so those
+ * resolve to /6502/ (the wrong page) or /6502/<tool>/archive/ (a 404): site
+ * audit, 2026-10-03. Both are rooted here instead. The article applies the
+ * same rewrite (lib/article.ts).
+ */
+export function rootRelative(html: string, tool: string): string {
+  return html
+    .replace(/href="\.\/((?:\?[^"#]*)?(?:#[^"]*)?)"/g, (_w, tail: string) => `href="/6502/${tool}${tail}"`)
+    .replace(/href="\/?archive\/?((?:\?[^"#]*)?(?:#[^"]*)?)"/g, 'href="/6502/archive$1"');
+}
+
+/**
  * `readOn`: the label of the fold each prose section gets after its
  * opening paragraphs (lib/prose.ts foldSection). Without it nothing is
  * folded, which is what the companion article wants: it IS the rest.
@@ -212,6 +226,7 @@ export function explorer(file = "index.html", readOn?: string): Explorer {
     slugs.has(slug) ? `href="/6502/${slug}"` : whole,
   );
   body = body.replace(/href="\/"/g, 'href="/6502/explorer"');
+  body = rootRelative(body, file === "index.html" ? "explorer" : file.replace(/\.html$/, ""));
 
   // The prose under the instrument, with its long paragraphs split at
   // sentence ends (lib/prose.ts; the companion article applies the same

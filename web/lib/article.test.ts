@@ -77,3 +77,16 @@ describe("the article reader", () => {
     expect(splitRuns(runs)).toEqual([runs]);
   });
 });
+
+describe("the article's relative links", () => {
+  // One segment deeper than the tool page, "archive/" was a 404 and "./" a
+  // redirect (site audit, 2026-10-03). lib/explorer.ts rootRelative().
+  test("no article keeps a bare ./ or archive/", () => {
+    for (const p of articlePages()) {
+      expect(article(p.file).html).not.toMatch(/href="(\.\/|archive\/)/);
+    }
+  });
+  test("the talk article sends readers to the archive", () => {
+    expect(article("talk.html").html).toContain('href="/6502/archive"');
+  });
+});

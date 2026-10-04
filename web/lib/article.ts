@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { CHIP_SRC } from "./chip-src";
 import path from "node:path";
-import { explorerPages } from "./explorer";
+import { explorerPages, rootRelative } from "./explorer";
 import { PROSE_SECTION, chunkSection, foldSection, splitParagraphs, unescape } from "./prose";
 import { chunksFor } from "./articles";
 
@@ -90,6 +90,7 @@ export function article(file: string, readOn?: string): Article {
     sec = sec.replace(/href="\/?([a-z0-9-]+)((?:\?[^"#]*)?(?:#[^"]*)?)"/g, (whole, slug: string, tail: string) =>
       s.has(slug) ? `href="/6502/${slug}${tail}"` : whole);
     sec = sec.replace(/href="\/"/g, 'href="/6502/explorer"');
+    sec = rootRelative(sec, file.replace(/\.html$/, ""));
     sections.push(sec);
   }
   if (!sections.length) throw new Error(`6502/web/${file}: no section.bp-prose; there is no article to lift`);
