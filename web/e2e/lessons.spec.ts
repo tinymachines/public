@@ -54,6 +54,18 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "title") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // Every part was found in the runs: a cursor written into the background as a column,
+        // a countdown, a demo that ran out by itself and scrolled, and Start both ways.
+        expect(x.title.cleared, "the tables are cleared before the title is drawn").toBeGreaterThan(0);
+        expect(x.cursor).toEqual({ tiles: 3, step: 32 });
+        expect(x.countdown).toBeGreaterThan(0);
+        expect(x.demo?.scrolled).toBe(true);
+        expect([x.start_demo, x.start_title].every((v) => typeof v === "number")).toBe(true);
+      }
+      expect(rows.find((r) => r[0] === "tiles")?.slice(1)).toEqual([l.measures.title.tiles.toLocaleString("en"), a.title.tiles.toLocaleString("en")]);
     } else if (l.kind === "status") {
       const a = l.against as typeof l.measures;
       expect(l.measures.split_line).toBe(a.split_line);

@@ -471,6 +471,92 @@ def pause_measures(dirpath: Path, x: int, wait: int, after: int, chime: str, mus
     }
 
 
+def title_measures(dirpath: Path, x: int, after: int):
+    """A title screen, from a run's logs alone: what it finds of these
+    (a run need not hold them all). The title's drawing: the frames from
+    its first write to the picture to its last (gaps of a few frames
+    allowed), the whole name tables cleared on the way and the tiles
+    written besides. The cursor: what a Select writes to the picture in
+    the frames after it. The countdown: frames from a Select to the demo,
+    the first frame the position at x moves with nothing held on the pad.
+    The demo: frames until the title is drawn again, and whether the
+    scroll moved meanwhile (the title scrolling away). And the frames
+    from Start to the next write, during the demo and on the title."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    pad = (dirpath / "pad.bin").read_bytes()
+    cell = frames_of(ram)
+    n = len(pad)
+    nt = {}
+    last = None
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, c, step = int(l.split()[0]), int(l.split()[1], 16), int(l.split()[2]), int(l.split()[3])
+        if not 0x2000 <= a < 0x3000:
+            continue
+        # A run the log split where a frame began (a clear with the picture
+        # off outlasts a blank) is one run, counted at the frame it began.
+        if last and step == 1 == last[3] and a == last[1] + last[2] and f - last[4] <= 1:
+            w = nt[last[0]]
+            w[-1] = (w[-1][0] + c, 1)
+            last = (last[0], last[1], last[2] + c, 1, f)
+            continue
+        nt.setdefault(f, []).append((c, step))
+        last = (f, a, c, step, f)
+    press = lambda bit: [f for f in range(max(after, 1), n) if pad[f] & bit and not pad[f - 1] & bit]
+    selects, starts = press(0x04), press(0x08)
+
+    def drawing(first):
+        """The run of frames with writes from `first`, gaps of up to 4."""
+        f = min((g for g in nt if g >= first), default=None)
+        if f is None:
+            return None
+        end = f
+        while any(g in nt for g in range(end + 1, end + 5)):
+            end = next(g for g in range(end + 1, end + 5) if g in nt)
+        return f, end
+
+    def demo_from(f0):
+        # The first move of at least three in 16 frames, with nothing held:
+        # being placed once is not a demo.
+        moved = lambda g: cell(g, x) != cell(g - 1, x) and not pad[g] & 0xC3
+        return next((f for f in range(f0 + 1, n - 16) if moved(f) and sum(moved(g) for g in range(f, f + 16)) >= 3), None)
+
+    out = {}
+    # Each drawing of the title starts by clearing whole name tables.
+    clears = sorted(f for f, w in nt.items() if f >= after and any(c >= 1024 for c, _ in w))
+    titles = []
+    for c in clears:
+        if not titles or c > titles[-1][1]:
+            titles.append(drawing(c))
+    if not titles:
+        sys.exit(f"board-lessons: no title drawn in {dirpath}")
+    first, end = titles[0]
+    writes = [w for f in range(first, end + 1) for w in nt.get(f, [])]
+    out["title"] = {"frames": end - first + 1, "cleared": sum(c for c, _ in writes if c >= 1024) // 1024, "tiles": sum(c for c, _ in writes if c < 1024)}
+    nexttitle = lambda f: min((t[0] for t in titles if t[0] > f), default=n)
+    pressed = lambda lo, hi: any(lo < q <= hi for q in selects + starts)
+    # A demo that ran to its end by itself: from its first move to the next drawing.
+    for t0, t1 in titles:
+        d = demo_from(t1)
+        if d is not None and d < nexttitle(t1) < n and not pressed(d, nexttitle(t1)) and "demo" not in out:
+            scroll = [int(l.split()[2]) for l in (dirpath / "scroll.txt").read_text().splitlines() if d <= int(l.split()[0]) < nexttitle(t1)]
+            out["demo"] = {"frames": nexttitle(t1) - d, "scrolled": max(scroll, default=0) > 0}
+    for p in selects:
+        d = demo_from(p)
+        w = [w for f in range(p, p + 4) for w in nt.get(f, [])]
+        if w and "cursor" not in out:
+            out["cursor"] = {"tiles": sum(c for c, _ in w), "step": max(s for _, s in w)}
+        # A Select with nothing pressed after it before the demo: the countdown.
+        if d is not None and d < nexttitle(p) and not pressed(p, d) and "countdown" not in out:
+            out["countdown"] = d - p
+    # Each demo, from its first move to the next drawing of the title.
+    demos = [(d, nexttitle(t1)) for t0, t1 in titles if (d := demo_from(t1)) is not None and d < nexttitle(t1)]
+    for p in starts:
+        nxt = min((g for g in nt if g > p), default=None)
+        if nxt is not None:
+            out.setdefault("start_demo" if any(d <= p < e for d, e in demos) else "start_title", nxt - p)
+    return out
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -572,6 +658,19 @@ def main():
             # Mario: x on screen at $0086, the wait at $0777; its chime on the
             # first square, its music back on the second and the triangle.
             against = ({"game": "Super Mario Bros.", **pause_measures(Path(compare[name]) / "pause2", 0x86, 0x777, 520, "03", {"04", "05", "06", "07", "08", "0A", "0B"}, (650, 710))} if name in compare else prev.get("against"))
+        elif kind == "title":
+            measures = title_measures(run, int(meta["memory"]["x"][1:], 16), 0)
+            if name in compare:
+                # Mario: three private runs from its cartridge's picker (Start at
+                # frame 200): untouched, one late Select and Start in the demo,
+                # Select three times and Start. x on screen at $0086. What one
+                # run does not hold another does; the first found is kept.
+                against = {"game": "Super Mario Bros."}
+                for r in ("idle", "late", "title"):
+                    for k, v in title_measures(Path(compare[name]) / r, 0x86, 205).items():
+                        against.setdefault(k, v)
+            else:
+                against = prev.get("against")
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and

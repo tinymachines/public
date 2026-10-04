@@ -154,6 +154,16 @@ export interface PauseMeasures {
   music_back: number | null;
 }
 
+/** A title screen, measured the same on both (title_measures). */
+export interface TitleMeasures {
+  title: { frames: number; cleared: number; tiles: number };
+  demo?: { frames: number; scrolled: boolean };
+  cursor?: { tiles: number; step: number };
+  countdown?: number;
+  start_demo?: number;
+  start_title?: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -178,6 +188,7 @@ export type Lesson =
   | (Base & { kind: "status"; measures: StatusMeasures; against?: (StatusMeasures & { game: string }) | null })
   | (Base & { kind: "sound"; measures: SoundMeasures; against?: (SoundMeasures & { game: string }) | null })
   | (Base & { kind: "pause"; measures: PauseMeasures; against?: (PauseMeasures & { game: string }) | null })
+  | (Base & { kind: "title"; measures: TitleMeasures; against?: (TitleMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

@@ -485,5 +485,7 @@
  "A jump sound that borrows the music's channel, the way Mario's does": "マリオのように、曲のチャンネルを借りるジャンプの音",
  "A cartridge of our own with a tune and a jump sound, both ours, sharing one square channel the way Super Mario Bros. was seen sharing it, compared by that shape only, with its program.": "どちらも私たちが作った曲とジャンプの音が、一つの矩形波チャンネルを、スーパーマリオブラザーズがそうしていたように分け合う、私たち自身のカートリッジ。比べるのはその形だけで、プログラムも添える。",
  "A pause that holds the world still, the way Mario's does": "マリオのように、世界を止めておくポーズ",
- "A cartridge of our own whose Start button pauses it: the square holds, nothing is drawn, the tune is cut for a chime of our own, and Start is ignored for a while, compared by that shape with how Super Mario Bros. was seen pausing, with its program.": "スタートボタンで止まる、私たち自身のカートリッジ。四角はその場にとどまり、何も描かれず、曲は切れて私たちのチャイムが鳴り、しばらくスタートは受け付けない。スーパーマリオブラザーズがそう止まるのを見たその形で比べ、プログラムも添える。"
+ "A cartridge of our own whose Start button pauses it: the square holds, nothing is drawn, the tune is cut for a chime of our own, and Start is ignored for a while, compared by that shape with how Super Mario Bros. was seen pausing, with its program.": "スタートボタンで止まる、私たち自身のカートリッジ。四角はその場にとどまり、何も描かれず、曲は切れて私たちのチャイムが鳴り、しばらくスタートは受け付けない。スーパーマリオブラザーズがそう止まるのを見たその形で比べ、プログラムも添える。",
+ "A title drawn into the level, the way Mario's is": "マリオのように、レベルの中に描くタイトル",
+ "A cartridge of our own whose title is written into its level's picture, with a menu whose cursor is three background tiles and a countdown into a demo that scrolls the title away, compared by that shape with how Super Mario Bros. was seen doing it, with its program.": "タイトルをレベルの絵の中に書き込む、私たち自身のカートリッジ。カーソルが背景のタイル三つでできたメニューと、タイトルをスクロールで流し去るデモへのカウントダウンがある。スーパーマリオブラザーズがそうしているのを見たその形で比べ、プログラムも添える。"
 }
