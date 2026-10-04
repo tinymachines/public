@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageMeta } from "@/lib/seo";
 import { localize, t } from "@/lib/i18n";
-import { excerpt, lesson, lessons, romName } from "@/lib/lessons";
+import { excerpt, lesson, lessons, romName, topics } from "@/lib/lessons";
 import { Shell } from "@/app/components/SiteFrame";
 import { JUMP, JumpPart } from "./jump";
 import { SCROLL, ScrollPart } from "./scroll";
@@ -49,6 +49,8 @@ const PROSE = {
     codeH: "As written",
     code: "The part of the program this lesson is about. The whole program is a plain text file:",
     back: "All the lessons",
+    before: "Before this one:",
+    after: "Next:",
   },
   ja: {
     files: "カートリッジ。NES のカートリッジを遊べるところならどこでも遊べる:",
@@ -58,6 +60,8 @@ const PROSE = {
     codeH: "書いたとおりに",
     code: "このレッスンが扱うプログラムの部分。プログラム全体は、ただのテキストファイルだ:",
     back: "すべてのレッスン",
+    before: "この前は:",
+    after: "次は:",
   },
 } as const;
 
@@ -102,6 +106,25 @@ export default async function LessonPage({ params }: { params: Promise<{ lang: L
         </p>
         <pre data-lesson-code>{excerpt(l.key, from, to)}</pre>
 
+        {/* The lessons either side of this one in its group, read from lessons/topics.json by way of the record. */}
+        {(() => {
+          const g = topics().find((x) => x.lessons.includes(l.key))!;
+          const i = g.lessons.indexOf(l.key);
+          const side = (k: string | undefined, label: string, which: string) => {
+            const o = k ? lesson(k) : undefined;
+            return o ? (
+              <p data-lesson-side={which}>
+                {label} <Link href={localize(lang, `/autopsy/lessons/${o.key}`)}>{t(lang, o.title)}</Link>
+              </p>
+            ) : null;
+          };
+          return (
+            <>
+              {side(g.lessons[i - 1], S.before, "before")}
+              {side(g.lessons[i + 1], S.after, "after")}
+            </>
+          );
+        })()}
         <p>
           <Link href={localize(lang, "/autopsy/lessons")}>{S.back}</Link>
         </p>

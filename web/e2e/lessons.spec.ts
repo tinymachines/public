@@ -151,6 +151,14 @@ for (const l of record()) {
       expect(rows.find((r) => r[0] === "tiles")?.slice(1)).toEqual([l.measures.tiles.join(" / "), a.tiles.join(" / ")]);
     }
     await expect(page.locator("[data-lesson-pictures] img")).toHaveCount(l.pictures.length);
+    // The lessons either side of this one in its group, and none past its ends.
+    const group = (JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { topics: { lessons: string[] }[] }).topics.find((g) => g.lessons.includes(l.key))!.lessons;
+    const at = group.indexOf(l.key);
+    for (const [which, k] of [["before", group[at - 1]], ["after", group[at + 1]]] as const) {
+      const link = page.locator(`[data-lesson-side="${which}"] a`);
+      if (k) await expect(link).toHaveAttribute("href", `/autopsy/lessons/${k}`);
+      else await expect(link).toHaveCount(0);
+    }
   });
 
   test(`${l.key}: the cartridge and the program served are the record's and the repository's`, async ({ page, request }) => {

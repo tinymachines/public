@@ -557,8 +557,10 @@ image it runs from.
    the low-bytes-only table; a way in per game for the ones that sit
    on a screen, which is where the next points of coverage are. That
    table of contents is the toolkit's. The lessons (`lessons/`, on the
-   site at /autopsy/lessons) are the first of it built: four
-   cartridges of ours, each measured beside the game it learned from.
+   site at /autopsy/lessons) are the first of it built: cartridges of
+   ours, each measured beside the game it learned from, in the groups
+   `lessons/topics.json` gives them (how a character moves, how the
+   world goes by, the screens around the game, sound).
 6. **NES Build.** The studio: each pattern a lesson with our own ROM
    and its own autopsy showing the same shape, an assembler and a
    linker in the page (the 6502's `asm.js` is the seed), the desk's
