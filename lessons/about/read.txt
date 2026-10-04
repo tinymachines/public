@@ -1,0 +1,2 @@
+# frames 1200
+# Power on and touch nothing: the words crawl up and start again.

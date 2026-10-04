@@ -1,0 +1,15 @@
+{
+ "title": "Words that crawl up the screen, the way Zelda's story does",
+ "kind": "about",
+ "description": "A cartridge of our own whose about screen crawls our own words up the screen a pixel every second frame, writing one row each time the words have moved up a row, through both stacked screens and round again, compared by that shape with how The Legend of Zelda tells its story, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "read.txt",
+ "frames": 1200,
+ "grabs": [300, 500, 700, 1100],
+ "walk_from": 10,
+ "memory": {}
+}
