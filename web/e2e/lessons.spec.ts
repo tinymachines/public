@@ -26,9 +26,10 @@ test("the lessons page lists every lesson, and the autopsy's front door lists th
   const groups = (JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { topics: { key: string; lessons: string[] }[] }).topics;
   expect(groups.length, "the record holds groups").toBeGreaterThan(1);
   for (const g of groups) {
-    const inside = await page.locator(`[data-topic="${g.key}"] [data-lessons] > li > a:first-child`).evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+    const inside = await page.locator(`[data-lessons][data-topic="${g.key}"] > li > a:first-child`).evaluateAll((as) => as.map((a) => a.getAttribute("href")));
     expect(inside).toEqual(g.lessons.map((k) => `/autopsy/lessons/${k}`));
-    await expect(page.locator(`[data-topic="${g.key}"] h2`)).toHaveCount(1);
+    // A heading straight inside the prose, where the stylesheet styles it.
+    await expect(page.locator(`.prose > h2[data-topic-head="${g.key}"]`)).toHaveCount(1);
   }
   await open(page, "/autopsy", 200);
   await expect(page.locator('[data-parts] a[href="/autopsy/lessons"]')).toHaveCount(1);

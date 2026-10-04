@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/lang";
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import { localize, t } from "@/lib/i18n";
@@ -50,9 +51,9 @@ export default async function LessonsPage({ params }: { params: Promise<{ lang: 
       <div className="prose">
         <p>{S.intro}</p>
         {topics().map((g) => (
-          <section key={g.key} data-topic={g.key}>
-            <h2>{t(lang, g.title)}</h2>
-            <ul data-lessons>
+          <Fragment key={g.key}>
+            <h2 data-topic-head={g.key}>{t(lang, g.title)}</h2>
+            <ul data-lessons data-topic={g.key}>
               {g.lessons.map((key) => lesson(key)!).map((l) => (
                 <li key={l.key}>
                   <Link href={localize(lang, `/autopsy/lessons/${l.key}`)}>{t(lang, l.title)}</Link>: {t(lang, l.description)}
@@ -72,7 +73,7 @@ export default async function LessonsPage({ params }: { params: Promise<{ lang: 
                 </li>
               ))}
             </ul>
-          </section>
+          </Fragment>
         ))}
       </div>
     </Shell>
