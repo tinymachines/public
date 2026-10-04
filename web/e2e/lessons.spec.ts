@@ -63,6 +63,18 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "solid") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A real bump (still rising fast at the touch), a fall back down, the block's tiles blanked
+        // and drawn again, and a long push at the wall with the speed taken away again and again.
+        expect(x.rising).toBeGreaterThanOrEqual(3);
+        expect(x.fall_frames).toBeGreaterThan(5);
+        expect(x.block_back).toBeGreaterThan(5);
+        expect(x.pushing_frames).toBeGreaterThan(60);
+        expect(x.zeroed).toBeGreaterThan(5);
+      }
+      expect(rows.find((r) => r[0] === "fall")?.slice(1)).toEqual([String(l.measures.fall_frames), String(a.fall_frames)]);
     } else if (l.kind === "about") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

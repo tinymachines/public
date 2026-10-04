@@ -220,6 +220,19 @@ export interface AboutMeasures {
   frames: number;
 }
 
+/** Ground, a block bumped from below and a wall (solid_measures). */
+export interface SolidMeasures {
+  rising: number;
+  fall_frames: number;
+  block_after: number;
+  block_back: number;
+  wall_x: number;
+  pushed_back: boolean;
+  zeroed: number;
+  zeroed_every: number[];
+  pushing_frames: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -249,6 +262,7 @@ export type Lesson =
   | (Base & { kind: "menu"; measures: MenuMeasures; against?: (MenuMeasures & { game: string }) | null })
   | (Base & { kind: "splash"; measures: SplashMeasures; against?: (SplashMeasures & { game: string }) | null })
   | (Base & { kind: "about"; measures: AboutMeasures; against?: (AboutMeasures & { game: string }) | null })
+  | (Base & { kind: "solid"; measures: SolidMeasures; against?: (SolidMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

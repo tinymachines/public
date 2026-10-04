@@ -778,6 +778,53 @@ def about_measures(dirpath: Path, after: int):
     }
 
 
+def solid_measures(dirpath: Path, x: int, y: int, vy: int, speed: int, after: int):
+    """Solid things, from a run that holds Right, jumps under a block
+    (A held) and walks on into a wall: from memory (the game's own bytes
+    for x, y, the speed down in whole pixels, and the speed across), the
+    touch (the first frame after A that the speed down is no longer
+    rising when a frame before it rose by 3 or more, so not the top of a
+    jump), how fast it was rising then, the frames from the touch to
+    standing where it took off; from the writes to the picture, the
+    block's tiles (a write of two tiles and another 32 on, the block's
+    two rows) on or just after the touch, and how many frames later the
+    same tiles are written again; and at the wall, with Right held, where
+    x stops, whether it is ever pushed back a pixel, and how many frames
+    apart the speed across is taken away."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    pad = (dirpath / "pad.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(pad)
+    sv = lambda f: c(f, vy) - 256 if c(f, vy) >= 128 else c(f, vy)
+    press = next(f for f in range(max(after, 1), n) if pad[f] & 0x01 and not pad[f - 1] & 0x01)
+    ground = c(press - 1, y)
+    touch = next(f for f in range(press + 1, n) if sv(f) >= 0 and sv(f - 1) <= -3)
+    landed = next(f for f in range(touch, n) if c(f, y) == ground)
+    runs = {}
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, k, _ = l.split()
+        if k == "2":
+            runs.setdefault(int(f), set()).add(int(a, 16))
+    hit = next(((f, a) for f in range(touch - 1, touch + 4) for a in sorted(runs.get(f, ())) if a + 32 in runs[f]), None)
+    if hit is None:
+        sys.exit(f"board-lessons: no block's tiles written near the touch at frame {touch} in {dirpath}")
+    again = next(f for f in range(hit[0] + 1, n) if {hit[1], hit[1] + 32} <= runs.get(f, set()))
+    # The wall: from the first frame x holds for 30 frames with Right held.
+    held = lambda f: pad[f] & 0x80
+    stop = next(f for f in range(landed, n - 30) if all(held(g) and c(g, x) == c(f, x) or (held(g) and c(g, x) == c(f, x) - 1) for g in range(f, f + 30)))
+    pushing = [f for f in range(stop + 1, n) if held(f)]
+    back = any(c(f, x) == c(f - 1, x) - 1 for f in pushing)
+    zeroed = [f for f in pushing if c(f, speed) == 0 and c(f - 1, speed) > 0]
+    gaps = [b - a for a, b in zip(zeroed, zeroed[1:])]
+    return {
+        "rising": -sv(touch - 1), "fall_frames": landed - touch,
+        "block_after": hit[0] - touch, "block_back": again - hit[0],
+        "wall_x": c(stop, x), "pushed_back": back,
+        "zeroed": len(zeroed), "zeroed_every": sorted(set(gaps)),
+        "pushing_frames": len(pushing),
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -933,6 +980,14 @@ def main():
             # Zelda: the untouched private run; its story is drawn at 984 and
             # writes its first new row at 1722.
             against = ({"game": "The Legend of Zelda", **about_measures(Path(compare[name]) / "idle", 1000)} if name in compare else prev.get("against"))
+        elif kind == "solid":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            measures = solid_measures(run, h(mm["x"]), h(mm["y"]), h(mm["vy"]), h(mm["speed"]), meta["walk_from"])
+            # Mario: a private run that bumps the first block of 1-1, stomps
+            # the first Goomba and walks into the first pipe; x on its page
+            # at $0086, y at $00CE, the speed down at $009F, across at $0057.
+            against = ({"game": "Super Mario Bros.", **solid_measures(Path(compare[name]) / "wall704", 0x86, 0xCE, 0x9F, 0x57, 600)} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and
