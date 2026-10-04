@@ -269,6 +269,18 @@ export interface LivesMeasures {
   lives: number[];
 }
 
+/** A coin from a block and the score (coins_measures). */
+export interface CoinsMeasures {
+  score_too: boolean;
+  bar_tiles: number;
+  coin_frames: number;
+  coin_rise: number;
+  coin_pictures: number;
+  picture_frames: number;
+  points_frames: number;
+  points_rise: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -302,6 +314,7 @@ export type Lesson =
   | (Base & { kind: "walkers"; measures: WalkersMeasures; against?: (WalkersMeasures & { game: string }) | null })
   | (Base & { kind: "flicker"; measures: FlickerMeasures; against?: (FlickerOne & { game: string }) | null })
   | (Base & { kind: "lives"; measures: LivesMeasures; against?: (LivesMeasures & { game: string }) | null })
+  | (Base & { kind: "coins"; measures: CoinsMeasures; against?: (CoinsMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

@@ -63,6 +63,16 @@ for (const l of record()) {
         expect(x.chime_notes).toBeGreaterThan(1);
       }
       expect(rows.find((r) => r[0] === "wait")?.slice(1)).toEqual([String(l.measures.wait), String(a.wait)]);
+    } else if (l.kind === "coins") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // The score with the coin, the bar written, a coin that turns through four pictures, then the points.
+        expect(x.score_too).toBe(true);
+        expect(x.bar_tiles).toBeGreaterThanOrEqual(8);
+        expect([x.coin_pictures, x.picture_frames]).toEqual([4, 2]);
+        expect(x.coin_rise).toBeGreaterThan(10);
+        expect(x.points_frames).toBeGreaterThan(10);
+      }
     } else if (l.kind === "lives") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

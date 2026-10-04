@@ -22,7 +22,7 @@ at HEAD (so the directory must be committed and clean), the cartridge's
 digest and bytes, the measures and the pictures. --check rebuilds each
 cartridge and holds it to the record without writing anything.
 """
-import argparse, base64, datetime, io, json, subprocess, sys
+import argparse, base64, datetime, io, itertools, json, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -945,6 +945,49 @@ def lives_measures(dirpath: Path, start: int, x, y, lives, dying, playing):
     }
 
 
+def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
+    """A coin from a block, from memory and the writes to the picture,
+    with the game's coin count and score given as functions of the cells
+    and a frame: the first frame after `start` the coin count changes (the
+    bump), whether the score changed on that frame too, the tiles written
+    to the bar (rows 0 to 5 of the first name table) on that frame and the
+    one either side, and from sprite memory, for the coin's sprites (by
+    tile) and then the points' sprites: the frames each is seen, how far
+    it rises from where it first appears, and for the coin how many
+    pictures it turns through and how many frames each is shown."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    bump = next(f for f in range(start, n) if coins(c, f) != coins(c, f - 1))
+    bar = 0
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, k, _ = l.split()
+        if bump - 1 <= int(f) <= bump + 1 and 0x2000 <= int(a, 16) < 0x20C0:
+            bar += int(k)
+    def sprites(f, tiles):
+        return [(ram[f * 2048 + 0x200 + i * 4], ram[f * 2048 + 0x201 + i * 4]) for i in range(64)
+                if ram[f * 2048 + 0x200 + i * 4] < 0xEF and ram[f * 2048 + 0x201 + i * 4] in tiles]
+    def flight(tiles, after):
+        seen = [f for f in range(after, min(after + 200, n)) if sprites(f, tiles)]
+        if not seen:
+            return None
+        ys = [min(y for y, _ in sprites(f, tiles)) for f in seen]
+        return seen, ys
+    cf = flight(coin_tiles, bump - 1)
+    if cf is None:
+        sys.exit(f"board-lessons: no coin seen after the bump at frame {bump} in {dirpath}")
+    seen, ys = cf
+    pics = [sprites(f, coin_tiles)[0][1] for f in seen]
+    runs = [len(list(g)) for _, g in itertools.groupby(pics)]
+    pf = flight(points_tiles, seen[-1])
+    return {
+        "score_too": score(c, bump) != score(c, bump - 1), "bar_tiles": bar,
+        "coin_frames": len(seen), "coin_rise": ys[0] - min(ys), "coin_pictures": len(set(pics)),
+        "picture_frames": max(set(runs[1:-1] or runs), key=(runs[1:-1] or runs).count),
+        "points_frames": len(pf[0]) if pf else 0, "points_rise": (pf[1][0] - min(pf[1])) if pf else 0,
+    }
+
+
 def mmc1_mirroring(path: Path):
     """An MMC1 board's mirroring as the game set it, frame by frame, from the
     log of writes into the cartridge's range: five writes of one bit each
@@ -1139,6 +1182,17 @@ def main():
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
+        elif kind == "coins":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            lo, hi = mm["coin_tiles"]
+            measures = coins_measures(run, meta["walk_from"], lambda c, f: tuple(c(f, h(a)) for a in mm["coins"]), lambda c, f: tuple(c(f, h(a)) for a in mm["score"]),
+                                      set(range(lo, hi + 1)), set(mm["points_tiles"]))
+            # Mario: the same private run as the solid lesson's (the first ?
+            # block of 1-1); coins at $075E, the score's digits at $07DD to
+            # $07E2, the coin's sprites tiles $60 to $63, the points' $F7 and $FB.
+            against = ({"game": "Super Mario Bros.", **coins_measures(Path(compare[name]) / "wall704", 600, lambda c, f: c(f, 0x75E), lambda c, f: tuple(c(f, 0x7DD + i) for i in range(6)),
+                                                                    {0x60, 0x61, 0x62, 0x63}, {0xF7, 0xFB})} if name in compare else prev.get("against"))
         elif kind == "stomp":
             measures = stomp_measures(cell, meta["frames"], meta["memory"], meta["walk_from"])
             # What our own autopsy calls the routine that tells the two apart, and
