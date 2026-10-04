@@ -1,0 +1,15 @@
+{
+ "title": "A coin from a block and the score, the way Mario's are",
+ "kind": "coins",
+ "description": "A cartridge of our own where bumping a block pops out a coin that turns as it rises and falls, counts the coin and the points into a bar at the top on that frame, and floats the points up after, compared by that shape with how Super Mario Bros. was seen doing it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "bump.txt",
+ "frames": 300,
+ "grabs": [92, 98, 112, 140],
+ "walk_from": 20,
+ "memory": {"coins": ["$66", "$67"], "score": ["$60", "$61", "$62", "$63", "$64", "$65"], "coin_tiles": [8, 11], "points_tiles": [42, 44]}
+}

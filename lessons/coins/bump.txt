@@ -1,0 +1,6 @@
+# frames 300
+# Walk right, jump under the block (A held), land, walk on to the wall
+# and keep pushing against it.
+AT 20 80
+AT 78 81
+AT 103 80
