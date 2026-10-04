@@ -67,7 +67,8 @@ export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string;
       <p className="quiet">
         <label>
           {T.pick}{" "}
-          <select value={key} onChange={(e) => void program.open(e.target.value)} data-program-pick>
+          {/* A select is as wide as its longest title unless held to the window. */}
+          <select value={key} onChange={(e) => void program.open(e.target.value)} style={{ maxWidth: "100%" }} data-program-pick>
             <option value="" disabled>
               ...
             </option>
