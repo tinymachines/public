@@ -44,6 +44,7 @@ const PROSE = {
   en: {
     files: "The cartridge, to play anywhere that plays NES cartridges:",
     play: "Play it here",
+    desk: "Change it on the desk",
     picsH: "On the screen",
     pic: (f: string) => `frame ${f}`,
     codeH: "As written",
@@ -55,6 +56,7 @@ const PROSE = {
   ja: {
     files: "カートリッジ。NES のカートリッジを遊べるところならどこでも遊べる:",
     play: "ここで遊ぶ",
+    desk: "机の上で変えてみる",
     picsH: "画面の上では",
     pic: (f: string) => `フレーム ${f}`,
     codeH: "書いたとおりに",
@@ -83,6 +85,9 @@ export default async function LessonPage({ params }: { params: Promise<{ lang: L
         <p data-lesson-files>
           <Link className="btn btn-primary" href={`${localize(lang, "/nes/play")}?lesson=${l.key}`} data-lesson-play>
             {S.play}
+          </Link>{" "}
+          <Link className="btn" href={`${localize(lang, "/nes/create")}?lesson=${l.key}`} data-lesson-desk>
+            {S.desk}
           </Link>{" "}
           {S.files} <a href={`/autopsy/lessons/${romName(l.key)}`} download>{romName(l.key)}</a>
         </p>

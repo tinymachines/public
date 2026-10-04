@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Lang } from "@/lib/lang";
 import { Desk, Window, useDesk, type DeskLabels, type WinSpec } from "@/app/components/Desk";
 import { Cartridge, Readouts, Screen } from "../play/Play";
@@ -10,6 +10,7 @@ import { Sprites } from "../play/Sprites";
 import { Record } from "./Record";
 import { Flow } from "./Flow";
 import { Listing } from "./Listing";
+import { Program } from "./Program";
 import { History } from "./History";
 import { Nametables } from "./Nametables";
 import * as flow from "./flowEngine";
@@ -40,6 +41,9 @@ const WINS: WinSpec[] = [
   // The listing opens where Flow does: the same run, as the file.
   { id: "listing", at: [0, 0, 0.68, 1], open: false },
   { id: "history", at: [0.36, 0.04, 0.5, 0.92], open: false },
+  // A lesson's program to change opens over the code, beside the screen
+  // and the cartridge, so what it builds is in view as it plays.
+  { id: "program", at: [0.36, 0, 0.32, 1], open: false },
   { id: "about", at: [0.3, 0.16, 0.4, 0.6], open: false },
 ];
 
@@ -64,15 +68,15 @@ const LABELS: Record<Lang, DeskLabels> = {
   },
 };
 
-export function Create({ lang, about, more }: { lang: Lang; about: ReactNode; more: { href: string; label: string }[] }) {
+export function Create({ lang, about, more, lessons }: { lang: Lang; about: ReactNode; more: { href: string; label: string }[]; lessons: { key: string; title: string }[] }) {
   return (
     <Desk storageKey="tm.nes.create.desk" wins={WINS} labels={LABELS[lang]} className="play-shell" more={more}>
-      <Windows lang={lang} about={about} />
+      <Windows lang={lang} about={about} lessons={lessons} />
     </Desk>
   );
 }
 
-function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
+function Windows({ lang, about, lessons }: { lang: Lang; about: ReactNode; lessons: { key: string; title: string }[] }) {
   const desk = useDesk();
   // A sprite on screen names its tile; the sheet opens it, and its window
   // comes forward.
@@ -84,6 +88,7 @@ function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
   // A recording read or opened comes up in the Flow window, brought forward.
   const opened = useSyncExternalStore(flow.subscribe, () => flow.snapshot().open?.meta.id ?? null, () => null);
   const { show } = desk;
+  const openProgram = useCallback(() => show("program"), [show]);
   useEffect(() => {
     if (opened) show("flow");
     // Only when another recording opens, not whenever the desk moves.
@@ -105,6 +110,7 @@ function Windows({ lang, about }: { lang: Lang; about: ReactNode }) {
       <Window id="flow"><Flow lang={lang} /></Window>
       <Window id="listing"><Listing lang={lang} /></Window>
       <Window id="history"><History lang={lang} /></Window>
+      <Window id="program"><Program lang={lang} lessons={lessons} onOpen={openProgram} /></Window>
       <Window id="about">{about}</Window>
     </>
   );

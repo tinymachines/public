@@ -7,6 +7,7 @@ import { surface } from "@/lib/projects";
 import { SiteFooter, WorkbenchBar } from "@/app/components/SiteFrame";
 import { PlayTransport } from "../play/PlayTransport";
 import { Create } from "./Create";
+import { lesson, topics } from "@/lib/lessons";
 import "../signal/ntsc.css";
 import "../nes.css";
 
@@ -49,7 +50,7 @@ const PROSE = {
         The tools are the ones the play page had until they moved here: the screen, the
         cartridge, the CPU, the memory, the palettes, the sprites on screen, the
         code with its blocks (kept on your shelf when the cartridge came from
-        there), and the sprite editor. Four more are this desk&rsquo;s own.
+        there), and the sprite editor. The rest are this desk&rsquo;s own.
         Nametables shows the two screens of tile numbers the picture chip holds,
         drawn with the game&rsquo;s own tiles. Record keeps a run of a game, from right where you are
         or from power-on, and Flow plays it back and reads what the code did: its
@@ -59,7 +60,12 @@ const PROSE = {
         recording. A moment can also be saved and loaded on its own, under the
         cartridge, and breakpoints are on the code window. History keeps the
         console&rsquo;s own trace and steps back through it, a moment saved
-        before each step.
+        before each step. Listing writes a run&rsquo;s cartridge out as text you
+        could assemble back into it, with what the run did marked on it. Program
+        opens the program of one of our lessons for you to change: Assemble and
+        play builds your version right here in the page and puts it in the
+        console, and the lesson&rsquo;s own page has the same program as we wrote
+        it.
       </>
     ),
     back: "Back to the NES console",
@@ -75,7 +81,7 @@ const PROSE = {
     phone: <>スマートフォンには机が無い: 同じ道具が縦に並び、帯からそれぞれへ飛べる。</>,
     gaps: (
       <>
-        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、ブロック付きのコード（カートリッジが棚から来たものなら、ブロックは棚に残る）、そしてスプライトのエディタ。この机だけの道具が四つある。「ネームテーブル」は画像チップが持つ二画面ぶんのタイル番号を、ゲーム自身のタイルで描いて見せる。「記録」はゲームの一回の走行を、いまの場面からか電源投入から残し、「フロー」はそれを再生してコードが何をしたかを読む: ルーチン、ループ、選んだテーブル、パッドに続いたもの、そして似ていた区間。いまの場面から記録した走行は、その瞬間に保存したコンソール全体から始まり、その保存は記録と一緒に残る。場面は単独でも、カートリッジの下で保存して読み込める。ブレークポイントはコードのウィンドウにある。「履歴」はコンソール自身のトレースを残し、各ステップの前に保存した場面へ一歩ずつ戻る。
+        道具はここへ移るまで遊ぶページにあったものと同じ: 画面、カートリッジ、CPU、メモリ、パレット、画面上のスプライト、ブロック付きのコード（カートリッジが棚から来たものなら、ブロックは棚に残る）、そしてスプライトのエディタ。残りはこの机だけの道具だ。「ネームテーブル」は画像チップが持つ二画面ぶんのタイル番号を、ゲーム自身のタイルで描いて見せる。「記録」はゲームの一回の走行を、いまの場面からか電源投入から残し、「フロー」はそれを再生してコードが何をしたかを読む: ルーチン、ループ、選んだテーブル、パッドに続いたもの、そして似ていた区間。いまの場面から記録した走行は、その瞬間に保存したコンソール全体から始まり、その保存は記録と一緒に残る。場面は単独でも、カートリッジの下で保存して読み込める。ブレークポイントはコードのウィンドウにある。「履歴」はコンソール自身のトレースを残し、各ステップの前に保存した場面へ一歩ずつ戻る。「リスティング」は走行のカートリッジを、組み立て直せるテキストとして書き出し、走行がしたことを印にして添える。「プログラム」は私たちのレッスンのプログラムを開き、自由に変えられるようにする: 「組み立てて遊ぶ」で、あなたの版をこのページの中で組み立ててコンソールに入れる。レッスンのページには、私たちが書いたとおりの同じプログラムがある。
       </>
     ),
     back: "NES コンソールへ戻る",
@@ -114,6 +120,7 @@ export default async function CreatePage({ params }: { params: Promise<{ lang: L
           <Create
             lang={lang}
             about={about}
+            lessons={topics().flatMap((g) => g.lessons).map((k) => ({ key: k, title: t(lang, lesson(k)!.title) }))}
             more={[{ href: localize(lang, "/nes/play"), label: t(lang, surface("nes", "play").nav_label ?? "Play") }]}
           />
           <SiteFooter lang={lang} floor />

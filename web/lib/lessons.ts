@@ -286,6 +286,24 @@ export function lesson(key: string): Lesson | undefined {
   return lessons().find((l) => l.key === key);
 }
 
+/** What the desk needs to build a lesson in the page: the program and the
+ * tiles as written, and the board's facts, from the lesson's own
+ * directory (wasm/listing/src/lesson.rs puts them together, there and in
+ * lessons/build.py). */
+export function parts(key: string) {
+  const d = path.join(ROOT, "lessons", key);
+  const meta = JSON.parse(fs.readFileSync(path.join(d, "lesson.json"), "utf8")) as { mirroring: string; prg: number; org: string; chr: number };
+  const l = lesson(key)!;
+  return {
+    key,
+    title: l.title,
+    sha256: l.sha256,
+    board: { mirroring: meta.mirroring, prg: meta.prg, org: meta.org, chr: meta.chr },
+    prg: fs.readFileSync(path.join(d, "prg.s"), "utf8"),
+    chr: fs.readFileSync(path.join(d, "chr.s"), "utf8"),
+  };
+}
+
 /** The lesson's program as written, the file the cartridge was built from. */
 export function program(key: string): string {
   return fs.readFileSync(path.join(ROOT, "lessons", key, "prg.s"), "utf8");

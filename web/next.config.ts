@@ -75,11 +75,11 @@ const nextConfig: NextConfig = {
         // /og is a route of its own (the link cards), not a page in a language:
         // it carries the language inside its path, so it is kept out of the
         // prefix the same way /ja is. So are a lesson's files
-        // (/autopsy/lessons/<key>.nes and .s, app/autopsy/lessons/[file]):
+        // (/autopsy/lessons/<key>.nes, .s and .parts.json, app/autopsy/lessons/[file]):
         // that route is dynamic too, so it comes after this rule, which
         // otherwise sent jump.nes to the lesson page as a lesson named
         // "jump.nes" and a 404.
-        { source: "/:path((?!(?:ja|og)(?:/|$))(?!autopsy/lessons/[a-z0-9-]+\\.(?:nes|s)$).*)", destination: "/en/:path" },
+        { source: "/:path((?!(?:ja|og)(?:/|$))(?!autopsy/lessons/[a-z0-9-]+\\.(?:nes|s|parts\\.json)$).*)", destination: "/en/:path" },
       ],
     };
   },
