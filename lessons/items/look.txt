@@ -1,0 +1,11 @@
+# frames 300
+# Walk right, open the item screen with Start, press Start again while it
+# slides (not read), close it, walk on.
+AT 20 80
+AT 60 88
+AT 66 80
+AT 80 88
+AT 86 80
+AT 150 88
+AT 156 80
+AT 260 00

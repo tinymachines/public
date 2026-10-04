@@ -1,0 +1,15 @@
+{
+ "title": "An item screen the picture slides away to show, the way Zelda's does",
+ "kind": "items",
+ "description": "A cartridge of our own whose Start button slides the whole picture down to show an item screen above it, drawn a row at a time just ahead of the slide, compared by that shape with how The Legend of Zelda was seen doing it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "look.txt",
+ "frames": 300,
+ "grabs": [50, 80, 120, 200],
+ "walk_from": 20,
+ "memory": {}
+}
