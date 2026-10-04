@@ -1,0 +1,18 @@
+# frames 1500
+# Power on. Select once, then nothing until the demo has played and the
+# title is back; during the second demo, Start; on the title again,
+# Select twice and Start; then walk right and jump.
+AT 60 04
+AT 66 00
+AT 1150 08
+AT 1156 00
+AT 1220 04
+AT 1226 00
+AT 1250 04
+AT 1256 00
+AT 1290 08
+AT 1296 00
+AT 1330 80
+AT 1380 81
+AT 1395 80
+AT 1490 00

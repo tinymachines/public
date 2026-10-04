@@ -1,0 +1,15 @@
+{
+ "title": "A title drawn into the level, the way Mario's is",
+ "kind": "title",
+ "description": "A cartridge of our own whose title is written into its level's picture, with a menu whose cursor is three background tiles and a countdown into a demo that scrolls the title away, compared by that shape with how Super Mario Bros. was seen doing it, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "vertical",
+ "script": "menu.txt",
+ "frames": 1500,
+ "grabs": [30, 300, 600, 1300],
+ "walk_from": 0,
+ "memory": {"x": "$11"}
+}
