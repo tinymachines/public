@@ -4697,3 +4697,65 @@ Open: Zelda's rows before a sideways slide; the low-bytes-only table;
 a way in per game for the ones that sit on a screen; the rest of an
 object table; sound (every game has a driver, no lesson yet); the
 owner's design for /autopsy and the lessons.
+
+## Checkpoint, 2026-10-05: twenty lessons, a desk you can write on, and sprites
+
+Live serves `134336e`, level with main, beta and GitHub; every sibling
+repository touched is pushed and clean (public, meatball-labs,
+MeatballAI/ComfyUI, nes, nes-bench). Deployed many times over two days,
+each on the owner's word, each announced to the bradleyio session first
+(the agreed rule: whoever starts a tinymachines deploy first goes, the
+other waits).
+
+**The lessons, now twenty, in four groups** (`lessons/topics.json`, the
+one list; the board refuses a lesson in no group or two, a name that is
+no lesson, and an empty group):
+
+| group | lessons |
+|---|---|
+| How a character moves | jump, run, stomp, solid (ground, a block bumped, a wall), coins (a coin from a block and the score), walkers (turning at walls and at each other) |
+| How the picture is made | scroll, rooms, screens, status, flicker (eight sprites a line, the order turned) |
+| The screens around the game | splash, title, menu, pause, items, about (the story crawl), lives (a life lost) |
+| Sound | sound |
+
+Each is our own cartridge measured beside Super Mario Bros. or The
+Legend of Zelda with one measuring function for both, read off the
+storyboard's memory, picture writes, scroll pairs, sound writes and
+mapper writes; each page's checks require the thing to have been seen in
+both runs, so none can pass on nothing. Lesson pages link the lessons
+either side in their group.
+
+**The desk you can write on.** "Change it on the desk" on a lesson page
+opens its program in the Program window on /nes/create: edit, Assemble
+and play builds it in the page with the same code that built the lesson
+(`wasm/listing/src/lesson.rs`, which `lessons/build.py` now calls; its
+Python byte counter is gone) and plays it; unchanged it is the lesson's
+cartridge byte for byte. The Sprite maker turns a picture into sprite
+tiles in three of the console's measured colours (`lib/nesSprite.ts`;
+there is still no RGB table on the site) and puts them into the open
+program.
+
+**The sprite generator** (MeatballAI/ComfyUI's `fastapi_proxy.py`,
+`cbcomfy-api` on 127.0.0.1:32520) is back after the nominate project's
+retirement broke it, published at https://tinymachines.ai/sprites/ for
+signed-in users, with nginx letting through only health, docs, the MCP
+endpoint (`/sprites/mcp/`) and a sprite's own image; the old
+comfy.nominate.ai site that pointed at it with no sign-in is disabled.
+SDXL pixel art, 45 s warm and about 7 min cold.
+
+**The family.** The footer's dots read the family registry
+(`scripts/sync-family.sh`, deploy stage 2h). The registry itself is now
+a directory per slot, `meatball-labs/family/sites/<n>-<hue>/`, built
+into a manifest at https://meatball.ai/family/manifest.json, and the
+style guide's "Preview with" lists every site from it.
+
+**Where to pick up.** The list agreed for 2026-10-05 is in the session's
+memory (todo-2026-10-05): the owner tries the sprite generator signed
+in, redumps Othello, updates the cartridge reader's firmware (the
+blank-cart bug is fixed upstream at oscartreader); then sprites drawn
+whole in a lesson and their colours written into its palette, a token so
+agents can use /sprites/mcp/, faster sprites, measuring the reader's
+version beside ours in the Program window, and the autopsy's open items.
+Decisions with the owner: Meatball Labs as tinymachines' parent in its
+structured data; a prompt model for the sprite chat; the pending
+`.window` line in deploy/tinymachines.ai.nginx.
