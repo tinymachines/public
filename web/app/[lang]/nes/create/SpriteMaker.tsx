@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { fitColours, replaceTiles, shrink, tileLines, toTiles, type Picture, type Rgb } from "@/lib/nesSprite";
-import { measuredPalette } from "../play/playEngine";
+import { measuredPalette, serverSnapshot as consoleServer, snapshot as consoleNow, subscribe as consoleSub } from "../play/playEngine";
 import * as program from "./programEngine";
 import { generateSprite, listSprites, signedIn, spriteUrl, type GeneratedSprite } from "./spriteApi";
 
@@ -88,7 +88,11 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
   const [signed, setSigned] = useState<boolean | null>(null);
   const [sprites, setSprites] = useState<GeneratedSprite[]>([]);
   const [picture, setPicture] = useState<{ pic: Picture; url: string; name: string } | null>(null);
-  const [palette, setPalette] = useState<Rgb[] | null>(null);
+  // The measured colours: the console's own copy once anything has been
+  // painted, or asked for when a picture is chosen.
+  const painted = useSyncExternalStore(consoleSub, () => consoleNow().palette, () => consoleServer().palette);
+  const [asked, setAsked] = useState<Rgb[] | null>(null);
+  const palette = (painted as Rgb[] | null) ?? asked;
   const [size, setSize] = useState(16);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
@@ -98,7 +102,6 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    void measuredPalette().then((rgb) => setPalette(rgb as Rgb[] | null));
     void signedIn().then(async (ok) => {
       setSigned(ok);
       if (ok) setSprites(await listSprites().catch(() => []));
@@ -132,6 +135,7 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
   const choose = async (src: Blob | string, name: string, url: string) => {
     setWhy(null);
     setNote(null);
+    if (!palette) void measuredPalette().then((rgb) => setAsked(rgb as Rgb[] | null)).catch(() => undefined);
     try {
       setPicture({ pic: await pictureOf(src), url, name });
     } catch (e) {

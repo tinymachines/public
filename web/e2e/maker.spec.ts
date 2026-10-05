@@ -24,7 +24,10 @@ test("a picture of our own becomes three colours of tiles, and they go into the 
   await page.setViewportSize(DESK);
   await open(page, "/nes/create?lesson=jump", 500);
   await expect(page.locator('[data-program-for="jump"]')).toHaveCount(1, { timeout: 15000 });
+  // The console's colours are measured once something has been painted: play the lesson a moment.
   await page.locator("[data-desk-tab=maker]").click();
+  await expect(page.locator("[data-play-run-sister]")).toBeEnabled({ timeout: 20000 });
+  await page.locator("[data-play-run-sister]").click();
   await page.locator("[data-maker-file]").setInputFiles(path.join(__dirname, "fixtures", "sprite-quarters.png"));
   const codes = page.locator("[data-maker-codes]");
   await expect(codes).toHaveCount(1, { timeout: 30000 });
