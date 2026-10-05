@@ -4698,7 +4698,7 @@ a way in per game for the ones that sit on a screen; the rest of an
 object table; sound (every game has a driver, no lesson yet); the
 owner's design for /autopsy and the lessons.
 
-## Checkpoint, 2026-10-05: twenty lessons, a desk you can write on, and sprites
+## Checkpoint, 2026-10-05: nineteen lessons, a desk you can write on, and sprites
 
 Live serves `134336e`, level with main, beta and GitHub; every sibling
 repository touched is pushed and clean (public, meatball-labs,
@@ -4707,7 +4707,7 @@ each on the owner's word, each announced to the bradleyio session first
 (the agreed rule: whoever starts a tinymachines deploy first goes, the
 other waits).
 
-**The lessons, now twenty, in four groups** (`lessons/topics.json`, the
+**The lessons, now nineteen, in four groups** (`lessons/topics.json`, the
 one list; the board refuses a lesson in no group or two, a name that is
 no lesson, and an empty group):
 
