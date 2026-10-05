@@ -11,6 +11,7 @@ import { Record } from "./Record";
 import { Flow } from "./Flow";
 import { Listing } from "./Listing";
 import { Program } from "./Program";
+import { SpriteMaker } from "./SpriteMaker";
 import { History } from "./History";
 import { Nametables } from "./Nametables";
 import * as flow from "./flowEngine";
@@ -45,6 +46,8 @@ const WINS: WinSpec[] = [
   // A lesson's program to change opens over the code, beside the screen
   // and the cartridge, so what it builds is in view as it plays.
   { id: "program", at: [0.36, 0, 0.32, 1], open: false },
+  // The Sprite maker opens beside the Program window, whose tiles it fills.
+  { id: "maker", at: [0.68, 0, 0.32, 1], open: false },
   { id: "about", at: [0.3, 0.16, 0.4, 0.6], open: false },
 ];
 
@@ -119,6 +122,7 @@ function Windows({ lang, about, lessons }: { lang: Lang; about: ReactNode; lesso
       <Window id="listing"><Listing lang={lang} /></Window>
       <Window id="history"><History lang={lang} /></Window>
       <Window id="program"><Program lang={lang} lessons={lessons} /></Window>
+      <Window id="maker"><SpriteMaker lang={lang} /></Window>
       <Window id="about">{about}</Window>
     </>
   );

@@ -108,7 +108,7 @@ export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string;
             <button type="button" className="btn btn-primary" disabled={p.busy} onClick={() => void program.assemble()} data-program-assemble>
               {p.busy ? T.building : T.assemble}
             </button>{" "}
-            <button type="button" className="btn" disabled={p.busy || p.text === p.parts.prg} onClick={() => program.ours()} data-program-ours>
+            <button type="button" className="btn" disabled={p.busy || (p.text === p.parts.prg && p.chr === p.parts.chr)} onClick={() => program.ours()} data-program-ours>
               {T.ours}
             </button>{" "}
             <button type="button" className="btn btn-ghost" onClick={() => program.download()} data-program-download>

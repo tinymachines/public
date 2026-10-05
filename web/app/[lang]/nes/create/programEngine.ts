@@ -27,12 +27,14 @@ export interface ProgramState {
   parts: Parts | null;
   /** The program as it stands in the editor. */
   text: string;
+  /** The tiles as they stand (the Sprite maker can put new ones in). */
+  chr: string;
   busy: boolean;
   built: Built | null;
   why: string | null;
 }
 
-const INITIAL: ProgramState = { parts: null, text: "", busy: false, built: null, why: null };
+const INITIAL: ProgramState = { parts: null, text: "", chr: "", busy: false, built: null, why: null };
 let state: ProgramState = INITIAL;
 const listeners = new Set<() => void>();
 function set(patch: Partial<ProgramState>) {
@@ -76,7 +78,7 @@ export async function open(key: string) {
     const r = await fetch(`/autopsy/lessons/${key}.parts.json`);
     if (!r.ok) throw new Error(`no lesson named ${key}`);
     const parts = (await r.json()) as Parts;
-    set({ parts, text: kept(key) ?? parts.prg, busy: false });
+    set({ parts, text: kept(key) ?? parts.prg, chr: kept(`${key}.chr`) ?? parts.chr, busy: false });
   } catch (e) {
     set({ busy: false, why: String((e as Error)?.message ?? e) });
   }
@@ -87,9 +89,17 @@ export function edit(text: string) {
   if (state.parts) keep(state.parts.key, text === state.parts.prg ? null : text);
 }
 
-/** Back to the lesson's program as we wrote it. */
+/** New tiles for the open lesson (kept here like an edit of the program). */
+export function setTiles(chr: string) {
+  set({ chr, built: null });
+  if (state.parts) keep(`${state.parts.key}.chr`, chr === state.parts.chr ? null : chr);
+}
+
+/** Back to the lesson's program and tiles as we wrote them. */
 export function ours() {
-  if (state.parts) edit(state.parts.prg);
+  if (!state.parts) return;
+  edit(state.parts.prg);
+  setTiles(state.parts.chr);
 }
 
 /** Build the program as it stands into a cartridge and put it in the console. */
@@ -106,7 +116,7 @@ export async function assemble() {
         else reject(new Error(d.error));
       };
       w.onerror = () => reject(new Error("the listing worker failed to load; its bundle may be absent"));
-      w.postMessage({ id: 1, lesson: { prg: state.text, chr: p.chr, board: p.board } });
+      w.postMessage({ id: 1, lesson: { prg: state.text, chr: state.chr, board: p.board } });
     });
     const b = JSON.parse(answer.built) as Built & { src: string };
     set({ busy: false, built: { sha256: b.sha256, code_bytes: b.code_bytes, instructions: b.instructions } });

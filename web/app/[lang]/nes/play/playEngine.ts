@@ -863,6 +863,21 @@ async function keepRecording(log: Uint8Array | null): Promise<RecordingMeta | nu
   }
 }
 
+/**
+ * The 64 colours as the picture worker measured them, for a page that
+ * needs them before anything has been painted (the desk's Sprite maker):
+ * the same answer the sheet paints from, kept once it comes.
+ */
+export async function measuredPalette(): Promise<number[][] | null> {
+  if (state.palette) return state.palette;
+  const r = await pictureW.call({ path: "palette" });
+  if (r.ok && r.answer && "rgb" in r.answer) {
+    set({ palette: r.answer.rgb });
+    return r.answer.rgb;
+  }
+  return null;
+}
+
 /** The picture worker's measured colours, asked for once per paint until there are some. */
 let paletteAsked = false;
 function askPalette() {
