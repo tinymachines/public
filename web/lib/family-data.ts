@@ -24,6 +24,6 @@ export const FAMILY: readonly FamilyMember[] = [
   { hue: "spruce", hex: "#1b7d82", name: "amy.io", href: "https://amy.io", role: "lab" },
   { hue: "steel", hex: "#41749d", name: "bradley.io", href: "https://bradley.io", role: "home" },
   { hue: "iris", hex: "#6a679e", name: "tinymachines.ai", href: "https://tinymachines.ai", role: "lab" },
-  { hue: "plum", hex: "#8b5c86" },
+  { hue: "plum", hex: "#8b5c86", name: "Campaign Brain", href: "https://campaignbrain.dev", role: "lab" },
   { hue: "rose", hex: "#995963", name: "snailmail.ai", role: "lab", reserved: true },
 ]
