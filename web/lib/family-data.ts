@@ -27,3 +27,27 @@ export const FAMILY: readonly FamilyMember[] = [
   { hue: "plum", hex: "#8b5c86", name: "Campaign Brain", href: "https://campaignbrain.dev", role: "lab" },
   { hue: "rose", hex: "#995963", name: "snailmail.ai", role: "lab", reserved: true },
 ]
+
+export type ElectricId = "lime" | "cyan" | "ember" | "magenta" | "violet"
+
+/** One of the electric set: a hue turned up for a dark screen, four tones. */
+export interface ElectricHue {
+  id: ElectricId
+  name: string
+  /** OKLCH hue, degrees */
+  hue: number
+  /** The muted slot of the site that wears it, and that site's name; absent while open. */
+  slot?: FamilyHue
+  who?: string
+  /** glow: the mark and links. core: buttons. dim: solid blocks. haze: a tinted surface over night. */
+  tones: { glow: string; core: string; dim: string; haze: string }
+}
+
+/** The electric set (electric.json). */
+export const ELECTRIC: readonly ElectricHue[] = [
+  { id: "lime", name: "Lime", hue: 141, slot: "rose", who: "snailmail.ai", tones: { glow: "#3ffe00", core: "#3dc820", dim: "#25541d", haze: "#1e2a1c" } },
+  { id: "cyan", name: "Cyan", hue: 200, slot: "spruce", who: "amy.io", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
+  { id: "ember", name: "Ember", hue: 55, slot: "sage", who: "hotbits", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
+  { id: "magenta", name: "Magenta", hue: 340, tones: { glow: "#fc00cb", core: "#b61692", dim: "#6a2f58", haze: "#31212b" } },
+  { id: "violet", name: "Violet", hue: 300, tones: { glow: "#9200fe", core: "#5f0fa7", dim: "#503975", haze: "#292333" } },
+]
