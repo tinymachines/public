@@ -4759,3 +4759,30 @@ version beside ours in the Program window, and the autopsy's open items.
 Decisions with the owner: Meatball Labs as tinymachines' parent in its
 structured data; a prompt model for the sprite chat; the pending
 `.window` line in deploy/tinymachines.ai.nginx.
+
+## Checkpoint, 2026-10-06: the pile page waits for a deploy
+
+Live and beta serve `4fbfdaf` (deployed 2026-10-06 on the owner's word,
+every stage passing). Main is past it by commits that are pushed and
+**not deployed**:
+
+| commit | what |
+|---|---|
+| `2415f8e` | the pile's eleven photographs, brought in by that deploy's docs pull (they already serve) |
+| `410b4a8` | the notebook's new page, What is in the pile (`/docs/nes/pile`, under Building the bench), with its Japanese shadow and index row; nes-bench `aa0150c` and `3bc7bb1` carried |
+| `773f0c4` | the family list resynced to meatball-labs `a2be165`: an ELECTRIC export arrives, nothing reads it yet |
+
+The pile page was pulled, stamped and tested in a throwaway worktree
+(the main checkout serves live); it has not been through a full site
+build, which the deploy does before it restarts anything.
+
+**Where to pick up.** Deploy on the owner's word, telling the bradleyio
+session first; run `scripts/sync-family.sh --check` before it, because
+the registry in meatball-labs is moving. Two things are the owner's to
+weigh: the pile page publishes a board's base MAC and names an office
+machine (both already public in nes-bench; the fix, if wanted, is in
+`nes-bench/docs/pile.md`), and nes-bench's heading guard
+(`tools/pulled-docs.json`) wants a row for `pile.md`, slug `pile`, with
+a shadow. Lint stands at 0 errors and 139 warnings, mostly unused
+expressions, not yet swept. The list from the 2026-10-05 checkpoint is
+otherwise unchanged.
