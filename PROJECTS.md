@@ -4786,3 +4786,44 @@ machine (both already public in nes-bench; the fix, if wanted, is in
 a shadow. Lint stands at 0 errors and 139 warnings, mostly unused
 expressions, not yet swept. The list from the 2026-10-05 checkpoint is
 otherwise unchanged.
+
+## Checkpoint, 2026-10-06 (evening): the pile page is live, and a protocol spec arrives
+
+Live and beta serve `83cb01a` (deployed 2026-10-06 evening on the owner's
+word, every stage passing, main pushed, nothing waiting). That build
+carried everything the morning checkpoint listed as waiting, plus one
+more commit:
+
+| commit | what |
+|---|---|
+| `410b4a8` | What is in the pile, at `/docs/nes/pile` in both languages: its first full build, and it serves |
+| `773f0c4` | the family list resynced to meatball-labs `a2be165`; `sync-family.sh --check` was current at deploy time |
+| `83cb01a` | `notes/tm-protocol-spec.md` and `.pdf`: the owner's spec for `tm://`, a read-only URI namespace over MCP (one scheme, mounts for fs, git and http, three verbs, typed links between a served page and the code and data behind it). The PDF holds the two drawings the markdown export dropped |
+
+The spec arrived in `docs/`, where the notebook loader demands a title
+from every markdown file and threw; it lives in `notes/` now, beside the
+other design notes, and the tree loads its 83 pages again.
+
+**On the spec, said in chat and worth keeping.** This repository already
+has three of its pieces: `/api/mcp` speaks the protocol (tools only, no
+resources), so the open question of resources versus a `resolve` tool
+can be tested there before a server is written; the pull list in
+`web/scripts/pull-nesdocs.mjs` plus `data/engine.json` and
+`api/provenance.py` are most of the build manifest the link resolver
+wants, and would give every notebook page an exact source link; and the
+true join for `/autopsy/patterns` (the page under `web/app/[lang]/autopsy`,
+`data/autopsy.json`, `scripts/board-autopsy.py`) is a better walkthrough
+than the invented one. Two cautions for the server: the fs mount's roots
+should be an allowlist of project trees, never the host (this box holds
+the sign-in database, the gitignored hosting runbook and unit files that
+have held keys, and a filename deny-list catches none of them); and the
+`rendered` facet should fetch through loopback nginx with a Host header,
+since Next and uvicorn know nothing of vhosts, redirects or headers.
+
+**Where to pick up.** Nothing waits on a deploy. The owner's to weigh,
+unchanged from the morning: the pile page's base MAC and office-machine
+line (fix in `nes-bench/docs/pile.md` if wanted); nes-bench's
+`tools/pulled-docs.json` wants a row for `pile.md`, slug `pile`, shadow
+yes; and whether the `tm://` work starts with resources on `/api/mcp`.
+Lint stands at 0 errors and 139 warnings, unswept. The list from the
+2026-10-05 checkpoint is otherwise unchanged.
