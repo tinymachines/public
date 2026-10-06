@@ -270,6 +270,44 @@ work and it is not started.
   after the first thing goes undocumented.
 - **Coins are a quota, never a price.** See `../NOTICE.md`. Not built yet.
 
+## tm://, the namespace
+
+The same endpoint also speaks MCP **resources**: this checkout's `docs/`,
+`data/` and `notes/`, and the pages of the sites this box serves, as one
+read-only URI namespace with typed links between a page and the file it is
+rendered from. The spec is `notes/tm-protocol-spec.md`; `api/tm.py` is its
+first slice, built on this server to find out whether an MCP client navigates
+resources at all before a server is written for the purpose.
+
+```
+tm://tinymachines/                           the mounts
+tm://tinymachines/fs/docs/nes/pile.md        a file; ?as=stat for its metadata
+tm://tinymachines/fs/docs/nes/               a directory: reading it lists it
+tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
+                                             a page, as its readable text
+```
+
+Three verbs, `resources/list`, `resources/read` and `completion/complete`,
+and resource templates for the grammar. A collection is a URI ending in `/`;
+reading one returns its children as JSON with a cursor, which is how a client
+walks coarse to fine. Every read carries links in `_meta` under
+`tinymachines.ai/links`: `tm:source` from a notebook page to its markdown,
+`tm:renders-as` back, and `up`, `collection`, `alternate` and `describedby` as
+the IANA registry defines them. A URI that does not resolve comes back as a
+JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
+that do, `too-large` with a range template, `out-of-root`, `denied`, `binary`).
+
+Three decisions, each for a reason this box supplies: the fs roots are an
+allowlist of the three directories that are public on GitHub, never the host,
+and every path is resolved before it is touched; `rendered` is fetched through
+nginx on loopback with the site's name as SNI and Host, so the bytes are what a
+visitor gets and the mount cannot be pointed at a site this box does not
+serve; and the page-to-source join is the notebook loader's own rule restated,
+which `test_tm.py` checks against the loader and against the last crawl.
+
+What waits for the git mount: which repository a pulled page came from, which
+data file a page reads, history and blame.
+
 ## Pieces and surfaces are different questions
 
 `/v1/pieces` is what exists. `/v1/projects` is how the site is organised, and

@@ -46,6 +46,7 @@ import db
 import mcp_server
 import probe as probe_mod
 import projects as projects_mod
+import tm
 from models import (
     Visitors,
     MintAvailability,
@@ -511,11 +512,18 @@ def _mcp_licensing(_: dict) -> dict:
     }
 
 
-_MCP = mcp_server.make_handler({
-    "overview": _mcp_overview,
-    "piece": _mcp_piece,
-    "licensing": _mcp_licensing,
-})
+_MCP = mcp_server.make_handler(
+    {
+        "overview": _mcp_overview,
+        "piece": _mcp_piece,
+        "licensing": _mcp_licensing,
+    },
+    # The tm:// namespace (api/tm.py): this checkout's docs/, data/ and notes/
+    # and the sites this box serves, as read-only MCP resources with typed
+    # links between a page and its source. The checkout is the one that
+    # serves live, so what the fs mount shows is what the site was built from.
+    namespace=tm.Namespace(Path(__file__).resolve().parent.parent),
+)
 
 
 def _visitors_path() -> Path:

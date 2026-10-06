@@ -50,6 +50,21 @@ run 6502 code, use the 6502 API at https://6502.tinymachines.ai/api, which has
 its own MCP endpoint with five tools for assembling, running and minting
 cartridges."""
 
+# Appended when the server carries a tm:// namespace (api/tm.py).
+TM_INSTRUCTIONS = """
+
+The same server is also a read-only namespace, tm://, spoken as MCP resources:
+start by reading tm://tinymachines/ (the mounts), then read any URI ending in /
+to list its children, and read a file or page to get it. Two mounts: fs/ is the
+repository's docs/, data/ and notes/; http/<site>/ is what a visitor gets from a
+site this box serves, with ?as=text for the readable text. Every read carries
+typed links in _meta under "tinymachines.ai/links": a notebook page links to the
+markdown it is rendered from (tm:source), the file links back to its page
+(tm:renders-as), and up, collection, alternate and describedby do what the IANA
+registry says. A URI that does not resolve comes back with the nearest ones that
+do. Resource templates and completions give the grammar and live values, so you
+can compose a URI you were never shown and try it."""
+
 
 class RpcError(Exception):
     def __init__(self, code: int, message: str, data: Any = None):
@@ -111,11 +126,19 @@ TOOLS: list[dict] = [
 ]
 
 
-def make_handler(impls: dict[str, Callable[[dict], Any]]) -> Callable[[Any], Any]:
+def make_handler(
+    impls: dict[str, Callable[[dict], Any]],
+    namespace: Any = None,
+) -> Callable[[Any], Any]:
     """One JSON-RPC message in, one response out (or None for a notification).
 
     Batches are handled by the caller, which is the only part of the transport
     that needs to know a batch from a message.
+
+    `namespace`, when given, is a tm.Namespace: the server then also speaks
+    resources/list, resources/templates/list, resources/read and
+    completion/complete, and says so in its capabilities. Without one it is
+    the three tools and nothing else, which is what it was.
     """
     names = {t["name"] for t in TOOLS}
     missing = names - set(impls)
@@ -147,6 +170,11 @@ def make_handler(impls: dict[str, Callable[[dict], Any]]) -> Callable[[Any], Any
         text = result if isinstance(result, str) else json.dumps(result, indent=1, default=str)
         return {"content": [{"type": "text", "text": text}], "isError": False}
 
+    capabilities: dict[str, Any] = {"tools": {"listChanged": False}}
+    if namespace is not None:
+        capabilities["resources"] = {"subscribe": False, "listChanged": False}
+        capabilities["completions"] = {}
+
     async def handle(msg: Any) -> dict | None:
         if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0":
             raise RpcError(INVALID_REQ, "not a JSON-RPC 2.0 message")
@@ -161,9 +189,9 @@ def make_handler(impls: dict[str, Callable[[dict], Any]]) -> Callable[[Any], Any
             want = params.get("protocolVersion")
             result: Any = {
                 "protocolVersion": want if want in SUPPORTED else LATEST,
-                "capabilities": {"tools": {"listChanged": False}},
+                "capabilities": capabilities,
                 "serverInfo": SERVER,
-                "instructions": INSTRUCTIONS,
+                "instructions": INSTRUCTIONS + (TM_INSTRUCTIONS if namespace else ""),
             }
         elif method == "ping":
             result = {}
@@ -171,6 +199,17 @@ def make_handler(impls: dict[str, Callable[[dict], Any]]) -> Callable[[Any], Any
             result = {"tools": TOOLS}
         elif method == "tools/call":
             result = await call_tool(params)
+        elif namespace and method == "resources/list":
+            result = tm_call(namespace.list_resources, params.get("cursor"))
+        elif namespace and method == "resources/templates/list":
+            result = {"resourceTemplates": namespace.templates()}
+        elif namespace and method == "resources/read":
+            uri = params.get("uri")
+            if not isinstance(uri, str):
+                raise RpcError(BAD_PARAMS, "resources/read needs a uri")
+            result = await tm_call_async(namespace.read, uri)
+        elif namespace and method == "completion/complete":
+            result = tm_call(namespace.complete, params)
         else:
             raise RpcError(NO_METHOD, f"method {method!r} is not implemented")
 
@@ -179,6 +218,35 @@ def make_handler(impls: dict[str, Callable[[dict], Any]]) -> Callable[[Any], Any
         return {"jsonrpc": "2.0", "id": mid, "result": result}
 
     return handle
+
+
+def _as_rpc(e: Exception) -> RpcError:
+    """A tm.TmError is already a structured refusal; it becomes the JSON-RPC
+    error with its reason and helpers in `data`, so a wrong guess teaches the
+    client instead of dead-ending."""
+    code = getattr(e, "code", None)
+    data = getattr(e, "data", None)
+    if isinstance(code, int) and isinstance(data, dict):
+        return RpcError(code, str(e), data)
+    return RpcError(INTERNAL, f"{type(e).__name__}: {e}")
+
+
+def tm_call(fn: Callable[..., Any], *args: Any) -> Any:
+    try:
+        return fn(*args)
+    except RpcError:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise _as_rpc(e) from e
+
+
+async def tm_call_async(fn: Callable[..., Any], *args: Any) -> Any:
+    try:
+        return await fn(*args)
+    except RpcError:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise _as_rpc(e) from e
 
 
 def error_body(mid: Any, e: RpcError) -> dict:
