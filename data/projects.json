@@ -194,7 +194,7 @@
   {
    "key": "hotbits",
    "name": "hotbits",
-   "what": "True random bytes from the decay of a radioactive source: a Geiger counter on a Pi, with bits taken from the timing between decay events.",
+   "what": "True random bytes from the decay of a radioactive source: a Geiger counter whose every count is timed in hardware, with bits taken from the timing between decay events.",
    "silo": "style/projects/hotbits.css",
    "status": "moving",
    "surfaces": [

@@ -99,6 +99,8 @@ web/public/nes/bench.svg
 web/public/nes/bench/
 # The lab's unlisted test pages, pulled from ../nes-bench/tools by the same script
 web/public/lab/
+# The Geiger TRNG's drawing package, pulled from ../geiger by the same script
+web/public/hotbits/
 
 # The console arc's notebook, pulled from the sibling checkouts at build
 # time by web/scripts/pull-nesdocs.mjs; the repositories are the one copy.

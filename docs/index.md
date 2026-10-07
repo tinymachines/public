@@ -75,9 +75,9 @@ the page moved like the others. See [the registry](/docs/6502/the-registry).
 
 [hotbits](/hotbits) is here too, which makes this a roof rather than a 6502
 site with a roof on it. It is true random bytes from radioactive decay: a
-Geiger counter on a Pi, with each bit taken from comparing one gap between
-decay events with the next, so the bias cancels by symmetry rather than by
-correction.
+Geiger counter whose every count is timed in hardware, with each bit taken
+from comparing one gap between decay events with the next, so the bias
+cancels by symmetry rather than by correction.
 
 Two pages, and both of them ask rather than state. The landing page reads the
 byte pool from the running instrument when you load it, because a pool that

@@ -31,9 +31,11 @@ export class NotCurrent extends Error {}
  * bench checkout's full commit. Returns the docno, the file and where it
  * is; throws NotCurrent with the reason otherwise.
  */
-export function packagePdf(bench, manifest, head) {
+export function packagePdf(bench, manifest, head, hrefBase = "/nes/bench") {
   const m = JSON.parse(fs.readFileSync(path.join(bench, "docs", manifest), "utf8"));
-  const file = `nes-bench-${m.docno}-rev${m.rev}.pdf`;
+  // The project is the manifest's (geiger's packages say "geiger"); the
+  // bench's older manifests do not name one and are nes-bench's.
+  const file = `${m.project ?? "nes-bench"}-${m.docno}-rev${m.rev}.pdf`;
   const dir = path.join(bench, "docs", "package", m.docno.toLowerCase());
   const pdf = path.join(dir, file);
   const where = `${manifest} (${m.docno} rev ${m.rev})`;
@@ -50,5 +52,5 @@ export function packagePdf(bench, manifest, head) {
   if (typeof r.commit !== "string" || r.commit !== head) {
     throw new NotCurrent(`${where}: built at ${String(r.commit).slice(0, 7)} and the checkout is at ${String(head).slice(0, 7)}: stale against the sources, rebuild it.`);
   }
-  return { docno: m.docno, rev: m.rev, title: m.title, file, dir, href: `/nes/bench/${file}` };
+  return { docno: m.docno, rev: m.rev, title: m.title, file, dir, href: `${hrefBase}/${file}` };
 }

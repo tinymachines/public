@@ -249,10 +249,37 @@ const packageLink = (p) => ({
   label: { en: `${p.title}: drawing package ${p.docno} rev ${p.rev} (PDF)`, ja: `図面一式「${p.title}」${p.docno} 版 ${p.rev} (PDF、英語)` },
   href: p.href,
 });
+// The Geiger TRNG's drawing package, from ../geiger. That repository is
+// private, so a clone without it still builds: the notebook then shows
+// no printable line on /docs/hotbits, and this says so. The same record
+// and the same four refusals as the bench's packages, and one more: the
+// PDF's text is scanned for an address or a host name, because a drawing
+// is built elsewhere and a public site prints neither (CLAUDE.md).
+const GEIGER = path.join(SIBLINGS, "geiger");
+let PKG_TRNG = null;
+if (fs.existsSync(path.join(GEIGER, "docs", "package-trng.json"))) {
+  const head = execFileSync("git", ["-C", GEIGER, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  try {
+    PKG_TRNG = packagePdf(GEIGER, "package-trng.json", head, "/hotbits");
+  } catch (e) {
+    if (e instanceof NotCurrent) throw new Error(`pull-nesdocs: ${e.message} (geiger: rebuild the package from a clean tree)`);
+    throw e;
+  }
+  const text = spawnSync("pdftotext", [path.join(PKG_TRNG.dir, PKG_TRNG.file), "-"], { encoding: "utf8" });
+  if (text.status !== 0) {
+    throw new Error(`pull-nesdocs: pdftotext is needed to scan ${PKG_TRNG.file} for host detail (${(text.stderr || text.error?.message || "not on PATH").trim()})`);
+  }
+  const hit = text.stdout.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b|\b[\w-]+\.(?:local|lan)\b|\+dirty/);
+  if (hit) throw new Error(`pull-nesdocs: ${PKG_TRNG.file} prints ${JSON.stringify(hit[0])}; a drawing on the public site names no host`);
+} else {
+  console.log("pull-nesdocs: ../geiger is not checked out; /docs/hotbits gets no printable line");
+}
+
 const ARTEFACTS = {
   v1b: packageLink(PKG_V1B),
   v2b: packageLink(PKG_V2B),
   padble: packageLink(PKG_PADBLE),
+  ...(PKG_TRNG ? { trng: packageLink(PKG_TRNG) } : {}),
   board: { label: { en: "v2b board, top copper (SVG)", ja: "v2b 基板、表面の銅 (SVG)" }, href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
   photo: { label: { en: "v1b as built, the checks called out on the photograph (PNG)", ja: "組み上がった v1b、写真の上に検査箇所を書き出したもの (PNG)" }, href: "/nes/lab/board-junctions-v1b.png" },
 };
@@ -377,6 +404,20 @@ if (pkg.status !== 0) {
     const f = path.basename(p.href);
     fs.copyFileSync(path.join(p.dir, f), path.join(benchOut, f));
     console.log(`pull-nesdocs: ${f}`);
+  }
+  // The TRNG package, served from /hotbits/ beside the instrument's pages,
+  // under the same rule: the one file the manifest names, nothing else.
+  const hotbitsOut = path.join(ROOT, "web", "public", "hotbits");
+  fs.mkdirSync(hotbitsOut, { recursive: true });
+  if (PKG_TRNG) {
+    fs.copyFileSync(path.join(PKG_TRNG.dir, PKG_TRNG.file), path.join(hotbitsOut, PKG_TRNG.file));
+    console.log(`pull-nesdocs: ${PKG_TRNG.file}`);
+  }
+  for (const f of fs.readdirSync(hotbitsOut)) {
+    if (f.endsWith(".pdf") && f !== PKG_TRNG?.file) {
+      fs.unlinkSync(path.join(hotbitsOut, f));
+      console.log(`pull-nesdocs: withdrew ${f}, which no manifest names`);
+    }
   }
   for (const f of fs.readdirSync(benchOut)) {
     if (f.endsWith(".pdf") && !wanted.has(f)) {
@@ -543,6 +584,9 @@ for (const [k, a] of Object.entries(ARTEFACTS)) {
 const artefactDocs = Object.fromEntries(
   DOCS.filter((d) => d.artefacts?.length).map((d) => [`${d.section ?? "nes"}/${d.slug}.md`, d.artefacts]),
 );
+// The instrument's page is this repository's, not pulled, and shows the
+// TRNG package when there is one.
+if (PKG_TRNG) artefactDocs["hotbits/index.md"] = ["trng"];
 fs.writeFileSync(
   path.join(ROOT, "web", "public", "nes", "bench", "artefacts.json"),
   JSON.stringify({ lead: { en: "Printable:", ja: "印刷用:" }, artefacts: ARTEFACTS, docs: artefactDocs }, null, 2) + "\n",

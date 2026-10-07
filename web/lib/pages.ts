@@ -112,7 +112,7 @@ export const PAGES: Record<string, FixedPage> = {
   "/hotbits": {
     title: "hotbits",
     description:
-      "True random bytes from radioactive decay: a Geiger counter on a Pi, with bits taken from the timing between events.",
+      "True random bytes from radioactive decay: a Geiger counter whose every count is timed in hardware, with bits taken from the timing between events.",
   },
   "/hotbits/space": {
     title: "The entropy, drawn",
