@@ -4990,3 +4990,30 @@ addresses and office-machine line, nes-bench's `tools/pulled-docs.json`
 row for `pile.md`, 139 lint warnings, the sprite sign-in test, the
 Othello redump, the reader firmware). One untranslated page remains in
 the notebook, `docs/6502/two-ways-in.mdx`, which predates this work.
+
+## Checkpoint, 2026-10-07: every notebook body speaks Japanese
+
+Live and beta serve `ccd81ce` (deployed 2026-10-07 on the owner's word,
+every stage passing, main pushed, nothing waiting). One commit since the
+early checkpoint:
+
+| commit | what |
+|---|---|
+| `ccd81ce` | `docs/ja/6502/two-ways-in.mdx`, the last untranslated page, demo included: TwoWaysDemo takes the language as a prop, so the button, the notice and the readout's headings are Japanese on the shadow and unchanged on the English page; the docs page takes an `.mdx` shadow when the English is one (a shadow keeps its page's extension), and check-ja-docs walks and stamps `.mdx` shadows. check-i18n: 85 of 85 bodies translated. Verified on live: the Japanese title, body and demo at `/ja/docs/6502/two-ways-in` |
+
+The page had stayed English on purpose, until its interactive part could
+be translated rather than just its prose; that was this. Learned on the
+way, and written in memory: a throwaway worktree can run `next build`
+once its node_modules is a hard-linked copy rather than a symlink, which
+Turbopack refuses, and once the submodule is copied in.
+
+**Where to pick up.** The notebook has no untranslated page. The list is
+otherwise the early checkpoint's: the owner's client test against
+`https://tinymachines.ai/api/mcp` (resources, or `resolve`?);
+subscriptions if a use appears; the additional patterns for the lessons
+(Interludes, Dead, End of Game, Hit Detection); `/docs/hotbits` updated
+from geiger's plan once the tube feeds the pool for real; and the
+standing items (the pile page's two MAC addresses and office-machine
+line, nes-bench's `tools/pulled-docs.json` row for `pile.md`, 139 lint
+warnings, the sprite sign-in test, the Othello redump, the reader
+firmware).
