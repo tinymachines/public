@@ -4926,3 +4926,41 @@ only if a use appears. The pile page now publishes two MAC addresses
 (the C6 LCD board's and the P4's) and the office-machine line, all
 already public in nes-bench; nes-bench's `tools/pulled-docs.json` row
 for `pile.md` is still wanted; lint stands at 139 warnings.
+
+## Checkpoint, 2026-10-06 (last): tm v1 complete, and the TRNG drawing on the roof
+
+Live and beta serve `68a82b3` (deployed 2026-10-06 late night on the
+owner's word, every stage passing, main pushed, nothing waiting). Since
+the late-night checkpoint:
+
+| commit | what |
+|---|---|
+| `2faeb9c` | the data links: any page carries `tm:source` to the route file that renders it and `tm:data` to the records its rendering reaches (named in its file and its `web/lib` imports, the site frame and the language tables left out); a record carries `tm:read-by` and `tm:generated-by` to the script under `scripts/` that names it, exact when the record's own note names it; the reverse links hang off the script and the route in git. Static reading of source, so `inferred` unless stated. API tests 196 |
+| `812c8c5` | the pile page's Japanese shadow follows nes-bench `6288fd7` |
+| `68a82b3` | the Geiger TRNG's drawing package, TM-TRNG-001 rev D, pulled from `../geiger` (private; a clone without it builds with no printable line) through the same record and refusals as the bench's packages plus a scan of the PDF's text for an address or a host name, served at `/hotbits/geiger-TM-TRNG-001-revD.pdf` with the printable line under the title of `/docs/hotbits`. The instrument page and every one-liner about hotbits stop saying a Pi timestamps the counts: the case and opto, the ESP32-C6 emitter latching edges in hardware, the server, and where it stood on 2026-10-06 (run end to end on test pulses, no real counts yet). Asked for by the owner through the 6502-aa session, which fetches the PDF itself |
+
+Two things the geiger package needed before the roof would take it, both
+sent back and both fixed on their side: the PDF named the retired Pi's
+mDNS host, and geiger's build wrote no record for the pull to check. It
+now writes the same `built.json` as nes-bench's build.
+
+With `68a82b3` the `tm://` spec's v1 is live in full except
+subscriptions, which the spec defers until a use appears: three mounts
+(fs, git, http), three verbs, templates and completions, typed links in
+every direction the spec names and two it did not (`tm:read-by`,
+`tm:generates` from a script), the `resolve` tool, and the notebook page
+`/docs/mcp-setup-guide` that says how to connect.
+
+**Where to pick up.** The spec's first open question is the owner's to
+answer with a client against `https://tinymachines.ai/api/mcp`: does it
+walk the resources, or reach for `resolve`? What it does decides which
+stays primary, and whether the guide's advice changes. After that, by
+the owner's choice: subscriptions if a use appears; a Japanese body for
+the setup guide if it stays in the notebook rather than rolling off to
+its own project; the additional patterns for the lessons (Interludes,
+Dead, End of Game, Hit Detection); and the standing items (the pile
+page's two MAC addresses and office-machine line, nes-bench's
+`tools/pulled-docs.json` row for `pile.md`, 139 lint warnings, the
+sprite sign-in test, the Othello redump, the reader firmware). When
+hotbits starts counting for real, `/docs/hotbits` says the pool was not
+fed "at that moment" and should be updated from geiger's plan.
