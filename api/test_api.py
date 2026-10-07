@@ -423,7 +423,7 @@ def test_every_advertised_tool_is_implemented(client):
     """make_handler asserts this at import, both ways. This checks the list a
     client actually sees."""
     tools = rpc(client, "tools/list").json()["result"]["tools"]
-    assert {t["name"] for t in tools} == {"overview", "piece", "licensing"}
+    assert {t["name"] for t in tools} == {"overview", "piece", "licensing", "resolve"}
     for t in tools:
         assert t["description"], f"tool {t['name']} has no description"
         assert t["inputSchema"]["type"] == "object"

@@ -342,6 +342,47 @@ class Namespace:
         self.fetch = fetch
         self.sites = sites
 
+    # -- the tool-shaped door --------------------------------------------
+
+    def tool(self) -> dict:
+        """The one tool the spec allows: resolve(uri), which is read with the
+        links in the body rather than in _meta. For a client that is
+        tool-first and never lists resources; it changes nothing about the
+        namespace, and the two answer the same thing."""
+        return {
+            "name": "resolve",
+            "title": "Read a tm:// URI, with its links",
+            "description": (
+                "Read one URI of the tm:// namespace and get its content with typed links to the "
+                "things around it. Start with tm://tinymachines/ (the mounts), read any URI ending "
+                "in / to list its children, and read a file or page to get it: "
+                "tm://tinymachines/fs/docs/nes/pile.md is a file of this checkout, "
+                "tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text is the page it becomes, "
+                "as its readable text. A notebook page links to its markdown (tm:source) and the file "
+                "links back (tm:renders-as); up, collection, alternate and describedby are the IANA "
+                "relations. ?as=stat gives metadata without content. A URI that does not resolve "
+                "is refused with the nearest ones that do, so try the nearest rather than guessing."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {"uri": {"type": "string", "description": "A tm:// URI, with facets in its query string."}},
+                "required": ["uri"],
+                "additionalProperties": False,
+            },
+        }
+
+    async def resolve(self, args: dict) -> dict:
+        uri = args.get("uri")
+        if not isinstance(uri, str):
+            raise TmError(BAD_PARAMS, "bad-uri", "resolve needs a uri")
+        got = await self.read(uri)
+        content = dict(got["contents"][0])
+        if "blob" in content:
+            content["bytes"] = len(base64.b64decode(content.pop("blob")))
+            content["note"] = "binary; the bytes are available through resources/read as a blob"
+        content["links"] = got["_meta"][META_LINKS]
+        return content
+
     # -- what the server advertises --------------------------------------
 
     def templates(self) -> list[dict]:

@@ -258,8 +258,9 @@ work and it is not started.
   *and* produces the OpenAPI schema. There is no hand-written OpenAPI file and
   no second schema layer describing what the models already describe, so the
   reference cannot drift from the behaviour.
-- **REST and MCP are one surface.** The three MCP tools call the same
-  implementations the HTTP routes call. HTTP is fine-grained because a program
+- **REST and MCP are one surface.** The three MCP tools about the pieces call
+  the same implementations the HTTP routes call, and `resolve` is the
+  namespace's own read. HTTP is fine-grained because a program
   can hold six things and ask a second question about the fourth; the tools are
   coarse because a model should not need four calls and the intermediate JSON
   in its context to ask what this is. `overview` answers that in one call,
@@ -288,7 +289,10 @@ tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
 ```
 
 Three verbs, `resources/list`, `resources/read` and `completion/complete`,
-and resource templates for the grammar. A collection is a URI ending in `/`;
+and resource templates for the grammar; and one tool, `resolve(uri)`, which is
+the same read with the links in its body, for a client that is tool-first and
+never lists resources. The two answer the same thing, and a refusal through
+the tool keeps its reason and its nearest URIs. A collection is a URI ending in `/`;
 reading one returns its children as JSON with a cursor, which is how a client
 walks coarse to fine. Every read carries links in `_meta` under
 `tinymachines.ai/links`: `tm:source` from a notebook page to its markdown,

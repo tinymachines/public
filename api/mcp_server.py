@@ -63,7 +63,8 @@ markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as), and up, collection, alternate and describedby do what the IANA
 registry says. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
-can compose a URI you were never shown and try it."""
+can compose a URI you were never shown and try it. The resolve tool reads the
+same URIs and returns the links in its body, for a client that prefers tools."""
 
 
 class RpcError(Exception):
@@ -140,7 +141,13 @@ def make_handler(
     completion/complete, and says so in its capabilities. Without one it is
     the three tools and nothing else, which is what it was.
     """
-    names = {t["name"] for t in TOOLS}
+    tools = list(TOOLS)
+    if namespace is not None:
+        # The namespace's one tool, resolve(uri): the same read, with the
+        # links in the body, for a client that never lists resources.
+        tools.append(namespace.tool())
+        impls = {**impls, namespace.tool()["name"]: namespace.resolve}
+    names = {t["name"] for t in tools}
     missing = names - set(impls)
     assert not missing, f"tools with no implementation: {sorted(missing)}"
     extra = set(impls) - names
@@ -163,10 +170,15 @@ def make_handler(
             # A tool that refuses is a normal result with isError, not a
             # protocol error: the model has to be able to read the reason and
             # try again, and a JSON-RPC error is for the client, not the model.
-            return {
-                "content": [{"type": "text", "text": f"{type(e).__name__}: {e}"}],
-                "isError": True,
-            }
+            # A structured refusal (a tm.TmError) keeps its data, which is
+            # where the nearest URIs and the range template are.
+            data = getattr(e, "data", None)
+            text = (
+                json.dumps({"error": str(e), **data}, indent=1)
+                if isinstance(data, dict)
+                else f"{type(e).__name__}: {e}"
+            )
+            return {"content": [{"type": "text", "text": text}], "isError": True}
         text = result if isinstance(result, str) else json.dumps(result, indent=1, default=str)
         return {"content": [{"type": "text", "text": text}], "isError": False}
 
@@ -196,7 +208,7 @@ def make_handler(
         elif method == "ping":
             result = {}
         elif method == "tools/list":
-            result = {"tools": TOOLS}
+            result = {"tools": tools}
         elif method == "tools/call":
             result = await call_tool(params)
         elif namespace and method == "resources/list":

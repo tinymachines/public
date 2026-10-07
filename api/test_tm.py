@@ -407,3 +407,35 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
     with pytest.raises(mcp_server.RpcError) as e:
         run(bare({"jsonrpc": "2.0", "id": 6, "method": "resources/list"}))
     assert e.value.code == mcp_server.NO_METHOD
+
+
+
+def test_resolve_is_the_same_read_with_the_links_in_the_body(ns):
+    handler = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS}, namespace=ns)
+    listed = run(handler({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}))["result"]["tools"]
+    assert [t["name"] for t in listed] == ["overview", "piece", "licensing", "resolve"]
+    bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
+    assert "resolve" not in {t["name"] for t in run(bare({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}))["result"]["tools"]}
+
+    def call(uri):
+        return run(handler({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "resolve", "arguments": {"uri": uri}}}))["result"]
+
+    got = call(f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text")
+    assert got["isError"] is False
+    body = json.loads(got["content"][0]["text"])
+    via_resource = run(ns.read(f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text"))
+    assert body["text"] == via_resource["contents"][0]["text"]
+    assert body["links"] == via_resource["_meta"][tm.META_LINKS]
+    # The round trip, through the tool alone.
+    src = next(ln["href"] for ln in body["links"] if ln["rel"] == "tm:source")
+    back = json.loads(call(src)["content"][0]["text"])
+    assert "Gear on hand." in back["text"]
+    assert f"{ROOT}http/tinymachines.ai/docs/nes/pile" in [ln["href"] for ln in back["links"] if ln["rel"] == "tm:renders-as"]
+    # A refusal the model can read: isError, with the nearest URIs kept.
+    bad = call(f"{ROOT}fs/docs/nes/pil.md")
+    assert bad["isError"] is True
+    err = json.loads(bad["content"][0]["text"])
+    assert err["reason"] == "not-found" and err["nearest"][0] == f"{ROOT}fs/docs/nes/pile.md"
+    # Binary comes back as a size, not a blob the model would have to carry.
+    blob = json.loads(call(f"{ROOT}fs/docs/big.bin?range=0-4")["content"][0]["text"])
+    assert blob["bytes"] == 4 and "blob" not in blob
