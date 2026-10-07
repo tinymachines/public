@@ -5045,3 +5045,41 @@ for the lessons (Interludes, Dead, End of Game, Hit Detection);
 for real; the pile page's two MAC addresses and office-machine line;
 nes-bench's `tools/pulled-docs.json` row for `pile.md`; the sprite
 sign-in test, the Othello redump, the reader firmware.
+
+## Checkpoint, 2026-10-07 (afternoon): the four patterns the owner asked for, as lessons
+
+Live and beta serve `7ff151b` (deployed 2026-10-07 afternoon on the
+owner's word, every stage passing, main pushed, nothing waiting). The
+owner's note of 2026-10-06, "Additional Patterns: Interludes, Dead, End
+of Game, Hit Detection", is four lessons now, twenty-three in all:
+
+| commit | lesson | what |
+|---|---|---|
+| `e6cb3b2` | `hitbox` (moving, after the stomp) | a box inside each picture, kept in memory every frame as Super Mario Bros. keeps one for Mario ($04AC) and each enemy ($04B0+4s). The sizes were read off the game against its pictures: Mario's three in from either side and four down from the top of his picture, to its bottom; a Goomba's a band across the middle. On both the pictures overlap before the boxes do, and only the boxes decide; the game's state changes the frame after the boxes meet, ours as they meet. Select shows two corner marks a box (four would put twelve sprites on a line) |
+| `351756b` | `pit` (screens, after the lives lesson) | walking off a hole: no hang, no hop, steering kept on the way down, the walkers still walking, the life after a wait (ours 90 frames, Mario 249, the fall's music); measured from the level's start and the ground before the hole |
+| `ec8cc11` | `gameover` (screens, after the hole) | three lives lost; the last goes straight to GAME OVER (Mario: cleared 211 frames after the touch, 105 tiles, held 422; ours 55, 9, 255), then the title (Mario redraws 1,794 tiles), Start to play (Mario 168 through the card, ours 1), the lives back |
+| `8f43348` | `interlude` (screens, before the hole) | the level's end: the pole, the slide, the self-walk with Left held and ignored, the time counted into the score a unit a frame at fifty points each on both, the card, the next level. Mario's side needed a run to 1-1's flagpole, found stage by stage by a private searcher: jump candidates tried twelve at a time, the one kept whose trouble (death, standing still, or a fall past the bottom) came latest, since a fall still carries x |
+| `a2b5079`, `7ff151b` | the record | `data/lessons.json` re-boarded twice, twenty-one then twenty-three; `board-lessons.py --check` passes; the lessons e2e passed 71 of 72 against a throwaway build, the play button needing the wasm bundle only the deploy makes |
+
+Three things worth keeping from the way there. A `CMP` that matches
+leaves the zero flag set, so a routine returning a block number must
+load it after the compare, or its caller takes ground for air (the
+interlude's square fell through the level from its first frame).
+`pkill -f` and `pgrep -f` with the launch line in the same command match
+the shell running it (the project notes already say so; it still bit
+twice). And a throwaway worktree needs the submodule copied in and a
+hard-linked node_modules before `next build` will run.
+
+Meanwhile the geiger TRNG package moved past its record and would have
+failed the pull; the 6502-aa session rebuilt it at geiger `7524c41` and
+gave geiger nes-bench's post-commit hook, so it stays current.
+
+**Where to pick up.** The owner's client test against
+`https://tinymachines.ai/api/mcp` (resources, or `resolve`?) is still
+the open question that decides tm's next step. Then by the owner's
+choice: subscriptions if a use appears; lesson candidates (moving
+platforms, the camera's dead zone, a music engine); `/docs/hotbits`
+updated from geiger's plan once the tube feeds the pool; the pile
+page's two MAC addresses and office-machine line; nes-bench's
+`tools/pulled-docs.json` row for `pile.md`; the sprite sign-in test,
+the Othello redump, the reader firmware.
