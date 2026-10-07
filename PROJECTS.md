@@ -5083,3 +5083,45 @@ updated from geiger's plan once the tube feeds the pool; the pile
 page's two MAC addresses and office-machine line; nes-bench's
 `tools/pulled-docs.json` row for `pile.md`; the sprite sign-in test,
 the Othello redump, the reader firmware.
+
+## Checkpoint, 2026-10-07 (evening): the family's electric dots, and a lift in progress
+
+Live and beta serve `582387b` (deployed 2026-10-07 evening on the
+owner's word, every stage passing, main pushed). Since the afternoon
+checkpoint:
+
+| commit | what |
+|---|---|
+| `582387b` | the family list resynced to meatball-labs `b30f193`: hotbits, snailmail.ai and amy.io moved from the muted hues to the electric set, and the footer now draws the nine muted dots and then the five electric ones, each in its core tone (inline, since the kit has no token for them yet), linked, named when reserved, silent when open. The bradleyio session compared the live footer with meatball.ai, sysforge.ai and bradley.io: the same 14 dots in the same colours. The family spec checks the electric dots |
+
+**In progress, not on main: the platforms lesson**, on the local branch
+`wip/platforms` (`769e54f`, not pushed). Our cartridge is done: a lift
+shuttles over a hole a pixel a frame and carries the square by its own
+step on the same frame. The measure caught a real bug on the way: the
+lift turned before it carried, so on the turning frame the square went
+one way and the lift the other; carry comes before the turn now, and
+every step taken with nothing pressed along the lift's way for a
+second carries the square by the same (68 of 68). Mario's side waits
+on a private run to 1-2's lifts (1-1 has none), found stage by stage
+by the same kind of searcher that reached 1-1's flagpole; it had
+climbed onto a dead-end brick ledge in 1-2, and now ranks ledges last.
+When it reaches a lift: write `mario_platforms`, merge the branch,
+board, check, and the lesson waits for a deploy.
+
+**Noted, not chased:** the bradleyio session saw the home page's link
+prefetches for /read, /build and /hotbits answer 307 and then 404 in a
+browser, four console errors on load; the pages load fine. Next issues
+the 307 itself (the English rewrite to `/en/...` meets its RSC
+cache-busting check); with hand-made headers the redirect target
+answered 200, so the 404 needs a real browser's router headers to
+reproduce. The owner's call whether to chase it.
+
+**Where to pick up.** The platforms lesson, as above. The owner's
+client test against `https://tinymachines.ai/api/mcp` (resources, or
+`resolve`?). Then by the owner's choice: the prefetch 404s;
+subscriptions if a use appears; the camera's dead zone and a music
+engine as lessons; `/docs/hotbits` once the tube feeds the pool (the
+bradleyio session also suspects duplicated blocks in the extractor,
+unconfirmed); the pile page's two MAC addresses and office-machine
+line; nes-bench's `tools/pulled-docs.json` row for `pile.md`; the sprite
+sign-in test, the Othello redump, the reader firmware.
