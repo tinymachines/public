@@ -120,7 +120,7 @@ def test_a_wrong_host_mount_or_site_names_the_right_ones():
     for uri, expect in [
         ("tm://elsewhere/fs/", ROOT),
         ("https://tinymachines.ai/docs", ROOT),
-        ("tm://tinymachines/git/x", f"{ROOT}fs/"),
+        ("tm://tinymachines/svn/x", f"{ROOT}fs/"),
         ("tm://tinymachines/http/example.com/", f"{ROOT}http/tinymachines.ai/"),
     ]:
         with pytest.raises(TmError) as e:
@@ -145,7 +145,7 @@ def test_a_link_cannot_get_its_confidence_wrong():
 
 def test_the_root_lists_the_mounts_and_a_collection_lists_its_children(ns):
     root, links = read(ns, ROOT)
-    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}http/"}
+    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/"}
     top, _ = read(ns, f"{ROOT}fs/")
     assert [c["name"] for c in json.loads(top["text"])["children"]] == ["docs/", "data/", "notes/"]
     nes, links = read(ns, f"{ROOT}fs/docs/nes/")
@@ -381,10 +381,10 @@ def test_http_refusals_are_structured(ns):
 def test_resources_list_is_the_map_not_the_inventory(ns, monkeypatch):
     monkeypatch.setattr(tm, "RESOURCES_PAGE", 4)
     first = ns.list_resources(None)
-    assert [r["name"] for r in first["resources"]] == ["root", "fs", "http", "docs/"]
+    assert [r["name"] for r in first["resources"]] == ["root", "fs", "git", "http"]
     rest = ns.list_resources(first["nextCursor"])
     names = [r["name"] for r in rest["resources"]]
-    assert "docs/nes/" in names and "docs/ja/nes/" in names
+    assert names[0] == "docs/" and "docs/nes/" in names and "docs/ja/nes/" in names
     assert not any(n.endswith(".md") for n in names), "leaves are reached by reading their collection"
 
 
@@ -400,7 +400,7 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
         run(handler({"jsonrpc": "2.0", "id": 3, "method": "resources/read", "params": {"uri": f"{ROOT}fs/docs/nes/pil.md"}}))
     assert e.value.code == tm.RESOURCE_NOT_FOUND and e.value.data["reason"] == "not-found"
     tmpl = run(handler({"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list"}))["result"]
-    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "http"]
+    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "git", "http"]
     bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
     plain = run(bare({"jsonrpc": "2.0", "id": 5, "method": "initialize", "params": {}}))["result"]
     assert "resources" not in plain["capabilities"]
@@ -439,3 +439,162 @@ def test_resolve_is_the_same_read_with_the_links_in_the_body(ns):
     # Binary comes back as a size, not a blob the model would have to carry.
     blob = json.loads(call(f"{ROOT}fs/docs/big.bin?range=0-4")["content"][0]["text"])
     assert blob["bytes"] == 4 and "blob" not in blob
+
+
+# ---------------------------------------------------------------------------
+# git
+# ---------------------------------------------------------------------------
+
+
+def git(d: Path, *args: str) -> str:
+    env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t",
+           "GIT_COMMITTER_EMAIL": "t@x", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    return subprocess.run(["git", "-C", str(d), *args], capture_output=True, text=True, check=True, env=env).stdout
+
+
+@pytest.fixture
+def gits(repo: Path) -> dict[str, Path]:
+    """The temp checkout as a repository with two commits and a tag, and a
+    sibling repository that one notebook page is pulled from. The checkout's
+    pull script has one row, so the origins map has one entry."""
+    (repo / "web" / "scripts").mkdir(parents=True)
+    (repo / "web" / "scripts" / "pull-nesdocs.mjs").write_text(
+        'const DOCS = [\n  { repo: "bench", file: "pile.md", slug: "pile", code: null, kind: "reference", title: "Pile" },\n];\n'
+    )
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "add", "docs/index.md", "docs/nes/index.md", "docs/nes/alone.md", "notes/plan.md", "data/figures.json", "data/secret-key.json", "web")
+    git(repo, "commit", "-q", "-m", "first")
+    git(repo, "tag", "v1")
+    (repo / "docs" / "nes" / "alone.md").write_text("---\ntitle: Alone\n---\n# Alone\n\nSecond line.\n")
+    git(repo, "add", "docs/nes/alone.md")
+    git(repo, "commit", "-q", "-m", "second: alone grows a line")
+    bench = repo.parent / (repo.name + "-bench")   # a sibling of the checkout, as the real ones are
+    (bench / "docs").mkdir(parents=True)
+    (bench / "docs" / "pile.md").write_text("# Pile, at the bench\n")
+    git(bench, "init", "-q", "-b", "main")
+    git(bench, "add", "docs/pile.md")
+    git(bench, "commit", "-q", "-m", "the pile")
+    return {"public": repo, "bench": bench}
+
+
+@pytest.fixture
+def gns(gits: dict[str, Path]) -> Namespace:
+    return Namespace(gits["public"], fetch=canned_fetch, git_repos=gits)
+
+
+def test_the_git_root_lists_the_repositories_and_a_tree_lists_at_a_ref(gns):
+    top = json.loads(read(gns, f"{ROOT}git/")[0]["text"])
+    assert [c["name"] for c in top["children"]] == ["bench/", "public/"]
+    tree, links = read(gns, f"{ROOT}git/public/docs/nes/")
+    body = json.loads(tree["text"])
+    assert [c["name"] for c in body["children"]] == ["alone.md", "index.md"], "pile.md is not committed, so it is not here"
+    assert body["at"] == "HEAD" and len(body["commit"]) == 40
+    assert rels(links)["up"] == [f"{ROOT}git/public/docs/"]
+    at_tag, links = read(gns, f"{ROOT}git/public/docs/nes/?at=v1")
+    assert json.loads(at_tag["text"])["commit"] != body["commit"]
+    assert rels(links)["up"] == [f"{ROOT}git/public/docs/?at=v1"]
+    root_listing = json.loads(read(gns, f"{ROOT}git/public/")[0]["text"])
+    assert {c["name"] for c in root_listing["children"]} == {"data/", "docs/", "notes/", "web/"}
+
+
+def test_a_file_at_head_and_at_a_tag_are_the_same_identity(gns):
+    now, links = read(gns, f"{ROOT}git/public/docs/nes/alone.md")
+    assert "Second line." in now["text"]
+    then, then_links = read(gns, f"{ROOT}git/public/docs/nes/alone.md?at=v1")
+    assert "Second line." not in then["text"]
+    assert then["uri"] == f"{ROOT}git/public/docs/nes/alone.md?at=v1"
+    r = rels(then_links)
+    assert r["latest-version"] == [f"{ROOT}git/public/docs/nes/alone.md"]
+    assert r["version-history"] == [f"{ROOT}git/public/docs/nes/alone.md?at=v1&as=log"]
+    assert "latest-version" not in rels(links)
+    assert rels(links)["tm:working-copy"] == [f"{ROOT}fs/docs/nes/alone.md"]
+
+
+def test_log_blame_and_stat_are_representations_of_the_file(gns):
+    log = json.loads(read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=log")[0]["text"])
+    assert [c["subject"] for c in log["commits"]] == ["second: alone grows a line", "first"]
+    assert all(c["uri"] == f"{ROOT}git/public/docs/nes/alone.md?at={c['commit']}" for c in log["commits"])
+    assert "email" not in json.dumps(log) and "t@x" not in json.dumps(log)
+    one = json.loads(read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=log&n=1")[0]["text"])
+    assert len(one["commits"]) == 1
+    blame, _ = read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=blame")
+    assert blame["mimeType"] == "text/plain"
+    lines = blame["text"].splitlines()
+    assert any("Second line." in ln and log["commits"][0]["commit"] in ln for ln in lines)
+    assert any("# Alone" in ln and log["commits"][1]["commit"] in ln for ln in lines)
+    stat = json.loads(read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=stat")[0]["text"])
+    assert stat["type"] == "blob" and stat["size"] > 0 and stat["commit"] == log["commits"][0]["commit"]
+    assert refusal(gns, f"{ROOT}git/public/docs/nes/alone.md?as=diff").reason == "bad-facet"
+    assert refusal(gns, f"{ROOT}git/public/docs/nes/alone.md?as=log&n=x").reason == "bad-facet"
+
+
+def test_git_refusals_teach(gns):
+    e = refusal(gns, f"{ROOT}git/public/docs/nes/alon.md")
+    assert e.reason == "not-found" and e.data["nearest"][0] == f"{ROOT}git/public/docs/nes/alone.md"
+    e = refusal(gns, f"{ROOT}git/public/docs/index.md?at=v2")
+    assert e.reason == "no-such-ref" and e.data["nearest"] == [f"{ROOT}git/public/?at=v1"]
+    for at in ("--output=/tmp/x", "-n", "a..b", "v1 main"):
+        assert refusal(gns, f"{ROOT}git/public/docs/index.md?at={at}").reason == "bad-facet", at
+    assert refusal(gns, f"{ROOT}git/public/../bench/docs/pile.md").reason == "out-of-root"
+    assert refusal(gns, f"{ROOT}git/public/docs/%2e%2e/%2e%2e/etc/passwd").reason == "out-of-root"
+    e = refusal(gns, f"{ROOT}git/nope/")
+    assert e.reason == "not-found" and e.data["nearest"] == [f"{ROOT}git/bench/", f"{ROOT}git/public/"]
+    e = refusal(gns, f"{ROOT}git/public/docs/nes")
+    assert e.data["nearest"] == [f"{ROOT}git/public/docs/nes/"]
+    bare = json.loads(read(gns, f"{ROOT}git/public")[0]["text"])
+    assert bare["uri"] == f"{ROOT}git/public/" and bare["children"], "a repository's root is its tree, slash or no slash"
+    assert refusal(gns, f"{ROOT}git/public/data/secret-key.json").reason == "denied"
+    kids = {c["name"]: c for c in json.loads(read(gns, f"{ROOT}git/public/data/")[0]["text"])["children"]}
+    assert kids["secret-key.json"]["redacted"] is True
+
+
+def test_a_pulled_page_links_to_the_repository_it_came_from(gns):
+    """The spec's build manifest, read from the pull script: the pulled copy,
+    its page and the origin file are joined in every direction."""
+    assert gns.origins.by_fs == {"docs/nes/pile.md": ("bench", "docs/pile.md")}
+    _, links = read(gns, f"{ROOT}fs/docs/nes/pile.md")
+    r = rels(links)
+    assert r["tm:generated-by"] == [f"{ROOT}git/bench/docs/pile.md"]
+    assert r["version-history"] == [f"{ROOT}git/bench/docs/pile.md?as=log"]
+    assert "tm:repository" not in r, "a pulled copy is not in this repository"
+    _, links = read(gns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text")
+    assert rels(links)["tm:generated-by"] == [f"{ROOT}git/bench/docs/pile.md"]
+    origin, links = read(gns, f"{ROOT}git/bench/docs/pile.md")
+    assert "at the bench" in origin["text"]
+    r = rels(links)
+    assert r["tm:generates"] == [f"{ROOT}fs/docs/nes/pile.md"]
+    assert r["tm:renders-as"] == [f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES]
+    # And a file of this repository that is not pulled links to itself in git.
+    _, links = read(gns, f"{ROOT}fs/docs/nes/alone.md")
+    r = rels(links)
+    assert r["tm:repository"] == [f"{ROOT}git/public/docs/nes/alone.md"]
+    assert "tm:generated-by" not in r
+
+
+def test_the_real_pull_scripts_name_repositories_this_server_has():
+    """Over the real checkout: every origin row names a repository the git
+    mount offers, so no tm:generated-by link points at a mount that is not
+    there. Skipped where the siblings are not checked out."""
+    n = Namespace(REPO, fetch=canned_fetch)
+    assert len(n.origins.by_fs) > 50, "the pull scripts parsed to too few rows to mean anything"
+    assert n.origins.by_fs["docs/nes/pile.md"] == ("nes-bench", "docs/pile.md")
+    assert n.origins.by_fs["docs/6502/atlas.md"] == ("6502", "docs/atlas.md")
+    missing = {r for r, _ in n.origins.by_fs.values()} - set(n.git)
+    if missing:
+        pytest.skip(f"siblings not checked out here: {sorted(missing)}")
+
+
+def test_git_completion_offers_refs_and_tree_paths(gns):
+    def complete(name, value, **ctx):
+        p = {"ref": {"type": "ref/resource", "uri": f"{ROOT}git/{{repo}}{{/path*}}{{?at,as,n}}"}, "argument": {"name": name, "value": value}}
+        if ctx:
+            p["context"] = {"arguments": ctx}
+        return gns.complete(p)["completion"]["values"]
+
+    assert complete("repo", "") == ["bench", "public"]
+    assert complete("at", "", repo="public") == ["HEAD", "main", "v1"]
+    assert complete("at", "v", repo="public") == ["v1"]
+    assert complete("path", "docs/n", repo="public") == ["docs/nes/"]
+    assert complete("path", "docs/nes/", repo="public", at="v1") == ["docs/nes/alone.md", "docs/nes/index.md"]
+    assert complete("path", "x", repo="nope") == []
+    assert complete("as", "b") == ["blame"]

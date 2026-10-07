@@ -49,7 +49,9 @@ import base64
 import fnmatch
 import json
 import mimetypes
+import posixpath
 import re
+import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -69,6 +71,15 @@ FS_ROOTS = ("docs", "data", "notes")
 # The sites this box serves, by the name nginx knows them under.
 SITES = ("tinymachines.ai", "beta.tinymachines.ai")
 
+# The repositories the git mount offers, by their GitHub name, each a sibling
+# of this checkout. All public under github.com/tinymachines. "6502" is the
+# served worktree when there is one, because that is the commit the site's
+# pages were read from (CLAUDE.md: the build reads the served release, never
+# the working tree); its HEAD is the boarded commit.
+GIT_SIBLINGS = ("nes", "nes-bench", "nes-bus", "ntsc-crt", "halfphi", "2a03", "2c02")
+GIT_TIMEOUT_S = 15
+LOG_DEFAULT, LOG_MAX = 20, 100
+
 # The second net under the roots: a file that matches is listed as redacted
 # and refused on read, so the client knows it exists and does not get it.
 DENY = ("*.env", ".env*", "*.pem", "*.key", "id_*", "*secret*", "*.local.md", "*.db", "__pycache__", ".git", ".*")
@@ -83,6 +94,11 @@ PAGE_EXT = (".md", ".mdx")
 
 AS_FS = ("raw", "stat")
 AS_HTTP = ("rendered", "text", "stat")
+AS_GIT = ("raw", "log", "blame", "tree", "stat")
+
+# A ref a client may name: a branch, a tag, a commit. Nothing that git would
+# read as an option, nothing that walks.
+REF_OK = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 
 META_LINKS = "tinymachines.ai/links"
 
@@ -183,8 +199,8 @@ def _page(items: list, cursor: str | None, size: int) -> tuple[list, str | None]
 
 @dataclass
 class Ref:
-    mount: str                      # "" (the root), "fs" or "http"
-    site: str | None                # http only
+    mount: str                      # "" (the root), "fs", "git" or "http"
+    site: str | None                # http only; the repository name for git
     path: str                       # the backend's path: "docs/nes/pile.md", "/docs/nes/pile"
     facets: dict[str, str] = field(default_factory=dict)
 
@@ -199,6 +215,8 @@ class Ref:
             return ROOT
         if self.mount == "fs":
             return f"{ROOT}fs/{quote(self.path)}"
+        if self.mount == "git":
+            return f"{ROOT}git/{self.site}/{quote(self.path)}" if self.site else f"{ROOT}git/"
         return f"{ROOT}http/{self.site}{quote(self.path)}"
 
 
@@ -221,6 +239,12 @@ def parse(uri: str) -> Ref:
     if mount == "fs":
         path = "/".join(rest) + ("/" if trailing and rest else "")
         return Ref("fs", None, path, facets)
+    if mount == "git":
+        if not rest:
+            return Ref("git", None, "", facets)
+        repo, tree = rest[0], rest[1:]
+        path = "/".join(tree) + ("/" if trailing and tree else "")
+        return Ref("git", repo, path, facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -238,8 +262,75 @@ def parse(uri: str) -> Ref:
     raise TmError(
         RESOURCE_NOT_FOUND, "not-found",
         f"no mount named {mount!r}",
-        nearest=[f"{ROOT}fs/", f"{ROOT}http/"],
+        nearest=[f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/"],
     )
+
+
+# ---------------------------------------------------------------------------
+# The git mount's one way in: git itself, read-only, on a repository the
+# server was told about, with every argument passed as an argument.
+# ---------------------------------------------------------------------------
+
+
+def git_repos_beside(repo: Path) -> dict[str, Path]:
+    """The repositories offered: this checkout under its GitHub name, and the
+    siblings that are checked out here."""
+    out: dict[str, Path] = {"public": repo}
+    parent = repo.parent
+    for name in GIT_SIBLINGS:
+        d = parent / name
+        if (d / ".git").exists():
+            out[name] = d
+    served = parent / "6502-served"
+    if (served / ".git").exists():
+        out["6502"] = served
+    elif (parent / "6502" / ".git").exists():
+        out["6502"] = parent / "6502"
+    return out
+
+
+def run_git(repo_dir: Path, *args: str, binary: bool = False) -> bytes | str:
+    """One git command, no shell, a timeout, and its failure turned into a
+    refusal the client can read."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(repo_dir), *args],
+            capture_output=True, timeout=GIT_TIMEOUT_S, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise TmError(INTERNAL, "timeout", f"git {args[0]} took longer than {GIT_TIMEOUT_S}s") from None
+    if done.returncode != 0:
+        msg = done.stderr.decode("utf-8", errors="replace").strip().splitlines()
+        raise TmError(RESOURCE_NOT_FOUND, "git-error", msg[-1] if msg else f"git {args[0]} failed")
+    return done.stdout if binary else done.stdout.decode("utf-8", errors="replace")
+
+
+class Origins:
+    """Which repository a pulled page came from. The pull scripts are the one
+    copy of that fact (web/scripts/pull-nesdocs.mjs lists repo, file and slug
+    per row; pull-chipdocs.mjs lists the 6502 files), so this reads them
+    rather than keeping a second list. A row names where the pull writes:
+    docs/nes/<slug>.md, or docs/<section>/<slug>.md, or docs/6502/<file>."""
+
+    NES_ROW = re.compile(r'repo:\s*"([^"]+)"(?:,\s*section:\s*"([^"]+)")?,\s*file:\s*"([^"]+)",\s*slug:\s*"([^"]+)"')
+    CHIP_ROW = re.compile(r'^\s*file:\s*"([^"]+)",\s*$', re.M)
+
+    def __init__(self, repo: Path):
+        self.by_fs: dict[str, tuple[str, str]] = {}      # "docs/nes/pile.md" -> ("nes-bench", "docs/pile.md")
+        self.by_git: dict[tuple[str, str], str] = {}     # the inverse
+        nes = repo / "web" / "scripts" / "pull-nesdocs.mjs"
+        if nes.is_file():
+            for m in self.NES_ROW.finditer(nes.read_text()):
+                r, section, file, slug = m.groups()
+                self._add(f"docs/{section or 'nes'}/{slug}.md", r, f"docs/{file}")
+        chip = repo / "web" / "scripts" / "pull-chipdocs.mjs"
+        if chip.is_file():
+            for m in self.CHIP_ROW.finditer(chip.read_text()):
+                self._add(f"docs/6502/{m[1]}", "6502", f"docs/{m[1]}")
+
+    def _add(self, fs_rel: str, repo: str, git_path: str) -> None:
+        self.by_fs[fs_rel] = (repo, git_path)
+        self.by_git[(repo, git_path)] = fs_rel
 
 
 # ---------------------------------------------------------------------------
@@ -337,10 +428,18 @@ def page_text(html: str) -> str:
 
 
 class Namespace:
-    def __init__(self, repo: Path, fetch: Fetch = fetch_loopback, sites: tuple[str, ...] = SITES):
+    def __init__(
+        self,
+        repo: Path,
+        fetch: Fetch = fetch_loopback,
+        sites: tuple[str, ...] = SITES,
+        git_repos: dict[str, Path] | None = None,
+    ):
         self.repo = repo.resolve()
         self.fetch = fetch
         self.sites = sites
+        self.git = {k: v.resolve() for k, v in (git_repos if git_repos is not None else git_repos_beside(self.repo)).items()}
+        self.origins = Origins(self.repo)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -406,6 +505,19 @@ class Namespace:
                 ),
             },
             {
+                "uriTemplate": f"{ROOT}git/{{repo}}{{/path*}}{{?at,as,n}}",
+                "name": "git",
+                "title": "A file or tree of a repository, at a ref",
+                "description": (
+                    f"Repositories: {', '.join(sorted(self.git))}. A path is a tree path; at= is a branch, tag or "
+                    "commit (default HEAD; for 6502 that is the commit the site serves). as=log gives the commits "
+                    "touching the path (n= how many, default 20), as=blame the file with a commit per line, "
+                    "as=tree a directory as JSON, as=stat the object's type, size and resolved commit. A pulled "
+                    "notebook page's origin file carries tm:generates to the copy in this checkout and "
+                    "tm:renders-as to its page."
+                ),
+            },
+            {
                 "uriTemplate": f"{ROOT}http/{{site}}{{/path*}}{{?as}}",
                 "name": "http",
                 "title": "A page of a site this box serves",
@@ -424,6 +536,7 @@ class Namespace:
         items: list[dict] = [
             {"uri": ROOT, "name": "root", "title": "The mounts", "mimeType": "application/json"},
             {"uri": f"{ROOT}fs/", "name": "fs", "title": "The repository's files", "mimeType": "application/json"},
+            {"uri": f"{ROOT}git/", "name": "git", "title": "The repositories, at any ref", "mimeType": "application/json"},
             {"uri": f"{ROOT}http/", "name": "http", "title": "The sites this box serves", "mimeType": "application/json"},
         ]
         for root in FS_ROOTS:
@@ -434,6 +547,8 @@ class Namespace:
             for d in dirs:
                 rel = d.relative_to(self.repo).as_posix() + "/"
                 items.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": rel, "mimeType": "application/json"})
+        for name in sorted(self.git):
+            items.append({"uri": f"{ROOT}git/{name}/", "name": name, "title": f"tinymachines/{name} at HEAD", "mimeType": "application/json"})
         for site in self.sites:
             items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": "application/json"})
         chunk, nxt = _page(items, cursor, RESOURCES_PAGE)
@@ -456,9 +571,19 @@ class Namespace:
         ctx = ((params.get("context") or {}).get("arguments") or {})
         if name == "site":
             values = [s for s in self.sites if s.startswith(value)]
+        elif name == "repo":
+            values = [r for r in sorted(self.git) if r.startswith(value)]
         elif name == "as":
-            pool = AS_HTTP if "/http/" in tmpl else AS_FS
+            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_FS
             values = [a for a in pool if a.startswith(value)]
+        elif name == "n":
+            values = [str(n) for n in (LOG_DEFAULT, 50, LOG_MAX) if str(n).startswith(value)]
+        elif name == "at":
+            repo = ctx.get("repo") or "public"
+            values = self._git_refs(repo, value) if repo in self.git else []
+        elif name == "path" and "/git/" in tmpl:
+            repo = ctx.get("repo") or "public"
+            values = self._git_complete(repo, ctx.get("at") or "HEAD", value) if repo in self.git else []
         elif name == "path" and "/fs" in tmpl:
             values = self._fs_complete(value)
         elif name == "path" and "/http/" in tmpl:
@@ -478,13 +603,16 @@ class Namespace:
         if ref.mount == "":
             body = {"uri": ROOT, "mounts": [
                 {"uri": f"{ROOT}fs/", "what": f"the repository's files under {', '.join(FS_ROOTS)}/"},
+                {"uri": f"{ROOT}git/", "what": f"the repositories ({', '.join(sorted(self.git))}) at any ref, with history and blame"},
                 {"uri": f"{ROOT}http/", "what": "the sites this box serves, page by page"},
             ]}
             return self._result(ROOT, "application/json", json.dumps(body, indent=1), [
-                link("collection", f"{ROOT}fs/"), link("collection", f"{ROOT}http/"),
+                link("collection", f"{ROOT}fs/"), link("collection", f"{ROOT}git/"), link("collection", f"{ROOT}http/"),
             ])
         if ref.mount == "fs":
             return self._read_fs(ref)
+        if ref.mount == "git":
+            return self._read_git(ref)
         return await self._read_http(ref)
 
     def _result(self, uri: str, mime: str, text: str | None, links: list[dict], blob: bytes | None = None) -> dict:
@@ -575,6 +703,24 @@ class Namespace:
             if page:
                 for site in self.sites:
                     links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page this file becomes on {site}"))
+            links.extend(self._origin_links(clean))
+        return links
+
+    def _origin_links(self, rel: str) -> list[dict]:
+        """From a file of this checkout into git: the tracked file's own
+        history, or, for a page the build pulled in, the file in the other
+        repository it was pulled from."""
+        links: list[dict] = []
+        origin = self.origins.by_fs.get(rel)
+        if origin and origin[0] in self.git:
+            repo, gpath = origin
+            there = f"{ROOT}git/{repo}/{quote(gpath)}"
+            links.append(link("tm:generated-by", there, "exact", title=f"pulled at build time from {repo}/{gpath}"))
+            links.append(link("version-history", f"{there}?as=log"))
+        elif "public" in self.git and self._git_has("public", "HEAD", rel):
+            here = f"{ROOT}git/public/{quote(rel)}"
+            links.append(link("tm:repository", here, "exact", title="this file in the repository, at HEAD"))
+            links.append(link("version-history", f"{here}?as=log"))
         return links
 
     def page_for(self, rel: str) -> str | None:
@@ -668,6 +814,204 @@ class Namespace:
             return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)
         return self._result(uri, mime, None, links, blob=data)
 
+    # -- git ---------------------------------------------------------------
+
+    def _git_dir(self, repo: str | None) -> Path:
+        if repo is None or repo not in self.git:
+            raise TmError(
+                RESOURCE_NOT_FOUND, "not-found", f"{repo!r} is not a repository this server offers",
+                nearest=[f"{ROOT}git/{r}/" for r in sorted(self.git)],
+            )
+        return self.git[repo]
+
+    def _git_path(self, path: str) -> str:
+        """A tree path, normalised, refused if it would walk up. git would
+        refuse it too; this refuses it with the mount's own reason."""
+        clean = posixpath.normpath(path.rstrip("/")) if path.rstrip("/") else ""
+        if clean == ".":
+            clean = ""
+        if clean.startswith("../") or clean == ".." or clean.startswith("/"):
+            raise TmError(RESOURCE_NOT_FOUND, "out-of-root", f"{path} walks out of the tree")
+        if clean and denied(clean):
+            raise TmError(RESOURCE_NOT_FOUND, "denied", f"{clean} is on the deny-list; it exists and is not offered")
+        return clean
+
+    def _git_at(self, repo: str, at: str) -> str:
+        """The ref as given, checked, and its commit."""
+        if not REF_OK.match(at) or ".." in at:
+            raise TmError(BAD_PARAMS, "bad-facet", f"at={at!r} is not a ref name")
+        try:
+            return run_git(self._git_dir(repo), "rev-parse", "--verify", "--quiet", f"{at}^{{commit}}").strip()
+        except TmError:
+            raise TmError(
+                RESOURCE_NOT_FOUND, "no-such-ref", f"{repo} has no ref {at!r}",
+                nearest=[f"{ROOT}git/{repo}/?at={r}" for r in self._git_refs(repo, at[:1])[:5]],
+            ) from None
+
+    def _git_refs(self, repo: str, prefix: str) -> list[str]:
+        out = run_git(self._git_dir(repo), "for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/tags")
+        refs = ["HEAD"] + [r for r in out.split() if r]
+        return [r for r in refs if r.startswith(prefix)]
+
+    def _git_has(self, repo: str, at: str, path: str) -> bool:
+        try:
+            run_git(self._git_dir(repo), "cat-file", "-e", f"{at}:{path}")
+            return True
+        except TmError:
+            return False
+
+    def _git_children(self, repo: str, at: str, tree: str) -> list[dict]:
+        spec = f"{at}:{tree}" if tree else at
+        try:
+            out = run_git(self._git_dir(repo), "ls-tree", "-l", spec)
+        except TmError:
+            raise self._git_missing(repo, at, tree) from None
+        kids = []
+        for line in out.splitlines():
+            meta, _, name = line.partition("\t")
+            mode, kind, _sha, size = meta.split()
+            rel = f"{tree}/{name}" if tree else name
+            base = f"{ROOT}git/{repo}/{quote(rel)}"
+            if kind == "tree":
+                kids.append({"uri": base + "/", "name": name + "/", "mimeType": "application/json", "isCollection": True})
+            elif kind == "commit":
+                kids.append({"uri": base, "name": name, "submodule": True, "isCollection": False})
+            elif denied(rel):
+                kids.append({"uri": base, "name": name, "redacted": True, "isCollection": False})
+            else:
+                kids.append({"uri": base, "name": name, "mimeType": mime_for(name), "size": int(size), "isCollection": False})
+        kids.sort(key=lambda c: (not c["isCollection"], c["name"]))
+        return kids
+
+    def _git_missing(self, repo: str, at: str, path: str) -> TmError:
+        clean = path.rstrip("/")
+        parent, _, leaf = clean.rpartition("/")
+        try:
+            sibs = self._git_children(repo, at, parent)
+        except TmError:
+            sibs = []
+        sibs.sort(key=lambda c: (0 if c["name"].rstrip("/").startswith(leaf[:3]) else 1, c["name"]))
+        return TmError(
+            RESOURCE_NOT_FOUND, "not-found", f"{repo} at {at} has no {clean!r}",
+            nearest=[c["uri"] for c in sibs[:5]],
+        )
+
+    def _git_complete(self, repo: str, at: str, typed: str) -> list[str]:
+        d, _, leaf = typed.rpartition("/")
+        try:
+            kids = self._git_children(repo, at, d)
+        except TmError:
+            return []
+        prefix = f"{d}/" if d else ""
+        return [prefix + c["name"] for c in kids if c["name"].startswith(leaf)]
+
+    def _git_links(self, repo: str, at: str, path: str, is_dir: bool, head: bool) -> list[dict]:
+        clean = path.rstrip("/")
+        parent = clean.rpartition("/")[0]
+        q = "" if head else f"?at={at}"
+        up = f"{ROOT}git/{repo}/{quote(parent)}/{q}" if parent else f"{ROOT}git/{repo}/{q}"
+        links = [link("up", up if clean else f"{ROOT}git/")]
+        base = f"{ROOT}git/{repo}/{quote(clean)}"
+        if not head and clean:
+            links.append(link("latest-version", base, title="the same path at HEAD"))
+        if is_dir:
+            return links
+        sep = "&" if q else "?"
+        links.append(link("collection", up))
+        links.append(link("describedby", f"{base}{q}{sep}as=stat"))
+        links.append(link("version-history", f"{base}{q}{sep}as=log"))
+        links.append(link("alternate", f"{base}{q}{sep}as=blame", title="the file with a commit per line"))
+        if repo == "public" and clean.split("/")[0] in FS_ROOTS and (self.repo / clean).is_file():
+            links.append(link("tm:working-copy", f"{ROOT}fs/{quote(clean)}", "exact", title="the checked-out file"))
+        pulled = self.origins.by_git.get((repo, clean))
+        if pulled:
+            links.append(link("tm:generates", f"{ROOT}fs/{quote(pulled)}", "exact", title=f"the copy the build pulls to {pulled}"))
+            page = self.page_for(pulled)
+            if page:
+                for site in self.sites:
+                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page it becomes on {site}"))
+        return links
+
+    def _read_git(self, ref: Ref) -> dict:
+        if ref.site is None:
+            body = {"uri": f"{ROOT}git/", "children": [
+                {"uri": f"{ROOT}git/{r}/", "name": r + "/", "mimeType": "application/json", "isCollection": True,
+                 "title": f"github.com/tinymachines/{r}"} for r in sorted(self.git)
+            ]}
+            return self._result(f"{ROOT}git/", "application/json", json.dumps(body, indent=1), [link("up", ROOT)])
+        repo = ref.site
+        as_ = ref.facets.get("as", "tree" if ref.is_collection else "raw")
+        if as_ not in AS_GIT:
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; git offers {', '.join(AS_GIT)}")
+        at = ref.facets.get("at", "HEAD")
+        commit = self._git_at(repo, at)
+        head = at == "HEAD"
+        path = self._git_path(ref.path)
+        q = "" if head else f"?at={at}"
+        sep = "&" if q else "?"
+        base = f"{ROOT}git/{repo}/{quote(path)}"
+        if as_ == "tree" or (ref.is_collection and as_ == "raw"):
+            kids = self._git_children(repo, at, path)
+            chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
+            body: dict[str, Any] = {"uri": base + ("/" if path else ""), "at": at, "commit": commit, "children": chunk}
+            if nxt:
+                body["nextCursor"] = nxt
+            return self._result(body["uri"] + q, "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
+        if not path:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"the root of {repo} is a tree; read {ROOT}git/{repo}/", nearest=[f"{ROOT}git/{repo}/"])
+        if as_ == "log":
+            try:
+                n = max(1, min(int(ref.facets.get("n", LOG_DEFAULT)), LOG_MAX))
+            except ValueError:
+                raise TmError(BAD_PARAMS, "bad-facet", "n= must be a number") from None
+            if not self._git_has(repo, at, path):
+                raise self._git_missing(repo, at, path)
+            out = run_git(self._git_dir(repo), "log", f"-n{n}", "--format=%H%x1f%h%x1f%an%x1f%aI%x1f%s", at, "--", path)
+            commits = []
+            for line in out.splitlines():
+                full, short, author, date, subject = line.split("\x1f", 4)
+                commits.append({"commit": full, "short": short, "author": author, "date": date, "subject": subject,
+                                "uri": f"{base}?at={full}"})
+            body = {"uri": f"{base}{q}{sep}as=log", "path": path, "at": at, "n": n, "commits": commits}
+            return self._result(body["uri"], "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, False, head))
+        try:
+            kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{at}:{path}").strip()
+        except TmError:
+            raise self._git_missing(repo, at, path) from None
+        if kind == "tree":
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{path} is a tree; its listing is at {base}/", nearest=[f"{base}/{q}"])
+        if kind != "blob":
+            raise TmError(RESOURCE_NOT_FOUND, "binary", f"{path} is a {kind} (a submodule), not a file", mimeType="application/x-git-" + kind)
+        size = int(run_git(self._git_dir(repo), "cat-file", "-s", f"{at}:{path}").strip())
+        mime = mime_for(path)
+        links = self._git_links(repo, at, path, False, head)
+        if as_ == "stat":
+            stat = {"uri": base, "path": path, "at": at, "commit": commit, "type": kind, "size": size, "mimeType": mime, "text": is_text(mime)}
+            return self._result(f"{base}{q}{sep}as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", base + q)])
+        if as_ == "blame":
+            out = run_git(self._git_dir(repo), "blame", "-l", "--root", "--date=short", at, "--", path)
+            if len(out.encode()) > READ_CAP:
+                raise TmError(RESOURCE_NOT_FOUND, "too-large", f"blame of {path} is over the cap; read the file in ranges and the log instead",
+                              size=len(out.encode()), log=f"{base}{q}{sep}as=log")
+            return self._result(f"{base}{q}{sep}as=blame", "text/plain", out, links)
+        rng = ref.facets.get("range")
+        start, end = 0, size
+        if rng is not None:
+            m = re.fullmatch(r"(\d+)-(\d+)", rng)
+            if not m or int(m[1]) >= int(m[2]):
+                raise TmError(BAD_PARAMS, "bad-facet", "range=START-END, bytes [START, END) with START < END")
+            start, end = int(m[1]), min(int(m[2]), size)
+            if end - start > READ_CAP:
+                raise TmError(BAD_PARAMS, "too-large", f"a range reads at most {READ_CAP} bytes", size=size)
+        elif size > READ_CAP:
+            raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{path} is {size} bytes at {at}; the cap is {READ_CAP}. Read it in ranges.",
+                          size=size, range=f"{base}{q}{sep}range={{start}}-{{end}}", stat=f"{base}{q}{sep}as=stat")
+        data = run_git(self._git_dir(repo), "cat-file", "blob", f"{at}:{path}", binary=True)[start:end]
+        uri = base + q if rng is None else f"{base}{q}{sep}range={start}-{end}"
+        if is_text(mime):
+            return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)
+        return self._result(uri, mime, None, links, blob=data)
+
     # -- http --------------------------------------------------------------
 
     def _site_pages(self, site: str) -> list[str]:
@@ -741,6 +1085,10 @@ class Namespace:
                 src = self.source_for("ja" if m[1] else "en", m[2] or "")
                 if src:
                     links.append(link("tm:source", f"{ROOT}fs/{quote(src)}", "exact", title="the markdown this page is rendered from"))
+                    origin = self.origins.by_fs.get(src)
+                    if origin and origin[0] in self.git:
+                        links.append(link("tm:generated-by", f"{ROOT}git/{origin[0]}/{quote(origin[1])}", "exact",
+                                          title=f"pulled at build time from {origin[0]}/{origin[1]}"))
         return links
 
     async def _read_http(self, ref: Ref) -> dict:

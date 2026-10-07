@@ -86,13 +86,17 @@ Four tools:
 | `licensing` | what may be published and under what terms, which is not one licence |
 | `resolve` | one `tm://` URI, read, with its links in the body; the tool-shaped door into the namespace below |
 
-And the namespace, as MCP resources. The grammar is one host and two
+And the namespace, as MCP resources. The grammar is one host and three
 mounts:
 
 ```
 tm://tinymachines/                                 the mounts
 tm://tinymachines/fs/docs/nes/pile.md              a file of the site's checkout
 tm://tinymachines/fs/docs/nes/                     a directory; reading it lists it
+tm://tinymachines/git/nes-bench/docs/pile.md       the same file in the repository
+                                                   it was pulled from, at HEAD
+tm://tinymachines/git/public/docs/words.md?at=v1.0&as=blame
+                                                   a file at a tag, a commit per line
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                                    the page that file becomes, as text
 ```
@@ -103,10 +107,21 @@ representation is a query parameter, never a path suffix: `?as=stat` is the
 metadata of the same thing, `?as=text` a page's readable text, `?as=rendered`
 the HTML with the headers a visitor gets.
 
+The git mount offers the site's own repository and the ones beside it that
+the notebook pulls pages from, all public on GitHub under the same names.
+`?at=` is a branch, tag or commit, `?as=log` the commits touching a path
+(`&n=` how many), `?as=blame` the file with a commit per line, `?as=tree` a
+directory as JSON. For `6502` the default ref is the commit the site is
+serving, not the newest.
+
 Every read carries links. A notebook page links to the markdown it is
 rendered from (`tm:source`), the markdown links back to its page
-(`tm:renders-as`), and `up`, `collection`, `alternate` and `describedby`
-mean what the IANA registry says. Through resources the links sit in the
+(`tm:renders-as`); a page the build pulled from another repository, and its
+copy here, link to the file they came from (`tm:generated-by`) and that file
+links forward (`tm:generates`); a file here and the same file in git are
+joined both ways (`tm:repository`, `tm:working-copy`); and `up`,
+`collection`, `alternate`, `describedby`, `version-history` and
+`latest-version` mean what the IANA registry says. Through resources the links sit in the
 result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.
 
@@ -122,15 +137,16 @@ Six exchanges take a client from a cold connection to the source file behind
 a page, without guessing a path:
 
 1. `initialize`: the capabilities and the orientation.
-2. `resources/templates/list`: the three templates, root, fs and http.
+2. `resources/templates/list`: the four templates, root, fs, git and http.
 3. Read `tm://tinymachines/http/tinymachines.ai/docs/nes/`: the notebook's
    NES section, page by page.
 4. `completion/complete` on the fs template's `path` with `docs/nes/pi`
    typed: the files that start that way.
 5. Read `tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text`: the
    page's text, and a `tm:source` link.
-6. Read that link: the markdown, with its own link back to the page and the
-   directory it sits in.
+6. Read that link: the markdown, with its own link back to the page, to the
+   directory it sits in, and to the file in the bench repository it was
+   pulled from, whose `?as=log` is its history.
 
 Through the `resolve` tool, the same six steps are calls with a `uri`
 argument, and the links come back in the body.
@@ -204,12 +220,19 @@ mount's roots; a read is capped in bytes and offers ranges beyond the cap;
 a listing is paged; a deny-list of filename patterns is a second net, listed
 as redacted so a client knows the file exists and does not get it.
 
-Two of ours, and the reason each is shaped the way it is:
+Three of ours, and the reason each is shaped the way it is:
 
 - **fs** offers three directories of the checkout that serves the site, the
   ones that are public on GitHub anyway. The roots are an allowlist, never
   the host, because this box holds a sign-in database and a gitignored
   hosting runbook, and no deny-list of names would catch them.
+- **git** runs git itself, read-only, on repositories the server was told
+  about, with every argument passed as an argument and never through a
+  shell. A ref is checked against a pattern before it is used, so nothing a
+  client names can be read as an option; a tree path is normalised and
+  refused if it walks up. Which repository a pulled page came from is read
+  from the pull scripts, which are the one copy of that fact, rather than
+  kept as a second list.
 - **http** fetches a page through nginx on loopback, with the site's name as
   SNI and as the `Host` header, so the bytes are what a visitor gets: the
   real certificate, the redirect map, the policy headers. The site has to be
@@ -245,6 +268,8 @@ A refusal is a JSON-RPC error whose `data.reason` a client can switch on:
 | `too-large` | the size, a `?range=` template, a `?as=stat` link |
 | `binary` | the type and a `?as=stat` link |
 | `redirect` | the status; the visitor would be sent on |
+| `no-such-ref` | the refs that start the same way |
+| `git-error` | git's own last line |
 | `bad-facet`, `bad-cursor` | what was expected |
 
 Through the `resolve` tool the same refusal is an `isError` result with
@@ -263,10 +288,8 @@ on a real refusal or a real list.
 
 ## What is not here yet
 
-The namespace is its first slice. Not yet: a `git` mount (history, blame, a
-file at a ref, and which repository a pulled page came from, which the pull
-list already knows); `tm:data` links from a page to the record its figures
-are filled from; subscriptions; and anything that writes. Writes are not
+Not yet: `tm:data` links from a page to the record its figures are filled
+from; subscriptions; and anything that writes. Writes are not
 planned. The direction the spec reserves is proposals: a tool that takes a
 URI a client wishes existed and stages a reviewable change, with nothing
 landing without the owner's approval.

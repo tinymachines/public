@@ -284,6 +284,9 @@ resources at all before a server is written for the purpose.
 tm://tinymachines/                           the mounts
 tm://tinymachines/fs/docs/nes/pile.md        a file; ?as=stat for its metadata
 tm://tinymachines/fs/docs/nes/               a directory: reading it lists it
+tm://tinymachines/git/nes-bench/docs/pile.md?at=v1.0
+                                             a file of a repository, at a ref;
+                                             ?as=log, ?as=blame, ?as=tree, ?as=stat
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                              a page, as its readable text
 ```
@@ -296,10 +299,22 @@ the tool keeps its reason and its nearest URIs. A collection is a URI ending in 
 reading one returns its children as JSON with a cursor, which is how a client
 walks coarse to fine. Every read carries links in `_meta` under
 `tinymachines.ai/links`: `tm:source` from a notebook page to its markdown,
-`tm:renders-as` back, and `up`, `collection`, `alternate` and `describedby` as
-the IANA registry defines them. A URI that does not resolve comes back as a
+`tm:renders-as` back, `tm:generated-by` from a pulled page or its copy to the
+file in the repository it was pulled from and `tm:generates` back,
+`tm:repository` and `tm:working-copy` between a file here and the same file
+in git, and `up`, `collection`, `alternate`, `describedby`, `version-history`
+and `latest-version` as the IANA registry defines them. A URI that does not resolve comes back as a
 JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
 that do, `too-large` with a range template, `out-of-root`, `denied`, `binary`).
+
+The git mount offers this repository and the siblings checked out beside it,
+under their GitHub names, all public under github.com/tinymachines. It runs
+git itself, read-only, with every argument passed as an argument, a ref
+checked against a pattern before it is used, and the tree path normalised
+and refused if it walks up. `6502` is the served worktree, so its HEAD is
+the commit the site's pages were read from. Which repository a pulled page
+came from is read from the pull scripts (`web/scripts/pull-nesdocs.mjs`,
+`pull-chipdocs.mjs`), which are the one copy of that fact.
 
 Three decisions, each for a reason this box supplies: the fs roots are an
 allowlist of the three directories that are public on GitHub, never the host,
@@ -309,8 +324,8 @@ visitor gets and the mount cannot be pointed at a site this box does not
 serve; and the page-to-source join is the notebook loader's own rule restated,
 which `test_tm.py` checks against the loader and against the last crawl.
 
-What waits for the git mount: which repository a pulled page came from, which
-data file a page reads, history and blame.
+What is not here yet: `tm:data` links from a page to the record its figures
+are filled from, and subscriptions.
 
 ## Pieces and surfaces are different questions
 
