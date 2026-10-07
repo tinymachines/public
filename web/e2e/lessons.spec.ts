@@ -195,6 +195,19 @@ for (const l of record()) {
       expect(l.measures.mirroring?.fixed).toBe(true);
       expect(a.mirroring?.slide).toBe("vertical");
       await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
+    } else if (l.kind === "interlude") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A slide, a walk with the pad ignored, the time counted into the score, a card, the next level.
+        expect(x.slide).toBeGreaterThan(5);
+        expect(x.walk).toBeGreaterThan(5);
+        expect(x.ignored).toBe(true);
+        expect(x.count_frames).toBeGreaterThan(5);
+        expect(x.per_unit).toBeGreaterThan(0);
+        expect(x.card).toBeGreaterThan(30);
+        expect(x.levels[1] - x.levels[0]).toBe(1);
+      }
+      expect(rows.find((r) => r[0] === "slide")?.slice(1)).toEqual([String(l.measures.slide), String(a.slide)]);
     } else if (l.kind === "gameover") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

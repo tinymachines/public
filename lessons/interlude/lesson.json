@@ -1,0 +1,36 @@
+{
+ "title": "The level's end, the way Mario's is",
+ "kind": "interlude",
+ "description": "A cartridge of our own where touching the pole at the end of the level hands the game to itself: the pad is ignored, the square slides down and walks to the door by itself, the time left is counted into the score, a card names the next level, and the next level begins, compared by that shape with how Super Mario Bros. was seen ending a level, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "end.txt",
+ "frames": 1000,
+ "grabs": [
+  120,
+  150,
+  250,
+  520
+ ],
+ "walk_from": 20,
+ "memory": {
+  "x": "$11",
+  "y": "$15",
+  "round": "$50",
+  "level": "$53",
+  "time": [
+   "$56",
+   "$57",
+   "$58"
+  ],
+  "score": [
+   "$60",
+   "$61",
+   "$62",
+   "$63"
+  ]
+ }
+}

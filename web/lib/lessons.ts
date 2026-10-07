@@ -317,6 +317,20 @@ export interface GameoverMeasures {
   lives: number[];
 }
 
+/** A level's end (interlude_measures). */
+export interface InterludeMeasures {
+  slide: number;
+  walk: number;
+  ignored: boolean;
+  count_frames: number;
+  units: number;
+  per_unit: number;
+  counted: number;
+  card_after: number;
+  card: number;
+  levels: number[];
+}
+
 interface Base {
   key: string;
   title: string;
@@ -354,6 +368,7 @@ export type Lesson =
   | (Base & { kind: "hitbox"; measures: HitboxMeasures; against?: (HitboxMeasures & { game: string }) | null })
   | (Base & { kind: "pit"; measures: PitMeasures; against?: (PitMeasures & { game: string }) | null })
   | (Base & { kind: "gameover"; measures: GameoverMeasures; against?: (GameoverMeasures & { game: string }) | null })
+  | (Base & { kind: "interlude"; measures: InterludeMeasures; against?: (InterludeMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

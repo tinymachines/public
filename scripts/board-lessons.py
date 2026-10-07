@@ -1089,6 +1089,73 @@ def gameover_measures(dirpath: Path, origin: int, start: int, lives, dying, play
     }
 
 
+def interlude_measures(dirpath: Path, start: int, x, y, time, score, level, sliding, walking, playing):
+    """A level's end, from memory, the pad and the writes to the picture,
+    with the game's own bytes as functions of the cells and a frame: from
+    the first frame after `start` the player is sliding, the frames of
+    the slide (sliding, y rising), the frames of the walk (walking, x
+    rising) and whether the pad was held the other way meanwhile and
+    ignored (Left held on some of those frames, x never falling); then
+    the count: the frames the time falls on, the units it falls by on a
+    frame, and the points the score rises by for each; the frames from
+    the count's end to the picture being cleared for the card and from
+    that to playing again; and the level's number before and after."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    pad = (dirpath / "pad.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    touch = next(f for f in range(start, n) if sliding(c, f) and not sliding(c, f - 1))
+    before = level(c, touch - 1)
+    slid = next(f for f in range(touch, n) if not sliding(c, f))
+    # The count: the first unbroken run of frames the time falls on (a gap
+    # of more than three frames ends it; the next level's own clock, a
+    # unit every so many frames, is not the count).
+    falls = []
+    for f in range(slid, n):
+        if time(c, f) < time(c, f - 1):
+            if falls and f - falls[-1] > 3:
+                break
+            falls.append(f)
+    if not falls:
+        sys.exit(f"board-lessons: the time never counted down after frame {slid} in {dirpath}")
+    first, last = falls[0], falls[-1]
+    # The walk ends with its last step before the count (Mario stands at the
+    # pole's foot a while before walking, and his count begins a few frames
+    # before his last step).
+    steps = [f for f in range(slid, first) if walking(c, f) and x(c, f) > x(c, f - 1)]
+    walk_end = (steps[-1] + 1) if steps else slid
+    left = [f for f in range(touch, walk_end) if pad[f] & 0x40]
+    ignored = bool(left) and all(x(c, f) >= x(c, f - 1) for f in range(touch + 1, walk_end))
+    units = [time(c, f - 1) - time(c, f) for f in falls]
+    mode = lambda v: max(set(v), key=v.count)
+    per_unit = round((score(c, last) - score(c, first - 1)) / max(1, time(c, first - 1) - time(c, last)))
+    runs = joined_runs(dirpath / "vram.txt")
+    cleared = next(f for f, a, k, _ in runs if f >= last and k >= 1000)
+    again = next(f for f in range(cleared, n) if playing(c, f))
+    return {
+        "slide": slid - touch, "walk": walk_end - slid, "ignored": ignored,
+        "count_frames": last - first + 1, "units": mode(units), "per_unit": per_unit, "counted": time(c, first - 1) - time(c, last),
+        "card_after": cleared - last, "card": again - cleared, "levels": [before, level(c, again)],
+    }
+
+
+def mario_interlude(dirpath: Path):
+    """The same off Super Mario Bros., the private run that reaches the
+    flagpole of 1-1 and holds Left from there (flag): sliding is state 4
+    at $000E and the walk into the castle state 5; the time is the three
+    digits at $07F8 to $07FA; the score is the six digits at $07DD to
+    $07E2, shown with a nought after them; the level is $075C, counted
+    from nought, so one is added; playing is the level's task with Mario
+    walking, as in the lives lesson."""
+    m = interlude_measures(
+        dirpath / "flag", 2500, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
+        lambda c, f: c(f, 0x7F8) * 100 + c(f, 0x7F9) * 10 + c(f, 0x7FA), lambda c, f: int("".join(str(c(f, 0x7DD + i)) for i in range(6))) * 10,
+        lambda c, f: c(f, 0x75C) + 1, lambda c, f: c(f, 0x0E) == 4, lambda c, f: c(f, 0x0E) == 5,
+        # Played: the level's task, whether or not Mario is walking in by himself yet.
+        lambda c, f: c(f, 0x770) == 1 and c(f, 0x772) == 3)
+    return {"game": "Super Mario Bros.", **m}
+
+
 def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
     """A coin from a block, from memory and the writes to the picture,
     with the game's coin count and score given as functions of the cells
@@ -1326,6 +1393,14 @@ def main():
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
+        elif kind == "interlude":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            digits = lambda addrs: (lambda c, f: int("".join(str(c(f, h(a))) for a in addrs)))
+            measures = interlude_measures(run, meta["walk_from"], lambda c, f: c(f, h(mm["x"])), lambda c, f: c(f, h(mm["y"])), digits(mm["time"]), digits(mm["score"]),
+                                          lambda c, f: c(f, h(mm["level"])), lambda c, f: c(f, h(mm["round"])) == 7, lambda c, f: c(f, h(mm["round"])) == 8,
+                                          lambda c, f: c(f, h(mm["round"])) == 0)
+            against = mario_interlude(Path(compare[name])) if name in compare else prev.get("against")
         elif kind == "gameover":
             h = lambda a: int(a[1:], 16)
             mm = meta["memory"]

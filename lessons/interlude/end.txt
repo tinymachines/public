@@ -1,0 +1,10 @@
+# frames 1000
+# Right held to the pole, with A held for a jump on the way so the pole
+# is caught in the air; then Left held through the slide, the walk and
+# the count, to show that the pad is ignored; then the next level, with
+# Right held again.
+AT 20 80
+AT 114 81
+AT 134 80
+AT 150 40
+AT 600 80
