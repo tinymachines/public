@@ -4964,3 +4964,29 @@ page's two MAC addresses and office-machine line, nes-bench's
 sprite sign-in test, the Othello redump, the reader firmware). When
 hotbits starts counting for real, `/docs/hotbits` says the pool was not
 fed "at that moment" and should be updated from geiger's plan.
+
+## Checkpoint, 2026-10-07 (early): the MCP page in Japanese
+
+Live and beta serve `8d51312` (deployed 2026-10-07 early on the owner's
+word, every stage passing, main pushed, nothing waiting). One commit
+since the last checkpoint:
+
+| commit | what |
+|---|---|
+| `8d51312` | `docs/ja/mcp-setup-guide.md`, the whole guide in Japanese: fourteen headings and five fenced blocks as in the English, commands and URIs left as they are; the title and description in the overlay; stamped, and no longer listed as untranslated. Live at `/ja/docs/mcp-setup-guide` |
+
+nes-bench pushed `6288fd7` (the P4's MAC on the pile page), announced
+by the 6502-aa session; this side already shadowed it at `812c8c5`, so
+nothing drifted.
+
+**Where to pick up.** The list is the one from the last checkpoint of
+2026-10-06, less the Japanese body, which is done. First, the owner's
+client test against `https://tinymachines.ai/api/mcp`: resources, or
+`resolve`? Then, by the owner's choice: subscriptions if a use appears;
+the additional patterns for the lessons (Interludes, Dead, End of Game,
+Hit Detection); `/docs/hotbits` updated from geiger's plan once the tube
+feeds the pool for real; the standing items (the pile page's two MAC
+addresses and office-machine line, nes-bench's `tools/pulled-docs.json`
+row for `pile.md`, 139 lint warnings, the sprite sign-in test, the
+Othello redump, the reader firmware). One untranslated page remains in
+the notebook, `docs/6502/two-ways-in.mdx`, which predates this work.
