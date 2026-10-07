@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { BASE, DESK, open } from "./lib";
+import { DESK, open } from "./lib";
 
 /**
  * The three doors, and the notebook's kinds: the two pages read cold on

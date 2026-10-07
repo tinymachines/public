@@ -225,7 +225,7 @@ function Topbar({
   return (
     <div className="band topbar">
       {hard ? (
-        // eslint-disable-next-line @next/next/no-html-link-for-pages
+         
         <a href={home} className="wordmark" aria-label="tinymachines.ai">{mark}</a>
       ) : (
         <Link href={home} className="wordmark" aria-label="tinymachines.ai">{mark}</Link>

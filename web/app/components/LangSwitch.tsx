@@ -56,6 +56,6 @@ export function LangSwitch({ lang, hard = false }: { lang: Lang; hard?: boolean 
   const flag = other === "ja" ? <FlagJP /> : <FlagUS />;
   // A plain anchor on a page whose module must not survive the navigation
   // (see MenuItem.hard). Same target, same markup, a fresh document.
-  // eslint-disable-next-line @next/next/no-html-link-for-pages
+   
   return hard ? <a {...props}>{flag}</a> : <Link {...props}>{flag}</Link>;
 }

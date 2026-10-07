@@ -46,7 +46,7 @@ describe("a bench drawing package is current or refused", () => {
   });
 
   test("no record, or a record for another package, is refused", () => {
-    const none = bench(({ dir }) => { /* the record is written after edit; remove it below */ });
+    const none = bench(() => { /* the record is written after edit; remove it below */ });
     fs.unlinkSync(path.join(none, "docs", "package", "tm-nesb-009", "built.json"));
     expect(() => packagePdf(none, "package-nine.json", "a".repeat(40))).toThrow(/no built.json/);
     const other = bench(({ record }) => { record.rev = "B"; record.file = "nes-bench-TM-NESB-009-revB.pdf"; });

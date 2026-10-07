@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 import Link from "next/link";
 import { localize, t } from "@/lib/i18n";
-import { project, measuredOn, serviceOrigin } from "@/lib/projects";
+import { project, serviceOrigin } from "@/lib/projects";
 import { Shell } from "@/app/components/SiteFrame";
 import { Pool } from "./Pool";
 import "./hotbits.css";

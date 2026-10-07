@@ -139,7 +139,10 @@ export function local({ engine } = {}) {
 
   return session({
     kind: "local",
-    async boot({ source, org = 0x0200, machine = null }) {
+    // `source` and `org` are the remote backend's half of this signature:
+    // there is no assembler here, so a call that carries them lands on the
+    // refusal below, which says where to assemble instead.
+    async boot({ machine = null }) {
       if (machine) {
         restoreInto(engine, machine);
         return { machine: JSON.parse(engine.exportMachine()), observe: readRegisters(engine) };

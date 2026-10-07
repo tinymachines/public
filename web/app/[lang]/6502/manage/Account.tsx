@@ -191,6 +191,10 @@ export function Account({ lang = "en" }: { lang?: Lang }) {
       <p className="eyebrow">{S.eyebrow}</p>
       <h2>{S.tokens}</h2>
       <p className="note acct-who">
+        {/* GitHub's avatar, 28 px, straight from GitHub: next/image would
+            route it through this site's optimizer for no gain and one more
+            host to allow. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         {me.user.pic ? <img className="acct-pic" src={me.user.pic} alt="" width={28} height={28} /> : null}
         {S.signedIn(me.user.name, me.user.login)}{" "}
         <button type="button" className="linkish" onClick={signOut}>{S.signOut}</button>

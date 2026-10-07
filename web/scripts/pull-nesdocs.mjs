@@ -438,6 +438,7 @@ if (fs.existsSync(LAB)) {
     }
   }
 }
+console.log(`pull-nesdocs: ${labCount} photographs from the lab notebook`);
 
 // A dotted quad that is somebody's machine. Documentation addresses
 // (RFC 5737) and the loopback are not: a page may legitimately show

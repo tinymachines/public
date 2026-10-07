@@ -230,13 +230,13 @@ export function Menu({
                 <>
                   <span>{account.signedIn} <b>@{who.login}</b></span>
                   {hard ? (
-                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                     
                     <a href={editor}>{account.tokens}</a>
                   ) : (
                     <Link href={editor}>{account.tokens}</Link>
                   )}
                   {who.shelf ? (
-                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                     
                     <a href={localize(lang, "/nes/shelf")} data-menu-shelf>{account.carts}</a>
                   ) : null}
                   <button type="button" className="linkish" onClick={signOut}>{account.signOut}</button>

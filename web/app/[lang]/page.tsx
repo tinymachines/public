@@ -249,7 +249,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
         <div className="hero-ctas">
           {/* A plain anchor, on purpose: the explorer's module must start
               from a fresh document (lib/nav.ts, MenuItem.hard). */}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          { }
           <a className="btn btn-primary" href={localize(lang, "/6502/explorer")}>
             {S.ctaExplorer}
           </a>
@@ -307,7 +307,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
                     </a>
                   ) : isHardRoute(s.lands_at) ? (
                     // A fresh document for the explorer's pages (lib/nav.ts).
-                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                     
                     <a key={s.key} className="tag" href={localize(lang, s.lands_at)}>
                       {t(lang, s.nav_label ?? s.name)}
                     </a>
@@ -370,7 +370,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
                 if (!href) return null;
                 return onSite ? (
                   isHardRoute(href) ? (
-                    // eslint-disable-next-line @next/next/no-html-link-for-pages
+                     
                     <a className="tag live" href={localize(lang, href)}>
                       {S.readHere}
                     </a>

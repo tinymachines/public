@@ -450,6 +450,16 @@ if (manifest) {
     console.error(`check-build: only ${entries.length} nav entries derived; this would pass on nothing.`);
     process.exit(2);
   }
+  // Every entry points at a route this build prerendered, or at a surface
+  // the manifest says is served another way. This comparison is the check;
+  // the sets above were built and, from 2026-08-25 until the lint sweep of
+  // 2026-10-07, never compared, so the check passed on nothing.
+  const dead = entries.filter((e) => !routes.has(e) && !served.has(e));
+  if (dead.length) {
+    console.error(`check-build: nav entries with no route in this build: ${dead.join(", ")}`);
+    process.exit(2);
+  }
+  console.log(`check-build: ${entries.length} nav entries, every one a route or a served surface`);
   // The footer no longer renders the map (owner's call, 2026-08-25): the menu
   // is the one place it appears, built from this same list in lib/nav.ts, so
   // there is no second rendering left to drift. The parity check that lived

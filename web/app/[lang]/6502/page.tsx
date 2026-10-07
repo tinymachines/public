@@ -44,61 +44,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return pageMeta(lang, "/6502")
 }
 
-const PROSE = {
-  en: {
-    surfaces: (n: number, d: string) => (
-      <>
-        <b>{n} parts,</b> each address probed {d}
-      </>
-    ),
-    hereCount: (h: number, n: number) => (
-      <>
-        <b>
-          {h} of {n} parts are here.
-        </b>{" "}
-        Every one of them still answers at its own subdomain as well, because
-        nothing has been switched off.
-      </>
-    ),
-    theSurfaces: "The parts",
-    thSurface: "Part",
-    thWhat: "What it is",
-    thToday: "Answers today",
-    thLands: "Lands at",
-    thStatus: "Status",
-    proposed: "proposed",
-    settled: (a: number, b: number) => `${a} of ${b} final addresses settled`,
-    redirectMap: "An address that moves becomes a redirect; published links keep working.",
-  },
-  ja: {
-    surfaces: (n: number, d: string) => (
-      <>
-        <b>部品 {n} 点。</b>各アドレスの応答を {d} に確認
-      </>
-    ),
-    hereCount: (h: number, n: number) => (
-      <>
-        <b>
-          {n} 点中 {h} 点がここにある。
-        </b>{" "}
-        どれも元のサブドメインでも今なお応答している。何も止めていないからだ。
-      </>
-    ),
-    theSurfaces: "部品一覧",
-    thSurface: "部品",
-    thWhat: "何であるか",
-    thToday: "今日応答する場所",
-    thLands: "着地先",
-    thStatus: "状態",
-    proposed: "提案",
-    settled: (a: number, b: number) => `最終アドレス ${b} 件中 ${a} 件が確定`,
-    redirectMap: "動くアドレスはリダイレクトになる。公開済みのリンクは切れない。",
-  },
-} as const;
-
 export default async function ProjectPage({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
-  const S = PROSE[lang];
   const T = LESSON[lang];
   const p = project("6502");
   const arrived = new Set(arrivedSurfaces(p).map((s) => s.lands_at));
