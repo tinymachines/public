@@ -4893,3 +4893,36 @@ to the record its figures are filled from; a Japanese body for the guide
 if it stays in the notebook. Unchanged: the pile page's base MAC and
 office-machine line, nes-bench's `tools/pulled-docs.json` row for
 `pile.md`, and 139 lint warnings.
+
+## Checkpoint, 2026-10-06 (late night): the git mount, and a note for after tm
+
+Live and beta serve `488ae96` (deployed 2026-10-06 late night on the
+owner's word, every stage passing). Since the late checkpoint:
+
+| commit | what |
+|---|---|
+| `488ae96` | the git mount: `git/<repo>/<path>?at=<ref>&as=<raw, log, blame, tree, stat>` over this repository and the siblings checked out beside it under their GitHub names (nes, nes-bench, nes-bus, ntsc-crt, halfphi, 2a03, 2c02; 6502 is the served worktree, so its HEAD is the commit the site serves). git runs read-only and never through a shell; a ref is checked against a pattern, a tree path is normalised and refused if it walks up. The pull scripts are read as the build manifest: a pulled page and its copy carry `tm:generated-by` to the file they came from, that file carries `tm:generates` and `tm:renders-as` back, and a file of this repository is joined to itself in git both ways. API tests 191. Deployed |
+| `812c8c5` | the pile page's Japanese shadow follows nes-bench `6288fd7`, which the deploy's pull had carried onto the live page (the P4 board's own serial port, seen for a second at power-up). Pushed with this checkpoint, NOT deployed |
+
+Verified on the public endpoint after the deploy: the git root lists the
+nine repositories, the pile page's origin file in nes-bench answers with
+its history and its forward links, and `git/6502` resolves HEAD to the
+commit `data/engine.json` says is serving. The real-checkout test found
+two repositories the pull list names that the mount did not offer, 2a03
+and 2c02, before the deploy did.
+
+**A note for when tm is done, from the owner (2026-10-06):** additional
+patterns for the autopsy lessons: Interludes, Dead, End of Game, Hit
+Detection. They join the lesson candidates (moving platforms, the
+camera's dead zone, a music engine).
+
+**Where to pick up.** Waiting on a deploy: `812c8c5` alone, a shadow
+with no English change, so no hurry. The spec's first open question is
+still the owner's to answer with a client against
+`https://tinymachines.ai/api/mcp`: resources, or the `resolve` tool.
+Then `tm:data` links from a page to the record its figures are filled
+from (the figure slots already name their files), and subscriptions
+only if a use appears. The pile page now publishes two MAC addresses
+(the C6 LCD board's and the P4's) and the office-machine line, all
+already public in nes-bench; nes-bench's `tools/pulled-docs.json` row
+for `pile.md` is still wanted; lint stands at 139 warnings.
