@@ -3,11 +3,12 @@
  "topics": [
   {
    "key": "moving",
-   "title": "How a character moves: jumping, running, landing on things, bumping into them",
+   "title": "How a character moves: jumping, running, landing on things, bumping into them, and the box that decides a touch",
    "lessons": [
     "jump",
     "run",
     "stomp",
+    "hitbox",
     "solid",
     "coins",
     "walkers"
@@ -45,4 +46,4 @@
    ]
   }
  ]
-}
+}\n

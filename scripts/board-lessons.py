@@ -945,6 +945,67 @@ def lives_measures(dirpath: Path, start: int, x, y, lives, dying, playing):
     }
 
 
+def hitbox_measures(dirpath: Path, start: int, player, walker, boxes, touched):
+    """Boxes inside pictures, from memory, with the pictures and the
+    boxes of the player and of a walker given as functions of the cells
+    and a frame (each a left, top, right, bottom; right and bottom one
+    past the last pixel), and `touched` the frame a touch is first
+    known. Each box's distance in from its picture's four edges, the most
+    common over the frames from `start` to the touch; and at the first
+    touch, how far the two pictures overlapped across and down the frame
+    before, how far the boxes did, and how many frames before that the
+    pictures had overlapped while the boxes did not."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    t = next(f for f in range(start + 1, n) if touched(c, f))
+    mode = lambda v: max(set(v), key=v.count)
+    def inset(pic, box):
+        vals = [tuple(abs(b - p) for p, b in zip(pic(c, f), box(c, f))) for f in range(start, t) if box(c, f)[0] < 240]
+        return list(mode(vals))
+    ov = lambda a, b: (min(a[2], b[2]) - max(a[0], b[0]), min(a[3], b[3]) - max(a[1], b[1]))
+    pb, wb = boxes
+    # The frame before the touch is known: the last frame both are where
+    # they met. A game that decides as it moves them (ours) shows the boxes
+    # not yet overlapping there, with the gap left; one that decides the
+    # frame after (Mario's state changes a frame behind) shows them overlapping.
+    f = t - 1
+    pics = ov(player(c, f), walker(c, f))
+    bx = ov(pb(c, f), wb(c, f))
+    before = 0
+    g = f if min(bx) <= 0 else f - 1
+    while g > start and min(ov(player(c, g), walker(c, g))) > 0 and min(ov(pb(c, g), wb(c, g))) <= 0:
+        before += 1
+        g -= 1
+    return {"player": inset(player, pb), "walker": inset(walker, wb), "pictures": list(pics), "boxes": list(bx),
+            "before": before, "after": min(bx) > 0, "frame": t}
+
+
+def mario_hitbox(dirpath: Path):
+    """The same off Super Mario Bros., the run with its first hit (board):
+    small Mario's picture is the lower half of his thirty-two pixel
+    frame, at his screen x ($03AD) and sixteen below his y ($00CE); his
+    box is kept at $04AC to $04AF. A Goomba's picture sits eight below
+    its y ($00CF+s) at its x less the camera; its box at $04B0+4s. The
+    enemy is the slot nearest Mario the frame before his state leaves 8,
+    and the touch is that change."""
+    ram = (dirpath / "board" / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    cam = lambda f: c(f, 0x71A) * 256 + c(f, 0x71C)
+    hf = next(g for g in range(600, n) if c(g - 1, 0x0E) == 8 and c(g, 0x0E) != 8 and c(g - 1, 0xCE) < 230)
+    there = [s for s in range(5) if c(hf - 1, 0x0F + s)]
+    s = min(there, key=lambda s: abs(((c(hf - 1, 0x6E + s) * 256 + c(hf - 1, 0x87 + s)) - cam(hf - 1)) - c(hf - 1, 0x3AD)))
+    ex = lambda c, f: ((c(f, 0x6E + s) * 256 + c(f, 0x87 + s)) - cam(f)) & 0xFF
+    player = lambda c, f: (c(f, 0x3AD), c(f, 0xCE) + 16, c(f, 0x3AD) + 16, c(f, 0xCE) + 32)
+    walker = lambda c, f: (ex(c, f), c(f, 0xCF + s) + 8, ex(c, f) + 16, c(f, 0xCF + s) + 24)
+    pbox = lambda c, f: tuple(c(f, 0x4AC + i) for i in range(4))
+    wbox = lambda c, f: tuple(c(f, 0x4B0 + 4 * s + i) for i in range(4))
+    # Mario's insets over the frames he walks on the ground before the hit, the Goomba's while it walks.
+    m = hitbox_measures(dirpath / "board", hf - 60, player, walker, (pbox, wbox), lambda c, f: f == hf)
+    return {"game": "Super Mario Bros.", **m}
+
+
 def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
     """A coin from a block, from memory and the writes to the picture,
     with the game's coin count and score given as functions of the cells
@@ -1182,6 +1243,14 @@ def main():
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
+        elif kind == "hitbox":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            pic = lambda xa, ya: (lambda c, f: (c(f, xa), c(f, ya), c(f, xa) + 16, c(f, ya) + 16))
+            box = lambda addrs: (lambda c, f: tuple(c(f, h(a)) for a in addrs))
+            measures = hitbox_measures(run, meta["walk_from"], pic(h(mm["x"]), h(mm["y"])), pic(h(mm["walker_x"]), h(mm["walker_y"])),
+                                       (box(mm["box"]), box(mm["walker_box"])), lambda c, f: c(f, h(mm["touches"])) != c(f - 1, h(mm["touches"])))
+            against = mario_hitbox(Path(compare[name])) if name in compare else prev.get("against")
         elif kind == "coins":
             h = lambda a: int(a[1:], 16)
             mm = meta["memory"]

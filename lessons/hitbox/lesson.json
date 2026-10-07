@@ -1,0 +1,39 @@
+{
+ "title": "A box inside the picture, the way Mario's is",
+ "kind": "hitbox",
+ "description": "A cartridge of our own where the square and a walker each carry a box smaller than their pictures, kept in memory every frame with the sizes read off Super Mario Bros., and only the boxes decide a touch; Select shows them. Measured beside the game, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "meet.txt",
+ "frames": 400,
+ "grabs": [
+  100,
+  136,
+  138,
+  140
+ ],
+ "walk_from": 60,
+ "memory": {
+  "x": "$11",
+  "y": "$15",
+  "walker_x": "$60",
+  "walker_y": "$64",
+  "box": [
+   "$70",
+   "$71",
+   "$72",
+   "$73"
+  ],
+  "walker_box": [
+   "$74",
+   "$75",
+   "$76",
+   "$77"
+  ],
+  "touches": "$65",
+  "shown": "$68"
+ }
+}

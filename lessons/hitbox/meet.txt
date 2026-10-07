@@ -1,0 +1,6 @@
+# frames 400
+# Select shows the boxes, then Right held: the square walks into the
+# walker coming the other way, is sent back, and walks into it again.
+AT 30 04
+AT 34 00
+AT 60 80

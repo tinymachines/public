@@ -195,6 +195,19 @@ for (const l of record()) {
       expect(l.measures.mirroring?.fixed).toBe(true);
       expect(a.mirroring?.slide).toBe("vertical");
       await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
+    } else if (l.kind === "hitbox") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // Both boxes sit inside their pictures, the pictures overlapped before the boxes did, and the hit came with the boxes.
+        expect(x.player.length === 4 && x.walker.length === 4).toBe(true);
+        expect(Math.min(...x.player, ...x.walker)).toBeGreaterThanOrEqual(0);
+        expect(Math.max(...x.player, ...x.walker)).toBeGreaterThan(0);
+        expect(x.before).toBeGreaterThan(0);
+        expect(x.pictures[0]).toBeGreaterThan(0);
+      }
+      expect(rows.find((r) => r[0] === "player")?.slice(1)).toEqual([l.measures.player.join(", "), a.player.join(", ")]);
+      // The game decides the frame after the boxes meet; ours as they meet.
+      expect([l.measures.after, a.after]).toEqual([false, true]);
     } else {
       const a = l.against as typeof l.measures;
       expect(rows.find((r) => r[0] === "strips")?.slice(1)).toEqual([String(l.measures.strips), String(a.strips)]);

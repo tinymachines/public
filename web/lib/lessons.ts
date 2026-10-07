@@ -281,6 +281,18 @@ export interface CoinsMeasures {
   points_rise: number;
 }
 
+/** Boxes inside pictures (hitbox_measures): each inset as left, top, right, bottom. */
+export interface HitboxMeasures {
+  player: number[];
+  walker: number[];
+  pictures: number[];
+  boxes: number[];
+  before: number;
+  /** The touch is known the frame after the boxes meet (the game's), or as they meet (ours). */
+  after: boolean;
+  frame: number;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -315,6 +327,7 @@ export type Lesson =
   | (Base & { kind: "flicker"; measures: FlickerMeasures; against?: (FlickerOne & { game: string }) | null })
   | (Base & { kind: "lives"; measures: LivesMeasures; against?: (LivesMeasures & { game: string }) | null })
   | (Base & { kind: "coins"; measures: CoinsMeasures; against?: (CoinsMeasures & { game: string }) | null })
+  | (Base & { kind: "hitbox"; measures: HitboxMeasures; against?: (HitboxMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 
