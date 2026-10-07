@@ -195,6 +195,20 @@ for (const l of record()) {
       expect(l.measures.mirroring?.fixed).toBe(true);
       expect(a.mirroring?.slide).toBe("vertical");
       await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
+    } else if (l.kind === "pit") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A fall with no hop, steering on the way down, the world going on, a life taken only later, the screen, the level from its start.
+        expect(x.rise).toBe(0);
+        expect(x.moved).toBeGreaterThan(5);
+        expect(x.to_bottom).toBeGreaterThan(5);
+        expect(x.to_life).toBeGreaterThan(30);
+        expect(x.walker_moved).toBe(true);
+        expect(x.lives[0] - x.lives[1]).toBe(1);
+        expect(x.screen).toBeGreaterThan(30);
+        expect(x.from_start).toBe(true);
+      }
+      expect(rows.find((r) => r[0] === "to_life")?.slice(1)).toEqual([String(l.measures.to_life), String(a.to_life)]);
     } else if (l.kind === "hitbox") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

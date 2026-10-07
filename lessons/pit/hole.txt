@@ -1,0 +1,4 @@
+# frames 900
+# Right held throughout: the square walks off the edge of the hole and
+# falls, loses a life, starts again, and walks off it again.
+AT 20 80

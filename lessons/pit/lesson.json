@@ -1,0 +1,15 @@
+{
+ "title": "Falling into a hole, the way Mario does",
+ "kind": "pit",
+ "description": "A cartridge of our own where walking off the edge of a hole drops the square through the bottom of the screen, steering still working on the way down and the walkers still walking, until a wait runs out, the life is taken and the level begins again from its start, compared by that shape with how Super Mario Bros. was seen falling into a hole, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "hole.txt",
+ "frames": 900,
+ "grabs": [44, 56, 180, 300],
+ "walk_from": 20,
+ "memory": {"x": "$11", "y": "$15", "lives": "$52", "round": "$50", "walker_x": "$40"}
+}

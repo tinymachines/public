@@ -293,6 +293,19 @@ export interface HitboxMeasures {
   frame: number;
 }
 
+/** Falling into a hole (pit_measures). */
+export interface PitMeasures {
+  to_bottom: number;
+  moved: number;
+  rise: number;
+  to_life: number;
+  walker_moved: boolean;
+  clear_after: number;
+  screen: number;
+  from_start: boolean;
+  lives: number[];
+}
+
 interface Base {
   key: string;
   title: string;
@@ -328,6 +341,7 @@ export type Lesson =
   | (Base & { kind: "lives"; measures: LivesMeasures; against?: (LivesMeasures & { game: string }) | null })
   | (Base & { kind: "coins"; measures: CoinsMeasures; against?: (CoinsMeasures & { game: string }) | null })
   | (Base & { kind: "hitbox"; measures: HitboxMeasures; against?: (HitboxMeasures & { game: string }) | null })
+  | (Base & { kind: "pit"; measures: PitMeasures; against?: (PitMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

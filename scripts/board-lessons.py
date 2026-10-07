@@ -1006,6 +1006,42 @@ def mario_hitbox(dirpath: Path):
     return {"game": "Super Mario Bros.", **m}
 
 
+def pit_measures(dirpath: Path, origin: int, start: int, x, y, lives, walker, playing):
+    """Falling into a hole, from memory and the writes to the picture,
+    with the game's own bytes given as functions of the cells and a
+    frame: where the level began (the first frame after `origin` it is
+    being played), then from `start`, the player standing on the ground
+    before the hole, the edge (the first frame it is lower than it stood),
+    the bottom (the first frame its y passes the bottom of the screen or
+    wraps round), the frames between, the pixels moved across meanwhile
+    (the pad is held right throughout), how high it rose first (a hop
+    would show here), the frames from the bottom until the life is
+    taken, whether a walker kept moving between the two, the frames from
+    the life to the picture being cleared and from that to playing
+    again, and whether play begins again where the level began."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    begun = next(f for f in range(origin, n) if playing(c, f))
+    x0, y0 = x(c, begun), y(c, start)
+    edge = next(f for f in range(start + 1, n) if y(c, f) > y0)
+    bottom = next(f for f in range(edge, n) if y(c, f) >= 240 or (y(c, f) < y(c, f - 1) - 100))
+    taken = next(f for f in range(edge, n) if lives(c, f) != lives(c, edge))
+    writes = {}
+    for l in (dirpath / "vram.txt").read_text().splitlines():
+        f, a, k, _ = l.split()
+        if not a.startswith("3F"):
+            writes[int(f)] = writes.get(int(f), 0) + int(k)
+    cleared = next(f for f in range(taken, n) if writes.get(f, 0) + writes.get(f + 1, 0) >= 1000)
+    again = next(f for f in range(cleared, n) if playing(c, f))
+    return {
+        "to_bottom": bottom - edge, "moved": x(c, bottom) - x(c, edge), "rise": y0 - min(y(c, f) for f in range(start, bottom)),
+        "to_life": taken - bottom, "walker_moved": walker(c, taken) != walker(c, bottom),
+        "clear_after": cleared - taken, "screen": again - cleared,
+        "from_start": x(c, again) == x0, "lives": [lives(c, edge), lives(c, taken)],
+    }
+
+
 def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
     """A coin from a block, from memory and the writes to the picture,
     with the game's coin count and score given as functions of the cells
@@ -1242,6 +1278,19 @@ def main():
             # ($0772 = 3) with Mario walking (state 8), lives at $075A.
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
+                       if name in compare else prev.get("against"))
+        elif kind == "pit":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            measures = pit_measures(run, 10, 10, lambda c, f: c(f, h(mm["x"])), lambda c, f: c(f, h(mm["y"])), lambda c, f: c(f, h(mm["lives"])),
+                                    lambda c, f: c(f, h(mm["walker_x"])), lambda c, f: c(f, h(mm["round"])) == 0 and c(f, h(mm["lives"])) > 0)
+            # Mario: the private run that runs on past the fourth pipe and walks
+            # into the first hole of 1-1 (pit): the level begins after frame
+            # 400, and at 1240 he stands on the ground before the hole; x on its
+            # page at $006D/$0086, y at $00CE, lives at $075A, a Goomba's x at
+            # $006E/$0087, playing as in the lives lesson.
+            against = ({"game": "Super Mario Bros.", **pit_measures(Path(compare[name]) / "pit", 400, 1240, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
+                                                                  lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x6E) * 256 + c(f, 0x87), lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
         elif kind == "hitbox":
             h = lambda a: int(a[1:], 16)
