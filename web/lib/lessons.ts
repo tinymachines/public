@@ -306,6 +306,17 @@ export interface PitMeasures {
   lives: number[];
 }
 
+/** The game's end and what follows (gameover_measures). */
+export interface GameoverMeasures {
+  to_screen: number;
+  screen_tiles: number;
+  held: number;
+  title_tiles: number;
+  start_to_play: number;
+  lives_back: boolean;
+  lives: number[];
+}
+
 interface Base {
   key: string;
   title: string;
@@ -342,6 +353,7 @@ export type Lesson =
   | (Base & { kind: "coins"; measures: CoinsMeasures; against?: (CoinsMeasures & { game: string }) | null })
   | (Base & { kind: "hitbox"; measures: HitboxMeasures; against?: (HitboxMeasures & { game: string }) | null })
   | (Base & { kind: "pit"; measures: PitMeasures; against?: (PitMeasures & { game: string }) | null })
+  | (Base & { kind: "gameover"; measures: GameoverMeasures; against?: (GameoverMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

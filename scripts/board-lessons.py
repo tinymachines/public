@@ -1042,6 +1042,53 @@ def pit_measures(dirpath: Path, origin: int, start: int, x, y, lives, walker, pl
     }
 
 
+def joined_runs(vram_path: Path):
+    """The writes to the picture as runs, with a run the log split where a
+    frame began (a clear with the picture off outlasts a blank) joined
+    back together and counted at the frame it began: (frame, address,
+    tiles, step)."""
+    out = []
+    for l in vram_path.read_text().splitlines():
+        f, a, c, step = l.split()
+        f, a, c, step = int(f), int(a, 16), int(c), int(step)
+        if out and step == 1 == out[-1][3] and a == out[-1][1] + out[-1][2] and f - out[-1][4] <= 1:
+            g, a0, c0, _, _ = out[-1]
+            out[-1] = (g, a0, c0 + c, 1, f)
+        else:
+            out.append((f, a, c, step, f))
+    return [(f, a, c, step) for f, a, c, step, _ in out]
+
+
+def gameover_measures(dirpath: Path, origin: int, start: int, lives, dying, playing):
+    """The game's end and what follows, from memory, the pad and the
+    writes to the picture, with the game's own bytes as functions of the
+    cells and a frame: from the last touch after `start` (the first frame
+    `dying`), the frames until the picture is cleared for the GAME OVER
+    screen (a run of a thousand tiles or more); the tiles that screen is
+    written with besides its clear (the thirty frames after it); the
+    frames it holds until the next clear, the title's; the tiles the
+    title is written with; from the first press of Start after that, the
+    frames until the game is played; and whether the lives are then what
+    they were when the game first began (after `origin`)."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    pad = (dirpath / "pad.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    begun = next(f for f in range(origin, n) if playing(c, f))
+    touch = next(f for f in range(start, n) if dying(c, f) and not dying(c, f - 1))
+    runs = joined_runs(dirpath / "vram.txt")
+    # A clear of both tables in one frame is two runs of a thousand; one clear.
+    clears = sorted({f for f, a, k, _ in runs if k >= 1000 and f > touch})
+    cleared, title = clears[0], clears[1]
+    tiles = lambda f0: sum(k for f, a, k, _ in runs if f0 <= f < f0 + 30 and k < 1000 and not 0x3F00 <= a < 0x4000)
+    press = next(f for f in range(title, n) if pad[f] & 0x08 and not pad[f - 1] & 0x08)
+    played = next(f for f in range(press, n) if playing(c, f))
+    return {
+        "to_screen": cleared - touch, "screen_tiles": tiles(cleared), "held": title - cleared, "title_tiles": tiles(title),
+        "start_to_play": played - press, "lives_back": lives(c, played) == lives(c, begun), "lives": [lives(c, begun), lives(c, played)],
+    }
+
+
 def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
     """A coin from a block, from memory and the writes to the picture,
     with the game's coin count and score given as functions of the cells
@@ -1278,6 +1325,19 @@ def main():
             # ($0772 = 3) with Mario walking (state 8), lives at $075A.
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
+                       if name in compare else prev.get("against"))
+        elif kind == "gameover":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            measures = gameover_measures(run, 10, 10, lambda c, f: c(f, h(mm["lives"])), lambda c, f: c(f, h(mm["round"])) == 1 and c(f, h(mm["lives"])) == 1,
+                                         lambda c, f: c(f, h(mm["round"])) == 0 and c(f, h(mm["lives"])) > 0)
+            # Mario: the private run that holds Right and B into the first
+            # Goomba three times over and presses Start on the title after
+            # (gameover2); the level first begins after frame 400 and the last
+            # play begins at 1532; dying is state 11 at $000E, lives at $075A
+            # (the count of extra lives, which the game shows plus one).
+            against = ({"game": "Super Mario Bros.", **gameover_measures(Path(compare[name]) / "gameover2", 400, 1540, lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11,
+                                                                       lambda c, f: c(f, 0x770) == 1 and c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
         elif kind == "pit":
             h = lambda a: int(a[1:], 16)

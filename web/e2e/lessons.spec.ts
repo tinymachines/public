@@ -195,6 +195,18 @@ for (const l of record()) {
       expect(l.measures.mirroring?.fixed).toBe(true);
       expect(a.mirroring?.slide).toBe("vertical");
       await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
+    } else if (l.kind === "gameover") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // The last touch to a cleared screen with words on it, held a long while, then a title drawn, Start taken, the lives back.
+        expect(x.to_screen).toBeGreaterThan(20);
+        expect(x.screen_tiles).toBeGreaterThan(5);
+        expect(x.held).toBeGreaterThan(120);
+        expect(x.title_tiles).toBeGreaterThan(5);
+        expect(x.start_to_play).toBeGreaterThan(0);
+        expect(x.lives_back).toBe(true);
+      }
+      expect(rows.find((r) => r[0] === "held")?.slice(1)).toEqual([String(l.measures.held), String(a.held)]);
     } else if (l.kind === "pit") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

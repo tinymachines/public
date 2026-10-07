@@ -27,7 +27,7 @@
   },
   {
    "key": "screens",
-   "title": "The screens around the game: splash, title, menu, pause, items, the story, a life lost and a hole fallen into",
+   "title": "The screens around the game: splash, title, menu, pause, items, the story, a life lost, a hole fallen into, and the end",
    "lessons": [
     "splash",
     "title",
@@ -35,6 +35,7 @@
     "pause",
     "lives",
     "pit",
+    "gameover",
     "items",
     "about"
    ]

@@ -1,0 +1,25 @@
+{
+ "title": "The last life, and what comes after it, the way Mario does",
+ "kind": "gameover",
+ "description": "A cartridge of our own with three lives to lose: the last touch goes straight to a GAME OVER screen that holds by itself, then to a title that waits for Start, and Start begins the game again with its lives back, compared by that shape with how Super Mario Bros. was seen ending and starting over, with its program.",
+ "board": "NROM",
+ "prg": 16384,
+ "org": "$C000",
+ "chr": 8192,
+ "mirroring": "horizontal",
+ "script": "last.txt",
+ "frames": 1000,
+ "grabs": [
+  50,
+  600,
+  850,
+  950
+ ],
+ "walk_from": 20,
+ "memory": {
+  "x": "$11",
+  "y": "$15",
+  "lives": "$52",
+  "round": "$50"
+ }
+}

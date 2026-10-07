@@ -1,0 +1,7 @@
+# frames 1000
+# Right held: the square walks into a walker three times over, GAME OVER
+# holds, the title comes up; Start on the title begins again with three
+# lives, and Right walks into a walker once more.
+AT 20 80
+AT 900 08
+AT 906 80
