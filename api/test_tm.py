@@ -598,3 +598,107 @@ def test_git_completion_offers_refs_and_tree_paths(gns):
     assert complete("path", "docs/nes/", repo="public", at="v1") == ["docs/nes/alone.md", "docs/nes/index.md"]
     assert complete("path", "x", repo="nope") == []
     assert complete("as", "b") == ["blame"]
+
+
+# ---------------------------------------------------------------------------
+# Data: what a page reads, what writes a record
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def site(gits: dict[str, Path]) -> Namespace:
+    """The temp checkout grows an app: a literal route that imports a library
+    module that names a record, a dynamic route, a catch-all; a record whose
+    note names its writer, another whose writer is only inferred, and a
+    language file that every page reads and no link should mention."""
+    repo = gits["public"]
+    app = repo / "web" / "app" / "[lang]"
+    (app / "autopsy" / "patterns").mkdir(parents=True)
+    (app / "autopsy" / "games" / "[game]").mkdir(parents=True)
+    (app / "docs" / "[[...slug]]").mkdir(parents=True)
+    (app / "autopsy" / "patterns" / "page.tsx").write_text(
+        'import { t } from "@/lib/i18n";\nimport { autopsy } from "@/lib/autopsy";\nimport { Shell } from "@/app/components/SiteFrame";\nexport default function Page() { return null; }\n'
+    )
+    (app / "autopsy" / "games" / "[game]" / "page.tsx").write_text('import { autopsy } from "@/lib/autopsy";\n')
+    (app / "docs" / "[[...slug]]" / "page.tsx").write_text('import { docsTree } from "../../../../lib/docs";\n')
+    lib = repo / "web" / "lib"
+    lib.mkdir()
+    (lib / "autopsy.ts").write_text('import { figures } from "./figures";\nconst FILE = path.join(ROOT, "data", "autopsy.json");\n')
+    (lib / "figures.ts").write_text('const CHIP = "chip.json";\n')
+    (lib / "i18n.ts").write_text('const JA = path.join(ROOT, "data", "ja.json");\n')
+    (lib / "docs.ts").write_text('export function docsTree() {}\n')
+    (repo / "web" / "app" / "components").mkdir()
+    (repo / "web" / "app" / "components" / "SiteFrame.tsx").write_text('import { nav } from "@/lib/nav";\n')
+    (lib / "nav.ts").write_text('const DOORS = "doors.json";\n')
+    (repo / "data" / "autopsy.json").write_text('{"_": "written only by scripts/board-autopsy.py", "marks": 1}\n')
+    (repo / "data" / "chip.json").write_text('{"nodes": 1}\n')
+    (repo / "data" / "ja.json").write_text('{}\n')
+    (repo / "data" / "doors.json").write_text('{}\n')
+    (repo / "scripts").mkdir()
+    (repo / "scripts" / "board-autopsy.py").write_text('OUT = "data/autopsy.json"\n')
+    (repo / "scripts" / "verify-chip.py").write_text('# reads chip.json and compares\n')
+    (repo / "scripts" / "check-figures.py").write_text('# chip.json, a checker, not a writer\n')
+    (repo / "scripts" / "deploy.sh").write_text('# mentions chip.json and autopsy.json\n')
+    git(repo, "add", "web", "data", "scripts")
+    git(repo, "commit", "-q", "-m", "an app")
+    return Namespace(repo, fetch=canned_fetch, git_repos=gits)
+
+
+def test_a_page_links_to_its_route_and_the_records_its_rendering_reaches(site):
+    _, links = read(site, f"{ROOT}http/tinymachines.ai/autopsy/patterns?as=stat")
+    r = rels(links)
+    assert r["tm:source"] == [f"{ROOT}git/public/web/app/%5Blang%5D/autopsy/patterns/page.tsx"]
+    assert r["tm:data"] == [f"{ROOT}fs/data/autopsy.json", f"{ROOT}fs/data/chip.json"], "through the library, transitively"
+    assert all(ln["confidence"] == "inferred" for ln in links if ln["rel"] == "tm:data")
+    assert f"{ROOT}fs/data/ja.json" not in r["tm:data"], "the language file is every page's, not this one's"
+    assert f"{ROOT}fs/data/doors.json" not in r["tm:data"], "the site frame's menu is not the page's reading"
+    _, ja = read(site, f"{ROOT}http/tinymachines.ai/ja/autopsy/patterns?as=stat")
+    assert rels(ja)["tm:source"] == r["tm:source"], "/ja is the language prefix, the same route"
+
+
+def test_a_dynamic_route_is_a_source_too_and_the_docs_route_is_a_template(site):
+    _, links = read(site, f"{ROOT}http/tinymachines.ai/autopsy/games/smb?as=stat")
+    src = [ln for ln in links if ln["rel"] == "tm:source"]
+    assert src[0]["href"].endswith("/autopsy/games/%5Bgame%5D/page.tsx") and "several" in src[0]["title"]
+    _, links = read(site, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text")
+    hrefs = rels(links)["tm:source"]
+    assert f"{ROOT}fs/docs/nes/pile.md" in hrefs, "the markdown stays the source"
+    assert any(h.endswith("/docs/%5B%5B...slug%5D%5D/page.tsx") for h in hrefs), "and the route is the template"
+    assert site.graph.route_for("/nothing/here") is None, "no catch-all at the root here, so no route"
+
+
+def test_a_record_links_to_its_writer_and_its_readers(site):
+    _, links = read(site, f"{ROOT}fs/data/autopsy.json")
+    r = rels(links)
+    assert r["tm:generated-by"] == [f"{ROOT}git/public/scripts/board-autopsy.py"]
+    assert [ln["confidence"] for ln in links if ln["rel"] == "tm:generated-by"] == ["exact"], "the record's own note names it"
+    assert r["tm:read-by"] == [f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns"], "the dynamic route is not listed, and one site stands for both"
+    _, links = read(site, f"{ROOT}fs/data/chip.json")
+    gen = [ln for ln in links if ln["rel"] == "tm:generated-by"]
+    assert [ln["href"] for ln in gen] == [f"{ROOT}git/public/scripts/verify-chip.py"], "deploy.sh and check-* are not writers"
+    assert gen[0]["confidence"] == "inferred"
+    _, in_git = read(site, f"{ROOT}git/public/data/autopsy.json")
+    assert rels(in_git)["tm:generated-by"] == r["tm:generated-by"]
+
+
+def test_a_script_and_a_route_link_forward(site):
+    _, links = read(site, f"{ROOT}git/public/scripts/board-autopsy.py")
+    assert rels(links)["tm:generates"] == [f"{ROOT}fs/data/autopsy.json"]
+    _, links = read(site, f"{ROOT}git/public/web/app/[lang]/autopsy/patterns/page.tsx")
+    assert rels(links)["tm:renders-as"] == [f"{ROOT}http/{s}{p}" for p in ("/autopsy/patterns", "/ja/autopsy/patterns") for s in tm.SITES]
+    _, links = read(site, f"{ROOT}git/public/web/app/[lang]/autopsy/games/[game]/page.tsx")
+    assert "tm:renders-as" not in rels(links), "a dynamic route renders many pages; none is named"
+
+
+def test_the_real_site_graph_joins_the_autopsy_page_to_its_record():
+    """Over the real checkout: the patterns page reaches data/autopsy.json
+    through lib/autopsy.ts, and the engine record names its writer."""
+    n = Namespace(REPO, fetch=canned_fetch)
+    assert len(n.graph.routes) > 30, "too few routes read to mean anything"
+    route = n.graph.route_for("/autopsy/patterns")
+    assert route == ("web/app/[lang]/autopsy/patterns/page.tsx", False)
+    assert "autopsy.json" in n.graph.page_data(route[0])
+    assert "ja.json" not in n.graph.page_data(route[0])
+    assert ("scripts/board-engine.py", "exact") in n.graph.writers_of("engine.json")
+    assert "/autopsy/patterns" in n.graph.readers_of("autopsy.json")
+    assert n.graph.route_for("/docs/nes/pile") == ("web/app/[lang]/docs/[[...slug]]/page.tsx", True)

@@ -119,8 +119,11 @@ rendered from (`tm:source`), the markdown links back to its page
 (`tm:renders-as`); a page the build pulled from another repository, and its
 copy here, link to the file they came from (`tm:generated-by`) and that file
 links forward (`tm:generates`); a file here and the same file in git are
-joined both ways (`tm:repository`, `tm:working-copy`); and `up`,
-`collection`, `alternate`, `describedby`, `version-history` and
+joined both ways (`tm:repository`, `tm:working-copy`); any page links to
+the route file that renders it (`tm:source`) and to the records its
+rendering reaches (`tm:data`), a record links back to its readers
+(`tm:read-by`) and to the script that writes it (`tm:generated-by`); and
+`up`, `collection`, `alternate`, `describedby`, `version-history` and
 `latest-version` mean what the IANA registry says. Through resources the links sit in the
 result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.
@@ -256,6 +259,16 @@ the language prefix), and the tests check the restatement against the
 loader itself and against the last crawl of the served site. That check is
 how two edge cases were found rather than assumed.
 
+The data links are read off the tree the same way. A URL's route file
+follows the app framework's convention; the records a page reads are the
+data files named in its file and in the library modules it imports,
+followed through the library only, so the site frame's menu and the
+language tables are not counted as the page's reading; the writer of a
+record is the script that names it. All of that is static reading of
+source, so those links say `inferred`, and a record whose own note names
+its writer is the one case that earns `exact`. A link's confidence is for
+the client to weigh, which is why it is on every one of ours.
+
 ### What a refusal carries
 
 A refusal is a JSON-RPC error whose `data.reason` a client can switch on:
@@ -288,8 +301,7 @@ on a real refusal or a real list.
 
 ## What is not here yet
 
-Not yet: `tm:data` links from a page to the record its figures are filled
-from; subscriptions; and anything that writes. Writes are not
+Not yet: subscriptions, and anything that writes. Writes are not
 planned. The direction the spec reserves is proposals: a tool that takes a
 URI a client wishes existed and stages a reviewable change, with nothing
 landing without the owner's approval.

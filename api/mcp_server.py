@@ -62,8 +62,9 @@ a site this box serves, with ?as=text for the readable text. Every read carries
 typed links in _meta under "tinymachines.ai/links": a notebook page links to the
 markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as) and to the repository it came from (tm:generated-by or
-tm:repository), and up, collection, alternate, describedby, version-history and
-latest-version do what the IANA registry says. A URI that does not resolve comes back with the nearest ones that
+tm:repository), any page links to its route file (tm:source) and to the records
+its rendering reads (tm:data), and up, collection, alternate, describedby,
+version-history and latest-version do what the IANA registry says. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the
 same URIs and returns the links in its body, for a client that prefers tools."""

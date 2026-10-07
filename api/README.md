@@ -302,7 +302,10 @@ walks coarse to fine. Every read carries links in `_meta` under
 `tm:renders-as` back, `tm:generated-by` from a pulled page or its copy to the
 file in the repository it was pulled from and `tm:generates` back,
 `tm:repository` and `tm:working-copy` between a file here and the same file
-in git, and `up`, `collection`, `alternate`, `describedby`, `version-history`
+in git, `tm:source` from any page to the route file that renders it and
+`tm:data` to the records its rendering reaches (with `tm:read-by` back from
+the record, and `tm:generated-by` from the record to the script that writes
+it), and `up`, `collection`, `alternate`, `describedby`, `version-history`
 and `latest-version` as the IANA registry defines them. A URI that does not resolve comes back as a
 JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
 that do, `too-large` with a range template, `out-of-root`, `denied`, `binary`).
@@ -316,6 +319,16 @@ the commit the site's pages were read from. Which repository a pulled page
 came from is read from the pull scripts (`web/scripts/pull-nesdocs.mjs`,
 `pull-chipdocs.mjs`), which are the one copy of that fact.
 
+The data links are read off the tree, not typed (`SiteGraph` in `api/tm.py`):
+a URL's route is the Next convention under `web/app/[lang]/`, the records a
+page reaches are the `data/<name>.json` files named in the page's file and
+in the library modules it imports, followed through `web/lib` only (the site
+frame and its menu are not the page's reading, and the language tables are
+every page's), and the writer of a record is the script under `scripts/`
+that names it. Static reading of source, so each of those links says
+`inferred`, except that a record whose own note names its writer gets
+`exact`.
+
 Three decisions, each for a reason this box supplies: the fs roots are an
 allowlist of the three directories that are public on GitHub, never the host,
 and every path is resolved before it is touched; `rendered` is fetched through
@@ -324,8 +337,7 @@ visitor gets and the mount cannot be pointed at a site this box does not
 serve; and the page-to-source join is the notebook loader's own rule restated,
 which `test_tm.py` checks against the loader and against the last crawl.
 
-What is not here yet: `tm:data` links from a page to the record its figures
-are filled from, and subscriptions.
+What is not here yet: subscriptions, and anything that writes.
 
 ## Pieces and surfaces are different questions
 

@@ -333,6 +333,190 @@ class Origins:
         self.by_git[(repo, git_path)] = fs_rel
 
 
+class SiteGraph:
+    """What a page reads, and what writes a record: read off the tree rather
+    than typed. A URL's route is the Next convention (web/app/[lang]/<path>/
+    page.tsx, a bracketed directory for a dynamic segment, a double bracket
+    for a catch-all). The data a page reads is every data/<name>.json named
+    in the page's file or in the library modules it imports, followed
+    through web/lib only: the site frame and its menu are not the page's
+    reading. The writer of a record is the script under scripts/ that names
+    it, exact when the record's own note says so, inferred otherwise.
+
+    All of it is static reading of source, so every link it yields says
+    `inferred` unless the record itself states the fact."""
+
+    # Read by every page for its words, not for its figures.
+    LANG_FILES = ("ja.json", "ja-docs.json")
+    IMPORT = re.compile(r'(?:from|import)\s*["\']([^"\']+)["\']')
+
+    def __init__(self, repo: Path):
+        self.repo = repo
+        self.app = repo / "web" / "app" / "[lang]"
+        self.lib = repo / "web" / "lib"
+        self.data_names = sorted(p.name for p in (repo / "data").glob("*.json")) if (repo / "data").is_dir() else []
+        self._name_re = re.compile(r"\b(" + "|".join(re.escape(n) for n in self.data_names) + r")\b") if self.data_names else None
+        self._mentions: dict[str, tuple[set[str], list[str]]] = {}
+        self._page_data: dict[str, list[str]] = {}
+        self.routes: list[tuple[list[str], str]] = []    # (segments, file rel to repo)
+        if self.app.is_dir():
+            for f in sorted(self.app.rglob("page.tsx")):
+                segs = list(f.relative_to(self.app).parts[:-1])
+                self.routes.append((segs, f.relative_to(repo).as_posix()))
+
+    # -- routes --
+
+    def route_for(self, url_path: str) -> tuple[str, bool] | None:
+        """The page file for a URL path, and whether the route is dynamic.
+        A literal directory beats a bracketed one; a catch-all takes the
+        rest; /ja is the language prefix, which is the [lang] directory."""
+        parts = [p for p in url_path.split("/") if p]
+        if parts and parts[0] == "ja":
+            parts = parts[1:]
+        best: tuple[int, str, bool] | None = None
+        for segs, file in self.routes:
+            score = self._match(segs, parts)
+            if score is None:
+                continue
+            dynamic = any(seg.startswith("[") for seg in segs)
+            if best is None or score > best[0]:
+                best = (score, file, dynamic)
+        return (best[1], best[2]) if best else None
+
+    @staticmethod
+    def _match(segs: list[str], parts: list[str]) -> int | None:
+        score = 0
+        i = 0
+        for j, seg in enumerate(segs):
+            if seg.startswith("[[...") or seg.startswith("[..."):
+                if j != len(segs) - 1:
+                    return None
+                if seg.startswith("[...") and i >= len(parts):
+                    return None
+                return score
+            if i >= len(parts):
+                return None
+            if seg.startswith("["):
+                score += 1
+            elif seg == parts[i]:
+                score += 10
+            else:
+                return None
+            i += 1
+        return score if i == len(parts) else None
+
+    def pages_for(self, file_rel: str) -> list[str]:
+        """The URL paths a literal route file renders (one per language)."""
+        for segs, file in self.routes:
+            if file == file_rel and not any(seg.startswith("[") for seg in segs):
+                path = "/" + "/".join(segs)
+                return [path if path != "/" else "/", "/ja" + (path if path != "/" else "")]
+        return []
+
+    # -- modules --
+
+    def _module(self, rel: str) -> tuple[set[str], list[str]]:
+        """The data files a module names, and the library modules it imports."""
+        if rel in self._mentions:
+            return self._mentions[rel]
+        names: set[str] = set()
+        imports: list[str] = []
+        f = self.repo / rel
+        try:
+            text = f.read_text(encoding="utf-8")
+        except OSError:
+            self._mentions[rel] = (names, imports)
+            return self._mentions[rel]
+        if self._name_re:
+            names.update(self._name_re.findall(text))
+        for spec in self.IMPORT.findall(text):
+            target = self._resolve(f, spec)
+            if target:
+                imports.append(target)
+        self._mentions[rel] = (names, imports)
+        return self._mentions[rel]
+
+    def _resolve(self, from_file: Path, spec: str) -> str | None:
+        if spec.startswith("@/lib/"):
+            base = self.repo / "web" / spec[2:]
+        elif spec.startswith("."):
+            base = (from_file.parent / spec).resolve()
+            if self.lib.resolve() not in base.parents and base != self.lib.resolve():
+                return None
+        else:
+            return None
+        for cand in (base, base.with_suffix(".ts"), base.with_suffix(".tsx"), base / "index.ts", base / "index.tsx"):
+            if cand.is_file() and cand.suffix in (".ts", ".tsx"):
+                try:
+                    return cand.resolve().relative_to(self.repo).as_posix()
+                except ValueError:
+                    return None
+        return None
+
+    def page_data(self, page_rel: str) -> list[str]:
+        """Every data file the page reaches: its own mentions and those of the
+        library modules it imports, transitively through web/lib."""
+        if page_rel in self._page_data:
+            return self._page_data[page_rel]
+        seen: set[str] = set()
+        names: set[str] = set()
+        todo = [page_rel]
+        while todo:
+            rel = todo.pop()
+            if rel in seen:
+                continue
+            seen.add(rel)
+            got, imports = self._module(rel)
+            names.update(got)
+            todo.extend(imports)
+        out = sorted(n for n in names if n not in self.LANG_FILES)
+        self._page_data[page_rel] = out
+        return out
+
+    def readers_of(self, name: str) -> list[str]:
+        """The literal pages whose reading reaches this record."""
+        pages = []
+        for segs, file in self.routes:
+            if any(seg.startswith("[") for seg in segs):
+                continue
+            if name in self.page_data(file):
+                pages.append("/" + "/".join(segs))
+        return sorted(pages)
+
+    # -- writers --
+
+    def writers_of(self, name: str) -> list[tuple[str, str]]:
+        """(script, confidence): the scripts under scripts/ that name the
+        record. Exact when the record's own note names the script."""
+        stated: set[str] = set()
+        rec = self.repo / "data" / name
+        try:
+            note = json.loads(rec.read_text()).get("_", "")
+            if isinstance(note, str):
+                stated.update(re.findall(r"scripts/[\w./-]+\.(?:py|mjs|ts|sh)", note))
+        except Exception:  # noqa: BLE001
+            pass
+        out: list[tuple[str, str]] = []
+        sdir = self.repo / "scripts"
+        if sdir.is_dir():
+            for f in sorted(sdir.iterdir()):
+                if not f.is_file() or f.name == "deploy.sh" or f.name.startswith("check-"):
+                    continue
+                try:
+                    text = f.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError):
+                    continue
+                rel = f"scripts/{f.name}"
+                if rel in stated:
+                    out.append((rel, "exact"))
+                elif re.search(r"\b" + re.escape(name) + r"\b", text):
+                    out.append((rel, "inferred"))
+        for rel in sorted(stated):
+            if rel not in {r for r, _ in out}:
+                out.append((rel, "exact"))
+        return out
+
+
 # ---------------------------------------------------------------------------
 # The http mount's fetch: loopback nginx, the site's name as SNI and Host.
 # ---------------------------------------------------------------------------
@@ -440,6 +624,7 @@ class Namespace:
         self.sites = sites
         self.git = {k: v.resolve() for k, v in (git_repos if git_repos is not None else git_repos_beside(self.repo)).items()}
         self.origins = Origins(self.repo)
+        self.graph = SiteGraph(self.repo)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -704,6 +889,25 @@ class Namespace:
                 for site in self.sites:
                     links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page this file becomes on {site}"))
             links.extend(self._origin_links(clean))
+            links.extend(self._record_links(clean))
+        return links
+
+    def _record_links(self, rel: str) -> list[dict]:
+        """For data/<name>.json: the script that writes it and the pages that
+        read it. The same links hang off the file in git."""
+        if not rel.startswith("data/") or not rel.endswith(".json") or "/" in rel[len("data/"):]:
+            return []
+        name = rel[len("data/"):]
+        links: list[dict] = []
+        if "public" in self.git:
+            for script, conf in self.graph.writers_of(name):
+                links.append(link("tm:generated-by", f"{ROOT}git/public/{quote(script)}", conf,
+                                  title="the script that writes this record" if conf == "exact" else "a script that names this record"))
+        # One site: beta serves the same pages, and a record that half the
+        # site reads would otherwise carry a hundred links.
+        for page in self.graph.readers_of(name):
+            links.append(link("tm:read-by", f"{ROOT}http/{self.sites[0]}{page}", "inferred",
+                              title="a page whose rendering reaches this record"))
         return links
 
     def _origin_links(self, rel: str) -> list[dict]:
@@ -923,6 +1127,16 @@ class Namespace:
         links.append(link("alternate", f"{base}{q}{sep}as=blame", title="the file with a commit per line"))
         if repo == "public" and clean.split("/")[0] in FS_ROOTS and (self.repo / clean).is_file():
             links.append(link("tm:working-copy", f"{ROOT}fs/{quote(clean)}", "exact", title="the checked-out file"))
+        if repo == "public":
+            for page in self.graph.pages_for(clean):
+                for site in self.sites:
+                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page this route renders on {site}"))
+            if clean.startswith("scripts/"):
+                for name in self.graph.data_names:
+                    for script, conf in self.graph.writers_of(name):
+                        if script == clean:
+                            links.append(link("tm:generates", f"{ROOT}fs/data/{quote(name)}", conf, title="a record this script writes"))
+            links.extend(self._record_links(clean))
         pulled = self.origins.by_git.get((repo, clean))
         if pulled:
             links.append(link("tm:generates", f"{ROOT}fs/{quote(pulled)}", "exact", title=f"the copy the build pulls to {pulled}"))
@@ -1080,6 +1294,13 @@ class Namespace:
             links.append(link("describedby", f"{base}?as=stat"))
             links.append(link("alternate", f"{base}?as=text", title="readable text"))
             links.append(link("alternate", f"{base}?as=rendered", title="the HTML a visitor gets"))
+            route = self.graph.route_for(clean)
+            if route and "public" in self.git:
+                file, dynamic = route
+                links.append(link("tm:source", f"{ROOT}git/public/{quote(file)}", "exact",
+                                  title="the route that renders this page" + (" (one of several it renders)" if dynamic else "")))
+                for name in self.graph.page_data(file):
+                    links.append(link("tm:data", f"{ROOT}fs/data/{quote(name)}", "inferred", title="a record the page's rendering reaches"))
             m = re.fullmatch(r"(/ja)?/docs(?:/(.*))?", clean)
             if m:
                 src = self.source_for("ja" if m[1] else "en", m[2] or "")
