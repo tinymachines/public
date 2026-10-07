@@ -4864,3 +4864,32 @@ and which repository a pulled page came from, which the pull list in
 a page to the record its figures come from. Unchanged from the evening:
 the pile page's base MAC and office-machine line, nes-bench's
 `tools/pulled-docs.json` row for `pile.md`, and 139 lint warnings.
+
+## Checkpoint, 2026-10-06 (late): the resolve tool, and a page that says how to connect
+
+Live and beta serve `20294e3` (deployed 2026-10-06 late on the owner's
+word, every stage passing, main pushed, nothing waiting). Two commits
+since the night checkpoint:
+
+| commit | what |
+|---|---|
+| `9350791` | `resolve(uri)`: the spec's tool-shaped door into the namespace, the same read with the links in its body, advertised only when the handler carries a namespace; a refusal through it keeps its reason and nearest URIs as an isError result. API tests 184 |
+| `20294e3` | the notebook page MCP, for clients and for servers, at `/docs/mcp-setup-guide`: connecting from claude.ai and desktop, Claude Code, any JSON-configured client and curl; the four tools and the `tm://` grammar with a six-exchange first session; and how this server is built so another speaks the same way. Listed in both indexes, no Japanese body yet |
+
+Verified on the public endpoint after the deploy: the tool list carries
+`resolve`, and resolving the guide's own page returns its text with its
+`tm:source` link. The owner means to roll the guide off into a separate
+project later; it lives in `docs/` so it is served meanwhile.
+
+**Where to pick up.** The spec's first open question is the owner's to
+answer with a client, and either outcome is now covered: connect
+claude.ai or Claude desktop to `https://tinymachines.ai/api/mcp` and see
+whether it walks the resources or reaches for `resolve`. What that shows
+decides whether the resources stay primary or the tool does. After that,
+in order: the git mount (history, blame, a file at a ref, and which
+repository a pulled page came from, which the pull list in
+`web/scripts/pull-nesdocs.mjs` already knows); `tm:data` links from a page
+to the record its figures are filled from; a Japanese body for the guide
+if it stays in the notebook. Unchanged: the pile page's base MAC and
+office-machine line, nes-bench's `tools/pulled-docs.json` row for
+`pile.md`, and 139 lint warnings.
