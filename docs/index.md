@@ -27,6 +27,7 @@ switches, and the behaviour falls out of simulating them.
 | [The console contract](/docs/6502/the-console-contract) | a frame is an agreement, not hardware |
 | [Cartridges](/docs/6502/cartridges) | a ROM, its tiles and the contract, in one file |
 | [MCP](/docs/6502/mcp) | five tools, each one a whole errand |
+| [MCP, for clients and for servers](/docs/mcp-setup-guide) | connecting a client to tinymachines.ai/api/mcp, the tm:// namespace it offers, and how the server is built |
 | [The registry](/docs/6502/the-registry) | builders, and why publishing measures rather than believes |
 
 The chip itself has a shelf of analysis, pulled from the 6502 tree at build
