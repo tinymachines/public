@@ -45,7 +45,7 @@ function shadows() {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p, path.join(base, e.name));
-      else if (e.name.endsWith(".md")) out.push(path.join(base, e.name));
+      else if (e.name.endsWith(".md") || e.name.endsWith(".mdx")) out.push(path.join(base, e.name));
     }
   };
   walk(path.join(DOCS, "ja"), "");

@@ -33,7 +33,42 @@ interface Row {
 
 const SOURCE = "  LDA #$2E\n  CLC\n  ADC #$14\n  BRK\n";
 
-export function TwoWaysDemo() {
+/**
+ * The words on the panel, in the language of the document that holds it.
+ * The .mdx page has a Japanese shadow (docs/ja/6502/two-ways-in.mdx), and a
+ * demo whose readout stayed English on it would be the one untranslated
+ * thing on the page; the shadow passes lang="ja", the English page passes
+ * nothing. The instruction labels are code and stay as they are.
+ */
+const WORDS = {
+  en: {
+    intro: ["This runs in your browser, against the chip behind this site's ", ", through the module below. Nothing is precomputed."],
+    run: "Run it",
+    running: "Running",
+    failed: "It did not run: ",
+    nothing: "Nothing is shown rather than a plausible number.",
+    measured: "measured just now",
+    after: "after",
+    halfCycle: "half-cycle",
+    plusOne: "+1 half-cycle",
+    noRegisters: "the run reported no registers",
+  },
+  ja: {
+    intro: ["これはあなたのブラウザの中で、このサイトの ", " の背後にあるチップに対して、下のモジュールを通して走る。前もって計算したものは何も無い。"],
+    run: "走らせる",
+    running: "実行中",
+    failed: "走らなかった: ",
+    nothing: "もっともらしい数の代わりに、何も表示しない。",
+    measured: "いま測った",
+    after: "の後",
+    halfCycle: "半サイクル",
+    plusOne: "+1 半サイクル",
+    noRegisters: "実行がレジスタを報告しなかった",
+  },
+} as const;
+
+export function TwoWaysDemo({ lang = "en" }: { lang?: "en" | "ja" }) {
+  const w = WORDS[lang];
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +94,7 @@ export function TwoWaysDemo() {
       for (const label of ["LDA #$2E", "CLC", "ADC #$14"]) {
         await cpu.runUntil("instruction");
         const r = cpu.registers();
-        if (!r) throw new Error("the run reported no registers");
+        if (!r) throw new Error(w.noRegisters);
         out.push({ label, halfCycle: cpu.halfCycle(), a: r.a, pc: r.pc });
       }
       // The write lands after the next fetch is already underway, so the sum
@@ -67,8 +102,8 @@ export function TwoWaysDemo() {
       for (let i = 0; i < 2; i++) {
         await cpu.step(1);
         const r = cpu.registers();
-        if (!r) throw new Error("the run reported no registers");
-        out.push({ label: "+1 half-cycle", halfCycle: cpu.halfCycle(), a: r.a, pc: r.pc });
+        if (!r) throw new Error(w.noRegisters);
+        out.push({ label: w.plusOne, halfCycle: cpu.halfCycle(), a: r.a, pc: r.pc });
       }
       setRows(out);
     } catch (e) {
@@ -82,21 +117,21 @@ export function TwoWaysDemo() {
   return (
     <div className="rail">
       <p className="quiet">
-        This runs in your browser, against the chip behind this site&apos;s{" "}
-        <code>/6502/api</code>, through the module below. Nothing is
-        precomputed.
+        {w.intro[0]}
+        <code>/6502/api</code>
+        {w.intro[1]}
       </p>
       <p>
         <button className="btn btn-primary" onClick={run} disabled={busy}>
-          {busy ? "Running" : "Run it"}
+          {busy ? w.running : w.run}
         </button>
       </p>
 
       {error ? (
         <p className="notice">
-          It did not run: {error}
+          {w.failed}{error}
           <br />
-          Nothing is shown rather than a plausible number.
+          {w.nothing}
         </p>
       ) : null}
 
@@ -109,13 +144,13 @@ export function TwoWaysDemo() {
           <div className="panel-face">
             <div className="panel-bar">
               <b>$2E + $14</b>
-              <span>measured just now</span>
+              <span>{w.measured}</span>
             </div>
             <table className="readout">
               <thead>
                 <tr>
-                  <th>after</th>
-                  <th className="num">half-cycle</th>
+                  <th>{w.after}</th>
+                  <th className="num">{w.halfCycle}</th>
                   <th className="num">A</th>
                   <th className="num">PC</th>
                 </tr>

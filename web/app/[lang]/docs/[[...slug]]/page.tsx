@@ -53,10 +53,11 @@ export async function generateMetadata({
  * missed the untranslated ones.
  */
 function hasJa(file: string): boolean {
-  // Shadows are .md only; the one .mdx document needs its interactive parts
-  // rebuilt to be translated, not just its prose, so it stays English until
-  // somebody does that deliberately.
-  if (!file.endsWith(".md")) return false;
+  // A shadow keeps its English page's extension. The one .mdx document's
+  // interactive part takes the language as a prop (TwoWaysDemo), so its
+  // shadow is an .mdx that passes lang="ja"; a shadow is never a .md
+  // standing in for an .mdx, because the component would then be missing
+  // and the page would silently lose its demo.
   return fs.existsSync(path.join(process.cwd(), "..", "docs", "ja", file));
 }
 
@@ -77,9 +78,12 @@ export default async function DocsPage({
   // guide, in flight), the build failed on files no page ever imports. With
   // the extension static, the context is exactly the pages.
   const useJa = lang === "ja" && hasJa(page.file);
+  const mdx = page.file.endsWith(".mdx");
   const { default: Content } = useJa
-    ? await import(`../../../../../docs/ja/${page.file.slice(0, -3)}.md`)
-    : page.file.endsWith(".mdx")
+    ? mdx
+      ? await import(`../../../../../docs/ja/${page.file.slice(0, -4)}.mdx`)
+      : await import(`../../../../../docs/ja/${page.file.slice(0, -3)}.md`)
+    : mdx
       ? await import(`../../../../../docs/${page.file.slice(0, -4)}.mdx`)
       : await import(`../../../../../docs/${page.file.slice(0, -3)}.md`);
   const docPath = slug.length ? `/docs/${slug.join("/")}` : "/docs";
