@@ -4827,3 +4827,40 @@ line (fix in `nes-bench/docs/pile.md` if wanted); nes-bench's
 yes; and whether the `tm://` work starts with resources on `/api/mcp`.
 Lint stands at 0 errors and 139 warnings, unswept. The list from the
 2026-10-05 checkpoint is otherwise unchanged.
+
+## Checkpoint, 2026-10-06 (night): tm:// speaks on /api/mcp
+
+Live and beta serve `4ec70eb` (deployed 2026-10-06 night on the owner's
+word, every stage passing, main pushed, nothing waiting). One commit
+since the evening checkpoint:
+
+| commit | what |
+|---|---|
+| `4ec70eb` | `api/tm.py` and `api/test_tm.py`: the spec's first slice. `/api/mcp` speaks resources/list, resources/templates/list, resources/read and completion/complete over two mounts, `fs/` (this checkout's docs, data and notes) and `http/<site>/` (a page as a visitor gets it, for the apex and beta), with typed links in `_meta` between a notebook page and the markdown it is rendered from. API tests 183 pass, 25 new |
+
+Three decisions the spec left open were made here, each for a reason
+this box supplies, and are written up in `api/README.md` under "tm://,
+the namespace": the fs roots are an allowlist of the three public
+directories rather than the host; `rendered` comes through nginx on
+loopback with the site's name as SNI and Host; and the page-to-source
+join is the notebook loader's rule restated, checked against the loader
+(through bun) and against the last crawl. The crawl check found the one
+`.mdx` page and the one `/docs` route that is not a page, which is what
+a check against a record is for.
+
+Verified on the public endpoint after the deploy: initialize advertises
+resources and completions, and reading
+`tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text` returns
+the page's own text, navigation left out, with its `tm:source` link.
+
+**Where to pick up.** The spec's first open question is now the owner's
+to answer with a client: connect claude.ai or Claude desktop to
+`https://tinymachines.ai/api/mcp` and see whether it navigates the
+resources unprompted. If it treats the server as tools only, a
+`resolve(uri)` tool over `Namespace.read` is the small addition the spec
+anticipates. After that, in order: the git mount (history and blame,
+and which repository a pulled page came from, which the pull list in
+`web/scripts/pull-nesdocs.mjs` already knows), then `tm:data` links from
+a page to the record its figures come from. Unchanged from the evening:
+the pile page's base MAC and office-machine line, nes-bench's
+`tools/pulled-docs.json` row for `pile.md`, and 139 lint warnings.
