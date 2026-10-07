@@ -5017,3 +5017,31 @@ standing items (the pile page's two MAC addresses and office-machine
 line, nes-bench's `tools/pulled-docs.json` row for `pile.md`, 139 lint
 warnings, the sprite sign-in test, the Othello redump, the reader
 firmware).
+
+## Checkpoint, 2026-10-07 (midday): the lint swept, and a check that had passed on nothing
+
+Live and beta serve `bb28632` (deployed 2026-10-07 on the owner's word,
+every stage passing, main pushed, nothing waiting). One commit since the
+morning checkpoint:
+
+| commit | what |
+|---|---|
+| `bb28632` | lint from 139 warnings to none. Generated files the lint had no business reading (pretext's bundle, the wasm-bindgen glue for the console and the playground's chips, all gitignored) are ignored for the reason the ntsc glue and the lab already were; underscore-prefixed names are unused on purpose and the rule now reads that; seven stale disable directives dropped, the avatar `<img>` explained in place, a dead prose table on `/6502` removed, and four small hand fixes. eslint 0, tsc clean, library tests 141 |
+
+One warning was a bug, and the deploy's own log now shows the fix
+working: check-build's eleventh check derived the nav entries and the
+routes the build prerendered and, from 2026-08-25 until this sweep,
+never compared them. The comment described a check that did not exist;
+the lint saw an unused `routes`. The comparison is in. Against the live
+build it prints "7 nav entries, every one a route or a served surface";
+against a manifest with a dead entry added it failed naming the entry
+before it was committed, which is the proof a restored check owes.
+
+**Where to pick up.** The standing list shrinks by one: the owner's
+client test against `https://tinymachines.ai/api/mcp` (resources, or
+`resolve`?); subscriptions if a use appears; the additional patterns
+for the lessons (Interludes, Dead, End of Game, Hit Detection);
+`/docs/hotbits` updated from geiger's plan once the tube feeds the pool
+for real; the pile page's two MAC addresses and office-machine line;
+nes-bench's `tools/pulled-docs.json` row for `pile.md`; the sprite
+sign-in test, the Othello redump, the reader firmware.
