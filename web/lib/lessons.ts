@@ -331,6 +331,18 @@ export interface InterludeMeasures {
   levels: number[];
 }
 
+/** A lift that carries the player (platforms_measures). */
+export interface PlatformsMeasures {
+  axis: "across" | "down";
+  step: number | null;
+  every: number | null;
+  travel: number;
+  standing: number;
+  stepped: number;
+  same: number;
+  steady: boolean;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -369,6 +381,7 @@ export type Lesson =
   | (Base & { kind: "pit"; measures: PitMeasures; against?: (PitMeasures & { game: string }) | null })
   | (Base & { kind: "gameover"; measures: GameoverMeasures; against?: (GameoverMeasures & { game: string }) | null })
   | (Base & { kind: "interlude"; measures: InterludeMeasures; against?: (InterludeMeasures & { game: string }) | null })
+  | (Base & { kind: "platforms"; measures: PlatformsMeasures; against?: (PlatformsMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

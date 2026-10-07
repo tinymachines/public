@@ -195,6 +195,16 @@ for (const l of record()) {
       expect(l.measures.mirroring?.fixed).toBe(true);
       expect(a.mirroring?.slide).toBe("vertical");
       await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
+    } else if (l.kind === "platforms") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A lift that steps, a player who stood on it while it did, moved by its step every time, at a steady height.
+        expect(x.step).toBeGreaterThan(0);
+        expect(x.stepped).toBeGreaterThan(10);
+        expect(x.same).toBe(x.stepped);
+        expect(x.steady).toBe(true);
+      }
+      expect(rows.find((r) => r[0] === "carried")?.slice(1)).toEqual([`${l.measures.same} of ${l.measures.stepped}`, `${a.same} of ${a.stepped}`]);
     } else if (l.kind === "interlude") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

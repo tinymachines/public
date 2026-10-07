@@ -1156,6 +1156,46 @@ def mario_interlude(dirpath: Path):
     return {"game": "Super Mario Bros.", **m}
 
 
+def platforms_measures(dirpath: Path, start: int, end: int, px, py, lx, ly, on):
+    """A lift that carries the player, from memory, with the player's and
+    the lift's positions and whether the player stands on it given as
+    functions of the cells and a frame. Over the frames `start` to `end`:
+    which way the lift moves (across, or up and down, whichever it moves
+    more), its step and the frames between steps, how far it travels;
+    the frames the player stood on it; of the frames the lift stepped
+    while the player stood on it with nothing pressed along its way for
+    sixty frames before (the player's own momentum spent), how
+    many moved the player by the lift's own step on that same frame; and whether the player's height above
+    the lift's top held steady all the while."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    end = min(end, len(ram) // 2048)
+    frames = range(start + 1, end)
+    dx = lambda f: lx(c, f) - lx(c, f - 1)
+    dy = lambda f: ly(c, f) - ly(c, f - 1)
+    across = sum(1 for f in frames if dx(f)) >= sum(1 for f in frames if dy(f))
+    d = dx if across else dy
+    pd = (lambda f: px(c, f) - px(c, f - 1)) if across else (lambda f: py(c, f) - py(c, f - 1))
+    at = (lambda f: lx(c, f)) if across else (lambda f: ly(c, f))
+    moves = [f for f in frames if d(f)]
+    mode = lambda v: max(set(v), key=v.count) if v else None
+    pad = (dirpath / "pad.bin").read_bytes()
+    # The pad along the lift's axis (Right and Left across, Up and Down up
+    # and down; script bytes are the console's order): a frame something
+    # was pressed that way is not a frame the lift alone moved the player.
+    along = 0xC0 if across else 0x30
+    standing = [f for f in frames if on(c, f) and on(c, f - 1)]
+    # And nothing for a second before, so the player's own momentum is spent.
+    stepped = [f for f in standing if d(f) and not any(pad[g] & along for g in range(max(0, f - 60), f + 1))]
+    same = [f for f in stepped if pd(f) == d(f)]
+    gaps = {ly(c, f) - py(c, f) for f in standing}
+    return {
+        "axis": "across" if across else "down", "step": mode([abs(d(f)) for f in moves]), "every": mode([b - a for a, b in zip(moves, moves[1:])]),
+        "travel": max(at(f) for f in frames) - min(at(f) for f in frames),
+        "standing": len(standing), "stepped": len(stepped), "same": len(same), "steady": len(gaps) == 1,
+    }
+
+
 def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
     """A coin from a block, from memory and the writes to the picture,
     with the game's coin count and score given as functions of the cells
@@ -1393,6 +1433,12 @@ def main():
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
+        elif kind == "platforms":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            measures = platforms_measures(run, meta["walk_from"], meta["frames"], lambda c, f: c(f, h(mm["x"])), lambda c, f: c(f, h(mm["y"])),
+                                          lambda c, f: c(f, h(mm["lift_x"])), lambda c, f: c(f, h(mm["lift_top"])), lambda c, f: c(f, h(mm["on"])) == 1)
+            against = mario_platforms(Path(compare[name])) if name in compare else prev.get("against")
         elif kind == "interlude":
             h = lambda a: int(a[1:], 16)
             mm = meta["memory"]
