@@ -20,12 +20,12 @@ export const FAMILY: readonly FamilyMember[] = [
   { hue: "clay", hex: "#995d48", name: "Meatball Labs", href: "https://meatball.ai", role: "lab" },
   { hue: "ochre", hex: "#89692f", name: "SysForge", href: "https://sysforge.ai", role: "lab" },
   { hue: "moss", hex: "#68763a" },
-  { hue: "sage", hex: "#427d59", name: "hotbits", href: "https://tinymachines.ai/hotbits", role: "lab" },
-  { hue: "spruce", hex: "#1b7d82", name: "amy.io", href: "https://amy.io", role: "lab" },
+  { hue: "sage", hex: "#427d59" },
+  { hue: "spruce", hex: "#1b7d82", name: "vizmin", role: "lab", reserved: true },
   { hue: "steel", hex: "#41749d", name: "bradley.io", href: "https://bradley.io", role: "home" },
   { hue: "iris", hex: "#6a679e", name: "tinymachines.ai", href: "https://tinymachines.ai", role: "lab" },
-  { hue: "plum", hex: "#8b5c86", name: "Campaign Brain", href: "https://campaignbrain.dev", role: "lab" },
-  { hue: "rose", hex: "#995963", name: "snailmail.ai", role: "lab", reserved: true },
+  { hue: "plum", hex: "#8b5c86" },
+  { hue: "rose", hex: "#995963" },
 ]
 
 export type ElectricId = "lime" | "cyan" | "ember" | "magenta" | "violet"
@@ -36,18 +36,20 @@ export interface ElectricHue {
   name: string
   /** OKLCH hue, degrees */
   hue: number
-  /** The muted slot of the site that wears it, and that site's name; absent while open. */
-  slot?: FamilyHue
+  /** The site that wears it (absent while open): its name, its address unless reserved. It holds no muted hue. */
   who?: string
+  href?: string
+  role?: "lab" | "home"
+  reserved?: boolean
   /** glow: the mark and links. core: buttons. dim: solid blocks. haze: a tinted surface over night. */
   tones: { glow: string; core: string; dim: string; haze: string }
 }
 
 /** The electric set (electric.json). */
 export const ELECTRIC: readonly ElectricHue[] = [
-  { id: "lime", name: "Lime", hue: 141, slot: "rose", who: "snailmail.ai", tones: { glow: "#3ffe00", core: "#3dc820", dim: "#25541d", haze: "#1e2a1c" } },
-  { id: "cyan", name: "Cyan", hue: 200, slot: "spruce", who: "amy.io", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
-  { id: "ember", name: "Ember", hue: 55, slot: "sage", who: "hotbits", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
+  { id: "lime", name: "Lime", hue: 141, who: "snailmail.ai", href: "https://snailmail.ai", role: "lab", tones: { glow: "#3ffe00", core: "#3dc820", dim: "#25541d", haze: "#1e2a1c" } },
+  { id: "cyan", name: "Cyan", hue: 200, who: "amy.io", href: "https://amy.io", role: "lab", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
+  { id: "ember", name: "Ember", hue: 55, who: "hotbits", href: "https://tinymachines.ai/hotbits", role: "lab", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
   { id: "magenta", name: "Magenta", hue: 340, tones: { glow: "#fc00cb", core: "#b61692", dim: "#6a2f58", haze: "#31212b" } },
   { id: "violet", name: "Violet", hue: 300, tones: { glow: "#9200fe", core: "#5f0fa7", dim: "#503975", haze: "#292333" } },
 ]
