@@ -97,6 +97,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The instruments: the die lit by what it is doing, the tracer, the schematic, the Halfwave Lab. One chip, many views.",
   },
+  "/computer-tree": {
+    title: "The Computer Tree, 1945 to 2025",
+    description:
+      "The US Army's 1961 family tree of the electronic computer, transcribed and grown one ring per decade to 2025, from ENIAC to Fugaku. Pick any machine and trace its line back to the root; the dataset is free to take.",
+  },
   "/visitors": {
     title: "Visitors",
     description:

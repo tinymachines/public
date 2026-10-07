@@ -1,0 +1,543 @@
+id,label,year,ring,maker,branch,layer,is_root,notes
+eniac,ENIAC,1945,1945,Moore School / U. Penn,Trunk,original_1961,true,Root of the tree
+edvac,EDVAC,1949,1950,Moore School,Left limb,original_1961,false,
+seac,SEAC,1950,1950,NBS,Left limb,original_1961,false,
+dyseac,DYSEAC,1954,1955,NBS,Left limb,original_1961,false,
+flac,FLAC,1953,1955,USAF Missile Test Center,Left limb,original_1961,false,SEAC copy
+crc_102a,CRC 102A,1953,1955,Computer Research Corp,Left - National line,original_1961,false,
+crc_107,CRC 107,1954,1955,Computer Research Corp,Left - National line,original_1961,false,
+national_102d,NATIONAL 102D,1955,1955,NCR,Left - National line,original_1961,false,NCR bought CRC in 1953
+national_107,NATIONAL 107,,1960,NCR,Left - National line,original_1961,false,
+national_303,NATIONAL 303,,1960,NCR,Left - National line,original_1961,false,
+national_304,NATIONAL 304,1959,1960,NCR,Left - National line,original_1961,false,
+national_310,NATIONAL 310,1960,1960,NCR,Left - National line,original_1961,false,
+national_510,NATIONAL 510,,1960,NCR,Left - National line,original_1961,false,
+national_315,NATIONAL 315,1962,1960,NCR,Right limb,original_1961,false,Drawn on right side of chart
+elecom_100,ELECOM 100,1951,1955,Underwood / Electronic Computer Corp,Left - Elecom line,original_1961,false,
+elecom_120,ELECOM 120,,1955,Underwood,Left - Elecom line,original_1961,false,
+elecom_120a,ELECOM 120A,,1955,Underwood,Left - Elecom line,original_1961,false,
+elecom_125,ELECOM 125,,1960,Underwood,Left - Elecom line,original_1961,false,
+elecom_125_fp,ELECOM 125 FP,,1960,Underwood,Left - Elecom line,original_1961,false,
+underwood_mercator_5000,UNDERWOOD MERCATOR 5000,,1960,Underwood,Left - upper,original_1961,false,
+univac_i,UNIVAC I,1951,1955,Remington Rand,Left - Univac line,original_1961,false,
+univac_file_i,UNIVAC FILE I,1956,1960,Remington Rand,Left - Univac line,original_1961,false,
+univac_file_ii,UNIVAC FILE II,,1960,Sperry Rand,Left - Univac line,original_1961,false,
+univac_ii,UNIVAC II,1958,1960,Sperry Rand,Left - Univac line,original_1961,false,
+univac_iii,UNIVAC III,1962,1960,Sperry Rand,Left - Univac line,original_1961,false,Shown as planned on chart
+miniac_i,MINIAC I,,1955,Physical Research Labs,Left limb,original_1961,false,
+miniac_ii,MINIAC II,,1960,Physical Research Labs,Left limb,original_1961,false,
+alwac_ii,ALWAC II,,1955,Logistics Research,Left limb,original_1961,false,
+alwac_iii,ALWAC III,,1955,Logistics Research,Left limb,original_1961,false,
+alwac_iii_e,ALWAC III E,1954,1960,Logistics Research,Left limb,original_1961,false,
+monrobot_iii,MONROBOT III,,1955,Monroe,Left - Monrobot line,original_1961,false,
+monrobot_v,MONROBOT V,,1955,Monroe,Left - Monrobot line,original_1961,false,
+monrobot_vi,MONROBOT VI,,1960,Monroe,Left - Monrobot line,original_1961,false,
+monrobot_ix,MONROBOT IX,,1960,Monroe,Left - Monrobot line,original_1961,false,
+monrobot_xi,MONROBOT XI,1960,1960,Monroe,Left - Monrobot line,original_1961,false,
+distributape,DISTRIBUTAPE,,1960,?,Left - Monrobot line,original_1961,false,
+bendix_g15,BENDIX G15,1956,1960,Bendix,Left limb,original_1961,false,
+bendix_d12,BENDIX D12,,1960,Bendix,Left limb,original_1961,false,
+bendix_g20,BENDIX G20,1961,1960,Bendix,Right limb,original_1961,false,Drawn on right side of chart
+mellon,MELLON,,1955,?,Left limb,original_1961,false,
+circle,CIRCLE,,1955,Hogan Labs,Left limb,original_1961,false,
+modac_404,MODAC 404,,1955,?,Left - Modac line,original_1961,false,
+modac_410,MODAC 410,,1960,?,Left - Modac line,original_1961,false,
+modac_414,MODAC 414,,1960,?,Left - Modac line,original_1961,false,
+modac_5014,MODAC 5014,,1960,?,Left - Modac line,original_1961,false,
+hughes_digitair,HUGHES DIGITAIR,,1960,Hughes,Left - upper,original_1961,false,
+hughes_d_pat,HUGHES D PAT,,1960,Hughes,Left - upper,original_1961,false,
+pennstac,PENNSTAC,,1955,Penn State,Left limb,original_1961,false,
+ordfiac,ORDFIAC,,1955,?,Left limb,original_1961,false,
+mistic,MISTIC,1957,1960,Michigan State,Left limb,original_1961,false,
+readix,READIX,,1960,J.B. Rea,Left limb,original_1961,false,
+datamatic_1000,DATAMATIC 1000,1957,1960,Raytheon-Honeywell,Left limb,original_1961,false,
+hampshire_ccc_500,HAMPSHIRE CCC 500,,1960,?,Left - upper,original_1961,false,
+hampshire_trtds,HAMPSHIRE TRTDS,,1960,?,Left - upper,original_1961,false,
+ccc_real_time,CCC REAL TIME,,1960,Computer Control Co,Left - upper,original_1961,false,
+spec,SPEC,,1960,?,Left - upper,original_1961,false,
+packbell_250,PACKBELL 250,1960,1960,Packard Bell,Left - upper,original_1961,false,
+rpc_9000,RPC 9000,,1960,Royal McBee,Left - upper,original_1961,false,
+rastac,RASTAC,,1960,?,Left - upper,original_1961,false,
+ge_60,GE 60,,1960,General Electric,Left - upper,original_1961,false,
+geotec_auto,GEOTEC AUTO,,1960,?,Left - upper,original_1961,false,
+scribe,SCRIBE,,1960,?,Left - upper,original_1961,false,
+vote,VOTE,,1960,?,Left - upper,original_1961,false,
+norc,NORC,1954,1960,IBM,Left - upper,original_1961,false,
+ln_3000,LN 3000,,1960,?,Left - upper,original_1961,false,
+perk_i,PERK I,,1960,?,Left - upper,original_1961,false,
+perk_ii,PERK II,,1960,?,Left - upper,original_1961,false,
+lfe_rd_900,LFE RD 900,,1960,Laboratory for Electronics,Left - upper,original_1961,false,
+intelex_airline_res,INTELEX AIRLINE RES,,1960,Intelex,Left - upper,original_1961,false,
+data_flo_rp_70,DATA-FLO RP-70,,1960,?,Left - upper,original_1961,false,
+dig_conv,DIG CONV,,1960,?,Left - upper,original_1961,false,
+numericor,NUMERICOR,,1960,?,Left - upper,original_1961,false,
+ge_erma,GE ERMA,1955,1960,GE / SRI,Left - GE line,original_1961,false,Bank of America check processing
+ge_210,GE 210,1959,1960,General Electric,Left - GE line,original_1961,false,
+ge_225,GE 225,1960,1960,General Electric,Left - GE line,original_1961,false,
+ge_250,GE 250,,1960,General Electric,Left - GE line,original_1961,false,
+ge_312,GE 312,,1960,General Electric,Left - GE line,original_1961,false,Process control
+ge_412,GE 412,,1960,General Electric,Left - GE line,original_1961,false,
+udec_i,UDEC I,1953,1955,Burroughs,Center-left - Burroughs,original_1961,false,
+udec_ii,UDEC II,,1955,Burroughs,Center-left - Burroughs,original_1961,false,
+udec_iii,UDEC III,,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+bur_e101,BUR E101,1955,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+bur_e103,BUR E103,,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+bur_205,BUR 205,1954,1960,Burroughs (ElectroData),Center-left - Burroughs,original_1961,false,
+bur_220,BUR 220,1958,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+b_250,B 250,1961,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+b_260,B 260,1961,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+b_270,B 270,1961,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+b_280,B 280,1961,1960,Burroughs,Center-left - Burroughs,original_1961,false,
+bur_d825,BUR D825,1962,1960,Burroughs,Right limb,original_1961,false,Military multiprocessor
+tim_i,TIM I,,1955,?,Center-left,original_1961,false,
+tim_ii,TIM II,,1955,?,Center-left,original_1961,false,
+magnefile_b,MAGNEFILE B,,1955,?,Center-left,original_1961,false,
+magnefile_d,MAGNEFILE D,,1955,?,Center-left,original_1961,false,
+lgp_30,LGP 30,1956,1960,Librascope / Royal McBee,Center-left - Librascope,original_1961,false,
+rpc_4000,RPC 4000,1960,1960,Royal McBee,Left - upper,original_1961,false,
+libra_asn_24,LIBRA ASN 24,,1960,Librascope,Center-left - Librascope,original_1961,false,
+libra_airtraf,LIBRA AIRTRAF,,1960,Librascope,Center-left - Librascope,original_1961,false,
+libra_407,LIBRA 407,,1960,Librascope,Center-left - Librascope,original_1961,false,
+libra_1000,LIBRA 1000,,1960,Librascope,Center-left - Librascope,original_1961,false,
+logistics,LOGISTICS,1953,1955,ERA,Center trunk,original_1961,false,
+bogart,BOGART,,1955,ERA / NSA,Center - military,original_1961,false,
+an_fsq_7,AN/FSQ 7,1958,1960,IBM (SAGE),Center - military,original_1961,false,SAGE
+an_fsq_32,AN/FSQ 32,1961,1960,IBM,Center - military,original_1961,false,
+target_intercept,TARGET INTERCEPT,,1960,?,Center - military,original_1961,false,
+athena,ATHENA,1957,1960,Univac,Center - military,original_1961,false,Titan missile guidance
+univac_mot,UNIVAC MOT,,1960,Univac,Center - military,original_1961,false,
+an_asq_28,AN/ASQ 28,,1960,?,Center - military,original_1961,false,
+stor_prog_dda,STOR PROG DDA,,1960,?,Center - military,original_1961,false,
+asc_15,ASC 15,,1960,?,Center - military,original_1961,false,
+an_tyk_7v_informer,AN/TYK 7V INFORMER,,1960,?,Center - military,original_1961,false,
+an_uyk,AN/UYK,,1960,?,Center - military,original_1961,false,
+mobidic_a,MOBIDIC A,1959,1960,Sylvania,Center - Mobidic,original_1961,false,
+mobidic_b,MOBIDIC B,,1960,Sylvania,Center - Mobidic,original_1961,false,
+mobidic_c,MOBIDIC C,,1960,Sylvania,Center - Mobidic,original_1961,false,
+mobidic_d,MOBIDIC D,,1960,Sylvania,Center - Mobidic,original_1961,false,
+mobidic_7a,MOBIDIC 7A,,1960,Sylvania,Center - Mobidic,original_1961,false,
+sylvania_s9400,SYLVANIA S9400,,1960,Sylvania,Right limb,original_1961,false,
+sylvania_m64,SYLVANIA M64,,1960,Sylvania,Right limb,original_1961,false,
+cubic_traffic,CUBIC TRAFFIC,,1960,Cubic,Center - military,original_1961,false,
+cubic_tracker,CUBIC TRACKER,,1960,Cubic,Center - military,original_1961,false,
+westinghouse_airborne,WESTINGHOUSE AIRBORNE,,1960,Westinghouse,Center - military,original_1961,false,
+universal_data_transcriber,UNIVERSAL DATA TRANSCRIBER,,1960,?,Center - military,original_1961,false,
+hughes_b_guid,HUGHES B GUID,,1960,Hughes,Center - military,original_1961,false,
+verdan,VERDAN,,1960,Autonetics,Center - military,original_1961,false,
+jukebox,JUKEBOX,,1960,?,Center - military,original_1961,false,
+redstone,REDSTONE,,1960,?,Center - military,original_1961,false,
+recomp_i,RECOMP I,1957,1960,Autonetics,Center - military,original_1961,false,
+recomp_ii,RECOMP II,1958,1960,Autonetics,Center - military,original_1961,false,
+recomp_iii,RECOMP III,,1960,Autonetics,Center - military,original_1961,false,
+ias,IAS,1952,1955,Institute for Advanced Study,Right limb,original_1961,false,von Neumann machine
+ordvac,ORDVAC,1951,1955,U. Illinois / Army BRL,Right limb,original_1961,false,
+illiac_i,ILLIAC I,1952,1955,U. Illinois,Right limb,original_1961,false,
+cyclone,CYCLONE,1959,1960,Iowa State,Right limb,original_1961,false,ILLIAC copy
+brlesc,BRLESC,1962,1960,Army BRL,Right limb,original_1961,false,
+maniac_i,MANIAC I,1952,1955,Los Alamos,Right limb,original_1961,false,
+maniac_ii,MANIAC II,1957,1960,Los Alamos,Right limb,original_1961,false,
+johnniac,JOHNNIAC,1953,1955,RAND,Right limb,original_1961,false,
+oracle,ORACLE,1953,1955,Oak Ridge,Right limb,original_1961,false,
+raydac,RAYDAC,1953,1955,Raytheon,Right limb,original_1961,false,
+diana,DIANA,,1960,?,Right limb,original_1961,false,
+whirlwind_i,WHIRLWIND I,1951,1955,MIT,Right limb,original_1961,false,
+memory_test,MEMORY TEST,1953,1955,MIT Lincoln Lab,Right limb,original_1961,false,
+lincoln_tx_0,LINCOLN TX-0,1956,1960,MIT Lincoln Lab,Right limb,original_1961,false,
+lincoln_tx_2,LINCOLN TX-2,1958,1960,MIT Lincoln Lab,Right limb,original_1961,false,
+lincoln_cg_24,LINCOLN CG 24,,1960,MIT Lincoln Lab,Right limb,original_1961,false,
+gen_mills_ag_ecs,GEN MILLS AG/ECS,,1960,General Mills,Right limb,original_1961,false,
+ibm_604,IBM 604,1948,1950,IBM,Right - IBM line,original_1961,false,Electronic calculating punch
+ibm_608,IBM 608,1957,1960,IBM,Right - IBM line,original_1961,false,
+ibm_610,IBM 610,1957,1960,IBM,Right - IBM line,original_1961,false,
+ibm_650,IBM 650,1954,1955,IBM,Right - IBM line,original_1961,false,
+ibm_305_ramac,IBM 305 RAMAC,1956,1960,IBM,Right - IBM line,original_1961,false,
+ibm_1401,IBM 1401,1959,1960,IBM,Right - IBM line,original_1961,false,
+ibm_1410,IBM 1410,1960,1960,IBM,Right - IBM line,original_1961,false,
+ibm_701,IBM 701,1952,1955,IBM,Right - IBM line,original_1961,false,
+ibm_704,IBM 704,1954,1960,IBM,Right - IBM line,original_1961,false,
+ibm_709,IBM 709,1958,1960,IBM,Right - IBM line,original_1961,false,
+ibm_7090,IBM 7090,1959,1960,IBM,Right - IBM line,original_1961,false,
+ibm_7044,IBM 7044,1962,1960,IBM,Right - IBM line,original_1961,false,
+stretch,STRETCH,1961,1960,IBM,Right - IBM line,original_1961,false,IBM 7030
+ibm_702,IBM 702,1953,1955,IBM,Center-left - IBM commercial,original_1961,false,
+ibm_705,IBM 705,1954,1960,IBM,Center-left - IBM commercial,original_1961,false,
+ibm_705_iii,IBM 705 III,1958,1960,IBM,Center-left - IBM commercial,original_1961,false,
+ibm_7080,IBM 7080,1961,1960,IBM,Center-left - IBM commercial,original_1961,false,
+ibm_7070,IBM 7070,1960,1960,IBM,Center-left - IBM commercial,original_1961,false,
+ibm_7074,IBM 7074,1961,1960,IBM,Center-left - IBM commercial,original_1961,false,
+univac_1101,UNIVAC 1101,1950,1955,ERA / Remington Rand,Right - Univac scientific,original_1961,false,ERA Atlas
+univac_1102,UNIVAC 1102,,1955,Remington Rand,Right - Univac scientific,original_1961,false,
+univac_1103,UNIVAC 1103,1953,1955,Remington Rand,Right - Univac scientific,original_1961,false,
+univac_1103a,UNIVAC 1103A,1956,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_1105,UNIVAC 1105,1958,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_1107,UNIVAC 1107,1962,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_larc,UNIVAC LARC,1960,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_solid_state_80,UNIVAC SOLID STATE 80,1958,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_step,UNIVAC STEP,,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_490,UNIVAC 490,1961,1960,Sperry Rand,Right - Univac scientific,original_1961,false,
+univac_1206,UNIVAC 1206,1961,1960,Sperry Rand,Right - Univac scientific,original_1961,false,Navy CP-642
+cdc_1604,CDC 1604,1960,1960,Control Data,Right limb,original_1961,false,Seymour Cray left ERA/Univac
+cdc_160,CDC 160,1960,1960,Control Data,Right limb,original_1961,false,
+cdc_6600,CDC 6600,1964,1960,Control Data,Right limb,original_1961,false,Shown as planned on chart
+rca_bizmac_i,RCA BIZMAC I,1956,1960,RCA,Right - RCA line,original_1961,false,
+rca_bizmac_ii,RCA BIZMAC II,,1960,RCA,Right - RCA line,original_1961,false,
+rca_501,RCA 501,1958,1960,RCA,Right - RCA line,original_1961,false,
+rca_301,RCA 301,1961,1960,RCA,Right - RCA line,original_1961,false,
+rca_601,RCA 601,1962,1960,RCA,Right - RCA line,original_1961,false,
+rca_110,RCA 110,1961,1960,RCA,Right - RCA line,original_1961,false,
+tele_speeda,TELE SPEEDA,,1960,Teleregister,Right - Tele line,original_1961,false,
+tele_inv_control,TELE INV CONTROL,,1960,Teleregister,Right - Tele line,original_1961,false,
+tele_unair,TELE UNAIR,,1960,Teleregister,Right - Tele line,original_1961,false,
+telefile,TELEFILE,,1960,Teleregister,Right - Tele line,original_1961,false,
+litton_20_40,LITTON 20/40,,1960,Litton,Right - Litton line,original_1961,false,
+litton_c7000,LITTON C7000,,1960,Litton,Right - Litton line,original_1961,false,
+litton_data_assess,LITTON DATA ASSESS,,1960,Litton,Right - Litton line,original_1961,false,
+alwac_800,ALWAC 800,,1960,Logistics Research,Right limb,original_1961,false,
+honeywell_800,HONEYWELL 800,1959,1960,Honeywell,Right - Honeywell,original_1961,false,
+honeywell_400,HONEYWELL 400,1961,1960,Honeywell,Right - Honeywell,original_1961,false,
+honeywell_290,HONEYWELL 290,,1960,Honeywell,Right - Honeywell,original_1961,false,Process control
+philco_cxpq,PHILCO CXPQ,,1960,Philco,Right - Philco,original_1961,false,
+philco_1000,PHILCO 1000,,1960,Philco,Right - Philco,original_1961,false,
+philco_2000,PHILCO 2000,1958,1960,Philco,Right - Philco,original_1961,false,TRANSAC S-2000
+philco_2400,PHILCO 2400,,1960,Philco,Right - Philco,original_1961,false,
+trw_130,TRW 130,,1960,TRW / Ramo-Wooldridge,Right limb,original_1961,false,
+trw_330,TRW 330,,1960,TRW,Right limb,original_1961,false,
+trw_530,TRW 530,,1960,TRW,Right limb,original_1961,false,
+trw_400,TRW 400,,1960,TRW,Right limb,original_1961,false,
+ccc_ddp_19,CCC DDP 19,,1960,Computer Control Co,Right limb,original_1961,false,
+asi_420,ASI 420,,1960,Advanced Scientific Instruments,Right limb,original_1961,false,
+ibm_7094,IBM 7094,1962,1970,IBM,IBM mainframe,extension,false,
+ibm_system_360,IBM System/360,1964,1970,IBM,IBM mainframe,extension,false,Unified IBM's incompatible lines
+ibm_360_91,IBM 360/91,1967,1970,IBM,IBM mainframe,extension,false,Stretch pipelining lineage
+ibm_system_3,IBM System/3,1969,1970,IBM,IBM midrange,extension,false,
+ibm_system_370,IBM System/370,1970,1970,IBM,IBM mainframe,extension,false,
+ibm_3033,IBM 3033,1977,1980,IBM,IBM mainframe,extension,false,
+ibm_4341,IBM 4341,1979,1980,IBM,IBM mainframe,extension,false,
+ibm_system_38,IBM System/38,1978,1980,IBM,IBM midrange,extension,false,
+ibm_5100,IBM 5100,1975,1980,IBM,IBM personal,extension,false,Ran System/360 emulation for APL
+ibm_801,IBM 801,1980,1980,IBM Research,IBM RISC,extension,false,First RISC design
+ibm_3081,IBM 3081,1981,1990,IBM,IBM mainframe,extension,false,
+ibm_3090,IBM 3090,1985,1990,IBM,IBM mainframe,extension,false,
+ibm_es_9000,IBM ES/9000,1990,1990,IBM,IBM mainframe,extension,false,
+ibm_as_400,IBM AS/400,1988,1990,IBM,IBM midrange,extension,false,
+ibm_rt_pc,IBM RT PC,1986,1990,IBM,IBM RISC,extension,false,
+ibm_rs_6000,IBM RS/6000,1990,1990,IBM,IBM RISC,extension,false,POWER architecture
+ibm_pc,IBM PC,1981,1990,IBM,PC,extension,false,Model 5150 (8088 CPU)
+ibm_pc_at,IBM PC/AT,1984,1990,IBM,PC,extension,false,
+ibm_ps_2,IBM PS/2,1987,1990,IBM,PC,extension,false,
+compaq_portable,Compaq Portable,1983,1990,Compaq,PC,extension,false,
+compaq_deskpro_386,Compaq Deskpro 386,1986,1990,Compaq,PC,extension,false,
+amdahl_470v_6,Amdahl 470V/6,1975,1980,Amdahl,Plug-compatible,extension,false,"Gene Amdahl, 360 architect"
+fujitsu_facom_m_190,Fujitsu FACOM M-190,1976,1980,Fujitsu,Plug-compatible,extension,false,Amdahl-Fujitsu partnership
+cdc_3600,CDC 3600,1963,1970,Control Data,CDC / Cray,extension,false,
+cdc_7600,CDC 7600,1969,1970,Control Data,CDC / Cray,extension,false,
+cdc_cyber_70,CDC Cyber 70,1971,1980,Control Data,CDC / Cray,extension,false,
+cdc_cyber_170,CDC Cyber 170,1973,1980,Control Data,CDC / Cray,extension,false,
+cdc_star_100,CDC STAR-100,1974,1980,Control Data,CDC / Cray,extension,false,
+cray_1,Cray-1,1976,1980,Cray Research,CDC / Cray,extension,false,Seymour Cray left CDC 1972
+cdc_cyber_205,CDC Cyber 205,1981,1990,Control Data,CDC / Cray,extension,false,
+cray_x_mp,Cray X-MP,1982,1990,Cray Research,CDC / Cray,extension,false,
+cdc_cyber_180,CDC Cyber 180,1984,1990,Control Data,CDC / Cray,extension,false,
+cray_2,Cray-2,1985,1990,Cray Research,CDC / Cray,extension,false,
+eta10,ETA10,1987,1990,ETA Systems,CDC / Cray,extension,false,
+cray_y_mp,Cray Y-MP,1988,1990,Cray Research,CDC / Cray,extension,false,
+univac_1108,UNIVAC 1108,1964,1970,Sperry Rand,Univac 1100,extension,false,
+univac_494,UNIVAC 494,1966,1970,Sperry Rand,Univac real-time,extension,false,
+univac_1218,UNIVAC 1218,1963,1970,Sperry Rand,Navy tactical,extension,false,
+univac_1110,UNIVAC 1110,1972,1980,Sperry Univac,Univac 1100,extension,false,
+univac_1100_80,UNIVAC 1100/80,1979,1980,Sperry Univac,Univac 1100,extension,false,
+an_uyk_7,AN/UYK-7,1970,1970,Sperry Univac,Navy tactical,extension,false,
+an_uyk_20,AN/UYK-20,1974,1980,Sperry Univac,Navy tactical,extension,false,
+univac_series_90,UNIVAC Series 90,1973,1980,Sperry Univac,RCA / Univac,extension,false,Univac bought RCA base 1971
+sperry_1100_90,Sperry 1100/90,1982,1990,Sperry,Univac 1100,extension,false,
+an_uyk_43,AN/UYK-43,1984,1990,Sperry / Unisys,Navy tactical,extension,false,
+an_uyk_44,AN/UYK-44,1984,1990,Sperry / Unisys,Navy tactical,extension,false,
+unisys_2200,Unisys 2200,1986,1990,Unisys,Univac 1100,extension,false,Burroughs + Sperry merger
+rca_spectra_70,RCA Spectra 70,1965,1970,RCA,RCA / Univac,extension,false,Partly 360-compatible
+rca_series,RCA Series,1970,1970,RCA,RCA / Univac,extension,false,
+burroughs_b5000,Burroughs B5000,1961,1970,Burroughs,Burroughs stack,extension,false,"Stack machine, ALGOL-oriented"
+burroughs_b5500,Burroughs B5500,1964,1970,Burroughs,Burroughs stack,extension,false,
+burroughs_b3500,Burroughs B3500,1966,1970,Burroughs,Burroughs medium,extension,false,
+burroughs_b6500,Burroughs B6500,1969,1970,Burroughs,Burroughs stack,extension,false,
+burroughs_b6700,Burroughs B6700,1971,1980,Burroughs,Burroughs stack,extension,false,
+burroughs_b7700,Burroughs B7700,1973,1980,Burroughs,Burroughs stack,extension,false,
+burroughs_a_series,Burroughs A Series,1984,1990,Burroughs / Unisys,Burroughs stack,extension,false,
+burroughs_v_series,Burroughs V Series,1985,1990,Burroughs / Unisys,Burroughs medium,extension,false,
+honeywell_200,Honeywell 200,1963,1970,Honeywell,Honeywell / GE,extension,false,"1401-compatible ""Liberator"""
+ge_235,GE 235,1964,1970,General Electric,Honeywell / GE,extension,false,Dartmouth time-sharing
+ge_635,GE 635,1964,1970,General Electric,Honeywell / GE,extension,false,
+ge_645,GE 645,1967,1970,General Electric,Honeywell / GE,extension,false,Built for Multics
+honeywell_6000,Honeywell 6000,1970,1970,Honeywell,Honeywell / GE,extension,false,Honeywell bought GE computers 1970
+honeywell_6180,Honeywell 6180,1973,1980,Honeywell,Honeywell / GE,extension,false,Multics
+honeywell_level_66,Honeywell Level 66,1974,1980,Honeywell,Honeywell / GE,extension,false,
+honeywell_dps_8,Honeywell DPS 8,1980,1980,Honeywell,Honeywell / GE,extension,false,
+honeywell_dps_88,Honeywell DPS 88,1982,1990,Honeywell,Honeywell / GE,extension,false,
+ccc_ddp_116,CCC DDP-116,1965,1970,Computer Control Co,Honeywell minis,extension,false,
+honeywell_ddp_516,Honeywell DDP-516,1966,1970,Honeywell,Honeywell minis,extension,false,ARPANET IMP hardware
+honeywell_316,Honeywell 316,1969,1970,Honeywell,Honeywell minis,extension,false,
+prime_200,Prime 200,1972,1980,Prime Computer,Honeywell minis,extension,false,
+prime_750,Prime 750,1979,1980,Prime Computer,Honeywell minis,extension,false,
+ncr_century_100,NCR Century 100,1968,1970,NCR,NCR,extension,false,
+ncr_criterion,NCR Criterion,1976,1980,NCR,NCR,extension,false,
+philco_212,Philco 212,1962,1970,Philco-Ford,Philco,extension,false,Philco left computing soon after
+sds_910,SDS 910,1962,1970,Scientific Data Systems,SDS / Xerox,extension,false,"Max Palevsky, ex-Packard Bell"
+sds_920,SDS 920,1962,1970,Scientific Data Systems,SDS / Xerox,extension,false,
+sds_930,SDS 930,1964,1970,Scientific Data Systems,SDS / Xerox,extension,false,
+sds_940,SDS 940,1966,1970,Scientific Data Systems,SDS / Xerox,extension,false,Berkeley Project Genie time-sharing
+sds_sigma_7,SDS Sigma 7,1966,1970,Scientific Data Systems,SDS / Xerox,extension,false,
+xds_sigma_9,XDS Sigma 9,1971,1980,Xerox Data Systems,SDS / Xerox,extension,false,
+bcc_500,BCC 500,1970,1970,Berkeley Computer Corp,SDS / Xerox,extension,false,Team moved to Xerox PARC
+xerox_alto,Xerox Alto,1973,1980,Xerox PARC,Workstations & GUI,extension,false,
+xerox_star,Xerox Star,1981,1990,Xerox,Workstations & GUI,extension,false,
+apple_lisa,Apple Lisa,1983,1990,Apple,Workstations & GUI,extension,false,
+apple_macintosh,Apple Macintosh,1984,1990,Apple,Workstations & GUI,extension,false,
+macintosh_ii,Macintosh II,1987,1990,Apple,Workstations & GUI,extension,false,
+next_computer,NeXT Computer,1988,1990,NeXT,Workstations & GUI,extension,false,
+sun_1,Sun-1,1982,1990,Sun Microsystems,Workstations & GUI,extension,false,
+sun_3,Sun-3,1985,1990,Sun Microsystems,Workstations & GUI,extension,false,
+sparcstation_1,SPARCstation 1,1989,1990,Sun Microsystems,Workstations & GUI,extension,false,
+dec_pdp_1,DEC PDP-1,1960,1970,DEC,DEC,extension,false,"Ken Olsen, ex-Lincoln Lab"
+dec_pdp_4,DEC PDP-4,1962,1970,DEC,DEC 18-bit,extension,false,
+linc,LINC,1962,1970,MIT Lincoln Lab,DEC 12-bit,extension,false,Wesley Clark
+dec_pdp_5,DEC PDP-5,1963,1970,DEC,DEC 12-bit,extension,false,
+dec_pdp_6,DEC PDP-6,1964,1970,DEC,DEC 36-bit,extension,false,
+dec_pdp_7,DEC PDP-7,1964,1970,DEC,DEC 18-bit,extension,false,Unix was born on one
+dec_pdp_8,DEC PDP-8,1965,1970,DEC,DEC 12-bit,extension,false,
+dec_pdp_9,DEC PDP-9,1966,1970,DEC,DEC 18-bit,extension,false,
+dec_pdp_10,DEC PDP-10,1966,1970,DEC,DEC 36-bit,extension,false,
+dec_pdp_12,DEC PDP-12,1969,1970,DEC,DEC 12-bit,extension,false,
+data_general_nova,Data General Nova,1969,1970,Data General,Data General,extension,false,"Ed de Castro, ex-DEC"
+dec_pdp_11,DEC PDP-11,1970,1970,DEC,DEC 16/32-bit,extension,false,
+dec_pdp_15,DEC PDP-15,1970,1970,DEC,DEC 18-bit,extension,false,
+dec_pdp_8_e,DEC PDP-8/E,1970,1970,DEC,DEC 12-bit,extension,false,
+xerox_maxc,Xerox MAXC,1971,1980,Xerox PARC,DEC 36-bit,extension,false,
+data_general_eclipse,Data General Eclipse,1974,1980,Data General,Data General,extension,false,
+dec_lsi_11,DEC LSI-11,1975,1980,DEC,DEC 16/32-bit,extension,false,
+decsystem_20,DECSYSTEM-20,1976,1980,DEC,DEC 36-bit,extension,false,
+dec_vax_11_780,DEC VAX-11/780,1977,1980,DEC,DEC 16/32-bit,extension,false,
+data_general_eclipse_mv_8000,Data General Eclipse MV/8000,1980,1980,Data General,Data General,extension,false,
+dec_vax_8600,DEC VAX 8600,1984,1990,DEC,DEC 16/32-bit,extension,false,
+dec_microvax_ii,DEC MicroVAX II,1985,1990,DEC,DEC 16/32-bit,extension,false,
+dec_vax_9000,DEC VAX 9000,1989,1990,DEC,DEC 16/32-bit,extension,false,
+data_general_aviion,Data General AViiON,1989,1990,Data General,Data General,extension,false,
+hp_2116a,HP 2116A,1966,1970,Hewlett-Packard,HP,extension,true,New root - no ancestor on the 1961 chart
+hp_3000,HP 3000,1972,1980,Hewlett-Packard,HP,extension,false,
+tandem_nonstop_i,Tandem NonStop I,1976,1980,Tandem,HP,extension,false,Founded by ex-HP engineers
+hp_9000_series_800,HP 9000 Series 800,1986,1990,Hewlett-Packard,HP,extension,false,PA-RISC
+datapoint_2200,Datapoint 2200,1970,1970,Computer Terminal Corp,Microprocessor & PC,extension,true,New root - its ISA became the 8008
+intel_4004,Intel 4004,1971,1980,Intel,Microprocessor & PC,extension,true,New root - Busicom calculator chip
+intel_8008,Intel 8008,1972,1980,Intel,Microprocessor & PC,extension,false,
+intel_8080,Intel 8080,1974,1980,Intel,Microprocessor & PC,extension,false,
+motorola_6800,Motorola 6800,1974,1980,Motorola,Microprocessor & PC,extension,false,
+mits_altair_8800,MITS Altair 8800,1975,1980,MITS,Microprocessor & PC,extension,false,
+mos_6502,MOS 6502,1975,1980,MOS Technology,Microprocessor & PC,extension,false,Ex-Motorola 6800 team
+zilog_z80,Zilog Z80,1976,1980,Zilog,Microprocessor & PC,extension,false,"Federico Faggin, ex-Intel"
+apple_i,Apple I,1976,1980,Apple,Microprocessor & PC,extension,false,
+apple_ii,Apple II,1977,1980,Apple,Microprocessor & PC,extension,false,
+commodore_pet,Commodore PET,1977,1980,Commodore,Microprocessor & PC,extension,false,
+trs_80_model_i,TRS-80 Model I,1977,1980,Tandy,Microprocessor & PC,extension,false,
+intel_8086,Intel 8086,1978,1980,Intel,Microprocessor & PC,extension,false,
+motorola_68000,Motorola 68000,1979,1980,Motorola,Microprocessor & PC,extension,false,
+commodore_64,Commodore 64,1982,1990,Commodore,Microprocessor & PC,extension,false,
+intel_80286,Intel 80286,1982,1990,Intel,Microprocessor & PC,extension,false,
+intel_80386,Intel 80386,1985,1990,Intel,Microprocessor & PC,extension,false,
+intel_80486,Intel 80486,1989,1990,Intel,Microprocessor & PC,extension,false,
+illiac_ii,ILLIAC II,1962,1970,U. Illinois,Parallel & research,extension,false,
+illiac_iii,ILLIAC III,1966,1970,U. Illinois,Parallel & research,extension,false,
+illiac_iv,ILLIAC IV,1975,1980,U. Illinois / Burroughs,Parallel & research,extension,false,Massively parallel SIMD
+goodyear_mpp,Goodyear MPP,1983,1990,Goodyear Aerospace,Parallel & research,extension,false,
+connection_machine_cm_1,Connection Machine CM-1,1985,1990,Thinking Machines,Parallel & research,extension,false,
+connection_machine_cm_2,Connection Machine CM-2,1987,1990,Thinking Machines,Parallel & research,extension,false,
+ibm_s_390_parallel_enterprise_server,IBM S/390 Parallel Enterprise Server,1994,2000,IBM,IBM mainframe,extension,false,CMOS mainframes replace bipolar
+ibm_s_390_g5,IBM S/390 G5,1998,2000,IBM,IBM mainframe,extension,false,
+ibm_eserver_z900,IBM eServer z900,2000,2000,IBM,IBM mainframe,extension,false,64-bit z/Architecture
+ibm_iseries,IBM iSeries,2000,2000,IBM,IBM midrange,extension,false,AS/400 rebranded
+ibm_rs_6000_sp,IBM RS/6000 SP,1993,2000,IBM,IBM RISC,extension,false,
+deep_blue,Deep Blue,1997,2000,IBM,IBM RISC,extension,false,Beat Kasparov in 1997
+asci_white,ASCI White,2000,2000,IBM,IBM RISC,extension,false,Top supercomputer of 2000
+powerpc_601,PowerPC 601,1993,2000,Apple-IBM-Motorola,Workstations & GUI,extension,false,AIM alliance
+ibm_thinkpad_700c,IBM ThinkPad 700C,1992,2000,IBM,PC,extension,false,
+compaq_proliant,Compaq ProLiant,1993,2000,Compaq,PC,extension,false,
+intel_pentium,Intel Pentium,1993,2000,Intel,Microprocessor & PC,extension,false,
+intel_pentium_pro,Intel Pentium Pro,1995,2000,Intel,Microprocessor & PC,extension,false,
+intel_pentium_ii,Intel Pentium II,1997,2000,Intel,Microprocessor & PC,extension,false,
+intel_pentium_iii,Intel Pentium III,1999,2000,Intel,Microprocessor & PC,extension,false,
+amd_athlon,AMD Athlon,1999,2000,AMD,Microprocessor & PC,extension,false,
+acorn_arm1,Acorn ARM1,1985,1990,Acorn,Microprocessor & PC,extension,false,Acorn's 6502 machines inspired a simple RISC design
+apple_newton,Apple Newton,1993,2000,Apple,Workstations & GUI,extension,false,ARM610 CPU; Apple co-founded ARM Ltd
+power_macintosh_6100,Power Macintosh 6100,1994,2000,Apple,Workstations & GUI,extension,false,
+imac_g3,iMac G3,1998,2000,Apple,Workstations & GUI,extension,false,Jobs returns via NeXT
+sparcstation_10,SPARCstation 10,1992,2000,Sun Microsystems,Workstations & GUI,extension,false,
+sun_ultra_1,Sun Ultra 1,1995,2000,Sun Microsystems,Workstations & GUI,extension,false,64-bit UltraSPARC
+sun_enterprise_10000,Sun Enterprise 10000,1997,2000,Sun Microsystems,Workstations & GUI,extension,false,"""Starfire"", from Cray Business Systems"
+cray_c90,Cray C90,1991,2000,Cray Research,CDC / Cray,extension,false,
+cray_3,Cray-3,1993,2000,Cray Computer Corp,CDC / Cray,extension,false,Gallium arsenide; few built
+cray_t3d,Cray T3D,1993,2000,Cray Research,CDC / Cray,extension,false,"Massively parallel, Alpha CPUs"
+cray_t90,Cray T90,1995,2000,Cray Research,CDC / Cray,extension,false,
+cray_t3e,Cray T3E,1995,2000,Cray Research,CDC / Cray,extension,false,
+connection_machine_cm_5,Connection Machine CM-5,1991,2000,Thinking Machines,Parallel & research,extension,false,
+asci_red,ASCI Red,1997,2000,Intel / Sandia,Parallel & research,extension,false,First teraflop machine
+beowulf_cluster,Beowulf cluster,1994,2000,NASA Goddard,Parallel & research,extension,false,Commodity PCs as a supercomputer
+dec_3000_axp,DEC 3000 AXP,1992,2000,DEC,DEC 16/32-bit,extension,false,"Alpha 21064, the VAX successor"
+dec_alphaserver,DEC AlphaServer,1994,2000,DEC / Compaq,DEC 16/32-bit,extension,false,Compaq bought DEC in 1998
+unisys_clearpath_ix,Unisys ClearPath IX,1996,2000,Unisys,Univac 1100,extension,false,
+unisys_clearpath_nx,Unisys ClearPath NX,1996,2000,Unisys,Burroughs stack,extension,false,
+an_uyq_70,AN/UYQ-70,1994,2000,Lockheed Martin,Navy tactical,extension,false,Navy moves to commercial hardware
+tandem_nonstop_himalaya,Tandem NonStop Himalaya,1993,2000,Tandem / Compaq,HP,extension,false,
+hp_superdome,HP Superdome,2000,2000,Hewlett-Packard,HP,extension,false,
+bull_dps_9000,Bull DPS 9000,1994,2000,Bull,Honeywell / GE,extension,false,Bull took over Honeywell computing
+ibm_eserver_z990,IBM eServer z990,2003,2010,IBM,IBM mainframe,extension,false,
+ibm_system_z9,IBM System z9,2005,2010,IBM,IBM mainframe,extension,false,
+ibm_system_z10,IBM System z10,2008,2010,IBM,IBM mainframe,extension,false,
+ibm_zenterprise_196,IBM zEnterprise 196,2010,2010,IBM,IBM mainframe,extension,false,
+ibm_pseries_690,IBM pSeries 690,2001,2010,IBM,IBM RISC,extension,false,"POWER4, first multicore server chip"
+ibm_power_systems,IBM Power Systems,2008,2010,IBM,IBM midrange,extension,false,AS/400 and RS/6000 lines merge
+blue_gene_l,Blue Gene/L,2004,2010,IBM,IBM RISC,extension,false,Embedded PowerPC cores at massive scale
+cell_broadband_engine,Cell Broadband Engine,2006,2010,Sony-Toshiba-IBM,IBM RISC,extension,false,
+sony_playstation_3,Sony PlayStation 3,2006,2010,Sony,IBM RISC,extension,false,
+roadrunner,Roadrunner,2008,2010,IBM / Los Alamos,Parallel & research,extension,false,First petaflop computer
+power_mac_g5,Power Mac G5,2003,2010,Apple,Workstations & GUI,extension,false,"PowerPC 970, derived from POWER4"
+macbook_pro,MacBook Pro,2006,2010,Apple,Workstations & GUI,extension,false,Apple moves to Intel
+ipod,iPod,2001,2010,Apple,Mobile,extension,false,ARM-based PortalPlayer chip
+arm11,ARM11,2002,2010,ARM Ltd,Mobile,extension,false,
+arm_cortex_a8,ARM Cortex-A8,2005,2010,ARM Ltd,Mobile,extension,false,
+iphone,iPhone,2007,2010,Apple,Mobile,extension,false,
+htc_dream,HTC Dream,2008,2010,HTC / Google,Mobile,extension,false,First Android phone
+apple_a4,Apple A4,2010,2010,Apple,Mobile,extension,false,
+ipad,iPad,2010,2010,Apple,Mobile,extension,false,
+intel_pentium_m,Intel Pentium M,2003,2010,Intel,Microprocessor & PC,extension,false,
+intel_core_2,Intel Core 2,2006,2010,Intel,Microprocessor & PC,extension,false,
+intel_core_i7,Intel Core i7,2008,2010,Intel,Microprocessor & PC,extension,false,Nehalem
+intel_itanium,Intel Itanium,2001,2010,Intel / HP,HP,extension,false,"EPIC, successor to PA-RISC"
+hp_integrity_superdome,HP Integrity Superdome,2003,2010,Hewlett-Packard,HP,extension,false,
+hp_nonstop_integrity,HP NonStop Integrity,2005,2010,Hewlett-Packard,HP,extension,false,
+hp_proliant,HP ProLiant,2002,2010,Hewlett-Packard,PC,extension,false,HP bought Compaq in 2002
+lenovo_thinkpad,Lenovo ThinkPad,2005,2010,Lenovo,PC,extension,false,Lenovo bought IBM's PC business
+amd_opteron,AMD Opteron,2003,2010,AMD,Microprocessor & PC,extension,false,"AMD64, the x86 64-bit standard"
+amd_phenom,AMD Phenom,2007,2010,AMD,Microprocessor & PC,extension,false,
+nvidia_geforce_256,NVIDIA GeForce 256,1999,2000,NVIDIA,GPU,extension,true,New root - first chip sold as a GPU
+nvidia_geforce_8800,NVIDIA GeForce 8800,2006,2010,NVIDIA,GPU,extension,false,CUDA: GPUs become general-purpose
+nvidia_tesla_c1060,NVIDIA Tesla C1060,2008,2010,NVIDIA,GPU,extension,false,
+nvidia_fermi,NVIDIA Fermi,2010,2010,NVIDIA,GPU,extension,false,
+tianhe_1a,Tianhe-1A,2010,2010,NUDT,Parallel & research,extension,false,"Top supercomputer of 2010, GPU-accelerated"
+amazon_ec2,Amazon EC2,2006,2010,Amazon,Parallel & research,extension,false,Commodity clusters rented as a service
+cray_x1,Cray X1,2003,2010,Cray Inc,CDC / Cray,extension,false,
+cray_xt3,Cray XT3,2004,2010,Cray Inc,CDC / Cray,extension,false,Red Storm
+cray_xt5,Cray XT5,2008,2010,Cray Inc,CDC / Cray,extension,false,Jaguar
+cray_xe6,Cray XE6,2010,2010,Cray Inc,CDC / Cray,extension,false,
+sun_fire_15k,Sun Fire 15K,2001,2010,Sun Microsystems,Workstations & GUI,extension,false,
+sun_fire_t1000,Sun Fire T1000,2005,2010,Sun Microsystems,Workstations & GUI,extension,false,"UltraSPARC T1, 32 threads"
+sparc_enterprise_m9000,SPARC Enterprise M9000,2007,2010,Fujitsu / Sun,Workstations & GUI,extension,false,Fujitsu SPARC64
+alphaserver_gs320,AlphaServer GS320,2001,2010,Compaq,DEC 16/32-bit,extension,false,Last major Alpha line
+unisys_clearpath_dorado,Unisys ClearPath Dorado,2003,2010,Unisys,Univac 1100,extension,false,
+unisys_clearpath_libra,Unisys ClearPath Libra,2003,2010,Unisys,Burroughs stack,extension,false,
+bull_novascale,Bull NovaScale,2002,2010,Bull,Honeywell / GE,extension,false,
+ibm_watson,IBM Watson,2011,2020,IBM,IBM midrange,extension,false,Power 750 cluster; won Jeopardy!
+ibm_zec12,IBM zEC12,2012,2020,IBM,IBM mainframe,extension,false,
+ibm_z13,IBM z13,2015,2020,IBM,IBM mainframe,extension,false,
+ibm_linuxone,IBM LinuxONE,2015,2020,IBM,IBM mainframe,extension,false,Linux-only mainframe
+ibm_z14,IBM z14,2017,2020,IBM,IBM mainframe,extension,false,
+ibm_z15,IBM z15,2019,2020,IBM,IBM mainframe,extension,false,
+blue_gene_q,Blue Gene/Q,2012,2020,IBM,IBM RISC,extension,false,
+sequoia,Sequoia,2012,2020,IBM / LLNL,Parallel & research,extension,false,Top supercomputer of June 2012
+ibm_power8,IBM POWER8,2014,2020,IBM,IBM RISC,extension,false,Opened to licensees via OpenPOWER
+ibm_power9,IBM POWER9,2017,2020,IBM,IBM RISC,extension,false,
+summit,Summit,2018,2020,IBM / Oak Ridge,Parallel & research,extension,false,Top supercomputer 2018-2019
+intel_sandy_bridge,Intel Sandy Bridge,2011,2020,Intel,Microprocessor & PC,extension,false,
+intel_haswell,Intel Haswell,2013,2020,Intel,Microprocessor & PC,extension,false,
+intel_skylake,Intel Skylake,2015,2020,Intel,Microprocessor & PC,extension,false,
+intel_ice_lake,Intel Ice Lake,2019,2020,Intel,Microprocessor & PC,extension,false,
+intel_xeon_phi,Intel Xeon Phi,2012,2020,Intel,Parallel & research,extension,false,Many P54C-derived Pentium cores on one chip
+tianhe_2,Tianhe-2,2013,2020,NUDT,Parallel & research,extension,false,Top supercomputer 2013-2015
+sunway_taihulight,Sunway TaihuLight,2016,2020,NRCPC (China),Parallel & research,extension,true,"New root - domestic SW26010 chip, top supercomputer 2016-2018"
+amd_bulldozer,AMD Bulldozer,2011,2020,AMD,Microprocessor & PC,extension,false,
+amd_zen,AMD Zen,2017,2020,AMD,Microprocessor & PC,extension,false,Ryzen / EPYC
+amd_epyc_rome,AMD EPYC Rome,2019,2020,AMD,Microprocessor & PC,extension,false,Zen 2 chiplets
+sony_playstation_4,Sony PlayStation 4,2013,2020,Sony / AMD,Microprocessor & PC,extension,false,x86 APU (Jaguar cores) replaces Cell
+nvidia_kepler,NVIDIA Kepler,2012,2020,NVIDIA,GPU,extension,false,
+cray_xk7,Cray XK7,2012,2020,Cray Inc,CDC / Cray,extension,false,Titan at Oak Ridge
+cray_xc40,Cray XC40,2014,2020,Cray Inc,CDC / Cray,extension,false,
+hpe_cray_ex,HPE Cray EX,2019,2020,HPE / Cray,CDC / Cray,extension,false,Shasta; HPE bought Cray 2019
+nvidia_tegra_x1,NVIDIA Tegra X1,2015,2020,NVIDIA,GPU,extension,false,
+nintendo_switch,Nintendo Switch,2017,2020,Nintendo,Mobile,extension,false,
+nvidia_p100,NVIDIA P100,2016,2020,NVIDIA,GPU,extension,false,"Pascal; NVLink, HBM"
+nvidia_dgx_1,NVIDIA DGX-1,2016,2020,NVIDIA,GPU,extension,false,"First ""AI supercomputer in a box"""
+nvidia_v100,NVIDIA V100,2017,2020,NVIDIA,GPU,extension,false,Volta; first Tensor Cores
+nvidia_a100,NVIDIA A100,2020,2020,NVIDIA,GPU,extension,false,Ampere
+nvidia_dgx_a100,NVIDIA DGX A100,2020,2020,NVIDIA,GPU,extension,false,
+google_tpu_v1,Google TPU v1,2016,2020,Google,AI accelerators,extension,true,New root - systolic-array inference chip (deployed 2015)
+google_tpu_v2,Google TPU v2,2017,2020,Google,AI accelerators,extension,false,Adds training
+google_tpu_v3,Google TPU v3,2018,2020,Google,AI accelerators,extension,false,
+google_tpu_v4,Google TPU v4,2020,2020,Google,AI accelerators,extension,false,
+arm_cortex_a15,ARM Cortex-A15,2011,2020,ARM Ltd,Mobile,extension,false,
+arm_cortex_a57,ARM Cortex-A57,2013,2020,ARM Ltd,Mobile,extension,false,First 64-bit (ARMv8) big core
+apple_a7,Apple A7,2013,2020,Apple,Mobile,extension,false,First 64-bit ARM phone chip
+iphone_5s,iPhone 5s,2013,2020,Apple,Mobile,extension,false,
+apple_watch,Apple Watch,2015,2020,Apple,Mobile,extension,false,
+apple_a11_bionic,Apple A11 Bionic,2017,2020,Apple,Mobile,extension,false,Adds Neural Engine
+apple_a14,Apple A14,2020,2020,Apple,Mobile,extension,false,
+apple_m1,Apple M1,2020,2020,Apple,Mobile,extension,false,Apple's Macs leave Intel
+macbook_air_m1,MacBook Air M1,2020,2020,Apple,Workstations & GUI,extension,false,
+google_pixel,Google Pixel,2016,2020,Google / HTC,Mobile,extension,false,HTC built the first Pixel
+raspberry_pi,Raspberry Pi,2012,2020,Raspberry Pi Foundation,Mobile,extension,false,BCM2835 (ARM11)
+raspberry_pi_4,Raspberry Pi 4,2019,2020,Raspberry Pi Foundation,Mobile,extension,false,Cortex-A72
+aws_graviton,AWS Graviton,2018,2020,Amazon,Parallel & research,extension,false,Cortex-A72 cores
+aws_graviton2,AWS Graviton2,2019,2020,Amazon,Parallel & research,extension,false,Neoverse N1
+k_computer,K computer,2011,2020,Fujitsu / RIKEN,Parallel & research,extension,false,SPARC64 VIIIfx; top supercomputer 2011
+fujitsu_a64fx,Fujitsu A64FX,2019,2020,Fujitsu,Parallel & research,extension,false,SPARC64 team switches to Arm
+fugaku,Fugaku,2020,2020,Fujitsu / RIKEN,Parallel & research,extension,false,Top supercomputer 2020
+oracle_sparc_m7,Oracle SPARC M7,2015,2020,Oracle,Workstations & GUI,extension,false,Oracle bought Sun in 2010
+oracle_sparc_m8,Oracle SPARC M8,2017,2020,Oracle,Workstations & GUI,extension,false,Last SPARC line
+hpe_superdome_x,HPE Superdome X,2014,2020,HPE,HP,extension,false,Superdome moves to x86
+hpe_nonstop_x,HPE NonStop X,2015,2020,HPE,HP,extension,false,NonStop moves to x86
+unisys_clearpath_forward,Unisys ClearPath Forward,2015,2020,Unisys,Univac 1100,extension,false,Univac and Burroughs lines both land on x86
+bull_sequana,Bull Sequana,2016,2020,Atos / Bull,Honeywell / GE,extension,false,
+berkeley_risc_i,Berkeley RISC I,1982,1990,UC Berkeley,IBM RISC,extension,false,"Coined ""RISC""; seeded SPARC and inspired ARM"
+sifive_hifive_unleashed,SiFive HiFive Unleashed,2018,2020,SiFive,RISC-V,extension,false,First Linux-capable RISC-V board
+sony_playstation_5,Sony PlayStation 5,2020,2020,Sony / AMD,Microprocessor & PC,extension,false,Zen 2 CPU + RDNA 2 GPU
+ati_radeon,ATI Radeon,2000,2000,ATI,GPU,extension,true,New root - AMD bought ATI in 2006
+ibm_z16,IBM z16,2022,2030,IBM,IBM mainframe,extension,false,"Telum chip, on-chip AI accelerator"
+ibm_z17,IBM z17,2025,2030,IBM,IBM mainframe,extension,false,Telum II
+ibm_linuxone_emperor_4,IBM LinuxONE Emperor 4,2022,2030,IBM,IBM mainframe,extension,false,
+ibm_power10,IBM POWER10,2021,2030,IBM,IBM RISC,extension,false,
+intel_alder_lake,Intel Alder Lake,2021,2030,Intel,Microprocessor & PC,extension,false,"Hybrid big/little cores, an idea from Arm's big.LITTLE"
+intel_meteor_lake,Intel Meteor Lake,2023,2030,Intel,Microprocessor & PC,extension,false,Chiplet tiles
+intel_lunar_lake,Intel Lunar Lake,2024,2030,Intel,Microprocessor & PC,extension,false,
+intel_sapphire_rapids,Intel Sapphire Rapids,2023,2030,Intel,Microprocessor & PC,extension,false,
+intel_ponte_vecchio,Intel Ponte Vecchio,2023,2030,Intel,GPU,extension,false,Data Center GPU Max
+aurora,Aurora,2023,2030,Intel / HPE / Argonne,Parallel & research,extension,false,Exascale
+amd_epyc_milan,AMD EPYC Milan,2021,2030,AMD,Microprocessor & PC,extension,false,
+amd_epyc_genoa,AMD EPYC Genoa,2022,2030,AMD,Microprocessor & PC,extension,false,
+amd_epyc_turin,AMD EPYC Turin,2024,2030,AMD,Microprocessor & PC,extension,false,
+amd_instinct_mi250x,AMD Instinct MI250X,2021,2030,AMD,GPU,extension,false,CDNA 2
+frontier,Frontier,2022,2030,HPE / AMD / Oak Ridge,Parallel & research,extension,false,First official exascale computer
+amd_instinct_mi300a,AMD Instinct MI300A,2023,2030,AMD,GPU,extension,false,CPU and GPU in one package
+el_capitan,El Capitan,2024,2030,HPE / AMD / LLNL,Parallel & research,extension,false,Top supercomputer Nov 2024
+valve_steam_deck,Valve Steam Deck,2022,2030,Valve,Microprocessor & PC,extension,false,Zen 2 + RDNA 2 handheld PC
+nvidia_h100,NVIDIA H100,2022,2030,NVIDIA,GPU,extension,false,Hopper; Transformer Engine
+nvidia_dgx_h100,NVIDIA DGX H100,2022,2030,NVIDIA,GPU,extension,false,
+nvidia_grace,NVIDIA Grace,2023,2030,NVIDIA,GPU,extension,false,Arm Neoverse V2 server CPU
+nvidia_gh200_grace_hopper,NVIDIA GH200 Grace Hopper,2023,2030,NVIDIA,GPU,extension,false,
+nvidia_b200,NVIDIA B200,2024,2030,NVIDIA,GPU,extension,false,Blackwell
+nvidia_gb200_nvl72,NVIDIA GB200 NVL72,2024,2030,NVIDIA,GPU,extension,false,Rack-scale system
+alps,Alps,2024,2030,HPE / CSCS,Parallel & research,extension,false,
+jupiter,JUPITER,2025,2030,Eviden (Bull) / Jülich,Parallel & research,extension,false,"Europe's first exascale system, Bull Sequana XH3000"
+xai_colossus,xAI Colossus,2024,2030,xAI,Parallel & research,extension,false,"100,000-GPU training cluster"
+apple_m2,Apple M2,2022,2030,Apple,Mobile,extension,false,
+apple_vision_pro,Apple Vision Pro,2024,2030,Apple,Mobile,extension,false,
+apple_m3,Apple M3,2023,2030,Apple,Mobile,extension,false,
+apple_m4,Apple M4,2024,2030,Apple,Mobile,extension,false,
+qualcomm_snapdragon_x_elite,Qualcomm Snapdragon X Elite,2024,2030,Qualcomm,Mobile,extension,false,"Nuvia team, ex-Apple chip designers"
+aws_graviton3,AWS Graviton3,2021,2030,Amazon,Parallel & research,extension,false,
+aws_graviton4,AWS Graviton4,2023,2030,Amazon,Parallel & research,extension,false,
+aws_trainium,AWS Trainium,2021,2030,Amazon,AI accelerators,extension,false,Same Annapurna Labs team
+aws_trainium2,AWS Trainium2,2024,2030,Amazon,AI accelerators,extension,false,
+microsoft_cobalt_100,Microsoft Cobalt 100,2023,2030,Microsoft,Parallel & research,extension,false,Arm Neoverse N2
+google_axion,Google Axion,2024,2030,Google,Parallel & research,extension,false,Arm Neoverse V2
+google_tpu_v5p,Google TPU v5p,2023,2030,Google,AI accelerators,extension,false,
+google_tpu_trillium,Google TPU Trillium,2024,2030,Google,AI accelerators,extension,false,TPU v6e
+google_tpu_ironwood,Google TPU Ironwood,2025,2030,Google,AI accelerators,extension,false,"TPU v7, built for inference"
+sifive_hifive_unmatched,SiFive HiFive Unmatched,2021,2030,SiFive,RISC-V,extension,false,RISC-V desktop board
+raspberry_pi_pico,Raspberry Pi Pico,2021,2030,Raspberry Pi Foundation,Mobile,extension,false,RP2040 microcontroller
+raspberry_pi_5,Raspberry Pi 5,2023,2030,Raspberry Pi Foundation,Mobile,extension,false,
+nintendo_switch_2,Nintendo Switch 2,2025,2030,Nintendo / NVIDIA,Mobile,extension,false,Custom Ampere-architecture Tegra

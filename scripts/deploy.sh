@@ -243,6 +243,11 @@ say "2h. The family"
 # show this site a family the others no longer agree with.
 bash scripts/sync-family.sh --check || fail "the footer's family list is not the registry's; run scripts/sync-family.sh"
 
+say "2i. The Computer Tree"
+# The tree's dataset and layout are bradley.io's, copied in; a copy behind
+# the source would draw a tree the two sites no longer agree on.
+bash scripts/sync-computer-tree.sh --check || fail "the Computer Tree is not bradley.io's; run scripts/sync-computer-tree.sh"
+
 # On the interpreter the service unit runs, not whichever python3 the
 # shell finds first. On 2026-09-11 the tests passed on a pyenv python
 # while /usr/bin/python3 had lost uvicorn (its user site-packages had

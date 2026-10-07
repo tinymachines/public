@@ -79,7 +79,8 @@ const nextConfig: NextConfig = {
         // that route is dynamic too, so it comes after this rule, which
         // otherwise sent jump.nes to the lesson page as a lesson named
         // "jump.nes" and a 404.
-        { source: "/:path((?!(?:ja|og)(?:/|$))(?!autopsy/lessons/[a-z0-9-]+\\.(?:nes|s|parts\\.json)$).*)", destination: "/en/:path" },
+        // (/computer-tree/<file>, the tree's dataset, app/computer-tree/[file]):
+        { source: "/:path((?!(?:ja|og)(?:/|$))(?!autopsy/lessons/[a-z0-9-]+\\.(?:nes|s|parts\\.json)$)(?!computer-tree/[a-z_]+\\.(?:json|csv)$)(?!computer-tree/DATACARD\\.md$).*)", destination: "/en/:path" },
       ],
     };
   },
