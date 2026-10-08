@@ -390,6 +390,32 @@ class Origins:
         self.by_git[(repo, git_path)] = fs_rel
 
 
+def edit_distance(a: str, b: str) -> int:
+    """Levenshtein: the fewest single-letter inserts, deletes and swaps."""
+    if len(a) < len(b):
+        a, b = b, a
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def closest(wanted: str, names: list[str]) -> list[str]:
+    """Names ranked by how close they are to a wrong guess (TM-5): edit
+    distance on the name (a directory's slash left off), then a shared
+    start, then the alphabet only for ties."""
+    w = wanted.rstrip("/").lower()
+    return sorted(names, key=lambda n: (edit_distance(w, n.rstrip("/").lower()), 0 if n.lower().startswith(w[:3]) else 1, n))
+
+
+def rank_children(wanted: str, kids: list[dict]) -> list[dict]:
+    order = {n: i for i, n in enumerate(closest(wanted, [c["name"] for c in kids]))}
+    return sorted(kids, key=lambda c: order[c["name"]])
+
+
 class SiteGraph:
     """What a page reads, and what writes a record: read off the tree rather
     than typed. A URL's route is the Next convention (web/app/[lang]/<path>/
@@ -971,15 +997,17 @@ class Namespace:
         return out
 
     def _fs_missing(self, rel: str) -> TmError:
-        """not-found that teaches: the nearest siblings of the deepest
-        ancestor that exists, closest names first."""
+        """not-found that teaches: the children of the deepest ancestor that
+        exists, closest to the first missing name first."""
         clean = rel.rstrip("/")
-        parent, _, leaf = clean.rpartition("/")
-        try:
-            sibs = self._fs_children(parent)
-        except TmError:
-            sibs = []
-        sibs.sort(key=lambda c: (0 if c["name"].rstrip("/").startswith(leaf[:3]) else 1, c["name"]))
+        parts = clean.split("/")
+        sibs: list[dict] = []
+        for i in range(len(parts) - 1, 0, -1):
+            try:
+                sibs = rank_children(parts[i], self._fs_children("/".join(parts[:i])))
+                break
+            except TmError:
+                continue
         return TmError(
             RESOURCE_NOT_FOUND, "not-found", f"fs/{clean} does not exist",
             nearest=[c["uri"] for c in sibs[:5]],
@@ -1173,7 +1201,7 @@ class Namespace:
         except TmError:
             raise TmError(
                 RESOURCE_NOT_FOUND, "no-such-ref", f"{repo} has no ref {at!r}",
-                nearest=[f"{ROOT}git/{repo}/?at={r}" for r in self._git_refs(repo, at[:1])[:5]],
+                nearest=[f"{ROOT}git/{repo}/?at={r}" for r in closest(at, self._git_refs(repo, ""))[:5]],
             ) from None
 
     def _git_refs(self, repo: str, prefix: str) -> list[str]:
@@ -1233,12 +1261,14 @@ class Namespace:
 
     def _git_missing(self, repo: str, at: str, path: str) -> TmError:
         clean = path.rstrip("/")
-        parent, _, leaf = clean.rpartition("/")
-        try:
-            sibs = self._git_children(repo, at, parent)
-        except TmError:
-            sibs = []
-        sibs.sort(key=lambda c: (0 if c["name"].rstrip("/").startswith(leaf[:3]) else 1, c["name"]))
+        parts = clean.split("/")
+        sibs: list[dict] = []
+        for i in range(len(parts) - 1, -1, -1):
+            try:
+                sibs = rank_children(parts[i], self._git_children(repo, at, "/".join(parts[:i])))
+                break
+            except TmError:
+                continue
         return TmError(
             RESOURCE_NOT_FOUND, "not-found", f"{repo} at {at} has no {clean!r}",
             nearest=[c["uri"] for c in sibs[:5]],
@@ -1670,8 +1700,11 @@ class Namespace:
 
     def _http_missing(self, site: str, path: str) -> TmError:
         clean = path.rstrip("/") or "/"
-        parent = clean.rpartition("/")[0] + "/"
-        leaf = clean.rpartition("/")[2]
-        sibs = self._http_children(site, parent)
-        sibs.sort(key=lambda c: (0 if c["name"].rstrip("/").startswith(leaf[:3]) else 1, c["name"]))
+        parts = clean.split("/")
+        sibs: list[dict] = []
+        for i in range(len(parts) - 1, 0, -1):
+            kids = self._http_children(site, "/".join(parts[:i]) + "/")
+            if kids:
+                sibs = rank_children(parts[i], kids)
+                break
         return TmError(RESOURCE_NOT_FOUND, "not-found", f"{site}{path} is not a page this box knows", nearest=[c["uri"] for c in sibs[:5]])

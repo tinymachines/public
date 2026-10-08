@@ -533,7 +533,7 @@ def test_git_refusals_teach(gns):
     e = refusal(gns, f"{ROOT}git/public/docs/nes/alon.md")
     assert e.reason == "not-found" and e.data["nearest"][0] == f"{ROOT}git/public/docs/nes/alone.md"
     e = refusal(gns, f"{ROOT}git/public/docs/index.md?at=v2")
-    assert e.reason == "no-such-ref" and e.data["nearest"] == [f"{ROOT}git/public/?at=v1"]
+    assert e.reason == "no-such-ref" and e.data["nearest"][0] == f"{ROOT}git/public/?at=v1"
     for at in ("--output=/tmp/x", "-n", "a..b", "v1 main"):
         assert refusal(gns, f"{ROOT}git/public/docs/index.md?at={at}").reason == "bad-facet", at
     assert refusal(gns, f"{ROOT}git/public/../bench/docs/pile.md").reason == "out-of-root"
@@ -893,3 +893,22 @@ def test_tm4_a_page_with_no_facet_reads_as_its_text(ns):
     # Something that is not a page reads as itself, not as a refusal.
     robots, _ = read(ns, f"{ROOT}http/tinymachines.ai/robots.txt")
     assert robots["text"] == "User-agent: *\n" and robots["mimeType"] == "text/plain"
+
+
+def test_tm5_a_wrong_guess_teaches_the_right_one(ns, gns):
+    # A typo is ranked by how close it is, not by the alphabet.
+    e = refusal(ns, f"{ROOT}fs/docs/nes/pyle.md")
+    assert e.data["nearest"][0] == f"{ROOT}fs/docs/nes/pile.md", e.data["nearest"]
+    # A missing directory answers from the nearest one that exists.
+    e = refusal(ns, f"{ROOT}fs/docs/nse/pile.md")
+    assert e.data["nearest"][0] == f"{ROOT}fs/docs/nes/", e.data["nearest"]
+    e = refusal(gns, f"{ROOT}git/public/docs/nse/pile.md")
+    assert e.data["nearest"][0] == f"{ROOT}git/public/docs/nes/", e.data["nearest"]
+    e = refusal(gns, f"{ROOT}git/public/docs/nes/ndex.md")
+    assert e.data["nearest"][0] == f"{ROOT}git/public/docs/nes/index.md", e.data["nearest"]
+    # A ref that shares no letter with a real one still lists the real ones.
+    e = refusal(gns, f"{ROOT}git/public/docs/index.md?at=does-not-exist")
+    assert e.reason == "no-such-ref" and f"{ROOT}git/public/?at=v1" in e.data["nearest"] and f"{ROOT}git/public/?at=HEAD" in e.data["nearest"]
+    e = refusal(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pyle")
+    assert e.data["nearest"][0] == f"{ROOT}http/tinymachines.ai/docs/nes/pile", e.data["nearest"]
+    assert tm.closest("pyle.md", ["a0-report.md", "pile.md", "alone.md"])[0] == "pile.md"
