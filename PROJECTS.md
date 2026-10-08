@@ -5259,3 +5259,28 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-08 (night): a page reads as its text
+
+Live and beta serve `3e50f73` (deployed 2026-10-08 on the owner's word,
+clean through every stage, main pushed). Since the evening checkpoint:
+
+| commit | what |
+|---|---|
+| `3e50f73` | TM-4, the last P0 in the owner's tm work package. A page read with no facet returns its text, the same body as `?as=text` (2,870 bytes for `/autopsy`, where the HTML is 44,200), and the HTML is behind `?as=rendered`, now the page's one alternate link. Something that is not a page still reads as itself. The resource template, the setup guide in both languages and the spec's facet list say so. Deployed |
+
+**Nothing is in progress off main.**
+
+**Where to pick up.** The rest of the owner's tm work package, in its
+order: TM-5 (nearest suggestions ranked, not alphabetical), TM-7
+(generator lineage one hop short), TM-9 (`.gitignore` and `.gitmodules`
+denied), TM-11 (an unsupported facet on a collection ignored silently),
+TM-12 (orientation at connect), TM-13 (the spec behind the server),
+TM-16 (patterns, games, routines and lessons as entities). Noted while
+doing TM-4: a page's text has no size cap, while its HTML does; no page
+is near it. The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
