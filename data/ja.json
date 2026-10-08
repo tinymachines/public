@@ -497,6 +497,8 @@
  "The camera's dead zone, the way Mario's is": "マリオのものと同じ、カメラの遊び",
  "A cartridge of our own where the camera lets the square walk a stretch of the screen without following, eases in past 80 pixels and holds it at 112 walking right, as Super Mario Bros. was measured doing, and, unlike the game, follows it back walking left, with its program.": "カメラが画面のある範囲では四角を追わずに歩かせ、右へ歩くと 80 ピクセルを過ぎたところでゆっくり動き出し、112 で四角を留める自前のカートリッジ。スーパーマリオブラザーズで測ったとおりだ。そしてゲームと違って、左へ歩けば追って戻る。プログラムつき。",
  "How the picture is made: scrolling, the camera's dead zone, rooms, screens, a bar that stays and sprites that flicker": "絵はどう作られるか: スクロール、カメラの遊び、部屋、画面、留まるバー、ちらつくスプライト",
+ "Using an oscilloscope, for software developers": "オシロスコープの使い方、ソフトウェア開発者のために",
+ "A scope as a debugger for the wire, taught on a real fault: a Geiger counter that clicked while its firmware counted nothing. The ground clip, the trigger as a breakpoint, bisecting a signal chain, scripting the scope over SCPI, and the ways the instrument itself was wrong.": "配線のためのデバッガとしてのスコープを、本物の故障で教える: カチカチ鳴っているのにファームウェアが何も数えなかったガイガーカウンター。グラウンドクリップ、ブレークポイントとしてのトリガ、信号の連鎖の二分探索、SCPI でスコープをスクリプトから操ること、そして計器そのものが間違えたいくつものやり方。",
  "A stomp and a hit, told apart the way Mario does": "マリオのように見分ける、踏みつけとぶつかり",
  "A cartridge of our own where touching a walker from above, falling, flattens it and bounces, and any other touch is a hit, the way Super Mario Bros. was measured telling them apart, measured beside it, with its program.": "上から落ちて歩くものに触れれば潰して跳ね返り、それ以外の触れ方はぶつかりになる、私たち自身のカートリッジ。スーパーマリオブラザーズがそれを見分けると測ったやり方で、マリオと並べて測り、プログラムも添える。",
  "Running, and why a running jump goes higher": "走ること、そして走ってのジャンプが高く上がるわけ",

@@ -208,7 +208,23 @@ const DOCS = [
     { repo: "nes-bench", file: "encyclopedia.md", slug: "encyclopedia", code: null, kind: "reference", title: "The encyclopedia of code patterns", group: "bench-exercise", order: 42, description: "What the x-rays add up to: each NES code pattern with its signature as measured on the model, a window on the die's pages, and the mechanism it teaches; code only from cartridges whose source is ours" },
     { repo: "nes-bench", file: "mario-dissection.md", slug: "mario-dissection", code: null, kind: "report", title: "Super Mario Bros., dissected", group: "bench-exercise", order: 43, description: "The first game taken apart on the model: the loop inside the interrupt, the frame scanline by scanline, the routine tree through the jump engine, the VRAM pipeline, and the pad's byte on its way to a jump; shape only, never the code" },
   { repo: "nes-bench", file: "open-items.md", slug: "open-items", code: null, kind: "record", title: "What is still open", group: "bench-record", order: 35.5, description: "Everything noticed along the way that is not finished: the calibration cart's part side, where the model's hue differs from the console's, the grabber, the bench and the cartridge reader, each with why it matters and what would close it." },
+  // From geiger, which is private: the page here is the public copy, so its
+  // footnote names the repository without linking it, and a clone without
+  // geiger beside it builds with the row left out. Its figure and its PDF
+  // are copied beside it (assets) and the PDF is its printable line.
+  { repo: "geiger", file: "articles/oscilloscope-for-software-developers.md", slug: "oscilloscope", code: null, kind: "procedure", title: "Using an oscilloscope, for software developers", group: "bench-experiments", order: 38.5, optional: true, private: true, assets: ["signal-chain.svg", "oscilloscope-for-software-developers.pdf"], artefacts: ["scope"], description: "A scope as a debugger for the wire, taught on a real fault: a Geiger counter that clicked while its firmware counted nothing. The ground clip, the trigger as a breakpoint, bisecting a signal chain, scripting the scope over SCPI, and the ways the instrument itself was wrong." },
 ];
+
+// A row marked optional comes from a repository a clone may not have
+// (geiger is private); without it the row is left out, and says so, rather
+// than the build failing for want of somebody else's checkout.
+for (let i = DOCS.length - 1; i >= 0; i--) {
+  const d = DOCS[i];
+  if (d.optional && !fs.existsSync(path.join(SIBLINGS, d.repo, "docs", d.file))) {
+    console.log(`pull-nesdocs: ../${d.repo} is not here; "${d.title}" is left out`);
+    DOCS.splice(i, 1);
+  }
+}
 
 // The bench's schematics, drawn by its generator and held to its wiring
 // tables (tools/check-sheets.py): served beside the console's figures,
@@ -280,6 +296,9 @@ const ARTEFACTS = {
   v2b: packageLink(PKG_V2B),
   padble: packageLink(PKG_PADBLE),
   ...(PKG_TRNG ? { trng: packageLink(PKG_TRNG) } : {}),
+  ...(DOCS.some((d) => d.slug === "oscilloscope")
+    ? { scope: { label: { en: "Using an oscilloscope, for software developers (PDF)", ja: "オシロスコープの使い方、ソフトウェア開発者のために (PDF、英語)" }, href: "/nes/articles/oscilloscope-for-software-developers.pdf" } }
+    : {}),
   board: { label: { en: "v2b board, top copper (SVG)", ja: "v2b 基板、表面の銅 (SVG)" }, href: "/nes/bench/fab/bench-v2b/bench-v2b-top-copper.svg" },
   photo: { label: { en: "v1b as built, the checks called out on the photograph (PNG)", ja: "組み上がった v1b、写真の上に検査箇所を書き出したもの (PNG)" }, href: "/nes/lab/board-junctions-v1b.png" },
 };
@@ -466,6 +485,10 @@ function transform(doc, md) {
   }
   // The lab notebook's photographs, served from /nes/lab/.
   s = s.replace(/\]\(lab\/([^)]+)\)/g, "](/nes/lab/$1)");
+  // A document's own assets, beside it upstream, served from /nes/articles/.
+  for (const f of doc.assets ?? []) {
+    s = s.replace(new RegExp(`\\]\\(${f.replace(/\./g, "\\.")}\\)`, "g"), `](/nes/articles/${f})`);
+  }
   let fenced = false;
   for (const [i, line] of s.split("\n").entries()) {
     if (/^```/.test(line)) fenced = !fenced;
@@ -566,7 +589,24 @@ for (const d of DOCS) {
   if (d.code) body = body.replace(/^(# .+\n)/m, `$1\n*${codeLine(d.code)}*\n`);
   const source = `https://github.com/tinymachines/${d.repo}/blob/main/docs/${d.file}`;
   const front = `---\ntitle: "${d.shownTitle.replace(/"/g, '\\"')}"\ndescription: "${d.description.replace(/"/g, '\\"')}"\norder: ${d.order}\n---\n\n`;
-  const note = `\n\n*Pulled at build time from [${d.repo}/docs/${d.file}](${source}); the repository is the one copy. The reports use some working words of their own: [Words the reports use](/docs/words).*\n`;
+  const note = d.private
+    ? `\n\n*Pulled at build time from ${d.repo}/docs/${d.file}, a repository that is not public; this page is the public copy.*\n`
+    : `\n\n*Pulled at build time from [${d.repo}/docs/${d.file}](${source}); the repository is the one copy. The reports use some working words of their own: [Words the reports use](/docs/words).*\n`;
+  if (d.assets?.length) {
+    const out = path.join(ROOT, "web", "public", "nes", "articles");
+    fs.mkdirSync(out, { recursive: true });
+    for (const f of d.assets) {
+      const from = path.join(path.dirname(src), f);
+      if (!fs.existsSync(from)) throw new Error(`${where(d)}: its asset ${f} is not beside it`);
+      if (f.endsWith(".pdf")) {
+        const text = spawnSync("pdftotext", [from, "-"], { encoding: "utf8" });
+        if (text.status !== 0) throw new Error(`pull-nesdocs: pdftotext is needed to scan ${f} for host detail`);
+        const hit = text.stdout.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b|\b[\w-]+\.(?:local|lan)\b/);
+        if (hit) throw new Error(`pull-nesdocs: ${f} prints ${JSON.stringify(hit[0])}; a page on the public site names no host`);
+      }
+      fs.copyFileSync(from, path.join(out, f));
+    }
+  }
   const dir = d.section ? path.join(OUT, "..", d.section) : OUT;
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${d.slug}.md`), front + body + note);

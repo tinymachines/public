@@ -97,6 +97,8 @@ web/public/nes/cal.nes
 # The bench drawing, pulled from ../nes-bench by pull-nesdocs.mjs
 web/public/nes/bench.svg
 web/public/nes/bench/
+# A pulled article's own figure and PDF, by the same script
+web/public/nes/articles/
 # The lab's unlisted test pages, pulled from ../nes-bench/tools by the same script
 web/public/lab/
 # The Geiger TRNG's drawing package, pulled from ../geiger by the same script
