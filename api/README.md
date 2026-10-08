@@ -276,7 +276,7 @@ work and it is not started.
 The same endpoint also speaks MCP **resources**: this checkout's `docs/`,
 `data/` and `notes/`, and the pages of the sites this box serves, as one
 read-only URI namespace with typed links between a page and the file it is
-rendered from. The spec is `notes/tm-protocol-spec.md`; `api/tm.py` is its
+rendered from. The spec is `extern/tinypeek/spec/tm-protocol-spec.md`; `api/tm.py` is its
 first slice, built on this server to find out whether an MCP client navigates
 resources at all before a server is written for the purpose.
 

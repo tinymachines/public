@@ -1,3 +1,6 @@
 [submodule "extern/pretext"]
 	path = extern/pretext
 	url = https://github.com/chenglou/pretext.git
+[submodule "extern/tinypeek"]
+	path = extern/tinypeek
+	url = https://github.com/tinymachines/tinypeek.git
