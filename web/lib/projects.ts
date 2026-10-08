@@ -130,7 +130,7 @@ export interface NavEntry {
  *
  * Two sources, and both are the manifest:
  *
- *   - the roof's own surfaces marked `nav`, which is docs, style and the API
+ *   - the roof's own surfaces marked `nav`: docs, style, the Computer Tree and the API
  *   - every other project's landing page, once it has one
  *
  * A project with no landing page is absent rather than dead-linked. hotbits is

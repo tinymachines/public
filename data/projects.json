@@ -49,6 +49,19 @@
      "prerendered": true
     },
     {
+     "key": "computer-tree",
+     "name": "The Computer Tree",
+     "nav": true,
+     "nav_label": "The Computer Tree",
+     "what": "The US Army's 1961 family tree of the electronic computer, grown one ring per decade to 2025; pick any machine and trace its line back to the root.",
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/computer-tree",
+     "lands_at": "/computer-tree",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
+    },
+    {
      "key": "admin",
      "name": "Admin",
      "nav": false,
