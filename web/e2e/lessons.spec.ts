@@ -207,6 +207,16 @@ for (const l of record()) {
       // The game never goes back; ours does.
       expect([l.measures.back, a.back]).toEqual([true, false]);
       expect(rows.find((r) => r[0] === "holds_at")?.slice(1)).toEqual([String(l.measures.holds_at), String(a.holds_at)]);
+    } else if (l.kind === "platforms") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A lift that steps, a player who stood on it while it did, moved by its step every time, at a steady height.
+        expect(x.step).toBeGreaterThan(0);
+        expect(x.stepped).toBeGreaterThan(10);
+        expect(x.same).toBe(x.stepped);
+        expect(x.steady).toBe(true);
+      }
+      expect(rows.find((r) => r[0] === "carried")?.slice(1)).toEqual([`${l.measures.same} of ${l.measures.stepped}`, `${a.same} of ${a.stepped}`]);
     } else if (l.kind === "interlude") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

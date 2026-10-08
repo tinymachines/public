@@ -341,6 +341,19 @@ export interface CameraMeasures {
   restarts_at: number | null;
 }
 
+/** A lift that carries the player (platforms_measures). */
+export interface PlatformsMeasures {
+  axis: "across" | "down";
+  step: number | null;
+  every: number | null;
+  /** Null for a lift with no ends: one that leaves the screen and comes back. */
+  travel: number | null;
+  standing: number;
+  stepped: number;
+  same: number;
+  steady: boolean;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -380,6 +393,7 @@ export type Lesson =
   | (Base & { kind: "gameover"; measures: GameoverMeasures; against?: (GameoverMeasures & { game: string }) | null })
   | (Base & { kind: "interlude"; measures: InterludeMeasures; against?: (InterludeMeasures & { game: string }) | null })
   | (Base & { kind: "camera"; measures: CameraMeasures; against?: (CameraMeasures & { game: string }) | null })
+  | (Base & { kind: "platforms"; measures: PlatformsMeasures; against?: (PlatformsMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

@@ -1,0 +1,7 @@
+# frames 600
+# Right held from the start: onto the lift as it waits at the near side,
+# then nothing pressed while it carries the square across, then Right
+# again off its far end onto the far side.
+AT 30 80
+AT 62 00
+AT 190 80
