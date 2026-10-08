@@ -120,8 +120,8 @@ rendered from (`tm:source`), the markdown links back to its page
 copy here, link to the file they came from (`tm:generated-by`) and that file
 links forward (`tm:generates`); a file here and the same file in git are
 joined both ways (`tm:repository`, `tm:working-copy`); any page links to
-the route file that renders it (`tm:source`) and to the records its
-rendering reaches (`tm:data`), a record links back to its readers
+the route file that renders it (`tm:source`) and to the records its own
+code reads (`tm:data`), a record links back to its readers
 (`tm:read-by`) and to the script that writes it (`tm:generated-by`); and
 `up`, `collection`, `alternate`, `describedby`, `version-history` and
 `latest-version` mean what the IANA registry says. Through resources the links sit in the

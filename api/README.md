@@ -303,8 +303,8 @@ walks coarse to fine. Every read carries links in `_meta` under
 file in the repository it was pulled from and `tm:generates` back,
 `tm:repository` and `tm:working-copy` between a file here and the same file
 in git, `tm:source` from any page to the route file that renders it and
-`tm:data` to the records its rendering reaches (with `tm:read-by` back from
-the record, and `tm:generated-by` from the record to the script that writes
+`tm:data` to the records its own code reads (with `tm:read-by` back from
+the record, at the same confidence, and `tm:generated-by` from the record to the script that writes
 it), and `up`, `collection`, `alternate`, `describedby`, `version-history`
 and `latest-version` as the IANA registry defines them. A URI that does not resolve comes back as a
 JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
@@ -348,8 +348,18 @@ links back (TM-6); a mount's root no longer goes up to itself (TM-10); and
 `scripts/check-tm-links.py` crawls the live namespace at the end of every
 deploy, after the beta follows (TM-15). A file names the page it becomes
 only on a site whose build has that page, so a beta that has not caught up
-is not promised it. Its inverse check leaves `tm:data` / `tm:read-by` out
-until TM-8 and TM-14 make them exact.
+is not promised it.
+
+A page's data is what its own code reads (TM-8, TM-14): its route file and
+the files beside it, and the library modules they import. A module reads a
+record when it builds the record's path or imports it, not when a comment
+names it. The site frame's modules (what SiteFrame and the layouts import)
+are entered only when the page imports them itself and never walked
+through, so the menu's records and the metadata's are no page's data. A
+record read by a module the page imports directly is `exact`, one further
+down is `inferred`, and where the build is on this box a link holds only if
+the page's bundle ships the reader module. Every `tm:read-by` names a page
+that names the record back, and the crawl now holds that pair too.
 
 What is not here yet: subscriptions, and anything that writes.
 

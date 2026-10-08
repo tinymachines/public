@@ -394,34 +394,46 @@ class SiteGraph:
     """What a page reads, and what writes a record: read off the tree rather
     than typed. A URL's route is the Next convention (web/app/[lang]/<path>/
     page.tsx, a bracketed directory for a dynamic segment, a double bracket
-    for a catch-all). The data a page reads is every data/<name>.json named
-    in the page's file or in the library modules it imports, followed
-    through web/lib only: the site frame and its menu are not the page's
-    reading. The writer of a record is the script under scripts/ that names
-    it, exact when the record's own note says so, inferred otherwise.
+    for a catch-all).
 
-    All of it is static reading of source, so every link it yields says
-    `inferred` unless the record itself states the fact."""
+    A module reads a record when it builds the record's path (`path.join(
+    ..., "data", "<name>.json")`) or imports it; a mention in a comment or a
+    message is not a read. Each record has one reader module, which is what
+    makes the walk worth doing (TM-8, TM-14 in the owner's work package of
+    2026-10-07).
+
+    A page's own code is its route file and the files beside it that it
+    imports. What that code reads, and what the library modules it imports
+    read, are the page's data: exact for a module the page's own code
+    imports, inferred for one further down the imports. The site frame is
+    not the page: the library modules the frame imports directly (from
+    SiteFrame and every layout) are entered only when the page's own code
+    imports them, and never walked through, so the menu's records and the
+    metadata's are nobody's page data.
+
+    The writer of a record is the script under scripts/ that names it, exact
+    when the record's own note says so, inferred otherwise."""
 
     # Read by every page for its words, not for its figures.
     LANG_FILES = ("ja.json", "ja-docs.json")
     IMPORT = re.compile(r'(?:from|import)\s*["\']([^"\']+)["\']')
+    READS = (re.compile(r'["\']data["\']\s*,\s*["\']([\w.-]+\.json)["\']'),
+             re.compile(r'from\s*["\'](?:@/|(?:\.\./)+)data/([\w.-]+\.json)["\']'))
+    FRAME = "web/app/components/SiteFrame.tsx"
 
     def __init__(self, repo: Path):
         self.repo = repo
         self.app = repo / "web" / "app" / "[lang]"
         self.lib = repo / "web" / "lib"
         self.data_names = sorted(p.name for p in (repo / "data").glob("*.json")) if (repo / "data").is_dir() else []
-        self._name_re = re.compile(r"\b(" + "|".join(re.escape(n) for n in self.data_names) + r")\b") if self.data_names else None
-        self._mentions: dict[str, tuple[set[str], list[str]]] = {}
-        self._page_data: dict[str, list[str]] = {}
+        self._modules: dict[str, tuple[set[str], list[str]]] = {}
+        self._page_reads: dict[str, dict[str, tuple[str, str]]] = {}
+        self._frame: set[str] | None = None
         self.routes: list[tuple[list[str], str]] = []    # (segments, file rel to repo)
         if self.app.is_dir():
             for f in sorted(self.app.rglob("page.tsx")):
                 segs = list(f.relative_to(self.app).parts[:-1])
                 self.routes.append((segs, f.relative_to(repo).as_posix()))
-
-    # -- routes --
 
     def route_for(self, url_path: str) -> tuple[str, bool] | None:
         """The page file for a URL path, and whether the route is dynamic.
@@ -473,72 +485,113 @@ class SiteGraph:
     # -- modules --
 
     def _module(self, rel: str) -> tuple[set[str], list[str]]:
-        """The data files a module names, and the library modules it imports."""
-        if rel in self._mentions:
-            return self._mentions[rel]
+        """The records a module reads, and the modules it imports that the
+        walk follows: the library, and the page's own files beside it."""
+        if rel in self._modules:
+            return self._modules[rel]
         names: set[str] = set()
         imports: list[str] = []
         f = self.repo / rel
         try:
             text = f.read_text(encoding="utf-8")
         except OSError:
-            self._mentions[rel] = (names, imports)
-            return self._mentions[rel]
-        if self._name_re:
-            names.update(self._name_re.findall(text))
+            self._modules[rel] = (names, imports)
+            return self._modules[rel]
+        for rx in self.READS:
+            names.update(n for n in rx.findall(text) if n in self.data_names)
         for spec in self.IMPORT.findall(text):
             target = self._resolve(f, spec)
             if target:
                 imports.append(target)
-        self._mentions[rel] = (names, imports)
-        return self._mentions[rel]
+        self._modules[rel] = (names, imports)
+        return self._modules[rel]
 
     def _resolve(self, from_file: Path, spec: str) -> str | None:
         if spec.startswith("@/lib/"):
             base = self.repo / "web" / spec[2:]
         elif spec.startswith("."):
             base = (from_file.parent / spec).resolve()
-            if self.lib.resolve() not in base.parents and base != self.lib.resolve():
+            inside = [d.resolve() for d in (self.lib, self.app)]
+            if not any(d in base.parents or d == base for d in inside):
                 return None
         else:
             return None
         for cand in (base, base.with_suffix(".ts"), base.with_suffix(".tsx"), base / "index.ts", base / "index.tsx"):
             if cand.is_file() and cand.suffix in (".ts", ".tsx"):
                 try:
-                    return cand.resolve().relative_to(self.repo).as_posix()
+                    rel = cand.resolve().relative_to(self.repo).as_posix()
                 except ValueError:
                     return None
+                return None if cand.name in ("layout.tsx", "page.tsx") else rel
         return None
 
-    def page_data(self, page_rel: str) -> list[str]:
-        """Every data file the page reaches: its own mentions and those of the
-        library modules it imports, transitively through web/lib."""
-        if page_rel in self._page_data:
-            return self._page_data[page_rel]
-        seen: set[str] = set()
-        names: set[str] = set()
+    def _is_lib(self, rel: str) -> bool:
+        return rel.startswith("web/lib/")
+
+    def frame(self) -> set[str]:
+        """The library modules the site frame imports directly: SiteFrame and
+        every layout. Derived from their imports, so a module that joins the
+        frame joins this set."""
+        if self._frame is None:
+            files = [self.FRAME] + [p.relative_to(self.repo).as_posix() for p in (self.repo / "web" / "app").rglob("layout.tsx")]
+            out: set[str] = set()
+            for rel in files:
+                f = self.repo / rel
+                try:
+                    text = f.read_text(encoding="utf-8")
+                except OSError:
+                    continue
+                for spec in self.IMPORT.findall(text):
+                    t = self._resolve(f, spec)
+                    if t and self._is_lib(t):
+                        out.add(t)
+            self._frame = out
+        return self._frame
+
+    def page_reads(self, page_rel: str) -> dict[str, tuple[str, str]]:
+        """{record: (confidence, the module that reads it)} for a route file."""
+        if page_rel in self._page_reads:
+            return self._page_reads[page_rel]
+        frame = self.frame()
+        out: dict[str, tuple[str, str]] = {}
+
+        def take(names: set[str], conf: str, reader: str) -> None:
+            for n in names:
+                if n in self.LANG_FILES:
+                    continue
+                if n not in out or (conf == "exact" and out[n][0] != "exact"):
+                    out[n] = (conf, reader)
+
+        # The page's own code: the route file and the files beside it.
+        own: set[str] = set()
         todo = [page_rel]
         while todo:
             rel = todo.pop()
+            if rel in own:
+                continue
+            own.add(rel)
+            todo.extend(t for t in self._module(rel)[1] if not self._is_lib(t))
+        seen: set[str] = set(own)
+        first: list[str] = []
+        for rel in sorted(own):
+            names, imports = self._module(rel)
+            take(names, "exact", rel)
+            first.extend(t for t in imports if self._is_lib(t))
+        # The library: exact where the page's own code imports the module,
+        # inferred beyond; never through the frame's modules.
+        todo = [(t, "exact") for t in first]
+        while todo:
+            rel, conf = todo.pop(0)
             if rel in seen:
                 continue
             seen.add(rel)
-            got, imports = self._module(rel)
-            names.update(got)
-            todo.extend(imports)
-        out = sorted(n for n in names if n not in self.LANG_FILES)
-        self._page_data[page_rel] = out
-        return out
-
-    def readers_of(self, name: str) -> list[str]:
-        """The literal pages whose reading reaches this record."""
-        pages = []
-        for segs, file in self.routes:
-            if any(seg.startswith("[") for seg in segs):
+            names, imports = self._module(rel)
+            take(names, conf, rel)
+            if rel in frame:
                 continue
-            if name in self.page_data(file):
-                pages.append("/" + "/".join(segs))
-        return sorted(pages)
+            todo.extend((t, "inferred") for t in imports if self._is_lib(t))
+        self._page_reads[page_rel] = out
+        return out
 
     # -- writers --
 
@@ -974,11 +1027,11 @@ class Namespace:
             for script, conf in self.graph.writers_of(name):
                 links.append(link("tm:generated-by", f"{ROOT}git/public/{quote(script)}", conf,
                                   title="the script that writes this record" if conf == "exact" else "a script that names this record"))
-        # One site: beta serves the same pages, and a record that half the
-        # site reads would otherwise carry a hundred links.
-        for page in self.graph.readers_of(name):
-            links.append(link("tm:read-by", f"{ROOT}http/{self.sites[0]}{page}", "inferred",
-                              title="a page whose rendering reaches this record"))
+        # Every page that names this record back as its data, on both sites
+        # and in both languages, with the same confidence (TM-14).
+        for site, page, conf in self.readers(name):
+            links.append(link("tm:read-by", f"{ROOT}http/{site}{page}", conf,
+                              title="a page whose own code reads this record" if conf == "exact" else "a page whose library reaches this record"))
         return links
 
     def _origin_links(self, rel: str) -> list[dict]:
@@ -1380,6 +1433,58 @@ class Namespace:
         b = self.built(site)
         return b is None or page in b
 
+    def shipped(self, site: str, route_file: str) -> set[str] | None:
+        """The source modules the site's build put in a route's server
+        bundle: the page entry's chunks and each chunk's source map. None
+        where there is no build, or no entry for the route, to read."""
+        d = self.build_dir(site)
+        if d is None or not route_file.startswith("web/app/"):
+            return None
+        entry = d / "server" / "app" / route_file[len("web/app/"):].replace(".tsx", ".js")
+        if not entry.is_file():
+            return None
+        cache = self.__dict__.setdefault("_shipped", {})
+        key = (site, route_file, entry.stat().st_mtime)
+        if key not in cache:
+            mods: set[str] = set()
+            for chunk in re.findall(r'R\.c\("([^"]+)"\)', entry.read_text(errors="replace")):
+                m = d / (chunk + ".map")
+                try:
+                    sm = json.loads(m.read_text())
+                except (OSError, ValueError):
+                    continue
+                sources = list(sm.get("sources", []))
+                for sec in sm.get("sections", []):
+                    sources.extend(sec.get("map", {}).get("sources", []))
+                # Relative to the tree the build was made in: the beta's
+                # bundle names the beta worktree's files, not this checkout's.
+                tree = d.parent.parent.resolve()
+                for src in sources:
+                    try:
+                        mods.add((m.parent / unquote(src)).resolve().relative_to(tree).as_posix())
+                    except ValueError:
+                        continue
+            cache[key] = mods
+        return cache[key]
+
+    def page_reads(self, site: str, route_file: str) -> dict[str, str]:
+        """{record: confidence} for a route on a site: the graph's reading,
+        less any record whose reader module the site's build did not ship
+        with the page."""
+        reads = self.graph.page_reads(route_file)
+        ship = self.shipped(site, route_file)
+        return {n: conf for n, (conf, reader) in sorted(reads.items()) if ship is None or reader in ship}
+
+    def readers(self, name: str) -> list[tuple[str, str, str]]:
+        """(site, page, confidence) for every page whose data names the record."""
+        out = []
+        for site in self.sites:
+            for _, file in self.graph.routes:
+                conf = self.page_reads(site, file).get(name)
+                if conf:
+                    out.extend((site, p, conf) for p in self.pages_of_route(site, file))
+        return sorted(out)
+
     def pages_of_route(self, site: str, file_rel: str) -> list[str]:
         b = self.built(site)
         if b is None:
@@ -1486,8 +1591,9 @@ class Namespace:
                 file, dynamic = route
                 links.append(link("tm:source", f"{ROOT}git/public/{quote(file)}", "exact",
                                   title="the route that renders this page" + (" (one of several it renders)" if dynamic else "")))
-                for name in self.graph.page_data(file):
-                    links.append(link("tm:data", f"{ROOT}fs/data/{quote(name)}", "inferred", title="a record the page's rendering reaches"))
+                for name, conf in self.page_reads(site, file).items():
+                    links.append(link("tm:data", f"{ROOT}fs/data/{quote(name)}", conf,
+                                      title="a record the page's own code reads" if conf == "exact" else "a record the page's library reaches"))
             lm = re.fullmatch(r"(?:/ja)?/autopsy/lessons/([a-z0-9-]+)", clean)
             if lm and (self.repo / "lessons" / lm[1] / "lesson.json").is_file() and "public" in self.git:
                 # TM-6: the cartridge's own source, its directory and each file in it.

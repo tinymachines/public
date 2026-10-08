@@ -626,12 +626,12 @@ def site(gits: dict[str, Path]) -> Namespace:
     lib = repo / "web" / "lib"
     lib.mkdir()
     (lib / "autopsy.ts").write_text('import { figures } from "./figures";\nconst FILE = path.join(ROOT, "data", "autopsy.json");\n')
-    (lib / "figures.ts").write_text('const CHIP = "chip.json";\n')
+    (lib / "figures.ts").write_text('const CHIP = path.join(ROOT, "data", "chip.json");\n')
     (lib / "i18n.ts").write_text('const JA = path.join(ROOT, "data", "ja.json");\n')
     (lib / "docs.ts").write_text('export function docsTree() {}\n')
     (repo / "web" / "app" / "components").mkdir()
     (repo / "web" / "app" / "components" / "SiteFrame.tsx").write_text('import { nav } from "@/lib/nav";\n')
-    (lib / "nav.ts").write_text('const DOORS = "doors.json";\n')
+    (lib / "nav.ts").write_text('import { autopsy } from "./autopsy";\nconst DOORS = path.join(ROOT, "data", "doors.json");\n')
     (repo / "data" / "autopsy.json").write_text('{"_": "written only by scripts/board-autopsy.py", "marks": 1}\n')
     (repo / "data" / "chip.json").write_text('{"nodes": 1}\n')
     (repo / "data" / "ja.json").write_text('{}\n')
@@ -651,7 +651,8 @@ def test_a_page_links_to_its_route_and_the_records_its_rendering_reaches(site):
     r = rels(links)
     assert r["tm:source"] == [f"{ROOT}git/public/web/app/%5Blang%5D/autopsy/patterns/page.tsx"]
     assert r["tm:data"] == [f"{ROOT}fs/data/autopsy.json", f"{ROOT}fs/data/chip.json"], "through the library, transitively"
-    assert all(ln["confidence"] == "inferred" for ln in links if ln["rel"] == "tm:data")
+    conf = {ln["href"].rsplit("/", 1)[1]: ln["confidence"] for ln in links if ln["rel"] == "tm:data"}
+    assert conf == {"autopsy.json": "exact", "chip.json": "inferred"}, "the page imports the record's reader; the chip record is a module further on"
     assert f"{ROOT}fs/data/ja.json" not in r["tm:data"], "the language file is every page's, not this one's"
     assert f"{ROOT}fs/data/doors.json" not in r["tm:data"], "the site frame's menu is not the page's reading"
     _, ja = read(site, f"{ROOT}http/tinymachines.ai/ja/autopsy/patterns?as=stat")
@@ -674,7 +675,8 @@ def test_a_record_links_to_its_writer_and_its_readers(site):
     r = rels(links)
     assert r["tm:generated-by"] == [f"{ROOT}git/public/scripts/board-autopsy.py"]
     assert [ln["confidence"] for ln in links if ln["rel"] == "tm:generated-by"] == ["exact"], "the record's own note names it"
-    assert r["tm:read-by"] == [f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns"], "the dynamic route is not listed, and one site stands for both"
+    assert r["tm:read-by"] == sorted(f"{ROOT}http/{x}{p}" for x in tm.SITES for p in ("/autopsy/patterns", "/ja/autopsy/patterns")), \
+        "every page that names it back, both languages and both sites; no build here, so the dynamic route's pages are unknown"
     _, links = read(site, f"{ROOT}fs/data/chip.json")
     gen = [ln for ln in links if ln["rel"] == "tm:generated-by"]
     assert [ln["href"] for ln in gen] == [f"{ROOT}git/public/scripts/verify-chip.py"], "deploy.sh and check-* are not writers"
@@ -703,10 +705,20 @@ def test_the_real_site_graph_joins_the_autopsy_page_to_its_record():
     assert len(n.graph.routes) > 30, "too few routes read to mean anything"
     route = n.graph.route_for("/autopsy/patterns")
     assert route == ("web/app/[lang]/autopsy/patterns/page.tsx", False)
-    assert "autopsy.json" in n.graph.page_data(route[0])
-    assert "ja.json" not in n.graph.page_data(route[0])
+    reads = n.graph.page_reads(route[0])
+    assert reads["autopsy.json"][0] == "exact" and reads["lessons.json"][0] == "exact"
+    assert "ja.json" not in reads
+    # TM-8 on the real tree: the menu's records are not every page's.
+    for page in ("/admin", "/6502/reading"):
+        got = n.graph.page_reads(n.graph.route_for(page)[0])
+        assert not {"pieces.json", "projects.json"} & set(got), (page, got)
+    # The patterns page imports lib/projects.ts itself (its surface), so that
+    # one is its own reading; the menu's pieces are still not.
+    assert "pieces.json" not in reads and reads["projects.json"] == ("exact", "web/lib/projects.ts")
+    assert "autopsy.json" not in n.graph.page_reads(n.graph.route_for("/6502/reading")[0])
+    assert "slowppu.json" in n.graph.page_reads(n.graph.route_for("/nes/playground")[0]), "a file beside the page reads it"
     assert ("scripts/board-engine.py", "exact") in n.graph.writers_of("engine.json")
-    assert "/autopsy/patterns" in n.graph.readers_of("autopsy.json")
+    assert "/autopsy/patterns" in [p for _, p, _ in n.readers("autopsy.json")]
     assert n.graph.route_for("/docs/nes/pile") == ("web/app/[lang]/docs/[[...slug]]/page.tsx", True)
 
 
@@ -806,3 +818,67 @@ def test_a_file_claims_no_page_a_built_site_does_not_serve(built):
     assert pages, "the file names no page at all"
     assert not [p for p in pages if p.startswith(f"{ROOT}http/tinymachines.ai/")], pages
     assert built.serves("tinymachines.ai", "/autopsy") and not built.serves("tinymachines.ai", "/docs/nes/scope")
+
+
+def test_tm8_a_page_reads_what_its_own_code_reads_not_what_the_frame_reads(site):
+    repo = site.repo
+    lib = repo / "web" / "lib"
+    pat = repo / "web" / "app" / "[lang]" / "autopsy" / "patterns"
+    # The frame's metadata reads the projects; a page that imports the same
+    # metadata helper is not reading them.
+    (lib / "seo.ts").write_text('import { surface } from "./projects";\n')
+    (lib / "projects.ts").write_text('// the surfaces; pieces.json belongs to api/pieces.py\nconst FILE = path.join(ROOT, "data", "projects.json");\n')
+    (repo / "web" / "app" / "components" / "SiteFrame.tsx").write_text('import { nav } from "@/lib/nav";\nimport { abs } from "@/lib/seo";\n')
+    (pat / "page.tsx").write_text(
+        'import { autopsy } from "@/lib/autopsy";\nimport { abs } from "@/lib/seo";\nimport { Words } from "./words";\n'
+        '// the old note named data/doors.json here\nexport default function Page() { return null; }\n'
+    )
+    (pat / "words.tsx").write_text('const L = path.join(ROOT, "data", "lessons.json");\n')
+    for name in ("projects.json", "pieces.json", "lessons.json"):
+        (repo / "data" / name).write_text("{}\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "a frame")
+    n = site
+    n.graph = tm.SiteGraph(repo)
+    reads = n.graph.page_reads("web/app/[lang]/autopsy/patterns/page.tsx")
+    assert {k: v[0] for k, v in reads.items()} == {"autopsy.json": "exact", "chip.json": "inferred", "lessons.json": "exact"}, reads
+    _, links = read(n, f"{ROOT}fs/data/projects.json?as=stat")
+    assert "tm:read-by" not in rels(links), "the frame's reading is nobody's page data"
+
+
+def test_tm14_every_read_by_is_answered_by_a_data_link_and_back(built):
+    """With a build: the dynamic route's pages are named, and a page whose
+    bundle does not ship a reader module claims nothing from it."""
+    nx = built.repo / "web" / ".next"
+    gp = nx / "server" / "app" / "[lang]" / "autopsy" / "games" / "[game]"
+    gp.mkdir(parents=True)
+    (gp / "page.js").write_text('var R=require("x")\nR.c("server/chunks/ssr/a.js")\n')
+    (nx / "server" / "chunks" / "ssr").mkdir(parents=True)
+    (nx / "server" / "chunks" / "ssr" / "a.js.map").write_text(json.dumps({"version": 3, "sources": ["../../../../../web/lib/i18n.ts"]}))
+    _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
+    by = rels(links)["tm:read-by"]
+    assert f"{ROOT}http/tinymachines.ai/autopsy/games/abc" not in by, "its bundle does not ship lib/autopsy.ts"
+    (nx / "server" / "chunks" / "ssr" / "a.js.map").write_text(json.dumps({"version": 3, "sources": ["../../../../../web/lib/%61utopsy.ts"]}))
+    built.__dict__.pop("_shipped", None)
+    _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
+    by = rels(links)["tm:read-by"]
+    assert f"{ROOT}http/tinymachines.ai/autopsy/games/abc" in by and f"{ROOT}http/tinymachines.ai/autopsy/games/def" in by
+    for href in by:
+        _, back = read(built, href + "?as=stat")
+        mine = [ln for ln in back if ln["rel"] == "tm:data" and ln["href"] == f"{ROOT}fs/data/autopsy.json"]
+        theirs = [ln for ln in links if ln["rel"] == "tm:read-by" and ln["href"] == href]
+        assert mine and mine[0]["confidence"] == theirs[0]["confidence"], href
+
+
+def test_tm14_the_beta_bundle_is_read_against_the_beta_tree(built):
+    # The beta's build is in its own worktree, and its source maps name that
+    # tree's files: read against this checkout, every module would be
+    # missing and the beta would claim no data at all.
+    bx = built.repo.parent / "public-beta" / "web" / ".next"
+    gp = bx / "server" / "app" / "[lang]" / "autopsy" / "games" / "[game]"
+    gp.mkdir(parents=True)
+    (bx / "prerender-manifest.json").write_text(json.dumps({"routes": {"/en/autopsy/games/abc": {"srcRoute": "/[lang]/autopsy/games/[game]"}}}))
+    (gp / "page.js").write_text('R.c("server/chunks/ssr/a.js")\n')
+    (bx / "server" / "chunks" / "ssr").mkdir(parents=True)
+    (bx / "server" / "chunks" / "ssr" / "a.js.map").write_text(json.dumps({"version": 3, "sources": ["../../../../../web/lib/autopsy.ts"]}))
+    assert built.page_reads("beta.tinymachines.ai", "web/app/[lang]/autopsy/games/[game]/page.tsx") == {"autopsy.json": "exact"}

@@ -18,12 +18,9 @@ What it asserts, for every URI it reaches:
   - a listed child resolves with the mimeType the listing claimed;
   - every link of a paired relation has its inverse on the target:
     tm:source / tm:renders-as, tm:generates / tm:generated-by,
-    tm:working-copy / tm:repository.
-
-tm:data / tm:read-by are not held to inverses yet: they follow imports
-through shared modules, so the menu's records read as every page's data and
-the readers listed are partly false (TM-8, TM-14 in the owner's work package
-of 2026-10-07). The count of those links is printed, not asserted.
+    tm:working-copy / tm:repository, tm:data / tm:read-by (the last pair
+    since TM-8 and TM-14: a page's data is what its own code reads, and a
+    record names back every page that says so, at the same confidence).
 
 Git mounts are walked by their links and two levels of listing, not file by
 file: nine repositories' every file would be most of the budget and prove
@@ -39,8 +36,8 @@ sys.path.insert(0, str(ROOT / "api"))
 import tm  # noqa: E402
 
 PAIRS = {"tm:source": "tm:renders-as", "tm:renders-as": "tm:source", "tm:generates": "tm:generated-by",
-         "tm:generated-by": "tm:generates", "tm:working-copy": "tm:repository", "tm:repository": "tm:working-copy"}
-LOOSE = {"tm:data", "tm:read-by"}
+         "tm:generated-by": "tm:generates", "tm:working-copy": "tm:repository", "tm:repository": "tm:working-copy",
+         "tm:data": "tm:read-by", "tm:read-by": "tm:data"}
 
 
 def identity(uri: str) -> str:
@@ -68,7 +65,6 @@ async def crawl(budget: int) -> int:
     problems: list[str] = []
     queue = deque([(tm.ROOT, None)])
     claimed: dict[str, str] = {}
-    loose = 0
 
     async def get(uri: str):
         if uri not in seen:
@@ -123,8 +119,6 @@ async def crawl(budget: int) -> int:
             href = ln["href"]
             if "{" in href:
                 continue
-            if ln["rel"] in LOOSE:
-                loose += 1
             if href not in seen and identity(href) not in seen:
                 queue.append((identity(href), uri))
     # Inverses, over every page and file reached.
@@ -142,10 +136,12 @@ async def crawl(budget: int) -> int:
             if not t["ok"]:
                 problems.append(f"{uri} {ln['rel']} {target}: the target does not resolve ({t['reason']})")
                 continue
-            back = {identity(b["href"]) for b in t["links"] if b["rel"] == inv}
+            back = {identity(b["href"]): b.get("confidence") for b in t["links"] if b["rel"] == inv}
             if identity(uri) not in back:
                 problems.append(f"{uri} {ln['rel']} {target}: no {inv} back")
-    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {loose} tm:data / tm:read-by links not yet held to inverses (TM-8, TM-14)")
+            elif ln["rel"] in ("tm:data", "tm:read-by") and back[identity(uri)] != ln.get("confidence"):
+                problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[identity(uri)]} back")
+    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused")
     if reads >= budget:
         print(f"check-tm-links: the budget of {budget} reads ran out with {len(queue)} still queued")
     for p in problems[:40]:
