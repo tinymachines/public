@@ -5209,3 +5209,30 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-08 (later): a page's data is what its own code reads
+
+Live and beta serve `100dc08` (deployed 2026-10-08 on the owner's word,
+clean through every stage, main pushed). Since the morning checkpoint:
+
+| commit | what |
+|---|---|
+| `100dc08` | TM-8 and TM-14. A module reads a record when it builds the record's path or imports it, not when a comment names it. A page's own code is its route file and the files beside it; the walk goes through the library from there but never through the modules the site frame and the layouts import directly, so the menu's and the metadata's records are no page's data. Exact for a reader the page imports itself, inferred further down, and only where the page's bundle ships the reader (the beta's bundle read against the beta's tree). `tm:read-by` names every page that names the record back, at the same confidence, and the deploy's crawl holds that pair now. `/admin` claims nothing; `/autopsy/patterns` reads the autopsy, lessons and projects records, all exact. Deployed |
+
+**Still in progress, not on main: the platforms lesson** on the local
+branch `wip/platforms`. The private search for 1-2's lifts is at its
+fifteenth stage and has backtracked once.
+
+**Where to pick up.** The platforms lesson when the search reaches a
+lift. The rest of the owner's tm work package, in its own order: TM-4
+(the http default facet returns raw HTML; P0), TM-5 (nearest suggestions
+ranked, not alphabetical), TM-7 (generator lineage one hop short), TM-9
+(`.gitignore` and `.gitmodules` denied), TM-11 (an unsupported facet on a
+collection is ignored silently), TM-12 (orientation at connect), TM-13
+(the spec behind the server), TM-16 (patterns, games, routines and
+lessons as entities). The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
