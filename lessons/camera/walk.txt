@@ -1,0 +1,6 @@
+# frames 700
+# Right held until the far end, then Left back toward the start, then
+# Right again.
+AT 20 80
+AT 300 40
+AT 500 80

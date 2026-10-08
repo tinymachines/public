@@ -331,6 +331,16 @@ export interface InterludeMeasures {
   levels: number[];
 }
 
+/** A camera's dead zone (camera_measures). */
+export interface CameraMeasures {
+  starts_at: number;
+  holds_at: number | null;
+  eased: number;
+  back: boolean;
+  back_at: number | null;
+  restarts_at: number | null;
+}
+
 interface Base {
   key: string;
   title: string;
@@ -369,6 +379,7 @@ export type Lesson =
   | (Base & { kind: "pit"; measures: PitMeasures; against?: (PitMeasures & { game: string }) | null })
   | (Base & { kind: "gameover"; measures: GameoverMeasures; against?: (GameoverMeasures & { game: string }) | null })
   | (Base & { kind: "interlude"; measures: InterludeMeasures; against?: (InterludeMeasures & { game: string }) | null })
+  | (Base & { kind: "camera"; measures: CameraMeasures; against?: (CameraMeasures & { game: string }) | null })
   | (Base & { kind: "stomp"; measures: StompMeasures; against?: (StompMeasures & { game: string }) | null })
   | (Base & { kind: "rooms"; measures: RoomsMeasures; against?: (RoomsMeasures & { game: string }) | null });
 

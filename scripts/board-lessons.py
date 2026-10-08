@@ -1156,6 +1156,39 @@ def mario_interlude(dirpath: Path):
     return {"game": "Super Mario Bros.", **m}
 
 
+def camera_measures(dirpath: Path, start: int, px, cam):
+    """A camera's dead zone, from memory, with the player's x in the level
+    and the camera's given as functions of the cells and a frame; the
+    player's place on the screen is the one less the other. From `start`:
+    where on the screen the player was when the camera first moved right;
+    the place it held the player at while it took every pixel the player
+    moved; how many frames it moved right by less than the player did
+    (easing in); whether it ever moved left, and the place it held the
+    player at then; and, after the player first turned back, where on the
+    screen the player was when the camera next moved right."""
+    ram = (dirpath / "ram.bin").read_bytes()
+    c = frames_of(ram)
+    n = len(ram) // 2048
+    sx = lambda f: px(c, f) - cam(c, f)
+    dp = lambda f: px(c, f) - px(c, f - 1)
+    dc = lambda f: cam(c, f) - cam(c, f - 1)
+    mode = lambda v: max(set(v), key=v.count) if v else None
+    frames = range(start + 1, n)
+    right = [f for f in frames if dc(f) > 0]
+    first = right[0]
+    held = [sx(f) for f in right if dc(f) == dp(f)]
+    eased = [f for f in right if 0 < dc(f) < dp(f)]
+    left = [f for f in frames if dc(f) < 0]
+    turned = next((f for f in frames if dp(f) < 0), None)
+    again = next((f for f in frames if turned and f > turned and dp(f) > 0), None)
+    restart = next((f for f in right if again and f > again), None)
+    return {
+        "starts_at": sx(first - 1), "holds_at": mode(held), "eased": len(eased),
+        "back": bool(left), "back_at": mode([sx(f) for f in left if dc(f) == dp(f)]) if left else None,
+        "restarts_at": sx(restart - 1) if restart else None,
+    }
+
+
 def coins_measures(dirpath: Path, start: int, coins, score, coin_tiles: set, points_tiles: set):
     """A coin from a block, from memory and the writes to the picture,
     with the game's coin count and score given as functions of the cells
@@ -1393,6 +1426,16 @@ def main():
             against = ({"game": "Super Mario Bros.", **lives_measures(Path(compare[name]) / "hop", 400, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86), lambda c, f: c(f, 0xCE),
                                                                     lambda c, f: c(f, 0x75A), lambda c, f: c(f, 0x0E) == 11, lambda c, f: c(f, 0x772) == 3 and c(f, 0x0E) == 8)}
                        if name in compare else prev.get("against"))
+        elif kind == "camera":
+            h = lambda a: int(a[1:], 16)
+            mm = meta["memory"]
+            two = lambda pair: (lambda c, f: c(f, h(pair[1])) * 256 + c(f, h(pair[0])))
+            measures = camera_measures(run, meta["walk_from"], two(mm["x"]), two(mm["camera"]))
+            # Mario: a private run that walks right until the camera follows,
+            # then left, then right (deadzone); x on its page at $006D/$0086,
+            # the camera at $071A/$071C.
+            against = ({"game": "Super Mario Bros.", **camera_measures(Path(compare[name]) / "deadzone", 520, lambda c, f: c(f, 0x6D) * 256 + c(f, 0x86),
+                                                                     lambda c, f: c(f, 0x71A) * 256 + c(f, 0x71C))} if name in compare else prev.get("against"))
         elif kind == "interlude":
             h = lambda a: int(a[1:], 16)
             mm = meta["memory"]

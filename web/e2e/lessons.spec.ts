@@ -195,6 +195,18 @@ for (const l of record()) {
       expect(l.measures.mirroring?.fixed).toBe(true);
       expect(a.mirroring?.slide).toBe("vertical");
       await expect(page.locator("[data-lesson-why]")).toHaveCount(1);
+    } else if (l.kind === "camera") {
+      const a = l.against as typeof l.measures;
+      for (const x of [l.measures, a]) {
+        // A stretch of the screen where the camera waits, an ease-in, then a place it holds the player at, and a restart after turning.
+        expect(x.starts_at).toBeGreaterThan(40);
+        expect(x.holds_at).toBeGreaterThan(x.starts_at);
+        expect(x.eased).toBeGreaterThan(5);
+        expect(x.restarts_at).not.toBeNull();
+      }
+      // The game never goes back; ours does.
+      expect([l.measures.back, a.back]).toEqual([true, false]);
+      expect(rows.find((r) => r[0] === "holds_at")?.slice(1)).toEqual([String(l.measures.holds_at), String(a.holds_at)]);
     } else if (l.kind === "interlude") {
       const a = l.against as typeof l.measures;
       for (const x of [l.measures, a]) {

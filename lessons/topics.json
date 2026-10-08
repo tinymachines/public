@@ -16,9 +16,10 @@
   },
   {
    "key": "world",
-   "title": "How the picture is made: scrolling, rooms, screens, a bar that stays and sprites that flicker",
+   "title": "How the picture is made: scrolling, the camera's dead zone, rooms, screens, a bar that stays and sprites that flicker",
    "lessons": [
     "scroll",
+    "camera",
     "rooms",
     "screens",
     "status",
