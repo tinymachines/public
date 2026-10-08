@@ -5174,3 +5174,38 @@ Whether bradley.io's tree page links back. Then as before: the prefetch
 music engine, `/docs/hotbits` once the tube feeds the pool, the pile
 page's details, nes-bench's row for `pile.md`, the sprite sign-in test,
 the Othello redump, the reader firmware.
+
+## Checkpoint, 2026-10-08: five tm tickets, the oscilloscope article, and a check moved to the end
+
+Live and beta serve `f305403` (deployed 2026-10-08 on the owner's word,
+clean through every stage, main pushed). Since the late checkpoint:
+
+| commit | what |
+|---|---|
+| `2da4488`, `28a6519` | the twenty-fourth lesson, the camera's dead zone: ours starts at 80, eases 65 frames, holds at 112 and follows back at 48; Super Mario Bros. starts at 81, eases 45, holds at 112 and never goes left. Deployed |
+| `5df838f` | tm://, five tickets from the owner's work package (TM-1, TM-2, TM-3, TM-6, TM-15) and TM-10. Assembly and other text files read as text; `?as=raw` gives a binary's bytes; the http listings come from the build's prerender manifest, titles included; a lesson page and its cartridge source link both ways; no mount root goes up to itself; `scripts/check-tm-links.py` crawls the namespace and holds every paired link to its inverse. Deployed |
+| `5a2e1bd` | the notebook gains "Using an oscilloscope, for software developers" from geiger (private, so no GitHub link), with its figure and PDF under `/nes/articles/` and a Japanese body. Pulled rows can now be optional, private and carry assets. Deployed |
+| `f305403` | the first deploy of `5a2e1bd` stopped at the new tm check: the namespace promised the beta the article's pages before the beta had followed and built them. A file now names a page only on a site whose build has it, and the check is stage 12, after the beta follows, so a failure there skips nothing. The stages it had skipped were run by hand and passed. Deployed |
+
+**The host rebooted 2026-10-07 at 22:48.** Every site came back on its
+own. The session scratchpad did not: the private Super Mario runs and the
+platforms search went with it. The path through 1-1 and the searcher
+were rebuilt from the session record (the path reaches the flag on the
+same frame), the camera run was re-made and matches its record exactly,
+and the rest of the private runs are only needed to re-measure, since a
+re-board keeps each lesson's earlier comparison.
+
+**Still in progress, not on main: the platforms lesson** on the local
+branch `wip/platforms`. The search for 1-2's lifts restarted from the
+start of 1-2 and is past its sixth stage.
+
+**Where to pick up.** The platforms lesson when the search reaches a
+lift. The remaining tm tickets: TM-8 and TM-14 together (data links
+follow imports through shared modules, so the menu's records read as
+every page's data), then TM-4, 5, 7, 9, 11, 12, 13, 16; TM-17 is not a
+bug (completions exist). The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
