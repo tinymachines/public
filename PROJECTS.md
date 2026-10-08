@@ -5236,3 +5236,26 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-08 (evening): the twenty-fifth lesson, a lift that carries you
+
+Live and beta serve `4c09628` (deployed 2026-10-08 on the owner's word,
+clean through every stage, main pushed). Since the later checkpoint:
+
+| commit | what |
+|---|---|
+| `64a746d` | the platforms lesson merged from `wip/platforms`: a lift over a hole, the square on it moved by the lift's own step on the same frame, the lift first, then the square, then the pad. Mario's side reads a private run that reaches the lifts at the end of 1-2, hops onto one as it comes level with the ledge before them, and presses nothing after. His lift goes down a pixel every frame and wraps the screen, so it has no ends: the record leaves the distance empty and the page says so. Deployed |
+| `4c09628` | the lessons re-boarded: twenty-five. Mario was carried on all 72 of the lift's steps while he stood on it, at a steady height; ours on 68 of 68. No other lesson's figures moved. Deployed |
+
+**Nothing is in progress off main.** The private Super Mario runs and
+searchers live in the session scratchpad, which a reboot clears; the way
+to rebuild them is in the session's memory.
+
+**Where to pick up.** The rest of the owner's tm work package: TM-4 (the
+http default facet returns raw HTML; the one P0 left), then TM-5, TM-7,
+TM-9, TM-11, TM-12, TM-13 and TM-16. The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
