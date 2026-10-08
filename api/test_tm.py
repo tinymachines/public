@@ -9,6 +9,7 @@ the namespace in.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import shutil
@@ -562,8 +563,9 @@ def test_a_pulled_page_links_to_the_repository_it_came_from(gns):
     origin, links = read(gns, f"{ROOT}git/bench/docs/pile.md")
     assert "at the bench" in origin["text"]
     r = rels(links)
-    assert r["tm:generates"] == [f"{ROOT}fs/docs/nes/pile.md"]
-    assert r["tm:renders-as"] == [f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES]
+    # The copy here and the pages made from it, each naming the origin back.
+    assert r["tm:generates"] == [f"{ROOT}fs/docs/nes/pile.md"] + [f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES]
+    assert "tm:renders-as" not in r, "the origin generates the page; the page's source is the copy"
     # And a file of this repository that is not pulled links to itself in git.
     _, links = read(gns, f"{ROOT}fs/docs/nes/alone.md")
     r = rels(links)
@@ -678,14 +680,18 @@ def test_a_record_links_to_its_writer_and_its_readers(site):
     assert [ln["href"] for ln in gen] == [f"{ROOT}git/public/scripts/verify-chip.py"], "deploy.sh and check-* are not writers"
     assert gen[0]["confidence"] == "inferred"
     _, in_git = read(site, f"{ROOT}git/public/data/autopsy.json")
-    assert rels(in_git)["tm:generated-by"] == r["tm:generated-by"]
+    # The record in git defers to its working copy, which carries the
+    # writer: a script's tm:generates names the working copy, so the inverse
+    # holds in one place.
+    assert rels(in_git)["tm:working-copy"] == [f"{ROOT}fs/data/autopsy.json"]
+    assert "tm:generated-by" not in rels(in_git)
 
 
 def test_a_script_and_a_route_link_forward(site):
     _, links = read(site, f"{ROOT}git/public/scripts/board-autopsy.py")
     assert rels(links)["tm:generates"] == [f"{ROOT}fs/data/autopsy.json"]
     _, links = read(site, f"{ROOT}git/public/web/app/[lang]/autopsy/patterns/page.tsx")
-    assert rels(links)["tm:renders-as"] == [f"{ROOT}http/{s}{p}" for p in ("/autopsy/patterns", "/ja/autopsy/patterns") for s in tm.SITES]
+    assert sorted(rels(links)["tm:renders-as"]) == sorted(f"{ROOT}http/{s}{p}" for p in ("/autopsy/patterns", "/ja/autopsy/patterns") for s in tm.SITES)
     _, links = read(site, f"{ROOT}git/public/web/app/[lang]/autopsy/games/[game]/page.tsx")
     assert "tm:renders-as" not in rels(links), "a dynamic route renders many pages; none is named"
 
@@ -702,3 +708,88 @@ def test_the_real_site_graph_joins_the_autopsy_page_to_its_record():
     assert ("scripts/board-engine.py", "exact") in n.graph.writers_of("engine.json")
     assert "/autopsy/patterns" in n.graph.readers_of("autopsy.json")
     assert n.graph.route_for("/docs/nes/pile") == ("web/app/[lang]/docs/[[...slug]]/page.tsx", True)
+
+
+# ---------------------------------------------------------------------------
+# The work package of 2026-10-07: TM-1, TM-2, TM-3, TM-6, TM-10
+# ---------------------------------------------------------------------------
+
+
+def test_tm1_sources_and_extensionless_text_read_as_text(site):
+    repo = site.repo
+    (repo / "lessons" / "jump").mkdir(parents=True)
+    (repo / "lessons" / "jump" / "prg.s").write_text("reset:\n    SEI\n")
+    (repo / "lessons" / "jump" / "lesson.json").write_text('{"kind": "jump"}\n')
+    (repo / "LICENSE").write_text("MIT\n")
+    (repo / "notes" / "odd.zzz").write_text("plain words\n")
+    (repo / "notes" / "rom.zzz").write_bytes(b"NES\x1a\x00\x01\x02")
+    git(repo, "add", "-f", "lessons", "LICENSE", "notes/odd.zzz", "notes/rom.zzz")
+    git(repo, "commit", "-q", "-m", "sources")
+    for uri, mime in [(f"{ROOT}git/public/lessons/jump/prg.s", "text/x-asm"), (f"{ROOT}git/public/LICENSE", "text/plain"),
+                      (f"{ROOT}git/public/notes/odd.zzz", "text/plain"), (f"{ROOT}fs/notes/odd.zzz", "text/plain")]:
+        c, _ = read(site, uri)
+        assert c["mimeType"] == mime and "text" in c, uri
+    assert read(site, f"{ROOT}git/public/notes/rom.zzz")[0]["mimeType"] == "application/octet-stream"
+    # The listing says what the read will.
+    kids = {k["name"]: k for k in json.loads(read(site, f"{ROOT}git/public/notes/")[0]["text"])["children"]}
+    assert kids["odd.zzz"]["mimeType"] == "text/plain" and kids["rom.zzz"]["mimeType"] == "application/octet-stream"
+
+
+def test_tm2_resolve_returns_the_bytes_on_as_raw(site):
+    (site.repo / "notes" / "rom.zzz").write_bytes(b"NES\x1a\x00\x01\x02")
+    plain = run(site.resolve({"uri": f"{ROOT}fs/notes/rom.zzz"}))
+    assert "blob" not in plain and "?as=raw" in plain["note"]
+    raw = run(site.resolve({"uri": f"{ROOT}fs/notes/rom.zzz?as=raw"}))
+    assert base64.b64decode(raw["blob"]) == b"NES\x1a\x00\x01\x02" and raw["encoding"] == "base64"
+
+
+@pytest.fixture
+def built(site):
+    """A build's prerender manifest and two pages' HTML, as Next writes them."""
+    nx = site.repo / "web" / ".next"
+    (nx / "server" / "app" / "en" / "autopsy" / "games").mkdir(parents=True)
+    routes = {
+        "/en": {"srcRoute": "/[lang]"}, "/ja": {"srcRoute": "/[lang]"},
+        "/en/autopsy": {"srcRoute": "/[lang]/autopsy"},
+        "/en/autopsy/games/abc": {"srcRoute": "/[lang]/autopsy/games/[game]"},
+        "/en/autopsy/games/def": {"srcRoute": "/[lang]/autopsy/games/[game]"},
+        "/en/autopsy/lessons/jump": {"srcRoute": "/[lang]/autopsy/lessons/[lesson]"},
+        "/ja/autopsy/lessons/jump": {"srcRoute": "/[lang]/autopsy/lessons/[lesson]"},
+        "/autopsy/lessons/jump.nes": {"srcRoute": "/autopsy/lessons/[file]", "routeType": "route"},
+    }
+    (nx / "prerender-manifest.json").write_text(json.dumps({"routes": routes}))
+    (nx / "server" / "app" / "en" / "autopsy" / "games" / "abc.html").write_text("<html><title>Metroid · tinymachines</title></html>")
+    return site
+
+
+def test_tm3_listings_come_from_the_build_with_titles(built):
+    top = {c["name"] for c in json.loads(read(built, f"{ROOT}http/tinymachines.ai/")[0]["text"])["children"]}
+    assert {"autopsy", "autopsy/"} <= top
+    games = json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")[0]["text"])["children"]
+    assert [g["name"] for g in games] == ["abc", "def"]
+    assert games[0]["title"] == "Metroid" and "title" not in games[1]
+    assert built.built("tinymachines.ai")["/autopsy/games/abc"] == "web/app/[lang]/autopsy/games/[game]/page.tsx"
+    # A route renders every page the build made from it, the dynamic ones too.
+    assert built.pages_of_route("tinymachines.ai", "web/app/[lang]/autopsy/games/[game]/page.tsx") == ["/autopsy/games/abc", "/autopsy/games/def"]
+
+
+def test_tm6_a_lesson_page_and_its_cartridge_source_are_one_link_apart_both_ways(built):
+    repo = built.repo
+    (repo / "lessons" / "jump").mkdir(parents=True, exist_ok=True)
+    (repo / "lessons" / "jump" / "prg.s").write_text("reset:\n")
+    (repo / "lessons" / "jump" / "lesson.json").write_text('{"kind": "jump"}\n')
+    git(repo, "add", "-f", "lessons")
+    git(repo, "commit", "-q", "-m", "a lesson")
+    _, links = read(built, f"{ROOT}http/tinymachines.ai/autopsy/lessons/jump?as=stat")
+    src = rels(links)["tm:source"]
+    assert f"{ROOT}git/public/lessons/jump/" in src and f"{ROOT}git/public/lessons/jump/prg.s" in src
+    for back in (f"{ROOT}git/public/lessons/jump/prg.s", f"{ROOT}git/public/lessons/jump/"):
+        _, bl = read(built, back)
+        assert f"{ROOT}http/tinymachines.ai/autopsy/lessons/jump" in rels(bl)["tm:renders-as"], back
+
+
+def test_tm10_no_mount_root_goes_up_to_itself(ns):
+    for uri in (f"{ROOT}fs/", f"{ROOT}http/", f"{ROOT}http/tinymachines.ai/"):
+        _, links = read(ns, uri)
+        assert rels(links)["up"] != [uri], uri
+    assert rels(read(ns, f"{ROOT}fs/")[1])["up"] == [ROOT]

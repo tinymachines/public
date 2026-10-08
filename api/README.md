@@ -337,6 +337,18 @@ visitor gets and the mount cannot be pointed at a site this box does not
 serve; and the page-to-source join is the notebook loader's own rule restated,
 which `test_tm.py` checks against the loader and against the last crawl.
 
+Fixed from the owner's work package of 2026-10-07 (an audit of the live
+server, kept beside the project as `docs/feedback/`): sources the type table
+did not know are recognised by their content, so a lesson's `prg.s` reads as
+text (TM-1); `resolve` with `?as=raw` returns a binary file's bytes, base64
+(TM-2); the http listings come from each site's build manifest, every page
+the build made with its title, so the game and lesson pages can be listed
+(TM-3); a lesson page links to its cartridge's source files and each file
+links back (TM-6); a mount's root no longer goes up to itself (TM-10); and
+`scripts/check-tm-links.py` crawls the live namespace at every deploy,
+stage 6e (TM-15). Its inverse check leaves `tm:data` / `tm:read-by` out
+until TM-8 and TM-14 make them exact.
+
 What is not here yet: subscriptions, and anything that writes.
 
 ## Pieces and surfaces are different questions

@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import base64
 import fnmatch
+import html
 import json
 import mimetypes
 import posixpath
@@ -125,7 +126,40 @@ TEXT_TYPES = {
     ".yml": "text/yaml",
     ".yaml": "text/yaml",
     ".toml": "text/toml",
+    # TM-1: the box's own sources, which an extension-only table served as
+    # binary (the lessons' 6502 assembly above all).
+    ".s": "text/x-asm",
+    ".asm": "text/x-asm",
+    ".inc": "text/x-asm",
+    ".lock": "text/plain",
+    ".rs": "text/x-rust",
+    ".sh": "text/x-shellscript",
+    ".c": "text/x-c",
+    ".h": "text/x-c",
+    ".cfg": "text/plain",
+    ".ini": "text/plain",
+    ".xml": "text/xml",
+    ".log": "text/plain",
+    ".service": "text/plain",
+    ".nginx": "text/plain",
 }
+
+# Text files named without an extension.
+TEXT_NAMES = {"LICENSE", "VERSION", "Makefile", "Dockerfile", "README", "COPYING", "NOTICE", "CHANGELOG", "AUTHORS"}
+
+SNIFF = 8192
+
+
+def looks_text(head: bytes) -> bool:
+    """TM-1: the content check behind the table. The first 8 KiB holds no NUL
+    and decodes as UTF-8 (a multibyte character cut at the end is allowed)."""
+    if b"\0" in head:
+        return False
+    try:
+        head.decode("utf-8")
+        return True
+    except UnicodeDecodeError as e:
+        return e.start >= len(head) - 3
 
 
 class TmError(Exception):
@@ -157,12 +191,35 @@ def is_text(mime: str) -> bool:
     return mime.startswith("text/") or mime in ("application/json", "image/svg+xml")
 
 
-def mime_for(name: str) -> str:
+def mime_for(name: str, head: bytes | None = None) -> str:
+    """By extension or a known name first; failing both, by content when the
+    caller has the head of the file; failing that, a guess or binary."""
+    base = Path(name).name
     ext = Path(name).suffix.lower()
     if ext in TEXT_TYPES:
         return TEXT_TYPES[ext]
+    if base in TEXT_NAMES or base.split(".")[0] in TEXT_NAMES:
+        return "text/plain"
     guessed, _ = mimetypes.guess_type(name)
-    return guessed or "application/octet-stream"
+    if guessed:
+        return guessed
+    if head is not None and looks_text(head):
+        return "text/plain"
+    return "application/octet-stream"
+
+
+def needs_sniff(name: str) -> bool:
+    """Whether the name alone leaves the type open."""
+    base = Path(name).name
+    return (Path(name).suffix.lower() not in TEXT_TYPES and base not in TEXT_NAMES
+            and base.split(".")[0] not in TEXT_NAMES and mimetypes.guess_type(name)[0] is None)
+
+
+def fs_mime(path: Path) -> str:
+    if not needs_sniff(path.name):
+        return mime_for(path.name)
+    with path.open("rb") as f:
+        return mime_for(path.name, f.read(SNIFF))
 
 
 def denied(rel_path: str) -> bool:
@@ -625,6 +682,7 @@ class Namespace:
         self.git = {k: v.resolve() for k, v in (git_repos if git_repos is not None else git_repos_beside(self.repo)).items()}
         self.origins = Origins(self.repo)
         self.graph = SiteGraph(self.repo)
+        self._built: dict[str, tuple] = {}
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -662,8 +720,15 @@ class Namespace:
         got = await self.read(uri)
         content = dict(got["contents"][0])
         if "blob" in content:
-            content["bytes"] = len(base64.b64decode(content.pop("blob")))
-            content["note"] = "binary; the bytes are available through resources/read as a blob"
+            raw = parse(uri).facets.get("as") == "raw"
+            content["bytes"] = len(base64.b64decode(content["blob"]))
+            if raw:
+                # TM-2: asked for the bytes, so they come back, base64, within
+                # the read cap (?range= beyond it).
+                content["encoding"] = "base64"
+            else:
+                content.pop("blob")
+                content["note"] = "binary; add ?as=raw for the bytes, base64 (with ?range=START-END past the cap)"
         content["links"] = got["_meta"][META_LINKS]
         return content
 
@@ -849,7 +914,7 @@ class Namespace:
                 out.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": p.name, "redacted": True, "isCollection": False})
             else:
                 st = p.stat()
-                out.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": p.name, "mimeType": mime_for(p.name), "size": st.st_size, "isCollection": False})
+                out.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": p.name, "mimeType": fs_mime(p), "size": st.st_size, "isCollection": False})
         return out
 
     def _fs_missing(self, rel: str) -> TmError:
@@ -880,14 +945,20 @@ class Namespace:
         clean = rel.rstrip("/")
         parent = clean.rpartition("/")[0]
         up = f"{ROOT}fs/{quote(parent)}/" if parent else f"{ROOT}fs/"
-        links = [link("up", up)]
+        # TM-10: the mount's own root goes up to the namespace's, never to itself.
+        links = [link("up", up if clean else ROOT)]
         if not is_dir:
             links.append(link("collection", up))
             links.append(link("describedby", f"{ROOT}fs/{quote(clean)}?as=stat"))
             page = self.page_for(clean)
             if page:
+                pages = [page]
+                # An English page with no Japanese shadow is the body /ja shows too.
+                if not page.startswith("/ja/") and not (self.repo / "docs" / "ja" / clean[len("docs/"):]).exists():
+                    pages.append("/ja" + page)
                 for site in self.sites:
-                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page this file becomes on {site}"))
+                    for pg in pages:
+                        links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the page this file becomes on {site}"))
             links.extend(self._origin_links(clean))
             links.extend(self._record_links(clean))
         return links
@@ -984,7 +1055,7 @@ class Namespace:
         if not abs_.is_file():
             raise self._fs_missing(rel)
         st = abs_.stat()
-        mime = mime_for(abs_.name)
+        mime = fs_mime(abs_)
         links = self._fs_links(rel, False)
         if as_ == "stat":
             stat = {
@@ -1071,8 +1142,10 @@ class Namespace:
         except TmError:
             raise self._git_missing(repo, at, tree) from None
         kids = []
-        for line in out.splitlines():
-            meta, _, name = line.partition("\t")
+        lines = [l.partition("\t") for l in out.splitlines()]
+        unknown = [meta.split()[2] for meta, _, name in lines if meta.split()[1] == "blob" and needs_sniff(name)]
+        heads = self._git_heads(repo, unknown)
+        for meta, _, name in lines:
             mode, kind, _sha, size = meta.split()
             rel = f"{tree}/{name}" if tree else name
             base = f"{ROOT}git/{repo}/{quote(rel)}"
@@ -1083,9 +1156,27 @@ class Namespace:
             elif denied(rel):
                 kids.append({"uri": base, "name": name, "redacted": True, "isCollection": False})
             else:
-                kids.append({"uri": base, "name": name, "mimeType": mime_for(name), "size": int(size), "isCollection": False})
+                kids.append({"uri": base, "name": name, "mimeType": mime_for(name, heads.get(_sha)), "size": int(size), "isCollection": False})
         kids.sort(key=lambda c: (not c["isCollection"], c["name"]))
         return kids
+
+    def _git_heads(self, repo: str, shas: list[str]) -> dict[str, bytes]:
+        """The first 8 KiB of each blob, in one git call (cat-file --batch)."""
+        if not shas:
+            return {}
+        done = subprocess.run(["git", "-C", str(self._git_dir(repo)), "cat-file", "--batch"], input="\n".join(shas).encode() + b"\n",
+                              capture_output=True, timeout=GIT_TIMEOUT_S, check=False)
+        out, i, heads = done.stdout, 0, {}
+        for sha in shas:
+            nl = out.index(b"\n", i)
+            parts = out[i:nl].split()
+            i = nl + 1
+            if len(parts) < 3:
+                continue
+            n = int(parts[2])
+            heads[sha] = out[i:i + min(n, SNIFF)]
+            i += n + 1
+        return heads
 
     def _git_missing(self, repo: str, at: str, path: str) -> TmError:
         clean = path.rstrip("/")
@@ -1118,6 +1209,14 @@ class Namespace:
         base = f"{ROOT}git/{repo}/{quote(clean)}"
         if not head and clean:
             links.append(link("latest-version", base, title="the same path at HEAD"))
+        if repo == "public" and head:
+            # TM-6: a lesson's directory and every file in it render as the
+            # lesson's pages, which name them back as their source.
+            key = self.lesson_of(clean)
+            if key:
+                for site in self.sites:
+                    for pg in self.lesson_pages(site, key):
+                        links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the lesson page this cartridge's source becomes on {site}"))
         if is_dir:
             return links
         sep = "&" if q else "?"
@@ -1127,23 +1226,26 @@ class Namespace:
         links.append(link("alternate", f"{base}{q}{sep}as=blame", title="the file with a commit per line"))
         if repo == "public" and clean.split("/")[0] in FS_ROOTS and (self.repo / clean).is_file():
             links.append(link("tm:working-copy", f"{ROOT}fs/{quote(clean)}", "exact", title="the checked-out file"))
-        if repo == "public":
-            for page in self.graph.pages_for(clean):
-                for site in self.sites:
-                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page this route renders on {site}"))
+        if repo == "public" and head:
+            # A route renders every page the site's build made from it (the
+            # build's prerender manifest), dynamic routes included.
+            for site in self.sites:
+                for page in self.pages_of_route(site, clean):
+                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"a page this route renders on {site}"))
             if clean.startswith("scripts/"):
                 for name in self.graph.data_names:
                     for script, conf in self.graph.writers_of(name):
                         if script == clean:
                             links.append(link("tm:generates", f"{ROOT}fs/data/{quote(name)}", conf, title="a record this script writes"))
-            links.extend(self._record_links(clean))
         pulled = self.origins.by_git.get((repo, clean))
-        if pulled:
+        if pulled and head:
+            # The origin of a pulled page generates its copy here and the pages
+            # made from that copy, which name it back as what generated them.
             links.append(link("tm:generates", f"{ROOT}fs/{quote(pulled)}", "exact", title=f"the copy the build pulls to {pulled}"))
             page = self.page_for(pulled)
             if page:
                 for site in self.sites:
-                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"the page it becomes on {site}"))
+                    links.append(link("tm:generates", f"{ROOT}http/{site}{page}", "exact", title=f"the page it becomes on {site}"))
         return links
 
     def _read_git(self, ref: Ref) -> dict:
@@ -1197,7 +1299,7 @@ class Namespace:
         if kind != "blob":
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"{path} is a {kind} (a submodule), not a file", mimeType="application/x-git-" + kind)
         size = int(run_git(self._git_dir(repo), "cat-file", "-s", f"{at}:{path}").strip())
-        mime = mime_for(path)
+        mime = mime_for(path) if not needs_sniff(path) else mime_for(path, run_git(self._git_dir(repo), "cat-file", "blob", f"{at}:{path}", binary=True)[:SNIFF])
         links = self._git_links(repo, at, path, False, head)
         if as_ == "stat":
             stat = {"uri": base, "path": path, "at": at, "commit": commit, "type": kind, "size": size, "mimeType": mime, "text": is_text(mime)}
@@ -1228,12 +1330,86 @@ class Namespace:
 
     # -- http --------------------------------------------------------------
 
+    # -- the sites' builds ----------------------------------------------------
+
+    def build_dir(self, site: str) -> Path | None:
+        """Where the build that serves a site lives: this checkout for live,
+        the beta worktree beside it for beta."""
+        d = (self.repo / "web" / ".next") if site == self.sites[0] else (self.repo.parent / "public-beta" / "web" / ".next")
+        return d if (d / "prerender-manifest.json").is_file() else None
+
+    def built(self, site: str) -> dict[str, str] | None:
+        """TM-3: every page the site's build prerendered, from its prerender
+        manifest: the URL path a visitor uses, and the route file that made
+        it. None where there is no build to read."""
+        d = self.build_dir(site)
+        if d is None:
+            return None
+        key = (site, (d / "prerender-manifest.json").stat().st_mtime)
+        if self._built.get(site, (None,))[0] != key:
+            routes = json.loads((d / "prerender-manifest.json").read_text())["routes"]
+            pages: dict[str, str] = {}
+            for p, r in routes.items():
+                src = r.get("srcRoute") or p
+                if not src.startswith("/[lang]") or r.get("routeType", "page") != "page":
+                    continue
+                m = re.fullmatch(r"/(en|ja)(/.*)?", p)
+                if not m:
+                    continue
+                url = (m[2] or "/") if m[1] == "en" else "/ja" + (m[2] or "")
+                pages[url] = f"web/app{src}/page.tsx".replace("/page.tsx/page.tsx", "/page.tsx")
+            self._built[site] = (key, pages)
+        return self._built[site][1]
+
+    def page_title(self, site: str, path: str) -> str | None:
+        """A page's title, from the HTML its build wrote."""
+        d = self.build_dir(site)
+        if d is None:
+            return None
+        rel = ("en" + (path if path != "/" else "")) if not path.startswith("/ja") else ("ja" + path[3:])
+        f = d / "server" / "app" / f"{rel or 'en'}.html"
+        if not f.is_file():
+            return None
+        m = re.search(r"<title>([^<]*)</title>", f.read_text(errors="replace")[:4000])
+        return html.unescape(m[1]).rsplit(" · ", 1)[0] if m else None
+
+    def pages_of_route(self, site: str, file_rel: str) -> list[str]:
+        b = self.built(site)
+        if b is None:
+            return self.graph.pages_for(file_rel)
+        return sorted(p for p, f in b.items() if f == file_rel)
+
+    def lesson_of(self, rel: str) -> str | None:
+        """The lesson a path in lessons/ belongs to (its directory or a file in it)."""
+        m = re.fullmatch(r"lessons/([a-z0-9-]+)(?:/[^/]+)?", rel)
+        return m[1] if m and (self.repo / "lessons" / m[1] / "lesson.json").is_file() else None
+
+    def lesson_pages(self, site: str, key: str) -> list[str]:
+        pages = [f"/autopsy/lessons/{key}", f"/ja/autopsy/lessons/{key}"]
+        b = self.built(site)
+        return [p for p in pages if b is None or p in b]
+
+    def lesson_files(self, key: str) -> list[str]:
+        """The tracked files of a lesson's directory, at HEAD."""
+        if "public" not in self.git:
+            return []
+        try:
+            out = run_git(self.git["public"], "ls-tree", "--name-only", "HEAD", f"lessons/{key}/")
+        except TmError:
+            return []
+        return [l for l in out.splitlines() if l]
+
     def _site_pages(self, site: str) -> list[str]:
         """Every page the site has, as far as this box can know without
         asking it: the notebook's pages from the docs tree, by the loader's
         rule, and the rest from the last crawl recorded in data/site-map.json.
         The crawl is a measurement with a date on it, which is why it is a
-        record and not a list typed here."""
+        record and not a list typed here. Where the site's build is on this
+        box, its prerender manifest is the list instead: every page, the
+        dynamic ones included (TM-3)."""
+        b = self.built(site)
+        if b is not None:
+            return sorted(b)
         pages: set[str] = set()
         for p in (self.repo / "docs").rglob("*"):
             rel = p.relative_to(self.repo).as_posix()
@@ -1273,7 +1449,11 @@ class Namespace:
         out = []
         for seg, e in sorted(kids.items()):
             if e["page"]:
-                out.append({"uri": f"{ROOT}http/{site}{quote(prefix + seg)}", "name": seg, "mimeType": "text/html", "isCollection": False})
+                child = {"uri": f"{ROOT}http/{site}{quote(prefix + seg)}", "name": seg, "mimeType": "text/html", "isCollection": False}
+                title = self.page_title(site, prefix + seg)
+                if title:
+                    child["title"] = title
+                out.append(child)
             if e["below"]:
                 out.append({"uri": f"{ROOT}http/{site}{quote(prefix + seg)}/", "name": seg + "/", "mimeType": "application/json", "isCollection": True})
         return out
@@ -1301,6 +1481,12 @@ class Namespace:
                                   title="the route that renders this page" + (" (one of several it renders)" if dynamic else "")))
                 for name in self.graph.page_data(file):
                     links.append(link("tm:data", f"{ROOT}fs/data/{quote(name)}", "inferred", title="a record the page's rendering reaches"))
+            lm = re.fullmatch(r"(?:/ja)?/autopsy/lessons/([a-z0-9-]+)", clean)
+            if lm and (self.repo / "lessons" / lm[1] / "lesson.json").is_file() and "public" in self.git:
+                # TM-6: the cartridge's own source, its directory and each file in it.
+                links.append(link("tm:source", f"{ROOT}git/public/lessons/{lm[1]}/", "exact", title="the cartridge's source, in the repository"))
+                for f in self.lesson_files(lm[1]):
+                    links.append(link("tm:source", f"{ROOT}git/public/{quote(f)}", "exact", title=f"the cartridge's {f.rsplit('/', 1)[1]}"))
             m = re.fullmatch(r"(/ja)?/docs(?:/(.*))?", clean)
             if m:
                 src = self.source_for("ja" if m[1] else "en", m[2] or "")
@@ -1336,7 +1522,10 @@ class Namespace:
             # the collection is what a cold client wants first.
             kids = self._http_children(site, "/")
             body = {"uri": ref.uri, "children": kids, "front_page": f"{ref.uri}?as=text"}
-            return self._result(ref.uri, "application/json", json.dumps(body, indent=1), self._http_links(site, "/", True))
+            # The listing and the front page share this address, so it carries
+            # the front page's own links too: its source and its data.
+            page = [ln for ln in self._http_links(site, "/", False) if ln["rel"].startswith("tm:")]
+            return self._result(ref.uri, "application/json", json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
         status, ctype, data = await self.fetch(site, path)
         base = f"{ROOT}http/{site}{quote(path)}"
         links = self._http_links(site, path, False)
