@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { labels, menuGroups, sections, type MenuGroup, type Section } from "@/lib/nav";
 import { PartsStrip } from "./PartsStrip";
-import { localize, t, type Lang } from "@/lib/i18n";
+import { hintIn, localize, t, type Lang } from "@/lib/i18n";
 import { Crumbs } from "./Crumbs";
 import { JsonLd, breadcrumbs } from "./JsonLd";
 import { abs, BETA, ORIGIN } from "@/lib/seo";
@@ -148,7 +148,7 @@ function localizedGroups(lang: Lang): MenuGroup[] {
     items: g.items.map((it) => ({
       ...it,
       label: t(lang, it.label),
-      hint: it.hint ? t(lang, it.hint) : it.hint,
+      hint: it.hint ? hintIn(lang, it.hint) : it.hint,
       href: it.prerendered === false ? it.href : localize(lang, it.href),
     })),
   }));

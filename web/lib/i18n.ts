@@ -25,6 +25,11 @@ function ja(): Record<string, string> {
 }
 
 /** The text in the given language: the overlay's answer, or the English. */
+/** The whole dictionary, for a lookup that has to search it (a menu hint). */
+export function jaTable(): Readonly<Record<string, string>> {
+  return ja();
+}
+
 export function t(lang: Lang, text: string): string {
   if (lang === "en") return text;
   return ja()[text] ?? text;
@@ -71,4 +76,22 @@ export function bodyLang(lang: Lang, copy: string[]): Lang {
   const latin = (text.match(LATIN) ?? []).length;
   if (kana + latin === 0) return lang;
   return kana / (kana + latin) >= 0.2 ? "ja" : "en";
+}
+
+/**
+ * A hint is the first sentence of a page's description with its full stop
+ * taken off (lib/nav.ts), and the dictionary is keyed by the whole
+ * description, so a hint is looked up as the description it begins and cut
+ * the same way in Japanese: its first sentence, without the 。. Without
+ * this every hint drawn from a description stayed English on /ja, beside a
+ * Japanese label.
+ */
+export function hintIn(lang: Lang, hint: string): string {
+  const direct = t(lang, hint);
+  if (lang === "en" || direct !== hint) return direct;
+  const whole = Object.keys(ja()).find((k) => k.startsWith(hint) && /^[.!?](\s|$)/.test(k.slice(hint.length)));
+  if (!whole) return hint;
+  const line = t(lang, whole);
+  const first = line.match(/^[\s\S]*?[。！？]/);
+  return (first ? first[0] : line).trim().replace(/[。.]$/, "");
 }
