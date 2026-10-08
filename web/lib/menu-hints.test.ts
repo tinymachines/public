@@ -14,7 +14,7 @@ import { hintIn } from "./i18n";
 test("every menu hint has a Japanese line", () => {
   const hints = menuGroups().flatMap((g) => g.items.map((i) => i.hint)).filter((h): h is string => !!h);
   expect(hints.length, "the menu has hints; the test would pass on nothing").toBeGreaterThan(3);
-  const english = hints.filter((h) => !/[぀-ヿ㐀-鿿]/.test(hintIn("ja", h)));
+  const english = hints.filter((h) => !/[\u3040-\u30FF\u3400-\u9FFF]/.test(hintIn("ja", h)));
   expect(english).toEqual([]);
   for (const h of hints) expect(hintIn("en", h)).toBe(h);
 });
