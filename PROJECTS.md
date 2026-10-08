@@ -5125,3 +5125,27 @@ bradleyio session also suspects duplicated blocks in the extractor,
 unconfirmed); the pile page's two MAC addresses and office-machine
 line; nes-bench's `tools/pulled-docs.json` row for `pile.md`; the sprite
 sign-in test, the Othello redump, the reader firmware.
+
+## Checkpoint, 2026-10-07 (night): the Computer Tree on the roof
+
+Live and beta serve `fdfb35f` (deployed 2026-10-07 night on the owner's
+word, every stage passing, main pushed). Since the evening checkpoint:
+
+| commit | what |
+|---|---|
+| `fdfb35f` | the Computer Tree at `/computer-tree` and `/ja/computer-tree`: bradley.io's tree of 542 machines, ENIAC to 2025, asked for by the owner through the bradleyio session. One copy: `scripts/sync-computer-tree.sh` copies bradley.io's dataset into `web/data/computer-tree` (not `web/public`) and its layout into `web/lib/computer-tree.ts`, and deploy stage 2i refuses either drifting. The component is bradley.io's, ported, with its words in both languages; the dataset is served byte for byte at `/computer-tree/<file>`. The English page names bradley.io's as canonical and links across; the Japanese page is its own. In no menu and not in the sitemap yet. `e2e/computer-tree.spec.ts` passes against live, console check included |
+
+**Still in progress, not on main: the platforms lesson**, local branch
+`wip/platforms` (`769e54f`). The private search for 1-2's lifts got
+past the dead-end ledge and died to the piranha plants; it now has
+waits as well as jumps among its moves and is running again.
+
+**Where to pick up.** The owner's calls: where `/computer-tree` sits on
+this site (menu, a door, the sitemap), and whether bradley.io's page
+links back. The platforms lesson, when the search reaches a lift. The
+owner's client test against `https://tinymachines.ai/api/mcp`. The
+rest as the evening checkpoint lists it: the prefetch 404s (noted, not
+chased), subscriptions, the camera's dead zone and a music engine,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
