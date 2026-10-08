@@ -104,8 +104,9 @@ tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
 A URI ending in `/` is a collection, and reading one returns its children
 with a cursor. Everything after the mount is the backend's own path. A
 representation is a query parameter, never a path suffix: `?as=stat` is the
-metadata of the same thing, `?as=text` a page's readable text, `?as=rendered`
-the HTML with the headers a visitor gets.
+metadata of the same thing, `?as=text` a page's readable text (which is also
+what a page gives with no parameter at all), `?as=rendered` the HTML with the
+headers a visitor gets.
 
 The git mount offers the site's own repository and the ones beside it that
 the notebook pulls pages from, all public on GitHub under the same names.

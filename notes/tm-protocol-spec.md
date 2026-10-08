@@ -71,7 +71,7 @@ tm://{host}/http/{site}{/path*}{?as}
 
 Completions are wired per argument: `repo` from the repos the server can see, `path` from a directory listing under the prefix typed so far, `at` from branches and tags, `site` from the vhosts the web server serves.
 
-Defined `as` values: `raw` (default; bytes with the backend's mimeType), `rendered` (http only; the HTML a visitor gets), `text` (http only; readable extraction of the rendered page), `log`, `blame`, `tree` (git only), `stat` (fs/git; metadata as JSON, no content).
+Defined `as` values: `raw` (the default for fs and git; bytes with the backend's mimeType), `rendered` (http only; the HTML a visitor gets), `text` (http only, and http's default for a page; readable extraction of the rendered page), `log`, `blame`, `tree` (git only), `stat` (fs/git; metadata as JSON, no content).
 
 Resolution failures return a structured error, never a bare 404: `not-found` carries up to five nearest sibling URIs so a wrong guess teaches the client instead of dead-ending; `too-large` carries the byte size and a `?range=` template; `binary` carries the mimeType and a `?as=stat` link.
 

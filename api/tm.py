@@ -825,8 +825,8 @@ class Namespace:
                 "name": "http",
                 "title": "A page of a site this box serves",
                 "description": (
-                    "What a visitor gets, fetched through the front door on loopback. as=rendered (the default) is the "
-                    "HTML with the headers nginx adds; as=text is its readable text; as=stat is the status and size "
+                    "What a visitor gets, fetched through the front door on loopback. as=text (the default for a page) is "
+                    "its readable text; as=rendered is the HTML with the headers nginx adds; as=stat is the status and size "
                     "without the body. A notebook page carries a tm:source link to the markdown behind it."
                 ),
             },
@@ -1584,7 +1584,6 @@ class Namespace:
         if not is_dir:
             links.append(link("collection", up))
             links.append(link("describedby", f"{base}?as=stat"))
-            links.append(link("alternate", f"{base}?as=text", title="readable text"))
             links.append(link("alternate", f"{base}?as=rendered", title="the HTML a visitor gets"))
             route = self.graph.route_for(clean)
             if route and "public" in self.git:
@@ -1617,7 +1616,11 @@ class Namespace:
                 {"uri": f"{ROOT}http/{s}/", "name": s, "mimeType": "application/json", "isCollection": True} for s in self.sites
             ]}
             return self._result(f"{ROOT}http/", "application/json", json.dumps(body, indent=1), [link("up", ROOT)])
-        as_ = ref.facets.get("as", "rendered")
+        # A page's text is what a reader wants first, so it is the default
+        # (TM-4); the HTML a visitor gets, nav and flight payload and all, is
+        # one facet away.
+        asked = ref.facets.get("as")
+        as_ = asked or "text"
         if as_ not in AS_HTTP:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; http offers {', '.join(AS_HTTP)}")
         site, path = ref.site, ref.path
@@ -1653,10 +1656,11 @@ class Namespace:
         if 300 <= status < 400:
             raise TmError(RESOURCE_NOT_FOUND, "redirect", f"{site}{path} redirects; the visitor would be sent on", status=status)
         mime = ctype.split(";")[0].strip() or "application/octet-stream"
-        if as_ == "text":
-            if mime != "text/html":
-                raise TmError(RESOURCE_NOT_FOUND, "binary", f"{site}{path} is {mime}, not a page", mimeType=mime, stat=f"{base}?as=stat")
-            return self._result(f"{base}?as=text", "text/plain", page_text(data.decode("utf-8", errors="replace")), links)
+        if as_ == "text" and mime == "text/html":
+            return self._result(f"{base}?as=text" if asked else base, "text/plain", page_text(data.decode("utf-8", errors="replace")), links)
+        if as_ == "text" and asked:
+            raise TmError(RESOURCE_NOT_FOUND, "binary", f"{site}{path} is {mime}, not a page", mimeType=mime, stat=f"{base}?as=stat")
+        # Not a page (robots.txt, a picture): with no facet it reads as itself.
         if len(data) > READ_CAP:
             raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{site}{path} is {len(data)} bytes rendered; ?as=text is smaller",
                           size=len(data), stat=f"{base}?as=stat", text=f"{base}?as=text")

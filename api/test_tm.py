@@ -319,11 +319,11 @@ def test_completion_is_a_listing_filtered_by_what_was_typed(ns):
 
 
 def test_a_page_reads_as_what_the_visitor_gets_and_links_to_its_source(ns):
-    c, links = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile")
+    c, links = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=rendered")
     assert c["mimeType"] == "text/html" and "<nav>" in c["text"]
     r = rels(links)
     assert r["tm:source"] == [f"{ROOT}fs/docs/nes/pile.md"]
-    assert r["alternate"] == [f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text", f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=rendered"]
+    assert r["alternate"] == [f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=rendered"], "the page itself is its text; the HTML is the alternate"
     assert r["up"] == r["collection"] == [f"{ROOT}http/tinymachines.ai/docs/nes/"]
 
 
@@ -367,7 +367,7 @@ def test_http_refusals_are_structured(ns):
     assert e.reason == "not-found" and e.data["nearest"][0] == f"{ROOT}http/tinymachines.ai/docs/nes/pile"
     assert refusal(ns, f"{ROOT}http/tinymachines.ai/old").reason == "redirect"
     assert refusal(ns, f"{ROOT}http/tinymachines.ai/robots.txt?as=text").reason == "binary"
-    big = refusal(ns, f"{ROOT}http/tinymachines.ai/big")
+    big = refusal(ns, f"{ROOT}http/tinymachines.ai/big?as=rendered")
     assert big.reason == "too-large" and big.data["text"].endswith("/big?as=text")
     assert refusal(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=blame").reason == "bad-facet"
     c, _ = read(ns, f"{ROOT}http/tinymachines.ai/old?as=stat")
@@ -882,3 +882,14 @@ def test_tm14_the_beta_bundle_is_read_against_the_beta_tree(built):
     (bx / "server" / "chunks" / "ssr").mkdir(parents=True)
     (bx / "server" / "chunks" / "ssr" / "a.js.map").write_text(json.dumps({"version": 3, "sources": ["../../../../../web/lib/autopsy.ts"]}))
     assert built.page_reads("beta.tinymachines.ai", "web/app/[lang]/autopsy/games/[game]/page.tsx") == {"autopsy.json": "exact"}
+
+
+def test_tm4_a_page_with_no_facet_reads_as_its_text(ns):
+    plain, _ = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile")
+    text, _ = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text")
+    assert plain["text"] == text["text"] == "What is in the pile\nGear on hand.\none\ntwo\n"
+    assert plain["mimeType"] == "text/plain"
+    assert plain["uri"] == f"{ROOT}http/tinymachines.ai/docs/nes/pile", "the identity answers for itself"
+    # Something that is not a page reads as itself, not as a refusal.
+    robots, _ = read(ns, f"{ROOT}http/tinymachines.ai/robots.txt")
+    assert robots["text"] == "User-agent: *\n" and robots["mimeType"] == "text/plain"
