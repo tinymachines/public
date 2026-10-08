@@ -793,3 +793,16 @@ def test_tm10_no_mount_root_goes_up_to_itself(ns):
         _, links = read(ns, uri)
         assert rels(links)["up"] != [uri], uri
     assert rels(read(ns, f"{ROOT}fs/")[1])["up"] == [ROOT]
+
+
+def test_a_file_claims_no_page_a_built_site_does_not_serve(built):
+    # A notebook page added since the site was built: the file names the page
+    # it becomes only where no build says otherwise, so the build that has not
+    # caught up (the beta, between a deploy and its follow) is not promised it.
+    (built.repo / "docs" / "nes").mkdir(parents=True, exist_ok=True)
+    (built.repo / "docs" / "nes" / "scope.md").write_text("# A scope\n")
+    _, links = read(built, f"{ROOT}fs/docs/nes/scope.md?as=stat")
+    pages = rels(links).get("tm:renders-as", [])
+    assert pages, "the file names no page at all"
+    assert not [p for p in pages if p.startswith(f"{ROOT}http/tinymachines.ai/")], pages
+    assert built.serves("tinymachines.ai", "/autopsy") and not built.serves("tinymachines.ai", "/docs/nes/scope")

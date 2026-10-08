@@ -345,8 +345,10 @@ text (TM-1); `resolve` with `?as=raw` returns a binary file's bytes, base64
 the build made with its title, so the game and lesson pages can be listed
 (TM-3); a lesson page links to its cartridge's source files and each file
 links back (TM-6); a mount's root no longer goes up to itself (TM-10); and
-`scripts/check-tm-links.py` crawls the live namespace at every deploy,
-stage 6e (TM-15). Its inverse check leaves `tm:data` / `tm:read-by` out
+`scripts/check-tm-links.py` crawls the live namespace at the end of every
+deploy, after the beta follows (TM-15). A file names the page it becomes
+only on a site whose build has that page, so a beta that has not caught up
+is not promised it. Its inverse check leaves `tm:data` / `tm:read-by` out
 until TM-8 and TM-14 make them exact.
 
 What is not here yet: subscriptions, and anything that writes.

@@ -957,7 +957,7 @@ class Namespace:
                 if not page.startswith("/ja/") and not (self.repo / "docs" / "ja" / clean[len("docs/"):]).exists():
                     pages.append("/ja" + page)
                 for site in self.sites:
-                    for pg in pages:
+                    for pg in (q for q in pages if self.serves(site, q)):
                         links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the page this file becomes on {site}"))
             links.extend(self._origin_links(clean))
             links.extend(self._record_links(clean))
@@ -1244,7 +1244,7 @@ class Namespace:
             links.append(link("tm:generates", f"{ROOT}fs/{quote(pulled)}", "exact", title=f"the copy the build pulls to {pulled}"))
             page = self.page_for(pulled)
             if page:
-                for site in self.sites:
+                for site in (x for x in self.sites if self.serves(x, page)):
                     links.append(link("tm:generates", f"{ROOT}http/{site}{page}", "exact", title=f"the page it becomes on {site}"))
         return links
 
@@ -1372,6 +1372,13 @@ class Namespace:
             return None
         m = re.search(r"<title>([^<]*)</title>", f.read_text(errors="replace")[:4000])
         return html.unescape(m[1]).rsplit(" · ", 1)[0] if m else None
+
+    def serves(self, site: str, page: str) -> bool:
+        """Whether a site serves a page, as far as its build says: where the
+        build is on this box its prerender manifest decides, so a page added
+        since (the beta between a deploy and its follow) is not claimed."""
+        b = self.built(site)
+        return b is None or page in b
 
     def pages_of_route(self, site: str, file_rel: str) -> list[str]:
         b = self.built(site)
