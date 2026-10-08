@@ -5149,3 +5149,28 @@ chased), subscriptions, the camera's dead zone and a music engine,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-07 (late): the tree in the menu, and the menu in Japanese
+
+Live and beta serve `aa9d059` (deployed 2026-10-07 late on the owner's
+word, main pushed). Since the night checkpoint:
+
+| commit | what |
+|---|---|
+| `a2ad203` | the Computer Tree in the menu: a roof surface in `data/projects.json` between the style guide and the API, in both languages; check-build counts eight nav entries, every one a route. Still out of the sitemap, since its English page names bradley.io's as canonical. Deployed |
+| `2014978` | the menu's hints read Japanese on `/ja`: a hint is a description's first sentence without its full stop and the dictionary is keyed by the whole description, so every hint drawn from one stayed English beside a Japanese label. `hintIn` (lib/i18n.ts) finds the description a hint begins and cuts the Japanese the same way; `lib/menu-hints.test.ts` fails on all nine hints without it |
+| `00c538a`, `aa9d059` | the test's Japanese range as escapes. The first deploy of `2014978` stopped at stage 2d before restarting anything: check-og-font found the range's endpoints written as characters the card face cannot draw. They had been written as escapes in the command, which decoded them before it ran, twice; built from character codes the third time. The retry deployed |
+
+**Still in progress, not on main: the platforms lesson** on the local
+branch `wip/platforms`. The private search for 1-2's lifts died again at
+the piranha plants, because its fatal jump was an earlier choice later
+stages could not undo; it now backtracks and has longer waits, and is
+running.
+
+**Where to pick up.** The platforms lesson when the search reaches a
+lift. The owner's client test against `https://tinymachines.ai/api/mcp`.
+Whether bradley.io's tree page links back. Then as before: the prefetch
+404s (noted, not chased), subscriptions, the camera's dead zone and a
+music engine, `/docs/hotbits` once the tube feeds the pool, the pile
+page's details, nes-bench's row for `pile.md`, the sprite sign-in test,
+the Othello redump, the reader firmware.
