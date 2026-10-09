@@ -5341,3 +5341,27 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-09 (evening): the build chain walks to where it leaves the box
+
+Live and beta serve `e7209cf` (deployed 2026-10-09 on the owner's word,
+clean through every stage, main pushed; the `beta` branch is pushed to
+GitHub too, which had stood 331 commits behind). Since the later
+checkpoint:
+
+| commit | what |
+|---|---|
+| `e7209cf` | TM-7. A record's writer is exact when the record's own note names it, under either key a record keeps its note in: ten records now name theirs exactly. Past the writer, `api/lineage.json` names what a script reads that it did not make and where the chain leaves the box, and a fourth mount, `offbox`, serves each as a node that says what it is and why it is not exposed. `data/autopsy.json` walks to `scripts/board-autopsy.py`, to the per-game models off the box, to `wasm/listing/tools/autopsy.py`, to the cartridges off the box, every link exact. A test holds the manifest's paths to be tracked; the crawl holds the new `tm:input` / `tm:input-of` pair. The setup guide in both languages says four mounts. Deployed |
+
+**Nothing is in progress off main.**
+
+**Where to pick up.** TM-9 (`.gitignore` and `.gitmodules` denied),
+TM-11 (an unsupported facet on a collection ignored silently), TM-12
+(orientation at connect), TM-13 (the spec behind the server: a full pass,
+now with the offbox mount and the input links to add), TM-16 (patterns,
+games, routines and lessons as entities). The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
