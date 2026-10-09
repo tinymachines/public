@@ -1,0 +1,16 @@
+{
+ "_": "The build chain past what each record's own note says (TM-7): what a script reads that it did not make, and the places the chain leaves this box. Read by api/tm.py into the offbox mount; every path here is checked to be tracked at HEAD by test_tm7_the_lineage_manifest_names_what_is_there.",
+ "offbox": {
+  "autopsy-models": {
+   "what": "Each game's model.json and summary.json, written beside its listing by wasm/listing/tools/autopsy.py and read from a shelf directory by scripts/board-autopsy.py.",
+   "why": "They are made from cartridge dumps and kept with them; data/autopsy.json keeps only their shape: addresses, labels, counts and pattern names.",
+   "generated_by": ["wasm/listing/tools/autopsy.py"],
+   "input_of": ["scripts/board-autopsy.py"]
+  },
+  "cartridges": {
+   "what": "The cartridge dumps the listings and models are made from.",
+   "why": "Commercial ROMs, kept off every repository (NOTICE.md).",
+   "input_of": ["wasm/listing/tools/autopsy.py"]
+  }
+ }
+}

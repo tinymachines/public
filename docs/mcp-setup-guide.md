@@ -86,7 +86,7 @@ Four tools:
 | `licensing` | what may be published and under what terms, which is not one licence |
 | `resolve` | one `tm://` URI, read, with its links in the body; the tool-shaped door into the namespace below |
 
-And the namespace, as MCP resources. The grammar is one host and three
+And the namespace, as MCP resources. The grammar is one host and four
 mounts:
 
 ```
@@ -99,6 +99,8 @@ tm://tinymachines/git/public/docs/words.md?at=v1.0&as=blame
                                                    a file at a tag, a commit per line
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                                    the page that file becomes, as text
+tm://tinymachines/offbox/autopsy-models            where a build chain leaves this
+                                                   box: named, never exposed
 ```
 
 A URI ending in `/` is a collection, and reading one returns its children

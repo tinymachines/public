@@ -39,7 +39,7 @@ import tm  # noqa: E402
 
 PAIRS = {"tm:source": "tm:renders-as", "tm:renders-as": "tm:source", "tm:generates": "tm:generated-by",
          "tm:generated-by": "tm:generates", "tm:working-copy": "tm:repository", "tm:repository": "tm:working-copy",
-         "tm:data": "tm:read-by", "tm:read-by": "tm:data"}
+         "tm:data": "tm:read-by", "tm:read-by": "tm:data", "tm:input": "tm:input-of", "tm:input-of": "tm:input"}
 
 
 def identity(uri: str) -> str:

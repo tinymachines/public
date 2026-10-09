@@ -289,6 +289,7 @@ tm://tinymachines/git/nes-bench/docs/pile.md?at=v1.0
                                              ?as=log, ?as=blame, ?as=tree, ?as=stat
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                              a page, as its readable text
+tm://tinymachines/offbox/autopsy-models      where a build chain leaves the box
 ```
 
 Three verbs, `resources/list`, `resources/read` and `completion/complete`,
@@ -366,6 +367,16 @@ carries the `tm:data` back. A dynamic route whose pages share only the root
 page on either site in either language is answered by its route's one link,
 and the crawl holds the pair that way: `data/autopsy.json` went from 92
 `tm:read-by` links to 5.
+
+A record's writer is exact when the record's own note names it, under
+either key a record keeps its note in (TM-7). Past the writer,
+`api/lineage.json` names what a script reads that it did not make and the
+places the chain leaves this box; the `offbox` mount serves each as a node
+that says what it is and why it is not exposed, with `tm:generated-by` to
+what makes it and `tm:input-of` to what reads it (`tm:input` is the way
+there). `data/autopsy.json` walks to `scripts/board-autopsy.py`, to the
+per-game models off the box, to `wasm/listing/tools/autopsy.py`, to the
+cartridges off the box, every link exact.
 
 What is not here yet: subscriptions, and anything that writes.
 

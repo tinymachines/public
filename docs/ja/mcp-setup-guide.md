@@ -63,7 +63,7 @@ initialize の答えには、モデルのために書かれた短い案内であ
 | `licensing` | 何をどの条件で公開してよいか。ひとつのライセンスではない |
 | `resolve` | `tm://` の URI をひとつ読み、リンクを本文に載せて返す。下の名前空間へのツール型の入口 |
 
-そして名前空間が、MCP のリソースとして。文法はホストひとつとマウント三つ:
+そして名前空間が、MCP のリソースとして。文法はホストひとつとマウント四つ:
 
 ```
 tm://tinymachines/                                 マウント一覧
@@ -75,6 +75,8 @@ tm://tinymachines/git/public/docs/words.md?at=v1.0&as=blame
                                                    タグ時点のファイル、行ごとにコミット
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                                    そのファイルがなるページ、テキストとして
+tm://tinymachines/offbox/autopsy-models            ビルドの連なりがこの箱を出る所。
+                                                   名前はあるが、中身は出さない
 ```
 
 `/` で終わる URI はコレクションで、読むとカーソルつきで子が返る。マウントより後ろはバックエンド自身のパスだ。表現はクエリパラメータであって、パスの接尾辞ではない。`?as=stat` は同じもののメタデータ、`?as=text` はページの読める本文（パラメータなしで読んでもこれになる）、`?as=rendered` は訪問者が受け取るヘッダつきの HTML。

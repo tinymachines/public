@@ -146,7 +146,7 @@ def test_a_link_cannot_get_its_confidence_wrong():
 
 def test_the_root_lists_the_mounts_and_a_collection_lists_its_children(ns):
     root, links = read(ns, ROOT)
-    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/"}
+    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/"}
     top, _ = read(ns, f"{ROOT}fs/")
     assert [c["name"] for c in json.loads(top["text"])["children"]] == ["docs/", "data/", "notes/"]
     nes, links = read(ns, f"{ROOT}fs/docs/nes/")
@@ -380,9 +380,9 @@ def test_http_refusals_are_structured(ns):
 
 
 def test_resources_list_is_the_map_not_the_inventory(ns, monkeypatch):
-    monkeypatch.setattr(tm, "RESOURCES_PAGE", 4)
+    monkeypatch.setattr(tm, "RESOURCES_PAGE", 5)
     first = ns.list_resources(None)
-    assert [r["name"] for r in first["resources"]] == ["root", "fs", "git", "http"]
+    assert [r["name"] for r in first["resources"]] == ["root", "fs", "git", "http", "offbox"]
     rest = ns.list_resources(first["nextCursor"])
     names = [r["name"] for r in rest["resources"]]
     assert names[0] == "docs/" and "docs/nes/" in names and "docs/ja/nes/" in names
@@ -401,7 +401,7 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
         run(handler({"jsonrpc": "2.0", "id": 3, "method": "resources/read", "params": {"uri": f"{ROOT}fs/docs/nes/pil.md"}}))
     assert e.value.code == tm.RESOURCE_NOT_FOUND and e.value.data["reason"] == "not-found"
     tmpl = run(handler({"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list"}))["result"]
-    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "git", "http"]
+    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "git", "http", "offbox"]
     bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
     plain = run(bare({"jsonrpc": "2.0", "id": 5, "method": "initialize", "params": {}}))["result"]
     assert "resources" not in plain["capabilities"]
@@ -956,3 +956,50 @@ def test_tm18_a_dynamic_route_at_the_root_names_its_pages(built):
     assert f"{ROOT}http/tinymachines.ai/read" in by and f"{ROOT}http/tinymachines.ai/watch" in by, by
     assert f"{ROOT}http/tinymachines.ai/" not in by, "not the root, which is the front page"
     assert built.reader_uri(f"{ROOT}http/beta.tinymachines.ai/ja/watch") == f"{ROOT}http/tinymachines.ai/watch"
+
+
+def test_tm7_the_build_chain_is_walkable_and_says_where_it_leaves_the_box(gns):
+    repo = gns.repo
+    (repo / "data" / "autopsy.json").write_text('{"note": "Written only by scripts/board-autopsy.py from the models tools/autopsy.py wrote."}\n')
+    (repo / "scripts").mkdir(exist_ok=True)
+    (repo / "scripts" / "board-autopsy.py").write_text('OUT = "data/autopsy.json"\n')
+    (repo / "tools").mkdir(exist_ok=True)
+    (repo / "tools" / "autopsy.py").write_text("# writes model.json\n")
+    (repo / "api").mkdir(exist_ok=True)
+    (repo / "api" / "lineage.json").write_text(json.dumps({"offbox": {
+        "models": {"what": "each game's model", "why": "kept with the cartridges", "generated_by": ["tools/autopsy.py"], "input_of": ["scripts/board-autopsy.py"]},
+        "carts": {"what": "the dumps", "why": "commercial ROMs", "input_of": ["tools/autopsy.py"]},
+    }}))
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "a chain")
+    n = Namespace(repo, fetch=canned_fetch, git_repos=dict(gns.git))
+    # The record's own note names its writer, so the link is exact, under
+    # either key a record keeps its note in.
+    _, links = read(n, f"{ROOT}fs/data/autopsy.json?as=stat")
+    gen = [ln for ln in links if ln["rel"] == "tm:generated-by"]
+    assert [(ln["href"], ln["confidence"]) for ln in gen] == [(f"{ROOT}git/public/scripts/board-autopsy.py", "exact")]
+    # The writer reads something no repository holds; the chain says so.
+    _, links = read(n, f"{ROOT}git/public/scripts/board-autopsy.py")
+    assert rels(links)["tm:input"] == [f"{ROOT}offbox/models"]
+    c, links = read(n, f"{ROOT}offbox/models")
+    body = json.loads(c["text"])
+    assert body["exposed"] is False and body["reason"] == "not-exposed" and body["what"] and body["why"]
+    assert rels(links)["tm:generated-by"] == [f"{ROOT}git/public/tools/autopsy.py"]
+    assert rels(links)["tm:input-of"] == [f"{ROOT}git/public/scripts/board-autopsy.py"]
+    assert all(ln["confidence"] == "exact" for ln in links if ln["rel"].startswith("tm:"))
+    _, links = read(n, f"{ROOT}git/public/tools/autopsy.py")
+    assert rels(links)["tm:generates"] == [f"{ROOT}offbox/models"] and rels(links)["tm:input"] == [f"{ROOT}offbox/carts"]
+    kids = json.loads(read(n, f"{ROOT}offbox/")[0]["text"])["children"]
+    assert [k["name"] for k in kids] == ["carts", "models"]
+    assert f"{ROOT}offbox/" in [m["uri"] for m in json.loads(read(n, ROOT)[0]["text"])["mounts"]]
+    assert refusal(n, f"{ROOT}offbox/nothing").reason == "not-found"
+
+
+def test_tm7_the_lineage_manifest_names_what_is_there():
+    """Over the real checkout: every path the manifest names is tracked at
+    HEAD, so the chain cannot point at a script that has gone."""
+    m = json.loads((REPO / "api" / "lineage.json").read_text())
+    tracked = set(subprocess.run(["git", "ls-files"], cwd=REPO, capture_output=True, text=True).stdout.split())
+    paths = [p for node in m["offbox"].values() for k in ("generated_by", "input_of") for p in node.get(k, [])]
+    assert paths, "a manifest that names nothing checks nothing"
+    assert not [p for p in paths if p not in tracked], [p for p in paths if p not in tracked]

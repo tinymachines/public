@@ -302,6 +302,8 @@ def parse(uri: str) -> Ref:
         repo, tree = rest[0], rest[1:]
         path = "/".join(tree) + ("/" if trailing and tree else "")
         return Ref("git", repo, path, facets)
+    if mount == "offbox":
+        return Ref("offbox", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -319,7 +321,7 @@ def parse(uri: str) -> Ref:
     raise TmError(
         RESOURCE_NOT_FOUND, "not-found",
         f"no mount named {mount!r}",
-        nearest=[f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/"],
+        nearest=[f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/"],
     )
 
 
@@ -630,7 +632,8 @@ class SiteGraph:
         stated: set[str] = set()
         rec = self.repo / "data" / name
         try:
-            note = json.loads(rec.read_text()).get("_", "")
+            d = json.loads(rec.read_text())
+            note = (d.get("_") or d.get("note") or "") if isinstance(d, dict) else ""
             if isinstance(note, str):
                 stated.update(re.findall(r"scripts/[\w./-]+\.(?:py|mjs|ts|sh)", note))
         except Exception:  # noqa: BLE001
@@ -859,6 +862,16 @@ class Namespace:
                     "without the body. A notebook page carries a tm:source link to the markdown behind it."
                 ),
             },
+            {
+                "uriTemplate": f"{ROOT}offbox/{{name}}",
+                "name": "offbox",
+                "title": "Where a build chain leaves this box",
+                "description": (
+                    "A place a script reads from or writes to that no repository holds, such as the cartridges: named "
+                    "and described (what it is, why it is not exposed), never served. tm:generated-by names what makes it "
+                    "and tm:input-of what reads it."
+                ),
+            },
         ]
 
     def list_resources(self, cursor: str | None) -> dict:
@@ -870,6 +883,7 @@ class Namespace:
             {"uri": f"{ROOT}fs/", "name": "fs", "title": "The repository's files", "mimeType": "application/json"},
             {"uri": f"{ROOT}git/", "name": "git", "title": "The repositories, at any ref", "mimeType": "application/json"},
             {"uri": f"{ROOT}http/", "name": "http", "title": "The sites this box serves", "mimeType": "application/json"},
+            {"uri": f"{ROOT}offbox/", "name": "offbox", "title": "Where a build chain leaves this box", "mimeType": "application/json"},
         ]
         for root in FS_ROOTS:
             base = self.repo / root
@@ -937,15 +951,50 @@ class Namespace:
                 {"uri": f"{ROOT}fs/", "what": f"the repository's files under {', '.join(FS_ROOTS)}/"},
                 {"uri": f"{ROOT}git/", "what": f"the repositories ({', '.join(sorted(self.git))}) at any ref, with history and blame"},
                 {"uri": f"{ROOT}http/", "what": "the sites this box serves, page by page"},
+                {"uri": f"{ROOT}offbox/", "what": "where a build chain leaves this box: named, described, never exposed"},
             ]}
             return self._result(ROOT, "application/json", json.dumps(body, indent=1), [
                 link("collection", f"{ROOT}fs/"), link("collection", f"{ROOT}git/"), link("collection", f"{ROOT}http/"),
+                link("collection", f"{ROOT}offbox/"),
             ])
+        if ref.mount == "offbox":
+            return self._read_offbox(ref)
         if ref.mount == "fs":
             return self._read_fs(ref)
         if ref.mount == "git":
             return self._read_git(ref)
         return await self._read_http(ref)
+
+    def lineage(self) -> dict[str, dict]:
+        """api/lineage.json (TM-7): what a script reads that it did not make,
+        and the places the build chain leaves this box. A record's writer is
+        not in it: the record's own note says that."""
+        f = self.repo / "api" / "lineage.json"
+        try:
+            return json.loads(f.read_text()).get("offbox", {})
+        except (OSError, ValueError):
+            return {}
+
+    def _read_offbox(self, ref: Ref) -> dict:
+        nodes = self.lineage()
+        name = ref.path.rstrip("/")
+        if ref.facets.get("as") not in (None, "stat"):
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={ref.facets['as']!r}; offbox offers stat")
+        if not name:
+            kids = [{"uri": f"{ROOT}offbox/{quote(n)}", "name": n, "mimeType": "application/json", "isCollection": False} for n in sorted(nodes)]
+            return self._result(f"{ROOT}offbox/", "application/json", json.dumps({"uri": f"{ROOT}offbox/", "children": kids}, indent=1), [link("up", ROOT)])
+        if name not in nodes:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"offbox/{name} is not a place this box names",
+                          nearest=[f"{ROOT}offbox/{quote(n)}" for n in closest(name, sorted(nodes))[:5]])
+        node = nodes[name]
+        uri = f"{ROOT}offbox/{quote(name)}"
+        body = {"uri": uri, "mimeType": "application/json", "exposed": False, "reason": "not-exposed", "what": node.get("what"), "why": node.get("why")}
+        links = [link("up", f"{ROOT}offbox/"), link("collection", f"{ROOT}offbox/")]
+        for p in node.get("generated_by", []):
+            links.append(link("tm:generated-by", f"{ROOT}git/public/{quote(p)}", "exact", title="what makes it, on this box"))
+        for p in node.get("input_of", []):
+            links.append(link("tm:input-of", f"{ROOT}git/public/{quote(p)}", "exact", title="what reads it, on this box"))
+        return self._result(uri if "as" not in ref.facets else f"{uri}?as=stat", "application/json", json.dumps(body, indent=1), links)
 
     def _result(self, uri: str, mime: str, text: str | None, links: list[dict], blob: bytes | None = None) -> dict:
         content: dict[str, Any] = {"uri": uri, "mimeType": mime}
@@ -1320,6 +1369,11 @@ class Namespace:
             for site in self.sites:
                 for page in self.pages_of_route(site, clean):
                     links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"a page this route renders on {site}"))
+            for node, d in sorted(self.lineage().items()):
+                if clean in d.get("generated_by", []):
+                    links.append(link("tm:generates", f"{ROOT}offbox/{quote(node)}", "exact", title="what it makes, kept off this box"))
+                if clean in d.get("input_of", []):
+                    links.append(link("tm:input", f"{ROOT}offbox/{quote(node)}", "exact", title="what it reads that no repository holds"))
             if clean.startswith("scripts/"):
                 for name in self.graph.data_names:
                     for script, conf in self.graph.writers_of(name):
