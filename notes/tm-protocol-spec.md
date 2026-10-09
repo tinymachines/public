@@ -1,4 +1,4 @@
-# tm:// Protocol Spec — moved
+# tm:// Protocol Spec: moved
 
 The protocol now lives in its own repository, **tinypeek**:
 

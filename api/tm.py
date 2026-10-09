@@ -1,7 +1,8 @@
 """tm://: this repository as a read-only URI namespace, spoken over MCP.
 
-The spec is extern/tinypeek/spec/tm-protocol-spec.md. This is its first slice: one host, two
-mounts, three verbs, typed links between a served page and the file behind it.
+The spec is extern/tinypeek/spec/tm-protocol-spec.md (tinymachines/tinypeek).
+This is its reference deployment: one host, four mounts (fs, git, http and
+offbox), three verbs, typed links between a served page and the file behind it.
 It exists to answer the spec's first open question, whether an MCP client
 navigates resources at all, on the server that already exists rather than on
 one written for the purpose.
@@ -77,7 +78,9 @@ SITES = ("tinymachines.ai", "beta.tinymachines.ai")
 # served worktree when there is one, because that is the commit the site's
 # pages were read from (CLAUDE.md: the build reads the served release, never
 # the working tree); its HEAD is the boarded commit.
-GIT_SIBLINGS = ("nes", "nes-bench", "nes-bus", "ntsc-crt", "halfphi", "2a03", "2c02")
+# tinypeek is the protocol's own repository (public since 2026-10-09), so the
+# namespace serves its spec.
+GIT_SIBLINGS = ("nes", "nes-bench", "nes-bus", "ntsc-crt", "halfphi", "2a03", "2c02", "tinypeek")
 GIT_TIMEOUT_S = 15
 LOG_DEFAULT, LOG_MAX = 20, 100
 
