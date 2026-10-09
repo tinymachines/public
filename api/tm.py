@@ -500,6 +500,9 @@ class SiteGraph:
             i += 1
         return score if i == len(parts) else None
 
+    def is_dynamic(self, file_rel: str) -> bool:
+        return any(any(seg.startswith("[") for seg in segs) for segs, file in self.routes if file == file_rel)
+
     def pages_for(self, file_rel: str) -> list[str]:
         """The URL paths a literal route file renders (one per language)."""
         for segs, file in self.routes:
@@ -1055,11 +1058,13 @@ class Namespace:
             for script, conf in self.graph.writers_of(name):
                 links.append(link("tm:generated-by", f"{ROOT}git/public/{quote(script)}", conf,
                                   title="the script that writes this record" if conf == "exact" else "a script that names this record"))
-        # Every page that names this record back as its data, on both sites
-        # and in both languages, with the same confidence (TM-14).
-        for site, page, conf in self.readers(name):
-            links.append(link("tm:read-by", f"{ROOT}http/{site}{page}", conf,
-                              title="a page whose own code reads this record" if conf == "exact" else "a page whose library reaches this record"))
+        # One link a route that reads it (TM-18): a page, or the collection a
+        # dynamic route's pages are listed in. The other site and the other
+        # language are each page's own alternates.
+        for page, conf in self.readers(name):
+            what = "the pages listed here" if page.endswith("/") else "a page"
+            links.append(link("tm:read-by", f"{ROOT}http/{self.sites[0]}{quote(page)}", conf,
+                              title=f"{what} whose own code reads this record" if conf == "exact" else f"{what} whose library reaches this record"))
         return links
 
     def _origin_links(self, rel: str) -> list[dict]:
@@ -1505,15 +1510,60 @@ class Namespace:
         ship = self.shipped(site, route_file)
         return {n: conf for n, (conf, reader) in sorted(reads.items()) if ship is None or reader in ship}
 
-    def readers(self, name: str) -> list[tuple[str, str, str]]:
-        """(site, page, confidence) for every page whose data names the record."""
-        out = []
-        for site in self.sites:
-            for _, file in self.graph.routes:
-                conf = self.page_reads(site, file).get(name)
-                if conf:
-                    out.extend((site, p, conf) for p in self.pages_of_route(site, file))
-        return sorted(out)
+    def route_readers(self, file: str) -> list[str]:
+        """The URL paths that stand for a route's pages (TM-18), on the
+        canonical site and in English: a literal route's page, or for a
+        dynamic route the collection its pages are listed in (their longest
+        shared directory). A dynamic route whose pages share only the root
+        (the doors) names them one by one, since the root collection is the
+        front page too. Empty where the site renders no page from it."""
+        site = self.sites[0]
+        pages = [p for p in self.pages_of_route(site, file) if not (p == "/ja" or p.startswith("/ja/"))]
+        if not pages or not self.graph.is_dynamic(file):
+            return pages[:1]
+        common = (pages[0].rpartition("/")[0] or "/") if len(pages) == 1 else posixpath.commonpath(pages)
+        return sorted(pages) if common == "/" else [common.rstrip("/") + "/"]
+
+    def readers(self, name: str) -> list[tuple[str, str]]:
+        """(path, confidence): one for each route whose pages read the
+        record, on the canonical site; exact wins where two routes share a
+        collection."""
+        out: dict[str, str] = {}
+        for _, file in self.graph.routes:
+            conf = self.page_reads(self.sites[0], file).get(name)
+            for path in (self.route_readers(file) if conf else []):
+                if path not in out or conf == "exact":
+                    out[path] = conf
+        return sorted(out.items())
+
+    def collection_reads(self, path: str) -> dict[str, str]:
+        """The records read by the dynamic routes whose pages this canonical
+        collection stands for."""
+        out: dict[str, str] = {}
+        for _, file in self.graph.routes:
+            if self.graph.is_dynamic(file) and path in self.route_readers(file):
+                for n, conf in self.page_reads(self.sites[0], file).items():
+                    if n not in out or conf == "exact":
+                        out[n] = conf
+        return dict(sorted(out.items()))
+
+    def reader_uri(self, uri: str) -> str | None:
+        """The tm:read-by target that stands for a page or a collection: what
+        a record names back for it. A page on either site, in either
+        language, is stood for by its route's one link."""
+        ref = parse(uri)
+        if ref.mount != "http" or ref.site is None:
+            return None
+        if ref.is_collection:
+            return f"{ROOT}http/{self.sites[0]}{quote(ref.path)}"
+        clean = ref.path.rstrip("/") or "/"
+        route = self.graph.route_for(clean)
+        if not route:
+            return None
+        paths = self.route_readers(route[0])
+        english = clean[3:] or "/" if clean == "/ja" or clean.startswith("/ja/") else clean
+        path = english if english in paths else (paths[0] if len(paths) == 1 and paths[0].endswith("/") else None)
+        return f"{ROOT}http/{self.sites[0]}{quote(path)}" if path else None
 
     def pages_of_route(self, site: str, file_rel: str) -> list[str]:
         b = self.built(site)
@@ -1611,6 +1661,12 @@ class Namespace:
         up = f"{ROOT}http/{site}{quote(parent)}/" if parent else f"{ROOT}http/{site}/"
         base = f"{ROOT}http/{site}{quote(clean)}"
         links = [link("up", up if clean != "/" else f"{ROOT}http/")]
+        if is_dir and site == self.sites[0] and clean != "/":
+            # A collection that stands for a dynamic route's pages carries
+            # their reading, the inverse of the records' one link (TM-18).
+            for name, conf in self.collection_reads(clean + "/").items():
+                links.append(link("tm:data", f"{ROOT}fs/data/{quote(name)}", conf,
+                                  title="a record the pages listed here read" if conf == "exact" else "a record the pages listed here reach"))
         if not is_dir:
             links.append(link("collection", up))
             links.append(link("describedby", f"{base}?as=stat"))

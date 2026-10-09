@@ -358,8 +358,14 @@ are entered only when the page imports them itself and never walked
 through, so the menu's records and the metadata's are no page's data. A
 record read by a module the page imports directly is `exact`, one further
 down is `inferred`, and where the build is on this box a link holds only if
-the page's bundle ships the reader module. Every `tm:read-by` names a page
-that names the record back, and the crawl now holds that pair too.
+the page's bundle ships the reader module. A record names each route that
+reads it once (TM-18), on the canonical site in English: a literal route by
+its page, a dynamic one by the collection its pages are listed in, which
+carries the `tm:data` back. A dynamic route whose pages share only the root
+(the doors) is named page by page, since the root is the front page too. A
+page on either site in either language is answered by its route's one link,
+and the crawl holds the pair that way: `data/autopsy.json` went from 92
+`tm:read-by` links to 5.
 
 What is not here yet: subscriptions, and anything that writes.
 

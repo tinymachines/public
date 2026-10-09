@@ -19,8 +19,10 @@ What it asserts, for every URI it reaches:
   - every link of a paired relation has its inverse on the target:
     tm:source / tm:renders-as, tm:generates / tm:generated-by,
     tm:working-copy / tm:repository, tm:data / tm:read-by (the last pair
-    since TM-8 and TM-14: a page's data is what its own code reads, and a
-    record names back every page that says so, at the same confidence).
+    since TM-8 and TM-14: a page's data is what its own code reads; since
+    TM-18 a record names each route that reads it once, by its page or by
+    the collection its pages are listed in, and a page anywhere is answered
+    by that one link, at the same confidence).
 
 Git mounts are walked by their links and two levels of listing, not file by
 file: nine repositories' every file would be most of the budget and prove
@@ -137,10 +139,14 @@ async def crawl(budget: int) -> int:
                 problems.append(f"{uri} {ln['rel']} {target}: the target does not resolve ({t['reason']})")
                 continue
             back = {identity(b["href"]): b.get("confidence") for b in t["links"] if b["rel"] == inv}
-            if identity(uri) not in back:
-                problems.append(f"{uri} {ln['rel']} {target}: no {inv} back")
-            elif ln["rel"] in ("tm:data", "tm:read-by") and back[identity(uri)] != ln.get("confidence"):
-                problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[identity(uri)]} back")
+            # A record names each route that reads it once (TM-18): a page on
+            # either site, in either language, is answered by the one link
+            # that stands for its route.
+            me = ns.reader_uri(identity(uri)) if ln["rel"] == "tm:data" else identity(uri)
+            if me not in back:
+                problems.append(f"{uri} {ln['rel']} {target}: no {inv} back" + (f" to {me}" if me != identity(uri) else ""))
+            elif ln["rel"] in ("tm:data", "tm:read-by") and back[me] != ln.get("confidence"):
+                problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[me]} back")
     print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused")
     if reads >= budget:
         print(f"check-tm-links: the budget of {budget} reads ran out with {len(queue)} still queued")

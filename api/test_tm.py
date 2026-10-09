@@ -675,8 +675,8 @@ def test_a_record_links_to_its_writer_and_its_readers(site):
     r = rels(links)
     assert r["tm:generated-by"] == [f"{ROOT}git/public/scripts/board-autopsy.py"]
     assert [ln["confidence"] for ln in links if ln["rel"] == "tm:generated-by"] == ["exact"], "the record's own note names it"
-    assert r["tm:read-by"] == sorted(f"{ROOT}http/{x}{p}" for x in tm.SITES for p in ("/autopsy/patterns", "/ja/autopsy/patterns")), \
-        "every page that names it back, both languages and both sites; no build here, so the dynamic route's pages are unknown"
+    assert r["tm:read-by"] == [f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns"], \
+        "one link a route: the English page on the canonical site; no build here, so the dynamic route's pages are unknown"
     _, links = read(site, f"{ROOT}fs/data/chip.json")
     gen = [ln for ln in links if ln["rel"] == "tm:generated-by"]
     assert [ln["href"] for ln in gen] == [f"{ROOT}git/public/scripts/verify-chip.py"], "deploy.sh and check-* are not writers"
@@ -718,7 +718,9 @@ def test_the_real_site_graph_joins_the_autopsy_page_to_its_record():
     assert "autopsy.json" not in n.graph.page_reads(n.graph.route_for("/6502/reading")[0])
     assert "slowppu.json" in n.graph.page_reads(n.graph.route_for("/nes/playground")[0]), "a file beside the page reads it"
     assert ("scripts/board-engine.py", "exact") in n.graph.writers_of("engine.json")
-    assert "/autopsy/patterns" in [p for _, p, _ in n.readers("autopsy.json")]
+    readers = dict(n.readers("autopsy.json"))
+    assert readers.get("/autopsy/patterns") == "exact" and "/autopsy/games/" in readers, readers
+    assert len(readers) <= 10, "TM-18: about ten, one a route"
     assert n.graph.route_for("/docs/nes/pile") == ("web/app/[lang]/docs/[[...slug]]/page.tsx", True)
 
 
@@ -856,15 +858,15 @@ def test_tm14_every_read_by_is_answered_by_a_data_link_and_back(built):
     (nx / "server" / "chunks" / "ssr").mkdir(parents=True)
     (nx / "server" / "chunks" / "ssr" / "a.js.map").write_text(json.dumps({"version": 3, "sources": ["../../../../../web/lib/i18n.ts"]}))
     _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
-    by = rels(links)["tm:read-by"]
-    assert f"{ROOT}http/tinymachines.ai/autopsy/games/abc" not in by, "its bundle does not ship lib/autopsy.ts"
+    by = rels(links).get("tm:read-by", [])
+    assert f"{ROOT}http/tinymachines.ai/autopsy/games/" not in by, "its bundle does not ship lib/autopsy.ts"
     (nx / "server" / "chunks" / "ssr" / "a.js.map").write_text(json.dumps({"version": 3, "sources": ["../../../../../web/lib/%61utopsy.ts"]}))
     built.__dict__.pop("_shipped", None)
     _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
     by = rels(links)["tm:read-by"]
-    assert f"{ROOT}http/tinymachines.ai/autopsy/games/abc" in by and f"{ROOT}http/tinymachines.ai/autopsy/games/def" in by
+    assert f"{ROOT}http/tinymachines.ai/autopsy/games/" in by, "the dynamic route's pages, as the collection that lists them"
     for href in by:
-        _, back = read(built, href + "?as=stat")
+        _, back = read(built, href if href.endswith("/") else href + "?as=stat")
         mine = [ln for ln in back if ln["rel"] == "tm:data" and ln["href"] == f"{ROOT}fs/data/autopsy.json"]
         theirs = [ln for ln in links if ln["rel"] == "tm:read-by" and ln["href"] == href]
         assert mine and mine[0]["confidence"] == theirs[0]["confidence"], href
@@ -912,3 +914,45 @@ def test_tm5_a_wrong_guess_teaches_the_right_one(ns, gns):
     e = refusal(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pyle")
     assert e.data["nearest"][0] == f"{ROOT}http/tinymachines.ai/docs/nes/pile", e.data["nearest"]
     assert tm.closest("pyle.md", ["a0-report.md", "pile.md", "alone.md"])[0] == "pile.md"
+
+
+def test_tm18_a_record_names_each_route_that_reads_it_once(built):
+    """One tm:read-by a route, on the canonical site in English: a literal
+    route by its page, a dynamic one by the collection its pages are listed
+    in, which carries the tm:data back. Every page that reads the record is
+    one hop from one of them."""
+    _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
+    by = rels(links)["tm:read-by"]
+    assert by == [f"{ROOT}http/tinymachines.ai/autopsy/games/"], by
+    _, coll = read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")
+    assert f"{ROOT}fs/data/autopsy.json" in rels(coll)["tm:data"], "the collection answers for the pages it lists"
+    kids = json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")[0]["text"])["children"]
+    assert {k["name"] for k in kids} >= {"abc", "def"}, "and every reading page is listed there"
+    # Any page that reads it, on any site and in either language, stands
+    # for itself through that one link.
+    for page in ("http/tinymachines.ai/autopsy/games/abc", "http/beta.tinymachines.ai/autopsy/games/def", "http/tinymachines.ai/ja/autopsy/games/abc"):
+        assert built.reader_uri(f"{ROOT}{page}") == f"{ROOT}http/tinymachines.ai/autopsy/games/", page
+    assert built.reader_uri(f"{ROOT}http/beta.tinymachines.ai/ja/autopsy/lessons/jump") is None, "no route here renders it, so nothing stands for it"
+
+
+def test_tm18_a_dynamic_route_at_the_root_names_its_pages(built):
+    # /watch, /read and /build share only the root, and the root collection
+    # is the front page too: the record names those pages one by one.
+    repo = built.repo
+    door = repo / "web" / "app" / "[lang]" / "[door]"
+    door.mkdir(parents=True)
+    (door / "page.tsx").write_text('import { autopsy } from "@/lib/autopsy";\n')
+    nx = repo / "web" / ".next"
+    m = json.loads((nx / "prerender-manifest.json").read_text())
+    for d in ("read", "watch"):
+        for lang in ("en", "ja"):
+            m["routes"][f"/{lang}/{d}"] = {"srcRoute": "/[lang]/[door]"}
+    (nx / "prerender-manifest.json").write_text(json.dumps(m))
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "doors")
+    built.graph = tm.SiteGraph(repo)
+    built._built.clear()
+    by = rels(read(built, f"{ROOT}fs/data/autopsy.json?as=stat")[1])["tm:read-by"]
+    assert f"{ROOT}http/tinymachines.ai/read" in by and f"{ROOT}http/tinymachines.ai/watch" in by, by
+    assert f"{ROOT}http/tinymachines.ai/" not in by, "not the root, which is the front page"
+    assert built.reader_uri(f"{ROOT}http/beta.tinymachines.ai/ja/watch") == f"{ROOT}http/tinymachines.ai/watch"
