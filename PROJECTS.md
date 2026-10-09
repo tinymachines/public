@@ -5395,3 +5395,29 @@ page links back. Then as before: the prefetch 404s, a music engine
 lesson, `/docs/hotbits` once the tube feeds the pool, the pile page's
 details, nes-bench's row for `pile.md`, the sprite sign-in test, the
 Othello redump, the reader firmware.
+
+## Checkpoint, 2026-10-09 (late): tinypeek public, its spec served
+
+Live and beta serve `0a9344a` (deployed 2026-10-09 on the owner's word,
+clean through every stage, main pushed; GitHub shows PR #4 merged). Since
+the night checkpoint:
+
+| commit | what |
+|---|---|
+| `e334bd1` | PR #4 merged: the tm:// spec lives in `tinymachines/tinypeek`, a submodule at `extern/tinypeek`; `notes/tm-protocol-spec.md` is a pointer. Deployed |
+| `0a9344a` | the review's fixes. tinypeek is public (the owner's call, after a scan of its files and history for addresses and keys found none), so the submodule clones for anyone, and tinypeek joins the git mount: the namespace serves its own spec again. The pin is at `cd6626e`, which carries TM-9; the docstring counts four mounts; the Japanese setup guide is stamped. Deployed |
+
+**Nothing is in progress off main.** TM-13 stays open: the spec at
+`cd6626e` predates TM-4, 5, 7 and 18.
+
+**Where to pick up.** TM-13, the spec's full pass in `../tinypeek` (four
+mounts with offbox, http's text default, ranked suggestions, `tm:input`,
+one `tm:read-by` a route, the dotfile rule), then bump the pin here.
+TM-11 (an unsupported facet on a collection ignored silently), TM-12
+(orientation at connect), TM-16 (patterns, games, routines and lessons
+as entities). The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
