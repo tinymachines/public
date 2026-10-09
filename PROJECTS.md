@@ -5319,3 +5319,25 @@ links back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-09 (later): a record names each route once
+
+Live and beta serve `67d8876` (deployed 2026-10-09 on the owner's word,
+clean through every stage, main pushed). Since the morning checkpoint:
+
+| commit | what |
+|---|---|
+| `67d8876` | TM-18. A record names each route that reads it once, on the canonical site in English: a literal route by its page, a dynamic one by the collection its pages are listed in, which carries the `tm:data` back. A page on either site in either language is answered by its route's one link, and the crawl holds the pair that way. `data/autopsy.json` went from 92 `tm:read-by` links to 5; the project list, read by most routes, has 33. The doors come from one dynamic route at the root, whose collection would be the front page too, so such a route is named page by page. Deployed |
+
+**Nothing is in progress off main.**
+
+**Where to pick up.** TM-7 (generator lineage one hop short), TM-9
+(`.gitignore` and `.gitmodules` denied), TM-11 (an unsupported facet on
+a collection ignored silently), TM-12 (orientation at connect), TM-13
+(the spec behind the server: a full pass), TM-16 (patterns, games,
+routines and lessons as entities). The owner's client test against
+`https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page links
+back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
