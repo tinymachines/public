@@ -84,6 +84,11 @@ LOG_DEFAULT, LOG_MAX = 20, 100
 # The second net under the roots: a file that matches is listed as redacted
 # and refused on read, so the client knows it exists and does not get it.
 DENY = ("*.env", ".env*", "*.pem", "*.key", "id_*", "*secret*", "*.local.md", "*.db", "__pycache__", ".git", ".*")
+# Dotfiles are denied as a class, so one nobody thought to list (.npmrc and
+# its token, .netrc, .git-credentials) stays out. These few are named back
+# in because they hold no secrets and tell a client how a repository is put
+# together: what it ignores, its submodules, its attributes (TM-9).
+DOT_OK = (".gitignore", ".gitmodules", ".gitattributes", ".editorconfig")
 
 READ_CAP = 256 * 1024   # bytes per read without ?range=
 LIST_CAP = 500          # children per listing page
@@ -223,7 +228,7 @@ def fs_mime(path: Path) -> str:
 
 
 def denied(rel_path: str) -> bool:
-    return any(fnmatch.fnmatch(part, pat) for part in rel_path.split("/") for pat in DENY)
+    return any(part not in DOT_OK and fnmatch.fnmatch(part, pat) for part in rel_path.split("/") for pat in DENY)
 
 
 def _cursor(offset: int) -> str:

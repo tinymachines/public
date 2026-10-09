@@ -1003,3 +1003,25 @@ def test_tm7_the_lineage_manifest_names_what_is_there():
     paths = [p for node in m["offbox"].values() for k in ("generated_by", "input_of") for p in node.get(k, [])]
     assert paths, "a manifest that names nothing checks nothing"
     assert not [p for p in paths if p not in tracked], [p for p in paths if p not in tracked]
+
+
+def test_tm9_the_repository_files_that_hold_no_secrets_are_readable(gns):
+    repo = gns.repo
+    (repo / ".gitignore").write_text("build/\n")
+    (repo / ".gitmodules").write_text('[submodule "extern/x"]\n\tpath = extern/x\n')
+    (repo / ".npmrc").write_text("//registry/:_authToken=no\n")
+    git(repo, "add", "-f", ".gitignore", ".gitmodules", ".npmrc")
+    git(repo, "commit", "-q", "-m", "dotfiles")
+    c, _ = read(gns, f"{ROOT}git/public/.gitignore")
+    assert c["text"] == "build/\n"
+    c, _ = read(gns, f"{ROOT}git/public/.gitmodules")
+    assert "extern/x" in c["text"], "how a client learns a repository's submodules"
+    kids = {k["name"]: k for k in json.loads(read(gns, f"{ROOT}git/public/")[0]["text"])["children"]}
+    assert not kids[".gitmodules"].get("redacted") and not kids[".gitignore"].get("redacted")
+    # Every other dotfile stays denied without anyone having to name it:
+    # a token in .npmrc, an .env, anything under .git.
+    assert kids[".npmrc"]["redacted"] is True
+    assert refusal(gns, f"{ROOT}git/public/.npmrc").reason == "denied"
+    for p in (".env", "data/.env", ".git/config", ".gitconfig", ".git-credentials"):
+        assert tm.denied(p), p
+    assert not tm.denied(".gitignore") and not tm.denied("extern/x/.gitmodules")
