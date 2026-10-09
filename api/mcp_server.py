@@ -55,15 +55,17 @@ TM_INSTRUCTIONS = """
 
 The same server is also a read-only namespace, tm://, spoken as MCP resources:
 start by reading tm://tinymachines/ (the mounts), then read any URI ending in /
-to list its children, and read a file or page to get it. Three mounts: fs/ is
+to list its children, and read a file or page to get it. Four mounts: fs/ is
 the repository's docs/, data/ and notes/; git/<repo>/ is a repository at any ref
 (?at=, with ?as=log, blame, tree, stat); http/<site>/ is what a visitor gets from
-a site this box serves, with ?as=text for the readable text. Every read carries
+a site this box serves, a page read as its text (?as=rendered for the HTML);
+offbox/ names the places a build chain leaves this box. Every read carries
 typed links in _meta under "tinymachines.ai/links": a notebook page links to the
 markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as) and to the repository it came from (tm:generated-by or
 tm:repository), any page links to its route file (tm:source) and to the records
-its rendering reads (tm:data), and up, collection, alternate, describedby,
+its own code reads (tm:data), a script to what it reads that no repository
+holds (tm:input), and up, collection, alternate, describedby,
 version-history and latest-version do what the IANA registry says. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the
