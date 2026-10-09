@@ -1,6 +1,6 @@
 """tm://: this repository as a read-only URI namespace, spoken over MCP.
 
-The spec is notes/tm-protocol-spec.md. This is its first slice: one host, two
+The spec is extern/tinypeek/spec/tm-protocol-spec.md. This is its first slice: one host, two
 mounts, three verbs, typed links between a served page and the file behind it.
 It exists to answer the spec's first open question, whether an MCP client
 navigates resources at all, on the server that already exists rather than on

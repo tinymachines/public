@@ -18,7 +18,7 @@ answering right now, measured when you ask. The **resources** are a `tm://`
 namespace: this site's documentation, data and design notes as files, and its
 pages as a visitor gets them, with typed links between a page and the
 markdown it is rendered from. The spec behind the namespace is in the
-repository at `notes/tm-protocol-spec.md`; this page is the practical side.
+repository at `extern/tinypeek/spec/tm-protocol-spec.md` (the tinypeek submodule); this page is the practical side.
 
 The first half is for a client. The second half is for anyone building a
 server, ours included.
