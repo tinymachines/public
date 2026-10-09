@@ -5365,3 +5365,33 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-09 (night): the tm:// protocol has its own home
+
+Live and beta serve `f690273` (deployed 2026-10-09 on the owner's word,
+clean through every stage, main pushed). Since the evening checkpoint:
+
+| commit | what |
+|---|---|
+| `f690273` | TM-9. Dotfiles stay denied as a class, so one nobody listed (`.npmrc` and its token, `.netrc`, `.git-credentials`) stays out, and four that hold no secrets are named back in: `.gitignore`, `.gitmodules`, `.gitattributes`, `.editorconfig`. `.env` and anything under `.git` stay denied. Deployed |
+
+**The protocol moved.** The owner put the tm:// spec and its explainer in
+their own repository, `tinymachines/tinypeek` (private), now cloned
+beside this one at `../tinypeek`. It holds the protocol only; the server
+stays here in `api/` as the reference deployment. So a ticket is code
+here and, where the spec states the behaviour, an edit there: TM-9's spec
+line is tinypeek `cd6626e`, pushed. This repository's GitHub branch
+`tinypeek-submodule` (another session's, 2026-10-08) would add tinypeek
+as a submodule at `extern/tinypeek`; it is not merged, because it
+predates TM-5, 18, 7 and 9, and a public repository with a private
+submodule cannot be cloned whole by a stranger. That is the owner's call.
+
+**Where to pick up.** The owner's call on the submodule branch. TM-11 (an
+unsupported facet on a collection ignored silently), TM-12 (orientation
+at connect), TM-13 (the spec's full pass, now in tinypeek), TM-16
+(patterns, games, routines and lessons as entities). The owner's client
+test against `https://tinymachines.ai/api/mcp`. Whether bradley.io's tree
+page links back. Then as before: the prefetch 404s, a music engine
+lesson, `/docs/hotbits` once the tube feeds the pool, the pile page's
+details, nes-bench's row for `pile.md`, the sprite sign-in test, the
+Othello redump, the reader firmware.
