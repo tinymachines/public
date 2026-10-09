@@ -5284,3 +5284,38 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-09: a wrong guess teaches the right one
+
+Live and beta serve `de89895` (deployed 2026-10-08 on the owner's word,
+clean through every stage, main pushed). Since the night checkpoint:
+
+| commit | what |
+|---|---|
+| `de89895` | TM-5. Every not-found suggestion list is ranked by edit distance on the name, then a shared start, then the alphabet for ties: `fs/docs/nes/pyle.md` suggests `pile.md` first. A path whose directory is missing answers from the deepest one that exists, and a bad git ref ranks every branch and tag instead of suggesting nothing. Deployed |
+
+The first try at that deploy stopped before building: two untracked
+things had appeared in the checkout, a `Downloads/` folder and a copy of
+the owner's re-tested work package in `docs/`. The owner moved the first
+and had the second deleted; the deploy then ran clean. The re-test adds
+**TM-18**: since TM-14, `data/autopsy.json?as=stat` carries about 95
+`tm:read-by` links (every autopsy page on two sites in two languages).
+The ask is one per route on the canonical site and language, dynamic
+routes collapsed to their collection, about ten in all, with every
+reading page one or two hops away. The crawl's inverse check for that
+pair changes with it.
+
+**Nothing is in progress off main.**
+
+**Where to pick up.** TM-18, then TM-7 (generator lineage one hop
+short), TM-9 (`.gitignore` and `.gitmodules` denied), TM-11 (an
+unsupported facet on a collection ignored silently), TM-12 (orientation
+at connect), TM-13 (the spec behind the server), TM-16 (patterns, games,
+routines and lessons as entities). The re-test could not verify TM-2,
+TM-13 or TM-15 from outside: TM-2 is live (`?as=raw` gives a file's
+bytes) and TM-15 runs at the end of every deploy. The owner's client test
+against `https://tinymachines.ai/api/mcp`. Whether bradley.io's tree page
+links back. Then as before: the prefetch 404s, a music engine lesson,
+`/docs/hotbits` once the tube feeds the pool, the pile page's details,
+nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
+redump, the reader firmware.
