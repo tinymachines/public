@@ -5502,3 +5502,19 @@ commit. For the website: step 2 of the hotbits bench when geiger's first
 page is ready (rows in `pull-nesdocs.mjs` that write into `docs/hotbits`;
 the revision note comes off when rev E lands), then the list in the
 2026-10-09 end-of-day checkpoint, the Sprite maker's palette first.
+
+## Checkpoint, 2026-10-10, later: the held tm commit is live
+
+Live and beta serve `23272d9`. The tinypeek agent fixed the nine crawl
+faults listed above (issue 5): a submodule's record states its type, the
+crawler reads a collection from the path so a tree at a ref is not asked
+for a file's facet, and the site root carries the front page's versions.
+Here, 217 API tests pass and the crawl reads 2,358 URIs with nothing to
+report, before the deploy and again as its last stage. TM-11, TM-19 and
+TM-20 are live; their spec markers are the tinypeek agent's to move.
+
+bradley.io's Computer Tree page links back to ours in both languages now,
+which closes that question on the owner's list.
+
+Next for the website session: hotbits bench step 2 when geiger's first
+page is ready, then the sprite maker's palette codes.
