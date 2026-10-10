@@ -5421,3 +5421,42 @@ back. Then as before: the prefetch 404s, a music engine lesson,
 `/docs/hotbits` once the tube feeds the pool, the pile page's details,
 nes-bench's row for `pile.md`, the sprite sign-in test, the Othello
 redump, the reader firmware.
+
+## Checkpoint, 2026-10-09 (end of day): the tm work has its own agent
+
+Live and beta serve `2671903` (version 1.0.269). Main is pushed at the
+handoff note's commits, which touch only `notes/` and need no deploy.
+Since the late checkpoint:
+
+| commit | what |
+|---|---|
+| `2671903` | TM-13. The spec is v0.3 in tinypeek (`5ecbebc`, rebased onto another session's own v0.3 pass, `f93e303`), every marker checked against this server; the pin is current and the connect instructions name four mounts. Deployed |
+| `bfdd1b0`, `acc4ce4` | `notes/handoff-2026-10-09.md`: where things stand, the repositories, the deploy procedure, the rules this work has paid for, the work package's state, what to pick up |
+
+**The tm work moved.** The owner is launching an agent for it from
+`../tinypeek`, whose `CLAUDE.md` (`3eef970`, pushed) gives it the
+namespace's files in this repository: `api/tm.py`, its tests,
+`api/lineage.json`, `api/mcp_server.py`, `scripts/check-tm-links.py`, the
+setup guide in both languages. Its list is TM-11, TM-12 and TM-16. This
+session stays out of those files, does the website, and is messaged first
+about anything that touches both.
+
+**Nothing is in progress off main.**
+
+**Where to pick up, the website.** In order: the Sprite maker writing its
+three codes into the program's palette, with a 2x2-tile draw in the lessons
+so a 16 px sprite shows whole; a token so agents can use `/sprites/mcp/`;
+faster sprites (a warm model, a smaller size, their own output folder);
+the reader's version measured beside ours in the Program window; the
+autopsy's open items (a table of low bytes only, a way in per game, the
+rest of an object table); a music engine lesson; the home page's prefetch
+404s. The family manifest read at run time only if the owner wants new
+family members without a deploy.
+
+**Waiting on the owner.** Meatball Labs as `parentOrganization` in the
+JSON-LD; a prompt model for the sprite chat; the `.window` line in the
+nginx config, never installed; whether bradley.io's tree page links back;
+the pile page's details and nes-bench's row for `pile.md`; the sprite maker
+tried signed in; the Othello redump; the reader firmware. And for the tm
+side, the client test against `https://tinymachines.ai/api/mcp`, now the
+tinypeek agent's to hear.
