@@ -5518,3 +5518,26 @@ which closes that question on the owner's list.
 
 Next for the website session: hotbits bench step 2 when geiger's first
 page is ready, then the sprite maker's palette codes.
+
+## Checkpoint, 2026-10-10, evening: the sprite maker finishes the job
+
+Live and beta serve `3ed93b9`. Putting a picture's tiles into the open
+lesson now edits the reader's copy of the program as well: the three
+fitted colours go into its first sprite palette, and the square is drawn
+from the new tiles, so a 16 pixel picture shows whole. The tiles go after
+the lesson's own, so the ground is no longer drawn over. No lesson's
+cartridge changed; the rewrites are in `web/lib/nesSprite.ts` and are
+tested against every lesson's source.
+
+Not covered: four lessons draw no square (about, flicker, menu, splash)
+and a 32 pixel picture is sixteen tiles; there the tiles go in and the
+note says what was not done. The colours go into the first sprite
+palette, so anything else a lesson draws with it changes colour too.
+
+Issue 5 is closed. Still stale: the `inLanguage` case in
+`web/e2e/untranslated.spec.ts`, which wants one untranslated document;
+the first geiger page will be one.
+
+Next for the website session, in order: a token so agents can use the
+sprites MCP endpoint; faster sprites; the reader's version in the Program
+window; hotbits bench step 2 when geiger has its first page.
