@@ -1338,9 +1338,16 @@ class Namespace:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; a submodule offers stat and log")
         url = self._git_submodule_url(repo, at, path)
         served = self._served_repo(url)
+        # Linked only when this server's copy of that repository has the
+        # pinned commit: a link that would not resolve is worse than none.
+        if served:
+            try:
+                run_git(self.git[served], "cat-file", "-e", f"{pinned}^{{commit}}")
+            except TmError:
+                served = None
         target = f"{ROOT}git/{served}/?at={pinned}" if served else None
-        body = {"uri": base, "type": "submodule", "path": path, "at": at, "commit": commit, "pinned": pinned,
-                "url": url, "repository": target}
+        body = {"uri": base, "mimeType": "application/json", "type": "submodule", "path": path, "at": at, "commit": commit,
+                "pinned": pinned, "url": url, "repository": target}
         parent = path.rpartition("/")[0]
         up = f"{ROOT}git/{repo}/{quote(parent)}/{q}" if parent else f"{ROOT}git/{repo}/{q}"
         links = [link("up", up), link("collection", up), link("describedby", f"{base}{q}{sep}as=stat"),
@@ -1814,11 +1821,14 @@ class Namespace:
             twin, lang = page[3:], "English"
         else:
             twin, lang = "/ja" + ("" if page == "/" else page), "Japanese"
+        # Each condition holds the same way round from either end, so every
+        # link is answered: the language twin only where the build made both,
+        # the other site only where both sites serve the page.
         b = self.built(site)
-        if b is not None and twin in b:
+        if b is not None and page in b and twin in b:
             out.append(link("alternate", f"{ROOT}http/{site}{quote(twin)}", title=f"the same page in {lang}"))
         for other in self.sites:
-            if other != site and self.serves(other, page):
+            if other != site and self.serves(site, page) and self.serves(other, page):
                 out.append(link("alternate", f"{ROOT}http/{other}{quote(page)}", title=f"the same page on {other}"))
         return out
 
@@ -1898,7 +1908,9 @@ class Namespace:
             body = {"uri": ref.uri, "children": kids, "front_page": f"{ref.uri}?as=text"}
             # The listing and the front page share this address, so it carries
             # the front page's own links too: its source and its data.
-            page = [ln for ln in self._http_links(site, "/", False) if ln["rel"].startswith("tm:")]
+            # Its other versions too (TM-20), or /ja's link to it goes unanswered.
+            page = [ln for ln in self._http_links(site, "/", False)
+                    if ln["rel"].startswith("tm:") or (ln["rel"] == "alternate" and "?as=" not in ln["href"])]
             return self._result(ref.uri, "application/json", json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
         status, ctype, data = await self.fetch(site, path)
         base = f"{ROOT}http/{site}{quote(path)}"

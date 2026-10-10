@@ -1127,3 +1127,52 @@ def test_tm11_a_facet_a_collection_has_no_use_for_is_refused_not_dropped(built):
     # The listing itself, and a site's front page (its root is both), still read.
     assert json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/")[0]["text"])["children"]
     assert read(built, f"{ROOT}http/tinymachines.ai/?as=stat")[0]["mimeType"] == "application/json"
+
+
+def _crawler():
+    """The deploy's link crawler, for its own idea of a file's stat URI."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("check_tm_links", REPO / "scripts" / "check-tm-links.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_tm19_the_crawl_faults_a_submodule_record_states_its_type_and_its_pin_resolves(gns, gits):
+    # Found by the crawler at deploy, 2026-10-10: the listing said
+    # application/json and the stat had no mimeType; and the pin's link, a
+    # collection at a ref, was read by the crawler as a file's stat.
+    bench_sha = git(gits["bench"], "rev-parse", "HEAD").strip()
+    _pin(gns.repo, "extern/bench", bench_sha, "https://github.com/tinymachines/bench.git")
+    c, links = read(gns, f"{ROOT}git/public/extern/bench?as=stat")
+    assert json.loads(c["text"])["mimeType"] == "application/json", "what the listing claimed"
+    crawl = _crawler()
+    pin = rels(links)["tm:pins"][0]
+    assert crawl.stat_of(pin) == pin, "a collection at a ref is a collection: no ?as=stat added"
+    assert json.loads(read(gns, crawl.stat_of(pin))[0]["text"])["commit"] == bench_sha
+    # A pin this server's copy of the repository does not have is not linked:
+    # a link that would not resolve is worse than none.
+    _pin(gns.repo, "extern/ahead", "2" * 40, "https://github.com/tinymachines/bench.git")
+    c, links = read(gns, f"{ROOT}git/public/extern/ahead")
+    assert "tm:pins" not in rels(links) and json.loads(c["text"])["repository"] is None
+
+
+def test_tm20_the_crawl_faults_the_front_page_answers_its_other_versions(built):
+    # Found by the crawler at deploy: /ja links to the site root, which reads
+    # as a listing and carried no alternate back.
+    _, ja = read(built, f"{ROOT}http/tinymachines.ai/ja?as=stat")
+    assert f"{ROOT}http/tinymachines.ai/" in rels(ja)["alternate"]
+    _, root = read(built, f"{ROOT}http/tinymachines.ai/")
+    assert f"{ROOT}http/tinymachines.ai/ja" in rels(root)["alternate"], "the root is the front page too"
+    # Every cross-version alternate is answered from where it lands, read the
+    # way the crawler reads it. A page the build did not make (served
+    # dynamically) gets none, so nothing is left unanswered.
+    crawl = _crawler()
+    for page in ("/", "/ja", "/autopsy/lessons/jump", "/ja/autopsy/lessons/jump", "/autopsy/games/abc"):
+        uri = f"{ROOT}http/tinymachines.ai{page}"
+        _, links = read(built, crawl.stat_of(uri) if page != "/" else uri)
+        for ln in links:
+            if ln["rel"] == "alternate" and crawl.identity(ln["href"]) != crawl.identity(uri):
+                t = crawl.identity(ln["href"])
+                _, back = read(built, crawl.stat_of(t))
+                assert crawl.identity(uri) in {crawl.identity(b["href"]) for b in back if b["rel"] == "alternate"}, (uri, t)

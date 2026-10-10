@@ -56,8 +56,11 @@ def identity(uri: str) -> str:
 
 
 def stat_of(uri: str) -> str:
-    """The URI of a file's or a page's stat; a collection or the root as it is."""
-    if uri.endswith("/") or uri == tm.ROOT:
+    """The URI of a file's or a page's stat; a collection or the root as it is.
+    A collection is a path ending in /, whatever query follows it: a tree at
+    a ref (git/<repo>/?at=<commit>, where a submodule's pin points) is still
+    a tree, and a tree refuses ?as=stat (TM-11)."""
+    if urlsplit(uri).path.endswith("/") or uri == tm.ROOT:
         return uri
     return uri + ("&" if "?" in uri else "?") + "as=stat"
 
