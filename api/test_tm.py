@@ -1068,6 +1068,9 @@ def test_tm19_a_submodule_reads_as_what_it_pins_not_as_a_dead_end(gns, gits):
     # The pin's own history: the commits that moved it.
     log = json.loads(read(gns, f"{ROOT}git/public/extern/bench?as=log")[0]["text"])
     assert [x["subject"] for x in log["commits"]] == ["pin bench"]
+    # Its links offer only what a submodule answers: no blame, which it refuses.
+    for ln in read(gns, f"{ROOT}git/public/extern/bench?as=log")[1]:
+        assert "as=blame" not in ln["href"], ln
     assert refusal(gns, f"{ROOT}git/public/extern/bench?as=blame").reason == "bad-facet"
 
 

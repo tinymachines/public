@@ -1529,7 +1529,11 @@ class Namespace:
                 commits.append({"commit": full, "short": short, "author": author, "date": date, "subject": subject,
                                 "uri": f"{base}?at={full}"})
             body = {"uri": f"{base}{q}{sep}as=log", "path": path, "at": at, "n": n, "commits": commits}
-            return self._result(body["uri"], "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, False, head))
+            links = self._git_links(repo, at, path, False, head)
+            if pinned:
+                # A submodule answers stat and log, not blame: no link to a refusal.
+                links = [ln for ln in links if "as=blame" not in ln["href"]]
+            return self._result(body["uri"], "application/json", json.dumps(body, indent=1), links)
         try:
             kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{at}:{path}").strip()
         except TmError:
