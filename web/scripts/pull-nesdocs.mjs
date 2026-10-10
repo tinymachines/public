@@ -464,6 +464,37 @@ console.log(`pull-nesdocs: ${labCount} photographs from the lab notebook`);
 // 127.0.0.1 or 198.51.100.7, and the bench's guides do.
 const HOST = /(?<![\w.])(?!127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)((?:\d{1,3}\.){3}\d{1,3})(?![\w.])/;
 
+// The hotbits bench's figures (/hotbits/bench/*.svg). The case's sheet comes
+// from the TRNG package the record above verified, so it is the sheet its
+// PDF was built from (sheets 2 and 4 are the system and emitter drawings
+// framed for the package, so the page draws those instead); the system and emitter
+// drawings and the signal chain come from geiger's tree, refused if they
+// differ from its last commit, so a copy always matches a commit. Each is
+// scanned for host detail as the PDF is. Without ../geiger there are none,
+// and the page draws only the figures it has.
+const BENCH_FIGURES = path.join(ROOT, "web", "public", "hotbits", "bench");
+fs.mkdirSync(BENCH_FIGURES, { recursive: true });
+const benchFigures = [];
+if (PKG_TRNG) {
+  benchFigures.push([path.join(PKG_TRNG.dir, "03-schematic.svg"), "03-schematic.svg"]);
+  const loose = ["docs/drawings/trng-system.svg", "docs/drawings/trng-emitter.svg", "docs/articles/signal-chain.svg"];
+  const dirty = execFileSync("git", ["-C", GEIGER, "status", "--porcelain", "--", ...loose], { encoding: "utf8" }).trim();
+  if (dirty) throw new Error(`pull-nesdocs: geiger's figures differ from its last commit, so a copy would match no commit:\n${dirty}`);
+  for (const f of loose) benchFigures.push([path.join(GEIGER, f), path.basename(f)]);
+}
+for (const [src, f] of benchFigures) {
+  const hit = fs.readFileSync(src, "utf8").match(HOST);
+  if (hit) throw new Error(`pull-nesdocs: ${f} prints ${JSON.stringify(hit[0])}; a drawing on the public site names no host`);
+  fs.copyFileSync(src, path.join(BENCH_FIGURES, f));
+}
+for (const f of fs.readdirSync(BENCH_FIGURES)) {
+  if (!benchFigures.some(([, n]) => n === f)) {
+    fs.unlinkSync(path.join(BENCH_FIGURES, f));
+    console.log(`pull-nesdocs: withdrew hotbits/bench/${f}, which nothing names`);
+  }
+}
+console.log(`pull-nesdocs: ${benchFigures.length} figures for the hotbits bench`);
+
 /** Where a document's text lives, for an error message. */
 const where = (d) => (d.here ? `docs/nes/${d.here}` : `${d.repo}/docs/${d.file}`);
 
@@ -729,6 +760,50 @@ fs.writeFileSync(path.join(OUT, "shelves.json"), JSON.stringify({
   kinds: Object.values(KINDS),
   // And the key to the codes those documents are filed under, so a page can
   // print what N, A, P and M mean beside the documents that carry them.
+  codes: CODES,
+}, null, 1) + "\n");
+
+// The hotbits bench's shelves (/hotbits/bench), written the same way and
+// read by the same library. The four pages written here are the
+// instrument shelf, their titles and lines read from their own
+// frontmatter, never typed twice. A page that lives in the NES notebook but
+// is about this bench too is shelved here by a link to it (lives: "nes"),
+// never a second copy. The bench shelves fill as geiger's pages arrive; a
+// shelf with nothing on it is not drawn.
+const HOTBITS_GROUPS = [
+  { key: "instrument", heading: "What the instrument is", intro: "How a decay becomes a byte: the counter, the bits, the tests that refuse to serve, and the gateway in front.", ja: { heading: "計器とは何か", intro: "崩壊がどうバイトになるか: カウンタ、ビット、配らないと決めるテスト、そして前に立つゲートウェイ。" } },
+  { key: "bench-plan", heading: "Planning the bench", intro: "Moving the count's timestamp off the server and into hardware, and the grounding the move depends on.", ja: { heading: "ベンチの計画", intro: "カウントの時刻をサーバーからハードウェアへ移すこと、そしてそれが頼るアースの取り方。" } },
+  { key: "bench-build", heading: "Building the bench", intro: "The emitter as drawn and as built: the drawings, the boards, the parts, and which ESP32 does which job.", ja: { heading: "ベンチを組む", intro: "図面の上のエミッタと、組み上がったエミッタ: 図面、基板、部品、そしてどの ESP32 がどの仕事をするか。" } },
+  { key: "bench-record", heading: "What happened at the bench", intro: "The lab notebook, kept as it happened, and what is still open.", ja: { heading: "ベンチで起きたこと", intro: "起きたままに残した実験ノートと、まだ開いていること。" } },
+  { key: "bench-experiments", heading: "Experiments at the bench", intro: "The scope on the signal chain, what the counter's own timing costs in counts, and how the source's quality is tracked.", ja: { heading: "ベンチでの実験", intro: "信号の連なりに当てたオシロスコープ、カウンタ自身の時間がカウントにいくら掛かるか、そして源の質をどう追うか。" } },
+  { key: "bench-exercise", heading: "Using what the bench makes", intro: "Getting the data and working with it, and taking the tube outdoors.", ja: { heading: "ベンチが作るものを使う", intro: "データを取ってそれを扱うこと、そして管を屋外へ持ち出すこと。" } },
+];
+const HOTBITS_LINKS = [
+  { slug: "esp32-part-choice", group: "bench-build" },
+  { slug: "oscilloscope", group: "bench-experiments" },
+];
+const HOTBITS_DIR = path.join(ROOT, "docs", "hotbits");
+const hotbitsHere = fs.readdirSync(HOTBITS_DIR).filter((f) => f.endsWith(".md")).map((f) => {
+  const fm = matter(fs.readFileSync(path.join(HOTBITS_DIR, f), "utf8")).data;
+  if (!fm.title || !fm.description) throw new Error(`pull-nesdocs: docs/hotbits/${f} has no title or no description to shelve it by`);
+  const slug = f === "index.md" ? "" : f.replace(/\.md$/, "");
+  return { group: "instrument", order: slug ? (fm.order ?? 99) : 0, doc: { route: slug ? `/docs/hotbits/${slug}` : "/docs/hotbits", title: fm.title, code: null, letter: null, kind: "reference", description: fm.description } };
+});
+const hotbitsLinked = HOTBITS_LINKS.flatMap((l) => {
+  const d = DOCS.find((x) => x.slug === l.slug && !x.section);
+  if (!d) {
+    console.log(`pull-nesdocs: ${l.slug} is not in this build, so the hotbits bench does not shelve it`);
+    return [];
+  }
+  return [{ group: l.group, order: d.order, doc: { ...shelf(d), lives: "nes" } }];
+});
+fs.writeFileSync(path.join(HOTBITS_DIR, "shelves.json"), JSON.stringify({
+  groups: HOTBITS_GROUPS.map((g) => ({
+    key: g.key, heading: g.heading, intro: g.intro, ja: g.ja,
+    docs: [...hotbitsHere, ...hotbitsLinked].filter((e) => e.group === g.key).sort((a, b) => a.order - b.order).map((e) => e.doc),
+  })),
+  cart: [],
+  kinds: Object.values(KINDS),
   codes: CODES,
 }, null, 1) + "\n");
 

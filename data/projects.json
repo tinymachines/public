@@ -236,6 +236,19 @@
      "lands_at_settled": true,
      "status": "here",
      "prerendered": true
+    },
+    {
+     "key": "bench",
+     "name": "The bench",
+     "what": "The bench the pool comes from: the tube in its case, the emitter that times every count, the drawings of both, and the notebook the bench keeps.",
+     "nav": false,
+     "nav_label": null,
+     "piece": null,
+     "serves_today": "https://tinymachines.ai/hotbits/bench",
+     "lands_at": "/hotbits/bench",
+     "lands_at_settled": true,
+     "status": "here",
+     "prerendered": true
     }
    ],
    "landing": "/hotbits"

@@ -24,6 +24,8 @@ export type ShelfDoc = {
   letter: string | null;
   kind: string;
   description: string;
+  /** Set where the document lives in another project's notebook and is shelved here by a link ("nes"). */
+  lives?: string;
 };
 
 /** What a document IS: the notebook's second axis (pull-nesdocs.mjs KINDS). */
@@ -41,16 +43,21 @@ export type Shelf = {
 
 type File = { groups: Shelf[]; cart: ShelfDoc[]; kinds: Kind[]; codes: Code[] };
 
-let cache: File | null = null;
+/** The projects whose notebooks have shelves: the NES, and the hotbits bench since 2026-10-09. */
+export type ShelfProject = "nes" | "hotbits";
 
-function read(): File {
-  if (cache) return cache;
-  const file = path.join(DOCS_DIR, "nes", "shelves.json");
+const cache: Partial<Record<ShelfProject, File>> = {};
+
+function read(project: ShelfProject = "nes"): File {
+  const hit = cache[project];
+  if (hit) return hit;
+  const file = path.join(DOCS_DIR, project, "shelves.json");
   if (!fs.existsSync(file)) {
-    throw new Error("docs/nes/shelves.json is missing: run bun scripts/pull-nesdocs.mjs (the build does)");
+    throw new Error(`docs/${project}/shelves.json is missing: run bun scripts/pull-nesdocs.mjs (the build does)`);
   }
-  cache = JSON.parse(fs.readFileSync(file, "utf8")) as File;
-  return cache;
+  const f = JSON.parse(fs.readFileSync(file, "utf8")) as File;
+  cache[project] = f;
+  return f;
 }
 
 /**
@@ -95,11 +102,22 @@ export function codes(): { code: Code; docs: ShelfDoc[] }[] {
 }
 
 /** One group, by key; throws on a key the pull does not write. */
-export function shelf(key: string): Shelf {
-  const g = read().groups.find((x) => x.key === key);
-  if (!g) throw new Error(`docs/nes/shelves.json has no group "${key}"`);
+export function shelf(key: string, project: ShelfProject = "nes"): Shelf {
+  const g = read(project).groups.find((x) => x.key === key);
+  if (!g) throw new Error(`docs/${project}/shelves.json has no group "${key}"`);
   if (!g.docs.length) throw new Error(`the "${key}" shelf is empty`);
   return g;
+}
+
+/**
+ * A project's groups that have something on them, in the pull's order. For
+ * a bench whose shelves fill as its pages arrive (hotbits): a group with no
+ * document is left out rather than drawn as a heading over nothing.
+ */
+export function filledShelves(project: ShelfProject): Shelf[] {
+  const gs = read(project).groups;
+  if (!gs.length) throw new Error(`docs/${project}/shelves.json has no groups`);
+  return gs.filter((g) => g.docs.length);
 }
 
 /** Every group, in the order the pull writes them. */

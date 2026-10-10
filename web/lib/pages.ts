@@ -124,6 +124,11 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "Four views of the same radioactive decay: a 3D field, a return map, a bit raster, and the measurements in phase space. Read from the archive, never the fresh pool.",
   },
+  "/hotbits/bench": {
+    title: "The bench",
+    description:
+      "The bench the pool comes from: the tube in its case, the emitter that times every count, the drawings of both, and the notebook the bench keeps.",
+  },
   "/hotbits/api": {
     title: "The hotbits API",
     description:
