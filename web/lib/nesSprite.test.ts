@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { drawnBox, fitColours, replaceTiles, shrink, tileLines, toTiles, type Picture, type Rgb } from "./nesSprite";
+import fs from "node:fs";
+import path from "node:path";
+import { drawnBox, drawSquareFrom, fitColours, replaceTiles, setSpriteColours, shrink, tileCount, tileLines, toTiles, type Picture, type Rgb } from "./nesSprite";
+
+const LESSONS = path.join(import.meta.dir, "..", "..", "lessons");
+const lesson = (key: string, file: string) => fs.readFileSync(path.join(LESSONS, key, file), "utf8");
+const keys = () => fs.readdirSync(LESSONS).filter((k) => fs.existsSync(path.join(LESSONS, k, "prg.s")));
 
 /** A picture of `w` by `h`, see-through, with `fill` painted where `at` says. */
 function picture(w: number, h: number, at: (x: number, y: number) => Rgb | null): Picture {
@@ -69,5 +75,54 @@ describe("nesSprite", () => {
     expect(out[2]).toBe(lines[0]);
     expect(out[3]).toBe(lines[1]);
     expect(out.filter((l) => l.includes(".byte"))).toHaveLength(3);
+  });
+
+  test("three colours go into sprite palette 0 of every lesson, and nowhere else", () => {
+    expect(keys().length).toBeGreaterThan(20);
+    for (const k of keys()) {
+      const prg = lesson(k, "prg.s");
+      const got = setSpriteColours(prg, [0x0a, 0x1b, 0x2c]);
+      expect(got, k).not.toBeNull();
+      const a = prg.split("\n"), b = got!.split("\n");
+      expect(b.length, k).toBe(a.length);
+      const changed = b.map((l, i) => (l === a[i] ? -1 : i)).filter((i) => i >= 0);
+      expect(changed.length, k).toBe(1);
+      const bytes = (l: string) => l.trim().replace(/^\.byte\s+/, "").split(",");
+      const was = bytes(a[changed[0]]), is = bytes(b[changed[0]]);
+      // The second line of the table: the ground colour kept, then the three, then the rest kept.
+      expect(a[changed[0] - 2].trim(), k).toBe("colours:");
+      expect(is, k).toEqual([was[0], "$0A", "$1B", "$2C", ...was.slice(4)]);
+    }
+    expect(setSpriteColours("main:\n    RTS\n", [1, 2, 3])).toBeNull();
+  });
+
+  test("the square is drawn from four tiles in reading order, and a second time over the first", () => {
+    const prg = lesson("jump", "prg.s");
+    const got = drawSquareFrom(prg, [3, 4, 5, 6])!;
+    const want = ["LDA #$03", "STA $0201", "LDA #$04", "STA $0205", "LDA #$05", "STA $0209", "LDA #$06", "STA $020D"];
+    const lines = got.split("\n").map((l) => l.trim());
+    const at = lines.indexOf("LDA #$03");
+    expect(lines.slice(at, at + 9)).toEqual([...want, "LDA #$00"]);
+    expect(lines.length).toBe(prg.split("\n").length + 3);
+    // Again, over its own work: the same eight lines with new numbers, nothing added.
+    const again = drawSquareFrom(got, [9, 9, 9, 9])!;
+    expect(again.split("\n").length).toBe(lines.length);
+    expect(again).not.toContain("LDA #$03");
+    expect(drawSquareFrom(again, [3, 4, 5, 6])).toBe(got);
+  });
+
+  test("the lessons that draw a square are found, and the four that do not are refused", () => {
+    const none = keys().filter((k) => drawSquareFrom(lesson(k, "prg.s"), [3, 4, 5, 6]) === null).sort();
+    expect(none).toEqual(["about", "flicker", "menu", "splash"]);
+    // Where it is found, it is the square's run: the one that loaded tile 1.
+    for (const k of keys().filter((x) => !none.includes(x))) {
+      const a = lesson(k, "prg.s").split("\n"), b = drawSquareFrom(lesson(k, "prg.s"), [3, 4, 5, 6])!.split("\n");
+      const i = b.findIndex((l, n) => l !== a[n]);
+      expect(a[i].trim(), k).toBe("LDA #$01");
+    }
+  });
+
+  test("a lesson's tiles are counted", () => {
+    expect(tileCount(lesson("jump", "chr.s"))).toBe(3);
   });
 });

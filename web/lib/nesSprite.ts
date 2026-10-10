@@ -178,3 +178,72 @@ export function replaceTiles(chr: string, first: number, lines: string[]): strin
   });
   return all.join("\n") + "\n";
 }
+
+/** How many tiles a lesson's chr.s holds: the first tile number nothing uses yet. */
+export function tileCount(chr: string): number {
+  return chr.split("\n").filter((l) => l.trimStart().startsWith(".byte")).length;
+}
+
+const code = (n: number) => "$" + n.toString(16).toUpperCase().padStart(2, "0");
+
+/**
+ * A lesson's program with three colours written into its first sprite
+ * palette: the table at the label `colours` is 32 bytes, the second 16
+ * the sprites', and the three after the shared ground colour are sprite
+ * palette 0's. Null when the program has no such table, so the caller
+ * says so rather than believing the colours went in.
+ */
+export function setSpriteColours(prg: string, codes: readonly number[]): string | null {
+  const all = prg.split("\n");
+  const label = all.findIndex((l) => /^colours:\s*$/.test(l));
+  if (label < 0) return null;
+  // The table's bytes, each with the line it is on and its place there.
+  const at: { line: number; n: number }[] = [];
+  for (let i = label + 1; i < all.length && at.length < 32; i++) {
+    const m = /^\s+\.byte\s+(.*)$/.exec(all[i]);
+    if (!m) break;
+    m[1].split(",").forEach((_, n) => at.push({ line: i, n }));
+  }
+  if (at.length < 20) return null;
+  codes.slice(0, 3).forEach((c, k) => {
+    const { line, n } = at[17 + k];
+    const m = /^(\s+\.byte\s+)(.*)$/.exec(all[line])!;
+    const bytes = m[2].split(",");
+    bytes[n] = code(c);
+    all[line] = m[1] + bytes.join(",");
+  });
+  return all.join("\n");
+}
+
+/**
+ * A lesson's program with its square drawn from new tiles. The lessons
+ * draw the square as four sprites, two by two, and give them their tile
+ * in one run of lines: a number loaded, then stored to the tile byte of
+ * four sprites in a row (top left, top right, bottom left, bottom
+ * right). That run is rewritten to load `tiles[k]` for sprite k, so four
+ * tiles in reading order show a 16 pixel picture whole. Null when the
+ * program has no such run (four of the lessons draw no square).
+ */
+export function drawSquareFrom(prg: string, tiles: readonly [number, number, number, number]): string | null {
+  const all = prg.split("\n");
+  const load = /^(\s+)LDA #\$[0-9A-Fa-f]{2}\s*$/;
+  const store = /^\s+STA \$(02[0-9A-Fa-f]{2})\s*$/;
+  for (let i = 0; i < all.length; i++) {
+    const indent = load.exec(all[i])?.[1];
+    if (indent === undefined) continue;
+    // Loads and stores from here on, until four tile bytes have been stored.
+    const to: number[] = [];
+    let j = i;
+    for (; j < all.length && to.length < 4; j++) {
+      const s = store.exec(all[j]);
+      if (s) to.push(parseInt(s[1], 16));
+      else if (!load.test(all[j]) || j + 1 >= all.length || !store.test(all[j + 1])) break;
+    }
+    if (to.length !== 4 || !to.every((a, k) => (a & 3) === 1 && a === to[0] + 4 * k)) continue;
+    if (j < all.length && store.test(all[j])) continue; // a longer run is something else's
+    const lines = to.flatMap((a, k) => [`${indent}LDA #${code(tiles[k])}`, `${indent}STA $${a.toString(16).toUpperCase().padStart(4, "0")}`]);
+    all.splice(i, j - i, ...lines);
+    return all.join("\n");
+  }
+  return null;
+}

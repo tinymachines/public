@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import { fitColours, replaceTiles, shrink, tileLines, toTiles, type Picture, type Rgb } from "@/lib/nesSprite";
+import { drawSquareFrom, fitColours, replaceTiles, setSpriteColours, shrink, tileCount, tileLines, toTiles, type Picture, type Rgb } from "@/lib/nesSprite";
 import { measuredPalette, serverSnapshot as consoleServer, snapshot as consoleNow, subscribe as consoleSub } from "../play/playEngine";
 import * as program from "./programEngine";
 import { generateSprite, listSprites, signedIn, spriteUrl, type GeneratedSprite } from "./spriteApi";
@@ -14,7 +14,11 @@ import { generateSprite, listSprites, signedIn, spriteUrl, type GeneratedSprite 
  * cropped, shrunk to 8, 16 or 32 pixels and fitted to three of the
  * console's colours as the picture worker measured them (lib/nesSprite.ts),
  * then offered as tiles: to download, to copy as lines of a program's
- * tiles, or to put into the program open in the Program window.
+ * tiles, or to put into the program open in the Program window. Putting
+ * them in edits the reader's copy of the program as well: the three
+ * colours go into its sprite palette and its square is drawn from the new
+ * tiles, and where the program has no such table or no such square the
+ * note says so. The lesson's own cartridge is never changed.
  */
 
 const S = {
@@ -37,7 +41,14 @@ const S = {
     copied: "Copied.",
     put: "Put into the program's tiles from tile",
     put2: "Put them in",
-    putDone: (a: string, b: string) => `In: tiles ${a === b ? a : `${a} to ${b}`}. Assemble and play to see them.`,
+    putDone: (a: string, b: string) => `In: tiles ${a === b ? a : `${a} to ${b}`}.`,
+    coloursIn: (c: string) => `Its three colours are in the program's sprite palette: ${c}.`,
+    coloursNo: "This program has no colour table the maker can find, so its palette is as it was.",
+    drawOne: "The program's square is drawn from the new tile, four times over.",
+    drawFour: "The program's square is drawn from the four new tiles.",
+    drawMany: "Sixteen tiles are more than the square's four, so the program still draws what it drew; it needs a bigger draw to show them.",
+    drawNo: "This program draws no square the maker can find, so nothing on the screen uses the new tiles yet.",
+    play: "Assemble and play to see it.",
     noProgram: "Open a lesson in the Program window to put the tiles into it.",
     original: "the picture",
     nes: "as the NES draws it",
@@ -61,7 +72,14 @@ const S = {
     copied: "コピーした。",
     put: "プログラムのタイルに入れる。始めのタイル",
     put2: "入れる",
-    putDone: (a: string, b: string) => `入れた: タイル ${a === b ? a : `${a}～${b}`}。組み立てて遊ぶと見える。`,
+    putDone: (a: string, b: string) => `入れた: タイル ${a === b ? a : `${a}～${b}`}。`,
+    coloursIn: (c: string) => `三色はプログラムのスプライトのパレットに書いた: ${c}。`,
+    coloursNo: "このプログラムには作り手が見つけられる色の表が無いので、パレットは元のまま。",
+    drawOne: "プログラムの四角は、新しいタイルを四回並べて描く。",
+    drawFour: "プログラムの四角は、新しい四つのタイルで描く。",
+    drawMany: "十六のタイルは四角の四つより多いので、プログラムは今までどおりに描く。見せるにはもっと大きく描く必要がある。",
+    drawNo: "このプログラムには作り手が見つけられる四角が無いので、画面で新しいタイルを使うものはまだ無い。",
+    play: "組み立てて遊ぶと見える。",
     noProgram: "プログラムのウィンドウでレッスンを開くと、そこへタイルを入れられる。",
     original: "元の絵",
     nes: "NES が描くと",
@@ -98,7 +116,10 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [first, setFirst] = useState(1);
+  // Where the tiles go: after the lesson's own until the reader says otherwise.
+  const [chosen, setChosen] = useState<{ key: string; first: number } | null>(null);
+  const free = Math.min(255, tileCount(p.parts?.chr ?? ""));
+  const first = chosen && chosen.key === p.parts?.key ? chosen.first : free;
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -171,7 +192,21 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
     if (!made || !p.parts) return;
     program.setTiles(replaceTiles(p.chr, first, made.lines));
     const last = first + made.lines.length - 1;
-    setNote(T.putDone(String(first), String(last)));
+    const said: string[] = [T.putDone(String(first), String(last))];
+    let text = p.text;
+    const coloured = setSpriteColours(text, made.codes);
+    if (coloured !== null) text = coloured;
+    said.push(coloured !== null ? T.coloursIn(made.codes.map(hex).join(", ")) : T.coloursNo);
+    if (made.lines.length > 4) said.push(T.drawMany);
+    else {
+      const n = made.lines.length;
+      const drawn = drawSquareFrom(text, n === 4 ? [first, first + 1, first + 2, first + 3] : [first, first, first, first]);
+      if (drawn !== null) text = drawn;
+      said.push(drawn === null ? T.drawNo : n === 4 ? T.drawFour : T.drawOne);
+    }
+    if (text !== p.text) program.edit(text);
+    said.push(T.play);
+    setNote(said.join(" "));
   };
 
   return (
@@ -255,7 +290,7 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
             <p className="quiet">
               <label>
                 {T.put}{" "}
-                <input type="number" min={0} max={255} value={first} onChange={(e) => setFirst(Math.max(0, Math.min(255, Number(e.target.value) || 0)))} style={{ width: "5em" }} data-maker-first />
+                <input type="number" min={0} max={255} value={first} onChange={(e) => setChosen({ key: p.parts!.key, first: Math.max(0, Math.min(255, Number(e.target.value) || 0)) })} style={{ width: "5em" }} data-maker-first />
               </label>{" "}
               <button type="button" className="btn" onClick={put} data-maker-put>{T.put2}</button>
             </p>
