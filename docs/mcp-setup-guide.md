@@ -125,8 +125,10 @@ links forward (`tm:generates`); a file here and the same file in git are
 joined both ways (`tm:repository`, `tm:working-copy`); any page links to
 the route file that renders it (`tm:source`) and to the records its own
 code reads (`tm:data`), a record links back to its readers
-(`tm:read-by`) and to the script that writes it (`tm:generated-by`); and
-`up`, `collection`, `alternate`, `describedby`, `version-history` and
+(`tm:read-by`) and to the script that writes it (`tm:generated-by`); a page
+links to the same page in the other language and on the other site
+(`alternate`), and a submodule to the repository it pins, at the commit it
+pins (`tm:pins`); and `up`, `collection`, `alternate`, `describedby`, `version-history` and
 `latest-version` mean what the IANA registry says. Through resources the links sit in the
 result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.

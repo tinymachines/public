@@ -83,7 +83,7 @@ tm://tinymachines/offbox/autopsy-models            ビルドの連なりがこ�
 
 git マウントはサイト自身のリポジトリと、ノートがページを取り込んでくる隣のリポジトリを提供する。すべて GitHub で同じ名前のもとに公開されている。`?at=` はブランチ、タグ、コミット、`?as=log` はパスに触れたコミット（`&n=` で何件か）、`?as=blame` は行ごとにコミットを添えたファイル、`?as=tree` はディレクトリを JSON で。`6502` の既定の ref は最新ではなく、サイトが配信しているコミットだ。
 
-どの読み取りもリンクを運ぶ。ノートのページは元になった markdown へ（`tm:source`）、markdown はそのページへ戻る（`tm:renders-as`）。ビルドが他のリポジトリから取り込んだページとここにある写しは、出所のファイルへ（`tm:generated-by`）、そのファイルは前向きに（`tm:generates`）。ここにあるファイルと git の同じファイルは双方向に結ばれる（`tm:repository`、`tm:working-copy`）。どのページも、それを描画するルートのファイルへ（`tm:source`）と、ページ自身のコードが読む記録へ（`tm:data`）、記録は読み手へ（`tm:read-by`）と書き手のスクリプトへ（`tm:generated-by`）。そして `up`、`collection`、`alternate`、`describedby`、`version-history`、`latest-version` は IANA のレジストリの言う通りの意味だ。リソースを通すとリンクは結果の `_meta` の `tinymachines.ai/links` の下に、`resolve` を通すと本文にある。
+どの読み取りもリンクを運ぶ。ノートのページは元になった markdown へ（`tm:source`）、markdown はそのページへ戻る（`tm:renders-as`）。ビルドが他のリポジトリから取り込んだページとここにある写しは、出所のファイルへ（`tm:generated-by`）、そのファイルは前向きに（`tm:generates`）。ここにあるファイルと git の同じファイルは双方向に結ばれる（`tm:repository`、`tm:working-copy`）。どのページも、それを描画するルートのファイルへ（`tm:source`）と、ページ自身のコードが読む記録へ（`tm:data`）、記録は読み手へ（`tm:read-by`）と書き手のスクリプトへ（`tm:generated-by`）。ページは同じページの別の言語版と別のサイト版へ（`alternate`）、サブモジュールは固定しているコミットのリポジトリへ（`tm:pins`）結ばれる。そして `up`、`collection`、`alternate`、`describedby`、`version-history`、`latest-version` は IANA のレジストリの言う通りの意味だ。リソースを通すとリンクは結果の `_meta` の `tinymachines.ai/links` の下に、`resolve` を通すと本文にある。
 
 解決できない URI は、解決できる最寄りのものを添えて拒まれる。だから外れた推測は行き止まりではなく教えになる。サイズ上限を超えるファイルはサイズと `?range=` のテンプレートつきで返る。リソーステンプレートが文法を述べ、補完が生きた値を埋めるので、クライアントは見せられたことのない URI を組み立てて試せる。
 

@@ -323,7 +323,8 @@ def test_a_page_reads_as_what_the_visitor_gets_and_links_to_its_source(ns):
     assert c["mimeType"] == "text/html" and "<nav>" in c["text"]
     r = rels(links)
     assert r["tm:source"] == [f"{ROOT}fs/docs/nes/pile.md"]
-    assert r["alternate"] == [f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=rendered"], "the page itself is its text; the HTML is the alternate"
+    facets = [h for h in r["alternate"] if "?as=" in h]
+    assert facets == [f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=rendered"], "the page itself is its text; the HTML is the alternate"
     assert r["up"] == r["collection"] == [f"{ROOT}http/tinymachines.ai/docs/nes/"]
 
 
@@ -1025,3 +1026,104 @@ def test_tm9_the_repository_files_that_hold_no_secrets_are_readable(gns):
     for p in (".env", "data/.env", ".git/config", ".gitconfig", ".git-credentials"):
         assert tm.denied(p), p
     assert not tm.denied(".gitignore") and not tm.denied("extern/x/.gitmodules")
+
+
+def _pin(repo: Path, path: str, sha: str, url: str) -> None:
+    """A submodule as git stores it: a gitlink entry (mode 160000) whose commit
+    lives in another repository, and its row in .gitmodules."""
+    name = path.rsplit("/", 1)[-1]
+    with (repo / ".gitmodules").open("a") as f:
+        f.write(f'[submodule "{path}"]\n\tpath = {path}\n\turl = {url}\n')
+    git(repo, "add", "-f", ".gitmodules")
+    git(repo, "update-index", "--add", "--cacheinfo", f"160000,{sha},{path}")
+    git(repo, "commit", "-q", "-m", f"pin {name}")
+
+
+def test_tm19_a_submodule_reads_as_what_it_pins_not_as_a_dead_end(gns, gits):
+    bench_sha = git(gits["bench"], "rev-parse", "HEAD").strip()
+    elsewhere = "1" * 40
+    _pin(gns.repo, "extern/bench", bench_sha, "https://github.com/tinymachines/bench.git")
+    _pin(gns.repo, "extern/pretext", elsewhere, "https://github.com/chenglou/pretext.git")
+    _pin(gns.repo, "extern/lookalike", elsewhere, "https://github.com/someone/bench.git")
+    kids = {k["name"]: k for k in json.loads(read(gns, f"{ROOT}git/public/extern/")[0]["text"])["children"]}
+    assert kids["bench"]["submodule"] is True and kids["bench"]["mimeType"] == "application/json"
+    for uri in (f"{ROOT}git/public/extern/bench", f"{ROOT}git/public/extern/bench/", f"{ROOT}git/public/extern/bench?as=stat"):
+        c, links = read(gns, uri)
+        body = json.loads(c["text"])
+        assert body["type"] == "submodule" and body["pinned"] == bench_sha, uri
+        assert body["url"] == "https://github.com/tinymachines/bench.git"
+        assert rels(links)["tm:pins"] == [f"{ROOT}git/bench/?at={bench_sha}"], "one link to the repository, at the pinned commit"
+        assert rels(links)["up"] == [f"{ROOT}git/public/extern/"]
+    # Where the link goes resolves, at the commit the submodule pins.
+    pinned = json.loads(read(gns, f"{ROOT}git/bench/?at={bench_sha}")[0]["text"])
+    assert pinned["commit"] == bench_sha
+    # A submodule this box does not serve still says what it is and where it
+    # lives; it just has nowhere in the namespace to send the reader.
+    c, links = read(gns, f"{ROOT}git/public/extern/pretext")
+    body = json.loads(c["text"])
+    assert body["type"] == "submodule" and body["url"] == "https://github.com/chenglou/pretext.git" and body["repository"] is None
+    assert "tm:pins" not in rels(links)
+    # Someone else's repository named like one of ours is not ours.
+    assert json.loads(read(gns, f"{ROOT}git/public/extern/lookalike")[0]["text"])["repository"] is None
+    # The pin's own history: the commits that moved it.
+    log = json.loads(read(gns, f"{ROOT}git/public/extern/bench?as=log")[0]["text"])
+    assert [x["subject"] for x in log["commits"]] == ["pin bench"]
+    assert refusal(gns, f"{ROOT}git/public/extern/bench?as=blame").reason == "bad-facet"
+
+
+def test_tm19_no_refusal_offers_the_uri_it_refused(gns, monkeypatch):
+    # The loop TM-19 found, forced: a refusal whose nearest names the address
+    # it refused. The read drops it on the way out.
+    loop = f"{ROOT}git/public/docs/nes/nope.md"
+    monkeypatch.setattr(gns, "_git_missing", lambda repo, at, path: TmError(tm.RESOURCE_NOT_FOUND, "not-found", "x", nearest=[loop, loop + "/"]))
+    assert refusal(gns, loop).data["nearest"] == [loop + "/"], "x/ for x is a different address, and stays"
+    monkeypatch.undo()
+    # A file asked for as a directory, and a name with a near twin: the
+    # nearest list may name a sibling, never the address that just failed.
+    for uri in (f"{ROOT}git/public/docs/nes/nope.md", f"{ROOT}git/public/docs/nes/alone.md/x", f"{ROOT}fs/docs/nes/pyle.md"):
+        e = refusal(gns, uri)
+        assert uri not in e.data.get("nearest", []), uri
+
+
+def test_tm20_a_page_links_to_itself_in_the_other_language_and_on_the_other_site(built):
+    repo = built.repo
+    (repo / "lessons" / "jump").mkdir(parents=True, exist_ok=True)
+    (repo / "lessons" / "jump" / "lesson.json").write_text('{"kind": "jump"}\n')
+    en, ja = "/autopsy/lessons/jump", "/ja/autopsy/lessons/jump"
+    # The beta's own build, beside the checkout as on the box (written here,
+    # since the temp directories' parent is shared between tests): it has the
+    # lesson in both languages and not the games.
+    bx = repo.parent / "public-beta" / "web" / ".next"
+    bx.mkdir(parents=True, exist_ok=True)
+    (bx / "prerender-manifest.json").write_text(json.dumps({"routes": {
+        "/en/autopsy/lessons/jump": {"srcRoute": "/[lang]/autopsy/lessons/[lesson]"},
+        "/ja/autopsy/lessons/jump": {"srcRoute": "/[lang]/autopsy/lessons/[lesson]"},
+    }}))
+    alt = lambda path, site="tinymachines.ai": rels(read(built, f"{ROOT}http/{site}{path}?as=stat")[1])["alternate"]
+    assert f"{ROOT}http/tinymachines.ai{ja}" in alt(en), "English to Japanese"
+    assert f"{ROOT}http/tinymachines.ai{en}" in alt(ja), "and back"
+    assert f"{ROOT}http/beta.tinymachines.ai{en}" in alt(en), "live to beta"
+    assert f"{ROOT}http/tinymachines.ai{en}" in alt(en, "beta.tinymachines.ai"), "and back"
+    # Only versions a build made: this game page is English only, and live only.
+    assert not any("/ja/" in h or "beta." in h for h in alt("/autopsy/games/abc"))
+    # Every cross-version alternate carries a title saying which version it is.
+    titled = [ln for ln in read(built, f"{ROOT}http/tinymachines.ai{en}?as=stat")[1] if ln["rel"] == "alternate" and "?as=" not in ln["href"]]
+    assert titled and all(ln.get("title") for ln in titled)
+
+
+def test_tm11_a_facet_a_collection_has_no_use_for_is_refused_not_dropped(built):
+    # Unknown facets were already refused everywhere; a facet a page has but a
+    # listing does not was answered with the listing, and the facet dropped.
+    for uri in (f"{ROOT}http/tinymachines.ai/autopsy/?as=rendered", f"{ROOT}http/tinymachines.ai/autopsy/?as=text"):
+        e = refusal(built, uri)
+        assert e.reason == "bad-facet" and "collection" in e.message, uri
+    # The same on the other mounts: an fs directory is a listing (raw is the
+    # listing itself), and a git tree offers its listing and its log.
+    for uri in (f"{ROOT}fs/docs/?as=stat", f"{ROOT}git/public/docs/?as=stat", f"{ROOT}git/public/docs/?as=blame"):
+        e = refusal(built, uri)
+        assert e.reason == "bad-facet" and "collection" in e.message, uri
+    assert json.loads(read(built, f"{ROOT}fs/docs/?as=raw")[0]["text"])["children"]
+    assert json.loads(read(built, f"{ROOT}git/public/docs/?as=log")[0]["text"])["commits"]
+    # The listing itself, and a site's front page (its root is both), still read.
+    assert json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/")[0]["text"])["children"]
+    assert read(built, f"{ROOT}http/tinymachines.ai/?as=stat")[0]["mimeType"] == "application/json"

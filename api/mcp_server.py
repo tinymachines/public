@@ -65,7 +65,8 @@ markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as) and to the repository it came from (tm:generated-by or
 tm:repository), any page links to its route file (tm:source) and to the records
 its own code reads (tm:data), a script to what it reads that no repository
-holds (tm:input), and up, collection, alternate, describedby,
+holds (tm:input), a page to itself in the other language and on the other site
+(alternate), a submodule to the repository it pins (tm:pins), and up, collection, alternate, describedby,
 version-history and latest-version do what the IANA registry says. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the

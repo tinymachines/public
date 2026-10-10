@@ -953,6 +953,17 @@ class Namespace:
     # -- resources/read ----------------------------------------------------
 
     async def read(self, uri: str) -> dict:
+        try:
+            return await self._read(uri)
+        except TmError as e:
+            # TM-19: a refusal never offers the address it just refused, which a
+            # client following nearest would take round forever. (x/ for x is
+            # a different address and stays: it is how a directory is offered.)
+            if e.data.get("nearest"):
+                e.data["nearest"] = [n for n in e.data["nearest"] if n != uri]
+            raise
+
+    async def _read(self, uri: str) -> dict:
         ref = parse(uri)
         if ref.mount == "":
             body = {"uri": ROOT, "mounts": [
@@ -1185,6 +1196,9 @@ class Namespace:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; fs offers {', '.join(AS_FS)}")
         rel = ref.path
         if ref.is_collection:
+            if as_ != "raw":
+                # TM-11: a directory is its listing; raw is that listing itself.
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an fs collection is a listing and offers no facets; read {ref.uri} without ?as")
             kids = self._fs_children(rel)
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
             body: dict[str, Any] = {"uri": ref.uri, "children": chunk}
@@ -1278,6 +1292,64 @@ class Namespace:
         except TmError:
             return False
 
+    def _git_gitlink(self, repo: str, at: str, path: str) -> str | None:
+        """The commit a submodule pins, when the path is one (a gitlink, mode
+        160000), else None. cat-file cannot answer this: the pinned commit
+        lives in the other repository, so asking for its type fails."""
+        try:
+            out = run_git(self._git_dir(repo), "ls-tree", at, "--", path)
+        except TmError:
+            return None
+        meta, _, name = out.partition("\t")
+        parts = meta.split()
+        if len(parts) == 3 and parts[0] == "160000" and parts[1] == "commit" and name.strip() == path:
+            return parts[2]
+        return None
+
+    def _git_submodule_url(self, repo: str, at: str, path: str) -> str | None:
+        """The url .gitmodules gives a submodule path, at that ref."""
+        try:
+            out = run_git(self._git_dir(repo), "config", "--blob", f"{at}:.gitmodules", "--get-regexp", r"^submodule\..*\.(path|url)$")
+        except TmError:
+            return None
+        names: dict[str, dict[str, str]] = {}
+        for line in out.splitlines():
+            key, _, value = line.partition(" ")
+            sect, _, field_ = key.rpartition(".")
+            names.setdefault(sect, {})[field_] = value.strip()
+        for d in names.values():
+            if d.get("path") == path:
+                return d.get("url")
+        return None
+
+    def _served_repo(self, url: str | None) -> str | None:
+        """The git mount's name for a submodule's url, when this box serves
+        that repository. The mount's repositories are github.com/tinymachines
+        ones, so only a url there matches: someone else's repository with a
+        name like one of ours is not ours."""
+        m = re.fullmatch(r"(?:https://github\.com/|git@github\.com:)tinymachines/([A-Za-z0-9._-]+?)(?:\.git)?/?", url or "")
+        return m[1] if m and m[1] in self.git else None
+
+    def _read_submodule(self, repo: str, at: str, commit: str, path: str, pinned: str, as_: str, head: bool) -> dict:
+        q = "" if head else f"?at={at}"
+        sep = "&" if q else "?"
+        base = f"{ROOT}git/{repo}/{quote(path)}"
+        if as_ not in ("raw", "tree", "stat"):
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; a submodule offers stat and log")
+        url = self._git_submodule_url(repo, at, path)
+        served = self._served_repo(url)
+        target = f"{ROOT}git/{served}/?at={pinned}" if served else None
+        body = {"uri": base, "type": "submodule", "path": path, "at": at, "commit": commit, "pinned": pinned,
+                "url": url, "repository": target}
+        parent = path.rpartition("/")[0]
+        up = f"{ROOT}git/{repo}/{quote(parent)}/{q}" if parent else f"{ROOT}git/{repo}/{q}"
+        links = [link("up", up), link("collection", up), link("describedby", f"{base}{q}{sep}as=stat"),
+                 link("version-history", f"{base}{q}{sep}as=log")]
+        if target:
+            links.append(link("tm:pins", target, "exact", title=f"the repository this submodule pins, at {pinned[:12]}"))
+        uri = f"{base}{q}{sep}as=stat" if as_ == "stat" else base + q
+        return self._result(uri, "application/json", json.dumps(body, indent=1), links)
+
     def _git_children(self, repo: str, at: str, tree: str) -> list[dict]:
         spec = f"{at}:{tree}" if tree else at
         try:
@@ -1295,7 +1367,8 @@ class Namespace:
             if kind == "tree":
                 kids.append({"uri": base + "/", "name": name + "/", "mimeType": "application/json", "isCollection": True})
             elif kind == "commit":
-                kids.append({"uri": base, "name": name, "submodule": True, "isCollection": False})
+                # TM-19: a submodule reads as a record of what it pins.
+                kids.append({"uri": base, "name": name, "submodule": True, "mimeType": "application/json", "isCollection": False})
             elif denied(rel):
                 kids.append({"uri": base, "name": name, "redacted": True, "isCollection": False})
             else:
@@ -1416,6 +1489,16 @@ class Namespace:
         q = "" if head else f"?at={at}"
         sep = "&" if q else "?"
         base = f"{ROOT}git/{repo}/{quote(path)}"
+        # TM-19: a submodule is neither a tree nor a blob here, and its commit
+        # lives in another repository; it reads as what it pins (and as=log is
+        # the commits that moved the pin).
+        pinned = self._git_gitlink(repo, at, path) if path else None
+        if pinned and as_ != "log":
+            return self._read_submodule(repo, at, commit, path, pinned, as_, head)
+        if ref.is_collection and as_ not in ("tree", "raw", "log"):
+            # TM-11: a tree is its listing and its history. stat and blame are
+            # a file's, refused here rather than answered "not found".
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; a git collection offers tree (its listing) and log; read {base}/ or {base}/?as=log")
         if as_ == "tree" or (ref.is_collection and as_ == "raw"):
             kids = self._git_children(repo, at, path)
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
@@ -1430,7 +1513,7 @@ class Namespace:
                 n = max(1, min(int(ref.facets.get("n", LOG_DEFAULT)), LOG_MAX))
             except ValueError:
                 raise TmError(BAD_PARAMS, "bad-facet", "n= must be a number") from None
-            if not self._git_has(repo, at, path):
+            if not pinned and not self._git_has(repo, at, path):
                 raise self._git_missing(repo, at, path)
             out = run_git(self._git_dir(repo), "log", f"-n{n}", "--format=%H%x1f%h%x1f%an%x1f%aI%x1f%s", at, "--", path)
             commits = []
@@ -1717,6 +1800,28 @@ class Namespace:
         kids = self._http_children(site, d + "/")
         return [f"{d}/{c['name']}" for c in kids if c["name"].startswith(leaf)]
 
+    def _version_links(self, site: str, page: str) -> list[dict]:
+        """TM-20: the same page in the other language and on the other site,
+        as `alternate`. TM-18 names a reading route once, on the canonical
+        site and language, and counts on these to carry a reader to the rest,
+        so they are never capped. The other language is linked only where the
+        site's build made it (a page may be English only); the other site
+        wherever it serves the page, as `serves` judges for renders-as."""
+        out: list[dict] = []
+        if page == "/ja":
+            twin, lang = "/", "English"
+        elif page.startswith("/ja/"):
+            twin, lang = page[3:], "English"
+        else:
+            twin, lang = "/ja" + ("" if page == "/" else page), "Japanese"
+        b = self.built(site)
+        if b is not None and twin in b:
+            out.append(link("alternate", f"{ROOT}http/{site}{quote(twin)}", title=f"the same page in {lang}"))
+        for other in self.sites:
+            if other != site and self.serves(other, page):
+                out.append(link("alternate", f"{ROOT}http/{other}{quote(page)}", title=f"the same page on {other}"))
+        return out
+
     def _http_links(self, site: str, path: str, is_dir: bool) -> list[dict]:
         clean = path.rstrip("/") or "/"
         parent = clean.rpartition("/")[0]
@@ -1733,6 +1838,7 @@ class Namespace:
             links.append(link("collection", up))
             links.append(link("describedby", f"{base}?as=stat"))
             links.append(link("alternate", f"{base}?as=rendered", title="the HTML a visitor gets"))
+            links.extend(self._version_links(site, clean))
             route = self.graph.route_for(clean)
             if route and "public" in self.git:
                 file, dynamic = route
@@ -1773,6 +1879,10 @@ class Namespace:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; http offers {', '.join(AS_HTTP)}")
         site, path = ref.site, ref.path
         if ref.is_collection and path != "/":
+            if asked:
+                # TM-11: a listing has one representation. A page's facet on it
+                # is refused, as a file refuses one it lacks, not dropped.
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={asked!r}; an http collection is a listing and offers no facets; read {ref.uri} without ?as")
             kids = self._http_children(site, path)
             if not kids:
                 raise self._http_missing(site, path)

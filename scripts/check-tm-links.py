@@ -22,7 +22,13 @@ What it asserts, for every URI it reaches:
     since TM-8 and TM-14: a page's data is what its own code reads; since
     TM-18 a record names each route that reads it once, by its page or by
     the collection its pages are listed in, and a page anywhere is answered
-    by that one link, at the same confidence).
+    by that one link, at the same confidence);
+  - an `alternate` to another version of a page (the other language, the
+    other site) is answered by one back (TM-20), since TM-18 counts on
+    those links to carry a reader from the one route it names;
+  - a submodule is listed with a type and resolves to what it pins (TM-19:
+    it used to be skipped, which is how a submodule that read as not-found
+    went unnoticed).
 
 Git mounts are walked by their links and two levels of listing, not file by
 file: nine repositories' every file would be most of the budget and prove
@@ -107,7 +113,7 @@ async def crawl(budget: int) -> int:
             import json
             body = json.loads(text)
             for child in body.get("children", []):
-                if child.get("redacted") or child.get("submodule"):
+                if child.get("redacted"):
                     continue
                 d = git_depth(child["uri"])
                 if d is not None and d > 2:
@@ -128,6 +134,14 @@ async def crawl(budget: int) -> int:
         if not got.get("ok"):
             continue
         for ln in got["links"]:
+            if ln["rel"] == "alternate" and identity(ln["href"]) != identity(uri) and "/http/" in uri:
+                # Another version of the page, not another facet of it (TM-20).
+                t = seen.get(identity(ln["href"])) or await get(stat_of(identity(ln["href"])))
+                if not t["ok"]:
+                    problems.append(f"{uri} alternate {ln['href']}: the target does not resolve ({t['reason']})")
+                elif identity(uri) not in {identity(b["href"]) for b in t["links"] if b["rel"] == "alternate"}:
+                    problems.append(f"{uri} alternate {ln['href']}: no alternate back")
+                continue
             inv = PAIRS.get(ln["rel"])
             if not inv:
                 continue
@@ -155,7 +169,7 @@ async def crawl(budget: int) -> int:
     if problems:
         print(f"check-tm-links: {len(problems)} problem(s)")
         return 1
-    print("check-tm-links: every link resolves, no up names itself, every listing's type holds, every pair has its inverse")
+    print("check-tm-links: every link resolves, no up names itself, every listing's type holds, every pair has its inverse, every version links back")
     return 0
 
 
