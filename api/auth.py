@@ -58,7 +58,7 @@ from fastapi.responses import RedirectResponse
 
 import db
 import mint as mint_mod
-from admin import connection
+from admin import connection, require_dev
 from models import AuthState, Me, MeLimits, MeToken, MeUser, MintedToken, NewToken
 
 router = APIRouter(prefix="/v1", tags=["account"])
@@ -429,6 +429,27 @@ def _me(conn: sqlite3.Connection, user: sqlite3.Row) -> Me:
 )
 def me(user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Me:
     return _me(conn, user)
+
+
+@router.get(
+    "/auth/pass",
+    status_code=204,
+    response_class=Response,
+    summary="Whether this caller may use a signed-in service: a session, or a dev key",
+    description="Answers 204 to a browser with a session and to a program that sends a live dev key "
+                "(`Authorization: Bearer tmk_...`), and 401 to anybody else. The front door asks this "
+                "before it lets a request through to the sprite generator, so a program can use the "
+                "generator's MCP endpoint with a key where a person uses it signed in. A request that "
+                "carries an Authorization header is judged by the key alone: a bad or revoked key is "
+                "refused even from a signed-in browser, so a refusal always says which key it was about.",
+    responses={401: {"description": "Nobody: no session, and no key or a key that is unknown or revoked."}},
+)
+def auth_pass(request: Request, conn: sqlite3.Connection = Depends(connection)) -> Response:
+    if request.headers.get("authorization"):
+        require_dev(request, conn)
+    else:
+        require_user(request, conn)
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------------------

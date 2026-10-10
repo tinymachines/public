@@ -48,6 +48,7 @@ exists at all and why GitHub is the first way in.
 
 | | |
 |---|---|
+| `GET /v1/auth/pass` | 204 for a session or a live dev key (`Authorization: Bearer tmk_...`), 401 for anybody else. The front door asks it before the sprite generator, so a program can use the generator's MCP endpoint with a key |
 | `GET /v1/me` | Who is signed in, and the tokens the account holds, by digest |
 | `POST /v1/me/tokens` | Mint a registry token held by this account, counted against the account rather than the address |
 | `POST /v1/me/tokens/{token_id}/reissue` | Revoke a lost token in the registry and move its page to a new one, returned once |

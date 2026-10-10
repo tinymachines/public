@@ -324,10 +324,17 @@ server {
     # The sprite generator: MeatballAI/ComfyUI's fastapi_proxy.py, the
     # cbcomfy-api unit on 127.0.0.1:32520 with uvicorn --root-path /sprites,
     # in front of ComfyUI on :8188. Signed-in users only (owner's call,
-    # 2026-10-04): every request is first put to the API's /v1/me, which
-    # answers 200 for a session and 401 for nobody, and nobody is sent to
-    # sign in and brought back. Each request can run the GPUs, which is
-    # why. The service checks nothing itself, so it listens on loopback.
+    # 2026-10-04): every request is first put to the API's /v1/auth/pass,
+    # which answers 204 for a session and 401 for nobody, and nobody is
+    # sent to sign in and brought back. Each request can run the GPUs,
+    # which is why. The service checks nothing itself, so it listens on
+    # loopback.
+    #
+    # A program has no session, so the same route passes a live dev key
+    # (Authorization: Bearer tmk_..., minted and revoked on /admin). A
+    # request that sends a key and is refused gets a plain 401 rather than
+    # a redirect to a sign-in page it cannot use. The key is the front
+    # door's business and is not passed on to the service.
     #
     # Signed in is anyone with a GitHub account, and the service passes
     # every ComfyUI route through (any workflow, uploads, deleting outputs,
@@ -338,12 +345,14 @@ server {
     # No add_header in these locations, for the same reason as /api/ below.
     location = /internal/sprites-auth {
         internal;
-        proxy_pass http://127.0.0.1:6510/v1/me;
+        proxy_pass http://127.0.0.1:6510/v1/auth/pass;
         proxy_pass_request_body off;
         proxy_set_header Content-Length "";
         proxy_set_header Host $host;
     }
     location @sprites_signin {
+        default_type application/json;
+        if ($http_authorization) { return 401 '{"detail":"That key is unknown or revoked. A dev key looks like tmk_... and is sent as Authorization: Bearer."}'; }
         return 302 /api/v1/auth/github?next=/sprites/;
     }
     location = /sprites { return 301 /sprites/; }
@@ -355,6 +364,7 @@ server {
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization     "";
         # A cold start loads the model from the slow drive (five minutes
         # seen), and MCP answers stream.
         proxy_read_timeout 900s;

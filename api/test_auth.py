@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import auth
+import db
 import chip
 import mint as mint_mod
 from app import app
@@ -312,3 +313,70 @@ def test_the_session_reaches_the_subdomains(client, github):
     r = client.get("/v1/auth/github/callback", params={"code": "c0de", "state": state})
     session = [c for c in r.headers.get_list("set-cookie") if c.startswith(f"{auth.SESSION_COOKIE}=") and "Max-Age=0" not in c]
     assert len(session) == 1 and "domain=" not in session[0].lower(), session
+
+
+# ---------------------------------------------------------------------------
+# /v1/auth/pass: what the front door asks before the sprite generator
+# ---------------------------------------------------------------------------
+
+
+def _key(scope="dev"):
+    import keys as keys_mod
+
+    conn = db.connect()
+    try:
+        key, row = keys_mod.mint(conn, scope=scope, note="an agent")
+        return key, row["id"]
+    finally:
+        conn.close()
+
+
+def _key_row(kid):
+    conn = db.connect()
+    try:
+        return conn.execute("SELECT * FROM api_keys WHERE id = ?", (kid,)).fetchone()
+    finally:
+        conn.close()
+
+
+def test_the_pass_refuses_nobody(client):
+    r = client.get("/v1/auth/pass")
+    assert r.status_code == 401
+
+
+def test_the_pass_lets_a_session_through(client, github, fake):
+    sign_in(client)
+    r = client.get("/v1/auth/pass")
+    assert r.status_code == 204 and r.content == b""
+
+
+def test_the_pass_lets_a_dev_key_through_and_marks_it_used(client):
+    key, kid = _key()
+    assert _key_row(kid)["last_used_at"] is None
+    r = client.get("/v1/auth/pass", headers={"authorization": f"Bearer {key}"})
+    assert r.status_code == 204
+    assert _key_row(kid)["last_used_at"] is not None
+
+
+def test_the_pass_refuses_a_revoked_key_and_says_so(client):
+    import keys as keys_mod
+
+    key, kid = _key()
+    conn = db.connect()
+    try:
+        assert keys_mod.revoke(conn, kid, db.now())
+    finally:
+        conn.close()
+    r = client.get("/v1/auth/pass", headers={"authorization": f"Bearer {key}"})
+    assert r.status_code == 401
+    assert "revoked" in r.json()["detail"]
+
+
+def test_the_pass_judges_a_presented_key_alone(client, github, fake):
+    """A signed-in browser that also sends a key nobody minted is refused: the
+    header is the claim being made, and a session does not paper over it."""
+    sign_in(client)
+    r = client.get("/v1/auth/pass", headers={"authorization": "Bearer tmk_00000000_" + "a" * 43})
+    assert r.status_code == 401
+    assert client.get("/v1/auth/pass", headers={"authorization": "Basic abc"}).status_code == 401
+    assert client.get("/v1/auth/pass").status_code == 204
