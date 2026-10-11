@@ -440,14 +440,15 @@ export function parts(key: string) {
   const meta = JSON.parse(fs.readFileSync(path.join(d, "lesson.json"), "utf8")) as { mirroring: string; prg: number; org: string; chr: number } & Record<string, unknown>;
   const l = lesson(key)!;
   // What the page needs to take the lesson's measurements again on the
-  // reader's cartridge, and our own numbers to set beside them. Only the
-  // jump lesson so far (lib/lessonMeasure.ts says why).
+  // reader's cartridge, and our own numbers to set beside them. The jump
+  // and run lessons so far (lib/lessonMeasure.ts says why).
+  const script = () => fs.readFileSync(path.join(d, meta.script as string), "utf8");
   const measure =
     l.kind === "jump"
       ? {
           plan: {
             kind: "jump" as const,
-            script: fs.readFileSync(path.join(d, meta.script as string), "utf8"),
+            script: script(),
             frames: meta.frames as number,
             presses: meta.presses as [number, number][],
             walk_from: meta.walk_from as number,
@@ -456,7 +457,19 @@ export function parts(key: string) {
           },
           ours: l.measures,
         }
-      : null;
+      : l.kind === "run"
+        ? {
+            plan: {
+              kind: "run" as const,
+              script: script(),
+              frames: meta.frames as number,
+              presses: meta.presses as [number, number][],
+              walk_from: meta.walk_from as number,
+              memory: meta.memory as { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] },
+            },
+            ours: l.measures,
+          }
+        : null;
   return {
     measure,
     key,

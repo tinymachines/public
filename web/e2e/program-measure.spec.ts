@@ -9,7 +9,9 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The first test is the check that holds the page's measuring to the
+ * The jump and run lessons are measured so far.
+ *
+ * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
  * numbers data/lessons.json holds, which scripts/board-lessons.py wrote
  * from a different console build and a different language. The others
@@ -25,10 +27,10 @@ const jump = () => {
   return l;
 };
 
-async function assembled(page: import("@playwright/test").Page, change?: (text: string) => string) {
+async function assembled(page: import("@playwright/test").Page, change?: (text: string) => string, key = "jump") {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=jump", 500);
-  await expect(page.locator('[data-program-for="jump"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, `/nes/create?lesson=${key}`, 500);
+  await expect(page.locator(`[data-program-for="${key}"]`)).toHaveCount(1, { timeout: 15000 });
   const text = page.locator("[data-program-text]");
   await expect(text).not.toHaveValue("", { timeout: 15000 });
   if (change) {
@@ -42,6 +44,26 @@ async function assembled(page: import("@playwright/test").Page, change?: (text: 
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
 }
+
+const run = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "run");
+  if (!l || l.kind !== "run") throw new Error("no run lesson in the record; the spec would pass on nothing");
+  return l;
+};
+
+/** The run lesson's rows as the window keys them, from the record. A speed upward is shown positive. */
+const runRows = () => {
+  const m = run().measures;
+  const want: Record<string, number | null> = { walk_top: m.walk_top, run_top: m.run_top, run_after: m.run_after, light_max: m.light_max, strong_min: m.strong_min };
+  for (const [k, j] of [["walk", m.walk_jump], ["run", m.run_jump]] as const) {
+    want[`${k}-first`] = -j.first;
+    want[`${k}-held`] = j.held;
+    want[`${k}-released`] = j.released;
+    want[`${k}-rose`] = j.rose;
+  }
+  return want;
+};
 
 const read = (page: import("@playwright/test").Page) =>
   page.locator("[data-program-measure]").evaluateAll((trs) =>
@@ -83,6 +105,35 @@ test("a program whose square never jumps is not given numbers, and says why", as
   await assembled(page, (t) => t.replace("jump:\n    LDA $03", "jump:\n    RTS\n    LDA $03"));
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 30000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("never left the ground");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+test("the run lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = runRows();
+  expect(Object.values(want).every((v) => typeof v === "number"), "the record has a number in every row").toBe(true);
+  await assembled(page, undefined, "run");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  // Forty-one runs, one after another.
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  expect(await read(page)).toEqual(Object.fromEntries(Object.entries(want).map(([k, v]) => [k, [v, v]])));
+});
+
+test("a square that speeds up faster reaches its running top sooner, and the rest stays as recorded", async ({ page }) => {
+  const want = runRows();
+  // Running adds 14/256 a frame ($0E); 28 is $1C.
+  await assembled(page, (t) => t.replace("running:\n    CLC\n    LDA $12\n    ADC #$0E", "running:\n    CLC\n    LDA $12\n    ADC #$1C"), "run");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await read(page);
+  expect(got.run_after[0]).toBe(want.run_after as number);
+  expect(got.run_after[1]).toBeLessThan(want.run_after as number);
+  for (const k of ["walk_top", "run_top", "walk-first", "walk-rose", "run-first"]) expect(got[k], k).toEqual([want[k] as number, want[k] as number]);
+});
+
+test("a run program with one jump for every speed is not given numbers, and says why", async ({ page }) => {
+  // The strong jump starts at the light jump's speed.
+  await assembled(page, (t) => t.replace("    INC $18\n    LDA #$FB", "    INC $18\n    LDA #$FC"), "run");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no jump started at 5 pixels a frame");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });
 

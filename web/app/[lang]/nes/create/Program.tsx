@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { JumpMeasures } from "@/lib/lessons";
+import type { JumpMeasures, RunMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -39,6 +39,22 @@ const S = {
     full: "Full speed, pixels a frame",
     jumpFrames: (held: string) => `A held ${held} frames: frames in the air`,
     jumpRisen: (held: string) => `A held ${held} frames: pixels risen`,
+    run: {
+      walk_top: "Top walking speed, pixels a frame",
+      run_top: "Top running speed, pixels a frame",
+      run_after: "Frames of B to reach it",
+      "walk-first": "Walking jump: first speed up, pixels a frame",
+      "walk-held": "Walking jump: pull with A held, 256ths",
+      "walk-released": "Walking jump: pull after, 256ths",
+      "walk-rose": "Walking jump: pixels risen",
+      "run-first": "Running jump: first speed up, pixels a frame",
+      "run-held": "Running jump: pull with A held, 256ths",
+      "run-released": "Running jump: pull after, 256ths",
+      "run-rose": "Running jump: pixels risen",
+      light_max: "The fastest speed that still gets the light jump, sixteenths",
+      strong_min: "The slowest speed that gets the strong jump, sixteenths",
+    },
+    noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
   ja: {
@@ -65,15 +81,53 @@ const S = {
     full: "全速、一フレームあたりのピクセル",
     jumpFrames: (held: string) => `A を ${held} フレーム押す: 空中にいたフレーム数`,
     jumpRisen: (held: string) => `A を ${held} フレーム押す: 上がったピクセル`,
+    run: {
+      walk_top: "歩く最高速、一フレームあたりのピクセル",
+      run_top: "走る最高速、一フレームあたりのピクセル",
+      run_after: "B を押してそこに達するまでのフレーム数",
+      "walk-first": "歩いてのジャンプ: 最初の上向きの速さ、一フレームあたりのピクセル",
+      "walk-held": "歩いてのジャンプ: A を押している間の引き、256 分の 1 単位",
+      "walk-released": "歩いてのジャンプ: その後の引き、256 分の 1 単位",
+      "walk-rose": "歩いてのジャンプ: 上がったピクセル",
+      "run-first": "走ってのジャンプ: 最初の上向きの速さ、一フレームあたりのピクセル",
+      "run-held": "走ってのジャンプ: A を押している間の引き、256 分の 1 単位",
+      "run-released": "走ってのジャンプ: その後の引き、256 分の 1 単位",
+      "run-rose": "走ってのジャンプ: 上がったピクセル",
+      light_max: "弱いジャンプになる最も速い速さ、16 分の 1 単位",
+      strong_min: "強いジャンプになる最も遅い速さ、16 分の 1 単位",
+    },
+    noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
 } as const;
 
-type Row = { key: string; label: string; ours: number; yours: number; oursText: string; yoursText: string };
+type Row = { key: string; label: string; ours: number | null; yours: number | null; oursText: string; yoursText: string };
+type Measure = NonNullable<program.Parts["measure"]>;
 
 /** Our numbers and the reader's, a row a number. A jump of theirs that ours has no match for is not listed. */
-function rows(T: (typeof S)[Lang], ours: JumpMeasures, yours: JumpMeasures, n: (v: number) => string): Row[] {
-  const row = (key: string, label: string, a: number, b: number): Row => ({ key, label, ours: a, yours: b, oursText: n(a), yoursText: n(b) });
+function rows(T: (typeof S)[Lang], measure: Measure, theirs: JumpMeasures | RunMeasures, n: (v: number) => string): Row[] {
+  const text = (v: number | null) => (v === null ? T.noValue : n(v));
+  const row = (key: string, label: string, a: number | null, b: number | null): Row => ({ key, label, ours: a, yours: b, oursText: text(a), yoursText: text(b) });
+  if (measure.plan.kind === "run") {
+    const ours = measure.ours as RunMeasures, yours = theirs as RunMeasures;
+    const jump = (k: "walk" | "run", a: RunMeasures["walk_jump"], b: RunMeasures["walk_jump"]) => [
+      // The record keeps a speed upward as a negative; the page says "up".
+      row(`${k}-first`, T.run[`${k}-first`], -a.first, -b.first),
+      row(`${k}-held`, T.run[`${k}-held`], a.held, b.held),
+      row(`${k}-released`, T.run[`${k}-released`], a.released, b.released),
+      row(`${k}-rose`, T.run[`${k}-rose`], a.rose, b.rose),
+    ];
+    return [
+      row("walk_top", T.run.walk_top, ours.walk_top, yours.walk_top),
+      row("run_top", T.run.run_top, ours.run_top, yours.run_top),
+      row("run_after", T.run.run_after, ours.run_after, yours.run_after),
+      ...jump("walk", ours.walk_jump, yours.walk_jump),
+      ...jump("run", ours.run_jump, yours.run_jump),
+      row("light_max", T.run.light_max, ours.light_max, yours.light_max),
+      row("strong_min", T.run.strong_min, ours.strong_min, yours.strong_min),
+    ];
+  }
+  const ours = measure.ours as JumpMeasures, yours = theirs as JumpMeasures;
   return [
     row("full_speed_after", T.fullAfter, ours.full_speed_after, yours.full_speed_after),
     row("full_speed", T.full, ours.full_speed, yours.full_speed),
@@ -185,8 +239,8 @@ export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string;
                         </tr>
                       </thead>
                       <tbody>
-                        {rows(T, p.parts.measure.ours, p.measured.yours, n).map((r) => (
-                          <tr key={r.key} data-program-measure={r.key} data-ours={r.ours} data-yours={r.yours} data-same={String(r.ours === r.yours)}>
+                        {rows(T, p.parts.measure, p.measured.yours, n).map((r) => (
+                          <tr key={r.key} data-program-measure={r.key} data-ours={r.ours ?? ""} data-yours={r.yours ?? ""} data-same={String(r.ours === r.yours)}>
                             <th scope="row">{r.label}</th>
                             <td>{r.oursText}</td>
                             <td>{r.ours === r.yours ? r.yoursText : <b>{r.yoursText}</b>}</td>

@@ -7,8 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
-import type { JumpMeasures } from "@/lib/lessons";
-import { cells, jumpMeasures, parseScript, type JumpPlan } from "@/lib/lessonMeasure";
+import type { JumpMeasures, RunMeasures } from "@/lib/lessons";
+import { cells, jumpMeasures, parseScript, runMeasures, sweeps, type JumpPlan, type RunPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -18,11 +18,11 @@ export interface Parts {
   prg: string;
   chr: string;
   /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
-  measure: { plan: JumpPlan; ours: JumpMeasures } | null;
+  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | null;
 }
 
 /** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
-export type Measured = { yours: JumpMeasures; why: null } | { yours: null; why: string };
+export type Measured = { yours: JumpMeasures | RunMeasures; why: null } | { yours: null; why: string };
 
 export interface Built {
   sha256: string;
@@ -114,26 +114,48 @@ export function ours() {
 /**
  * The cartridge run through the lesson's own pad script on a thread of its
  * own (public/nes/measure.worker.mjs), and its memory read the way the
- * lesson's was. A run the measurement cannot read (a jump that never
- * lands) comes back as the reason.
+ * lesson's was. The run lesson takes forty short runs more, shared among
+ * up to four threads. A run the measurement cannot read (a jump
+ * that never lands) comes back as the reason.
  */
-async function measure(rom: ArrayBuffer, plan: JumpPlan): Promise<Measured> {
-  const w = new Worker("/nes/measure.worker.mjs", { type: "module" });
-  try {
-    const ram = await new Promise<ArrayBuffer>((resolve, reject) => {
+async function measure(rom: ArrayBuffer, plan: JumpPlan | RunPlan): Promise<Measured> {
+  type Job = { script: [number, number][]; frames: number; stop?: { from: number; cell: number } };
+  const workers: Worker[] = [];
+  /** One thread taking jobs off the list in turn until it is empty; answers land at each job's own place. */
+  const crew = (jobs: Job[], out: ((f: number, a: number) => number)[], next: { n: number }) =>
+    new Promise<void>((resolve, reject) => {
+      const w = new Worker("/nes/measure.worker.mjs", { type: "module" });
+      workers.push(w);
+      const take = () => {
+        const id = next.n++;
+        if (id >= jobs.length) return resolve();
+        w.postMessage({ id, rom, ...jobs[id] });
+      };
       w.onmessage = (e) => {
-        const d = e.data as { ok?: boolean; answer?: { ram: ArrayBuffer }; error?: string };
-        if (d.ok) resolve(d.answer!.ram);
-        else reject(new Error(d.error));
+        const d = e.data as { id: number; ok?: boolean; answer?: { ram: ArrayBuffer }; error?: string };
+        if (!d.ok) return reject(new Error(d.error));
+        out[d.id] = cells(new Uint8Array(d.answer!.ram));
+        take();
       };
       w.onerror = () => reject(new Error("the measuring worker failed to load"));
-      w.postMessage({ id: 1, rom, script: parseScript(plan.script), frames: plan.frames });
+      take();
     });
-    return { yours: jumpMeasures(cells(new Uint8Array(ram)), plan), why: null };
+  const runs = async (jobs: Job[]) => {
+    const out: ((f: number, a: number) => number)[] = [], next = { n: 0 };
+    const threads = Math.max(1, Math.min(4, jobs.length, navigator.hardwareConcurrency || 1));
+    await Promise.all(Array.from({ length: threads }, () => crew(jobs, out, next)));
+    return out;
+  };
+  try {
+    const main: Job = { script: parseScript(plan.script), frames: plan.frames };
+    if (plan.kind === "jump") return { yours: jumpMeasures((await runs([main]))[0], plan), why: null };
+    const air = parseInt(plan.memory.air.slice(1), 16);
+    const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);
+    return { yours: runMeasures(first, swept, plan), why: null };
   } catch (e) {
     return { yours: null, why: String((e as Error)?.message ?? e) };
   } finally {
-    w.terminate();
+    for (const w of workers) w.terminate();
   }
 }
 
