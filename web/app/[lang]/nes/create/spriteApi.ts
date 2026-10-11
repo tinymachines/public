@@ -66,7 +66,11 @@ export function listSprites(limit = 24): Promise<GeneratedSprite[]> {
 
 /** A new sprite from a prompt: tens of seconds, minutes the first time after a restart. */
 export function generateSprite(prompt: string): Promise<GeneratedSprite> {
-  return tool<GeneratedSprite>("generate_sprite", { prompt, style: "pixel_art" });
+  // Smaller and shorter than the generator's own 1024 pixels and 25 steps:
+  // the picture is shrunk to 32 pixels at most here, and measured on
+  // 2026-10-10 a sprite took 43 s this way against 56 s. The detail given
+  // up is finer than the shrinking keeps.
+  return tool<GeneratedSprite>("generate_sprite", { prompt, style: "pixel_art", width: 768, height: 768, steps: 20 });
 }
 
 /** A generated sprite's picture, as a URL on this site. */
