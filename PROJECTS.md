@@ -5681,3 +5681,40 @@ Waiting on the owner: what Composer covers; whether to free a graphics
 card for sprites; the root disk at 99%; the sprite maker tried signed in
 with a picture from the generator; the `.window` line in the front
 door's file.
+
+## Checkpoint, 2026-10-11, night: three lessons are measured in the Program window
+
+Live and beta serve `9c8f91d`, and nothing is waiting on a deploy.
+
+The website session's work since the last checkpoint:
+
+- **The stomp lesson is measured in the page** (`9c8f91d`): the walker's
+  speed, six numbers each for the first stomp and the first hit, and how
+  long a stomped walker stays flat. Our own program, unchanged, measures
+  to exactly the numbers `data/lessons.json` holds, on the live site too.
+- Jump, run and stomp are now measured; 22 lessons show no table.
+
+Not covered: what our autopsy says of the stomp lesson's touch routine is
+in the record and is not taken again in the page.
+
+What the next lessons need, read off `scripts/board-lessons.py`:
+
+- **Memory alone, like the three done:** walkers, camera, platforms,
+  flicker and hitbox. These fit the measuring worker as it is.
+- **Writes to the picture chip, the scroll or the sound chip as well:**
+  the other seventeen. The worker keeps only memory, so these wait until
+  it can keep those logs too, which is a change to the console's bundle
+  and its own piece of work.
+
+Next for the website session, in order:
+
+1. Walkers, then camera and platforms, measured in the Program window,
+   each with the exact-match check.
+2. Sprites in their own output folder.
+3. Hotbits bench step 2 when geiger has its first converted page.
+4. Composer, once the owner says what it covers.
+
+Waiting on the owner: what Composer covers; whether to free a graphics
+card for sprites; the root disk at 99%; the sprite maker tried signed in
+with a picture from the generator; the `.window` line in the front
+door's file.
