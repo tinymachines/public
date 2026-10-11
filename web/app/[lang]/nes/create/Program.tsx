@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
+import type { JumpMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -28,6 +29,17 @@ const S = {
     same: "It is byte for byte the lesson's own cartridge.",
     yours: "It is your own cartridge: it differs from the lesson's.",
     lesson: "The lesson's page",
+    measuredH: "Measured the way the lesson was",
+    measuring: "Measuring it with the lesson's own button presses...",
+    measured: "Your cartridge was run through the lesson's own button presses with nobody watching, and read the way ours was.",
+    what: "What",
+    oursCol: "Ours",
+    yoursCol: "Yours",
+    fullAfter: "Frames of walking to full speed",
+    full: "Full speed, pixels a frame",
+    jumpFrames: (held: string) => `A held ${held} frames: frames in the air`,
+    jumpRisen: (held: string) => `A held ${held} frames: pixels risen`,
+    notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
   ja: {
     h: "プログラム",
@@ -43,8 +55,35 @@ const S = {
     same: "レッスンのカートリッジと一バイトも違わない。",
     yours: "あなたのカートリッジだ: レッスンのものとは違う。",
     lesson: "レッスンのページ",
+    measuredH: "レッスンと同じやり方で測った",
+    measuring: "レッスンと同じボタン操作で測っている...",
+    measured: "あなたのカートリッジを、誰も見ていないところでレッスンと同じボタン操作にかけ、私たちのものと同じ読み方で読んだ。",
+    what: "何を",
+    oursCol: "私たちの",
+    yoursCol: "あなたの",
+    fullAfter: "全速になるまでに歩いたフレーム数",
+    full: "全速、一フレームあたりのピクセル",
+    jumpFrames: (held: string) => `A を ${held} フレーム押す: 空中にいたフレーム数`,
+    jumpRisen: (held: string) => `A を ${held} フレーム押す: 上がったピクセル`,
+    notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
 } as const;
+
+type Row = { key: string; label: string; ours: number; yours: number; oursText: string; yoursText: string };
+
+/** Our numbers and the reader's, a row a number. A jump of theirs that ours has no match for is not listed. */
+function rows(T: (typeof S)[Lang], ours: JumpMeasures, yours: JumpMeasures, n: (v: number) => string): Row[] {
+  const row = (key: string, label: string, a: number, b: number): Row => ({ key, label, ours: a, yours: b, oursText: n(a), yoursText: n(b) });
+  return [
+    row("full_speed_after", T.fullAfter, ours.full_speed_after, yours.full_speed_after),
+    row("full_speed", T.full, ours.full_speed, yours.full_speed),
+    ...ours.jumps.flatMap((j, k) =>
+      yours.jumps[k]
+        ? [row(`frames-${j.held}`, T.jumpFrames(n(j.held)), j.frames, yours.jumps[k].frames), row(`risen-${j.held}`, T.jumpRisen(n(j.held)), j.risen, yours.jumps[k].risen)]
+        : [],
+    ),
+  ];
+}
 
 export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string; title: string }[] }) {
   const T = S[lang];
@@ -124,6 +163,42 @@ export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string;
             <p data-program-built data-program-sha={p.built.sha256} data-program-same={String(p.built.sha256 === p.parts.sha256)}>
               {T.built(n(p.built.instructions), n(p.built.code_bytes))} {p.built.sha256 === p.parts.sha256 ? T.same : T.yours}
             </p>
+          ) : null}
+          {p.built && p.parts.measure ? (
+            <div data-program-measured={p.measured ? (p.measured.yours ? "yes" : "no") : "wait"}>
+              <h3 className="eyebrow">{T.measuredH}</h3>
+              {!p.measured ? (
+                <p className="quiet">{T.measuring}</p>
+              ) : !p.measured.yours ? (
+                <p className="notice fail" data-program-measure-why>{T.notMeasured(p.measured.why)}</p>
+              ) : (
+                <>
+                  <p className="quiet">{T.measured}</p>
+                  <div className="ledger">
+                    <div className="scroller">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th scope="col">{T.what}</th>
+                          <th scope="col">{T.oursCol}</th>
+                          <th scope="col">{T.yoursCol}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows(T, p.parts.measure.ours, p.measured.yours, n).map((r) => (
+                          <tr key={r.key} data-program-measure={r.key} data-ours={r.ours} data-yours={r.yours} data-same={String(r.ours === r.yours)}>
+                            <th scope="row">{r.label}</th>
+                            <td>{r.oursText}</td>
+                            <td>{r.ours === r.yours ? r.yoursText : <b>{r.yoursText}</b>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           ) : null}
         </>
       )}

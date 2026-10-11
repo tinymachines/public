@@ -437,9 +437,28 @@ export function lesson(key: string): Lesson | undefined {
  * lessons/build.py). */
 export function parts(key: string) {
   const d = path.join(ROOT, "lessons", key);
-  const meta = JSON.parse(fs.readFileSync(path.join(d, "lesson.json"), "utf8")) as { mirroring: string; prg: number; org: string; chr: number };
+  const meta = JSON.parse(fs.readFileSync(path.join(d, "lesson.json"), "utf8")) as { mirroring: string; prg: number; org: string; chr: number } & Record<string, unknown>;
   const l = lesson(key)!;
+  // What the page needs to take the lesson's measurements again on the
+  // reader's cartridge, and our own numbers to set beside them. Only the
+  // jump lesson so far (lib/lessonMeasure.ts says why).
+  const measure =
+    l.kind === "jump"
+      ? {
+          plan: {
+            kind: "jump" as const,
+            script: fs.readFileSync(path.join(d, meta.script as string), "utf8"),
+            frames: meta.frames as number,
+            presses: meta.presses as [number, number][],
+            walk_from: meta.walk_from as number,
+            memory: meta.memory as { air: string; y: string; speed_x: [string, string] },
+            ground: meta.ground as number,
+          },
+          ours: l.measures,
+        }
+      : null;
   return {
+    measure,
     key,
     title: l.title,
     sha256: l.sha256,

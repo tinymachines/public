@@ -7,6 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
+import type { JumpMeasures } from "@/lib/lessons";
+import { cells, jumpMeasures, parseScript, type JumpPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -15,7 +17,12 @@ export interface Parts {
   board: { mirroring: string; prg: number; org: string; chr: number };
   prg: string;
   chr: string;
+  /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
+  measure: { plan: JumpPlan; ours: JumpMeasures } | null;
 }
+
+/** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
+export type Measured = { yours: JumpMeasures; why: null } | { yours: null; why: string };
 
 export interface Built {
   sha256: string;
@@ -31,10 +38,12 @@ export interface ProgramState {
   chr: string;
   busy: boolean;
   built: Built | null;
+  /** The cartridge just built, measured; null before a build and for a lesson the page cannot measure. */
+  measured: Measured | null;
   why: string | null;
 }
 
-const INITIAL: ProgramState = { parts: null, text: "", chr: "", busy: false, built: null, why: null };
+const INITIAL: ProgramState = { parts: null, text: "", chr: "", busy: false, built: null, measured: null, why: null };
 let state: ProgramState = INITIAL;
 const listeners = new Set<() => void>();
 function set(patch: Partial<ProgramState>) {
@@ -73,7 +82,7 @@ function keep(key: string, text: string | null) {
 /** Open a lesson's program: its parts from this site, and the edit kept here if there is one. */
 export async function open(key: string) {
   if (!/^[a-z0-9-]{1,32}$/.test(key)) return;
-  set({ busy: true, why: null, built: null });
+  set({ busy: true, why: null, built: null, measured: null });
   try {
     const r = await fetch(`/autopsy/lessons/${key}.parts.json`);
     if (!r.ok) throw new Error(`no lesson named ${key}`);
@@ -85,13 +94,13 @@ export async function open(key: string) {
 }
 
 export function edit(text: string) {
-  set({ text, built: null });
+  set({ text, built: null, measured: null });
   if (state.parts) keep(state.parts.key, text === state.parts.prg ? null : text);
 }
 
 /** New tiles for the open lesson (kept here like an edit of the program). */
 export function setTiles(chr: string) {
-  set({ chr, built: null });
+  set({ chr, built: null, measured: null });
   if (state.parts) keep(`${state.parts.key}.chr`, chr === state.parts.chr ? null : chr);
 }
 
@@ -102,11 +111,37 @@ export function ours() {
   setTiles(state.parts.chr);
 }
 
+/**
+ * The cartridge run through the lesson's own pad script on a thread of its
+ * own (public/nes/measure.worker.mjs), and its memory read the way the
+ * lesson's was. A run the measurement cannot read (a jump that never
+ * lands) comes back as the reason.
+ */
+async function measure(rom: ArrayBuffer, plan: JumpPlan): Promise<Measured> {
+  const w = new Worker("/nes/measure.worker.mjs", { type: "module" });
+  try {
+    const ram = await new Promise<ArrayBuffer>((resolve, reject) => {
+      w.onmessage = (e) => {
+        const d = e.data as { ok?: boolean; answer?: { ram: ArrayBuffer }; error?: string };
+        if (d.ok) resolve(d.answer!.ram);
+        else reject(new Error(d.error));
+      };
+      w.onerror = () => reject(new Error("the measuring worker failed to load"));
+      w.postMessage({ id: 1, rom, script: parseScript(plan.script), frames: plan.frames });
+    });
+    return { yours: jumpMeasures(cells(new Uint8Array(ram)), plan), why: null };
+  } catch (e) {
+    return { yours: null, why: String((e as Error)?.message ?? e) };
+  } finally {
+    w.terminate();
+  }
+}
+
 /** Build the program as it stands into a cartridge and put it in the console. */
 export async function assemble() {
   const p = state.parts;
   if (!p) return;
-  set({ busy: true, why: null, built: null });
+  set({ busy: true, why: null, built: null, measured: null });
   const w = new Worker("/nes/listing.worker.mjs", { type: "module" });
   try {
     const answer = await new Promise<{ built: string; rom: ArrayBuffer }>((resolve, reject) => {
@@ -120,6 +155,8 @@ export async function assemble() {
     });
     const b = JSON.parse(answer.built) as Built & { src: string };
     set({ busy: false, built: { sha256: b.sha256, code_bytes: b.code_bytes, instructions: b.instructions } });
+    // Measured from a copy: the console takes the cartridge's own bytes.
+    if (p.measure) void measure(answer.rom.slice(0), p.measure.plan).then((m) => state.parts === p && state.built?.sha256 === b.sha256 && set({ measured: m }));
     await load(new File([answer.rom], `${p.key}${b.sha256 === p.sha256 ? "" : "-yours"}.nes`, { type: "application/octet-stream" }));
     // And play, as the button says: a cartridge loads stopped.
     const c = console_();

@@ -195,9 +195,18 @@ export function Desk({
     [layout, dim],
   );
 
+  // A window asked for before the desk has measured itself and read its
+  // kept arrangement is remembered and shown once there is a layout. It
+  // used to be dropped: a lesson's program that arrived first (a quick
+  // answer, a cached one) left its window shut, and nothing asked again.
+  const wanted = useRef<string | null>(null);
   const show = useCallback(
     (id: string, open = true) => {
-      if (!layout?.[id]) return;
+      if (!layout) {
+        if (open) wanted.current = id;
+        return;
+      }
+      if (!layout[id]) return;
       const next = { ...layout, [id]: { ...layout[id], open } };
       setKept({ read: true, wins: open ? raise(next, id) : next });
     },
@@ -214,6 +223,12 @@ export function Desk({
   useEffect(() => {
     showRef.current = show;
   });
+  useEffect(() => {
+    if (!ready || !wanted.current) return;
+    const id = wanted.current;
+    wanted.current = null;
+    showRef.current(id);
+  }, [ready]);
   useEffect(() => {
     if (!ready || mode !== "float") return;
     const go = () => {
