@@ -1706,3 +1706,57 @@ def test_the_crawler_walks_the_pages_and_fails_on_a_read_over_the_cap(ents, caps
     monkeypatch.setattr(tm.Namespace, "_links_page", lambda self, links, off: (lambda p, n: (p[:-1] if len(p) > 1 else p, n))(*page(self, links, off)))
     rc, out = crawl()
     assert rc == 1 and "walked" in out, out
+
+
+# ---------------------------------------------------------------------------
+# tinypeek#8: a page's text is held to the byte cap like everything else
+# ---------------------------------------------------------------------------
+
+
+def test_a_page_whose_text_is_over_the_cap_is_refused_with_a_range_that_reads(ns):
+    page = f"{ROOT}http/tinymachines.ai/big"
+    want = tm.page_text("<main>" + "x" * (tm.READ_CAP + 1) + "</main>")   # the canned page's text
+    size = len(want.encode())
+    assert size > tm.READ_CAP
+    for uri in (page, f"{page}?as=text"):
+        e = refusal(ns, uri)
+        assert e.reason == "too-large" and e.data["size"] == size, "the default read is capped, not only the HTML"
+        assert e.data["range"] == f"{page}?as=text&range={{start}}-{{end}}" and e.data["stat"] == f"{page}?as=stat"
+    # Each range reads, and together they are the whole text.
+    got, at = "", 0
+    while at < size:
+        end = min(at + tm.READ_CAP, size)
+        c, links = read(ns, refusal(ns, page).data["range"].format(start=at, end=end))
+        assert c["mimeType"] == "text/plain" and c["uri"] == f"{page}?as=text&range={at}-{end}"
+        assert rels(links)["up"], "a range carries the page's links"
+        got, at = got + c["text"], end
+    assert got == want
+    c, _ = read(ns, f"{page}?range=0-4")
+    assert c["text"] == "xxxx", "text is the default, so a bare range is of the text"
+    assert read(ns, f"{page}?as=text&range={size - 4}-{size + 500}")[0]["text"] == want[-4:], "an end past the text stops at its end"
+    assert refusal(ns, f"{page}?as=text&range=0-{tm.READ_CAP + 1}").reason == "too-large", "a range reads at most the cap"
+    for bad in ("5-5", "9-2", "abc", "-4"):
+        assert refusal(ns, f"{page}?as=text&range={bad}").reason == "bad-facet", bad
+    # A page under the cap is untouched, and a range of it reads too.
+    small = f"{ROOT}http/tinymachines.ai/docs/nes/pile"
+    whole = read(ns, small)[0]["text"]
+    assert whole.startswith("What is in the pile") and read(ns, f"{small}?range=0-4")[0]["text"] == whole[:4]
+    # A range is of a page's text and nothing else: refused elsewhere, not dropped (TM-11).
+    assert refusal(ns, f"{small}?as=rendered&range=0-4").reason == "bad-facet"
+    assert refusal(ns, f"{small}?as=stat&range=0-4").reason == "bad-facet"
+    assert refusal(ns, f"{ROOT}http/tinymachines.ai/robots.txt?range=0-4").reason == "bad-facet", "not a page"
+    assert refusal(ns, f"{ROOT}http/tinymachines.ai/docs/nes/?range=0-4").reason == "bad-facet", "a listing"
+    # The HTML's refusal still points at something that works.
+    big = refusal(ns, f"{page}?as=rendered")
+    assert big.reason == "too-large" and big.data["text"].endswith("/big?as=text") and "range" in big.message
+
+
+def test_a_range_does_not_cut_a_character_in_two_silently(ns):
+    """Ranges are bytes of UTF-8, as on fs. A cut inside a character reads
+    as the replacement mark at the edge, never as an error."""
+    async def fetch(site: str, path: str):
+        return 200, "text/html; charset=utf-8", "<main><p>山山山</p></main>".encode()
+    n = Namespace(ns.repo, fetch=fetch)
+    page = f"{ROOT}http/tinymachines.ai/x"
+    assert read(n, f"{page}?range=0-3")[0]["text"] == "山"
+    assert read(n, f"{page}?range=0-4")[0]["text"] == "山�"

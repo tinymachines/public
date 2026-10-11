@@ -271,6 +271,18 @@ def denied(rel_path: str) -> bool:
     return any(part not in DOT_OK and fnmatch.fnmatch(part, pat) for part in rel_path.split("/") for pat in DENY)
 
 
+def byte_range(rng: str, size: int) -> tuple[int, int]:
+    """?range=START-END: bytes [START, END) of something `size` long, the end
+    stopping at its end, and never more than the cap in one read."""
+    m = re.fullmatch(r"(\d+)-(\d+)", rng)
+    if not m or int(m[1]) >= int(m[2]):
+        raise TmError(BAD_PARAMS, "bad-facet", "range=START-END, bytes [START, END) with START < END")
+    start, end = int(m[1]), min(int(m[2]), size)
+    if end - start > READ_CAP:
+        raise TmError(BAD_PARAMS, "too-large", f"a range reads at most {READ_CAP} bytes", size=size)
+    return start, end
+
+
 def _cursor(offset: int) -> str:
     return base64.urlsafe_b64encode(str(offset).encode()).decode()
 
@@ -1758,12 +1770,7 @@ class Namespace:
         rng = ref.facets.get("range")
         start, end = 0, st.st_size
         if rng is not None:
-            m = re.fullmatch(r"(\d+)-(\d+)", rng)
-            if not m or int(m[1]) >= int(m[2]):
-                raise TmError(BAD_PARAMS, "bad-facet", "range=START-END, bytes [START, END) with START < END")
-            start, end = int(m[1]), min(int(m[2]), st.st_size)
-            if end - start > READ_CAP:
-                raise TmError(BAD_PARAMS, "too-large", f"a range reads at most {READ_CAP} bytes", size=st.st_size)
+            start, end = byte_range(rng, st.st_size)
         elif st.st_size > READ_CAP:
             raise TmError(
                 RESOURCE_NOT_FOUND, "too-large",
@@ -2091,12 +2098,7 @@ class Namespace:
         rng = ref.facets.get("range")
         start, end = 0, size
         if rng is not None:
-            m = re.fullmatch(r"(\d+)-(\d+)", rng)
-            if not m or int(m[1]) >= int(m[2]):
-                raise TmError(BAD_PARAMS, "bad-facet", "range=START-END, bytes [START, END) with START < END")
-            start, end = int(m[1]), min(int(m[2]), size)
-            if end - start > READ_CAP:
-                raise TmError(BAD_PARAMS, "too-large", f"a range reads at most {READ_CAP} bytes", size=size)
+            start, end = byte_range(rng, size)
         elif size > READ_CAP:
             raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{path} is {size} bytes at {at}; the cap is {READ_CAP}. Read it in ranges.",
                           size=size, range=f"{base}{q}{sep}range={{start}}-{{end}}", stat=f"{base}{q}{sep}as=stat")
@@ -2429,6 +2431,11 @@ class Namespace:
         if as_ not in AS_HTTP:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; http offers {', '.join(AS_HTTP)}")
         site, path = ref.site, ref.path
+        rng = ref.facets.get("range")
+        if rng is not None and (as_ != "text" or ref.is_collection):
+            # tinypeek#8: a range is of a page's text. Anywhere else it is
+            # refused, as a facet a thing lacks is, not dropped (TM-11).
+            raise TmError(BAD_PARAMS, "bad-facet", "range reads a page's text; it goes with ?as=text, or with no ?as on a page")
         if ref.is_collection and path != "/":
             if asked:
                 # TM-11: a listing has one representation. A page's facet on it
@@ -2468,12 +2475,23 @@ class Namespace:
             raise TmError(RESOURCE_NOT_FOUND, "redirect", f"{site}{path} redirects; the visitor would be sent on", status=status)
         mime = ctype.split(";")[0].strip() or "application/octet-stream"
         if as_ == "text" and mime == "text/html":
-            return self._result(f"{base}?as=text" if asked else base, "text/plain", page_text(data.decode("utf-8", errors="replace")), links)
+            # tinypeek#8: a page's text is held to the byte cap like every
+            # other read. It was the one read with no cap, and the default one.
+            text = page_text(data.decode("utf-8", errors="replace")).encode()
+            if rng is not None:
+                start, end = byte_range(rng, len(text))
+                return self._result(f"{base}?as=text&range={start}-{end}", "text/plain", text[start:end].decode("utf-8", errors="replace"), links)
+            if len(text) > READ_CAP:
+                raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{site}{path} is {len(text)} bytes of text; the cap is {READ_CAP}. Read it in ranges.",
+                              size=len(text), range=f"{base}?as=text&range={{start}}-{{end}}", stat=f"{base}?as=stat")
+            return self._result(f"{base}?as=text" if asked else base, "text/plain", text.decode("utf-8"), links)
+        if rng is not None:
+            raise TmError(BAD_PARAMS, "bad-facet", f"range reads a page's text, and {site}{path} is {mime}, not a page")
         if as_ == "text" and asked:
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"{site}{path} is {mime}, not a page", mimeType=mime, stat=f"{base}?as=stat")
         # Not a page (robots.txt, a picture): with no facet it reads as itself.
         if len(data) > READ_CAP:
-            raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{site}{path} is {len(data)} bytes rendered; ?as=text is smaller",
+            raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{site}{path} is {len(data)} bytes rendered; ?as=text is smaller, and reads in ranges if it is over the cap too",
                           size=len(data), stat=f"{base}?as=stat", text=f"{base}?as=text")
         if not is_text(mime):
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"{site}{path} is {mime}", mimeType=mime, stat=f"{base}?as=stat")
