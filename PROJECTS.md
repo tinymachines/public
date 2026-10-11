@@ -5541,3 +5541,47 @@ the first geiger page will be one.
 Next for the website session, in order: a token so agents can use the
 sprites MCP endpoint; faster sprites; the reader's version in the Program
 window; hotbits bench step 2 when geiger has its first page.
+
+## Checkpoint, 2026-10-11: the generator opens to agents, sprites come out whole, two sessions share the deploy
+
+Live and beta serve `e0c2c7b`. Main is at `1bc26eb`, one tm commit past
+live (a logged address trimmed to 300 characters), waiting on a deploy.
+
+The website session's work since the last checkpoint:
+
+- **Agents can use the sprite generator.** `GET /v1/auth/pass` answers 204
+  for a session or a live dev key and 401 otherwise, and the front door
+  asks it before the generator. A dev key is minted and revoked on
+  `/admin`; a refused key gets a plain 401. The installed nginx file is
+  the repository's copy without the `.window` line, which is still the
+  owner's to decide, so install a candidate built from the installed file
+  and never the repository's file whole.
+- **The first sprite after a restart** takes about 136 s where it took
+  about 430 s: the generator's service reads its model through at start
+  and every 15 minutes (the ComfyUI repository). A warm sprite is 43 s as
+  the maker now asks for it (768 pixels, 20 steps) against 56 s. What
+  limits a warm sprite is graphics memory shared with other services.
+- **A generated picture is shrunk without its background**
+  (`clearGround` in `web/lib/nesSprite.ts`), with a checkbox to keep it.
+  Not covered: a subject the colour of its background with no outline,
+  and background the subject encloses.
+- **Each lesson records the key of the game it was measured beside**
+  (`against.key`, issue 7). Both keys were checked against the dumps the
+  private runs loaded.
+
+The tinypeek session is now a session on this machine (`tinypeek-aa`). It
+works in a sibling worktree, announces before it deploys, and deploys on
+the owner's word typed there. Since the last checkpoint it shipped TM-12
+and TM-16, link sets capped and paged, a tree read to a depth, a size cap
+on a page's text, a rate limit by caller, and an audit log of requests
+(capped at 8 MiB a day and 64 MiB in all, because the root disk is 99%
+full). Two of its changes touched `api/app.py` by agreed lines only.
+
+Next for the website session: the Composer the owner put on the docket
+(scope not yet said); sprites in their own output folder; the reader's
+version in the Program window; hotbits bench step 2 when geiger has its
+first page, and with it the stale `inLanguage` test.
+
+Waiting on the owner: what Composer covers; whether to free a graphics
+card for sprites; the root disk; the sprite maker tried signed in with a
+picture from the generator.
