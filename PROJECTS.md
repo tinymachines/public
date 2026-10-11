@@ -5630,3 +5630,54 @@ Waiting on the owner: what Composer covers; whether to free a graphics
 card for sprites; the root disk at 99%; the sprite maker tried signed in
 with a picture from the generator; the `.window` line in the front
 door's file.
+
+## Checkpoint, 2026-10-11, evening: the Program window measures the run lesson too
+
+Live and beta serve `50d660c`, which is the newest commit; nothing is
+waiting on a deploy.
+
+The website session's work since the last checkpoint:
+
+- **The run lesson is measured in the page** (`a65a08e`). After a reader
+  assembles its program, the Program window shows thirteen numbers of
+  ours beside theirs: the top speeds walking and running, how long
+  running takes to reach its top, four numbers for each of the two jumps,
+  and the two speeds either side of where the light jump becomes the
+  strong one.
+- **The check is the same as jump's:** our own run program, unchanged,
+  measures in the page to exactly the numbers `data/lessons.json` holds.
+  It passes against the live site.
+- **It takes forty short runs besides the lesson's own.** Each stops at
+  its jump, and the runs are shared among up to four threads
+  (`measure` in `programEngine.ts`, `stop` in
+  `web/public/nes/measure.worker.mjs`). In the test browser the whole
+  measurement takes about 15 seconds; the first version took over two
+  minutes.
+
+Not covered: 23 lessons still show no table. The strong jump is told
+apart by its first speed of 5 pixels a frame, as the record does it, so a
+reader who gives it another first speed is told there is no strong jump.
+
+Paid for once: a file under `web/public` that is tracked is served by
+the live site the moment it is committed in the main checkout, before
+any deploy. The worker changed that way here; the old page used it
+unchanged, so nothing broke. A change to such a file has to keep working
+with the page that is already live, or wait in a worktree for the
+deploy.
+
+The tinypeek session deployed twice in this stretch on the owner's word
+typed there (hosts listed at `tm://`, then spec pins to v0.14). This
+session set its uncommitted files aside for one of them.
+
+Next for the website session, in order:
+
+1. The next lesson measured in the Program window. Stomp is the nearest:
+   one walker, one stomp, one hit.
+2. Sprites in their own output folder.
+3. Hotbits bench step 2 when geiger has its first converted page.
+4. Composer, once the owner says what it covers.
+
+Waiting on the owner: what Composer covers; whether to free a graphics
+card for sprites; the root disk at 99%; the sprite maker tried signed in
+with a picture from the generator; the `.window` line in the front
+door's file.
