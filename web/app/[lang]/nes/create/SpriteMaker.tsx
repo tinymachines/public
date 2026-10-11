@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import { drawSquareFrom, fitColours, replaceTiles, setSpriteColours, shrink, tileCount, tileLines, toTiles, type Picture, type Rgb } from "@/lib/nesSprite";
+import { clearGround, drawSquareFrom, fitColours, hasOwnGround, replaceTiles, setSpriteColours, shrink, tileCount, tileLines, toTiles, type Picture, type Rgb } from "@/lib/nesSprite";
 import { measuredPalette, serverSnapshot as consoleServer, snapshot as consoleNow, subscribe as consoleSub } from "../play/playEngine";
 import * as program from "./programEngine";
 import { generateSprite, listSprites, signedIn, spriteUrl, type GeneratedSprite } from "./spriteApi";
@@ -11,7 +11,8 @@ import { generateSprite, listSprites, signedIn, spriteUrl, type GeneratedSprite 
  * The Sprite maker: a picture made into NES sprite tiles. The picture is
  * one the sprite generator made (tinymachines.ai/sprites, for signed-in
  * users), a new one asked of it, or a PNG from this computer. It is
- * cropped, shrunk to 8, 16 or 32 pixels and fitted to three of the
+ * cropped (a picture that fills its frame first loses the ground it stands
+ * on, unless the reader keeps it), shrunk to 8, 16 or 32 pixels and fitted to three of the
  * console's colours as the picture worker measured them (lib/nesSprite.ts),
  * then offered as tiles: to download, to copy as lines of a program's
  * tiles, or to put into the program open in the Program window. Putting
@@ -34,6 +35,7 @@ const S = {
     making: "Making it... the first one after a restart takes a few minutes.",
     file: "Or a PNG from this computer",
     size: "Size",
+    ground: "Leave out the picture's background",
     colours: "Colours, as codes for the sprite palette:",
     noPalette: "The console's colours are not measured yet; play any cartridge once.",
     download: "Download the tiles",
@@ -65,6 +67,7 @@ const S = {
     making: "作っている... 再起動のあとの最初の一つは数分かかる。",
     file: "またはこのコンピューターの PNG",
     size: "大きさ",
+    ground: "絵の背景を除く",
     colours: "色。スプライトのパレットに書く番号で:",
     noPalette: "コンソールの色がまだ測られていない。どれかのカートリッジを一度遊ぶ。",
     download: "タイルをダウンロード",
@@ -112,6 +115,11 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
   const [asked, setAsked] = useState<Rgb[] | null>(null);
   const palette = (painted as Rgb[] | null) ?? asked;
   const [size, setSize] = useState(16);
+  // A picture that fills its frame stands on a ground of its own (the
+  // generator's do); it is left out unless the reader wants it kept.
+  const [leaveOut, setLeaveOut] = useState(true);
+  const framed = useMemo(() => (picture ? hasOwnGround(picture.pic) : false), [picture]);
+  const cleared = useMemo(() => (picture && framed ? clearGround(picture.pic) : null), [picture, framed]);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [why, setWhy] = useState<string | null>(null);
@@ -131,11 +139,11 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
 
   const made = useMemo(() => {
     if (!picture || !palette) return null;
-    const s = shrink(picture.pic, size);
+    const s = shrink(leaveOut && cleared ? cleared : picture.pic, size);
     const f = fitColours(s, palette);
     const tiles = toTiles(f.indices, size);
     return { ...f, tiles, lines: tileLines(tiles) };
-  }, [picture, palette, size]);
+  }, [picture, palette, size, leaveOut, cleared]);
 
   // The NES version, eight screen pixels to a sprite pixel.
   useEffect(() => {
@@ -262,6 +270,13 @@ export function SpriteMaker({ lang }: { lang: Lang }) {
           </button>
         ))}
       </p>
+      {framed ? (
+        <p className="quiet">
+          <label>
+            <input type="checkbox" checked={leaveOut} onChange={(e) => setLeaveOut(e.target.checked)} data-maker-ground /> {T.ground}
+          </label>
+        </p>
+      ) : null}
       {why ? <p className="notice fail" data-maker-why>{why}</p> : null}
       {picture ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "flex-start" }}>

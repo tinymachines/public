@@ -43,6 +43,89 @@ export function drawnBox(p: Picture): { x: number; y: number; w: number; h: numb
   return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
+/** Whether a picture has no see-through ground of its own: every pixel on its edge is solid. */
+export function hasOwnGround(p: Picture): boolean {
+  const solid = (x: number, y: number) => p.data[(y * p.width + x) * 4 + 3] >= SOLID;
+  for (let x = 0; x < p.width; x++) if (!solid(x, 0) || !solid(x, p.height - 1)) return false;
+  for (let y = 0; y < p.height; y++) if (!solid(0, y) || !solid(p.width - 1, y)) return false;
+  return p.width > 0 && p.height > 0;
+}
+
+// The ground is found on a grid of at most this many cells a side, each the
+// average of the pixels it covers: a generated picture's edges are soft
+// over several pixels at full size, and a spread that follows soft edges
+// walks straight into the subject.
+const GROUND_GRID = 256;
+// A cell joins the ground when it is this close to the ground cell beside
+// it (so a ground that shades from edge to middle is followed) and this
+// close to the edge's average colour (so the spread stops at a subject of
+// another colour even where there is no outline). Tried on generated
+// sprites, 2026-10-10: a larger step ate dark outlines on a dark ground.
+const GROUND_STEP = 12 ** 2;
+const GROUND_FAR = 110 ** 2;
+
+/**
+ * A picture with its ground made see-through. A picture that fills its
+ * frame (a generated sprite stands on a flat or shaded colour) would
+ * otherwise spend one of its three colours on that ground and be shrunk
+ * frame and all. The ground is whatever is reached from the edge through
+ * cells of nearly the same colour. A picture that already has see-through
+ * at its edge is returned as it is.
+ *
+ * Not covered: a subject the colour of its ground with no outline between
+ * them loses that part, and ground enclosed by the subject (between an arm
+ * and a body) is kept, because nothing reaches it from the edge.
+ */
+export function clearGround(p: Picture): Picture {
+  if (!hasOwnGround(p)) return p;
+  const k = Math.max(1, Math.ceil(Math.max(p.width, p.height) / GROUND_GRID));
+  const w = Math.ceil(p.width / k), h = Math.ceil(p.height / k);
+  const cell = new Float64Array(w * h * 3);
+  const count = new Uint32Array(w * h);
+  for (let y = 0; y < p.height; y++) {
+    for (let x = 0; x < p.width; x++) {
+      const c = Math.floor(y / k) * w + Math.floor(x / k), i = (y * p.width + x) * 4;
+      cell[c * 3] += p.data[i];
+      cell[c * 3 + 1] += p.data[i + 1];
+      cell[c * 3 + 2] += p.data[i + 2];
+      count[c]++;
+    }
+  }
+  for (let c = 0; c < w * h; c++) for (let j = 0; j < 3; j++) cell[c * 3 + j] /= count[c];
+  const edge: number[] = [];
+  for (let x = 0; x < w; x++) edge.push(x, (h - 1) * w + x);
+  for (let y = 0; y < h; y++) edge.push(y * w, y * w + w - 1);
+  const mean = [0, 1, 2].map((j) => edge.reduce((t, c) => t + cell[c * 3 + j], 0) / edge.length);
+  const far = (c: number) => (cell[c * 3] - mean[0]) ** 2 + (cell[c * 3 + 1] - mean[1]) ** 2 + (cell[c * 3 + 2] - mean[2]) ** 2;
+  const step = (a: number, b: number) => (cell[a * 3] - cell[b * 3]) ** 2 + (cell[a * 3 + 1] - cell[b * 3 + 1]) ** 2 + (cell[a * 3 + 2] - cell[b * 3 + 2]) ** 2;
+  const ground = new Uint8Array(w * h);
+  const queue: number[] = [];
+  for (const c of edge) {
+    if (!ground[c] && far(c) <= GROUND_FAR) {
+      ground[c] = 1;
+      queue.push(c);
+    }
+  }
+  for (let q = 0; q < queue.length; q++) {
+    const c = queue[q], x = c % w, y = (c - x) / w;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const xx = x + dx, yy = y + dy;
+      if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+      const n = yy * w + xx;
+      if (ground[n] || step(n, c) > GROUND_STEP || far(n) > GROUND_FAR) continue;
+      ground[n] = 1;
+      queue.push(n);
+    }
+  }
+  const data = new Uint8ClampedArray(p.data);
+  for (let y = 0; y < p.height; y++) {
+    for (let x = 0; x < p.width; x++) {
+      if (ground[Math.floor(y / k) * w + Math.floor(x / k)]) data[(y * p.width + x) * 4 + 3] = 0;
+    }
+  }
+  return { width: p.width, height: p.height, data };
+}
+
 /**
  * The drawn part, shrunk into a square of `size`, kept in proportion and
  * centred: each new pixel is the average of the source pixels it covers,

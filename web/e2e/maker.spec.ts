@@ -56,3 +56,35 @@ test("a picture of our own becomes three colours of tiles, and they go into the 
   await expect(built).toHaveAttribute("data-program-same", "false");
   expect(await built.getAttribute("data-program-sha")).not.toBe(jump().sha256);
 });
+
+test("a picture that fills its frame is shrunk without the ground it stands on, unless the reader keeps it", async ({ page }) => {
+  // Our own picture: a disc, red over blue with a black rim, on a green
+  // ground that shades from the edge to the middle and fills the frame.
+  await page.setViewportSize(DESK);
+  await open(page, "/nes/create?lesson=jump", 500);
+  await expect(page.locator('[data-program-for="jump"]')).toHaveCount(1, { timeout: 15000 });
+  await page.locator("[data-desk-tab=maker]").click();
+  await expect(page.locator("[data-play-run-sister]")).toBeEnabled({ timeout: 20000 });
+  await page.locator("[data-play-run-sister]").click();
+  // A picture with see-through of its own is not offered the choice.
+  await page.locator("[data-maker-file]").setInputFiles(path.join(__dirname, "fixtures", "sprite-quarters.png"));
+  await expect(page.locator("[data-maker-codes]")).toHaveCount(1, { timeout: 30000 });
+  await expect(page.locator("[data-maker-ground]")).toHaveCount(0);
+
+  await page.locator("[data-maker-file]").setInputFiles(path.join(__dirname, "fixtures", "sprite-on-ground.png"));
+  const ground = page.locator("[data-maker-ground]");
+  await expect(ground).toBeChecked({ timeout: 30000 });
+  // The corner of the NES picture and its middle: how opaque each is.
+  const alpha = () =>
+    page.locator("[data-maker-nes]").evaluate((c) => {
+      const g = (c as HTMLCanvasElement).getContext("2d")!;
+      const w = (c as HTMLCanvasElement).width;
+      return { corner: g.getImageData(1, 1, 1, 1).data[3], middle: g.getImageData(w >> 1, w >> 2, 1, 1).data[3] };
+    });
+  await expect.poll(alpha).toEqual({ corner: 0, middle: 255 });
+  const without = await page.locator("[data-maker-codes]").getAttribute("data-maker-codes");
+  // Kept, the ground takes the corner and one of the three colours.
+  await ground.uncheck();
+  await expect.poll(alpha).toEqual({ corner: 255, middle: 255 });
+  expect(await page.locator("[data-maker-codes]").getAttribute("data-maker-codes")).not.toBe(without);
+});

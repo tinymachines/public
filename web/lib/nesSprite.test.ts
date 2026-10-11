@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import fs from "node:fs";
 import path from "node:path";
-import { drawnBox, drawSquareFrom, fitColours, replaceTiles, setSpriteColours, shrink, tileCount, tileLines, toTiles, type Picture, type Rgb } from "./nesSprite";
+import { clearGround, drawnBox, drawSquareFrom, hasOwnGround, fitColours, replaceTiles, setSpriteColours, shrink, tileCount, tileLines, toTiles, type Picture, type Rgb } from "./nesSprite";
 
 const LESSONS = path.join(import.meta.dir, "..", "..", "lessons");
 const lesson = (key: string, file: string) => fs.readFileSync(path.join(LESSONS, key, file), "utf8");
@@ -124,5 +124,54 @@ describe("nesSprite", () => {
 
   test("a lesson's tiles are counted", () => {
     expect(tileCount(lesson("jump", "chr.s"))).toBe(3);
+  });
+
+  test("a picture that fills its frame loses its ground, shaded or flat, and keeps its subject", () => {
+    // A red square with a black outline on a ground that shades from edge to middle.
+    const subject = (x: number, y: number) => x >= 20 && x < 44 && y >= 20 && y < 44;
+    const outline = (x: number, y: number) => subject(x, y) && (x < 22 || x >= 42 || y < 22 || y >= 42);
+    const shade = (x: number, y: number): Rgb => {
+      const d = Math.round(Math.hypot(x - 32, y - 32));
+      return [40 + d, 90 + d, 40 + d];
+    };
+    const p = picture(64, 64, (x, y) => (outline(x, y) ? [0, 0, 0] : subject(x, y) ? [220, 30, 30] : shade(x, y)));
+    expect(hasOwnGround(p)).toBe(true);
+    expect(drawnBox(p)).toEqual({ x: 0, y: 0, w: 64, h: 64 });
+    const c = clearGround(p);
+    expect(drawnBox(c)).toEqual({ x: 20, y: 20, w: 24, h: 24 });
+    // Every pixel of the subject is as it was, and the first picture is not written over.
+    for (let y = 20; y < 44; y++) for (let x = 20; x < 44; x++) expect([...c.data.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4)]).toEqual([...p.data.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4)]);
+    expect(p.data[3]).toBe(255);
+    // Then the three colours go to the subject: the ground takes none.
+    const f = fitColours(shrink(c, 16), PALETTE);
+    expect(f.indices.filter((v) => v === 0).length).toBe(0);
+    expect(new Set(f.indices)).toEqual(new Set([1, 2]));
+  });
+
+  test("ground of another colour is not cleared by being reached, and enclosed ground is kept", () => {
+    // A white ring on black: the black inside the ring is not reached from the edge.
+    const ring = (x: number, y: number) => {
+      const d = Math.hypot(x - 32, y - 32);
+      return d >= 16 && d < 24;
+    };
+    const c = clearGround(picture(64, 64, (x, y) => (ring(x, y) ? [255, 255, 255] : [0, 0, 0])));
+    const alpha = (x: number, y: number) => c.data[(y * 64 + x) * 4 + 3];
+    expect(alpha(0, 0)).toBe(0);
+    expect(alpha(32, 12)).toBe(255); // the ring
+    expect(alpha(32, 32)).toBe(255); // the ground the ring encloses
+  });
+
+  test("a picture with see-through at its edge is left as it is", () => {
+    const p = picture(64, 64, (x, y) => (x >= 10 && x < 30 && y >= 20 && y < 60 ? [255, 0, 0] : null));
+    expect(hasOwnGround(p)).toBe(false);
+    expect(clearGround(p)).toBe(p);
+  });
+
+  test("a big picture is cleared on a coarse grid and comes back at its own size", () => {
+    const subject = (x: number, y: number) => x >= 300 && x < 468 && y >= 300 && y < 468;
+    const p = picture(768, 768, (x, y) => (subject(x, y) ? [250, 250, 250] : [30, 60, 120]));
+    const c = clearGround(p);
+    expect([c.width, c.height]).toEqual([768, 768]);
+    expect(drawnBox(c)).toEqual({ x: 300, y: 300, w: 168, h: 168 });
   });
 });
