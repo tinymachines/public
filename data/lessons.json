@@ -1,6 +1,6 @@
 {
  "note": "Written only by scripts/board-lessons.py. Our own cartridges, built from lessons/ and measured on our console; a comparison with a commercial game carries counts only.",
- "boarded_on": "2026-10-08",
+ "boarded_on": "2026-10-10",
  "topics": [
   {
    "key": "moving",
@@ -94,6 +94,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "full_speed_after": 40,
     "full_speed": 1.5,
     "jumps": [
@@ -172,6 +173,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "walk_top": 1.5,
     "run_top": 2.5,
     "run_after": 45,
@@ -264,6 +266,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "walk": 0.5,
     "stomp": {
      "frame": 713,
@@ -354,6 +357,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "player": [
      3,
      4,
@@ -430,6 +434,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "rising": 3,
     "fall_frames": 14,
     "block_after": 0,
@@ -493,6 +498,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "axis": "down",
     "step": 1,
     "every": 1,
@@ -551,6 +557,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "score_too": true,
     "bar_tiles": 8,
     "coin_frames": 31,
@@ -611,6 +618,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "pixels": 1,
     "every": 2,
     "wall_turns": 3,
@@ -687,6 +695,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "strips": 40,
     "every_min": 31,
     "every_max": 33,
@@ -759,6 +768,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "starts_at": 81,
     "holds_at": 112,
     "eased": 45,
@@ -841,6 +851,7 @@
    },
    "against": {
     "game": "The Legend of Zelda",
+    "key": "44e33dc0a6fb",
     "mirroring": {
      "playing": "horizontal",
      "slide": "vertical",
@@ -943,6 +954,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "values": [
      0,
      1,
@@ -1022,6 +1034,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "split_line": 31,
     "split_frames": 180,
     "frames": 180,
@@ -1096,6 +1109,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "most": 6,
     "left_out": 0,
     "never_drawn": 0,
@@ -1149,6 +1163,7 @@
    },
    "against": {
     "game": "The Legend of Zelda",
+    "key": "44e33dc0a6fb",
     "shown": 487,
     "tiles": 0,
     "turn_every": 6,
@@ -1215,6 +1230,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "title": {
      "frames": 28,
      "cleared": 4,
@@ -1301,6 +1317,7 @@
    },
    "against": {
     "game": "The Legend of Zelda",
+    "key": "44e33dc0a6fb",
     "after_press": [
      1
     ],
@@ -1388,6 +1405,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "ignored_after": [
      20
     ],
@@ -1456,6 +1474,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "hang": 16,
     "rise": 53,
     "to_life": 208,
@@ -1520,6 +1539,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "slide": 62,
     "walk": 98,
     "ignored": true,
@@ -1587,6 +1607,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "to_bottom": 19,
     "moved": 16,
     "rise": 0,
@@ -1651,6 +1672,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "to_screen": 211,
     "screen_tiles": 105,
     "held": 422,
@@ -1718,6 +1740,7 @@
    },
    "against": {
     "game": "The Legend of Zelda",
+    "key": "44e33dc0a6fb",
     "step": 3,
     "travel": 175,
     "open_frames": 65,
@@ -1784,6 +1807,7 @@
    },
    "against": {
     "game": "The Legend of Zelda",
+    "key": "44e33dc0a6fb",
     "step": 1,
     "every": 2,
     "crawled": 638,
@@ -1844,6 +1868,7 @@
    },
    "against": {
     "game": "Super Mario Bros.",
+    "key": "ded208cee37d",
     "music_before": 136,
     "starts": 1,
     "sweep_settings": 3,

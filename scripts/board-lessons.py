@@ -29,6 +29,29 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "lessons"))
 import build  # noqa: E402
 
+# The dumps the private runs were made on, by the key data/autopsy.json
+# gives each game (the first twelve hex digits of the dump's SHA-256). The
+# name is what a page shows; the key is what joins a lesson to the game's
+# own record, exactly rather than by a guess at the name. Mario's is the
+# Super Mario Bros. + Duck Hunt cartridge: every private Mario run starts
+# at that cartridge's picker and presses Start into Mario.
+AGAINST_KEYS = {"Super Mario Bros.": "ded208cee37d", "The Legend of Zelda": "44e33dc0a6fb"}
+
+
+def keyed(against, name: str, games: set):
+    """A comparison with its game's key beside the name. Refused when the
+    name has no key here or the key is not a game in data/autopsy.json: a
+    lesson joined to a game that is not there would be a wrong link that
+    looks like a right one."""
+    if not against:
+        return against
+    key = AGAINST_KEYS.get(against["game"])
+    if key is None:
+        sys.exit(f"board-lessons: {name} is measured against {against['game']!r}, which has no key in AGAINST_KEYS")
+    if key not in games:
+        sys.exit(f"board-lessons: {name}: {against['game']!r} has key {key}, which is not a game in data/autopsy.json")
+    return {"game": against["game"], "key": key, **{k: v for k, v in against.items() if k not in ("game", "key")}}
+
 OUT = ROOT / "data" / "lessons.json"
 STORYBOARD = ROOT.parent / "nes" / "target" / "release" / "examples" / "storyboard"
 
@@ -1380,6 +1403,7 @@ def main():
     # The groups and their order: every lesson in exactly one, and no name
     # that is not a lesson. The record keeps the lessons in this order.
     topics = json.loads((ROOT / "lessons" / "topics.json").read_text())["topics"]
+    games = {g["key"] for g in json.loads((ROOT / "data" / "autopsy.json").read_text())["games"]}
     dirs = {p.name: p for p in (ROOT / "lessons").iterdir() if (p / "lesson.json").exists()}
     listed = [k for t in topics for k in t["lessons"]]
     if sorted(listed) != sorted(dirs):
@@ -1647,7 +1671,7 @@ def main():
             "key": name, "kind": meta.get("kind", "jump"), "title": meta["title"], "description": meta["description"], "tree": git("rev-parse", f"HEAD:lessons/{name}"),
             "sha256": sha, "code_bytes": b["code_bytes"], "instructions": b["instructions"],
             "rom": base64.b64encode(b["rom"].read_bytes()).decode(),
-            "measures": measures, "against": against,
+            "measures": measures, "against": keyed(against, name, games),
             "pictures": [{"frame": f, "png": png(run / f"frame-{f:05}.ppm")} for f in meta["grabs"]],
         })
         print(f"board-lessons: {name}: {measures}" + (f"; against {against['game']}: {dict((k, v) for k, v in against.items() if k != 'game')}" if against else ""))
