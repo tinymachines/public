@@ -1760,3 +1760,74 @@ def test_a_range_does_not_cut_a_character_in_two_silently(ns):
     page = f"{ROOT}http/tinymachines.ai/x"
     assert read(n, f"{page}?range=0-3")[0]["text"] == "山"
     assert read(n, f"{page}?range=0-4")[0]["text"] == "山�"
+
+
+# ---------------------------------------------------------------------------
+# tinypeek#4: a git tree to a stated depth, in one read
+# ---------------------------------------------------------------------------
+
+
+def _tree(ns: Namespace, uri: str) -> dict:
+    return json.loads(read(ns, uri)[0]["text"])
+
+
+def test_a_git_tree_reads_to_a_stated_depth_in_one_git_call(gns, monkeypatch):
+    top = f"{ROOT}git/public/"
+    one = _tree(gns, top)
+    assert _tree(gns, f"{top}?depth=1")["children"] == one["children"] == _tree(gns, f"{top}?as=tree&depth=1")["children"], "depth 1 is the listing there always was"
+    assert "depth" not in one["children"][0]
+    two = _tree(gns, f"{top}?depth=2")
+    names = [c["name"] for c in two["children"]]
+    assert two["depth"] == 2 and {"docs/", "docs/index.md", "docs/nes/", "notes/plan.md"} <= set(names)
+    assert "docs/nes/alone.md" not in names, "two levels, not three"
+    assert names == sorted(names), "in path order, a directory just before what is in it"
+    by = {c["name"]: c for c in two["children"]}
+    assert by["docs/nes/"] == {"uri": f"{top}docs/nes/", "name": "docs/nes/", "mimeType": "application/json", "isCollection": True, "depth": 2}, "a directory at the last level is listed, to be read on"
+    assert by["docs/index.md"]["uri"] == f"{top}docs/index.md" and by["docs/index.md"]["mimeType"] == "text/markdown" and by["docs/index.md"]["size"] > 0 and by["docs"+"/"]["depth"] == 1
+    three = _tree(gns, f"{top}?depth=3")
+    assert "docs/nes/alone.md" in [c["name"] for c in three["children"]]
+    assert read(gns, f"{top}?depth=3")[0]["uri"] == f"{top}?as=tree&depth=3"
+    # A denied name stays redacted however deep it is listed.
+    assert by["data/secret-key.json"] == {"uri": f"{top}data/secret-key.json", "name": "data/secret-key.json", "redacted": True, "isCollection": False, "depth": 2}
+    # From a directory the names are relative to it, and a ref still applies.
+    sub = _tree(gns, f"{top}docs/?depth=2")
+    assert [c["name"] for c in sub["children"]] == ["index.md", "nes/", "nes/alone.md", "nes/index.md"]
+    assert sub["children"][2]["uri"] == f"{top}docs/nes/alone.md"
+    old = _tree(gns, f"{top}docs/?at=v1&depth=2")
+    assert old["at"] == "v1" and old["children"][2]["uri"] == f"{top}docs/nes/alone.md?at=v1"
+    assert read(gns, f"{top}docs/?at=v1&depth=2")[0]["uri"] == f"{top}docs/?at=v1&as=tree&depth=2"
+    # One git ls-tree, however deep.
+    calls = []
+    real = tm.run_git
+    monkeypatch.setattr(tm, "run_git", lambda d, *a, **k: (calls.append(a[0]), real(d, *a, **k))[1])
+    _tree(gns, f"{top}?depth={tm.TREE_DEPTH_MAX}")
+    assert calls.count("ls-tree") == 1, calls
+    monkeypatch.setattr(tm, "run_git", real)
+    # The depth is bounded, and a depth where there is no tree is refused, not dropped.
+    for bad in ("0", str(tm.TREE_DEPTH_MAX + 1), "-1", "two", ""):
+        e = refusal(gns, f"{top}?depth={bad}")
+        assert e.reason == "bad-facet" and str(tm.TREE_DEPTH_MAX) in e.message, bad
+    assert refusal(gns, f"{top}docs/index.md?depth=2").reason == "bad-facet"
+    assert refusal(gns, f"{top}docs/?as=log&depth=2").reason == "bad-facet"
+    got = gns.complete({"ref": {"type": "ref/resource", "uri": next(t["uriTemplate"] for t in gns.templates() if t["name"] == "git")},
+                        "argument": {"name": "depth", "value": ""}})["completion"]["values"]
+    assert got == [str(n) for n in range(1, tm.TREE_DEPTH_MAX + 1)]
+
+
+def test_a_deep_tree_pages_and_does_not_enter_a_submodule(gns, gits, monkeypatch):
+    bench_sha = git(gits["bench"], "rev-parse", "HEAD").strip()
+    _pin(gns.repo, "extern/bench", bench_sha, "https://github.com/tinymachines/bench.git")
+    top = f"{ROOT}git/public/"
+    whole = _tree(gns, f"{top}?depth=4")["children"]
+    by = {c["name"]: c for c in whole}
+    assert by["extern/bench"]["submodule"] is True and by["extern/bench"]["isCollection"] is False
+    assert not any(n.startswith("extern/bench/") for n in by), "what a submodule pins is another repository's to list"
+    monkeypatch.setattr(tm, "LIST_CAP", 3)
+    walked, uri, reads = [], f"{top}?depth=4", 0
+    while uri:
+        body = _tree(gns, uri)
+        assert len(body["children"]) <= 3
+        walked += body["children"]
+        uri = f"{top}?depth=4&cursor={body['nextCursor']}" if "nextCursor" in body else None
+        reads += 1
+    assert walked == whole and reads > 2, "every entry once, in the same order"

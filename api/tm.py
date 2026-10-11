@@ -87,6 +87,7 @@ SITES = ("tinymachines.ai", "beta.tinymachines.ai")
 GIT_SIBLINGS = ("nes", "nes-bench", "nes-bus", "ntsc-crt", "halfphi", "2a03", "2c02", "tinypeek")
 GIT_TIMEOUT_S = 15
 LOG_DEFAULT, LOG_MAX = 20, 100
+TREE_DEPTH_MAX = 8      # levels a git tree lists in one read (?depth=); 1 is the plain listing
 
 # The second net under the roots: a file that matches is listed as redacted
 # and refused on read, so the client knows it exists and does not get it.
@@ -1292,14 +1293,14 @@ class Namespace:
                 ),
             },
             {
-                "uriTemplate": f"{ROOT}git/{{repo}}{{/path*}}{{?at,as,n}}",
+                "uriTemplate": f"{ROOT}git/{{repo}}{{/path*}}{{?at,as,n,depth}}",
                 "name": "git",
                 "title": "A file or tree of a repository, at a ref",
                 "description": (
                     f"Repositories: {', '.join(sorted(self.git))}. A path is a tree path; at= is a branch, tag or "
                     "commit (default HEAD; for 6502 that is the commit the site serves). as=log gives the commits "
                     "touching the path (n= how many, default 20), as=blame the file with a commit per line, "
-                    "as=tree a directory as JSON, as=stat the object's type, size and resolved commit. A pulled "
+                    "as=tree a directory as JSON (depth= how many levels, 1 to 8, default 1), as=stat the object's type, size and resolved commit. A pulled "
                     "notebook page's origin file carries tm:generates to the copy in this checkout and "
                     "tm:renders-as to its page."
                 ),
@@ -1404,6 +1405,8 @@ class Namespace:
             values = [a for a in pool if a.startswith(value)]
         elif name == "n":
             values = [str(n) for n in (LOG_DEFAULT, 50, LOG_MAX) if str(n).startswith(value)]
+        elif name == "depth":
+            values = [str(n) for n in range(1, TREE_DEPTH_MAX + 1) if str(n).startswith(value)]
         elif name == "kind":
             values = [k for k in ENTITY_KINDS if k.startswith(value)]
         elif name == "key" and "/entity/" in tmpl:
@@ -1898,30 +1901,41 @@ class Namespace:
         uri = f"{base}{q}{sep}as=stat" if as_ == "stat" else base + q
         return self._result(uri, "application/json", json.dumps(body, indent=1), links)
 
-    def _git_children(self, repo: str, at: str, tree: str) -> list[dict]:
+    def _git_children(self, repo: str, at: str, tree: str, depth: int = 1) -> list[dict]:
+        """A tree's entries. One level is the listing: directories first, then
+        names. Deeper (tinypeek#4) is one `git ls-tree -r` whatever the depth,
+        each entry named by its path below the tree and carrying its level, in
+        path order so a directory comes just before what is in it. A
+        submodule is listed and never entered: what it pins is another
+        repository's. A listing at a ref names its children at that ref."""
         spec = f"{at}:{tree}" if tree else at
         try:
-            out = run_git(self._git_dir(repo), "ls-tree", "-l", spec)
+            out = run_git(self._git_dir(repo), "ls-tree", "-l", *(("-r", "-t") if depth > 1 else ()), spec)
         except TmError:
             raise self._git_missing(repo, at, tree) from None
         kids = []
         lines = [l.partition("\t") for l in out.splitlines()]
-        unknown = [meta.split()[2] for meta, _, name in lines if meta.split()[1] == "blob" and needs_sniff(name)]
+        lines = [(meta, name) for meta, _, name in lines if name.count("/") < depth]
+        unknown = [meta.split()[2] for meta, name in lines if meta.split()[1] == "blob" and needs_sniff(name)]
         heads = self._git_heads(repo, unknown)
-        for meta, _, name in lines:
+        q = "" if at == "HEAD" else f"?at={quote(at)}"
+        for meta, name in lines:
             mode, kind, _sha, size = meta.split()
             rel = f"{tree}/{name}" if tree else name
             base = f"{ROOT}git/{repo}/{quote(rel)}"
             if kind == "tree":
-                kids.append({"uri": base + "/", "name": name + "/", "mimeType": "application/json", "isCollection": True})
+                kid = {"uri": base + "/" + q, "name": name + "/", "mimeType": "application/json", "isCollection": True}
             elif kind == "commit":
                 # TM-19: a submodule reads as a record of what it pins.
-                kids.append({"uri": base, "name": name, "submodule": True, "mimeType": "application/json", "isCollection": False})
+                kid = {"uri": base + q, "name": name, "submodule": True, "mimeType": "application/json", "isCollection": False}
             elif denied(rel):
-                kids.append({"uri": base, "name": name, "redacted": True, "isCollection": False})
+                kid = {"uri": base + q, "name": name, "redacted": True, "isCollection": False}
             else:
-                kids.append({"uri": base, "name": name, "mimeType": mime_for(name, heads.get(_sha)), "size": int(size), "isCollection": False})
-        kids.sort(key=lambda c: (not c["isCollection"], c["name"]))
+                kid = {"uri": base + q, "name": name, "mimeType": mime_for(name, heads.get(_sha)), "size": int(size), "isCollection": False}
+            if depth > 1:
+                kid["depth"] = name.count("/") + 1
+            kids.append(kid)
+        kids.sort(key=(lambda c: c["name"]) if depth > 1 else (lambda c: (not c["isCollection"], c["name"])))
         return kids
 
     def _git_heads(self, repo: str, shas: list[str]) -> dict[str, bytes]:
@@ -2047,13 +2061,25 @@ class Namespace:
             # TM-11: a tree is its listing and its history. stat and blame are
             # a file's, refused here rather than answered "not found".
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; a git collection offers tree (its listing) and log; read {base}/ or {base}/?as=log")
-        if as_ == "tree" or (ref.is_collection and as_ == "raw"):
-            kids = self._git_children(repo, at, path)
+        listing = as_ == "tree" or (ref.is_collection and as_ == "raw")
+        depth = 1
+        if "depth" in ref.facets:
+            # tinypeek#4: how many levels a tree lists. Bounded, and refused
+            # where there is no tree to list rather than dropped (TM-11).
+            d = ref.facets["depth"]
+            if not listing or not d.isdigit() or not 1 <= int(d) <= TREE_DEPTH_MAX:
+                raise TmError(BAD_PARAMS, "bad-facet", f"depth={d!r}; depth is 1 to {TREE_DEPTH_MAX}, the levels a git tree lists (?as=tree&depth=N on a collection)")
+            depth = int(d)
+        if listing:
+            kids = self._git_children(repo, at, path, depth)
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
             body: dict[str, Any] = {"uri": base + ("/" if path else ""), "at": at, "commit": commit, "children": chunk}
+            deep = f"{'&' if q else '?'}as=tree&depth={depth}" if depth > 1 else ""
+            if depth > 1:
+                body["depth"] = depth
             if nxt:
                 body["nextCursor"] = nxt
-            return self._result(body["uri"] + q, "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
+            return self._result(body["uri"] + q + deep, "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
         if not path:
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"the root of {repo} is a tree; read {ROOT}git/{repo}/", nearest=[f"{ROOT}git/{repo}/"])
         if as_ == "log":

@@ -116,7 +116,8 @@ The git mount offers the site's own repository and the ones beside it that
 the notebook pulls pages from, all public on GitHub under the same names.
 `?at=` is a branch, tag or commit, `?as=log` the commits touching a path
 (`&n=` how many), `?as=blame` the file with a commit per line, `?as=tree` a
-directory as JSON. For `6502` the default ref is the commit the site is
+directory as JSON, and `&depth=` how many levels of it in one read, up to
+eight. For `6502` the default ref is the commit the site is
 serving, not the newest.
 
 The entity mount is the first thing built on the other four. It gives the
