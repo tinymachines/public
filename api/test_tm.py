@@ -1831,3 +1831,128 @@ def test_a_deep_tree_pages_and_does_not_enter_a_submodule(gns, gits, monkeypatch
         uri = f"{top}?depth=4&cursor={body['nextCursor']}" if "nextCursor" in body else None
         reads += 1
     assert walked == whole and reads > 2, "every entry once, in the same order"
+
+
+# ---------------------------------------------------------------------------
+# tinypeek#6: a caller cannot make unbounded requests
+# ---------------------------------------------------------------------------
+
+
+class _Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def _limited(ns, **kw):
+    clock = _Clock()
+    limiter = mcp_server.RateLimit(clock=clock, **kw)
+    handler = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS}, namespace=ns, limiter=limiter)
+    return handler, limiter, clock
+
+
+def _read_msg(uri: str, mid: int = 1) -> dict:
+    return {"jsonrpc": "2.0", "id": mid, "method": "resources/read", "params": {"uri": uri}}
+
+
+def test_a_caller_over_the_limit_is_refused_with_when_to_come_back(ns):
+    handler, limiter, clock = _limited(ns, capacity=5, per_second=0.5)
+    page = f"{ROOT}fs/docs/nes/pile.md"
+    for i in range(5):
+        assert run(handler(_read_msg(page), caller="203.0.113.7"))["result"]["contents"], f"read {i + 1} of a burst of five"
+    with pytest.raises(mcp_server.RpcError) as e:
+        run(handler(_read_msg(page), caller="203.0.113.7"))
+    assert e.value.code == mcp_server.RATE_LIMITED and e.value.data["reason"] == "rate-limited"
+    assert e.value.data["retryAfter"] == 2, "one unit at half a unit a second"
+    assert "203.0.113.7" not in json.dumps(e.value.data) + e.value.message, "the refusal does not hand an address back"
+    # Somebody else is untouched, and so is a call made in-process with no caller at all.
+    assert run(handler(_read_msg(page), caller="203.0.113.8"))["result"]
+    for _ in range(20):
+        assert run(handler(_read_msg(page)))["result"], "the box's own crawl is not a caller"
+    # The tool door is the same limit, and its refusal is one a model can read.
+    got = run(handler({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "resolve", "arguments": {"uri": page}}}, caller="203.0.113.7"))["result"]
+    body = json.loads(got["content"][0]["text"])
+    assert got["isError"] is True and body["reason"] == "rate-limited" and body["retryAfter"] == 2
+    # A refused call costs nothing, so waiting the time it named is enough.
+    clock.now += 1.9
+    with pytest.raises(mcp_server.RpcError):
+        run(handler(_read_msg(page), caller="203.0.113.7"))
+    clock.now += 0.2
+    assert run(handler(_read_msg(page), caller="203.0.113.7"))["result"]
+    # And it fills back to the burst, no further.
+    clock.now += 10_000
+    assert sum(1 for _ in range(9) if _ok(handler, page, "203.0.113.7")) == 5
+
+
+def _ok(handler, uri: str, caller: str) -> bool:
+    try:
+        run(handler(_read_msg(uri), caller=caller))
+        return True
+    except mcp_server.RpcError as e:
+        assert e.code == mcp_server.RATE_LIMITED
+        return False
+
+
+def test_a_read_that_costs_the_box_more_counts_for_more(gns):
+    handler, limiter, clock = _limited(gns, capacity=10, per_second=1)
+    cost = mcp_server.cost
+    assert cost(_read_msg(f"{ROOT}fs/docs/nes/pile.md")) == 1
+    assert cost(_read_msg(f"{ROOT}http/tinymachines.ai/docs/nes/pile")) == mcp_server.COST_HTTP > 1, "a page is fetched through the front door"
+    assert cost(_read_msg(f"{ROOT}git/public/docs/nes/alone.md?as=log")) == mcp_server.COST_GIT > 1, "git is a process"
+    assert cost({"method": "tools/call", "params": {"name": "resolve", "arguments": {"uri": f"{ROOT}http/tinymachines.ai/docs"}}}) == mcp_server.COST_HTTP
+    assert cost({"method": "tools/call", "params": {"name": "overview"}}) == 1
+    for free in ("initialize", "ping", "notifications/initialized", "tools/list", "resources/templates/list"):
+        assert cost({"method": free}) == 0, f"{free}: a limited client can still connect and learn the grammar"
+    assert cost({"method": "resources/read", "params": {"uri": 7}}) == 1 and cost("not a message") == 1, "nonsense is counted, not crashed on"
+    # Two pages are the whole burst of ten at five each; two files are not.
+    assert _ok(handler, f"{ROOT}http/tinymachines.ai/docs/nes/pile", "a") and _ok(handler, f"{ROOT}http/tinymachines.ai/docs/nes/pile", "a")
+    assert not _ok(handler, f"{ROOT}fs/docs/nes/alone.md", "a")
+    assert _ok(handler, f"{ROOT}fs/docs/nes/alone.md", "b") and _ok(handler, f"{ROOT}fs/docs/nes/alone.md", "b")
+    # A free call goes through for a caller with nothing left.
+    assert run(handler({"jsonrpc": "2.0", "id": 9, "method": "initialize", "params": {}}, caller="a"))["result"]["serverInfo"]
+    # A call over the limit that also fails still names the limit, not the failure.
+    with pytest.raises(mcp_server.RpcError) as e:
+        run(handler(_read_msg(f"{ROOT}fs/docs/nes/nope.md"), caller="a"))
+    assert e.value.data["reason"] == "rate-limited"
+
+
+def test_the_limiter_keeps_no_more_callers_than_it_says(ns):
+    limiter = mcp_server.RateLimit(capacity=3, per_second=1, clock=_Clock(), max_callers=4)
+    for i in range(50):
+        assert limiter.take(f"198.51.100.{i}", 1) is None
+    assert len(limiter) <= 4, "a flood of addresses does not grow the table without end"
+    assert limiter.take("198.51.100.49", 1) is None and limiter.take("198.51.100.49", 1) is None and limiter.take("198.51.100.49", 1) is not None, "and the newest caller is still being counted"
+    assert mcp_server.RateLimit().capacity == mcp_server.RATE_BURST and mcp_server.RateLimit().per_second == mcp_server.RATE_PER_SECOND
+
+
+def test_the_server_limits_by_the_address_the_front_door_names(monkeypatch):
+    """Over the real app: the route hands the caller's address to the handler,
+    and it is the one nginx sets, not one a client can choose."""
+    from fastapi.testclient import TestClient
+    import app as service
+    limiter = service._MCP.limiter
+    assert isinstance(limiter, mcp_server.RateLimit), "the app's handler is built with a limit"
+    assert (limiter.capacity, limiter.per_second) == (mcp_server.RATE_BURST, mcp_server.RATE_PER_SECOND)
+    monkeypatch.setattr(limiter, "clock", _Clock())     # no time passes, so nothing is earned back mid-test
+    body = {"jsonrpc": "2.0", "id": 1, "method": "resources/read", "params": {"uri": ROOT}}
+    with TestClient(service.app) as client:
+        me = {"X-Real-IP": "203.0.113.50", "X-Forwarded-For": "198.51.100.1"}
+        limiter.forget("203.0.113.50")
+        seen = []
+        for _ in range(int(limiter.capacity) + 1):
+            r = client.post("/mcp", json=body, headers=me).json()
+            seen.append("error" in r)
+        assert seen[:-1] == [False] * int(limiter.capacity) and seen[-1] is True, "the burst, then a refusal"
+        r = client.post("/mcp", json=body, headers=me).json()
+        assert r["error"]["code"] == mcp_server.RATE_LIMITED and r["error"]["data"]["reason"] == "rate-limited" and r["error"]["data"]["retryAfter"] >= 1
+        # Changing the header a client controls does not reset it; another real address is another caller.
+        assert "error" in client.post("/mcp", json=body, headers={**me, "X-Forwarded-For": "192.0.2.9"}).json()
+        assert "result" in client.post("/mcp", json=body, headers={"X-Real-IP": "203.0.113.51"}).json()
+        # A batch is counted message by message.
+        limiter.forget("203.0.113.52")
+        batch = [dict(body, id=i) for i in range(int(limiter.capacity) + 2)]
+        got = client.post("/mcp", json=batch, headers={"X-Real-IP": "203.0.113.52"}).json()
+        assert sum("error" in g for g in got) == 2
+        limiter.forget("203.0.113.50"), limiter.forget("203.0.113.51"), limiter.forget("203.0.113.52")

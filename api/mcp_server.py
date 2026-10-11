@@ -23,6 +23,8 @@ That file is the reference; this is the same shape with different tools.
 from __future__ import annotations
 
 import json
+import math
+import time
 from typing import Any, Callable
 
 SERVER = {"name": "tinymachines", "title": "tinymachines.ai", "version": "1.0.0"}
@@ -74,7 +76,8 @@ holds (tm:input), a page to itself in the other language and on the other site
 version-history and latest-version do what the IANA registry says. Links come in one order (the IANA ones, then exact, then
 inferred; by rel, then href) and no read carries more than a hundred: a read with more ends in a tm:links link to
 <uri>?as=links, which gives all of them a page at a time, each page ending in next. A link that stands for several
-occurrences says how many in count. A URI that does not resolve comes back with the nearest ones that
+occurrences says how many in count. Reads are rate-limited by caller: a burst of 240, then 4 a second, a page
+costing 5 and a git read 2; over it the answer is rate-limited with retryAfter in seconds, and waiting that long is enough. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the
 same URIs and returns the links in its body, for a client that prefers tools."""
@@ -98,6 +101,98 @@ class RpcError(Exception):
 
 
 PARSE, INVALID_REQ, NO_METHOD, BAD_PARAMS, INTERNAL = -32700, -32600, -32601, -32602, -32603
+# In the range JSON-RPC leaves to the server; the last digits are HTTP's 429.
+RATE_LIMITED = -32029
+
+# ---------------------------------------------------------------------------
+# The rate limit (tinypeek#6)
+# ---------------------------------------------------------------------------
+#
+# Every other control here bounds one request: a byte cap, a page of a
+# listing, a cap on links. Nothing bounded how many a caller makes, and two of
+# the mounts do real work on each: http fetches the page through the front
+# door, git starts a process.
+#
+# A token bucket for each caller, in memory. A caller is the address the
+# front door accepted the connection from; there are no tokens yet, and when
+# there are, a token id is a better key and goes in the same place. The
+# address is a key in a table and nothing else: never logged, never written
+# down, never handed back, and forgotten on restart.
+#
+# Sized so that a person or a model reading the namespace never meets it, and
+# something crawling it does: a burst of 240 units, then 4 a second. The
+# deploy's own crawl runs in-process and is not a caller at all. A caller on
+# the box that reaches the port directly shares one bucket with every other
+# such caller; nothing in the deploy talks to this endpoint over HTTP, and a
+# burst of 240 is room for a person checking by hand, so loopback is not
+# exempted: an exemption is a limit anything on the box can step around.
+
+RATE_BURST = 240.0        # units a caller may spend at once
+RATE_PER_SECOND = 4.0     # units a caller earns back each second
+RATE_CALLERS = 10_000     # buckets kept; past it the longest idle are dropped
+COST_HTTP = 5             # a page, fetched through the front door
+COST_GIT = 2              # a git process
+
+
+class RateLimit:
+    """Token buckets by caller. `take` spends, or says how long to wait."""
+
+    def __init__(self, capacity: float = RATE_BURST, per_second: float = RATE_PER_SECOND,
+                 clock: Callable[[], float] = time.monotonic, max_callers: int = RATE_CALLERS):
+        self.capacity, self.per_second, self.clock, self.max_callers = float(capacity), float(per_second), clock, max_callers
+        self._buckets: dict[str, tuple[float, float]] = {}    # caller -> (units left, when)
+
+    def __len__(self) -> int:
+        return len(self._buckets)
+
+    def forget(self, caller: str) -> None:
+        self._buckets.pop(caller, None)
+
+    def take(self, caller: str, units: float) -> int | None:
+        """Spend `units` for `caller`: None when it could, else the whole
+        seconds until it can. A refusal spends nothing, so the wait it names
+        is enough."""
+        now = self.clock()
+        left, then = self._buckets.pop(caller, (self.capacity, now))
+        left = min(self.capacity, left + (now - then) * self.per_second)
+        wait = None
+        if units > left:
+            wait = max(1, math.ceil((min(units, self.capacity) - left) / self.per_second))
+        else:
+            left -= units
+        # Re-inserted last, so the table is in order of last use and the
+        # longest idle are the first out when a flood of addresses fills it.
+        self._buckets[caller] = (left, now)
+        while len(self._buckets) > self.max_callers:
+            self._buckets.pop(next(iter(self._buckets)))
+        return wait
+
+
+FREE = ("initialize", "ping", "tools/list", "resources/templates/list")
+
+
+def cost(msg: Any) -> int:
+    """What one message costs its caller. Connecting and learning the grammar
+    are free, so a limited client can still find out what it is talking to; a
+    read is one unit, more where the box does more work for it."""
+    if not isinstance(msg, dict):
+        return 1
+    method, params = msg.get("method"), msg.get("params")
+    if not isinstance(method, str):
+        return 1
+    if method in FREE or method.startswith("notifications/"):
+        return 0
+    params = params if isinstance(params, dict) else {}
+    uri = params.get("uri")
+    if method == "tools/call" and isinstance(params.get("arguments"), dict):
+        uri = params["arguments"].get("uri")
+    if isinstance(uri, str):
+        mount = uri.split("://", 1)[-1].split("/", 2)[1:2]
+        if mount == ["http"]:
+            return COST_HTTP
+        if mount == ["git"]:
+            return COST_GIT
+    return 1
 
 
 TOOLS: list[dict] = [
@@ -154,7 +249,8 @@ TOOLS: list[dict] = [
 def make_handler(
     impls: dict[str, Callable[[dict], Any]],
     namespace: Any = None,
-) -> Callable[[Any], Any]:
+    limiter: RateLimit | None = None,
+) -> Callable[..., Any]:
     """One JSON-RPC message in, one response out (or None for a notification).
 
     Batches are handled by the caller, which is the only part of the transport
@@ -164,6 +260,11 @@ def make_handler(
     resources/list, resources/templates/list, resources/read and
     completion/complete, and says so in its capabilities. Without one it is
     the three tools and nothing else, which is what it was.
+
+    `limiter`, when given, holds each caller to a rate (tinypeek#6). The
+    caller is whatever the transport passes as `caller` with a message; a
+    message with none (a test, the box reading itself in-process) is not
+    limited.
     """
     tools = list(TOOLS)
     if namespace is not None:
@@ -211,7 +312,22 @@ def make_handler(
         capabilities["resources"] = {"subscribe": False, "listChanged": False}
         capabilities["completions"] = {}
 
-    async def handle(msg: Any) -> dict | None:
+    def refuse(wait: int) -> dict:
+        return {"reason": "rate-limited", "retryAfter": wait, "burst": int(limiter.capacity), "perSecond": limiter.per_second}
+
+    async def handle(msg: Any, caller: str | None = None) -> dict | None:
+        # Before anything is parsed or read: a caller over its rate is told
+        # so, and how long to wait, whatever it asked for.
+        wait = limiter.take(caller, cost(msg)) if limiter is not None and caller is not None and cost(msg) else None
+        if wait is not None:
+            said = f"too many requests; try again in {wait}s"
+            if isinstance(msg, dict) and msg.get("method") == "tools/call":
+                # A tool's refusal is a result the model can read, as below.
+                if msg.get("id") is None:
+                    return None
+                return {"jsonrpc": "2.0", "id": msg.get("id"), "result": {
+                    "content": [{"type": "text", "text": json.dumps({"error": said, **refuse(wait)}, indent=1)}], "isError": True}}
+            raise RpcError(RATE_LIMITED, said, refuse(wait))
         if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0":
             raise RpcError(INVALID_REQ, "not a JSON-RPC 2.0 message")
         method, mid = msg.get("method"), msg.get("id")
@@ -253,6 +369,7 @@ def make_handler(
             return None
         return {"jsonrpc": "2.0", "id": mid, "result": result}
 
+    handle.limiter = limiter    # for the transport's own tests, and nothing else
     return handle
 
 

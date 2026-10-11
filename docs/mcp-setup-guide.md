@@ -158,7 +158,11 @@ result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.
 
 A URI that does not resolve is refused with the nearest ones that do, so a
-wrong guess teaches rather than dead-ends. A file over the size cap comes
+wrong guess teaches rather than dead-ends. Reads are limited by caller: a
+burst, then a steady rate, with a page counting for more than a file because
+the server fetches it. A caller over the rate is answered `rate-limited` with
+`retryAfter` in seconds, and waiting that long is enough. Someone reading
+never meets it; something crawling does. A file over the size cap comes
 back with its size and a `?range=` template. The resource templates say the
 grammar and completions fill in live values, so a client can compose a URI
 it was never shown and try it.

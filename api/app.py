@@ -523,6 +523,8 @@ _MCP = mcp_server.make_handler(
     # links between a page and its source. The checkout is the one that
     # serves live, so what the fs mount shows is what the site was built from.
     namespace=tm.Namespace(Path(__file__).resolve().parent.parent),
+    # tinypeek#6: each caller is held to a rate; mcp_endpoint says who is calling.
+    limiter=mcp_server.RateLimit(),
 )
 
 
@@ -577,11 +579,12 @@ async def mcp_endpoint(request: Request):
             status_code=400,
         )
 
+    caller = _caller_ip(request)
     out = []
     for msg in messages:
         mid = msg.get("id") if isinstance(msg, dict) else None
         try:
-            res = await _MCP(msg)
+            res = await _MCP(msg, caller=caller)
         except mcp_server.RpcError as e:
             res = mcp_server.error_body(mid, e)
         except Exception as e:  # noqa: BLE001
