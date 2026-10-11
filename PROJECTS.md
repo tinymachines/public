@@ -5585,3 +5585,48 @@ first page, and with it the stale `inLanguage` test.
 Waiting on the owner: what Composer covers; whether to free a graphics
 card for sprites; the root disk; the sprite maker tried signed in with a
 picture from the generator.
+
+## Checkpoint, 2026-10-11, later: the Program window measures the reader's own jump
+
+Live and beta serve `740d685`. Main is one commit past it, `c0a0d15`,
+which only moves the tinypeek pin to spec v0.11 (the tinypeek session's)
+and changes nothing the site serves until the next deploy.
+
+The website session's work since the last checkpoint:
+
+- **The Program window measures the jump lesson in the page.** After a
+  program assembles, a worker (`web/public/nes/measure.worker.mjs`) plays
+  the lesson's recorded button presses on the reader's cartridge and
+  reads the same memory cells the record was made from
+  (`web/lib/lessonMeasure.ts`). The window shows our numbers and the
+  reader's side by side, and marks each row same or different.
+- **The check that makes it honest:** our own program, unchanged,
+  measures in the page to exactly the numbers `data/lessons.json` holds.
+  That runs in the browser tests, against the live site too.
+- **A program that cannot be measured gets a reason, not numbers:** a
+  square that never leaves the ground, or one that has not landed by the
+  last frame.
+- **A window asked to show before the desk was laid out was dropped.**
+  `Desk.tsx` now remembers the request and shows it when ready. That was
+  the cause of an occasional failing browser test.
+
+Not covered: only the jump lesson is measured in the page. The other 24
+lessons show no table. Each one added needs its own plan and the same
+check against the record before it ships.
+
+Next for the website session, in the order we would take them:
+
+1. More lessons measured in the Program window, one at a time, starting
+   with run, whose measures (top speeds, light and strong jumps) are the
+   nearest to jump's.
+2. Sprites in their own output folder: the front door's `/view` rule,
+   the generator's file prefix and the maker's request change together.
+3. Hotbits bench step 2 when geiger has its first converted page, and
+   with it the stale `inLanguage` test and, when revision E lands, the
+   revision D note.
+4. Composer, once the owner says what it covers.
+
+Waiting on the owner: what Composer covers; whether to free a graphics
+card for sprites; the root disk at 99%; the sprite maker tried signed in
+with a picture from the generator; the `.window` line in the front
+door's file.
