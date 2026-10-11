@@ -1440,6 +1440,12 @@ class Namespace:
             if ref.facets.get("as") == "links":
                 return await self._read_links(ref)
             return self._bounded(await self._read(uri), ref)
+        except OSError as e:
+            # A path the filesystem will not even look up (a name too long, a
+            # loop of links) is a path that is not there. And nothing the
+            # system says about it reaches the client: its message names where
+            # the checkout is on this host.
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"that path does not exist ({e.strerror or type(e).__name__})") from None
         except TmError as e:
             # TM-19: a refusal never offers the address it just refused, which a
             # client following nearest would take round forever. (x/ for x is
@@ -1447,6 +1453,11 @@ class Namespace:
             if e.data.get("nearest"):
                 e.data["nearest"] = [n for n in e.data["nearest"] if n != uri]
             raise
+        except Exception as e:  # noqa: BLE001
+            # Whatever else goes wrong, the client learns that it did and what
+            # kind of thing it was, never the message: an exception's text is
+            # written for the box's owner and can hold a path on it.
+            raise TmError(INTERNAL, "internal", f"the server failed on this read ({type(e).__name__})") from None
 
     # -- a link set, bounded and paged (tinypeek#2) ------------------------
 

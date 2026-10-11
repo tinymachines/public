@@ -525,6 +525,8 @@ _MCP = mcp_server.make_handler(
     namespace=tm.Namespace(Path(__file__).resolve().parent.parent),
     # tinypeek#6: each caller is held to a rate; mcp_endpoint says who is calling.
     limiter=mcp_server.RateLimit(),
+    # tinypeek#7: one record a request, outside the checkout, or none where there is nowhere to write.
+    audit=mcp_server.AuditLog.from_env(Path(__file__).resolve().parent.parent),
 )
 
 

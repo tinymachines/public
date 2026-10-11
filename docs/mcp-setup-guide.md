@@ -162,7 +162,12 @@ wrong guess teaches rather than dead-ends. Reads are limited by caller: a
 burst, then a steady rate, with a page counting for more than a file because
 the server fetches it. A caller over the rate is answered `rate-limited` with
 `retryAfter` in seconds, and waiting that long is enough. Someone reading
-never meets it; something crawling does. A file over the size cap comes
+never meets it; something crawling does.
+
+The server keeps a record of each request: what was asked for, when, how it
+ended and how much came back. It does not record who asked: no address is
+kept, and no stand-in for one. The record is kept for thirty days at most and
+is not part of anything the namespace serves. A file over the size cap comes
 back with its size and a `?range=` template. The resource templates say the
 grammar and completions fill in live values, so a client can compose a URI
 it was never shown and try it.

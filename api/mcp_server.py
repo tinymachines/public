@@ -24,7 +24,10 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable
 
 SERVER = {"name": "tinymachines", "title": "tinymachines.ai", "version": "1.0.0"}
@@ -168,6 +171,120 @@ class RateLimit:
         return wait
 
 
+# ---------------------------------------------------------------------------
+# The audit log (tinypeek#7)
+# ---------------------------------------------------------------------------
+#
+# What was read through the namespace, one JSON line a request. Until now
+# nothing recorded it: nginx logs that somebody POSTed to /api/mcp, and the
+# URI is in the body, which nginx does not keep.
+#
+# A record is the time, the method, the tool and the URI where there is one,
+# how it ended ("ok", or the refusal's reason), the bytes sent back and the
+# milliseconds it took, and a token id, which is null until there are tokens.
+# It holds no address and no hash of one. The only identity there is today is
+# the caller's address, which is personal data, and the site's own visitor
+# count keeps none either; when tokens exist the token id is who asked.
+#
+# It is written outside the checkout, always: the namespace serves parts of
+# the checkout, and a log it could serve would be a log of its own readers,
+# published. So a directory under the checkout is refused, not trusted to be
+# outside the served roots. One file a day, thirty days kept, readable by the
+# service's user and nobody else. A write that fails is counted and never
+# fails the read it was recording.
+#
+# It is bounded in bytes as well as days, because the disk it sits on also
+# holds the service's database, and a full disk there is a worse failure than
+# a missing line. A crawler inside the rate limit can make hundreds of
+# thousands of requests a day. So a day's file stops at 8 MiB, after which
+# records are counted and not written, and the first line of the next file
+# says how many were dropped; and the files together stay under 64 MiB, the
+# oldest going first.
+
+AUDIT_DAYS = 30
+AUDIT_DAY_BYTES = 8 * 1024 * 1024      # one day's file; past it records are counted, not written
+AUDIT_TOTAL_BYTES = 64 * 1024 * 1024   # every file together; the oldest days go first
+AUDIT_URI_MAX = 2000      # a URI is whatever a client sends; a record stays a line
+
+
+class AuditLog:
+    def __init__(self, directory: Path, repo: Path, days: int = AUDIT_DAYS, now: Callable[[], float] = time.time,
+                 day_bytes: int = AUDIT_DAY_BYTES, total_bytes: int = AUDIT_TOTAL_BYTES):
+        self.dir = Path(directory)
+        self.days, self.now, self.day_bytes, self.total_bytes = days, now, day_bytes, total_bytes
+        self.failed, self.last_error = 0, ""
+        self.dropped = 0              # records not written since the last file began, for want of room
+        self._day, self._size = "", 0
+        here, checkout = self.dir.resolve(), Path(repo).resolve()
+        if here == checkout or checkout in here.parents:
+            raise ValueError(f"the audit log may not be written under the checkout ({checkout}), which the namespace serves parts of")
+
+    @classmethod
+    def from_env(cls, repo: Path) -> "AuditLog | None":
+        """$TM_AUDIT_DIR, else tm-audit/ in the service's state directory,
+        else no log at all (a test, a dev run). A place under the checkout is
+        refused and the service starts without a log rather than not at all."""
+        explicit, state = os.environ.get("TM_AUDIT_DIR"), os.environ.get("STATE_DIRECTORY")
+        where = Path(explicit) if explicit else Path(state.split(":")[0]) / "tm-audit" if state else None
+        if where is None:
+            return None
+        try:
+            return cls(where, repo)
+        except ValueError as e:
+            print(f"audit: {e}; reads are not being logged", flush=True)
+            return None
+
+    def write(self, method: str, tool: str | None, uri: str | None, result: str, size: int, ms: int, token: str | None = None) -> None:
+        try:
+            t = datetime.fromtimestamp(self.now(), timezone.utc)
+            day = t.strftime("%Y-%m-%d")
+            rec: dict[str, Any] = {"time": t.strftime("%Y-%m-%dT%H:%M:%SZ"), "method": str(method)[:100]}
+            if tool is not None:
+                rec["tool"] = str(tool)[:100]
+            rec.update(uri=None if uri is None else str(uri)[:AUDIT_URI_MAX], result=result, bytes=size, ms=ms, token=token)
+            today = self.dir / f"tm-audit-{day}.jsonl"
+            lines = b""
+            if day != self._day:
+                self.dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+                os.chmod(self.dir, 0o700)
+                kept = sorted(f for f in self.dir.glob("tm-audit-*.jsonl") if f != today)
+                # By days, then by bytes: the oldest go first, leaving room for today's.
+                while kept and (len(kept) >= self.days or sum(f.stat().st_size for f in kept) > self.total_bytes - self.day_bytes):
+                    kept.pop(0).unlink()
+                self._day, self._size = day, today.stat().st_size if today.exists() else 0
+                if self.dropped:
+                    # What the day before could not hold is said, not hidden.
+                    lines = (json.dumps({"time": rec["time"], "method": "audit", "result": "dropped", "dropped": self.dropped}) + "\n").encode()
+                    self.dropped = 0
+            # json.dumps escapes a newline, so one record is one line whatever the URI held.
+            lines += (json.dumps(rec, ensure_ascii=False) + "\n").encode("utf-8", errors="replace")
+            if self._size + len(lines) > self.day_bytes:
+                self.dropped += 1
+                return
+            fd = os.open(today, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+            try:
+                os.write(fd, lines)
+            finally:
+                os.close(fd)
+            self._size += len(lines)
+        except Exception as e:  # noqa: BLE001  -- the read is the point; the record is not
+            self.failed += 1
+            self.last_error = f"{type(e).__name__}: {e}"
+            self._day = ""
+
+
+def _subject(msg: Any) -> tuple[str, str | None, str | None]:
+    """A message's method, tool and URI, for the record; nonsense is recorded as nonsense."""
+    if not isinstance(msg, dict):
+        return "?", None, None
+    params = msg.get("params") if isinstance(msg.get("params"), dict) else {}
+    method = msg.get("method") if isinstance(msg.get("method"), str) else "?"
+    tool = params.get("name") if method == "tools/call" else None
+    args = params.get("arguments") if isinstance(params.get("arguments"), dict) else {}
+    uri = args.get("uri") if method == "tools/call" else params.get("uri")
+    return method, tool if isinstance(tool, str) else None, uri if isinstance(uri, str) else None
+
+
 FREE = ("initialize", "ping", "tools/list", "resources/templates/list")
 
 
@@ -250,6 +367,7 @@ def make_handler(
     impls: dict[str, Callable[[dict], Any]],
     namespace: Any = None,
     limiter: RateLimit | None = None,
+    audit: AuditLog | None = None,
 ) -> Callable[..., Any]:
     """One JSON-RPC message in, one response out (or None for a notification).
 
@@ -265,6 +383,10 @@ def make_handler(
     caller is whatever the transport passes as `caller` with a message; a
     message with none (a test, the box reading itself in-process) is not
     limited.
+
+    `audit`, when given, gets one record for every message that has an answer
+    (tinypeek#7): a read, a refusal, a call over the rate. It is written here
+    so both doors are covered, resources and tools alike.
     """
     tools = list(TOOLS)
     if namespace is not None:
@@ -316,6 +438,30 @@ def make_handler(
         return {"reason": "rate-limited", "retryAfter": wait, "burst": int(limiter.capacity), "perSecond": limiter.per_second}
 
     async def handle(msg: Any, caller: str | None = None) -> dict | None:
+        if audit is None or (isinstance(msg, dict) and str(msg.get("method", "")).startswith("notifications/")):
+            return await answer(msg, caller)
+        began = time.monotonic()
+        result, size = "error", 0
+        try:
+            out = await answer(msg, caller)
+            got = (out or {}).get("result")
+            result = "ok"
+            if isinstance(got, dict) and got.get("isError"):
+                # A tool's refusal is a result; the reason is in its text.
+                try:
+                    result = json.loads(got["content"][0]["text"]).get("reason") or "error"
+                except Exception:  # noqa: BLE001
+                    result = "error"
+            else:
+                size = len(json.dumps(got, default=str)) if got is not None else 0
+            return out
+        except RpcError as e:
+            result = (e.data or {}).get("reason", "error") if isinstance(e.data, dict) else "error"
+            raise
+        finally:
+            audit.write(*_subject(msg), result, size, int((time.monotonic() - began) * 1000))
+
+    async def answer(msg: Any, caller: str | None = None) -> dict | None:
         # Before anything is parsed or read: a caller over its rate is told
         # so, and how long to wait, whatever it asked for.
         wait = limiter.take(caller, cost(msg)) if limiter is not None and caller is not None and cost(msg) else None
@@ -370,6 +516,7 @@ def make_handler(
         return {"jsonrpc": "2.0", "id": mid, "result": result}
 
     handle.limiter = limiter    # for the transport's own tests, and nothing else
+    handle.audit = audit
     return handle
 
 

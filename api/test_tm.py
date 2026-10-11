@@ -1956,3 +1956,174 @@ def test_the_server_limits_by_the_address_the_front_door_names(monkeypatch):
         got = client.post("/mcp", json=batch, headers={"X-Real-IP": "203.0.113.52"}).json()
         assert sum("error" in g for g in got) == 2
         limiter.forget("203.0.113.50"), limiter.forget("203.0.113.51"), limiter.forget("203.0.113.52")
+
+
+# ---------------------------------------------------------------------------
+# tinypeek#7: every read leaves one record, and the record is never served
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def outside(tmp_path_factory) -> Path:
+    """A directory that is not under the temp checkout, as the service's state directory is not."""
+    return tmp_path_factory.mktemp("state")
+
+
+def _audited(ns, outside, **kw):
+    clock = _Clock()
+    log = mcp_server.AuditLog(outside / "audit", repo=ns.repo, now=lambda: 1_760_000_000 + clock.now, **kw)
+    handler = mcp_server.make_handler({t["name"]: (lambda _: {"fine": True}) for t in mcp_server.TOOLS}, namespace=ns,
+                                      limiter=mcp_server.RateLimit(capacity=3, per_second=1, clock=clock), audit=log)
+    return handler, log, clock
+
+
+def _lines(log) -> list[dict]:
+    out = []
+    for f in sorted(log.dir.glob("tm-audit-*.jsonl")):
+        out += [json.loads(l) for l in f.read_text().splitlines()]
+    return out
+
+
+def test_every_read_and_every_refusal_leaves_one_record(ns, outside):
+    handler, log, clock = _audited(ns, outside)
+    page = f"{ROOT}fs/docs/nes/pile.md"
+    got = run(handler(_read_msg(page), caller="203.0.113.7"))
+    with pytest.raises(mcp_server.RpcError):
+        run(handler(_read_msg(f"{ROOT}fs/docs/nes/pil.md"), caller="203.0.113.7"))
+    run(handler({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "resolve", "arguments": {"uri": f"{page}?as=stat"}}}, caller="203.0.113.7"))
+    with pytest.raises(mcp_server.RpcError):
+        run(handler(_read_msg(page), caller="203.0.113.7"))          # the fourth of a burst of three
+    run(handler({"jsonrpc": "2.0", "id": 5, "method": "tools/call", "params": {"name": "resolve", "arguments": {"uri": f"{ROOT}fs/nope/x"}}}))
+    run(handler({"jsonrpc": "2.0", "id": 6, "method": "tools/call", "params": {"name": "overview"}}))
+    run(handler({"jsonrpc": "2.0", "method": "notifications/initialized"}))
+    with pytest.raises(mcp_server.RpcError):
+        run(handler({"jsonrpc": "2.0", "id": 8, "method": "no/such"}))
+    recs = _lines(log)
+    assert [(r["method"], r.get("tool"), r.get("uri"), r["result"]) for r in recs] == [
+        ("resources/read", None, page, "ok"),
+        ("resources/read", None, f"{ROOT}fs/docs/nes/pil.md", "not-found"),
+        ("tools/call", "resolve", f"{page}?as=stat", "ok"),
+        ("resources/read", None, page, "rate-limited"),
+        ("tools/call", "resolve", f"{ROOT}fs/nope/x", "out-of-root"),
+        ("tools/call", "overview", None, "ok"),
+        ("no/such", None, None, "error"),
+    ], "one record each, a refusal by its reason, and a notification none: it has no answer"
+    first = recs[0]
+    assert first["bytes"] == len(json.dumps(got["result"])) and first["bytes"] > 0 and isinstance(first["ms"], int) and first["ms"] >= 0
+    assert first["time"].endswith("Z") and first["token"] is None, "the token id's place, empty until there are tokens"
+    assert set(first) == {"time", "method", "uri", "result", "bytes", "ms", "token"}, "and nothing else: no address"
+    assert "203.0.113.7" not in "".join(f.read_text() for f in log.dir.iterdir()), "who asked is not kept"
+    assert recs[3]["bytes"] == 0, "a refusal sends no content"
+
+
+def test_the_log_is_a_file_a_day_kept_thirty_days_and_private(ns, outside):
+    handler, log, clock = _audited(ns, outside, days=3)
+    for day in range(6):
+        run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))
+        clock.now += 86_400
+    names = sorted(f.name for f in log.dir.iterdir())
+    assert len(names) == 3 and names == sorted(names) and all(n.startswith("tm-audit-20") and n.endswith(".jsonl") for n in names), names
+    assert (log.dir.stat().st_mode & 0o077) == 0 and all((f.stat().st_mode & 0o077) == 0 for f in log.dir.iterdir()), "the owner's and nobody else's"
+    assert mcp_server.AuditLog(outside / "x", repo=ns.repo).days == mcp_server.AUDIT_DAYS == 30
+    # A URI is whatever a client sends: it is cut to a length and stays one line.
+    with pytest.raises(mcp_server.RpcError):
+        run(handler(_read_msg("tm://tinymachines/fs/docs/" + "a" * 5000 + '\n{"forged": true}'), caller="b"))
+    last = _lines(log)[-1]
+    assert len(last["uri"]) <= mcp_server.AUDIT_URI_MAX and "forged" not in last and last["result"] == "not-found", last["result"]
+    assert all(len(f.read_text().splitlines()) == f.read_text().count("\n") for f in log.dir.iterdir()), "a newline in a URI does not make a second record"
+
+
+def test_the_namespace_cannot_serve_its_own_log(ns, outside):
+    # Anywhere under the checkout is refused outright, the served roots above all.
+    for inside in (ns.repo / "notes" / "audit", ns.repo / "data", ns.repo / "deploy" / "audit", ns.repo):
+        with pytest.raises(ValueError) as e:
+            mcp_server.AuditLog(inside, repo=ns.repo)
+        assert "checkout" in str(e.value)
+    # A symlink into the checkout is seen through.
+    (outside / "sneaky").symlink_to(ns.repo / "notes")
+    with pytest.raises(ValueError):
+        mcp_server.AuditLog(outside / "sneaky" / "audit", repo=ns.repo)
+    # And from the namespace's side there is no way to spell a path that reaches it.
+    handler, log, _ = _audited(ns, outside)
+    run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))
+    name = next(log.dir.iterdir()).name
+    up = os.path.relpath(log.dir, ns.repo / "notes")
+    for uri in (f"{ROOT}fs/notes/{up}/{name}", f"{ROOT}fs/notes/{up.replace('..', '%2e%2e')}/{name}", f"{ROOT}fs{log.dir}/{name}", f"{ROOT}git/public/{up}/{name}"):
+        with pytest.raises(mcp_server.RpcError) as e:
+            run(handler(_read_msg(uri)))
+        assert e.value.data["reason"] in ("out-of-root", "not-found", "bad-facet", "git-error"), uri
+        assert "tm-audit" not in json.dumps(e.value.data.get("nearest", [])), uri
+
+
+def test_a_log_that_cannot_be_written_never_fails_the_read(ns, outside):
+    handler, log, _ = _audited(ns, outside)
+    assert run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))["result"]
+    shutil.rmtree(log.dir)
+    log.dir.write_text("a file where the directory should be")
+    assert run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))["result"], "the read is the point; the record is not"
+    assert log.failed == 1 and log.last_error, "and the failure is counted, where the owner can find it"
+    # No log configured is no log, and nothing else changes.
+    plain = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS}, namespace=ns)
+    assert run(plain(_read_msg(f"{ROOT}fs/docs/")))["result"] and plain.audit is None
+
+
+def test_where_the_log_goes_is_configuration_not_code(ns, outside, monkeypatch):
+    monkeypatch.delenv("TM_AUDIT_DIR", raising=False)
+    monkeypatch.delenv("STATE_DIRECTORY", raising=False)
+    assert mcp_server.AuditLog.from_env(ns.repo) is None, "nowhere to write is no log: a test, a dev run"
+    monkeypatch.setenv("STATE_DIRECTORY", f"{outside / 'state'}:{outside / 'other'}")
+    assert mcp_server.AuditLog.from_env(ns.repo).dir == outside / "state" / "tm-audit"
+    monkeypatch.setenv("TM_AUDIT_DIR", str(outside / "chosen"))
+    assert mcp_server.AuditLog.from_env(ns.repo).dir == outside / "chosen"
+    monkeypatch.setenv("TM_AUDIT_DIR", str(ns.repo / "notes"))
+    assert mcp_server.AuditLog.from_env(ns.repo) is None, "a place the namespace serves is refused, and the service still starts"
+    import app as service
+    assert service._MCP.audit is None or not str(service._MCP.audit.dir).startswith(str(REPO)), "the app's log, where there is one, is outside the checkout"
+    src = (HERE / "app.py").read_text()
+    assert "audit=mcp_server.AuditLog.from_env(" in src, "and the app asks for one"
+
+
+def test_the_log_is_bounded_in_bytes_and_says_what_it_dropped(ns, outside):
+    """The disk the log sits on also holds the service's database."""
+    handler, log, clock = _audited(ns, outside, day_bytes=600, total_bytes=1500)
+    for _ in range(12):
+        clock.now += 2
+        run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))
+    day1 = next(log.dir.iterdir())
+    written = len(day1.read_text().splitlines())
+    assert day1.stat().st_size <= 600 and 0 < written < 12 and log.dropped == 12 - written, "a day's file stops at its cap and the rest are counted"
+    assert log.failed == 0, "full is not broken"
+    clock.now += 86_400
+    run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))
+    first = json.loads(sorted(log.dir.iterdir())[-1].read_text().splitlines()[0])
+    assert (first["method"], first["result"], first["dropped"]) == ("audit", "dropped", 12 - written) and log.dropped == 0, "the next day opens by saying so"
+    for _ in range(8):
+        clock.now += 86_400
+        for _ in range(12):
+            clock.now += 2
+            run(handler(_read_msg(f"{ROOT}fs/docs/"), caller="a"))
+        assert sum(f.stat().st_size for f in log.dir.iterdir()) <= 1500, "every file together stays under the overall cap"
+    assert 1 <= len(list(log.dir.iterdir())) <= 3, "the oldest days went first"
+    assert mcp_server.AUDIT_DAY_BYTES == 8 * 2**20 and mcp_server.AUDIT_TOTAL_BYTES == 64 * 2**20
+    assert mcp_server.AUDIT_DAY_BYTES * mcp_server.AUDIT_DAYS > mcp_server.AUDIT_TOTAL_BYTES, "so it is the byte cap, not the days, that binds under load"
+
+
+def test_no_refusal_says_where_the_checkout_is_on_the_host(ns, monkeypatch):
+    """Found while testing the audit log: a name too long for the filesystem
+    came back as an internal error quoting the checkout's absolute path."""
+    where = str(ns.repo)
+    handler = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS}, namespace=ns)
+    for uri in (f"{ROOT}fs/docs/" + "a" * 5000, f"{ROOT}fs/docs/" + "a/" * 3000 + "x", f"{ROOT}fs/docs/" + "a" * 5000 + "/", f"{ROOT}fs/docs/" + "a" * 5000 + "?as=stat"):
+        e = refusal(ns, uri)
+        assert e.reason == "not-found" and where not in e.message and where not in json.dumps(e.data), "a path the filesystem will not look up is a path that is not there"
+        with pytest.raises(mcp_server.RpcError) as r:
+            run(handler(_read_msg(uri)))
+        assert where not in r.value.message + json.dumps(r.value.data)
+        got = run(handler({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "resolve", "arguments": {"uri": uri}}}))["result"]
+        assert got["isError"] and where not in got["content"][0]["text"], "nor through the tool"
+    # Anything else that goes wrong says what kind of thing it was and no more.
+    def broken(self, ref):
+        raise RuntimeError(f"could not open {where}/deploy/HOSTING.local.md")
+    monkeypatch.setattr(Namespace, "_read_fs", broken)
+    e = refusal(ns, f"{ROOT}fs/docs/")
+    assert (e.code, e.reason) == (tm.INTERNAL, "internal") and "RuntimeError" in e.message and where not in e.message and "HOSTING" not in e.message
