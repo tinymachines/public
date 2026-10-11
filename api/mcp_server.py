@@ -204,7 +204,11 @@ class RateLimit:
 AUDIT_DAYS = 30
 AUDIT_DAY_BYTES = 8 * 1024 * 1024      # one day's file; past it records are counted, not written
 AUDIT_TOTAL_BYTES = 64 * 1024 * 1024   # every file together; the oldest days go first
-AUDIT_URI_MAX = 2000      # a URI is whatever a client sends; a record stays a line
+# A URI is whatever a client sends. It is recorded cut to this length, with
+# its real length beside it, so a record stays a few hundred bytes: at 2,000
+# characters a caller could spend a day's room in a few thousand requests and
+# blind the log for the rest of the day.
+AUDIT_URI_MAX = 300
 
 
 class AuditLog:
@@ -241,7 +245,10 @@ class AuditLog:
             rec: dict[str, Any] = {"time": t.strftime("%Y-%m-%dT%H:%M:%SZ"), "method": str(method)[:100]}
             if tool is not None:
                 rec["tool"] = str(tool)[:100]
-            rec.update(uri=None if uri is None else str(uri)[:AUDIT_URI_MAX], result=result, bytes=size, ms=ms, token=token)
+            rec["uri"] = None if uri is None else str(uri)[:AUDIT_URI_MAX]
+            if uri is not None and len(str(uri)) > AUDIT_URI_MAX:
+                rec["uri_len"] = len(str(uri))
+            rec.update(result=result, bytes=size, ms=ms, token=token)
             today = self.dir / f"tm-audit-{day}.jsonl"
             lines = b""
             if day != self._day:

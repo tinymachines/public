@@ -2030,6 +2030,11 @@ def test_the_log_is_a_file_a_day_kept_thirty_days_and_private(ns, outside):
         run(handler(_read_msg("tm://tinymachines/fs/docs/" + "a" * 5000 + '\n{"forged": true}'), caller="b"))
     last = _lines(log)[-1]
     assert len(last["uri"]) <= mcp_server.AUDIT_URI_MAX and "forged" not in last and last["result"] == "not-found", last["result"]
+    # Cut short, with its real length kept: a long URI must not be a cheap way
+    # to spend the day's room and blind the log for the rest of it.
+    assert mcp_server.AUDIT_URI_MAX == 300 and len(last["uri"]) == 300 and last["uri_len"] == len("tm://tinymachines/fs/docs/") + 5000 + len('\n{"forged": true}')
+    assert len(json.dumps(last)) < 600, "a record stays small whatever it was asked"
+    assert "uri_len" not in _lines(log)[0], "a URI that fits is recorded whole and says no more"
     assert all(len(f.read_text().splitlines()) == f.read_text().count("\n") for f in log.dir.iterdir()), "a newline in a URI does not make a second record"
 
 
