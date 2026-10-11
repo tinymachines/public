@@ -101,14 +101,17 @@ READ_CAP = 256 * 1024   # bytes per read without ?range=
 LIST_CAP = 500          # children per listing page
 RESOURCES_PAGE = 100    # entries per resources/list page
 COMPLETE_CAP = 100      # values per completion
+LINK_CAP = 100          # links per read; past it, the rest is behind ?as=links
 
 # What the notebook's loader counts as a page (web/lib/docs.ts PAGE_EXT).
 PAGE_EXT = (".md", ".mdx")
 
-AS_FS = ("raw", "stat")
-AS_HTTP = ("rendered", "text", "stat")
-AS_GIT = ("raw", "log", "blame", "tree", "stat")
-AS_ENTITY = ("stat",)
+# `links` is every mount's: the namespace answers it before a mount is asked
+# (tinypeek#2), so it is listed here for what a client is told and offered.
+AS_FS = ("raw", "stat", "links")
+AS_HTTP = ("rendered", "text", "stat", "links")
+AS_GIT = ("raw", "log", "blame", "tree", "stat", "links")
+AS_ENTITY = ("stat", "links")
 
 # The kinds of thing the entity mount addresses (TM-16). A routine is
 # addressed under its game.
@@ -198,10 +201,13 @@ class TmError(Exception):
         self.data = {"reason": reason, **data}
 
 
-def link(rel: str, href: str, confidence: str | None = None, title: str | None = None) -> dict:
+def link(rel: str, href: str, confidence: str | None = None, title: str | None = None, count: int | None = None) -> dict:
     """One typed link. `confidence` is mandatory on tm: relations and absent
     on IANA ones, which are exact by construction; the asymmetry is checked
-    here so no caller can get it wrong quietly."""
+    here so no caller can get it wrong quietly. `count` is for a link that
+    stands for several occurrences (a pattern found 41 times in a game): a
+    whole number a client can sort on, where the title says it for a person
+    (tinypeek#3)."""
     ours = rel.startswith("tm:")
     assert ours == (confidence is not None), f"{rel}: confidence {'required' if ours else 'not allowed'}"
     out: dict[str, Any] = {"rel": rel, "href": href}
@@ -209,7 +215,21 @@ def link(rel: str, href: str, confidence: str | None = None, title: str | None =
         out["confidence"] = confidence
     if title:
         out["title"] = title
+    if count is not None:
+        assert type(count) is int and count >= 0, f"{rel}: count is a whole number, not {count!r}"
+        out["count"] = count
     return out
+
+
+CONFIDENCE_ORDER = {None: 0, "exact": 1, "inferred": 2, "low": 3}
+
+
+def ordered(links: list[dict]) -> list[dict]:
+    """The one order links come in, on every mount (tinypeek#2): the IANA
+    relations first (they are how a client moves), then what is exact, then
+    what is inferred; within each by rel, then by href. Stated, so a page of
+    a large set is the same page on the next read."""
+    return sorted(links, key=lambda ln: (CONFIDENCE_ORDER.get(ln.get("confidence"), 9), ln["rel"], ln["href"]))
 
 
 def is_text(mime: str) -> bool:
@@ -889,14 +909,19 @@ class Entities:
         for li, x in enumerate(less.get("lessons") or []):
             if not isinstance(x, dict) or not isinstance(x.get("key"), str):
                 continue
-            # The record keeps the name of the game a lesson was measured
-            # beside, not its key. One game here with that name and no other
-            # is the join, and it is inferred; anything looser is a guess.
-            named = by_name.get(plain_name(str((x.get("against") or {}).get("game") or "")), [])
-            game = named[0] if len(named) == 1 else None
-            lessons[x["key"]] = {"i": li, "rec": x, "topic": topic.get(x["key"]), "game": game}
+            # The record says which game a lesson was measured beside by its
+            # key (public#7), and that join is exact. A record that keeps
+            # only the game's name is joined by it when one game here has
+            # that name and no other, and that is inferred; anything looser
+            # is a guess. A key that names no game here is not followed.
+            against = x.get("against") or {}
+            game, how = (against["key"], "exact") if against.get("key") in games else (None, None)
+            if game is None and "key" not in against:
+                named = by_name.get(plain_name(str(against.get("game") or "")), [])
+                game, how = (named[0], "inferred") if len(named) == 1 else (None, None)
+            lessons[x["key"]] = {"i": li, "rec": x, "topic": topic.get(x["key"]), "game": game, "how": how}
             if game:
-                games[game]["lessons"].append(x["key"])
+                games[game]["lessons"].append((x["key"], how))
             for p, n in (x.get("patterns") or {}).items():
                 if p in patterns:
                     patterns[p]["lessons"][x["key"]] = n
@@ -948,12 +973,12 @@ class Entities:
                                     for k, n in p["lessons"].items()]}
         links = self._frame(uri, self.uri("pattern", collection=True))
         for f in found:
-            links.append(link("tm:found-in", f["uri"], "exact", title=f"found {times(f['count'])} in {f['name']}"))
+            links.append(link("tm:found-in", f["uri"], "exact", title=f"found {times(f['count'])} in {f['name']}", count=f["count"]))
         for g, rid in p["instances"]:
             links.append(link("tm:instance", self.uri("game", g, "routine", rid), "exact",
                               title=f"{ix['games'][g]['routines'][rid]['rec'].get('name')} in {ix['games'][g]['rec'].get('name')}"))
         for d in body["demonstrated_by"]:
-            links.append(link("tm:demonstrated-by", d["uri"], "exact", title=f"our own cartridge, where it is found {times(d['count'])}: {d['title']}"))
+            links.append(link("tm:demonstrated-by", d["uri"], "exact", title=f"our own cartridge, where it is found {times(d['count'])}: {d['title']}", count=d["count"]))
         links.append(link("tm:data", self._record("autopsy", f"/patterns/{p['i']}"), "exact", title="where the record names this pattern"))
         return body, links
 
@@ -966,9 +991,10 @@ class Entities:
                 "routines_at": self.uri("game", key, "routine", collection=True)}
         links = self._frame(uri, self.uri("game", collection=True))
         for p, n in sorted(g["marks"].items()):
-            links.append(link("tm:exhibits", self.uri("pattern", p), "exact", title=f"found {times(n)} here"))
-        for k in g["lessons"]:
-            links.append(link("tm:measured-by", self.uri("lesson", k), "inferred", title="a lesson measured beside a game of this name"))
+            links.append(link("tm:exhibits", self.uri("pattern", p), "exact", title=f"found {times(n)} here", count=n))
+        for k, how in g["lessons"]:
+            links.append(link("tm:measured-by", self.uri("lesson", k), how,
+                              title="a lesson measured beside this game" if how == "exact" else "a lesson measured beside a game of this name"))
         for site in self.ns.sites:
             for pg in self.game_pages(site, key):
                 links.append(link("tm:renders-as", f"{ROOT}http/{site}{quote(pg)}", "exact", title=f"this game's page on {site}"))
@@ -1004,10 +1030,11 @@ class Entities:
             links.append(link("tm:cartridge", cart, "exact", title="the cartridge's source, in the repository"))
         for p, n in sorted((x["rec"].get("patterns") or {}).items()):
             if p in ix["patterns"]:
-                links.append(link("tm:demonstrates", self.uri("pattern", p), "exact", title=f"found {times(n)} in this cartridge"))
+                links.append(link("tm:demonstrates", self.uri("pattern", p), "exact", title=f"found {times(n)} in this cartridge", count=n))
         if x["game"]:
-            links.append(link("tm:measures", self.uri("game", x["game"]), "inferred",
-                              title=f"the one game here named {(x['rec'].get('against') or {}).get('game')}; the record keeps the name, not the key"))
+            links.append(link("tm:measures", self.uri("game", x["game"]), x["how"],
+                              title="the game this lesson was measured beside, by the key its record keeps" if x["how"] == "exact"
+                              else f"the one game here named {(x['rec'].get('against') or {}).get('game')}; the record keeps the name, not the key"))
         links.append(link("tm:data", self._record("lessons", f"/lessons/{x['i']}"), "exact", title="the record this lesson is read from"))
         return body, links
 
@@ -1199,7 +1226,8 @@ class Namespace:
                 "links back (tm:renders-as); up, collection, alternate and describedby are the IANA "
                 "relations. tm://tinymachines/entity/ holds the autopsy's patterns, games, routines and lessons as "
                 "things with links between them (entity/pattern/pad-poll names every game and routine it was found in). "
-                "?as=stat gives metadata without content. A URI that does not resolve "
+                "?as=stat gives metadata without content, ?as=links every link of a thing a page at a time (a read "
+                "with more than a hundred ends in a tm:links link to it). A URI that does not resolve "
                 "is refused with the nearest ones that do, so try the nearest rather than guessing."
             ),
             "inputSchema": {
@@ -1393,7 +1421,10 @@ class Namespace:
 
     async def read(self, uri: str) -> dict:
         try:
-            return await self._read(uri)
+            ref = parse(uri)
+            if ref.facets.get("as") == "links":
+                return await self._read_links(ref)
+            return self._bounded(await self._read(uri), ref)
         except TmError as e:
             # TM-19: a refusal never offers the address it just refused, which a
             # client following nearest would take round forever. (x/ for x is
@@ -1401,6 +1432,60 @@ class Namespace:
             if e.data.get("nearest"):
                 e.data["nearest"] = [n for n in e.data["nearest"] if n != uri]
             raise
+
+    # -- a link set, bounded and paged (tinypeek#2) ------------------------
+
+    @staticmethod
+    def _links_uri(ref: Ref) -> str:
+        """Where a thing's whole link set is read. A git ref is part of what
+        the thing is, so it stays; every other facet is a representation."""
+        at = ref.facets.get("at")
+        return ref.uri + (f"?at={quote(at)}&as=links" if at else "?as=links")
+
+    def _bounded(self, got: dict, ref: Ref) -> dict:
+        """Every read's links, in the stated order and never more than the
+        cap. Past it the read keeps the first page and, in the last place, one
+        link to the whole set, so nothing becomes unreachable. Here and not in
+        a mount, so the rule is one rule."""
+        links = ordered(got["_meta"][META_LINKS])
+        if len(links) > LINK_CAP:
+            total = len(self._own(links, ref))
+            links = links[:LINK_CAP - 1] + [link("tm:links", self._links_uri(ref), "exact", count=total,
+                                                 title=f"all {total} links, a page at a time; this read carries the first {LINK_CAP - 1}")]
+        got["_meta"][META_LINKS] = links
+        return got
+
+    def _own(self, links: list[dict], ref: Ref) -> list[dict]:
+        """A thing's own links. Its ?as=stat also points back at the thing it
+        describes; that is the stat's link, not the thing's, so the set
+        behind ?as=links and its count are the same from either read."""
+        whole = self._links_uri(ref)[:-len("as=links")].rstrip("?&")
+        return [ln for ln in links if not (ln["rel"] == "alternate" and ln["href"] == whole)]
+
+    def _links_page(self, links: list[dict], offset: int) -> tuple[list[dict], int | None]:
+        """One page of an ordered set, and where the next one starts. A page
+        leaves room for its `next` link under the cap."""
+        size = LINK_CAP - 1
+        return links[offset:offset + size], (offset + size if offset + size < len(links) else None)
+
+    async def _read_links(self, ref: Ref) -> dict:
+        """?as=links: a thing's links and no content, a page at a time. The
+        set is the one its ?as=stat carries (a collection's own, since a
+        listing has no stat), so a file over the byte cap and a page that
+        would have to be fetched whole still give up their links."""
+        here = self._links_uri(ref)
+        whole = here[:-len("as=links")].rstrip("?&")
+        leaf = not ref.is_collection and ref.mount != ""
+        got = await self._read(whole + (("&" if "?" in whole else "?") + "as=stat" if leaf else ""))
+        links = ordered(self._own(got["_meta"][META_LINKS], ref))
+        offset = _offset(ref.facets.get("cursor"))
+        page, nxt = self._links_page(links, offset)
+        body: dict[str, Any] = {"uri": whole, "total": len(links), "returned": len(page)}
+        if nxt is not None:
+            body["nextCursor"] = _cursor(nxt)
+            page = page + [link("next", f"{here}&cursor={body['nextCursor']}", title=f"{len(links) - nxt} more links")]
+        uri = here if offset == 0 else f"{here}&cursor={ref.facets['cursor']}"
+        return self._result(uri, "application/json", json.dumps(body, indent=1), page)
 
     async def _read(self, uri: str) -> dict:
         ref = parse(uri)
@@ -1447,7 +1532,7 @@ class Namespace:
         nodes = self.lineage()
         name = ref.path.rstrip("/")
         if ref.facets.get("as") not in (None, "stat"):
-            raise TmError(BAD_PARAMS, "bad-facet", f"as={ref.facets['as']!r}; offbox offers stat")
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={ref.facets['as']!r}; offbox offers stat, links")
         if not name:
             kids = [{"uri": f"{ROOT}offbox/{quote(n)}", "name": n, "mimeType": "application/json", "isCollection": False} for n in sorted(nodes)]
             return self._result(f"{ROOT}offbox/", "application/json", json.dumps({"uri": f"{ROOT}offbox/", "children": kids}, indent=1), [link("up", ROOT)])

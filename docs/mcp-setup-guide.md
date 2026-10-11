@@ -126,11 +126,9 @@ their own, read from the two records the site already publishes:
 `entity/game/<key>/routine/<bank>-<address>` and `entity/lesson/<key>`. Each
 reads as JSON, its record's fields, and `?as=stat` is its metadata. Only a
 routine that a rule named has an address, and no byte of any cartridge is in
-any of them. A lesson's record keeps the name of the game it was measured
-beside and not its key, so a lesson links to that game only where exactly one
-game here has that name. Today that joins the lessons measured beside The
-Legend of Zelda and not the ones measured beside Super Mario Bros., whose
-cartridge here is the one it shares with Duck Hunt.
+any of them. A lesson's record keeps the key of the game it was measured
+beside, so each lesson links to that game (`tm:measures`) and the game links
+back (`tm:measured-by`).
 
 Every read carries links. A notebook page links to the markdown it is
 rendered from (`tm:source`), the markdown links back to its page
@@ -149,7 +147,12 @@ that uses it (`tm:demonstrated-by`), and those link back (`tm:exhibits`,
 `tm:instance-of`, `tm:demonstrates`); a lesson links to its cartridge's source
 (`tm:cartridge`) and a game to its page (`tm:renders-as`); the root links to
 the documents to read first (`help`); and `up`, `collection`, `alternate`, `describedby`, `version-history` and
-`latest-version` mean what the IANA registry says. Through resources the links sit in the
+`latest-version` mean what the IANA registry says. A link that stands for
+several occurrences says how many in `count`. Links come in one order: the
+IANA ones first, then the exact, then the inferred, and by relation and
+address within each. No read carries more than a hundred of them: one with
+more ends in a `tm:links` link to `?as=links`, which gives the whole set and
+no content, a page at a time, each page ending in `next`. Through resources the links sit in the
 result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.
 

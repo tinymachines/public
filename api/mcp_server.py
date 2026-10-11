@@ -71,7 +71,10 @@ tm:repository), any page links to its route file (tm:source) and to the records
 its own code reads (tm:data), a script to what it reads that no repository
 holds (tm:input), a page to itself in the other language and on the other site
 (alternate), a submodule to the repository it pins (tm:pins), and up, collection, alternate, describedby,
-version-history and latest-version do what the IANA registry says. A URI that does not resolve comes back with the nearest ones that
+version-history and latest-version do what the IANA registry says. Links come in one order (the IANA ones, then exact, then
+inferred; by rel, then href) and no read carries more than a hundred: a read with more ends in a tm:links link to
+<uri>?as=links, which gives all of them a page at a time, each page ending in next. A link that stands for several
+occurrences says how many in count. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the
 same URIs and returns the links in its body, for a client that prefers tools."""

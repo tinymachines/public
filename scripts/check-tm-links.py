@@ -15,6 +15,11 @@ What it asserts, for every URI it reaches:
     only reached through a listing that marked it redacted, and is skipped;
     too-large is an answer, with its range template);
   - no `up` link names the URI itself;
+  - no read carries more links than the cap, and a read that says the rest
+    is behind ?as=links is walked page by page: every link once, as many as
+    it said, the inline ones among them (tinypeek#2). The inverse checks
+    below run on the whole set, so a link on a later page still counts;
+  - a link that carries a count is answered by the same count (tinypeek#3);
   - a listed child resolves with the mimeType the listing claimed;
   - every link of a paired relation has its inverse on the target:
     tm:source / tm:renders-as, tm:generates / tm:generated-by,
@@ -44,7 +49,7 @@ A budget that runs out is a failure, not a pass: whatever was still queued
 was not checked. --repo crawls another checkout with this one's code, which
 is how a change is crawled against the box's build before it is deployed.
 """
-import argparse, asyncio, sys
+import argparse, asyncio, json, sys
 from collections import deque
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -94,11 +99,46 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     queue = deque([(tm.ROOT, None)])
     claimed: dict[str, str] = {}
 
+    async def whole(uri: str, inline: list) -> list:
+        """A read over the cap carries its first page and a tm:links to the
+        rest (tinypeek#2). Walk the pages, so an inverse on a later one is
+        still seen, and hold the walk to what it promises: no read over the
+        cap, every inline link in it, no link twice, as many as it said."""
+        more = [ln for ln in inline if ln["rel"] == "tm:links"]
+        if not more:
+            return inline
+        out, at, total, pages = [], more[0]["href"], None, 0
+        while at and pages < 500:
+            r = await ns.read(at)
+            pages += 1
+            page = r["_meta"][tm.META_LINKS]
+            if len(page) > tm.LINK_CAP:
+                problems.append(f"{at}: {len(page)} links in one read, over the cap of {tm.LINK_CAP}")
+            total = json.loads(r["contents"][0]["text"])["total"]
+            out += [ln for ln in page if ln["rel"] != "next"]
+            nxt = [ln["href"] for ln in page if ln["rel"] == "next"]
+            at = nxt[0] if nxt else None
+        keys = [json.dumps(ln, sort_keys=True) for ln in out]
+        if len(out) != total or more[0].get("count") != total:
+            problems.append(f"{uri}: walked {len(out)} links behind ?as=links, which said {total} (and the read itself said {more[0].get('count')})")
+        if len(set(keys)) != len(keys):
+            problems.append(f"{uri}: a link comes twice behind ?as=links")
+        # A stat's own pointer back at the thing it describes is not one of
+        # the thing's links, and is not behind ?as=links.
+        back = lambda ln: ln["rel"] == "alternate" and ln["href"] == identity(uri)
+        missing = [ln for ln in inline if ln["rel"] != "tm:links" and not back(ln) and json.dumps(ln, sort_keys=True) not in set(keys)]
+        if missing:
+            problems.append(f"{uri}: {len(missing)} inline link(s) are not behind ?as=links, first {missing[0]['rel']} {missing[0]['href']}")
+        return out
+
     async def get(uri: str):
         if uri not in seen:
             try:
                 r = await ns.read(uri)
-                seen[uri] = {"ok": True, "links": r["_meta"][tm.META_LINKS], "content": r["contents"][0]}
+                links = r["_meta"][tm.META_LINKS]
+                if len(links) > tm.LINK_CAP:
+                    problems.append(f"{uri}: {len(links)} links in one read, over the cap of {tm.LINK_CAP}")
+                seen[uri] = {"ok": True, "links": await whole(uri, links), "content": r["contents"][0]}
             except tm.TmError as e:
                 seen[uri] = {"ok": False, "reason": e.reason}
         return seen[uri]
@@ -177,12 +217,15 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 problems.append(f"{uri} {ln['rel']} {target}: the target does not resolve ({t['reason']})")
                 continue
             back = {identity(b["href"]): b.get("confidence") for b in t["links"] if b["rel"] == inv}
+            counts = {identity(b["href"]): b.get("count") for b in t["links"] if b["rel"] == inv}
             # A record names each route that reads it once (TM-18): a page on
             # either site, in either language, is answered by the one link
             # that stands for its route.
             me = ns.reader_uri(identity(uri)) if ln["rel"] == "tm:data" else identity(uri)
             if me not in back:
                 problems.append(f"{uri} {ln['rel']} {target}: no {inv} back" + (f" to {me}" if me != identity(uri) else ""))
+            elif "count" in ln and counts.get(me) != ln["count"]:
+                problems.append(f"{uri} {ln['rel']} {target}: count {ln['count']} one way, {counts.get(me)} back")
             elif ln["rel"] in SAME_CONFIDENCE and back[me] != ln.get("confidence"):
                 problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[me]} back")
     print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused")

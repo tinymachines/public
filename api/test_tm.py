@@ -162,7 +162,7 @@ def test_a_file_reads_as_text_with_its_type_and_its_page(ns):
     r = rels(links)
     assert r["up"] == r["collection"] == [f"{ROOT}fs/docs/nes/"]
     assert r["describedby"] == [f"{ROOT}fs/docs/nes/pile.md?as=stat"]
-    assert r["tm:renders-as"] == [f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES]
+    assert r["tm:renders-as"] == sorted(f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES), "by href, the order every link set comes in"
     assert all(ln.get("confidence") == "exact" for ln in links if ln["rel"] == "tm:renders-as")
 
 
@@ -306,7 +306,7 @@ def test_completion_is_a_listing_filtered_by_what_was_typed(ns):
     assert complete(fs_t, "path", "docs/nope/x") == []
     assert complete(http_t, "site", "beta") == ["beta.tinymachines.ai"]
     assert complete(http_t, "as", "t") == ["text"]
-    assert complete(fs_t, "as", "") == ["raw", "stat"]
+    assert complete(fs_t, "as", "") == ["raw", "stat", "links"]
     assert complete(http_t, "path", "/docs/nes/p", site="tinymachines.ai") == ["/docs/nes/pile"]
     assert complete(http_t, "path", "/docs/n", site="tinymachines.ai") == ["/docs/nes", "/docs/nes/"]
     with pytest.raises(TmError):
@@ -565,7 +565,7 @@ def test_a_pulled_page_links_to_the_repository_it_came_from(gns):
     assert "at the bench" in origin["text"]
     r = rels(links)
     # The copy here and the pages made from it, each naming the origin back.
-    assert r["tm:generates"] == [f"{ROOT}fs/docs/nes/pile.md"] + [f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES]
+    assert r["tm:generates"] == sorted([f"{ROOT}fs/docs/nes/pile.md"] + [f"{ROOT}http/{s}/docs/nes/pile" for s in tm.SITES])
     assert "tm:renders-as" not in r, "the origin generates the page; the page's source is the copy"
     # And a file of this repository that is not pulled links to itself in git.
     _, links = read(gns, f"{ROOT}fs/docs/nes/alone.md")
@@ -676,7 +676,7 @@ def test_a_record_links_to_its_writer_and_its_readers(site):
     r = rels(links)
     assert r["tm:generated-by"] == [f"{ROOT}git/public/scripts/board-autopsy.py"]
     assert [ln["confidence"] for ln in links if ln["rel"] == "tm:generated-by"] == ["exact"], "the record's own note names it"
-    assert r["tm:read-by"] == [f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns", f"{ROOT}entity/game/", f"{ROOT}entity/pattern/"], \
+    assert r["tm:read-by"] == [f"{ROOT}entity/game/", f"{ROOT}entity/pattern/", f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns"], \
         "one link a route: the English page on the canonical site; no build here, so the dynamic route's pages are unknown. And one for each kind of entity read from it (TM-16)"
     _, links = read(site, f"{ROOT}fs/data/chip.json")
     gen = [ln for ln in links if ln["rel"] == "tm:generated-by"]
@@ -924,7 +924,7 @@ def test_tm18_a_record_names_each_route_that_reads_it_once(built):
     one hop from one of them."""
     _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
     by = rels(links)["tm:read-by"]
-    assert by == [f"{ROOT}http/tinymachines.ai/autopsy/games/", f"{ROOT}entity/game/", f"{ROOT}entity/pattern/"], by
+    assert by == [f"{ROOT}entity/game/", f"{ROOT}entity/pattern/", f"{ROOT}http/tinymachines.ai/autopsy/games/"], by
     _, coll = read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")
     assert f"{ROOT}fs/data/autopsy.json" in rels(coll)["tm:data"], "the collection answers for the pages it lists"
     kids = json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")[0]["text"])["children"]
@@ -1200,7 +1200,7 @@ def test_tm12_the_root_and_the_connect_instructions_name_the_orientation_documen
     start = json.loads(c["text"])["start_here"]
     assert [s["uri"] for s in start] == [f"{ROOT}git/public/START-HERE.md", f"{ROOT}git/public/CLAUDE.md"], "the 6502 project is not mounted here, so its document is not named"
     assert all(s["what"] for s in start)
-    assert rels(links)["help"] == [s["uri"] for s in start]
+    assert rels(links)["help"] == sorted(s["uri"] for s in start), "the body keeps the reading order; links come by href like any others"
     for s in start:
         assert read(gns, s["uri"])[0]["mimeType"] == "text/markdown", "each one reads"
     handler = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS}, namespace=gns)
@@ -1411,6 +1411,41 @@ def test_tm16_an_entity_and_the_things_it_names_in_other_mounts_answer_each_othe
     assert read(ents, f"{ROOT}fs/data/autopsy.json#/games/1?as=stat")[0]["uri"].startswith(f"{ROOT}fs/data/autopsy.json"), "a pointer names a place in the file and the file still reads"
 
 
+def test_a_lesson_names_its_game_exactly_by_the_key_its_record_keeps(ents):
+    """public#7: with the game's key in the record the join is exact, whatever
+    the names are. The name-only record is the test below, and it gives this
+    lesson no game at all."""
+    assert "tm:measures" not in rels(read(ents, f"{E}lesson/jump")[1]), "name only: Super Mario Bros. is no game's whole name here"
+    rec = json.loads(json.dumps(LESSONS))
+    rec["lessons"][0]["against"]["key"] = "abc"      # a name no game here has, and the key of one that is
+    rec["lessons"][1]["against"]["key"] = "def"
+    (ents.repo / "data" / "lessons.json").write_text(json.dumps(rec))
+    os.utime(ents.repo / "data" / "lessons.json", (2_000_000_000, 2_000_000_000))
+    for lesson, game in (("jump", "abc"), ("rooms", "def")):
+        m = [ln for ln in read(ents, f"{E}lesson/{lesson}")[1] if ln["rel"] == "tm:measures"]
+        assert [(ln["href"], ln["confidence"]) for ln in m] == [(f"{E}game/{game}", "exact")], lesson
+        back = [ln for ln in read(ents, f"{E}game/{game}")[1] if ln["rel"] == "tm:measured-by"]
+        assert [(ln["href"], ln["confidence"]) for ln in back] == [(f"{E}lesson/{lesson}", "exact")], game
+    assert json.loads(read(ents, f"{E}lesson/jump")[0]["text"])["against"] == {"game": "Super Mario Bros.", "full_speed": 1.5, "key": "abc"}
+    # A key that names no game here is not followed, and the name is not tried in its place.
+    rec["lessons"][1]["against"]["key"] = "000000000000"
+    (ents.repo / "data" / "lessons.json").write_text(json.dumps(rec))
+    os.utime(ents.repo / "data" / "lessons.json", (2_000_000_100, 2_000_000_100))
+    assert "tm:measures" not in rels(read(ents, f"{E}lesson/rooms")[1]), "a refusal beats a plausible answer"
+    assert "tm:measured-by" not in rels(read(ents, f"{E}game/def")[1])
+
+
+def test_the_real_lessons_all_name_their_game_exactly():
+    """Over the real checkout: every lesson that names a game links to it."""
+    n = Namespace(REPO, fetch=canned_fetch)
+    lessons = json.loads((REPO / "data" / "lessons.json").read_text())["lessons"]
+    named = [x for x in lessons if (x.get("against") or {}).get("game")]
+    assert len(named) >= 25
+    for x in named:
+        m = [ln for ln in read(n, f"{E}lesson/{x['key']}")[1] if ln["rel"] == "tm:measures"]
+        assert [(ln["href"], ln["confidence"]) for ln in m] == [(f"{E}game/{x['against']['key']}", "exact")], x["key"]
+
+
 def test_tm16_a_lesson_names_its_game_only_where_the_names_agree(ents):
     c, links = read(ents, f"{E}lesson/rooms")
     m = [ln for ln in links if ln["rel"] == "tm:measures"]
@@ -1448,7 +1483,7 @@ def test_tm16_templates_resources_and_completions_know_the_mount(ents):
     assert comp(et, "key", "a", kind="game") == ["abc"]
     assert comp(rt, "key", "") == ["abc", "def"]
     assert comp(rt, "routine", "b1", key="abc") == ["b1-A000"]
-    assert comp(et, "as", "") == ["stat"]
+    assert comp(et, "as", "") == ["stat", "links"]
 
 
 def test_tm16_a_checkout_without_the_records_has_an_empty_mount_not_a_broken_one(gns):
@@ -1524,3 +1559,150 @@ def test_tm16_the_crawler_holds_the_entity_pairs_and_fails_when_one_end_goes_qui
     monkeypatch.setattr(tm.Entities, "_lesson", lambda self, key: (lesson(self, key)[0], [ln for ln in lesson(self, key)[1] if ln["rel"] != "tm:data"]))
     rc, out = crawl()
     assert rc == 1 and "an entity with no tm:data to its record" in out, "no pair misses this link, so the crawl asks for it"
+
+
+# ---------------------------------------------------------------------------
+# tinypeek#3: a count on a link. tinypeek#2: a large link set, a page at a time
+# ---------------------------------------------------------------------------
+
+
+def test_a_link_can_say_how_many_and_the_entity_links_that_count_do(ents):
+    assert tm.link("tm:found-in", "x", "exact", count=3)["count"] == 3
+    assert "count" not in tm.link("tm:found-in", "x", "exact"), "optional: most links stand for one thing"
+    assert tm.link("up", "x", count=0)["count"] == 0, "zero is a count, and any rel may carry one"
+    for bad in (-1, 1.5, "2", True):
+        with pytest.raises(AssertionError):
+            tm.link("tm:found-in", "x", "exact", count=bad)
+    # The number is the occurrences in the record: pad-poll is marked twice on
+    # one routine of abc and once in def; jump's cartridge has it once, rooms' twice.
+    marks = {g["key"]: sum(m["pattern"] == "pad-poll" for lst in ("routine_list", "loop_list") for r in g[lst] for m in r["is"]) for g in AUTOPSY["games"]}
+    _, links = read(ents, f"{E}pattern/pad-poll")
+    assert {ln["href"]: ln["count"] for ln in links if ln["rel"] == "tm:found-in"} == {f"{E}game/abc": marks["abc"], f"{E}game/def": marks["def"]} == {f"{E}game/abc": 2, f"{E}game/def": 1}
+    assert {ln["href"]: ln["count"] for ln in links if ln["rel"] == "tm:demonstrated-by"} == {f"{E}lesson/jump": 1, f"{E}lesson/rooms": 2}
+    assert all(ln["title"] for ln in links if "count" in ln), "the title stays, for people"
+    assert not any("count" in ln for ln in links if ln["rel"] in ("tm:instance", "tm:data", "up")), "one routine, one record: nothing to count"
+    # The other end of each pair says the same number.
+    assert {ln["href"]: ln["count"] for ln in read(ents, f"{E}game/abc")[1] if ln["rel"] == "tm:exhibits"} == {f"{E}pattern/pad-poll": 2, f"{E}pattern/sprite-writer": 2}
+    assert {ln["href"]: ln["count"] for ln in read(ents, f"{E}lesson/rooms")[1] if ln["rel"] == "tm:demonstrates"} == {f"{E}pattern/pad-poll": 2}
+
+
+def _order_key(ln: dict) -> tuple:
+    return ({None: 0, "exact": 1, "inferred": 2}.get(ln.get("confidence"), 3), ln["rel"], ln["href"])
+
+
+def test_links_come_in_one_stated_order_on_every_mount(ents):
+    for uri in (ROOT, f"{ROOT}fs/data/autopsy.json", f"{ROOT}fs/docs/", f"{ROOT}git/public/lessons/jump/", f"{ROOT}git/public/docs/nes/alone.md",
+                f"{ROOT}http/tinymachines.ai/autopsy/games/abc?as=stat", f"{ROOT}offbox/", f"{E}pattern/pad-poll", f"{E}game/def", f"{E}lesson/rooms"):
+        _, links = read(ents, uri)
+        assert links == sorted(links, key=_order_key), f"{uri}: IANA rels, then exact, then inferred; by rel, then by href"
+    confs = [ln.get("confidence") for ln in read(ents, f"{E}lesson/rooms")[1]]
+    assert confs.index("inferred") > max(i for i, c in enumerate(confs) if c == "exact"), "the surer links first"
+
+
+def _walk(ns: Namespace, uri: str) -> tuple[list[dict], int]:
+    """Every link behind ?as=links, following next, and how many reads it took."""
+    out, reads, at = [], 0, uri + ("&" if "?" in uri else "?") + "as=links"
+    while at:
+        c, links = read(ns, at)
+        reads += 1
+        assert len(links) <= tm.LINK_CAP, f"{at}: {len(links)} links in one read"
+        nxt = [ln for ln in links if ln["rel"] == "next"]
+        out += [ln for ln in links if ln["rel"] != "next"]
+        body = json.loads(c["text"])
+        assert body["returned"] == len(links) - len(nxt) and (("nextCursor" in body) == bool(nxt))
+        at = nxt[0]["href"] if nxt else None
+        assert reads < 50
+    return out, reads
+
+
+def test_a_large_link_set_is_capped_inline_and_whole_behind_as_links(ents, monkeypatch):
+    uri = f"{E}pattern/pad-poll"
+    _, full = read(ents, uri)
+    assert len(full) == 10 and "tm:links" not in rels(full), "under the cap a read is whole and says nothing of paging"
+    monkeypatch.setattr(tm, "LINK_CAP", 4)
+    c, inline = read(ents, uri)
+    assert len(inline) == 4, "no single read returns more than the cap"
+    assert inline[:3] == full[:3], "the first page, in the stated order"
+    more = inline[-1]
+    assert (more["rel"], more["href"], more["confidence"], more["count"]) == ("tm:links", f"{uri}?as=links", "exact", 10), "and the way to the rest, with how many there are"
+    assert json.loads(c["text"])["key"] == "pad-poll", "the content is untouched"
+    walked, reads = _walk(ents, uri)
+    assert reads == 4 and walked == full, "three a page, and the same ten in the same order as the read under no cap"
+    assert sorted(map(json.dumps, walked)) == sorted(set(map(json.dumps, walked))), "every link exactly once"
+    assert all(ln in walked for ln in full), "nothing is unreachable"
+    first, _ = read(ents, f"{uri}?as=links")
+    body = json.loads(first["text"])
+    assert first["uri"] == f"{uri}?as=links" and first["mimeType"] == "application/json" and (body["uri"], body["total"]) == (uri, 10) and "key" not in body
+    assert read(ents, f"{uri}?as=links") == read(ents, f"{uri}?as=links"), "stable across reads"
+    # Through the tool the same page comes back in the body.
+    got = run(ents.resolve({"uri": uri}))
+    assert len(got["links"]) == 4 and got["links"][-1]["rel"] == "tm:links"
+    # Its stat is over the cap too, and counts the same ten: the pointer a
+    # stat keeps back to its thing is the stat's, not one of the thing's.
+    _, st = read(ents, f"{uri}?as=stat")
+    assert len(st) == 4 and (st[-1]["rel"], st[-1]["href"], st[-1]["count"]) == ("tm:links", f"{uri}?as=links", 10)
+    assert refusal(ents, f"{uri}?as=links&cursor=nonsense").reason == "bad-cursor"
+    assert refusal(ents, f"{E}pattern/nope?as=links").reason == "not-found", "links of nothing are refused as the thing is"
+
+
+def test_as_links_is_one_rule_on_every_mount(ents, monkeypatch):
+    monkeypatch.setattr(tm, "LINK_CAP", 3)
+    for uri in (ROOT, f"{ROOT}fs/data/autopsy.json", f"{ROOT}fs/docs/", f"{ROOT}git/public/data/autopsy.json", f"{ROOT}git/public/docs/nes/alone.md?at=v1",
+                f"{ROOT}git/public/lessons/jump/", f"{ROOT}http/tinymachines.ai/autopsy/games/abc?as=stat", f"{ROOT}http/tinymachines.ai/autopsy/games/",
+                f"{ROOT}http/tinymachines.ai/", f"{ROOT}offbox/", f"{E}", f"{E}game/abc", f"{E}game/abc/routine/"):
+        _, inline = read(ents, uri)
+        assert len(inline) <= 3, uri
+        walked, _ = _walk(ents, uri)
+        assert walked, uri
+        if "tm:links" in rels(inline):
+            assert len(walked) > 2 and [ln for ln in inline[:-1] if ln not in walked] == [], uri
+        else:
+            assert [ln for ln in inline if ln not in walked] == [], uri
+    # A ref is part of what a thing is, so it stays on the way to its links.
+    _, inline = read(ents, f"{ROOT}git/public/docs/nes/alone.md?at=v1")
+    assert rels(inline)["tm:links"] == [f"{ROOT}git/public/docs/nes/alone.md?at=v1&as=links"]
+    # A file over the byte cap still gives up its links.
+    big = ents.repo / "data" / "huge.json"
+    big.write_text('{"x": "' + "y" * (tm.READ_CAP + 10) + '"}')
+    assert refusal(ents, f"{ROOT}fs/data/huge.json").reason == "too-large"
+    assert _walk(ents, f"{ROOT}fs/data/huge.json")[0]
+    # And the facet is offered where facets are offered.
+    for tmpl in ("fs{/path*}", "git/{repo}{/path*}{?at,as,n}", "http/{site}{/path*}{?as}", "entity/{kind}/{key}{?as}"):
+        got = ents.complete({"ref": {"type": "ref/resource", "uri": ROOT + tmpl}, "argument": {"name": "as", "value": "l"}})["completion"]["values"]
+        assert "links" in got, tmpl
+
+
+def test_the_crawler_walks_the_pages_and_fails_on_a_read_over_the_cap(ents, capsys, monkeypatch):
+    crawler = _crawler()
+    (ents.repo / "notes" / "escape.md").unlink()
+    monkeypatch.setattr(tm, "LINK_CAP", 5)
+
+    def crawl() -> tuple[int, str]:
+        n = Namespace(ents.repo, fetch=canned_fetch, sites=tm.SITES[:1], git_repos=dict(ents.git))
+        rc = run(crawler.crawl(4000, ents.repo, n))
+        return rc, capsys.readouterr().out
+
+    rc, out = crawl()
+    assert rc == 0, out   # every inverse is still seen, though most reads here are over a cap of five
+    # An inverse on a later page still counts: lose one that only paging reaches and the crawl is red.
+    game = tm.Entities._game
+    monkeypatch.setattr(tm.Entities, "_game", lambda self, key: (game(self, key)[0], [ln for ln in game(self, key)[1] if ln["rel"] != "tm:renders-as"]))
+    rc, out = crawl()
+    assert rc == 1 and "no tm:renders-as back" in out, out
+    monkeypatch.setattr(tm.Entities, "_game", game)
+    # A count that disagrees with the other end is caught (tinypeek#3).
+    monkeypatch.setattr(tm.Entities, "_game", lambda self, key: (game(self, key)[0], [dict(ln, count=ln["count"] + 1) if ln["rel"] == "tm:exhibits" else ln for ln in game(self, key)[1]]))
+    rc, out = crawl()
+    assert rc == 1 and "count 2 one way, 3 back" in out, out
+    monkeypatch.setattr(tm.Entities, "_game", game)
+    # A read that ignores the cap is caught.
+    bounded = tm.Namespace._bounded
+    monkeypatch.setattr(tm.Namespace, "_bounded", lambda self, got, ref: got)
+    rc, out = crawl()
+    assert rc == 1 and "links in one read" in out, out
+    monkeypatch.setattr(tm.Namespace, "_bounded", bounded)
+    # So is a walk that drops a link, by the total each page states.
+    page = tm.Namespace._links_page
+    monkeypatch.setattr(tm.Namespace, "_links_page", lambda self, links, off: (lambda p, n: (p[:-1] if len(p) > 1 else p, n))(*page(self, links, off)))
+    rc, out = crawl()
+    assert rc == 1 and "walked" in out, out
