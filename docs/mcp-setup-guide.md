@@ -90,6 +90,7 @@ And the namespace, as MCP resources. The grammar is one host and five
 mounts:
 
 ```
+tm://                                              the hosts this server answers for: one
 tm://tinymachines/                                 the mounts
 tm://tinymachines/fs/docs/nes/pile.md              a file of the site's checkout
 tm://tinymachines/fs/docs/nes/                     a directory; reading it lists it
@@ -179,8 +180,8 @@ a page, without guessing a path:
 
 1. `initialize`: the capabilities and the orientation, which names the
    documents to read first.
-2. `resources/templates/list`: the templates, one for the root and one or
-   two for each mount.
+2. `resources/templates/list`: the templates, one for the list of hosts,
+   one for the root and one or two for each mount.
 3. Read `tm://tinymachines/http/tinymachines.ai/docs/nes/`: the notebook's
    NES section, page by page.
 4. `completion/complete` on the fs template's `path` with `docs/nes/pi`

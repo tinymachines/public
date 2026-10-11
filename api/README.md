@@ -282,6 +282,7 @@ first slice, built on this server to find out whether an MCP client navigates
 resources at all before a server is written for the purpose.
 
 ```
+tm://                                        the hosts this server answers for: one
 tm://tinymachines/                           the mounts
 tm://tinymachines/fs/docs/nes/pile.md        a file; ?as=stat for its metadata
 tm://tinymachines/fs/docs/nes/               a directory: reading it lists it

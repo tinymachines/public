@@ -82,7 +82,7 @@ def stat_of(uri: str) -> str:
     A collection is a path ending in /, whatever query follows it: a tree at
     a ref (git/<repo>/?at=<commit>, where a submodule's pin points) is still
     a tree, and a tree refuses ?as=stat (TM-11)."""
-    if urlsplit(uri).path.endswith("/") or uri == tm.ROOT:
+    if urlsplit(uri).path.endswith("/") or uri in (tm.ROOT, tm.TOP):
         return uri
     return uri + ("&" if "?" in uri else "?") + "as=stat"
 
@@ -96,7 +96,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     ns = ns or tm.Namespace(repo)
     seen: dict[str, dict] = {}
     problems: list[str] = []
-    queue = deque([(tm.ROOT, None)])
+    queue = deque([(tm.TOP, None)])
     claimed: dict[str, str] = {}
 
     async def whole(uri: str, inline: list) -> list:

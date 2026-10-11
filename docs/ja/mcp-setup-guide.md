@@ -66,6 +66,7 @@ initialize の答えには、モデルのために書かれた短い案内であ
 そして名前空間が、MCP のリソースとして。文法はホストひとつとマウント五つ:
 
 ```
+tm://                                              このサーバーが答えるホストの一覧: ひとつ
 tm://tinymachines/                                 マウント一覧
 tm://tinymachines/fs/docs/nes/pile.md              サイトのチェックアウトのファイル
 tm://tinymachines/fs/docs/nes/                     ディレクトリ。読むと一覧になる
@@ -98,7 +99,7 @@ entity マウントは、ほかの四つの上に最初に建てたものだ。�
 六回のやり取りで、クライアントは冷えた接続からページの背後のソースファイルまで、パスを推測せずに辿り着く:
 
 1. `initialize`: 能力と案内。案内は最初に読む文書の名前を挙げる。
-2. `resources/templates/list`: テンプレート。ルートにひとつ、マウントごとにひとつか二つ。
+2. `resources/templates/list`: テンプレート。ホストの一覧にひとつ、ルートにひとつ、マウントごとにひとつか二つ。
 3. `tm://tinymachines/http/tinymachines.ai/docs/nes/` を読む: ノートの NES 節、ページごとに。
 4. fs テンプレートの `path` に `docs/nes/pi` と打って `completion/complete`: そう始まるファイル。
 5. `tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text` を読む: ページの本文と、`tm:source` のリンク。

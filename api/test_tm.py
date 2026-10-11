@@ -381,9 +381,9 @@ def test_http_refusals_are_structured(ns):
 
 
 def test_resources_list_is_the_map_not_the_inventory(ns, monkeypatch):
-    monkeypatch.setattr(tm, "RESOURCES_PAGE", 6)
+    monkeypatch.setattr(tm, "RESOURCES_PAGE", 7)
     first = ns.list_resources(None)
-    assert [r["name"] for r in first["resources"]] == ["root", "fs", "git", "http", "offbox", "entity"]
+    assert [r["name"] for r in first["resources"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity"]
     rest = ns.list_resources(first["nextCursor"])
     names = [r["name"] for r in rest["resources"]]
     assert names[0] == "docs/" and "docs/nes/" in names and "docs/ja/nes/" in names
@@ -402,7 +402,7 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
         run(handler({"jsonrpc": "2.0", "id": 3, "method": "resources/read", "params": {"uri": f"{ROOT}fs/docs/nes/pil.md"}}))
     assert e.value.code == tm.RESOURCE_NOT_FOUND and e.value.data["reason"] == "not-found"
     tmpl = run(handler({"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list"}))["result"]
-    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "git", "http", "offbox", "entity", "routine"]
+    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine"]
     bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
     plain = run(bare({"jsonrpc": "2.0", "id": 5, "method": "initialize", "params": {}}))["result"]
     assert "resources" not in plain["capabilities"]
@@ -1459,7 +1459,7 @@ def test_tm16_a_lesson_names_its_game_only_where_the_names_agree(ents):
 
 def test_tm16_templates_resources_and_completions_know_the_mount(ents):
     names = [t["name"] for t in ents.templates()]
-    assert names == ["root", "fs", "git", "http", "offbox", "entity", "routine"]
+    assert names == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine"]
     listed = []
     cur = None
     while True:
@@ -1559,6 +1559,22 @@ def test_tm16_the_crawler_holds_the_entity_pairs_and_fails_when_one_end_goes_qui
     monkeypatch.setattr(tm.Entities, "_lesson", lambda self, key: (lesson(self, key)[0], [ln for ln in lesson(self, key)[1] if ln["rel"] != "tm:data"]))
     rc, out = crawl()
     assert rc == 1 and "an entity with no tm:data to its record" in out, "no pair misses this link, so the crawl asks for it"
+    monkeypatch.setattr(tm.Entities, "_lesson", lesson)
+    # tinypeek#10: the crawl starts at the list of hosts, so the list is checked.
+    assert crawl()[0] == 0
+    parse_ = tm.parse
+    def no_top(uri):
+        ref = parse_(uri)
+        if ref.mount == "tm":
+            raise TmError(tm.RESOURCE_NOT_FOUND, "not-found", "no list of hosts")
+        return ref
+    monkeypatch.setattr(tm, "parse", no_top)
+    rc, out = crawl()
+    assert rc == 1 and "tm:// (from None) does not resolve" in out, out
+    monkeypatch.setattr(tm, "parse", parse_)
+    monkeypatch.setattr(tm, "TOP", ROOT)
+    rc, out = crawl()
+    assert rc == 1 and f"{ROOT}: up names itself" in out, out
 
 
 # ---------------------------------------------------------------------------
@@ -2132,3 +2148,45 @@ def test_no_refusal_says_where_the_checkout_is_on_the_host(ns, monkeypatch):
     monkeypatch.setattr(Namespace, "_read_fs", broken)
     e = refusal(ns, f"{ROOT}fs/docs/")
     assert (e.code, e.reason) == (tm.INTERNAL, "internal") and "RuntimeError" in e.message and where not in e.message and "HOSTING" not in e.message
+
+
+def test_tm_with_no_host_lists_the_hosts_this_server_answers_for(ns):
+    """tinypeek#10. The grammar has a host and the spec said tm:// lists
+    them; the server refused it. A server answers for a set of hosts and a
+    set of one is a set: the top lists it, the host's root goes up to it,
+    and a client's code is the same however many there are."""
+    for uri in ("tm://", "tm:///"):
+        content, links = read(ns, uri)
+        body = json.loads(content["text"])
+        assert content["uri"] == tm.TOP == "tm://" and content["mimeType"] == "application/json"
+        assert [h["uri"] for h in body["hosts"]] == [ROOT] and body["hosts"][0]["name"] == tm.HOST and body["hosts"][0]["what"]
+        assert [(ln["rel"], ln["href"]) for ln in links] == [("collection", ROOT)]
+    _, links = read(ns, ROOT)
+    assert ("up", tm.TOP) in [(ln["rel"], ln["href"]) for ln in links], "the host's root goes up to the list it is in"
+    # Its links read as any collection's do, and it takes no other facet.
+    content, links = read(ns, "tm://?as=links")
+    assert json.loads(content["text"])["total"] == 1 and links[0]["href"] == ROOT
+    for facet in ("as=stat", "as=text", "range=0-9", "at=HEAD", "depth=2"):
+        e = refusal(ns, f"tm://?{facet}")
+        assert e.reason == "bad-facet", facet
+    # It is advertised, so a client finds it without being told.
+    assert ns.list_resources(None)["resources"][0]["uri"] == tm.TOP
+    assert tm.TOP in [t["uriTemplate"] for t in ns.templates()]
+
+
+def test_a_host_this_server_does_not_answer_for_is_refused_and_names_the_ones_it_does(ns):
+    """A host is a name, not a place to look: nothing in the URI says where
+    another host's server is, so the answer is a refusal that names this
+    server's hosts and where they are listed."""
+    for uri in ("tm://other/", "tm://other/fs/docs/", "tm:///fs/docs/", "tm://tinymachines:80/", "tm://x@tinymachines/"):
+        e = refusal(ns, uri)
+        assert e.reason == "not-found" and e.data["nearest"] == [ROOT, tm.TOP], uri
+    assert refusal(ns, "http://tinymachines/").reason == "not-found"
+    # RFC 3986: a host compares without case, and the answer is the one spelling.
+    for uri in ("tm://TinyMachines/", "tm://TINYMACHINES"):
+        content, _ = read(ns, uri)
+        assert content["uri"] == ROOT
+    content, _ = read(ns, "tm://TinyMachines/fs/docs/")
+    assert content["uri"] == f"{ROOT}fs/docs/"
+    e = refusal(ns, "tm://TinyMachines/fs/Docs/")
+    assert e.reason == "out-of-root", "a path keeps its case: Docs is not docs"

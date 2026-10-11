@@ -66,6 +66,9 @@ import httpx
 
 HOST = "tinymachines"
 ROOT = f"tm://{HOST}/"
+# tm:// with no host: the hosts this server answers for (tinypeek#10). Here
+# that is one, and a list of one is still the list.
+TOP = "tm://"
 
 # The mounts, in the order the root lists them.
 MOUNTS = ("fs", "git", "http", "offbox", "entity")
@@ -314,7 +317,7 @@ def _page(items: list, cursor: str | None, size: int) -> tuple[list, str | None]
 
 @dataclass
 class Ref:
-    mount: str                      # "" (the root), "fs", "git", "http", "offbox" or "entity"
+    mount: str                      # "" (the root), "tm" (the list of hosts), "fs", "git", "http", "offbox" or "entity"
     site: str | None                # http only; the repository name for git
     path: str                       # the backend's path: "docs/nes/pile.md", "/docs/nes/pile"
     facets: dict[str, str] = field(default_factory=dict)
@@ -328,6 +331,8 @@ class Ref:
         """The identity: no facets."""
         if self.mount == "":
             return ROOT
+        if self.mount == "tm":
+            return TOP
         if self.mount == "fs":
             return f"{ROOT}fs/{quote(self.path)}"
         if self.mount == "git":
@@ -341,13 +346,18 @@ def parse(uri: str) -> Ref:
     if not isinstance(uri, str):
         raise TmError(BAD_PARAMS, "bad-uri", "uri must be a string")
     parts = urlsplit(uri)
-    if parts.scheme != "tm" or parts.netloc != HOST:
+    facets = {k: v for k, v in parse_qsl(parts.query, keep_blank_values=True)}
+    if parts.scheme == "tm" and uri.startswith(TOP) and parts.netloc == "" and parts.path in ("", "/"):
+        return Ref("tm", None, "", facets)
+    # A host compares without case (RFC 3986); a path keeps its own.
+    if parts.scheme != "tm" or parts.netloc.lower() != HOST:
+        # A host is a name, not a place to look: nothing in the URI says where
+        # another host's server is, so this one can only say whom it answers for.
         raise TmError(
             RESOURCE_NOT_FOUND, "not-found",
-            f"{uri!r} is not under {ROOT}; this server knows one host, {HOST}",
-            nearest=[ROOT],
+            f"{uri!r} is not under {ROOT}; this server answers for one host, {HOST}",
+            nearest=[ROOT, TOP],
         )
-    facets = {k: v for k, v in parse_qsl(parts.query, keep_blank_values=True)}
     segs = [unquote(s) for s in parts.path.split("/") if s != ""] if parts.path not in ("", "/") else []
     trailing = parts.path.endswith("/")
     if not segs:
@@ -1275,6 +1285,13 @@ class Namespace:
     def templates(self) -> list[dict]:
         return [
             {
+                "uriTemplate": TOP,
+                "name": "hosts",
+                "title": "The hosts",
+                "description": "The hosts this server answers for. Here that is one, and everything is under it.",
+                "mimeType": "application/json",
+            },
+            {
                 "uriTemplate": ROOT,
                 "name": "root",
                 "title": "The mounts",
@@ -1355,6 +1372,7 @@ class Namespace:
         Leaves are reached by reading their collection, which keeps this list
         a map rather than an inventory."""
         items: list[dict] = [
+            {"uri": TOP, "name": "hosts", "title": "The hosts this server answers for", "mimeType": "application/json"},
             {"uri": ROOT, "name": "root", "title": "The mounts", "mimeType": "application/json"},
             {"uri": f"{ROOT}fs/", "name": "fs", "title": "The repository's files", "mimeType": "application/json"},
             {"uri": f"{ROOT}git/", "name": "git", "title": "The repositories, at any ref", "mimeType": "application/json"},
@@ -1515,6 +1533,11 @@ class Namespace:
 
     async def _read(self, uri: str) -> dict:
         ref = parse(uri)
+        if ref.mount == "tm":
+            if ref.facets:
+                raise TmError(BAD_PARAMS, "bad-facet", f"the list of hosts takes no facet but as=links; read {TOP}")
+            body = {"uri": TOP, "hosts": [{"uri": ROOT, "name": HOST, "what": "the tinymachines.ai box: its sites, its repositories and its files"}]}
+            return self._result(TOP, "application/json", json.dumps(body, indent=1), [link("collection", ROOT, title="the one host this server answers for")])
         if ref.mount == "":
             body = {"uri": ROOT, "mounts": [
                 {"uri": f"{ROOT}fs/", "what": f"the repository's files under {', '.join(FS_ROOTS)}/"},
@@ -1525,7 +1548,8 @@ class Namespace:
             ], "start_here": self.start_here()}
             # TM-12: the documents a fresh session should read first.
             return self._result(ROOT, "application/json", json.dumps(body, indent=1),
-                                [link("collection", f"{ROOT}{m}/") for m in MOUNTS]
+                                [link("up", TOP, title="the hosts this server answers for")]
+                                + [link("collection", f"{ROOT}{m}/") for m in MOUNTS]
                                 + [link("help", s["uri"], title=s["what"]) for s in body["start_here"]])
         if ref.mount == "offbox":
             return self._read_offbox(ref)
