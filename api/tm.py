@@ -1,8 +1,9 @@
 """tm://: this repository as a read-only URI namespace, spoken over MCP.
 
 The spec is extern/tinypeek/spec/tm-protocol-spec.md (tinymachines/tinypeek).
-This is its reference deployment: one host, four mounts (fs, git, http and
-offbox), three verbs, typed links between a served page and the file behind it.
+This is its reference deployment: one host, four mounts over what is on the
+box (fs, git, http and offbox) and one application built on them (entity),
+three verbs, typed links between a served page and the file behind it.
 It exists to answer the spec's first open question, whether an MCP client
 navigates resources at all, on the server that already exists rather than on
 one written for the purpose.
@@ -66,6 +67,9 @@ import httpx
 HOST = "tinymachines"
 ROOT = f"tm://{HOST}/"
 
+# The mounts, in the order the root lists them.
+MOUNTS = ("fs", "git", "http", "offbox", "entity")
+
 # The directories the fs mount can see. Public on GitHub already; the rest of
 # the checkout (deploy/, the database, the build outputs) is not offered.
 FS_ROOTS = ("docs", "data", "notes")
@@ -104,6 +108,19 @@ PAGE_EXT = (".md", ".mdx")
 AS_FS = ("raw", "stat")
 AS_HTTP = ("rendered", "text", "stat")
 AS_GIT = ("raw", "log", "blame", "tree", "stat")
+AS_ENTITY = ("stat",)
+
+# The kinds of thing the entity mount addresses (TM-16). A routine is
+# addressed under its game.
+ENTITY_KINDS = ("game", "lesson", "pattern")
+
+# The box's own orientation documents (TM-12): named at connect and at the
+# root, each only where its repository is mounted and the file is there.
+ORIENTATION = (
+    ("public", "START-HERE.md", "the brief: what this site is and the order the work goes in"),
+    ("public", "CLAUDE.md", "the house rules of the repository that serves the site"),
+    ("6502", "CLAUDE.md", "the 6502 project's own rules, the chip work the site is the front door for"),
+)
 
 # A ref a client may name: a branch, a tag, a commit. Nothing that git would
 # read as an option, nothing that walks.
@@ -264,7 +281,7 @@ def _page(items: list, cursor: str | None, size: int) -> tuple[list, str | None]
 
 @dataclass
 class Ref:
-    mount: str                      # "" (the root), "fs", "git" or "http"
+    mount: str                      # "" (the root), "fs", "git", "http", "offbox" or "entity"
     site: str | None                # http only; the repository name for git
     path: str                       # the backend's path: "docs/nes/pile.md", "/docs/nes/pile"
     facets: dict[str, str] = field(default_factory=dict)
@@ -282,6 +299,8 @@ class Ref:
             return f"{ROOT}fs/{quote(self.path)}"
         if self.mount == "git":
             return f"{ROOT}git/{self.site}/{quote(self.path)}" if self.site else f"{ROOT}git/"
+        if self.mount in ("offbox", "entity"):
+            return f"{ROOT}{self.mount}/{quote(self.path)}"
         return f"{ROOT}http/{self.site}{quote(self.path)}"
 
 
@@ -312,6 +331,8 @@ def parse(uri: str) -> Ref:
         return Ref("git", repo, path, facets)
     if mount == "offbox":
         return Ref("offbox", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
+    if mount == "entity":
+        return Ref("entity", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -329,7 +350,7 @@ def parse(uri: str) -> Ref:
     raise TmError(
         RESOURCE_NOT_FOUND, "not-found",
         f"no mount named {mount!r}",
-        nearest=[f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/"],
+        nearest=[f"{ROOT}{m}/" for m in closest(mount, list(MOUNTS))],
     )
 
 
@@ -757,6 +778,386 @@ def page_text(html: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Layer 5: the entity mount (TM-16)
+# ---------------------------------------------------------------------------
+
+
+def plain_name(name: str) -> str:
+    """A game's name as a person says it: no region or revision in brackets,
+    the article back at the front, case aside. "Legend of Zelda, The (USA)
+    (Rev 1)" and "The Legend of Zelda" are one name; "Super Mario Bros. +
+    Duck Hunt (USA)" and "Super Mario Bros." are two."""
+    s = re.sub(r"\s*\([^)]*\)", "", name).strip()
+    m = re.fullmatch(r"(.*), (The|A|An)", s)
+    return (f"{m[2]} {m[1]}" if m else s).lower()
+
+
+def times(n: int) -> str:
+    return "once" if n == 1 else f"{n} times"
+
+
+class Entities:
+    """The first application on the platform: patterns, games, routines and
+    lessons as things with addresses of their own, read from the two records
+    the site already publishes (data/autopsy.json, data/lessons.json). No new
+    data, and no byte of any cartridge.
+
+        entity/pattern/<key>                       pad-poll
+        entity/game/<key>                          ded208cee37d
+        entity/game/<key>/routine/<bank>-<addr>    b0-8E5C
+        entity/lesson/<key>                        jump
+
+    Identity is the key the record already keeps, so it survives a page or a
+    file moving. A routine has an address only when a rule named it (it
+    carries a pattern); a loop the rules named is a routine here.
+
+    It is written as its own class so the cut is visible: the namespace hands
+    it a path and gets a result back, and where a link from here needs its
+    inverse on something another mount serves (a game's page, a lesson's
+    directory, a record), that mount asks `inbound` rather than knowing what
+    an entity is."""
+
+    RECORDS = {"autopsy": "data/autopsy.json", "lessons": "data/lessons.json"}
+    # What stands for each kind's entities on the record they are read from
+    # (TM-18's rule: a record names each reader once). A game's routines are
+    # stood for by the games' collection, which they are listed under.
+    READS = {"pattern": "autopsy", "game": "autopsy", "lesson": "lessons"}
+    # Kept out of a body: a game's routines are addressed one by one, and a
+    # lesson's cartridge and pictures are bytes, which stay in the record.
+    GAME_LISTS = ("routine_list", "loop_list")
+
+    def __init__(self, ns: "Namespace"):
+        self.ns = ns
+        self._stamp: tuple | None = None
+        self._ix: dict[str, Any] = {}
+
+    # -- the records ---------------------------------------------------------
+
+    def _load(self, which: str) -> tuple[float | None, dict]:
+        f = self.ns.repo / self.RECORDS[which]
+        try:
+            got = json.loads(f.read_text())
+            return f.stat().st_mtime, got if isinstance(got, dict) else {}
+        except (OSError, ValueError):
+            return None, {}
+
+    @staticmethod
+    def rid(r: dict) -> str:
+        """A routine's name in a URI: its bank and its address, b0-8E5C."""
+        bank = str(r.get("bank", ""))
+        return f"{'b' + bank[3:] if bank.startswith('prg') else bank}-{int(r.get('addr', 0)):04X}"
+
+    def index(self) -> dict[str, Any]:
+        """Both records, keyed by identity and joined. Rebuilt when either
+        file changes, so a deploy's new record is served without a restart."""
+        stamp = tuple((self.ns.repo / p).stat().st_mtime if (self.ns.repo / p).is_file() else None for p in self.RECORDS.values())
+        if stamp == self._stamp and self._ix:
+            return self._ix
+        _, auto = self._load("autopsy")
+        _, less = self._load("lessons")
+        patterns: dict[str, dict] = {
+            p: {"i": i, "games": {}, "instances": [], "lessons": {}}
+            for i, p in enumerate(auto.get("patterns") or []) if isinstance(p, str)
+        }
+        games: dict[str, dict] = {}
+        for gi, g in enumerate(auto.get("games") or []):
+            if not isinstance(g, dict) or not isinstance(g.get("key"), str):
+                continue
+            entry = {"i": gi, "rec": g, "routines": {}, "all": set(), "lessons": [], "marks": {}}
+            for lst in self.GAME_LISTS:
+                for ri, r in enumerate(g.get(lst) or []):
+                    rid = self.rid(r)
+                    entry["all"].add(rid)
+                    marks = [m["pattern"] for m in r.get("is") or [] if m.get("pattern") in patterns]
+                    if not marks:
+                        continue
+                    entry["routines"][rid] = {"list": lst, "i": ri, "rec": r, "patterns": sorted(set(marks))}
+                    # A rule can mark one routine twice (two polls in one
+                    # routine): the count is of marks, as the record's own
+                    # is, and a routine is one instance however many it has.
+                    for p in marks:
+                        patterns[p]["games"][g["key"]] = patterns[p]["games"].get(g["key"], 0) + 1
+                        entry["marks"][p] = entry["marks"].get(p, 0) + 1
+                    for p in sorted(set(marks)):
+                        patterns[p]["instances"].append((g["key"], rid))
+            games[g["key"]] = entry
+        by_name: dict[str, list[str]] = {}
+        for k, g in games.items():
+            by_name.setdefault(plain_name(str(g["rec"].get("name", ""))), []).append(k)
+        topic = {k: t.get("key") for t in less.get("topics") or [] for k in t.get("lessons") or []}
+        lessons: dict[str, dict] = {}
+        for li, x in enumerate(less.get("lessons") or []):
+            if not isinstance(x, dict) or not isinstance(x.get("key"), str):
+                continue
+            # The record keeps the name of the game a lesson was measured
+            # beside, not its key. One game here with that name and no other
+            # is the join, and it is inferred; anything looser is a guess.
+            named = by_name.get(plain_name(str((x.get("against") or {}).get("game") or "")), [])
+            game = named[0] if len(named) == 1 else None
+            lessons[x["key"]] = {"i": li, "rec": x, "topic": topic.get(x["key"]), "game": game}
+            if game:
+                games[game]["lessons"].append(x["key"])
+            for p, n in (x.get("patterns") or {}).items():
+                if p in patterns:
+                    patterns[p]["lessons"][x["key"]] = n
+        self._stamp, self._ix = stamp, {
+            "patterns": patterns, "games": games, "lessons": lessons,
+            "has": {which: s is not None for which, s in zip(self.RECORDS, stamp)},
+        }
+        return self._ix
+
+    # -- addresses ---------------------------------------------------------
+
+    @staticmethod
+    def uri(*parts: str, collection: bool = False) -> str:
+        return f"{ROOT}entity/" + "/".join(quote(p) for p in parts) + ("/" if collection and parts else "")
+
+    def stands_for(self, ref: "Ref") -> str | None:
+        """The collection a record names for an entity, or for itself."""
+        kind = ref.path.split("/", 1)[0]
+        return self.uri(kind, collection=True) if kind in ENTITY_KINDS else None
+
+    def _record(self, which: str, pointer: str) -> str:
+        return f"{ROOT}fs/{self.RECORDS[which]}#{pointer}"
+
+    def game_pages(self, site: str, key: str) -> list[str]:
+        """A game's page in each language, where the site's build made it."""
+        pages = [f"/autopsy/games/{key}", f"/ja/autopsy/games/{key}"]
+        b = self.ns.built(site)
+        return [p for p in pages if b is None or p in b]
+
+    def cartridge(self, key: str) -> str | None:
+        """A lesson's directory in the repository, when one is tracked."""
+        if "public" in self.ns.git and self.ns._git_has("public", "HEAD", f"lessons/{key}/lesson.json"):
+            return f"{ROOT}git/public/lessons/{quote(key)}/"
+        return None
+
+    # -- links ---------------------------------------------------------------
+
+    def _frame(self, uri: str, coll: str) -> list[dict]:
+        return [link("up", coll), link("collection", coll), link("describedby", f"{uri}?as=stat")]
+
+    def _pattern(self, key: str) -> tuple[dict, list[dict]]:
+        ix = self.index()
+        p = ix["patterns"][key]
+        uri = self.uri("pattern", key)
+        found = [{"uri": self.uri("game", g), "key": g, "name": ix["games"][g]["rec"].get("name"), "count": n} for g, n in p["games"].items()]
+        body = {"uri": uri, "entity": "pattern", "key": key, "games": len(found), "count": sum(f["count"] for f in found),
+                "routines": len(p["instances"]), "found_in": found,
+                "demonstrated_by": [{"uri": self.uri("lesson", k), "key": k, "title": ix["lessons"][k]["rec"].get("title"), "count": n}
+                                    for k, n in p["lessons"].items()]}
+        links = self._frame(uri, self.uri("pattern", collection=True))
+        for f in found:
+            links.append(link("tm:found-in", f["uri"], "exact", title=f"found {times(f['count'])} in {f['name']}"))
+        for g, rid in p["instances"]:
+            links.append(link("tm:instance", self.uri("game", g, "routine", rid), "exact",
+                              title=f"{ix['games'][g]['routines'][rid]['rec'].get('name')} in {ix['games'][g]['rec'].get('name')}"))
+        for d in body["demonstrated_by"]:
+            links.append(link("tm:demonstrated-by", d["uri"], "exact", title=f"our own cartridge, where it is found {times(d['count'])}: {d['title']}"))
+        links.append(link("tm:data", self._record("autopsy", f"/patterns/{p['i']}"), "exact", title="where the record names this pattern"))
+        return body, links
+
+    def _game(self, key: str) -> tuple[dict, list[dict]]:
+        ix = self.index()
+        g = ix["games"][key]
+        uri = self.uri("game", key)
+        body = {"uri": uri, "entity": "game", **{k: v for k, v in g["rec"].items() if k not in self.GAME_LISTS},
+                "routines_measured": len(g["all"]), "routines_named": len(g["routines"]),
+                "routines_at": self.uri("game", key, "routine", collection=True)}
+        links = self._frame(uri, self.uri("game", collection=True))
+        for p, n in sorted(g["marks"].items()):
+            links.append(link("tm:exhibits", self.uri("pattern", p), "exact", title=f"found {times(n)} here"))
+        for k in g["lessons"]:
+            links.append(link("tm:measured-by", self.uri("lesson", k), "inferred", title="a lesson measured beside a game of this name"))
+        for site in self.ns.sites:
+            for pg in self.game_pages(site, key):
+                links.append(link("tm:renders-as", f"{ROOT}http/{site}{quote(pg)}", "exact", title=f"this game's page on {site}"))
+        links.append(link("tm:data", self._record("autopsy", f"/games/{g['i']}"), "exact", title="the record this game is read from"))
+        return body, links
+
+    def _routine(self, key: str, rid: str) -> tuple[dict, list[dict]]:
+        g = self.index()["games"][key]
+        r = g["routines"][rid]
+        uri = self.uri("game", key, "routine", rid)
+        rec = r["rec"]
+        body = {"uri": uri, "entity": "routine", "key": rid,
+                "game": {"uri": self.uri("game", key), "key": key, "name": g["rec"].get("name")},
+                # A loop's record has no kind of its own; a routine's says how it is entered.
+                "kind": "loop", **rec, "address": f"${int(rec.get('addr', 0)):04X}"}
+        links = self._frame(uri, self.uri("game", key, "routine", collection=True))
+        for p in r["patterns"]:
+            links.append(link("tm:instance-of", self.uri("pattern", p), "exact", title="what a rule named this routine"))
+        links.append(link("tm:data", self._record("autopsy", f"/games/{g['i']}/{r['list']}/{r['i']}"), "exact", title="the record this routine is read from"))
+        return body, links
+
+    def _lesson(self, key: str) -> tuple[dict, list[dict]]:
+        ix = self.index()
+        x = ix["lessons"][key]
+        uri = self.uri("lesson", key)
+        rec = {k: v for k, v in x["rec"].items() if k != "rom"}
+        if isinstance(rec.get("pictures"), list):
+            rec["pictures"] = [{k: v for k, v in p.items() if k != "png"} for p in rec["pictures"] if isinstance(p, dict)]
+        body = {"uri": uri, "entity": "lesson", "topic": x["topic"], **rec}
+        links = self._frame(uri, self.uri("lesson", collection=True))
+        cart = self.cartridge(key)
+        if cart:
+            links.append(link("tm:cartridge", cart, "exact", title="the cartridge's source, in the repository"))
+        for p, n in sorted((x["rec"].get("patterns") or {}).items()):
+            if p in ix["patterns"]:
+                links.append(link("tm:demonstrates", self.uri("pattern", p), "exact", title=f"found {times(n)} in this cartridge"))
+        if x["game"]:
+            links.append(link("tm:measures", self.uri("game", x["game"]), "inferred",
+                              title=f"the one game here named {(x['rec'].get('against') or {}).get('game')}; the record keeps the name, not the key"))
+        links.append(link("tm:data", self._record("lessons", f"/lessons/{x['i']}"), "exact", title="the record this lesson is read from"))
+        return body, links
+
+    def inbound(self, mount: str, site: str | None, path: str, is_dir: bool = False) -> list[dict]:
+        """The other end of each pair this mount starts: what a page, a
+        directory or a record says back about the entity that names it. Each
+        condition is the one the entity's own link was made under, so no
+        inverse is offered for a link that is not there."""
+        ix = self.index()
+        out: list[dict] = []
+        if mount == "http" and site and not is_dir:
+            m = re.fullmatch(r"(?:/ja)?/autopsy/games/([^/]+)", path)
+            if m and m[1] in ix["games"] and path in self.game_pages(site, m[1]):
+                out.append(link("tm:source", self.uri("game", m[1]), "exact", title="the game this page is about, as an entity"))
+        elif mount == "git" and site == "public" and is_dir:
+            m = re.fullmatch(r"lessons/([^/]+)", path)
+            if m and m[1] in ix["lessons"] and self.cartridge(m[1]):
+                out.append(link("tm:cartridge-of", self.uri("lesson", m[1]), "exact", title="the lesson this cartridge is, as an entity"))
+        elif mount == "fs":
+            for kind in sorted(self.READS):
+                which = self.READS[kind]
+                if path == self.RECORDS[which] and ix["has"][which]:
+                    out.append(link("tm:read-by", self.uri(kind, collection=True), "exact", title=f"the {kind} entities, each read from this record"))
+        return out
+
+    # -- listings ------------------------------------------------------------
+
+    def _kids(self, parts: list[str]) -> list[dict] | None:
+        """The children of a collection, or None when it is not one."""
+        ix = self.index()
+
+        def leaf(uri: str, name: str, title: Any) -> dict:
+            out = {"uri": uri, "name": name, "mimeType": "application/json", "isCollection": False}
+            if title:
+                out["title"] = str(title)
+            return out
+
+        def coll(uri: str, name: str) -> dict:
+            return {"uri": uri, "name": name, "mimeType": "application/json", "isCollection": True}
+
+        if not parts:
+            return [coll(self.uri(k, collection=True), f"{k}/") for k in ENTITY_KINDS]
+        if parts == ["pattern"]:
+            return [leaf(self.uri("pattern", k), k, f"found {times(sum(p['games'].values()))} in {len(p['games'])} of the games") for k, p in sorted(ix["patterns"].items())]
+        if parts == ["lesson"]:
+            return [leaf(self.uri("lesson", k), k, x["rec"].get("title")) for k, x in sorted(ix["lessons"].items())]
+        if parts == ["game"]:
+            out = []
+            for k, g in sorted(ix["games"].items()):
+                out.append(leaf(self.uri("game", k), k, g["rec"].get("name")))
+                out.append(coll(self.uri("game", k, collection=True), f"{k}/"))
+            return out
+        if len(parts) == 2 and parts[0] == "game" and parts[1] in ix["games"]:
+            return [coll(self.uri("game", parts[1], "routine", collection=True), "routine/")]
+        if len(parts) == 3 and parts[0] == "game" and parts[1] in ix["games"] and parts[2] == "routine":
+            rs = ix["games"][parts[1]]["routines"]
+            return [leaf(self.uri("game", parts[1], "routine", rid), rid, f"{r['rec'].get('name')}: {', '.join(r['patterns'])}") for rid, r in sorted(rs.items())]
+        return None
+
+    def keys(self, kind: str) -> list[str]:
+        return sorted(self.index().get(f"{kind}s", {}))
+
+    def routines(self, game: str) -> list[str]:
+        g = self.index()["games"].get(game)
+        return sorted(g["routines"]) if g else []
+
+    # -- read ----------------------------------------------------------------
+
+    def _missing(self, parts: list[str], coll: bool) -> TmError:
+        """not-found that teaches: the right spelling of the address when it
+        is a slash away, else the nearest names at the first wrong step."""
+        ix = self.index()
+        said = "entity/" + "/".join(parts) + ("/" if coll else "")
+
+        def no(msg: str, nearest: list[str]) -> TmError:
+            return TmError(RESOURCE_NOT_FOUND, "not-found", msg, nearest=nearest[:5])
+
+        if parts[0] not in ENTITY_KINDS:
+            return no(f"{said}: no entities of kind {parts[0]!r}; the kinds are {', '.join(ENTITY_KINDS)}",
+                      [self.uri(k, collection=True) for k in closest(parts[0], list(ENTITY_KINDS))])
+        kind = parts[0]
+        if len(parts) == 1:
+            return no(f"{said} is a collection; its listing is at {self.uri(kind, collection=True)}", [self.uri(kind, collection=True)])
+        pool = ix[f"{kind}s"]
+        if parts[1] not in pool:
+            want = parts[1].lower()
+            ranked = closest(parts[1], sorted(pool))
+            if kind == "game":
+                # A game asked for by its name is offered by its key.
+                ranked.sort(key=lambda k: want not in str(pool[k]["rec"].get("name", "")).lower())
+            return no(f"{said}: no {kind} with the key {parts[1]!r}", [self.uri(kind, k) for k in ranked])
+        here = self.uri(kind, parts[1])
+        if len(parts) == 2:
+            return no(f"{said} is not a collection; the {kind} is at {here}", [here])
+        listing = self.uri("game", parts[1], "routine", collection=True)
+        if kind != "game" or parts[2] != "routine" or len(parts) > 4:
+            return no(f"{said}: nothing is addressed there", [listing] if kind == "game" else [here])
+        if len(parts) == 3:
+            return no(f"{said} is a collection; its listing is at {listing}", [listing])
+        g = pool[parts[1]]
+        near = [self.uri("game", parts[1], "routine", r) for r in closest(parts[3], sorted(g["routines"]))]
+        if coll:
+            return no(f"{said} is not a collection", near if parts[3] not in g["routines"] else [self.uri("game", parts[1], "routine", parts[3])])
+        if parts[3] in g["all"]:
+            return no(f"{said} is a routine of {g['rec'].get('name')} that ran and carries no pattern; only the routines a rule named have an address", near)
+        return no(f"{said}: {g['rec'].get('name')} has no routine at that bank and address", near)
+
+    def read(self, ref: "Ref") -> dict:
+        as_ = ref.facets.get("as")
+        if as_ not in (None, *AS_ENTITY):
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; entity offers {', '.join(AS_ENTITY)}")
+        parts = [p for p in ref.path.split("/") if p]
+        ix = self.index()
+        if ref.is_collection:
+            kids = self._kids(parts)
+            if kids is None:
+                raise self._missing(parts, True)
+            if as_:
+                # TM-11: a listing has one representation.
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an entity collection is a listing and offers no facets; read {ref.uri} without ?as")
+            chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
+            body: dict[str, Any] = {"uri": ref.uri, "children": chunk}
+            if nxt:
+                body["nextCursor"] = nxt
+                body["next"] = f"{ref.uri}?cursor={nxt}"
+            links = [link("up", self.uri(*parts[:-1], collection=True) if parts else ROOT)]
+            if len(parts) == 1 and ix["has"][self.READS[parts[0]]]:
+                # The record itself, as an http collection names it: the
+                # entities listed here each carry their own place in it.
+                links.append(link("tm:data", f"{ROOT}fs/{self.RECORDS[self.READS[parts[0]]]}", "exact", title="the record the entities listed here are read from"))
+            return self.ns._result(ref.uri, "application/json", json.dumps(body, indent=1), links)
+        if len(parts) == 2 and parts[0] == "pattern" and parts[1] in ix["patterns"]:
+            body, links = self._pattern(parts[1])
+        elif len(parts) == 2 and parts[0] == "game" and parts[1] in ix["games"]:
+            body, links = self._game(parts[1])
+        elif len(parts) == 2 and parts[0] == "lesson" and parts[1] in ix["lessons"]:
+            body, links = self._lesson(parts[1])
+        elif len(parts) == 4 and parts[0] == "game" and parts[2] == "routine" and parts[3] in ix["games"].get(parts[1], {"routines": {}})["routines"]:
+            body, links = self._routine(parts[1], parts[3])
+        else:
+            raise self._missing(parts, False)
+        text = json.dumps(body, indent=1)
+        if as_ == "stat":
+            stat = {"uri": ref.uri, "entity": body["entity"], "key": body["key"], "name": body.get("name") or body.get("title") or body["key"],
+                    "mimeType": "application/json", "size": len(text.encode()), "isCollection": False, "text": True}
+            return self.ns._result(f"{ref.uri}?as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", ref.uri)])
+        return self.ns._result(ref.uri, "application/json", text, links)
+
+
+# ---------------------------------------------------------------------------
 # The namespace
 # ---------------------------------------------------------------------------
 
@@ -776,6 +1177,7 @@ class Namespace:
         self.origins = Origins(self.repo)
         self.graph = SiteGraph(self.repo)
         self._built: dict[str, tuple] = {}
+        self.entities = Entities(self)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -795,7 +1197,9 @@ class Namespace:
                 "tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text is the page it becomes, "
                 "as its readable text. A notebook page links to its markdown (tm:source) and the file "
                 "links back (tm:renders-as); up, collection, alternate and describedby are the IANA "
-                "relations. ?as=stat gives metadata without content. A URI that does not resolve "
+                "relations. tm://tinymachines/entity/ holds the autopsy's patterns, games, routines and lessons as "
+                "things with links between them (entity/pattern/pad-poll names every game and routine it was found in). "
+                "?as=stat gives metadata without content. A URI that does not resolve "
                 "is refused with the nearest ones that do, so try the nearest rather than guessing."
             ),
             "inputSchema": {
@@ -880,6 +1284,29 @@ class Namespace:
                     "and tm:input-of what reads it."
                 ),
             },
+            {
+                "uriTemplate": f"{ROOT}entity/{{kind}}/{{key}}{{?as}}",
+                "name": "entity",
+                "title": "A pattern, a game or a lesson of the autopsy",
+                "description": (
+                    f"kind is one of {', '.join(ENTITY_KINDS)}; key is the one the records keep (pad-poll, a game's "
+                    "twelve hex digits, jump). Each reads as JSON, its record's fields, with links: a pattern to the games "
+                    "it was found in (tm:found-in), each routine a rule named (tm:instance) and the lessons that use it "
+                    "(tm:demonstrated-by); a game to its patterns (tm:exhibits) and its page (tm:renders-as); a lesson to "
+                    "its cartridge's source (tm:cartridge) and its patterns (tm:demonstrates). entity/<kind>/ lists the keys."
+                ),
+                "mimeType": "application/json",
+            },
+            {
+                "uriTemplate": f"{ROOT}entity/game/{{key}}/routine/{{routine}}{{?as}}",
+                "name": "routine",
+                "title": "A routine of a game that a rule named",
+                "description": (
+                    "routine is a bank and an address, b0-8E5C. Only routines that carry a pattern have an address; "
+                    "entity/game/<key>/routine/ lists them. Each links to its patterns (tm:instance-of)."
+                ),
+                "mimeType": "application/json",
+            },
         ]
 
     def list_resources(self, cursor: str | None) -> dict:
@@ -892,6 +1319,7 @@ class Namespace:
             {"uri": f"{ROOT}git/", "name": "git", "title": "The repositories, at any ref", "mimeType": "application/json"},
             {"uri": f"{ROOT}http/", "name": "http", "title": "The sites this box serves", "mimeType": "application/json"},
             {"uri": f"{ROOT}offbox/", "name": "offbox", "title": "Where a build chain leaves this box", "mimeType": "application/json"},
+            {"uri": f"{ROOT}entity/", "name": "entity", "title": "The autopsy's patterns, games, routines and lessons", "mimeType": "application/json"},
         ]
         for root in FS_ROOTS:
             base = self.repo / root
@@ -905,6 +1333,10 @@ class Namespace:
             items.append({"uri": f"{ROOT}git/{name}/", "name": name, "title": f"tinymachines/{name} at HEAD", "mimeType": "application/json"})
         for site in self.sites:
             items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": "application/json"})
+        for kind in ENTITY_KINDS:
+            items.append({"uri": Entities.uri(kind, collection=True), "name": f"entity/{kind}/", "mimeType": "application/json"})
+        for key in self.entities.keys("game"):
+            items.append({"uri": Entities.uri("game", key, "routine", collection=True), "name": f"entity/game/{key}/routine/", "mimeType": "application/json"})
         chunk, nxt = _page(items, cursor, RESOURCES_PAGE)
         out: dict[str, Any] = {"resources": chunk}
         if nxt:
@@ -928,10 +1360,17 @@ class Namespace:
         elif name == "repo":
             values = [r for r in sorted(self.git) if r.startswith(value)]
         elif name == "as":
-            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_FS
+            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_ENTITY if "/entity/" in tmpl else AS_FS
             values = [a for a in pool if a.startswith(value)]
         elif name == "n":
             values = [str(n) for n in (LOG_DEFAULT, 50, LOG_MAX) if str(n).startswith(value)]
+        elif name == "kind":
+            values = [k for k in ENTITY_KINDS if k.startswith(value)]
+        elif name == "key" and "/entity/" in tmpl:
+            kinds = ["game"] if "/entity/game/" in tmpl else [ctx["kind"]] if ctx.get("kind") in ENTITY_KINDS else list(ENTITY_KINDS)
+            values = [k for kind in kinds for k in self.entities.keys(kind) if k.startswith(value)]
+        elif name == "routine":
+            values = [r for r in self.entities.routines(ctx.get("key") or "") if r.startswith(value)]
         elif name == "at":
             repo = ctx.get("repo") or "public"
             values = self._git_refs(repo, value) if repo in self.git else []
@@ -971,18 +1410,28 @@ class Namespace:
                 {"uri": f"{ROOT}git/", "what": f"the repositories ({', '.join(sorted(self.git))}) at any ref, with history and blame"},
                 {"uri": f"{ROOT}http/", "what": "the sites this box serves, page by page"},
                 {"uri": f"{ROOT}offbox/", "what": "where a build chain leaves this box: named, described, never exposed"},
-            ]}
-            return self._result(ROOT, "application/json", json.dumps(body, indent=1), [
-                link("collection", f"{ROOT}fs/"), link("collection", f"{ROOT}git/"), link("collection", f"{ROOT}http/"),
-                link("collection", f"{ROOT}offbox/"),
-            ])
+                {"uri": f"{ROOT}entity/", "what": "the autopsy's patterns, games, routines and lessons, each with links to the others"},
+            ], "start_here": self.start_here()}
+            # TM-12: the documents a fresh session should read first.
+            return self._result(ROOT, "application/json", json.dumps(body, indent=1),
+                                [link("collection", f"{ROOT}{m}/") for m in MOUNTS]
+                                + [link("help", s["uri"], title=s["what"]) for s in body["start_here"]])
         if ref.mount == "offbox":
             return self._read_offbox(ref)
+        if ref.mount == "entity":
+            return self.entities.read(ref)
         if ref.mount == "fs":
             return self._read_fs(ref)
         if ref.mount == "git":
             return self._read_git(ref)
         return await self._read_http(ref)
+
+    def start_here(self) -> list[dict]:
+        """TM-12: the orientation documents that are there to read, as URIs.
+        One whose repository is not mounted, or that is not at its HEAD, is
+        left out: a pointer that does not resolve is worse than none."""
+        return [{"uri": f"{ROOT}git/{repo}/{quote(path)}", "what": what}
+                for repo, path, what in ORIENTATION if repo in self.git and self._git_has(repo, "HEAD", path)]
 
     def lineage(self) -> dict[str, dict]:
         """api/lineage.json (TM-7): what a script reads that it did not make,
@@ -1133,7 +1582,7 @@ class Namespace:
             what = "the pages listed here" if page.endswith("/") else "a page"
             links.append(link("tm:read-by", f"{ROOT}http/{self.sites[0]}{quote(page)}", conf,
                               title=f"{what} whose own code reads this record" if conf == "exact" else f"{what} whose library reaches this record"))
-        return links
+        return links + self.entities.inbound("fs", None, rel)
 
     def _origin_links(self, rel: str) -> list[dict]:
         """From a file of this checkout into git: the tracked file's own
@@ -1443,7 +1892,7 @@ class Namespace:
                     for pg in self.lesson_pages(site, key):
                         links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the lesson page this cartridge's source becomes on {site}"))
         if is_dir:
-            return links
+            return links + (self.entities.inbound("git", repo, clean, True) if head else [])
         sep = "&" if q else "?"
         links.append(link("collection", up))
         links.append(link("describedby", f"{base}{q}{sep}as=stat"))
@@ -1708,6 +2157,8 @@ class Namespace:
         a record names back for it. A page on either site, in either
         language, is stood for by its route's one link."""
         ref = parse(uri)
+        if ref.mount == "entity":
+            return self.entities.stands_for(ref)
         if ref.mount != "http" or ref.site is None:
             return None
         if ref.is_collection:
@@ -1876,6 +2327,7 @@ class Namespace:
                     if origin and origin[0] in self.git:
                         links.append(link("tm:generated-by", f"{ROOT}git/{origin[0]}/{quote(origin[1])}", "exact",
                                           title=f"pulled at build time from {origin[0]}/{origin[1]}"))
+            links.extend(self.entities.inbound("http", site, clean))
         return links
 
     async def _read_http(self, ref: Ref) -> dict:

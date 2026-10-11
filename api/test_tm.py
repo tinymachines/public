@@ -146,7 +146,7 @@ def test_a_link_cannot_get_its_confidence_wrong():
 
 def test_the_root_lists_the_mounts_and_a_collection_lists_its_children(ns):
     root, links = read(ns, ROOT)
-    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/"}
+    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/", f"{ROOT}entity/"}
     top, _ = read(ns, f"{ROOT}fs/")
     assert [c["name"] for c in json.loads(top["text"])["children"]] == ["docs/", "data/", "notes/"]
     nes, links = read(ns, f"{ROOT}fs/docs/nes/")
@@ -381,9 +381,9 @@ def test_http_refusals_are_structured(ns):
 
 
 def test_resources_list_is_the_map_not_the_inventory(ns, monkeypatch):
-    monkeypatch.setattr(tm, "RESOURCES_PAGE", 5)
+    monkeypatch.setattr(tm, "RESOURCES_PAGE", 6)
     first = ns.list_resources(None)
-    assert [r["name"] for r in first["resources"]] == ["root", "fs", "git", "http", "offbox"]
+    assert [r["name"] for r in first["resources"]] == ["root", "fs", "git", "http", "offbox", "entity"]
     rest = ns.list_resources(first["nextCursor"])
     names = [r["name"] for r in rest["resources"]]
     assert names[0] == "docs/" and "docs/nes/" in names and "docs/ja/nes/" in names
@@ -402,7 +402,7 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
         run(handler({"jsonrpc": "2.0", "id": 3, "method": "resources/read", "params": {"uri": f"{ROOT}fs/docs/nes/pil.md"}}))
     assert e.value.code == tm.RESOURCE_NOT_FOUND and e.value.data["reason"] == "not-found"
     tmpl = run(handler({"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list"}))["result"]
-    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "git", "http", "offbox"]
+    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["root", "fs", "git", "http", "offbox", "entity", "routine"]
     bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
     plain = run(bare({"jsonrpc": "2.0", "id": 5, "method": "initialize", "params": {}}))["result"]
     assert "resources" not in plain["capabilities"]
@@ -676,8 +676,8 @@ def test_a_record_links_to_its_writer_and_its_readers(site):
     r = rels(links)
     assert r["tm:generated-by"] == [f"{ROOT}git/public/scripts/board-autopsy.py"]
     assert [ln["confidence"] for ln in links if ln["rel"] == "tm:generated-by"] == ["exact"], "the record's own note names it"
-    assert r["tm:read-by"] == [f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns"], \
-        "one link a route: the English page on the canonical site; no build here, so the dynamic route's pages are unknown"
+    assert r["tm:read-by"] == [f"{ROOT}http/{tm.SITES[0]}/autopsy/patterns", f"{ROOT}entity/game/", f"{ROOT}entity/pattern/"], \
+        "one link a route: the English page on the canonical site; no build here, so the dynamic route's pages are unknown. And one for each kind of entity read from it (TM-16)"
     _, links = read(site, f"{ROOT}fs/data/chip.json")
     gen = [ln for ln in links if ln["rel"] == "tm:generated-by"]
     assert [ln["href"] for ln in gen] == [f"{ROOT}git/public/scripts/verify-chip.py"], "deploy.sh and check-* are not writers"
@@ -924,7 +924,7 @@ def test_tm18_a_record_names_each_route_that_reads_it_once(built):
     one hop from one of them."""
     _, links = read(built, f"{ROOT}fs/data/autopsy.json?as=stat")
     by = rels(links)["tm:read-by"]
-    assert by == [f"{ROOT}http/tinymachines.ai/autopsy/games/"], by
+    assert by == [f"{ROOT}http/tinymachines.ai/autopsy/games/", f"{ROOT}entity/game/", f"{ROOT}entity/pattern/"], by
     _, coll = read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")
     assert f"{ROOT}fs/data/autopsy.json" in rels(coll)["tm:data"], "the collection answers for the pages it lists"
     kids = json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/games/")[0]["text"])["children"]
@@ -1179,3 +1179,348 @@ def test_tm20_the_crawl_faults_the_front_page_answers_its_other_versions(built):
                 t = crawl.identity(ln["href"])
                 _, back = read(built, crawl.stat_of(t))
                 assert crawl.identity(uri) in {crawl.identity(b["href"]) for b in back if b["rel"] == "alternate"}, (uri, t)
+
+
+# ---------------------------------------------------------------------------
+# TM-12: the orientation documents, named at connect and at the root
+# ---------------------------------------------------------------------------
+
+
+def test_tm12_the_root_and_the_connect_instructions_name_the_orientation_documents(gns):
+    repo = gns.repo
+    # Nothing is named that is not there: a link that would not resolve is
+    # worse than none.
+    assert json.loads(read(gns, ROOT)[0]["text"])["start_here"] == []
+    assert "help" not in rels(read(gns, ROOT)[1])
+    (repo / "START-HERE.md").write_text("# Start here\n")
+    (repo / "CLAUDE.md").write_text("# House rules\n")
+    git(repo, "add", "START-HERE.md", "CLAUDE.md")
+    git(repo, "commit", "-q", "-m", "orientation")
+    c, links = read(gns, ROOT)
+    start = json.loads(c["text"])["start_here"]
+    assert [s["uri"] for s in start] == [f"{ROOT}git/public/START-HERE.md", f"{ROOT}git/public/CLAUDE.md"], "the 6502 project is not mounted here, so its document is not named"
+    assert all(s["what"] for s in start)
+    assert rels(links)["help"] == [s["uri"] for s in start]
+    for s in start:
+        assert read(gns, s["uri"])[0]["mimeType"] == "text/markdown", "each one reads"
+    handler = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS}, namespace=gns)
+    init = run(handler({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}))["result"]
+    for s in start:
+        assert s["uri"] in init["instructions"], "a fresh session's first message points at them"
+    assert "git/6502/CLAUDE.md" not in init["instructions"]
+
+
+def test_tm12_the_real_orientation_documents_are_there():
+    """Over the real checkout: the three documents the ticket names resolve
+    wherever their repository is checked out beside this one."""
+    n = Namespace(REPO, fetch=canned_fetch)
+    named = [s["uri"] for s in n.start_here()]
+    assert f"{ROOT}git/public/START-HERE.md" in named and f"{ROOT}git/public/CLAUDE.md" in named
+    if "6502" in n.git:
+        assert f"{ROOT}git/6502/CLAUDE.md" in named
+    assert len(named) <= 3, "two or three, not a reading list"
+
+
+# ---------------------------------------------------------------------------
+# TM-16: the entity mount, the first application on the platform
+# ---------------------------------------------------------------------------
+
+
+def _mark(pattern: str) -> dict:
+    return {"pattern": pattern, "evidence": {"by": "match", "frames": 3}}
+
+
+AUTOPSY = {
+    "note": "Written only by scripts/board-autopsy.py. Shape only; no byte of any ROM.",
+    "patterns": ["frame-wait", "pad-poll", "sprite-writer"],
+    "games": [
+        {"key": "abc", "name": "Metroid (USA)", "mapper": 1, "patterns": {"pad-poll": 1, "sprite-writer": 2},
+         "routine_list": [
+             {"name": "b0_poll_8E5C", "bank": "prg0", "addr": 0x8E5C, "kind": "call", "entered": 5, "is": [_mark("pad-poll"), _mark("pad-poll"), _mark("sprite-writer")]},
+             {"name": "b0_routine_9000", "bank": "prg0", "addr": 0x9000, "kind": "call", "entered": 2, "is": []},
+             {"name": "b1_sprites_A000", "bank": "prg1", "addr": 0xA000, "kind": "call", "entered": 9, "is": [_mark("sprite-writer")]},
+         ],
+         "loop_list": [], "variable_list": [{"addr": "$0010"}]},
+        {"key": "def", "name": "Legend of Zelda, The (USA) (Rev 1)", "mapper": 1, "patterns": {"pad-poll": 1, "frame-wait": 1},
+         "routine_list": [{"name": "b7_poll_E000", "bank": "prg7", "addr": 0xE000, "kind": "call", "entered": 1, "is": [_mark("pad-poll")]}],
+         "loop_list": [{"name": "b7_wait_C150", "bank": "prg7", "addr": 0xC150, "is": [_mark("frame-wait")]}]},
+    ],
+}
+
+LESSONS = {
+    "note": "Written only by scripts/board-lessons.py.",
+    "topics": [{"key": "moving", "title": "How a character moves", "lessons": ["jump"]}],
+    "lessons": [
+        {"key": "jump", "kind": "jump", "title": "A jump", "patterns": {"pad-poll": 1, "frame-wait": 1}, "rom": "TkVTGg==",
+         "against": {"game": "Super Mario Bros.", "full_speed": 1.5}, "pictures": [{"frame": 100, "png": "iVBORw0KGgo="}]},
+        {"key": "rooms", "kind": "rooms", "title": "Rooms", "patterns": {"pad-poll": 2}, "rom": "TkVTGg==",
+         "against": {"game": "The Legend of Zelda"}, "pictures": []},
+    ],
+}
+
+
+@pytest.fixture
+def ents(built) -> Namespace:
+    """The built temp checkout with the two records in their real shape and
+    one lesson's cartridge committed (the other lesson has no directory)."""
+    repo = built.repo
+    (repo / "data" / "autopsy.json").write_text(json.dumps(AUTOPSY))
+    (repo / "data" / "lessons.json").write_text(json.dumps(LESSONS))
+    (repo / "lessons" / "jump").mkdir(parents=True)
+    (repo / "lessons" / "jump" / "prg.s").write_text("reset:\n")
+    (repo / "lessons" / "jump" / "lesson.json").write_text('{"kind": "jump"}\n')
+    (repo / "scripts" / "board-lessons.py").write_text('OUT = "data/lessons.json"\n')
+    git(repo, "add", "-f", "lessons", "data/autopsy.json", "data/lessons.json", "scripts/board-lessons.py")
+    git(repo, "commit", "-q", "-m", "the records, their writer and a lesson")
+    return Namespace(repo, fetch=canned_fetch, git_repos=dict(built.git))
+
+
+E = f"{ROOT}entity/"
+
+
+def test_tm16_an_entity_fits_the_grammar_the_other_mounts_use(ents):
+    r = parse(f"{E}game/abc/routine/b0-8E5C?as=stat")
+    assert (r.mount, r.path, r.facets, r.is_collection) == ("entity", "game/abc/routine/b0-8E5C", {"as": "stat"}, False)
+    assert r.uri == f"{E}game/abc/routine/b0-8E5C"
+    assert parse(E).is_collection and parse(f"{E}pattern/").is_collection
+    c, links = read(ents, ROOT)
+    assert E in [m["uri"] for m in json.loads(c["text"])["mounts"]] and E in rels(links)["collection"]
+    with pytest.raises(TmError) as e:
+        parse("tm://tinymachines/entities/")
+    assert e.value.data["nearest"][0] == E, "the closest mount first"
+    top, links = read(ents, E)
+    assert [k["name"] for k in json.loads(top["text"])["children"]] == ["game/", "lesson/", "pattern/"]
+    assert rels(links)["up"] == [ROOT]
+
+
+def test_tm16_from_a_pattern_a_client_reaches_its_games_routines_and_lessons(ents):
+    c, links = read(ents, f"{E}pattern/pad-poll")
+    body = json.loads(c["text"])
+    assert c["mimeType"] == "application/json" and (body["entity"], body["key"]) == ("pattern", "pad-poll")
+    r = rels(links)
+    assert r["tm:found-in"] == [f"{E}game/abc", f"{E}game/def"]
+    assert r["tm:instance"] == [f"{E}game/abc/routine/b0-8E5C", f"{E}game/def/routine/b7-E000"]
+    assert r["tm:demonstrated-by"] == [f"{E}lesson/jump", f"{E}lesson/rooms"]
+    assert r["up"] == [f"{E}pattern/"] and r["collection"] == [f"{E}pattern/"] and r["describedby"] == [f"{E}pattern/pad-poll?as=stat"]
+    assert [(g["key"], g["count"]) for g in body["found_in"]] == [("abc", 2), ("def", 1)], "the count is in the body: marks, and one routine here has two"
+    assert (body["games"], body["count"], body["routines"]) == (2, 3, 2)
+    titles = {ln["href"]: ln["title"] for ln in links if ln["rel"] == "tm:found-in"}
+    assert titles[f"{E}game/abc"] == "found 2 times in Metroid (USA)" and titles[f"{E}game/def"] == "found once in Legend of Zelda, The (USA) (Rev 1)", "and in the link's title"
+    assert all(ln["confidence"] == "exact" for ln in links if ln["rel"].startswith("tm:"))
+    # sprite-writer marks two routines of one game.
+    sw = json.loads(read(ents, f"{E}pattern/sprite-writer")[0]["text"])
+    assert [(g["key"], g["count"]) for g in sw["found_in"]] == [("abc", 2)] and sw["routines"] == 2
+    # Each link is answered from the other end.
+    _, links = read(ents, f"{E}game/abc/routine/b0-8E5C")
+    assert rels(links)["tm:instance-of"] == [f"{E}pattern/pad-poll", f"{E}pattern/sprite-writer"]
+    assert rels(links)["up"] == [f"{E}game/abc/routine/"]
+    _, links = read(ents, f"{E}game/abc")
+    assert rels(links)["tm:exhibits"] == [f"{E}pattern/pad-poll", f"{E}pattern/sprite-writer"]
+    _, links = read(ents, f"{E}lesson/jump")
+    assert rels(links)["tm:demonstrates"] == [f"{E}pattern/frame-wait", f"{E}pattern/pad-poll"]
+
+
+def test_tm16_an_entity_reads_as_its_record_and_carries_no_rom_byte(ents):
+    game = json.loads(read(ents, f"{E}game/abc")[0]["text"])
+    assert game["name"] == "Metroid (USA)" and game["mapper"] == 1 and game["variable_list"] == [{"addr": "$0010"}]
+    assert "routine_list" not in game and "loop_list" not in game, "the routines are addressed, not inlined"
+    assert game["routines_named"] == 2 and game["routines_measured"] == 3 and game["routines_at"] == f"{E}game/abc/routine/"
+    rt = json.loads(read(ents, f"{E}game/abc/routine/b0-8E5C")[0]["text"])
+    assert (rt["name"], rt["bank"], rt["addr"], rt["address"], rt["entered"]) == ("b0_poll_8E5C", "prg0", 0x8E5C, "$8E5C", 5)
+    assert rt["game"] == {"uri": f"{E}game/abc", "key": "abc", "name": "Metroid (USA)"}
+    assert [m["pattern"] for m in rt["is"]] == ["pad-poll", "pad-poll", "sprite-writer"] and rt["is"][0]["evidence"]["by"] == "match"
+    loop = json.loads(read(ents, f"{E}game/def/routine/b7-C150")[0]["text"])
+    assert (loop["entity"], loop["kind"], loop["name"]) == ("routine", "loop", "b7_wait_C150"), "a loop the rules named is a routine here"
+    assert rt["entity"] == "routine" and rt["kind"] == "call", "the record's own kind is how it is entered"
+    c, _ = read(ents, f"{E}lesson/jump")
+    lesson = json.loads(c["text"])
+    assert lesson["title"] == "A jump" and lesson["topic"] == "moving" and lesson["against"]["game"] == "Super Mario Bros."
+    assert (lesson["entity"], lesson["kind"]) == ("lesson", "jump")
+    assert "rom" not in lesson and "TkVT" not in c["text"], "the cartridge's bytes stay in the record"
+    assert lesson["pictures"] == [{"frame": 100}] and "iVBOR" not in c["text"]
+
+
+def test_tm16_listings_name_only_what_the_rules_named_and_refusals_teach(ents):
+    games = json.loads(read(ents, f"{E}game/")[0]["text"])["children"]
+    assert [(k["name"], k["isCollection"]) for k in games] == [("abc", False), ("abc/", True), ("def", False), ("def/", True)]
+    assert games[0]["title"] == "Metroid (USA)" and games[0]["mimeType"] == "application/json"
+    assert [k["name"] for k in json.loads(read(ents, f"{E}game/abc/")[0]["text"])["children"]] == ["routine/"]
+    c, links = read(ents, f"{E}game/abc/routine/")
+    kids = json.loads(c["text"])["children"]
+    assert [k["name"] for k in kids] == ["b0-8E5C", "b1-A000"], "b0-9000 ran and carries no pattern"
+    assert "pad-poll" in kids[0]["title"] and rels(links)["up"] == [f"{E}game/abc/"]
+    e = refusal(ents, f"{E}game/abc/routine/b0-9000")
+    assert e.reason == "not-found" and "no pattern" in e.message, "it exists in the record; say why it has no address"
+    assert set(e.data["nearest"]) == {f"{E}game/abc/routine/b0-8E5C", f"{E}game/abc/routine/b1-A000"}, "the ones that have an address"
+    e = refusal(ents, f"{E}pattern/pad-pol")
+    assert e.reason == "not-found" and e.data["nearest"][0] == f"{E}pattern/pad-poll"
+    e = refusal(ents, f"{E}game/metroid")
+    assert e.data["nearest"][0] == f"{E}game/abc", "a game asked for by name is offered by key"
+    e = refusal(ents, f"{E}pattern")
+    assert e.reason == "not-found" and e.data["nearest"] == [f"{E}pattern/"]
+    e = refusal(ents, f"{E}pattern/pad-poll/")
+    assert e.reason == "not-found" and e.data["nearest"] == [f"{E}pattern/pad-poll"]
+    e = refusal(ents, f"{E}tune/x")
+    assert e.reason == "not-found" and set(e.data["nearest"]) == {f"{E}game/", f"{E}lesson/", f"{E}pattern/"}
+    e = refusal(ents, f"{E}game/abc/routine")
+    assert e.data["nearest"] == [f"{E}game/abc/routine/"]
+    # Facets: stat and nothing else; a listing offers none (TM-11).
+    st, links = read(ents, f"{E}pattern/pad-poll?as=stat")
+    stat = json.loads(st["text"])
+    assert st["uri"] == f"{E}pattern/pad-poll?as=stat" and stat["mimeType"] == "application/json" and stat["isCollection"] is False and stat["size"] > 0
+    assert rels(links)["alternate"] == [f"{E}pattern/pad-poll"] and f"{E}game/abc" in rels(links)["tm:found-in"]
+    assert refusal(ents, f"{E}pattern/pad-poll?as=raw").reason == "bad-facet"
+    assert refusal(ents, f"{E}pattern/?as=stat").reason == "bad-facet"
+    assert refusal(ents, f"{E}?as=stat").reason == "bad-facet"
+    # A listing pages like any other.
+    first = json.loads(run(ents.read(f"{E}game/"))["contents"][0]["text"])
+    assert "nextCursor" not in first
+
+
+def test_tm16_an_entity_and_the_things_it_names_in_other_mounts_answer_each_other(ents):
+    # A game and its page.
+    _, links = read(ents, f"{E}game/abc")
+    page = f"{ROOT}http/tinymachines.ai/autopsy/games/abc"
+    assert page in rels(links)["tm:renders-as"]
+    assert f"{ROOT}http/tinymachines.ai/ja/autopsy/games/abc" not in rels(links)["tm:renders-as"], "the build made no Japanese page"
+    _, back = read(ents, f"{page}?as=stat")
+    assert f"{E}game/abc" in rels(back)["tm:source"]
+    _, other = read(ents, f"{ROOT}http/tinymachines.ai/autopsy/patterns?as=stat")
+    assert not any(h.startswith(E) for h in rels(other).get("tm:source", [])), "only a game's own page"
+    # A lesson and its cartridge.
+    _, links = read(ents, f"{E}lesson/jump")
+    assert rels(links)["tm:cartridge"] == [f"{ROOT}git/public/lessons/jump/"]
+    _, back = read(ents, f"{ROOT}git/public/lessons/jump/")
+    assert rels(back)["tm:cartridge-of"] == [f"{E}lesson/jump"]
+    assert "tm:cartridge-of" not in rels(read(ents, f"{ROOT}git/public/lessons/jump/prg.s")[1]), "the directory, as the lesson names it"
+    assert "tm:cartridge" not in rels(read(ents, f"{E}lesson/rooms")[1]), "no directory is tracked for it, so none is named"
+    # An entity and its record: the record names each kind once (TM-18's rule).
+    for uri, pointer in [(f"{E}pattern/pad-poll", "autopsy.json#/patterns/1"), (f"{E}game/def", "autopsy.json#/games/1"),
+                         (f"{E}game/abc/routine/b1-A000", "autopsy.json#/games/0/routine_list/2"),
+                         (f"{E}game/def/routine/b7-C150", "autopsy.json#/games/1/loop_list/0"), (f"{E}lesson/rooms", "lessons.json#/lessons/1")]:
+        assert rels(read(ents, uri)[1])["tm:data"] == [f"{ROOT}fs/data/{pointer}"], uri
+    by = rels(read(ents, f"{ROOT}fs/data/autopsy.json?as=stat")[1])["tm:read-by"]
+    assert f"{E}pattern/" in by and f"{E}game/" in by and f"{E}lesson/" not in by
+    assert not any("/routine/" in h for h in by), "nineteen games' routines are stood for by the games' collection"
+    assert rels(read(ents, f"{ROOT}fs/data/lessons.json?as=stat")[1])["tm:read-by"] == [f"{E}lesson/"]
+    assert rels(read(ents, f"{E}pattern/")[1])["tm:data"] == [f"{ROOT}fs/data/autopsy.json"]
+    assert rels(read(ents, f"{E}lesson/")[1])["tm:data"] == [f"{ROOT}fs/data/lessons.json"]
+    assert "tm:data" not in rels(read(ents, f"{E}game/abc/routine/")[1]), "the games' collection stands for these"
+    for uri, stands in [(f"{E}pattern/pad-poll", f"{E}pattern/"), (f"{E}game/abc/routine/b0-8E5C", f"{E}game/"), (f"{E}lesson/", f"{E}lesson/")]:
+        assert ents.reader_uri(uri) == stands
+    assert read(ents, f"{ROOT}fs/data/autopsy.json#/games/1?as=stat")[0]["uri"].startswith(f"{ROOT}fs/data/autopsy.json"), "a pointer names a place in the file and the file still reads"
+
+
+def test_tm16_a_lesson_names_its_game_only_where_the_names_agree(ents):
+    c, links = read(ents, f"{E}lesson/rooms")
+    m = [ln for ln in links if ln["rel"] == "tm:measures"]
+    assert [(ln["href"], ln["confidence"]) for ln in m] == [(f"{E}game/def", "inferred")], "the record keeps the game's name, not its key"
+    _, back = read(ents, f"{E}game/def")
+    assert [(ln["href"], ln["confidence"]) for ln in back if ln["rel"] == "tm:measured-by"] == [(f"{E}lesson/rooms", "inferred")]
+    c, links = read(ents, f"{E}lesson/jump")
+    assert "tm:measures" not in rels(links), "no game here is named Super Mario Bros. and nothing else"
+    assert json.loads(c["text"])["against"]["game"] == "Super Mario Bros."
+
+
+def test_tm16_templates_resources_and_completions_know_the_mount(ents):
+    names = [t["name"] for t in ents.templates()]
+    assert names == ["root", "fs", "git", "http", "offbox", "entity", "routine"]
+    listed = []
+    cur = None
+    while True:
+        page = ents.list_resources(cur)
+        listed += [r["uri"] for r in page["resources"]]
+        cur = page.get("nextCursor")
+        if not cur:
+            break
+    assert {E, f"{E}pattern/", f"{E}game/", f"{E}lesson/", f"{E}game/abc/routine/"} <= set(listed)
+    assert f"{E}pattern/pad-poll" not in listed, "leaves are reached by reading their collection"
+
+    def comp(tmpl: str, name: str, value: str, **ctx: str) -> list[str]:
+        return ents.complete({"ref": {"type": "ref/resource", "uri": tmpl}, "argument": {"name": name, "value": value},
+                              "context": {"arguments": ctx}})["completion"]["values"]
+
+    et = next(t["uriTemplate"] for t in ents.templates() if t["name"] == "entity")
+    rt = next(t["uriTemplate"] for t in ents.templates() if t["name"] == "routine")
+    assert comp(et, "kind", "") == ["game", "lesson", "pattern"] and comp(et, "kind", "p") == ["pattern"]
+    assert comp(et, "key", "pad", kind="pattern") == ["pad-poll"]
+    assert comp(et, "key", "", kind="lesson") == ["jump", "rooms"]
+    assert comp(et, "key", "a", kind="game") == ["abc"]
+    assert comp(rt, "key", "") == ["abc", "def"]
+    assert comp(rt, "routine", "b1", key="abc") == ["b1-A000"]
+    assert comp(et, "as", "") == ["stat"]
+
+
+def test_tm16_a_checkout_without_the_records_has_an_empty_mount_not_a_broken_one(gns):
+    assert json.loads(read(gns, f"{E}pattern/")[0]["text"])["children"] == []
+    assert "tm:data" not in rels(read(gns, f"{E}pattern/")[1])
+    assert refusal(gns, f"{E}pattern/pad-poll").reason == "not-found"
+
+
+def test_tm16_the_real_records_hold_what_the_spec_says_of_them():
+    """Over the real checkout: the counts the spec states, measured."""
+    n = Namespace(REPO, fetch=canned_fetch)
+    auto = json.loads((REPO / "data" / "autopsy.json").read_text())
+    ix = n.entities.index()
+    assert sorted(ix["patterns"]) == sorted(auto["patterns"])
+    named = sum(len(g["routines"]) for g in ix["games"].values())
+    marks = sum(len(r["rec"]["is"]) for g in ix["games"].values() for r in g["routines"].values())
+    assert marks == auto["totals"]["marks"], "every mark has a routine with an address"
+    assert named <= marks and sum(len(g["all"]) for g in ix["games"].values()) >= auto["totals"]["routines"]
+    for key, g in ix["games"].items():
+        assert g["marks"] == g["rec"]["patterns"], f"{key}: the record's own counts are the ones counted here, mark by mark"
+    poll = json.loads(read(n, f"{E}pattern/pad-poll")[0]["text"])
+    assert len(poll["found_in"]) == sum(1 for g in auto["games"] if "pad-poll" in g["patterns"])
+    lessons = json.loads((REPO / "data" / "lessons.json").read_text())["lessons"]
+    assert sorted(ix["lessons"]) == sorted(x["key"] for x in lessons)
+    for x in lessons:
+        assert set(x["patterns"]) <= set(ix["patterns"]), x["key"]
+    c, _ = read(n, f"{E}lesson/jump")
+    assert x["rom"][:24] not in "".join(read(n, f"{E}lesson/{y['key']}")[0]["text"] for y in lessons), "no lesson entity carries its cartridge"
+
+
+def _crawler():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("check_tm_links", REPO / "scripts" / "check-tm-links.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_tm16_the_crawler_holds_the_entity_pairs_and_fails_when_one_end_goes_quiet(ents, capsys, monkeypatch):
+    """The deploy's last check, run here over the temp checkout: clean as
+    built, and red when a pair loses an end, a confidence disagrees or the
+    budget runs out. A check that only ever passes is not a check."""
+    crawler = _crawler()
+    (ents.repo / "notes" / "escape.md").unlink()   # the symlink out of the root, there for another test to refuse
+
+    def crawl(budget: int = 4000) -> tuple[int, str]:
+        # One site: the temp checkout has a build for the live site and none
+        # for the beta, and a site with no build claims pages it cannot check.
+        n = Namespace(ents.repo, fetch=canned_fetch, sites=tm.SITES[:1], git_repos=dict(ents.git))
+        rc = run(crawler.crawl(budget, ents.repo, n))
+        return rc, capsys.readouterr().out
+
+    rc, out = crawl()
+    assert rc == 0, out
+    assert "every pair has its inverse" in out
+    rc, out = crawl(budget=10)
+    assert rc == 1 and "budget of 10 reads ran out" in out, "what was not reached was not checked"
+    inbound = tm.Entities.inbound
+    for mount, lost in [("http", "tm:renders-as"), ("git", "tm:cartridge"), ("fs", "tm:data")]:
+        monkeypatch.setattr(tm.Entities, "inbound", lambda self, m, *a, _x=mount, **k: [] if m == _x else inbound(self, m, *a, **k))
+        rc, out = crawl()
+        assert rc == 1 and lost in out, f"{mount} stopped answering and the crawl passed:\n{out}"
+    monkeypatch.setattr(tm.Entities, "inbound", inbound)
+    game = tm.Entities._game
+    monkeypatch.setattr(tm.Entities, "_game", lambda self, key: (game(self, key)[0], [ln for ln in game(self, key)[1] if ln["rel"] != "tm:exhibits"]))
+    rc, out = crawl()
+    assert rc == 1 and "tm:found-in" in out and "no tm:exhibits back" in out, out
+    monkeypatch.setattr(tm.Entities, "_game", lambda self, key: (game(self, key)[0], [dict(ln, confidence="exact") if ln["rel"] == "tm:measured-by" else ln for ln in game(self, key)[1]]))
+    rc, out = crawl()
+    assert rc == 1 and "inferred one way, exact back" in out, out
+    monkeypatch.setattr(tm.Entities, "_game", game)
+    lesson = tm.Entities._lesson
+    monkeypatch.setattr(tm.Entities, "_lesson", lambda self, key: (lesson(self, key)[0], [ln for ln in lesson(self, key)[1] if ln["rel"] != "tm:data"]))
+    rc, out = crawl()
+    assert rc == 1 and "an entity with no tm:data to its record" in out, "no pair misses this link, so the crawl asks for it"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Crawl the tm:// namespace and hold its links to their promises (TM-15).
 
-  python3 scripts/check-tm-links.py [--budget N]
+  python3 scripts/check-tm-links.py [--budget N] [--repo PATH]
 
 Starts at tm://tinymachines/ and walks every collection's children and every
 link's href, breadth first, up to a budget of reads. It runs the namespace
@@ -22,7 +22,13 @@ What it asserts, for every URI it reaches:
     since TM-8 and TM-14: a page's data is what its own code reads; since
     TM-18 a record names each route that reads it once, by its page or by
     the collection its pages are listed in, and a page anywhere is answered
-    by that one link, at the same confidence);
+    by that one link, at the same confidence), and the entity mount's
+    pairs (TM-16): tm:found-in / tm:exhibits, tm:instance / tm:instance-of,
+    tm:demonstrated-by / tm:demonstrates, tm:measures / tm:measured-by,
+    tm:cartridge / tm:cartridge-of, each at the same confidence both ways.
+    An entity's tm:data is answered by its record's one link to the
+    collection of its kind, as a page's is by its route's, and every
+    entity carries one;
   - an `alternate` to another version of a page (the other language, the
     other site) is answered by one back (TM-20), since TM-18 counts on
     those links to carry a reader from the one route it names;
@@ -33,6 +39,10 @@ What it asserts, for every URI it reaches:
 Git mounts are walked by their links and two levels of listing, not file by
 file: nine repositories' every file would be most of the budget and prove
 little the mount's tests do not.
+
+A budget that runs out is a failure, not a pass: whatever was still queued
+was not checked. --repo crawls another checkout with this one's code, which
+is how a change is crawled against the box's build before it is deployed.
 """
 import argparse, asyncio, sys
 from collections import deque
@@ -46,6 +56,13 @@ import tm  # noqa: E402
 PAIRS = {"tm:source": "tm:renders-as", "tm:renders-as": "tm:source", "tm:generates": "tm:generated-by",
          "tm:generated-by": "tm:generates", "tm:working-copy": "tm:repository", "tm:repository": "tm:working-copy",
          "tm:data": "tm:read-by", "tm:read-by": "tm:data", "tm:input": "tm:input-of", "tm:input-of": "tm:input"}
+# The entity mount's pairs (TM-16).
+ENTITY_PAIRS = {"tm:found-in": "tm:exhibits", "tm:instance": "tm:instance-of", "tm:demonstrated-by": "tm:demonstrates",
+                "tm:measures": "tm:measured-by", "tm:cartridge": "tm:cartridge-of"}
+PAIRS.update(ENTITY_PAIRS)
+PAIRS.update({v: k for k, v in ENTITY_PAIRS.items()})
+# Pairs whose two ends must agree on how sure they are.
+SAME_CONFIDENCE = {"tm:data", "tm:read-by"} | set(ENTITY_PAIRS) | set(ENTITY_PAIRS.values())
 
 
 def identity(uri: str) -> str:
@@ -70,8 +87,8 @@ def git_depth(uri: str) -> int | None:
     return len(parts) - 2 if parts and parts[0] == "git" else None
 
 
-async def crawl(budget: int) -> int:
-    ns = tm.Namespace(ROOT)
+async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
+    ns = ns or tm.Namespace(repo)
     seen: dict[str, dict] = {}
     problems: list[str] = []
     queue = deque([(tm.ROOT, None)])
@@ -105,6 +122,10 @@ async def crawl(budget: int) -> int:
         for ln in links:
             if ln["rel"] == "up" and identity(ln["href"]) == identity(uri):
                 problems.append(f"{uri}: up names itself")
+        # TM-16: an entity says where in its record it is read from. No pair
+        # would miss the link if it went, so it is asked for outright.
+        if urlsplit(uri).path.startswith("/entity/") and not uri.endswith("/") and not any(ln["rel"] == "tm:data" for ln in links):
+            problems.append(f"{uri}: an entity with no tm:data to its record")
         if uri in claimed and not uri.endswith("/"):
             import json as _j
             st = _j.loads(got["content"]["text"]) if got["content"].get("text", "").startswith("{") else {}
@@ -162,11 +183,12 @@ async def crawl(budget: int) -> int:
             me = ns.reader_uri(identity(uri)) if ln["rel"] == "tm:data" else identity(uri)
             if me not in back:
                 problems.append(f"{uri} {ln['rel']} {target}: no {inv} back" + (f" to {me}" if me != identity(uri) else ""))
-            elif ln["rel"] in ("tm:data", "tm:read-by") and back[me] != ln.get("confidence"):
+            elif ln["rel"] in SAME_CONFIDENCE and back[me] != ln.get("confidence"):
                 problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[me]} back")
     print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused")
-    if reads >= budget:
-        print(f"check-tm-links: the budget of {budget} reads ran out with {len(queue)} still queued")
+    unread = [u for u, _ in queue if u not in seen]
+    if unread:
+        problems.append(f"the budget of {budget} reads ran out with {len(unread)} URIs still queued and unchecked; raise --budget")
     for p in problems[:40]:
         print(f"  {p}")
     if problems:
@@ -178,9 +200,10 @@ async def crawl(budget: int) -> int:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--budget", type=int, default=4000)
+    ap.add_argument("--budget", type=int, default=12000)
+    ap.add_argument("--repo", type=Path, default=ROOT, help="the checkout to crawl (default: the one this script is in)")
     a = ap.parse_args()
-    sys.exit(asyncio.run(crawl(a.budget)))
+    sys.exit(asyncio.run(crawl(a.budget, a.repo.resolve())))
 
 
 if __name__ == "__main__":

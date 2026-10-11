@@ -291,6 +291,8 @@ tm://tinymachines/git/nes-bench/docs/pile.md?at=v1.0
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                              a page, as its readable text
 tm://tinymachines/offbox/autopsy-models      where a build chain leaves the box
+tm://tinymachines/entity/pattern/pad-poll    a pattern, a game, a routine or a lesson
+                                             of the autopsy, as a thing with links
 ```
 
 Three verbs, `resources/list`, `resources/read` and `completion/complete`,

@@ -55,11 +55,15 @@ TM_INSTRUCTIONS = """
 
 The same server is also a read-only namespace, tm://, spoken as MCP resources:
 start by reading tm://tinymachines/ (the mounts), then read any URI ending in /
-to list its children, and read a file or page to get it. Four mounts: fs/ is
+to list its children, and read a file or page to get it. Five mounts: fs/ is
 the repository's docs/, data/ and notes/; git/<repo>/ is a repository at any ref
 (?at=, with ?as=log, blame, tree, stat); http/<site>/ is what a visitor gets from
 a site this box serves, a page read as its text (?as=rendered for the HTML);
-offbox/ names the places a build chain leaves this box. Every read carries
+offbox/ names the places a build chain leaves this box; entity/ holds the
+autopsy's patterns, games, routines and lessons as things of their own, so
+entity/pattern/pad-poll links to every game it was found in (tm:found-in), each
+routine a rule named (tm:instance) and the lessons that use it
+(tm:demonstrated-by), with no need to read the record they come from. Every read carries
 typed links in _meta under "tinymachines.ai/links": a notebook page links to the
 markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as) and to the repository it came from (tm:generated-by or
@@ -71,6 +75,17 @@ version-history and latest-version do what the IANA registry says. A URI that do
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the
 same URIs and returns the links in its body, for a client that prefers tools."""
+
+
+def start_here(namespace: Any) -> str:
+    """TM-12: the box's orientation documents, named in the instructions so a
+    fresh session's first message points at them. The namespace says which
+    are there to read; none that would not resolve is named."""
+    docs = namespace.start_here() if hasattr(namespace, "start_here") else []
+    if not docs:
+        return ""
+    return "\n\nRead these first; they are this box's own orientation documents:\n" + "\n".join(
+        f"  {d['uri']}  ({d['what']})" for d in docs)
 
 
 class RpcError(Exception):
@@ -209,7 +224,7 @@ def make_handler(
                 "protocolVersion": want if want in SUPPORTED else LATEST,
                 "capabilities": capabilities,
                 "serverInfo": SERVER,
-                "instructions": INSTRUCTIONS + (TM_INSTRUCTIONS if namespace else ""),
+                "instructions": INSTRUCTIONS + (TM_INSTRUCTIONS + start_here(namespace) if namespace else ""),
             }
         elif method == "ping":
             result = {}

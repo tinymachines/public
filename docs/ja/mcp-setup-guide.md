@@ -63,7 +63,7 @@ initialize の答えには、モデルのために書かれた短い案内であ
 | `licensing` | 何をどの条件で公開してよいか。ひとつのライセンスではない |
 | `resolve` | `tm://` の URI をひとつ読み、リンクを本文に載せて返す。下の名前空間へのツール型の入口 |
 
-そして名前空間が、MCP のリソースとして。文法はホストひとつとマウント四つ:
+そして名前空間が、MCP のリソースとして。文法はホストひとつとマウント五つ:
 
 ```
 tm://tinymachines/                                 マウント一覧
@@ -77,13 +77,17 @@ tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                                    そのファイルがなるページ、テキストとして
 tm://tinymachines/offbox/autopsy-models            ビルドの連なりがこの箱を出る所。
                                                    名前はあるが、中身は出さない
+tm://tinymachines/entity/pattern/pad-poll          解剖が見つけたパターン。それを持つ
+                                                   ゲームとルーチンすべてへのリンクつき
 ```
 
 `/` で終わる URI はコレクションで、読むとカーソルつきで子が返る。マウントより後ろはバックエンド自身のパスだ。表現はクエリパラメータであって、パスの接尾辞ではない。`?as=stat` は同じもののメタデータ、`?as=text` はページの読める本文（パラメータなしで読んでもこれになる）、`?as=rendered` は訪問者が受け取るヘッダつきの HTML。
 
 git マウントはサイト自身のリポジトリと、ノートがページを取り込んでくる隣のリポジトリを提供する。すべて GitHub で同じ名前のもとに公開されている。`?at=` はブランチ、タグ、コミット、`?as=log` はパスに触れたコミット（`&n=` で何件か）、`?as=blame` は行ごとにコミットを添えたファイル、`?as=tree` はディレクトリを JSON で。`6502` の既定の ref は最新ではなく、サイトが配信しているコミットだ。
 
-どの読み取りもリンクを運ぶ。ノートのページは元になった markdown へ（`tm:source`）、markdown はそのページへ戻る（`tm:renders-as`）。ビルドが他のリポジトリから取り込んだページとここにある写しは、出所のファイルへ（`tm:generated-by`）、そのファイルは前向きに（`tm:generates`）。ここにあるファイルと git の同じファイルは双方向に結ばれる（`tm:repository`、`tm:working-copy`）。どのページも、それを描画するルートのファイルへ（`tm:source`）と、ページ自身のコードが読む記録へ（`tm:data`）、記録は読み手へ（`tm:read-by`）と書き手のスクリプトへ（`tm:generated-by`）。ページは同じページの別の言語版と別のサイト版へ（`alternate`）、サブモジュールは固定しているコミットのリポジトリへ（`tm:pins`）結ばれる。そして `up`、`collection`、`alternate`、`describedby`、`version-history`、`latest-version` は IANA のレジストリの言う通りの意味だ。リソースを通すとリンクは結果の `_meta` の `tinymachines.ai/links` の下に、`resolve` を通すと本文にある。
+entity マウントは、ほかの四つの上に最初に建てたものだ。解剖（autopsy）のパターン、ゲーム、ルーチン、レッスンにそれぞれの番地を与える。読むのはサイトがすでに公開している二つの記録で、番地は `entity/pattern/<key>`、`entity/game/<key>`、`entity/game/<key>/routine/<bank>-<address>`、`entity/lesson/<key>`。どれも JSON として、記録の項目のまま読め、`?as=stat` はそのメタデータ。番地があるのは規則が名前をつけたルーチンだけで、カートリッジのバイトはどこにも入っていない。レッスンの記録が持つのは比べた相手のゲームの名前であって、キーではない。だからレッスンがゲームへ結ばれるのは、ここにその名前のゲームがちょうどひとつある場合だけだ。いまは「ゼルダの伝説」と比べたレッスンが結ばれ、「スーパーマリオブラザーズ」と比べたレッスンは結ばれない。ここにあるそのカートリッジは「ダックハント」と一緒のものだからだ。
+
+どの読み取りもリンクを運ぶ。ノートのページは元になった markdown へ（`tm:source`）、markdown はそのページへ戻る（`tm:renders-as`）。ビルドが他のリポジトリから取り込んだページとここにある写しは、出所のファイルへ（`tm:generated-by`）、そのファイルは前向きに（`tm:generates`）。ここにあるファイルと git の同じファイルは双方向に結ばれる（`tm:repository`、`tm:working-copy`）。どのページも、それを描画するルートのファイルへ（`tm:source`）と、ページ自身のコードが読む記録へ（`tm:data`）、記録は読み手へ（`tm:read-by`）と書き手のスクリプトへ（`tm:generated-by`）。ページは同じページの別の言語版と別のサイト版へ（`alternate`）、サブモジュールは固定しているコミットのリポジトリへ（`tm:pins`）結ばれる。パターンは見つかったゲームへ（`tm:found-in`）、規則が名前をつけたルーチンへ（`tm:instance`）、それを使うレッスンへ（`tm:demonstrated-by`）、そしてそれぞれが戻る（`tm:exhibits`、`tm:instance-of`、`tm:demonstrates`）。レッスンはカートリッジのソースへ（`tm:cartridge`）、ゲームはそのページへ（`tm:renders-as`）。ルートは最初に読む文書へ（`help`）結ばれる。そして `up`、`collection`、`alternate`、`describedby`、`version-history`、`latest-version` は IANA のレジストリの言う通りの意味だ。リソースを通すとリンクは結果の `_meta` の `tinymachines.ai/links` の下に、`resolve` を通すと本文にある。
 
 解決できない URI は、解決できる最寄りのものを添えて拒まれる。だから外れた推測は行き止まりではなく教えになる。サイズ上限を超えるファイルはサイズと `?range=` のテンプレートつきで返る。リソーステンプレートが文法を述べ、補完が生きた値を埋めるので、クライアントは見せられたことのない URI を組み立てて試せる。
 
@@ -91,8 +95,8 @@ git マウントはサイト自身のリポジトリと、ノートがページ�
 
 六回のやり取りで、クライアントは冷えた接続からページの背後のソースファイルまで、パスを推測せずに辿り着く:
 
-1. `initialize`: 能力と案内。
-2. `resources/templates/list`: 四つのテンプレート、root、fs、git、http。
+1. `initialize`: 能力と案内。案内は最初に読む文書の名前を挙げる。
+2. `resources/templates/list`: テンプレート。ルートにひとつ、マウントごとにひとつか二つ。
 3. `tm://tinymachines/http/tinymachines.ai/docs/nes/` を読む: ノートの NES 節、ページごとに。
 4. fs テンプレートの `path` に `docs/nes/pi` と打って `completion/complete`: そう始まるファイル。
 5. `tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text` を読む: ページの本文と、`tm:source` のリンク。

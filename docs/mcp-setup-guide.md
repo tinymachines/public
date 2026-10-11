@@ -86,7 +86,7 @@ Four tools:
 | `licensing` | what may be published and under what terms, which is not one licence |
 | `resolve` | one `tm://` URI, read, with its links in the body; the tool-shaped door into the namespace below |
 
-And the namespace, as MCP resources. The grammar is one host and four
+And the namespace, as MCP resources. The grammar is one host and five
 mounts:
 
 ```
@@ -101,6 +101,8 @@ tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                                    the page that file becomes, as text
 tm://tinymachines/offbox/autopsy-models            where a build chain leaves this
                                                    box: named, never exposed
+tm://tinymachines/entity/pattern/pad-poll          a pattern the autopsy found, with a
+                                                   link to every game and routine it is in
 ```
 
 A URI ending in `/` is a collection, and reading one returns its children
@@ -117,6 +119,19 @@ the notebook pulls pages from, all public on GitHub under the same names.
 directory as JSON. For `6502` the default ref is the commit the site is
 serving, not the newest.
 
+The entity mount is the first thing built on the other four. It gives the
+autopsy's patterns, games, routines and lessons addresses of
+their own, read from the two records the site already publishes:
+`entity/pattern/<key>`, `entity/game/<key>`,
+`entity/game/<key>/routine/<bank>-<address>` and `entity/lesson/<key>`. Each
+reads as JSON, its record's fields, and `?as=stat` is its metadata. Only a
+routine that a rule named has an address, and no byte of any cartridge is in
+any of them. A lesson's record keeps the name of the game it was measured
+beside and not its key, so a lesson links to that game only where exactly one
+game here has that name. Today that joins the lessons measured beside The
+Legend of Zelda and not the ones measured beside Super Mario Bros., whose
+cartridge here is the one it shares with Duck Hunt.
+
 Every read carries links. A notebook page links to the markdown it is
 rendered from (`tm:source`), the markdown links back to its page
 (`tm:renders-as`); a page the build pulled from another repository, and its
@@ -128,7 +143,12 @@ code reads (`tm:data`), a record links back to its readers
 (`tm:read-by`) and to the script that writes it (`tm:generated-by`); a page
 links to the same page in the other language and on the other site
 (`alternate`), and a submodule to the repository it pins, at the commit it
-pins (`tm:pins`); and `up`, `collection`, `alternate`, `describedby`, `version-history` and
+pins (`tm:pins`); a pattern links to each game it was found in
+(`tm:found-in`), each routine a rule named (`tm:instance`) and each lesson
+that uses it (`tm:demonstrated-by`), and those link back (`tm:exhibits`,
+`tm:instance-of`, `tm:demonstrates`); a lesson links to its cartridge's source
+(`tm:cartridge`) and a game to its page (`tm:renders-as`); the root links to
+the documents to read first (`help`); and `up`, `collection`, `alternate`, `describedby`, `version-history` and
 `latest-version` mean what the IANA registry says. Through resources the links sit in the
 result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.
@@ -144,8 +164,10 @@ it was never shown and try it.
 Six exchanges take a client from a cold connection to the source file behind
 a page, without guessing a path:
 
-1. `initialize`: the capabilities and the orientation.
-2. `resources/templates/list`: the four templates, root, fs, git and http.
+1. `initialize`: the capabilities and the orientation, which names the
+   documents to read first.
+2. `resources/templates/list`: the templates, one for the root and one or
+   two for each mount.
 3. Read `tm://tinymachines/http/tinymachines.ai/docs/nes/`: the notebook's
    NES section, page by page.
 4. `completion/complete` on the fs template's `path` with `docs/nes/pi`
