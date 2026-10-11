@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cells, jumpMeasures, padOf, parseScript, runMeasures, sweeps, type JumpPlan, type RunPlan } from "./lessonMeasure";
+import { cells, jumpMeasures, padOf, parseScript, runMeasures, stompMeasures, sweeps, type JumpPlan, type RunPlan, type StompPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -116,5 +116,48 @@ describe("the run lesson", () => {
     // A run cut off before its jump reads as never leaving the ground, not as a number.
     const short = sweeps().map(() => cells(new Uint8Array(10 * 2048)));
     expect(() => runMeasures(cells(main()), short, RUN)).toThrow("the square never left the ground");
+  });
+});
+
+const STOMP: StompPlan = {
+  kind: "stomp", script: "", frames: 300, walk_from: 60,
+  memory: { x: "$11", y: "$15", speed_down: ["$16", "$17"], walker_x: "$60", walker_y: "$64", walker_state: "$62", hits: "$65", stomps: "$66" },
+};
+
+/** A made-up meeting: a walker moving left half a pixel a frame, stomped at `stomp` (flat for `flat` frames) and hitting at `hit`; either may be left out. */
+function meeting(o: { stomp?: number; flat?: number; hit?: number }): Uint8Array {
+  const ram = new Uint8Array(300 * 2048);
+  let wx = 200 * 256;
+  for (let f = 0; f < 300; f++) {
+    const at = (a: number, v: number) => (ram[f * 2048 + a] = v & 0xff);
+    const flat = o.stomp !== undefined && f >= o.stomp && f < o.stomp + (o.flat ?? 0);
+    if (!flat) wx -= 128;
+    at(0x60, wx >> 8);
+    at(0x61, wx);
+    at(0x62, flat ? 4 : 0);
+    at(0x64, 176);
+    at(0x11, (wx >> 8) - 6);
+    // Falling 4 a frame onto it the frame before the stomp, thrown up 4 after; level with it otherwise.
+    at(0x15, o.stomp !== undefined && f === o.stomp - 1 ? 157 : 176);
+    at(0x17, o.stomp !== undefined && f === o.stomp - 1 ? 4 : o.stomp === f ? 0xfc : 0);
+    at(0x66, o.stomp !== undefined && f >= o.stomp ? 1 : 0);
+    at(0x65, o.hit !== undefined && f >= o.hit ? 1 : 0);
+  }
+  return ram;
+}
+
+describe("the stomp lesson", () => {
+  test("the walker's speed, the stomp and the hit are read off the run", () => {
+    const m = stompMeasures(cells(meeting({ stomp: 141, flat: 25, hit: 194 })), STOMP);
+    expect(m.walk).toBe(0.5);
+    expect(m.stomp).toEqual({ frame: 141, dx: 6, dy: 19, fall: 4, after: -4, state: [0, 4], flat: 25 });
+    expect(m.hit).toMatchObject({ frame: 194, dy: 0, fall: 0, after: 0, state: [0, 0] });
+  });
+
+  test("a run with no stomp, no hit, or a walker still flat at the end is refused with the reason", () => {
+    expect(() => stompMeasures(cells(meeting({ hit: 194 })), STOMP)).toThrow("never stomped the walker");
+    expect(() => stompMeasures(cells(meeting({ stomp: 141, flat: 25 })), STOMP)).toThrow("never hit the square");
+    expect(() => stompMeasures(cells(meeting({ stomp: 141, flat: 500, hit: 100 })), STOMP)).toThrow("stomped at frame 141 was still flat when the run ended");
+    expect(() => stompMeasures(cells(new Uint8Array(300 * 2048)), STOMP)).toThrow("the walker never walked");
   });
 });

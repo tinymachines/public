@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { JumpMeasures, RunMeasures } from "@/lib/lessons";
+import type { JumpMeasures, RunMeasures, StompMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -54,6 +54,22 @@ const S = {
       light_max: "The fastest speed that still gets the light jump, sixteenths",
       strong_min: "The slowest speed that gets the strong jump, sixteenths",
     },
+    stomp: {
+      walk: "The walker's speed, pixels a frame",
+      "stomp-frame": "The stomp: its frame",
+      "stomp-dx": "The stomp: the walker across from the square the frame before, pixels",
+      "stomp-dy": "The stomp: the walker below the square the frame before, pixels",
+      "stomp-fall": "The stomp: the square's speed down before, pixels a frame",
+      "stomp-after": "The stomp: the square's speed down after",
+      "stomp-state": "The stomp: the walker's state after",
+      "stomp-flat": "Frames the walker stays flattened",
+      "hit-frame": "The hit: its frame",
+      "hit-dx": "The hit: the walker across from the square the frame before, pixels",
+      "hit-dy": "The hit: the walker below the square the frame before, pixels",
+      "hit-fall": "The hit: the square's speed down before, pixels a frame",
+      "hit-after": "The hit: the square's speed down after",
+      "hit-state": "The hit: the walker's state after",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -96,6 +112,22 @@ const S = {
       light_max: "弱いジャンプになる最も速い速さ、16 分の 1 単位",
       strong_min: "強いジャンプになる最も遅い速さ、16 分の 1 単位",
     },
+    stomp: {
+      walk: "歩くものの速さ、一フレームあたりのピクセル",
+      "stomp-frame": "踏みつけ: そのフレーム",
+      "stomp-dx": "踏みつけ: 前のフレームの横のずれ、ピクセル",
+      "stomp-dy": "踏みつけ: 前のフレームの縦のずれ、ピクセル",
+      "stomp-fall": "踏みつけ: 四角の下向きの速さ、前、一フレームあたりのピクセル",
+      "stomp-after": "踏みつけ: 四角の下向きの速さ、後",
+      "stomp-state": "踏みつけ: 歩くものの状態、後",
+      "stomp-flat": "歩くものが潰れている間のフレーム数",
+      "hit-frame": "ぶつかり: そのフレーム",
+      "hit-dx": "ぶつかり: 前のフレームの横のずれ、ピクセル",
+      "hit-dy": "ぶつかり: 前のフレームの縦のずれ、ピクセル",
+      "hit-fall": "ぶつかり: 四角の下向きの速さ、前、一フレームあたりのピクセル",
+      "hit-after": "ぶつかり: 四角の下向きの速さ、後",
+      "hit-state": "ぶつかり: 歩くものの状態、後",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -105,7 +137,7 @@ type Row = { key: string; label: string; ours: number | null; yours: number | nu
 type Measure = NonNullable<program.Parts["measure"]>;
 
 /** Our numbers and the reader's, a row a number. A jump of theirs that ours has no match for is not listed. */
-function rows(T: (typeof S)[Lang], measure: Measure, theirs: JumpMeasures | RunMeasures, n: (v: number) => string): Row[] {
+function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (v: number) => string): Row[] {
   const text = (v: number | null) => (v === null ? T.noValue : n(v));
   const row = (key: string, label: string, a: number | null, b: number | null): Row => ({ key, label, ours: a, yours: b, oursText: text(a), yoursText: text(b) });
   if (measure.plan.kind === "run") {
@@ -125,6 +157,23 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: JumpMeasures | RunM
       ...jump("run", ours.run_jump, yours.run_jump),
       row("light_max", T.run.light_max, ours.light_max, yours.light_max),
       row("strong_min", T.run.strong_min, ours.strong_min, yours.strong_min),
+    ];
+  }
+  if (measure.plan.kind === "stomp") {
+    const ours = measure.ours as StompMeasures, yours = theirs as StompMeasures;
+    const touch = (k: "stomp" | "hit", a: StompMeasures["hit"], b: StompMeasures["hit"]) => [
+      row(`${k}-frame`, T.stomp[`${k}-frame`], a.frame, b.frame),
+      row(`${k}-dx`, T.stomp[`${k}-dx`], a.dx, b.dx),
+      row(`${k}-dy`, T.stomp[`${k}-dy`], a.dy, b.dy),
+      row(`${k}-fall`, T.stomp[`${k}-fall`], a.fall, b.fall),
+      row(`${k}-after`, T.stomp[`${k}-after`], a.after, b.after),
+      row(`${k}-state`, T.stomp[`${k}-state`], a.state[1], b.state[1]),
+    ];
+    return [
+      row("walk", T.stomp.walk, ours.walk, yours.walk),
+      ...touch("stomp", ours.stomp, yours.stomp),
+      row("stomp-flat", T.stomp["stomp-flat"], ours.stomp.flat, yours.stomp.flat),
+      ...touch("hit", ours.hit, yours.hit),
     ];
   }
   const ours = measure.ours as JumpMeasures, yours = theirs as JumpMeasures;

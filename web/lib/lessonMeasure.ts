@@ -10,12 +10,12 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump and run lessons are measured here so far. Every lesson has its
+ * The jump, run and stomp lessons are measured here so far. Every lesson has its
  * own way of being measured, and each one is added with that check or not
  * at all.
  */
 
-import type { JumpMeasures, OneJump, RunMeasures } from "./lessons";
+import type { JumpMeasures, OneJump, RunMeasures, StompMeasures, Touch } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -92,7 +92,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -187,4 +187,55 @@ export function runMeasures(main: (f: number, a: number) => number, swept: ((f: 
   if (!light.length) throw new Error("every jump started at 5 pixels a frame, the strong jump's speed, however slowly the square was moving, so there is no speed where the jump changes");
   if (!strong.length) throw new Error("no jump started at 5 pixels a frame, the strong jump's speed, however fast the square was running, so there is no speed where the jump changes");
   return { walk_top: walkTop, run_top: runTop, run_after: runAt - runFrom, walk_jump: jumps[0], run_jump: jumps[1], light_max: Math.max(...light), strong_min: Math.min(...strong) };
+}
+
+/** What the stomp lesson's measurement reads, from its lesson.json. */
+export interface StompPlan {
+  kind: "stomp";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: string; y: string; speed_down: [string, string]; walker_x: string; walker_y: string; walker_state: string; hits: string; stomps: string };
+}
+
+/** Python's round(): a half goes to the even neighbour. The record was rounded that way. */
+function roundEven(v: number): number {
+  const r = Math.round(v);
+  return Math.abs(v % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
+
+/**
+ * The stomp lesson's numbers (board-lessons.py's stomp_measures): the
+ * walker's speed, then for the first stomp and the first hit where the
+ * two were the frame before, the square's speed down before and after,
+ * and the walker's state either side; and how long a stomped walker stays
+ * flat. A run with no stomp or no hit in it is refused with the reason.
+ * What our autopsy says of the routine is not measured here.
+ */
+export function stompMeasures(cell: (f: number, a: number) => number, plan: StompPlan): Omit<StompMeasures, "compare"> {
+  const m = plan.memory, from = plan.walk_from, frames = plan.frames;
+  const [vlo, vhi] = m.speed_down.map(addr), wx = addr(m.walker_x), st = (f: number) => cell(f, addr(m.walker_state));
+  const px = (f: number) => cell(f, addr(m.x)), py = (f: number) => cell(f, addr(m.y));
+  const pv = (f: number) => round2(signed(cell(f, vhi)) + cell(f, vlo) / 256);
+  const ex = (f: number) => cell(f, wx) + cell(f, wx + 1) / 256, ey = (f: number) => cell(f, addr(m.walker_y));
+  let steps = 0, walked = 0;
+  for (let f = from; f < frames; f++) {
+    if (st(f) === 0 && st(f - 1) === 0 && ex(f) < ex(f - 1)) {
+      steps++;
+      walked += ex(f - 1) - ex(f);
+    }
+  }
+  if (!steps) throw new Error("the walker never walked");
+  const first = (a: number, start: number) => {
+    for (let f = start; f < frames; f++) if (cell(f, a) !== cell(f - 1, a)) return f;
+    return -1;
+  };
+  const stomp = first(addr(m.stomps), from), hit = first(addr(m.hits), from);
+  if (stomp < 0) throw new Error("the square never stomped the walker");
+  if (hit < 0) throw new Error("the walker never hit the square");
+  let back = -1;
+  for (let f = stomp; f < frames && back < 0; f++) if (st(f) === 0) back = f;
+  if (back < 0) throw new Error(`the walker stomped at frame ${stomp} was still flat when the run ended`);
+  const touch = (f: number): Touch => ({ frame: f, dx: roundEven(ex(f - 1) - px(f - 1)), dy: ey(f - 1) - py(f - 1), fall: pv(f - 1), after: pv(f), state: [st(f - 1), st(f)] });
+  return { walk: round2(walked / steps), stomp: { ...touch(stomp), flat: back - stomp }, hit: touch(hit) };
 }

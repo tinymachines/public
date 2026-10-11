@@ -9,7 +9,7 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump and run lessons are measured so far.
+ * The jump, run and stomp lessons are measured so far.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -134,6 +134,50 @@ test("a run program with one jump for every speed is not given numbers, and says
   await assembled(page, (t) => t.replace("    INC $18\n    LDA #$FB", "    INC $18\n    LDA #$FC"), "run");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("no jump started at 5 pixels a frame");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The stomp lesson's rows as the window keys them, from the record. */
+const stompRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "stomp");
+  if (!l || l.kind !== "stomp") throw new Error("no stomp lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const want: Record<string, number> = { walk: m.walk, "stomp-flat": m.stomp.flat };
+  for (const [k, t] of [["stomp", m.stomp], ["hit", m.hit]] as const) {
+    want[`${k}-frame`] = t.frame;
+    want[`${k}-dx`] = t.dx;
+    want[`${k}-dy`] = t.dy;
+    want[`${k}-fall`] = t.fall;
+    want[`${k}-after`] = t.after;
+    want[`${k}-state`] = t.state[1];
+  }
+  return want;
+};
+
+test("the stomp lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = stompRows();
+  expect(want["stomp-frame"], "the record has a stomp before its hit").toBeLessThan(want["hit-frame"]);
+  await assembled(page, undefined, "stomp");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 30000 });
+  expect(await read(page)).toEqual(Object.fromEntries(Object.entries(want).map(([k, v]) => [k, [v, v]])));
+});
+
+test("a walker made to stay flat twice as long does, and the stomp itself stays as recorded", async ({ page }) => {
+  const want = stompRows();
+  // A stomped walker stays flat 25 frames ($19); 50 is $32.
+  await assembled(page, (t) => t.replace("    LDA #$19\n    STA $63", "    LDA #$32\n    STA $63"), "stomp");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 30000 });
+  const got = await read(page);
+  expect(got["stomp-flat"]).toEqual([want["stomp-flat"], want["stomp-flat"] * 2]);
+  for (const k of ["walk", "stomp-frame", "stomp-dx", "stomp-dy", "stomp-fall", "stomp-after"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a stomp program where every touch is a hit is not given numbers, and says why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("    ORA $16\n    BEQ hit", "    JMP hit"), "stomp");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 30000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("never stomped the walker");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });
 

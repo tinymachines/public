@@ -7,8 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
-import type { JumpMeasures, RunMeasures } from "@/lib/lessons";
-import { cells, jumpMeasures, parseScript, runMeasures, sweeps, type JumpPlan, type RunPlan } from "@/lib/lessonMeasure";
+import type { JumpMeasures, RunMeasures, StompMeasures } from "@/lib/lessons";
+import { cells, jumpMeasures, parseScript, runMeasures, stompMeasures, sweeps, type JumpPlan, type Plan, type RunPlan, type StompPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -18,11 +18,14 @@ export interface Parts {
   prg: string;
   chr: string;
   /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
-  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | null;
+  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | null;
 }
 
+/** What a measurement comes to. The stomp lesson's is without the autopsy's part, which the page does not take. */
+export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare">;
+
 /** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
-export type Measured = { yours: JumpMeasures | RunMeasures; why: null } | { yours: null; why: string };
+export type Measured = { yours: Yours; why: null } | { yours: null; why: string };
 
 export interface Built {
   sha256: string;
@@ -118,7 +121,7 @@ export function ours() {
  * up to four threads. A run the measurement cannot read (a jump
  * that never lands) comes back as the reason.
  */
-async function measure(rom: ArrayBuffer, plan: JumpPlan | RunPlan): Promise<Measured> {
+async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
   type Job = { script: [number, number][]; frames: number; stop?: { from: number; cell: number } };
   const workers: Worker[] = [];
   /** One thread taking jobs off the list in turn until it is empty; answers land at each job's own place. */
@@ -149,6 +152,7 @@ async function measure(rom: ArrayBuffer, plan: JumpPlan | RunPlan): Promise<Meas
   try {
     const main: Job = { script: parseScript(plan.script), frames: plan.frames };
     if (plan.kind === "jump") return { yours: jumpMeasures((await runs([main]))[0], plan), why: null };
+    if (plan.kind === "stomp") return { yours: stompMeasures((await runs([main]))[0], plan), why: null };
     const air = parseInt(plan.memory.air.slice(1), 16);
     const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);
     return { yours: runMeasures(first, swept, plan), why: null };
