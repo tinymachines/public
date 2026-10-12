@@ -10,14 +10,14 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp, walkers, camera, platforms, scroll, rooms and
- * screens lessons are measured here so far. Every lesson has its own way
- * of being measured, and each one is added with that check or not at all.
- * Scroll and rooms read a write log beside memory; screens takes the part
- * of its record that reads memory and the pad, not our autopsy's part.
+ * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens
+ * and status lessons are measured here so far. Every lesson has its own
+ * way of being measured, and each one is added with that check or not at
+ * all. Scroll, rooms and status read the write logs; screens takes the
+ * part of its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, StatusMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -104,7 +104,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -684,4 +684,65 @@ export function screensMeasures(cell: (f: number, a: number) => number, plan: Sc
     pause = { before: median(pre), during: median(mid), frames: p1 - p0 };
   }
   return { values, changes: changes.length, pause };
+}
+
+/** What the status lesson's measurement reads, from its lesson.json: the frames measured from walk_from; and the scroll and vram logs. */
+export interface StatusPlan {
+  kind: "status";
+  script: string;
+  frames: number;
+  walk_from: number;
+}
+
+/** The most counted key, the first seen on a tie, as Python's Counter.most_common gives it. */
+function commonest<K>(count: Map<K, number>): [K, number] | null {
+  let best: [K, number] | null = null;
+  for (const [k, n] of count) if (!best || n > best[1]) best = [k, n];
+  return best;
+}
+
+/**
+ * The status lesson's numbers (board-lessons.py's status_measures), from
+ * the logs alone between walk_from and the end: the picture line the
+ * scroll is most often set at while the picture draws (the split) and on
+ * how many frames, the scroll most often set in the blank (the bar's), and
+ * in the bar's rows (the top four of name table 0) the write made most
+ * often (the timer: where, how many tiles, how often) and every other
+ * write there. A picture never split, a blank that never sets the scroll,
+ * or a bar never written is refused with the reason.
+ */
+export function statusMeasures(vram: string, scrollLog: string, plan: StatusPlan): StatusMeasures {
+  const start = plan.walk_from, end = plan.frames;
+  const split = new Map<number, number>(), blank = new Map<string, number>();
+  for (const line of scrollLog.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const [f, at, x, y] = w.map(Number);
+    if (f < start || f >= end) continue;
+    if (at < 240) split.set(at, (split.get(at) ?? 0) + 1);
+    else blank.set(`${x} ${y}`, (blank.get(`${x} ${y}`) ?? 0) + 1);
+  }
+  const bar = new Map<string, number>(), times = new Map<string, number[]>();
+  for (const [f, ws] of vramWrites(vram)) {
+    if (f < start || f >= end) continue;
+    for (const [a, n] of ws) {
+      if (a < 0x2000 || a >= 0x2080) continue;
+      const k = `${a} ${n}`;
+      bar.set(k, (bar.get(k) ?? 0) + 1);
+      times.set(k, [...(times.get(k) ?? []), f]);
+    }
+  }
+  const atLine = commonest(split), inBlank = commonest(blank), written = commonest(bar);
+  if (!atLine) throw new Error("the picture was never split: the scroll was never set while it was drawing");
+  if (!inBlank) throw new Error("the scroll was never set in the blank");
+  if (!written) throw new Error("nothing was written into the bar's rows");
+  const [a, n] = written[0].split(" ").map(Number), fs = times.get(written[0])!;
+  return {
+    split_line: atLine[0],
+    split_frames: atLine[1],
+    frames: end - start,
+    bar_scroll: inBlank[0].split(" ").map(Number),
+    timer: { row: (a & 0x3ff) >> 5, column: a & 31, tiles: n, writes: written[1], every: [...new Set(fs.slice(1).map((f, k) => f - fs[k]))].sort((p, q) => p - q) },
+    other_bar_writes: [...bar.values()].reduce((s, v) => s + v, 0) - written[1],
+  };
 }

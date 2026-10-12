@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -454,5 +454,36 @@ describe("the screens lesson", () => {
   });
   test("a byte that never changes is refused with the reason", () => {
     expect(() => screensMeasures(cells(screens({ answer: false })), SCREENS)).toThrow("the screen's byte never changed");
+  });
+});
+
+const STATUS: StatusPlan = { kind: "status", script: "", frames: 1500, walk_from: 60 };
+
+/** Made-up logs: every frame the scroll set at line 31 for the level and 0,0 in the blank; the timer's three tiles at row 2, column 26, written every `every` frames from 84 (59 times by 1500 at 24). `split` false never sets the scroll while drawing. */
+function status(o: { every?: number; split?: boolean; timer?: boolean }): { vram: string; scroll: string } {
+  const every = o.every ?? 24, split = o.split ?? true, timer = o.timer ?? true;
+  const vram: string[] = [], scroll: string[] = [];
+  for (let f = 0; f < 1500; f++) {
+    if (split) scroll.push(`${f} 31 ${f & 0xff} 0`);
+    scroll.push(`${f} 241 0 0`);
+    if (timer && f >= 84 && (f - 84) % every === 0) vram.push(`${f} 205A 3 1`);
+  }
+  return { vram: vram.map((l) => l + "\n").join(""), scroll: scroll.map((l) => l + "\n").join("") };
+}
+
+describe("the status lesson", () => {
+  test("the split, the bar's scroll and the timer's writes are read off the logs", () => {
+    const { vram, scroll } = status({});
+    expect(statusMeasures(vram, scroll, STATUS)).toEqual({
+      split_line: 31, split_frames: 1440, frames: 1440, bar_scroll: [0, 0], timer: { row: 2, column: 26, tiles: 3, writes: 59, every: [24] }, other_bar_writes: 0,
+    });
+    const q = status({ every: 12 });
+    expect(statusMeasures(q.vram, q.scroll, STATUS).timer).toEqual({ row: 2, column: 26, tiles: 3, writes: 118, every: [12] });
+  });
+  test("a picture never split, or a bar never written, is refused with the reason", () => {
+    const a = status({ split: false });
+    expect(() => statusMeasures(a.vram, a.scroll, STATUS)).toThrow("never split");
+    const b = status({ timer: false });
+    expect(() => statusMeasures(b.vram, b.scroll, STATUS)).toThrow("nothing was written into the bar");
   });
 });

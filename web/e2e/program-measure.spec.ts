@@ -9,9 +9,10 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run, stomp, walkers, camera, platforms, scroll, rooms and
- * screens lessons are measured so far; scroll and rooms read the write
- * logs, and screens takes only the part of its record the page can.
+ * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens
+ * and status lessons are measured so far; scroll, rooms and status read
+ * the write logs, and screens takes only the part of its record the page
+ * can.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -430,10 +431,51 @@ test("a program whose title never answers Start is not given numbers, and says w
   await expect(page.locator("[data-program-measure-why]")).toContainText("never changed");
 });
 
+/** The status lesson's rows as the window keys them, from the record. */
+const statusRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "status");
+  if (!l || l.kind !== "status") throw new Error("no status lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  return {
+    split_line: String(m.split_line), split_frames: String(m.split_frames), frames: String(m.frames), bar_scroll: m.bar_scroll.join(" "),
+    "timer-row": String(m.timer.row), "timer-column": String(m.timer.column), "timer-tiles": String(m.timer.tiles), "timer-writes": String(m.timer.writes), "timer-every": m.timer.every.join(" "),
+    other_bar_writes: String(m.other_bar_writes),
+  } as Record<string, string>;
+};
+
+test("the status lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = statusRows();
+  expect(Number(want["timer-writes"]), "the record's timer was written").toBeGreaterThan(0);
+  await assembled(page, undefined, "status");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a timer that ticks every 12 frames is written every 12 and twice as often, and the split stays as recorded", async ({ page }) => {
+  const want = statusRows();
+  // The timer's countdown is 24 ($18), set at power-on and at each tick; both become 12 ($0C).
+  await assembled(page, (t) => t.split("    LDA #$18\n    STA $73").join("    LDA #$0C\n    STA $73"), "status");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got["timer-every"]).toEqual([want["timer-every"], "12"]);
+  expect(got["timer-writes"]).toEqual([want["timer-writes"], String(Number(want["timer-writes"]) * 2)]);
+  for (const k of ["split_line", "split_frames", "bar_scroll", "timer-row", "timer-column", "timer-tiles", "other_bar_writes"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program that never sets the scroll while the picture draws is not given numbers, and says why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("    LDA $20\n    STA $2005\n    LDA #$00\n    STA $2005\n    JSR readpad", "    JSR readpad"), "status");
+  await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("never split");
+});
+
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=status", 500);
-  await expect(page.locator('[data-program-for="status"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=sound", 500);
+  await expect(page.locator('[data-program-for="sound"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });

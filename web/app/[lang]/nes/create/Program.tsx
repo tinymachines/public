@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -153,6 +153,18 @@ const S = {
       "pause-frames": "Frames paused",
       notTaken: "What our autopsy says of the program (its stretches, its jump engine and its table) is in the record and is not measured here.",
     },
+    status: {
+      split_line: "The picture line the scroll is set at while it draws",
+      split_frames: "Frames it was set there",
+      frames: "Frames measured",
+      bar_scroll: "The scroll set in the blank, for the bar: across, down",
+      "timer-row": "The timer: its row in the bar",
+      "timer-column": "The timer: its column",
+      "timer-tiles": "The timer: tiles a write",
+      "timer-writes": "The timer: times written",
+      "timer-every": "The timer: frames between writes",
+      other_bar_writes: "Other writes into the bar",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -293,6 +305,18 @@ const S = {
       "pause-during": "一時停止の間に一フレームで変わるメモリのセル数、中央値",
       "pause-frames": "一時停止していたフレーム数",
       notTaken: "私たちの解剖がこのプログラムについて言うこと (区切り、ジャンプエンジン、表) は記録にあり、ここでは測らない。",
+    },
+    status: {
+      split_line: "描いている間にスクロールを設定する絵の行",
+      split_frames: "そこで設定したフレーム数",
+      frames: "測ったフレーム数",
+      bar_scroll: "ブランクでバーのために設定したスクロール: 横、縦",
+      "timer-row": "タイマー: バーの中の行",
+      "timer-column": "タイマー: 列",
+      "timer-tiles": "タイマー: 一回の書き込みのタイル数",
+      "timer-writes": "タイマー: 書いた回数",
+      "timer-every": "タイマー: 書き込みのあいだのフレーム数",
+      other_bar_writes: "バーへのその他の書き込み",
     },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
@@ -446,6 +470,25 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("pause-before", C["pause-before"], ours.pause?.before ?? null, yours.pause?.before ?? null),
       row("pause-during", C["pause-during"], ours.pause?.during ?? null, yours.pause?.during ?? null),
       row("pause-frames", C["pause-frames"], ours.pause?.frames ?? null, yours.pause?.frames ?? null),
+    ];
+  }
+  if (measure.plan.kind === "status") {
+    const ours = measure.ours as StatusMeasures, yours = theirs as StatusMeasures;
+    const B = T.status;
+    const list = (key: keyof typeof B, a: number[], b: number[]): Row => ({
+      key, label: B[key], ours: a.length ? a.join(" ") : null, yours: b.length ? b.join(" ") : null, oursText: a.length ? a.join(", ") : T.noValue, yoursText: b.length ? b.join(", ") : T.noValue,
+    });
+    return [
+      row("split_line", B.split_line, ours.split_line, yours.split_line),
+      row("split_frames", B.split_frames, ours.split_frames, yours.split_frames),
+      row("frames", B.frames, ours.frames, yours.frames),
+      list("bar_scroll", ours.bar_scroll, yours.bar_scroll),
+      row("timer-row", B["timer-row"], ours.timer.row, yours.timer.row),
+      row("timer-column", B["timer-column"], ours.timer.column, yours.timer.column),
+      row("timer-tiles", B["timer-tiles"], ours.timer.tiles, yours.timer.tiles),
+      row("timer-writes", B["timer-writes"], ours.timer.writes, yours.timer.writes),
+      list("timer-every", ours.timer.every, yours.timer.every),
+      row("other_bar_writes", B.other_bar_writes, ours.other_bar_writes, yours.other_bar_writes),
     ];
   }
   if (measure.plan.kind === "stomp") {
