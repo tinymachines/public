@@ -9,7 +9,7 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run, stomp, walkers and camera lessons are measured so far.
+ * The jump, run, stomp, walkers, camera and platforms lessons are measured so far.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -261,6 +261,44 @@ test("a program whose camera is never moved is not given numbers, and says why",
   await assembled(page, (t) => t.replace("    JSR camera\n", ""), "camera");
   await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 60000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("never moved right");
+});
+
+/** The platforms lesson's rows as the window keys them, from the record; a yes or no is 1 or 0, none is "". */
+const platformsRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "platforms");
+  if (!l || l.kind !== "platforms") throw new Error("no platforms lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x: number | null) => (x === null ? "" : String(x));
+  return { axis: m.axis, step: v(m.step), every: v(m.every), travel: v(m.travel), standing: v(m.standing), stepped: v(m.stepped), same: v(m.same), steady: m.steady ? "1" : "0" } as Record<string, string>;
+};
+
+test("the platforms lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = platformsRows();
+  expect(Number(want.same), "the record's lift carried the square").toBeGreaterThan(0);
+  await assembled(page, undefined, "platforms");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 60000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a lift made to turn back sooner travels less, and its step stays as recorded", async ({ page }) => {
+  const want = platformsRows();
+  // The lift turns at x 80 and x 128 ($80); turning at 112 ($70) instead, it travels 32.
+  await assembled(page, (t) => t.replace("    CMP #$80\n    BNE moved", "    CMP #$70\n    BNE moved"), "platforms");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 60000 });
+  const got = await readText(page);
+  expect(got.travel).toEqual([want.travel, "32"]);
+  expect(got.step).toEqual([want.step, want.step]);
+  expect(got.axis).toEqual([want.axis, want.axis]);
+});
+
+test("a program whose lift is never moved is not given numbers, and says why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("    JSR lift\n", ""), "platforms");
+  await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 60000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("the lift never moved");
 });
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {

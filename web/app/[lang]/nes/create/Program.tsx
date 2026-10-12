@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -90,6 +90,20 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    platforms: {
+      axis: "Which way the lift moves",
+      across: "across",
+      down: "up and down",
+      step: "The lift's step, pixels",
+      every: "Frames between the lift's steps",
+      travel: "How far the lift travels, pixels",
+      standing: "Frames the square stood on the lift",
+      stepped: "Of those, frames the lift stepped with nothing pressed its way for a second before",
+      same: "Of those, frames the square moved by the lift's own step",
+      steady: "The square's height above the lift held steady",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -168,6 +182,20 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    platforms: {
+      axis: "リフトの動く向き",
+      across: "横",
+      down: "上下",
+      step: "リフトの一歩、ピクセル",
+      every: "リフトの歩と歩のあいだのフレーム数",
+      travel: "リフトの行程、ピクセル",
+      standing: "四角がリフトの上に立っていたフレーム数",
+      stepped: "そのうち、その向きに一秒間何も押さずにリフトが一歩動いたフレーム数",
+      same: "そのうち、四角がリフトの一歩と同じだけ動いたフレーム数",
+      steady: "リフトの上での四角の高さが一定だったか",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -228,6 +256,21 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       yn(yours.back),
       row("back_at", T.camera.back_at, ours.back_at, yours.back_at),
       row("restarts_at", T.camera.restarts_at, ours.restarts_at, yours.restarts_at),
+    ];
+  }
+  if (measure.plan.kind === "platforms") {
+    const ours = measure.ours as PlatformsMeasures, yours = theirs as PlatformsMeasures;
+    const P = T.platforms;
+    const word = (key: "axis" | "steady", a: string | number, b: string | number, text: (v: string | number) => string): Row => ({ key, label: P[key], ours: a, yours: b, oursText: text(a), yoursText: text(b) });
+    return [
+      word("axis", ours.axis, yours.axis, (v) => (v === "across" ? P.across : P.down)),
+      row("step", P.step, ours.step, yours.step),
+      row("every", P.every, ours.every, yours.every),
+      row("travel", P.travel, ours.travel, yours.travel),
+      row("standing", P.standing, ours.standing, yours.standing),
+      row("stepped", P.stepped, ours.stepped, yours.stepped),
+      row("same", P.same, ours.same, yours.same),
+      word("steady", Number(ours.steady), Number(yours.steady), (v) => (v ? P.yes : P.no)),
     ];
   }
   if (measure.plan.kind === "stomp") {

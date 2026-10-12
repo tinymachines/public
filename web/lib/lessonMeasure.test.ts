@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type RunPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RunPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -274,5 +274,54 @@ describe("the camera lesson", () => {
   });
   test("a camera that never moves right is refused with the reason", () => {
     expect(() => cameraMeasures(cells(walk({ follow: false })), CAMERA)).toThrow("the camera never moved right");
+  });
+});
+
+const PLATFORMS: PlatformsPlan = { kind: "platforms", script: "AT 30 80\nAT 62 00\nAT 190 80\n", frames: 600, walk_from: 20, memory: { x: "$11", y: "$15", lift_x: "$30", lift_top: "$33", on: "$32" } };
+
+/**
+ * A made-up ride: a lift going back and forth between x 80 and 128 by
+ * `step` every `every` frames, its top at 160; the square walks right onto
+ * it from frame 30, stands on it from frame 70 to 230 (16 above its top,
+ * or `wobble` pixels higher on one frame), moved by the lift's step on the
+ * same frame, then walks off. `moving` false leaves the lift still.
+ */
+function ride(o: { step?: number; every?: number; wobble?: number; moving?: boolean; stand?: boolean }): Uint8Array {
+  const step = o.step ?? 1, every = o.every ?? 1, moving = o.moving ?? true, stand = o.stand ?? true;
+  const ram = new Uint8Array(600 * 2048);
+  let lift = 80, dir = 1, x = 20;
+  for (let f = 0; f < 600; f++) {
+    let d = 0;
+    if (moving && f % every === 0) {
+      d = dir * step;
+      lift += d;
+      if (lift <= 80 || lift >= 128) dir = -dir;
+    }
+    const on = stand && f >= 70 && f <= 230;
+    if (on) x += d;
+    else if (f >= 30 && f < 70) x += 1;
+    else if (f >= 231) x += 1;
+    ram[f * 2048 + 0x11] = x & 0xff;
+    ram[f * 2048 + 0x15] = 160 - 16 - (on && o.wobble && f === 150 ? o.wobble : 0);
+    ram[f * 2048 + 0x30] = lift;
+    ram[f * 2048 + 0x33] = 160;
+    ram[f * 2048 + 0x32] = on ? 1 : 0;
+  }
+  return ram;
+}
+
+describe("the platforms lesson", () => {
+  test("the lift's way, step, travel and the frames it carried the square are read off the ride", () => {
+    const m = platformsMeasures(cells(ride({})), PLATFORMS);
+    expect(m).toEqual({ axis: "across", step: 1, every: 1, travel: 48, standing: 160, stepped: m.stepped, same: m.same, steady: true });
+    // Right is held until frame 62 and again from 190; a second after the release the lift's steps count, until the press.
+    expect(m.stepped).toBe(190 - 122);
+    expect(m.same).toBe(m.stepped);
+    const q = platformsMeasures(cells(ride({ step: 2, every: 3, wobble: 1 })), PLATFORMS);
+    expect([q.step, q.every, q.steady]).toEqual([2, 3, false]);
+  });
+  test("a lift that never moves, or a square that never stands on it, is refused with the reason", () => {
+    expect(() => platformsMeasures(cells(ride({ moving: false })), PLATFORMS)).toThrow("the lift never moved");
+    expect(() => platformsMeasures(cells(ride({ stand: false })), PLATFORMS)).toThrow("never stood on the lift");
   });
 });

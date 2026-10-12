@@ -7,8 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
-import type { CameraMeasures, JumpMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
-import { cameraMeasures, cells, jumpMeasures, parseScript, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type Plan, type RunPlan, type StompPlan, type WalkersPlan } from "@/lib/lessonMeasure";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import { cameraMeasures, cells, jumpMeasures, parseScript, platformsMeasures, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type Plan, type PlatformsPlan, type RunPlan, type StompPlan, type WalkersPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -18,11 +18,11 @@ export interface Parts {
   prg: string;
   chr: string;
   /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
-  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | null;
+  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | null;
 }
 
 /** What a measurement comes to. The stomp lesson's is without the autopsy's part, which the page does not take. */
-export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures;
+export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures;
 
 /** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
 export type Measured = { yours: Yours; why: null } | { yours: null; why: string };
@@ -155,6 +155,7 @@ async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
     if (plan.kind === "stomp") return { yours: stompMeasures((await runs([main]))[0], plan), why: null };
     if (plan.kind === "walkers") return { yours: walkersMeasures((await runs([main]))[0], plan), why: null };
     if (plan.kind === "camera") return { yours: cameraMeasures((await runs([main]))[0], plan), why: null };
+    if (plan.kind === "platforms") return { yours: platformsMeasures((await runs([main]))[0], plan), why: null };
     const air = parseInt(plan.memory.air.slice(1), 16);
     const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);
     return { yours: runMeasures(first, swept, plan), why: null };

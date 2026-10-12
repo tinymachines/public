@@ -10,12 +10,12 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp, walkers and camera lessons are measured here so
- * far. Every lesson has its own way of being measured, and each one is
- * added with that check or not at all.
+ * The jump, run, stomp, walkers, camera and platforms lessons are measured
+ * here so far. Every lesson has its own way of being measured, and each
+ * one is added with that check or not at all.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, RunMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RunMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -92,7 +92,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -347,5 +347,65 @@ export function cameraMeasures(cell: (f: number, a: number) => number, plan: Cam
     back: left.length > 0,
     back_at: left.length ? mode(left.filter((f) => dc(f) === dp(f)).map(sx)) : null,
     restarts_at: restart === undefined ? null : sx(restart - 1),
+  };
+}
+
+/** What the platforms lesson's measurement reads, from its lesson.json: the square's x and y, the lift's x and top, and the cell that is 1 while the square stands on it. */
+export interface PlatformsPlan {
+  kind: "platforms";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: string; y: string; lift_x: string; lift_top: string; on: string };
+}
+
+/**
+ * The platforms lesson's numbers (board-lessons.py's platforms_measures):
+ * which way the lift moves (across, or up and down, whichever it moves
+ * more), its step and the frames between steps, how far it travels; the
+ * frames the square stood on it; of the frames the lift stepped while the
+ * square stood on it with nothing pressed its way for sixty frames before,
+ * how many moved the square by the lift's own step on that same frame; and
+ * whether the square's height above the lift held steady. The pad is the
+ * script's byte each frame, as the record's run kept it. A lift that never
+ * moves, or a square that never stands on it, is refused with the reason.
+ */
+export function platformsMeasures(cell: (f: number, a: number) => number, plan: PlatformsPlan): PlatformsMeasures {
+  const m = plan.memory;
+  const px = (f: number) => cell(f, addr(m.x)), py = (f: number) => cell(f, addr(m.y));
+  const lx = (f: number) => cell(f, addr(m.lift_x)), ly = (f: number) => cell(f, addr(m.lift_top));
+  const on = (f: number) => cell(f, addr(m.on)) === 1;
+  const frames: number[] = [];
+  for (let f = plan.walk_from + 1; f < plan.frames; f++) frames.push(f);
+  const dx = (f: number) => lx(f) - lx(f - 1), dy = (f: number) => ly(f) - ly(f - 1);
+  const across = frames.filter((f) => dx(f)).length >= frames.filter((f) => dy(f)).length;
+  const d = across ? dx : dy;
+  const pd = across ? (f: number) => px(f) - px(f - 1) : (f: number) => py(f) - py(f - 1);
+  const at = across ? lx : ly;
+  const moves = frames.filter((f) => d(f));
+  if (!moves.length) throw new Error("the lift never moved");
+  // The pad along the lift's way (Right and Left across, Up and Down up and
+  // down, in the script's order): a frame something was pressed that way is
+  // not a frame the lift alone moved the square.
+  const pad = padOf(parseScript(plan.script), plan.frames);
+  const along = across ? 0xc0 : 0x30;
+  const standing = frames.filter((f) => on(f) && on(f - 1));
+  if (!standing.length) throw new Error("the square never stood on the lift");
+  const quiet = (f: number) => {
+    for (let g = Math.max(0, f - 60); g <= f; g++) if (pad[g] & along) return false;
+    return true;
+  };
+  const stepped = standing.filter((f) => d(f) && quiet(f));
+  const gaps = new Set(standing.map((f) => ly(f) - py(f)));
+  const places = frames.map(at);
+  return {
+    axis: across ? "across" : "down",
+    step: mode(moves.map((f) => Math.abs(d(f)))),
+    every: mode(moves.slice(1).map((f, k) => f - moves[k])),
+    travel: Math.max(...places) - Math.min(...places),
+    standing: standing.length,
+    stepped: stepped.length,
+    same: stepped.filter((f) => pd(f) === d(f)).length,
+    steady: gaps.size === 1,
   };
 }
