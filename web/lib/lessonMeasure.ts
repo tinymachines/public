@@ -10,13 +10,14 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp, walkers, camera, platforms, scroll and rooms
- * lessons are measured here so far. Every lesson has its own way of being
- * measured, and each one is added with that check or not at all. Scroll
- * and rooms read a write log beside memory.
+ * The jump, run, stomp, walkers, camera, platforms, scroll, rooms and
+ * screens lessons are measured here so far. Every lesson has its own way
+ * of being measured, and each one is added with that check or not at all.
+ * Scroll and rooms read a write log beside memory; screens takes the part
+ * of its record that reads memory and the pad, not our autopsy's part.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScrollMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -103,7 +104,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -632,4 +633,55 @@ export function roomsMeasures(cell: (f: number, a: number) => number, vram: stri
     columns: during.length,
     up: roomsUp(cell, writes, room, frames, plan.up_from),
   };
+}
+
+/** What the screens lesson's measurement reads, from its lesson.json: the byte that chooses the screen. The pad is the script's. */
+export interface ScreensPlan {
+  kind: "screens";
+  script: string;
+  frames: number;
+  memory: { screen: string };
+}
+
+/** The part of the screens record the page measures: not what our autopsy says of the program. */
+export type ScreensYours = Omit<ScreensMeasures, "stretches" | "met" | "engine" | "table">;
+
+/**
+ * The screens lesson's numbers that come from memory and the pad
+ * (board-lessons.py's screens_measures, less the autopsy's part): the
+ * values the screen's byte took and how many times it changed, and, from a
+ * press of Start in play to the next, how many cells of memory changed a
+ * frame before and during (the medians) and how long the pause lasted. The
+ * stretches, the jump engine and the table come from our autopsy of the
+ * program, which the page does not run. A byte that never changes is
+ * refused with the reason.
+ */
+export function screensMeasures(cell: (f: number, a: number) => number, plan: ScreensPlan): ScreensYours {
+  const screen = addr(plan.memory.screen), frames = plan.frames;
+  const changes: number[] = [];
+  for (let f = 1; f < frames; f++) if (cell(f, screen) !== cell(f - 1, screen)) changes.push(f);
+  if (!changes.length) throw new Error("the screen's byte never changed");
+  const values = [cell(0, screen), ...changes.map((f) => cell(f, screen))];
+  // Cells changing in a frame, the stack and the sprite page left out.
+  const moving = (f: number) => {
+    let n = 0;
+    for (let a = 0; a < 0x800; a++) if (!(a >= 0x100 && a < 0x300) && cell(f, a) !== cell(f - 1, a)) n++;
+    return n;
+  };
+  const median = (v: number[]) => [...v].sort((p, q) => p - q)[v.length >> 1];
+  // Paused: a press of Start in play, and the next press.
+  const pad = padOf(parseScript(plan.script), frames);
+  const presses: number[] = [];
+  for (let f = 1; f < frames; f++) if (pad[f] & 0x08 && !(pad[f - 1] & 0x08)) presses.push(f);
+  const play = values.length > 1 ? presses.filter((f) => cell(f - 1, screen) === values[1]) : [];
+  const later = play.length ? presses.filter((f) => f > play[0]) : [];
+  let pause: ScreensYours["pause"] = null;
+  if (play.length && later.length) {
+    const [p0, p1] = [play[0], later[0]];
+    const mid: number[] = [], pre: number[] = [];
+    for (let f = p0 + 5; f < p1 - 1; f++) mid.push(moving(f));
+    for (let f = p0 - 20; f < p0; f++) pre.push(moving(f));
+    pause = { before: median(pre), during: median(mid), frames: p1 - p0 };
+  }
+  return { values, changes: changes.length, pause };
 }

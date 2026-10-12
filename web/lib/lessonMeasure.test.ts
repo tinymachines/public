@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, scrollMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScrollPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -430,5 +430,29 @@ describe("the rooms lesson", () => {
   test("a room whose number never changes is refused with the reason", () => {
     const { ram, vram, scroll } = rooms({ leave: false });
     expect(() => roomsMeasures(cells(ram), vram, scroll, ROOMS)).toThrow("never changed after frame 360");
+  });
+});
+
+const SCREENS: ScreensPlan = { kind: "screens", script: "AT 120 08\nAT 124 00\nAT 330 08\nAT 334 00\nAT 500 08\nAT 504 00\n", frames: 900, memory: { screen: "$40" } };
+
+/** A made-up run: the title until Start at 120, play (five cells of memory changing a frame) until Start at 330, a pause (nothing changing) until Start at 500, play again. `answer` false leaves the title. */
+function screens(o: { answer?: boolean }): Uint8Array {
+  const answer = o.answer ?? true;
+  const ram = new Uint8Array(900 * 2048);
+  for (let f = 0; f < 900; f++) {
+    const screen = !answer ? 0 : f < 120 ? 0 : f < 330 ? 1 : f < 500 ? 2 : 1;
+    ram[f * 2048 + 0x40] = screen;
+    if (screen === 1) for (let k = 0; k < 5; k++) ram[f * 2048 + 0x10 + k] = f & 0xff;
+    else for (let k = 0; k < 5; k++) ram[f * 2048 + 0x10 + k] = ram[(f - 1) * 2048 + 0x10 + k];
+  }
+  return ram;
+}
+
+describe("the screens lesson", () => {
+  test("the byte's values, its changes and how still memory is while paused are read off the run and the pad", () => {
+    expect(screensMeasures(cells(screens({})), SCREENS)).toEqual({ values: [0, 1, 2, 1], changes: 3, pause: { before: 5, during: 0, frames: 170 } });
+  });
+  test("a byte that never changes is refused with the reason", () => {
+    expect(() => screensMeasures(cells(screens({ answer: false })), SCREENS)).toThrow("the screen's byte never changed");
   });
 });

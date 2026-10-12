@@ -9,8 +9,9 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run, stomp, walkers, camera, platforms, scroll and rooms
- * lessons are measured so far; scroll and rooms read the write logs.
+ * The jump, run, stomp, walkers, camera, platforms, scroll, rooms and
+ * screens lessons are measured so far; scroll and rooms read the write
+ * logs, and screens takes only the part of its record the page can.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -392,10 +393,47 @@ test("a program whose square never leaves its room is not given numbers, and say
   await expect(page.locator("[data-program-measure-why]")).toContainText("never changed");
 });
 
+/** The screens lesson's rows as the window keys them, from the record: the part the page measures. */
+const screensRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "screens");
+  if (!l || l.kind !== "screens") throw new Error("no screens lesson in the record; the spec would pass on nothing");
+  const m = l.measures, pz = m.pause;
+  if (!pz) throw new Error("the screens record has no pause; the spec would pass on nothing");
+  return { values: m.values.join(" "), changes: String(m.changes), "pause-before": String(pz.before), "pause-during": String(pz.during), "pause-frames": String(pz.frames) } as Record<string, string>;
+};
+
+test("the screens lesson, unchanged, measures in the page to exactly the numbers the record holds, and says what it does not take", async ({ page }) => {
+  const want = screensRows();
+  await assembled(page, undefined, "screens");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+  await expect(page.locator("[data-program-not-taken]")).toContainText("autopsy");
+});
+
+test("a pause that returns to the title instead of play shows in the values, and the pause itself stays as recorded", async ({ page }) => {
+  const want = screensRows();
+  // Start while paused sets the screen to 1, playing; 0 is the title.
+  await assembled(page, (t) => t.replace("    LDA #$01\n    STA $40\nheld:", "    LDA #$00\n    STA $40\nheld:"), "screens");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.values).toEqual([want.values, want.values.replace(/ \d+$/, " 0")]);
+  for (const k of ["changes", "pause-before", "pause-during", "pause-frames"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program whose title never answers Start is not given numbers, and says why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("    JSR pressed\n    BEQ stay\n", "    JSR pressed\n    JMP stay\n"), "screens");
+  await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("never changed");
+});
+
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=screens", 500);
-  await expect(page.locator('[data-program-for="screens"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=status", 500);
+  await expect(page.locator('[data-program-for="status"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScrollMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -69,6 +69,7 @@ const S = {
       "hit-fall": "The hit: the square's speed down before, pixels a frame",
       "hit-after": "The hit: the square's speed down after",
       "hit-state": "The hit: the walker's state after",
+      notTaken: "What our autopsy says of the program's touch routine is in the record and is not measured here.",
     },
     walkers: {
       pixels: "Pixels a move",
@@ -144,6 +145,14 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    screens: {
+      values: "The values the screen's byte took, in order",
+      changes: "Times it changed",
+      "pause-before": "Cells of memory changing a frame while playing, the median",
+      "pause-during": "Cells of memory changing a frame while paused, the median",
+      "pause-frames": "Frames paused",
+      notTaken: "What our autopsy says of the program (its stretches, its jump engine and its table) is in the record and is not measured here.",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -201,6 +210,7 @@ const S = {
       "hit-fall": "ぶつかり: 四角の下向きの速さ、前、一フレームあたりのピクセル",
       "hit-after": "ぶつかり: 四角の下向きの速さ、後",
       "hit-state": "ぶつかり: 歩くものの状態、後",
+      notTaken: "私たちの解剖がこのプログラムの接触ルーチンについて言うことは記録にあり、ここでは測らない。",
     },
     walkers: {
       pixels: "一歩のピクセル",
@@ -275,6 +285,14 @@ const S = {
       "up-to_row": "最後に書いた行",
       yes: "はい",
       no: "いいえ",
+    },
+    screens: {
+      values: "画面のバイトが取った値、順に",
+      changes: "変わった回数",
+      "pause-before": "遊んでいる間に一フレームで変わるメモリのセル数、中央値",
+      "pause-during": "一時停止の間に一フレームで変わるメモリのセル数、中央値",
+      "pause-frames": "一時停止していたフレーム数",
+      notTaken: "私たちの解剖がこのプログラムについて言うこと (区切り、ジャンプエンジン、表) は記録にあり、ここでは測らない。",
     },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
@@ -419,6 +437,17 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       ...upRows,
     ];
   }
+  if (measure.plan.kind === "screens") {
+    const ours = measure.ours as ScreensMeasures, yours = theirs as ScreensMeasures;
+    const C = T.screens;
+    return [
+      { key: "values", label: C.values, ours: ours.values.join(" "), yours: yours.values.join(" "), oursText: ours.values.join(", "), yoursText: yours.values.join(", ") },
+      row("changes", C.changes, ours.changes, yours.changes),
+      row("pause-before", C["pause-before"], ours.pause?.before ?? null, yours.pause?.before ?? null),
+      row("pause-during", C["pause-during"], ours.pause?.during ?? null, yours.pause?.during ?? null),
+      row("pause-frames", C["pause-frames"], ours.pause?.frames ?? null, yours.pause?.frames ?? null),
+    ];
+  }
   if (measure.plan.kind === "stomp") {
     const ours = measure.ours as StompMeasures, yours = theirs as StompMeasures;
     const touch = (k: "stomp" | "hit", a: StompMeasures["hit"], b: StompMeasures["hit"]) => [
@@ -559,6 +588,9 @@ export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string;
                     </table>
                     </div>
                   </div>
+                  {p.parts.measure.plan.kind === "stomp" || p.parts.measure.plan.kind === "screens" ? (
+                    <p className="quiet" data-program-not-taken>{T[p.parts.measure.plan.kind].notTaken}</p>
+                  ) : null}
                 </>
               )}
             </div>
