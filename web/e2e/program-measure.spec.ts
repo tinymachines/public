@@ -9,8 +9,8 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run, stomp, walkers, camera, platforms and scroll lessons are
- * measured so far; scroll is the first to read a write log.
+ * The jump, run, stomp, walkers, camera, platforms, scroll and rooms
+ * lessons are measured so far; scroll and rooms read the write logs.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -344,10 +344,58 @@ test("a program that never starts a strip is not given numbers, and says why", a
   await expect(page.locator("[data-program-measure-why]")).toContainText("no strip was started");
 });
 
+/** The rooms lesson's rows as the window keys them, from the record. */
+const roomsRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "rooms");
+  if (!l || l.kind !== "rooms") throw new Error("no rooms lesson in the record; the spec would pass on nothing");
+  const m = l.measures, u = m.up;
+  if (!u) throw new Error("the rooms record has no step up; the spec would pass on nothing");
+  const v = (x: number | null | undefined) => (x === null || x === undefined ? "" : String(x));
+  const j = (x: (string | number)[]) => x.join(" ");
+  const runs = (x: Record<string, number>) => Object.entries(x).map(([k, n]) => `${k} ${n}`).join("; ");
+  return {
+    mirroring: `${m.mirroring?.playing}${m.mirroring?.fixed ? " fixed" : ""}`,
+    before: v(m.before), after: v(m.after), wait: v(m.wait), slide: v(m.slide), travel: v(m.travel), step: v(m.step),
+    written_before: runs(m.written_before), written_during: runs(m.written_during),
+    column_every: j(m.column_every), columns_from: v(m.columns_from), columns: v(m.columns),
+    "up-before": v(u.before), "up-after": v(u.after), "up-rows": v(u.rows), "up-tiles": j(u.tiles), "up-first": v(u.first), "up-every": j(u.every),
+    "up-upward": u.upward ? "1" : "0", "up-from_row": v(u.from_row), "up-to_row": v(u.to_row),
+  } as Record<string, string>;
+};
+
+test("the rooms lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = roomsRows();
+  expect(Number(want.columns), "the record's slide wrote columns").toBeGreaterThan(0);
+  await assembled(page, undefined, "rooms");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a room that slides in twice as fast steps 8 pixels a frame and travels twice as far, and its columns stay as recorded", async ({ page }) => {
+  const want = roomsRows();
+  // Sliding left, the scroll moves 4 pixels a step for 64 steps; 8 is twice the step and twice the travel.
+  await assembled(page, (t) => t.replace("    LDA $36\n    SBC #$04\n    STA $36", "    LDA $36\n    SBC #$08\n    STA $36"), "rooms");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.step).toEqual([want.step, String(Number(want.step) * 2)]);
+  expect(got.travel).toEqual([want.travel, String(Number(want.travel) * 2)]);
+  for (const k of ["before", "after", "columns", "column_every", "up-rows", "up-upward"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program whose square never leaves its room is not given numbers, and says why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("leave:\n    STA $32", "leave:\n    RTS\n    STA $32"), "rooms");
+  await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("never changed");
+});
+
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=rooms", 500);
-  await expect(page.locator('[data-program-for="rooms"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=screens", 500);
+  await expect(page.locator('[data-program-for="screens"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });

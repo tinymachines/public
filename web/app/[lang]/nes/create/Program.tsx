@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RunMeasures, ScrollMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScrollMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -118,6 +118,32 @@ const S = {
       column_frames: "Frames of the strip the columns are written on",
       last_write: "Frame of the strip with its last write",
     },
+    rooms: {
+      mirroring: "Which name tables sit side by side",
+      fixed: "fixed by the board",
+      before: "Walking out sideways: the room's number before",
+      after: "Walking out sideways: the room's number after",
+      wait: "Frames from the number changing to the picture moving",
+      slide: "Frames the picture slid",
+      travel: "Pixels the picture slid",
+      step: "Pixels a frame, the usual step",
+      written_before: "Runs of eight or more tiles written before the slide: tiles and way, how many",
+      written_during: "Runs of eight or more tiles written during the slide: tiles and way, how many",
+      column_every: "Frames between columns written during the slide",
+      columns_from: "Frame of the slide the first column was written on",
+      columns: "Columns written during the slide",
+      "up-before": "Walking out upward: the room's number before",
+      "up-after": "Walking out upward: the room's number after",
+      "up-rows": "Rows written across after the number changed",
+      "up-tiles": "Tiles in a row",
+      "up-first": "Frames from the number changing to the first row",
+      "up-every": "Frames between rows",
+      "up-upward": "The rows go up the table",
+      "up-from_row": "First row written",
+      "up-to_row": "Last row written",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -224,6 +250,32 @@ const S = {
       column_frames: "帯の何フレーム目に列を書くか",
       last_write: "帯の最後の書き込みのフレーム",
     },
+    rooms: {
+      mirroring: "どのネームテーブルが隣り合うか",
+      fixed: "基板で固定",
+      before: "横に出る: 前の部屋の番号",
+      after: "横に出る: 後の部屋の番号",
+      wait: "番号が変わってから絵が動くまでのフレーム数",
+      slide: "絵が滑ったフレーム数",
+      travel: "絵が滑ったピクセル",
+      step: "一フレームあたりのピクセル、いつもの一歩",
+      written_before: "滑る前に書いた 8 タイル以上の並び: タイル数と向き、回数",
+      written_during: "滑る間に書いた 8 タイル以上の並び: タイル数と向き、回数",
+      column_every: "滑る間に書いた列と列のあいだのフレーム数",
+      columns_from: "最初の列を書いた、滑りの何フレーム目か",
+      columns: "滑る間に書いた列の数",
+      "up-before": "上に出る: 前の部屋の番号",
+      "up-after": "上に出る: 後の部屋の番号",
+      "up-rows": "番号が変わってから横に書いた行の数",
+      "up-tiles": "一行のタイル数",
+      "up-first": "番号が変わってから最初の行までのフレーム数",
+      "up-every": "行と行のあいだのフレーム数",
+      "up-upward": "行はテーブルを上へ進むか",
+      "up-from_row": "最初に書いた行",
+      "up-to_row": "最後に書いた行",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -323,6 +375,48 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("ahead_max", S.ahead_max, ours.ahead_max, yours.ahead_max),
       list("column_frames", ours.column_frames, yours.column_frames),
       list("last_write", ours.last_write, yours.last_write),
+    ];
+  }
+  if (measure.plan.kind === "rooms") {
+    const ours = measure.ours as RoomsMeasures, yours = theirs as RoomsMeasures;
+    const R = T.rooms;
+    type Key = keyof typeof R;
+    const list = (key: Key, a: (string | number)[], b: (string | number)[]): Row => ({
+      key, label: R[key], ours: a.length ? a.join(" ") : null, yours: b.length ? b.join(" ") : null, oursText: a.length ? a.join(", ") : T.noValue, yoursText: b.length ? b.join(", ") : T.noValue,
+    });
+    // Runs written, "<tiles> <way>: how many" each, in the record's order.
+    const runs = (key: Key, a: Record<string, number>, b: Record<string, number>): Row => {
+      const value = (r: Record<string, number>) => Object.entries(r).map(([k, v]) => `${k} ${v}`);
+      const shown = (r: Record<string, number>) => Object.entries(r).map(([k, v]) => `${k}: ${n(v)}`);
+      return { key, label: R[key], ours: value(a).join("; ") || null, yours: value(b).join("; ") || null, oursText: shown(a).join("; ") || T.noValue, yoursText: shown(b).join("; ") || T.noValue };
+    };
+    const word = (key: Key, a: string | number, b: string | number, text: (v: string | number) => string): Row => ({ key, label: R[key], ours: a, yours: b, oursText: text(a), yoursText: text(b) });
+    const mirror = (m: RoomsMeasures["mirroring"]) => (m ? `${m.playing}${m.fixed ? " fixed" : ""}` : "");
+    const upRows: Row[] = ours.up && yours.up ? [
+      row("up-before", R["up-before"], ours.up.before, yours.up.before),
+      row("up-after", R["up-after"], ours.up.after, yours.up.after),
+      row("up-rows", R["up-rows"], ours.up.rows, yours.up.rows),
+      list("up-tiles", ours.up.tiles, yours.up.tiles),
+      row("up-first", R["up-first"], ours.up.first, yours.up.first),
+      list("up-every", ours.up.every, yours.up.every),
+      word("up-upward", Number(ours.up.upward), Number(yours.up.upward), (v) => (v ? R.yes : R.no)),
+      row("up-from_row", R["up-from_row"], ours.up.from_row, yours.up.from_row),
+      row("up-to_row", R["up-to_row"], ours.up.to_row, yours.up.to_row),
+    ] : [];
+    return [
+      word("mirroring", mirror(ours.mirroring), mirror(yours.mirroring), (v) => String(v).replace(" fixed", `, ${R.fixed}`)),
+      row("before", R.before, ours.before, yours.before),
+      row("after", R.after, ours.after, yours.after),
+      row("wait", R.wait, ours.wait, yours.wait),
+      row("slide", R.slide, ours.slide, yours.slide),
+      row("travel", R.travel, ours.travel, yours.travel),
+      row("step", R.step, ours.step, yours.step),
+      runs("written_before", ours.written_before, yours.written_before),
+      runs("written_during", ours.written_during, yours.written_during),
+      list("column_every", ours.column_every, yours.column_every),
+      row("columns_from", R.columns_from, ours.columns_from, yours.columns_from),
+      row("columns", R.columns, ours.columns, yours.columns),
+      ...upRows,
     ];
   }
   if (measure.plan.kind === "stomp") {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, runMeasures, scrollMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RunPlan, type ScrollPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, scrollMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScrollPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -380,5 +380,55 @@ describe("the scroll lesson", () => {
     const { ram, vram } = scroll({ strips: false });
     expect(() => scrollMeasures(cells(ram), vram, SCROLL)).toThrow("no strip was started");
     expect(() => scrollMeasures(cells(new Uint8Array(1500 * 2048)), "", SCROLL)).toThrow("the camera never moved");
+  });
+});
+
+const ROOMS: RoomsPlan = { kind: "rooms", script: "", frames: 1300, walk_from: 360, up_from: 60, mirroring: "vertical", memory: { room: "$30", scroll: ["$36", "$37"] } };
+
+/**
+ * A made-up pair of exits: the room's number drops by 16 at frame 100
+ * (a step up) and 30 rows of 32 tiles are written across from the bottom
+ * row up, one every second frame from frame 102; then it drops by one at
+ * frame 400 (a step left) and the picture slides `step` pixels a frame
+ * for 256 pixels from frame 402, told to the chip in the blank, with a
+ * column of 30 tiles written down every second frame. `leave` false
+ * never changes the number.
+ */
+function rooms(o: { step?: number; leave?: boolean }): { ram: Uint8Array; vram: string; scroll: string } {
+  const step = o.step ?? 4, leave = o.leave ?? true;
+  const ram = new Uint8Array(1300 * 2048);
+  const vram: string[] = [], scroll: string[] = [];
+  const hex = (a: number) => a.toString(16).toUpperCase().padStart(4, "0");
+  let room = 119, x = 0;
+  for (let f = 0; f < 1300; f++) {
+    if (leave && f === 100) room -= 16;
+    if (leave && f === 400) room -= 1;
+    if (leave && f >= 102 && f < 162 && f % 2 === 0) vram.push(`${f} ${hex(0x2000 + (29 - (f - 102) / 2) * 32)} 32 1`);
+    if (leave && f >= 402 && f < 402 + 256 / step) {
+      x = (x - step + 256) % 256;
+      if (f % 2 === 0) vram.push(`${f} ${hex(0x2400 + (f - 402) / 2)} 30 32`);
+    }
+    scroll.push(`${f} 246 ${x} 0`);
+    ram[f * 2048 + 0x30] = room;
+    ram[f * 2048 + 0x36] = x;
+  }
+  return { ram, vram: vram.map((l) => l + "\n").join(""), scroll: scroll.map((l) => l + "\n").join("") };
+}
+
+describe("the rooms lesson", () => {
+  test("the slide, what was written before and during it, and the step up are read off memory and the logs", () => {
+    const { ram, vram, scroll } = rooms({});
+    const m = roomsMeasures(cells(ram), vram, scroll, ROOMS);
+    expect(m).toEqual({
+      mirroring: { playing: "vertical", fixed: true }, before: 103, after: 102, wait: 2, slide: 64, travel: 256, step: 4,
+      written_before: {}, written_during: { "30 down": 32 }, column_every: [2], columns_from: 0, columns: 32,
+      up: { before: 119, after: 103, rows: 30, tiles: [32], first: 2, every: [2], upward: true, from_row: 29, to_row: 0 },
+    });
+    const q = roomsMeasures(cells(ram), vram, rooms({ step: 8 }).scroll, ROOMS);
+    expect([q.step, q.slide, q.travel]).toEqual([8, 32, 256]);
+  });
+  test("a room whose number never changes is refused with the reason", () => {
+    const { ram, vram, scroll } = rooms({ leave: false });
+    expect(() => roomsMeasures(cells(ram), vram, scroll, ROOMS)).toThrow("never changed after frame 360");
   });
 });

@@ -10,13 +10,13 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp, walkers, camera, platforms and scroll lessons are
- * measured here so far. Every lesson has its own way of being measured,
- * and each one is added with that check or not at all. The scroll lesson
- * is the first to read a write log beside memory.
+ * The jump, run, stomp, walkers, camera, platforms, scroll and rooms
+ * lessons are measured here so far. Every lesson has its own way of being
+ * measured, and each one is added with that check or not at all. Scroll
+ * and rooms read a write log beside memory.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RunMeasures, ScrollMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScrollMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -103,7 +103,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -513,5 +513,123 @@ export function scrollMeasures(cell: (f: number, a: number) => number, vram: str
     ahead_max: Math.max(...strips.map((s) => s.ahead)),
     column_frames: seen(strips.map((s) => listed(s.column_frames))),
     last_write: seen(strips.map((s) => s.last_write)),
+  };
+}
+
+/** What the rooms lesson's measurement reads, from its lesson.json: the room's number and the slide's scroll (low byte first), the board's mirroring, and the vram and scroll logs. */
+export interface RoomsPlan {
+  kind: "rooms";
+  script: string;
+  frames: number;
+  /** The first walk out sideways is after this frame; the first step up after `up_from`. */
+  walk_from: number;
+  up_from: number;
+  mirroring: string;
+  memory: { room: string; scroll: [string, string] };
+}
+
+/** Python's % : never negative. */
+const pmod = (a: number, m: number) => ((a % m) + m) % m;
+
+/** The first frame after `after` (and after frame 0) the room's number differs from the frame before, or a refusal. */
+function roomChange(cell: (f: number, a: number) => number, room: number, frames: number, after: number): number {
+  for (let f = Math.max(after, 1); f < frames; f++) if (cell(f, room) !== cell(f - 1, room)) return f;
+  throw new Error(`the room's number never changed after frame ${after}`);
+}
+
+/** The first step up (board-lessons.py's rooms_up): the room's number, and the rows written across after it changed. */
+function roomsUp(cell: (f: number, a: number) => number, writes: Map<number, [number, number, number][]>, room: number, frames: number, after: number): RoomsUp {
+  const t = roomChange(cell, room, frames, after);
+  const rows: [number, number, number][] = [];
+  for (let f = t; f < Math.min(t + 120, frames); f++) for (const [a, n, st] of writes.get(f) ?? []) if (st === 1 && n >= 24 && (a & 0x3ff) < 0x3c0) rows.push([f, a, n]);
+  const fs = rows.map((r) => r[0]), addrs = rows.map((r) => r[1]);
+  return {
+    before: cell(t - 1, room),
+    after: cell(t, room),
+    rows: rows.length,
+    tiles: [...new Set(rows.map((r) => r[2]))].sort((p, q) => p - q),
+    first: rows.length ? fs[0] - t : null,
+    every: [...new Set(fs.slice(1).map((f, k) => f - fs[k]))].sort((p, q) => p - q),
+    upward: addrs.slice(1).every((a, k) => a < addrs[k]),
+    from_row: rows.length ? (addrs[0] & 0x3ff) >> 5 : null,
+    to_row: rows.length ? (addrs[addrs.length - 1] & 0x3ff) >> 5 : null,
+  };
+}
+
+/**
+ * The rooms lesson's numbers (board-lessons.py's rooms_measures and
+ * rooms_up): the first walk out of a room sideways after walk_from, what
+ * the room's number did, how long until the picture moved, the slide as
+ * the picture chip was told it (the last scroll written each frame, a
+ * split's under the blank's), its travel and usual step, the runs of eight
+ * or more tiles written before and during it, and the new room's columns;
+ * then the first step up after up_from, the rows written across. The
+ * board's mirroring is the plan's, as the record takes it: our boards are
+ * soldered. A room that never changes, or a picture that never moves after
+ * it does, is refused with the reason.
+ */
+export function roomsMeasures(cell: (f: number, a: number) => number, vram: string, scrollLog: string, plan: RoomsPlan): RoomsMeasures {
+  const room = addr(plan.memory.room), scroll = addr(plan.memory.scroll[0]), frames = plan.frames;
+  const writes = vramWrites(vram);
+  const change = roomChange(cell, room, frames, plan.walk_from);
+  const end = Math.min(change + 200, frames);
+  // The slide as the picture chip was told it: the last scroll pair each frame, one written while the picture
+  // was drawing (a split) over one written in the blank. Without any, memory's own reads, which can run early.
+  const told = new Map<number, number>(), split = new Map<number, number>();
+  for (const line of scrollLog.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const [f, at, x] = w.map(Number);
+    (at < 240 ? split : told).set(f, x);
+  }
+  for (const [f, x] of split) told.set(f, x);
+  let first: number, last: number, moves: number[];
+  if (told.size) {
+    const xs = new Map<number, number>();
+    let lastX = 0;
+    for (let f = change - 5; f < end; f++) {
+      lastX = told.get(f) ?? lastX;
+      xs.set(f, lastX);
+    }
+    const moved: number[] = [];
+    for (let f = change; f < Math.min(change + 199, frames); f++) if (xs.get(f) !== xs.get(f - 1)) moved.push(f);
+    if (!moved.length) throw new Error(`the picture chip was never told to scroll after the room changed at frame ${change}`);
+    [first, last] = [moved[0], moved[moved.length - 1]];
+    moves = [];
+    for (let f = first; f <= last; f++) moves.push(Math.min(pmod(xs.get(f)! - xs.get(f - 1)!, 256), pmod(xs.get(f - 1)! - xs.get(f)!, 256)));
+  } else {
+    const moved = new Set<number>();
+    for (let f = change; f < end; f++) if (cell(f, scroll) !== cell(f - 1, scroll)) moved.add(f);
+    if (!moved.size) throw new Error(`the picture never moved after the room changed at frame ${change}`);
+    first = Math.min(...moved);
+    last = first;
+    // One frame without a move inside the slide is not its end (memory can be read before a frame's work is done); two are.
+    while (moved.has(last + 1) || moved.has(last + 2)) last += moved.has(last + 1) ? 1 : 2;
+    moves = [];
+    for (let f = first; f <= last; f++) moves.push(Math.min(pmod(cell(f, scroll) - cell(f - 1, scroll), 256), pmod(cell(f - 1, scroll) - cell(f, scroll), 256)));
+  }
+  const stepped = moves.filter((m) => m);
+  if (!stepped.length) throw new Error(`the picture never moved after the room changed at frame ${change}`);
+  const runs = (a: number, b: number) => {
+    const out: Record<string, number> = {};
+    for (let f = a; f < b; f++) for (const [, n, st] of writes.get(f) ?? []) if (n >= 8) out[`${n} ${st === 32 ? "down" : "across"}`] = (out[`${n} ${st === 32 ? "down" : "across"}`] ?? 0) + 1;
+    return Object.fromEntries(Object.entries(out).sort(([p], [q]) => (p < q ? -1 : p > q ? 1 : 0)));
+  };
+  const during: number[] = [];
+  for (let f = first; f < last + 2; f++) if ((writes.get(f) ?? []).some(([, n, st]) => n >= 8 && st === 32)) during.push(f);
+  return {
+    mirroring: { playing: plan.mirroring, fixed: true },
+    before: cell(change - 1, room),
+    after: cell(change, room),
+    wait: first - change,
+    slide: stepped.length,
+    travel: moves.reduce((s, m) => s + m, 0),
+    step: mode(stepped)!,
+    written_before: runs(change, first),
+    written_during: runs(first, last + 2),
+    column_every: [...new Set(during.slice(1).map((f, k) => f - during[k]))].sort((p, q) => p - q),
+    columns_from: during.length ? during[0] - first : null,
+    columns: during.length,
+    up: roomsUp(cell, writes, room, frames, plan.up_from),
   };
 }

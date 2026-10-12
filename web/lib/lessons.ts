@@ -441,7 +441,7 @@ export function parts(key: string) {
   const l = lesson(key)!;
   // What the page needs to take the lesson's measurements again on the
   // reader's cartridge, and our own numbers to set beside them. The jump,
-  // run, stomp, walkers, camera, platforms and scroll lessons so far (lib/lessonMeasure.ts says why).
+  // run, stomp, walkers, camera, platforms, scroll and rooms lessons so far (lib/lessonMeasure.ts says why).
   const script = () => fs.readFileSync(path.join(d, meta.script as string), "utf8");
   const measure =
     l.kind === "jump"
@@ -522,7 +522,20 @@ export function parts(key: string) {
                       },
                       ours: l.measures,
                     }
-                  : null;
+                  : l.kind === "rooms"
+                    ? {
+                        plan: {
+                          kind: "rooms" as const,
+                          script: script(),
+                          frames: meta.frames as number,
+                          walk_from: meta.walk_from as number,
+                          up_from: meta.up_from as number,
+                          mirroring: meta.mirroring,
+                          memory: meta.memory as { room: string; scroll: [string, string] },
+                        },
+                        ours: l.measures,
+                      }
+                    : null;
   return {
     measure,
     key,
