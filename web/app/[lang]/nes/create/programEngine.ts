@@ -8,7 +8,7 @@
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
 import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
-import { cameraMeasures, cells, jumpMeasures, parseScript, platformsMeasures, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type Plan, type PlatformsPlan, type RunPlan, type StompPlan, type WalkersPlan } from "@/lib/lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, parseScript, platformsMeasures, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type LogKind, type Plan, type PlatformsPlan, type RunPlan, type StompPlan, type WalkersPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -122,10 +122,12 @@ export function ours() {
  * that never lands) comes back as the reason.
  */
 async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
-  type Job = { script: [number, number][]; frames: number; stop?: { from: number; cell: number } };
+  type Job = { script: [number, number][]; frames: number; stop?: { from: number; cell: number }; logs?: LogKind[] };
+  /** A run: its memory a frame at a time, and the write logs it asked for (storyboard's text, by kind). */
+  type Run = { cell: (f: number, a: number) => number; logs: Partial<Record<LogKind, string>> };
   const workers: Worker[] = [];
   /** One thread taking jobs off the list in turn until it is empty; answers land at each job's own place. */
-  const crew = (jobs: Job[], out: ((f: number, a: number) => number)[], next: { n: number }) =>
+  const crew = (jobs: Job[], out: Run[], next: { n: number }) =>
     new Promise<void>((resolve, reject) => {
       const w = new Worker("/nes/measure.worker.mjs", { type: "module" });
       workers.push(w);
@@ -135,30 +137,30 @@ async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
         w.postMessage({ id, rom, ...jobs[id] });
       };
       w.onmessage = (e) => {
-        const d = e.data as { id: number; ok?: boolean; answer?: { ram: ArrayBuffer }; error?: string };
+        const d = e.data as { id: number; ok?: boolean; answer?: { ram: ArrayBuffer; logs: Partial<Record<LogKind, string>> }; error?: string };
         if (!d.ok) return reject(new Error(d.error));
-        out[d.id] = cells(new Uint8Array(d.answer!.ram));
+        out[d.id] = { cell: cells(new Uint8Array(d.answer!.ram)), logs: d.answer!.logs ?? {} };
         take();
       };
       w.onerror = () => reject(new Error("the measuring worker failed to load"));
       take();
     });
   const runs = async (jobs: Job[]) => {
-    const out: ((f: number, a: number) => number)[] = [], next = { n: 0 };
+    const out: Run[] = [], next = { n: 0 };
     const threads = Math.max(1, Math.min(4, jobs.length, navigator.hardwareConcurrency || 1));
     await Promise.all(Array.from({ length: threads }, () => crew(jobs, out, next)));
     return out;
   };
   try {
     const main: Job = { script: parseScript(plan.script), frames: plan.frames };
-    if (plan.kind === "jump") return { yours: jumpMeasures((await runs([main]))[0], plan), why: null };
-    if (plan.kind === "stomp") return { yours: stompMeasures((await runs([main]))[0], plan), why: null };
-    if (plan.kind === "walkers") return { yours: walkersMeasures((await runs([main]))[0], plan), why: null };
-    if (plan.kind === "camera") return { yours: cameraMeasures((await runs([main]))[0], plan), why: null };
-    if (plan.kind === "platforms") return { yours: platformsMeasures((await runs([main]))[0], plan), why: null };
+    if (plan.kind === "jump") return { yours: jumpMeasures((await runs([main]))[0].cell, plan), why: null };
+    if (plan.kind === "stomp") return { yours: stompMeasures((await runs([main]))[0].cell, plan), why: null };
+    if (plan.kind === "walkers") return { yours: walkersMeasures((await runs([main]))[0].cell, plan), why: null };
+    if (plan.kind === "camera") return { yours: cameraMeasures((await runs([main]))[0].cell, plan), why: null };
+    if (plan.kind === "platforms") return { yours: platformsMeasures((await runs([main]))[0].cell, plan), why: null };
     const air = parseInt(plan.memory.air.slice(1), 16);
     const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);
-    return { yours: runMeasures(first, swept, plan), why: null };
+    return { yours: runMeasures(first.cell, swept.map((r) => r.cell), plan), why: null };
   } catch (e) {
     return { yours: null, why: String((e as Error)?.message ?? e) };
   } finally {

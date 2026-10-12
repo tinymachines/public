@@ -52,6 +52,16 @@ export function cells(ram: Uint8Array): (f: number, a: number) => number {
 const addr = (a: string) => parseInt(a.slice(1), 16);
 
 /**
+ * The console's write logs, by the file storyboard writes each to: what a
+ * program wrote to the picture chip's memory (vram: `frame address count
+ * step`), the scroll (`frame line x y`), the sound chip (apu: `frame
+ * register value`) and the cartridge's own range (mapper: `frame address
+ * value`). The measuring worker hands them back as that text when asked.
+ */
+export type LogKind = "vram" | "scroll" | "apu" | "mapper";
+export const LOG_KINDS: LogKind[] = ["vram", "scroll", "apu", "mapper"];
+
+/**
  * The jump lesson's numbers (board-lessons.py's jump_measures): how many
  * frames of walking reach full speed and what it is, then for each jump
  * how long A was held, how many frames it spent in the air and how high
