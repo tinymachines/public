@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { JumpMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -80,6 +80,16 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    camera: {
+      starts_at: "Walking right: the square's place on the screen when the camera first moves, pixels",
+      holds_at: "Walking right: the place the camera holds the square at",
+      eased: "Frames the camera moved right by less than the square did",
+      back: "Walking left: the camera ever moves back",
+      back_at: "Walking left: the place the camera holds the square at",
+      restarts_at: "Right again: the square's place when the camera next moves",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -148,6 +158,16 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    camera: {
+      starts_at: "右へ歩く: カメラが初めて動いたときの四角の画面上の位置、ピクセル",
+      holds_at: "右へ歩く: カメラが四角を留めておく位置",
+      eased: "カメラが四角より少なく右へ動いたフレーム数",
+      back: "左へ歩く: カメラが戻ることがあるか",
+      back_at: "左へ歩く: カメラが四角を留めておく位置",
+      restarts_at: "また右へ: カメラが次に動いたときの四角の位置",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -196,6 +216,18 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       list("inside", T.walkers.inside, yn(ours.inside), yn(yours.inside), (v) => (v ? T.walkers.yes : T.walkers.no)),
       row("meetings", T.walkers.meetings, ours.meetings, yours.meetings),
       list("overlap", T.walkers.overlap, ours.overlap, yours.overlap, (v) => n(Number(v))),
+    ];
+  }
+  if (measure.plan.kind === "camera") {
+    const ours = measure.ours as CameraMeasures, yours = theirs as CameraMeasures;
+    const yn = (b: boolean): Row => ({ key: "back", label: T.camera.back, ours: Number(ours.back), yours: Number(b), oursText: ours.back ? T.camera.yes : T.camera.no, yoursText: b ? T.camera.yes : T.camera.no });
+    return [
+      row("starts_at", T.camera.starts_at, ours.starts_at, yours.starts_at),
+      row("holds_at", T.camera.holds_at, ours.holds_at, yours.holds_at),
+      row("eased", T.camera.eased, ours.eased, yours.eased),
+      yn(yours.back),
+      row("back_at", T.camera.back_at, ours.back_at, yours.back_at),
+      row("restarts_at", T.camera.restarts_at, ours.restarts_at, yours.restarts_at),
     ];
   }
   if (measure.plan.kind === "stomp") {

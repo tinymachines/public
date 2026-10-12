@@ -10,12 +10,12 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp and walkers lessons are measured here so far. Every
- * lesson has its own way of being measured, and each one is added with
- * that check or not at all.
+ * The jump, run, stomp, walkers and camera lessons are measured here so
+ * far. Every lesson has its own way of being measured, and each one is
+ * added with that check or not at all.
  */
 
-import type { JumpMeasures, OneJump, RunMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, RunMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -92,7 +92,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -305,5 +305,47 @@ export function walkersMeasures(cell: (f: number, a: number) => number, plan: Wa
     inside: [...inside].sort((a, b) => Number(a) - Number(b)),
     meetings: meets.length,
     overlap,
+  };
+}
+
+/** What the camera lesson's measurement reads, from its lesson.json: the square's x in the level and the camera's, each low byte then high. */
+export interface CameraPlan {
+  kind: "camera";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: [string, string]; camera: [string, string] };
+}
+
+/**
+ * The camera lesson's numbers (board-lessons.py's camera_measures): the
+ * square's place on the screen is its x less the camera's. From walk_from:
+ * where on the screen the square was when the camera first moved right;
+ * the place it held the square at while it took every pixel the square
+ * moved; how many frames it moved right by less than the square did; whether
+ * it ever moved left, and the place it held the square at then; and, after
+ * the square first turned back, where on the screen the square was when the
+ * camera next moved right. A camera that never moves right is refused.
+ */
+export function cameraMeasures(cell: (f: number, a: number) => number, plan: CameraPlan): CameraMeasures {
+  const [xl, xh] = plan.memory.x.map(addr), [cl, ch] = plan.memory.camera.map(addr);
+  const px = (f: number) => cell(f, xh) * 256 + cell(f, xl), cam = (f: number) => cell(f, ch) * 256 + cell(f, cl);
+  const sx = (f: number) => px(f) - cam(f), dp = (f: number) => px(f) - px(f - 1), dc = (f: number) => cam(f) - cam(f - 1);
+  const frames: number[] = [];
+  for (let f = plan.walk_from + 1; f < plan.frames; f++) frames.push(f);
+  const right = frames.filter((f) => dc(f) > 0);
+  if (!right.length) throw new Error("the camera never moved right");
+  const first = right[0];
+  const left = frames.filter((f) => dc(f) < 0);
+  const turned = frames.find((f) => dp(f) < 0);
+  const again = turned === undefined ? undefined : frames.find((f) => f > turned && dp(f) > 0);
+  const restart = again === undefined ? undefined : right.find((f) => f > again);
+  return {
+    starts_at: sx(first - 1),
+    holds_at: mode(right.filter((f) => dc(f) === dp(f)).map(sx)),
+    eased: right.filter((f) => dc(f) < dp(f)).length,
+    back: left.length > 0,
+    back_at: left.length ? mode(left.filter((f) => dc(f) === dp(f)).map(sx)) : null,
+    restarts_at: restart === undefined ? null : sx(restart - 1),
   };
 }

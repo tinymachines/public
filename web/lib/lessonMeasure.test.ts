@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cells, jumpMeasures, padOf, parseScript, runMeasures, stompMeasures, sweeps, walkersMeasures, type JumpPlan, type RunPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type RunPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -228,5 +228,51 @@ describe("the walkers lesson", () => {
       still[f * 2048 + 0x43] = 0xff;
     }
     expect(() => walkersMeasures(cells(still), WALKERS)).toThrow("0 meetings and 0 turns at walls");
+  });
+});
+
+const CAMERA: CameraPlan = { kind: "camera", script: "", frames: 700, walk_from: 20, memory: { x: ["$11", "$12"], camera: ["$20", "$21"] } };
+
+/**
+ * A made-up walk: the square goes right two pixels a frame from frame 20
+ * to 300, left to 500, right again. The camera eases in a pixel a frame
+ * once the square is past `start` on the screen, holds it at `hold` from
+ * there, and walking left (`back`) holds it at 48.
+ */
+function walk(o: { start?: number; hold?: number; back?: boolean; follow?: boolean }): Uint8Array {
+  const start = o.start ?? 80, hold = o.hold ?? 112, back = o.back ?? true, follow = o.follow ?? true;
+  const ram = new Uint8Array(700 * 2048);
+  let x = 0, cam = 0;
+  for (let f = 0; f < 700; f++) {
+    const d = f < 20 ? 0 : f < 300 ? 2 : f < 500 ? -2 : 2;
+    x += d;
+    if (follow) {
+      if (d > 0 && x - cam > start) {
+        cam++;
+        if (x - cam > hold) cam = x - hold;
+      }
+      if (d < 0 && back && x - cam < 48) cam = x - 48;
+    }
+    cam = Math.max(0, cam);
+    ram[f * 2048 + 0x11] = x & 0xff;
+    ram[f * 2048 + 0x12] = x >> 8;
+    ram[f * 2048 + 0x20] = cam & 0xff;
+    ram[f * 2048 + 0x21] = cam >> 8;
+  }
+  return ram;
+}
+
+describe("the camera lesson", () => {
+  test("where the camera starts, holds, eases, comes back and restarts are read off the walk", () => {
+    const m = cameraMeasures(cells(walk({})), CAMERA);
+    expect(m).toEqual({ starts_at: 80, holds_at: 112, eased: m.eased, back: true, back_at: 48, restarts_at: m.restarts_at });
+    expect(m.eased).toBeGreaterThan(0);
+    // Turning back, the square walks the dead zone from 48 up before the camera moves right again.
+    expect(m.restarts_at).toBe(80);
+    const q = cameraMeasures(cells(walk({ start: 64, hold: 96, back: false })), CAMERA);
+    expect([q.starts_at, q.holds_at, q.back, q.back_at]).toEqual([64, 96, false, null]);
+  });
+  test("a camera that never moves right is refused with the reason", () => {
+    expect(() => cameraMeasures(cells(walk({ follow: false })), CAMERA)).toThrow("the camera never moved right");
   });
 });
