@@ -10,12 +10,13 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp, walkers, camera and platforms lessons are measured
- * here so far. Every lesson has its own way of being measured, and each
- * one is added with that check or not at all.
+ * The jump, run, stomp, walkers, camera, platforms and scroll lessons are
+ * measured here so far. Every lesson has its own way of being measured,
+ * and each one is added with that check or not at all. The scroll lesson
+ * is the first to read a write log beside memory.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RunMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RunMeasures, ScrollMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -102,7 +103,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -417,5 +418,100 @@ export function platformsMeasures(cell: (f: number, a: number) => number, plan: 
     stepped: stepped.length,
     same: stepped.filter((f) => pd(f) === d(f)).length,
     steady: gaps.size === 1,
+  };
+}
+
+/** What the scroll lesson's measurement reads, from its lesson.json: the camera (low byte, high byte) and the strip countdown; and the vram write log. */
+export interface ScrollPlan {
+  kind: "scroll";
+  script: string;
+  frames: number;
+  memory: { camera: [string, string]; countdown: string };
+}
+
+/** The vram log's lines (`frame address count step`) by frame: [address, count, step]. */
+function vramWrites(text: string): Map<number, [number, number, number][]> {
+  const by = new Map<number, [number, number, number][]>();
+  for (const line of text.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const f = Number(w[0]);
+    by.set(f, [...(by.get(f) ?? []), [parseInt(w[1], 16), Number(w[2]), Number(w[3])]]);
+  }
+  return by;
+}
+
+/** The values seen, each as the record writes it, sorted as text: one value means every strip agreed. */
+const seen = (v: (string | number)[]) => [...new Set(v.map(String))].sort();
+
+/**
+ * The scroll lesson's numbers (board-lessons.py's scroll_measures), from
+ * memory (the camera and the strip countdown) and the picture-memory
+ * writes: while the camera moved, each strip the countdown started, the
+ * pixels between one and the next, how long a strip took, the columns and
+ * colour choices written in it and on which of its frames, and how far
+ * past the right edge its first column landed. A run whose camera never
+ * moves, starts no strip while it does, or starts fewer than two is
+ * refused with the reason.
+ */
+export function scrollMeasures(cell: (f: number, a: number) => number, vram: string, plan: ScrollPlan): ScrollMeasures {
+  const [lo, hi] = plan.memory.camera.map(addr), cd = addr(plan.memory.countdown), frames = plan.frames;
+  const cam = (f: number) => cell(f, hi) * 256 + cell(f, lo);
+  const writes = vramWrites(vram);
+  const moving: number[] = [];
+  for (let f = 1; f < frames; f++) if (cam(f) !== cam(f - 1)) moving.push(f);
+  if (!moving.length) throw new Error("the camera never moved");
+  const first = moving[0], last = moving[moving.length - 1];
+  // A strip started too near the end of the run to be seen through is left out.
+  const starts: number[] = [];
+  for (let f = first; f < Math.min(last, frames - 16); f++) if (cell(f, cd) && !cell(f - 1, cd)) starts.push(f);
+  if (!starts.length) throw new Error("no strip was started while the camera moved");
+  if (starts.length < 2) throw new Error("only one strip was started while the camera moved, so there is no distance between strips");
+  const gaps = starts.slice(1).map((b, k) => cam(b) - cam(starts[k]));
+  type Strip = { frames: number; last_write: number; columns: number; tiles: number[]; colours: number; ahead: number; column_frames: number[] };
+  const strips: Strip[] = [];
+  for (const f0 of starts) {
+    let f1 = -1;
+    for (let g = f0; g < f0 + 30 && f1 < 0; g++) if (cell(g, cd) === 0) f1 = g;
+    if (f1 < 0) throw new Error(`the strip started at frame ${f0} had not ended 30 frames later`);
+    // A frame past the countdown's end: a game that prepares in its main loop writes in the next blank.
+    const cols: [number, [number, number, number]][] = [], attr: number[] = [];
+    for (let g = f0; g < f1 + 2; g++) {
+      for (const w of writes.get(g) ?? []) {
+        if (w[2] === 32) cols.push([g, w]);
+        if ((w[0] & 0x3ff) >= 0x3c0 && w[1] === 1) attr.push(g);
+      }
+    }
+    if (!cols.length) continue;
+    const [g, [a]] = cols[0];
+    // Where the first column lands, counted from the right edge of the picture: the name tables are 512 pixels round.
+    const x = (a & 0x400 ? 0x100 : 0) + (a & 0x1f) * 8;
+    const ahead = ((((x - (cam(g) % 512)) % 512) + 512) % 512) - 256;
+    strips.push({
+      frames: f1 - f0 + 1,
+      last_write: Math.max(...cols.map(([h]) => h), ...attr) - f0,
+      columns: cols.length,
+      tiles: [...new Set(cols.map(([, w]) => w[1]))].sort((p, q) => p - q),
+      colours: attr.length,
+      ahead,
+      column_frames: [...new Set(cols.map(([h]) => h - f0))].sort((p, q) => p - q),
+    });
+  }
+  if (!strips.length) throw new Error("no strip wrote a column to the picture chip");
+  // A list is written the way the record writes it: Python's str of a list.
+  const listed = (v: number[]) => `[${v.join(", ")}]`;
+  return {
+    strips: strips.length,
+    every_min: Math.min(...gaps),
+    every_max: Math.max(...gaps),
+    every_mean: roundEven((gaps.reduce((s, g) => s + g, 0) / gaps.length) * 10) / 10,
+    frames: seen(strips.map((s) => s.frames)),
+    columns: seen(strips.map((s) => s.columns)),
+    tiles: [...new Set(strips.flatMap((s) => s.tiles))].sort((p, q) => p - q),
+    colours: seen(strips.map((s) => s.colours)),
+    ahead_min: Math.min(...strips.map((s) => s.ahead)),
+    ahead_max: Math.max(...strips.map((s) => s.ahead)),
+    column_frames: seen(strips.map((s) => listed(s.column_frames))),
+    last_write: seen(strips.map((s) => s.last_write)),
   };
 }

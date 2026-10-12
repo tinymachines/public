@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RunMeasures, ScrollMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -104,6 +104,20 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    scroll: {
+      strips: "Strips of land built while the camera moved",
+      every_min: "Pixels between one strip and the next: least",
+      every_max: "Pixels between one strip and the next: most",
+      every_mean: "Pixels between one strip and the next: mean",
+      frames: "Frames a strip takes",
+      columns: "Columns written in a strip",
+      tiles: "Tiles in a column",
+      colours: "Colour writes in a strip",
+      ahead_min: "Pixels past the right edge the first column lands: least",
+      ahead_max: "Pixels past the right edge the first column lands: most",
+      column_frames: "Frames of the strip the columns are written on",
+      last_write: "Frame of the strip with its last write",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -196,6 +210,20 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    scroll: {
+      strips: "カメラが動く間に組み立てた土地の帯の数",
+      every_min: "帯と次の帯のあいだのピクセル: 最小",
+      every_max: "帯と次の帯のあいだのピクセル: 最大",
+      every_mean: "帯と次の帯のあいだのピクセル: 平均",
+      frames: "一つの帯にかかるフレーム数",
+      columns: "一つの帯で書く列の数",
+      tiles: "一列のタイル数",
+      colours: "一つの帯での色の書き込み数",
+      ahead_min: "最初の列が画面右端より先に置かれるピクセル: 最小",
+      ahead_max: "最初の列が画面右端より先に置かれるピクセル: 最大",
+      column_frames: "帯の何フレーム目に列を書くか",
+      last_write: "帯の最後の書き込みのフレーム",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -271,6 +299,30 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("stepped", P.stepped, ours.stepped, yours.stepped),
       row("same", P.same, ours.same, yours.same),
       word("steady", Number(ours.steady), Number(yours.steady), (v) => (v ? P.yes : P.no)),
+    ];
+  }
+  if (measure.plan.kind === "scroll") {
+    const ours = measure.ours as ScrollMeasures, yours = theirs as ScrollMeasures;
+    const S = T.scroll;
+    // A measure the record keeps as a list of the values seen is one row: the values joined, in the record's order.
+    const list = (key: keyof ScrollMeasures & keyof typeof S, a: (string | number)[], b: (string | number)[]): Row => {
+      const value = (v: (string | number)[]) => (v.length ? v.join(" ") : null);
+      const shown = (v: (string | number)[]) => (v.length ? v.join(", ") : T.noValue);
+      return { key, label: S[key], ours: value(a), yours: value(b), oursText: shown(a), yoursText: shown(b) };
+    };
+    return [
+      row("strips", S.strips, ours.strips, yours.strips),
+      row("every_min", S.every_min, ours.every_min, yours.every_min),
+      row("every_max", S.every_max, ours.every_max, yours.every_max),
+      row("every_mean", S.every_mean, ours.every_mean, yours.every_mean),
+      list("frames", ours.frames, yours.frames),
+      list("columns", ours.columns, yours.columns),
+      list("tiles", ours.tiles, yours.tiles),
+      list("colours", ours.colours, yours.colours),
+      row("ahead_min", S.ahead_min, ours.ahead_min, yours.ahead_min),
+      row("ahead_max", S.ahead_max, ours.ahead_max, yours.ahead_max),
+      list("column_frames", ours.column_frames, yours.column_frames),
+      list("last_write", ours.last_write, yours.last_write),
     ];
   }
   if (measure.plan.kind === "stomp") {

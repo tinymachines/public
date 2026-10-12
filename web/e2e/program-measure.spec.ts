@@ -9,7 +9,8 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run, stomp, walkers, camera and platforms lessons are measured so far.
+ * The jump, run, stomp, walkers, camera, platforms and scroll lessons are
+ * measured so far; scroll is the first to read a write log.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -301,10 +302,52 @@ test("a program whose lift is never moved is not given numbers, and says why", a
   await expect(page.locator("[data-program-measure-why]")).toContainText("the lift never moved");
 });
 
+/** The scroll lesson's rows as the window keys them, from the record; a list is its items joined by a space. */
+const scrollRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "scroll");
+  if (!l || l.kind !== "scroll") throw new Error("no scroll lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const j = (v: (string | number)[]) => v.join(" ");
+  return {
+    strips: String(m.strips), every_min: String(m.every_min), every_max: String(m.every_max), every_mean: String(m.every_mean),
+    frames: j(m.frames), columns: j(m.columns), tiles: j(m.tiles), colours: j(m.colours),
+    ahead_min: String(m.ahead_min), ahead_max: String(m.ahead_max), column_frames: j(m.column_frames), last_write: j(m.last_write),
+  } as Record<string, string>;
+};
+
+test("the scroll lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = scrollRows();
+  expect(Number(want.strips), "the record has strips").toBeGreaterThan(0);
+  await assembled(page, undefined, "scroll");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("strips built one further ahead land 32 pixels further past the edge, and the rest stays as recorded", async ({ page }) => {
+  const want = scrollRows();
+  // The strip built is eleven 32-pixel steps past the camera's; twelve is a strip further on.
+  await assembled(page, (t) => t.replace("    ADC #$0B\n", "    ADC #$0C\n"), "scroll");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.ahead_min).toEqual([want.ahead_min, String(Number(want.ahead_min) + 32)]);
+  expect(got.ahead_max).toEqual([want.ahead_max, String(Number(want.ahead_max) + 32)]);
+  for (const k of ["strips", "frames", "columns", "tiles", "colours", "column_frames", "last_write"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program that never starts a strip is not given numbers, and says why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("    LDA #$07\n    STA $23", "    LDA #$00\n    STA $23"), "scroll");
+  await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no strip was started");
+});
+
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=scroll", 500);
-  await expect(page.locator('[data-program-for="scroll"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=rooms", 500);
+  await expect(page.locator('[data-program-for="rooms"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });

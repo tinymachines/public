@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, runMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RunPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, runMeasures, scrollMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RunPlan, type ScrollPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -323,5 +323,62 @@ describe("the platforms lesson", () => {
   test("a lift that never moves, or a square that never stands on it, is refused with the reason", () => {
     expect(() => platformsMeasures(cells(ride({ moving: false })), PLATFORMS)).toThrow("the lift never moved");
     expect(() => platformsMeasures(cells(ride({ stand: false })), PLATFORMS)).toThrow("never stood on the lift");
+  });
+});
+
+const SCROLL: ScrollPlan = { kind: "scroll", script: "", frames: 1500, memory: { camera: ["$20", "$21"], countdown: "$23" } };
+
+/**
+ * A made-up scroll: the camera moves a pixel a frame from frame 60; every
+ * 32 pixels a strip starts, its countdown running 7 frames; two columns
+ * of 26 tiles are written on the strip's frames 2 and 3, landing `ahead`
+ * pixels past the right edge (a column is 8 pixels, so `ahead` lands exactly
+ * when the camera's pixel on that frame plus 256 plus `ahead` is a
+ * multiple of 8), and seven colour choices on its frame 7.
+ * `strips` false never starts one.
+ */
+function scroll(o: { ahead?: number; strips?: boolean }): { ram: Uint8Array; vram: string } {
+  const ahead = o.ahead ?? 94, strips = o.strips ?? true;
+  const ram = new Uint8Array(1500 * 2048);
+  const lines: string[] = [];
+  let cam = 0, countdown = 0, f0 = -1;
+  for (let f = 0; f < 1500; f++) {
+    if (f >= 60) cam++;
+    if (countdown) countdown--;
+    else if (strips && f >= 60 && cam % 32 === 0) {
+      countdown = 7;
+      f0 = f;
+    }
+    const hex = (a: number) => a.toString(16).toUpperCase().padStart(4, "0");
+    if (f0 >= 0 && (f === f0 + 2 || f === f0 + 3)) {
+      for (let k = 0; k < 2; k++) {
+        // Both columns of a frame land at the strip's place; the first one's place is what is measured.
+        const x = (cam + 256 + ahead + (f - f0 - 2) * 16 + k * 8) % 512;
+        lines.push(`${f} ${hex(0x2000 | (x >= 256 ? 0x400 : 0) | ((x % 256) >> 3))} 26 32`);
+      }
+    }
+    if (f0 >= 0 && f === f0 + 7) for (let k = 0; k < 7; k++) lines.push(`${f} ${hex(0x23c0 + k * 8)} 1 1`);
+    ram[f * 2048 + 0x20] = cam & 0xff;
+    ram[f * 2048 + 0x21] = cam >> 8;
+    ram[f * 2048 + 0x23] = countdown;
+  }
+  return { ram, vram: lines.map((l) => l + "\n").join("") };
+}
+
+describe("the scroll lesson", () => {
+  test("the strips, their spacing, their frames and where their columns land are read off memory and the picture-memory writes", () => {
+    const { ram, vram } = scroll({});
+    const m = scrollMeasures(cells(ram), vram, SCROLL);
+    expect(m).toEqual({
+      strips: m.strips, every_min: 32, every_max: 32, every_mean: 32, frames: ["8"], columns: ["4"], tiles: [26], colours: ["7"],
+      ahead_min: 94, ahead_max: 94, column_frames: ["[2, 3]"], last_write: ["7"],
+    });
+    expect(m.strips).toBeGreaterThan(30);
+    expect(scrollMeasures(cells(ram), scroll({ ahead: 126 }).vram, SCROLL).ahead_min).toBe(126);
+  });
+  test("a camera that never moves, or one that starts no strip, is refused with the reason", () => {
+    const { ram, vram } = scroll({ strips: false });
+    expect(() => scrollMeasures(cells(ram), vram, SCROLL)).toThrow("no strip was started");
+    expect(() => scrollMeasures(cells(new Uint8Array(1500 * 2048)), "", SCROLL)).toThrow("the camera never moved");
   });
 });
