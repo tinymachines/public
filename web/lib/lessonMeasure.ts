@@ -10,12 +10,12 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run and stomp lessons are measured here so far. Every lesson has its
- * own way of being measured, and each one is added with that check or not
- * at all.
+ * The jump, run, stomp and walkers lessons are measured here so far. Every
+ * lesson has its own way of being measured, and each one is added with
+ * that check or not at all.
  */
 
-import type { JumpMeasures, OneJump, RunMeasures, StompMeasures, Touch } from "./lessons";
+import type { JumpMeasures, OneJump, RunMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -92,7 +92,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -238,4 +238,72 @@ export function stompMeasures(cell: (f: number, a: number) => number, plan: Stom
   if (back < 0) throw new Error(`the walker stomped at frame ${stomp} was still flat when the run ended`);
   const touch = (f: number): Touch => ({ frame: f, dx: roundEven(ex(f - 1) - px(f - 1)), dy: ey(f - 1) - py(f - 1), fall: pv(f - 1), after: pv(f), state: [st(f - 1), st(f)] });
   return { walk: round2(walked / steps), stomp: { ...touch(stomp), flat: back - stomp }, hit: touch(hit) };
+}
+
+/** What the walkers lesson's measurement reads, from its lesson.json: each walker's x and its step (1 right, $FF left). */
+export interface WalkersPlan {
+  kind: "walkers";
+  script: string;
+  frames: number;
+  memory: { x: string[]; step: string[] };
+}
+
+/** The value seen most often; on a tie the smallest, as the record's set-and-max came out. */
+function mode(v: number[]): number | null {
+  if (!v.length) return null;
+  const count = new Map<number, number>();
+  for (const d of v) count.set(d, (count.get(d) ?? 0) + 1);
+  return [...count.keys()].sort((a, b) => a - b).reduce((best, d) => (count.get(d)! > count.get(best)! ? d : best));
+}
+
+const WALKERS_FROM = 10;
+
+/**
+ * The walkers lesson's numbers (board-lessons.py's walker_measures): a
+ * turn is a frame a walker's direction differs from the frame before; two
+ * turning on one frame within 24 pixels of each other met, and any other
+ * turn was at a wall. Then the first walker's pace (pixels a move, frames
+ * between moves, over stretches with no turn), at each wall whether the
+ * frame before shows the walker a pixel further on than it settles, and
+ * at each meeting how far the two overlap (16 less the distance between).
+ * A run with no meeting or no turn at a wall is refused with the reason.
+ */
+export function walkersMeasures(cell: (f: number, a: number) => number, plan: WalkersPlan): WalkersMeasures {
+  const xs = plan.memory.x.map(addr), steps = plan.memory.step.map(addr);
+  const x = (i: number, f: number) => cell(f, xs[i]);
+  const right = (i: number, f: number) => cell(f, steps[i]) === 1;
+  const n = plan.frames;
+  const at = new Map<number, number[]>();
+  for (let i = 0; i < xs.length; i++) {
+    for (let f = WALKERS_FROM + 1; f < n; f++) if (right(i, f) !== right(i, f - 1)) at.set(f, [...(at.get(f) ?? []), i]);
+  }
+  // Two that turn on one frame within 24 pixels of each other met; turns at
+  // two walls on one frame are two turns at walls.
+  const near = (f: number, ii: number[]) => ii.length === 2 && Math.abs(x(ii[0], f) - x(ii[1], f)) < 24;
+  const meets: [number, number[]][] = [], walls: [number, number][] = [];
+  for (const [f, ii] of at) {
+    if (near(f, ii)) meets.push([f, [...ii].sort()]);
+    else for (const i of ii) walls.push([f, i]);
+  }
+  if (!meets.length || !walls.length) throw new Error(`the run shows ${meets.length} meetings and ${walls.length} turns at walls; it needs both`);
+  const inside = new Set<boolean>();
+  for (const [f, i] of walls) inside.add(x(i, f - 1) - x(i, f) === (right(i, f - 1) ? 1 : -1));
+  const overlap = [...new Set(meets.map(([f, [a, b]]) => 16 - Math.abs(x(a, f) - x(b, f))))].sort((a, b) => a - b);
+  // Pace: moves of the first walker where neither it nor the frame before turned.
+  const turned = new Set(at.keys());
+  const moves: number[] = [];
+  for (let f = WALKERS_FROM + 2; f < n; f++) if (!turned.has(f) && x(0, f) !== x(0, f - 1)) moves.push(f);
+  const gaps: number[] = [];
+  for (let k = 1; k < moves.length; k++) {
+    const [a, b] = [moves[k - 1], moves[k]];
+    if (![...turned].some((t) => a <= t && t <= b)) gaps.push(b - a);
+  }
+  return {
+    pixels: mode(moves.map((f) => Math.abs(x(0, f) - x(0, f - 1)))),
+    every: mode(gaps),
+    wall_turns: walls.length,
+    inside: [...inside].sort((a, b) => Number(a) - Number(b)),
+    meetings: meets.length,
+    overlap,
+  };
 }

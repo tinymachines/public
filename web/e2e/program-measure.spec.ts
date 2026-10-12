@@ -9,7 +9,7 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run and stomp lessons are measured so far.
+ * The jump, run, stomp and walkers lessons are measured so far.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -179,6 +179,51 @@ test("a stomp program where every touch is a hit is not given numbers, and says 
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 30000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("never stomped the walker");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The walkers lesson's rows as the window keys them, from the record: a list is its items joined by a space. */
+const walkersRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "walkers");
+  if (!l || l.kind !== "walkers") throw new Error("no walkers lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  return {
+    pixels: String(m.pixels), every: String(m.every), wall_turns: String(m.wall_turns), meetings: String(m.meetings),
+    inside: m.inside.map((b) => (b ? 1 : 0)).join(" "), overlap: m.overlap.join(" "),
+  } as Record<string, string>;
+};
+
+/** The rows as attribute text, for a lesson whose record keeps lists. */
+const readText = (page: import("@playwright/test").Page) =>
+  page.locator("[data-program-measure]").evaluateAll((trs) =>
+    Object.fromEntries(trs.map((t) => [t.getAttribute("data-program-measure"), [t.getAttribute("data-ours"), t.getAttribute("data-yours")]])),
+  ) as Promise<Record<string, [string, string]>>;
+
+test("the walkers lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = walkersRows();
+  expect(Object.keys(want).length, "the record has the walkers' six measures").toBe(6);
+  await assembled(page, undefined, "walkers");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 60000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("walkers made to step every frame do, and their pace in pixels stays as recorded", async ({ page }) => {
+  const want = walkersRows();
+  // The walkers move on the frames $44 is 1, which EOR toggles; always 1 is every frame.
+  await assembled(page, (t) => t.replace("    LDA $44\n    EOR #$01\n    STA $44", "    LDA $44\n    LDA #$01\n    STA $44"), "walkers");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 60000 });
+  const got = await readText(page);
+  expect(got.every).toEqual([want.every, "1"]);
+  expect(got.pixels).toEqual([want.pixels, want.pixels]);
+});
+
+test("walkers that walk through each other are not given numbers, and say why", async ({ page }) => {
+  await assembled(page, (t) => t.replace("    CMP #$11\n    BCS resting", "    JMP resting"), "walkers");
+  await expect(page.locator("[data-program-measure-why]")).toHaveCount(1, { timeout: 60000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("0 meetings");
 });
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {

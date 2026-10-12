@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { JumpMeasures, RunMeasures, StompMeasures } from "@/lib/lessons";
+import type { JumpMeasures, RunMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -70,6 +70,16 @@ const S = {
       "hit-after": "The hit: the square's speed down after",
       "hit-state": "The hit: the walker's state after",
     },
+    walkers: {
+      pixels: "Pixels a move",
+      every: "Frames between moves",
+      wall_turns: "Turns at a wall",
+      inside: "At a wall, a frame spent a pixel inside it",
+      meetings: "Meetings, both turning on one frame",
+      overlap: "At a meeting, pixels the two overlap",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -128,12 +138,23 @@ const S = {
       "hit-after": "ぶつかり: 四角の下向きの速さ、後",
       "hit-state": "ぶつかり: 歩くものの状態、後",
     },
+    walkers: {
+      pixels: "一歩のピクセル",
+      every: "歩と歩のあいだのフレーム数",
+      wall_turns: "壁で向きを変えた回数",
+      inside: "壁で、一フレーム壁の中に一ピクセル入ったか",
+      meetings: "出会い、同じフレームで両方が向きを変えた回数",
+      overlap: "出会いで二つが重なったピクセル",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
 } as const;
 
-type Row = { key: string; label: string; ours: number | null; yours: number | null; oursText: string; yoursText: string };
+/** A row's value is a number, or for a measure the record keeps as a list (the walkers' insides and overlaps) the list's items joined by a space; null is none. */
+type Row = { key: string; label: string; ours: number | string | null; yours: number | string | null; oursText: string; yoursText: string };
 type Measure = NonNullable<program.Parts["measure"]>;
 
 /** Our numbers and the reader's, a row a number. A jump of theirs that ours has no match for is not listed. */
@@ -157,6 +178,24 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       ...jump("run", ours.run_jump, yours.run_jump),
       row("light_max", T.run.light_max, ours.light_max, yours.light_max),
       row("strong_min", T.run.strong_min, ours.strong_min, yours.strong_min),
+    ];
+  }
+  if (measure.plan.kind === "walkers") {
+    const ours = measure.ours as WalkersMeasures, yours = theirs as WalkersMeasures;
+    // A list is one row: its items joined, in the record's order, so a list of one reads as the one.
+    const list = (key: string, label: string, a: (number | string)[], b: (number | string)[], text: (v: number | string) => string): Row => {
+      const value = (v: (number | string)[]) => (v.length ? v.join(" ") : null);
+      const shown = (v: (number | string)[]) => (v.length ? v.map(text).join(", ") : T.noValue);
+      return { key, label, ours: value(a), yours: value(b), oursText: shown(a), yoursText: shown(b) };
+    };
+    const yn = (v: boolean[]) => v.map((b) => (b ? 1 : 0));
+    return [
+      row("pixels", T.walkers.pixels, ours.pixels, yours.pixels),
+      row("every", T.walkers.every, ours.every, yours.every),
+      row("wall_turns", T.walkers.wall_turns, ours.wall_turns, yours.wall_turns),
+      list("inside", T.walkers.inside, yn(ours.inside), yn(yours.inside), (v) => (v ? T.walkers.yes : T.walkers.no)),
+      row("meetings", T.walkers.meetings, ours.meetings, yours.meetings),
+      list("overlap", T.walkers.overlap, ours.overlap, yours.overlap, (v) => n(Number(v))),
     ];
   }
   if (measure.plan.kind === "stomp") {
@@ -272,7 +311,7 @@ export function Program({ lang, lessons }: { lang: Lang; lessons: { key: string;
               <h3 className="eyebrow">{T.measuredH}</h3>
               {!p.measured ? (
                 <p className="quiet">{T.measuring}</p>
-              ) : !p.measured.yours ? (
+              ) : p.measured.yours === null ? (
                 <p className="notice fail" data-program-measure-why>{T.notMeasured(p.measured.why)}</p>
               ) : (
                 <>

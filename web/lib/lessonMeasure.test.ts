@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cells, jumpMeasures, padOf, parseScript, runMeasures, stompMeasures, sweeps, type JumpPlan, type RunPlan, type StompPlan } from "./lessonMeasure";
+import { cells, jumpMeasures, padOf, parseScript, runMeasures, stompMeasures, sweeps, walkersMeasures, type JumpPlan, type RunPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -159,5 +159,74 @@ describe("the stomp lesson", () => {
     expect(() => stompMeasures(cells(meeting({ stomp: 141, flat: 25 })), STOMP)).toThrow("never hit the square");
     expect(() => stompMeasures(cells(meeting({ stomp: 141, flat: 500, hit: 100 })), STOMP)).toThrow("stomped at frame 141 was still flat when the run ended");
     expect(() => stompMeasures(cells(new Uint8Array(300 * 2048)), STOMP)).toThrow("the walker never walked");
+  });
+});
+
+const WALKERS: WalkersPlan = { kind: "walkers", script: "", frames: 600, memory: { x: ["$40", "$41"], step: ["$42", "$43"] } };
+
+/**
+ * Two made-up walkers between walls at 16 and 224, each moving `pixels`
+ * every `every` frames from frame 0, turning as the lesson's do: at a wall
+ * the frame it would pass the wall (`inside` makes it go a pixel in first
+ * and come back the frame after, as Mario's Goombas do), and both when
+ * they come within 16 of each other (`meet` false lets them walk through).
+ */
+function walkers(o: { pixels?: number; every?: number; inside?: boolean; meet?: boolean }): Uint8Array {
+  const pixels = o.pixels ?? 1, every = o.every ?? 2, meet = o.meet ?? true;
+  const ram = new Uint8Array(600 * 2048);
+  const x = [60, 160], back = [0, 0];
+  let step = [1, -1];
+  for (let f = 0; f < 600; f++) {
+    if (f % every === 0) {
+      for (let i = 0; i < 2; i++) {
+        if (back[i]) {
+          // Pushed back out of the wall and turned, the move after going in.
+          x[i] += back[i];
+          back[i] = 0;
+          step[i] = -step[i];
+          continue;
+        }
+        const to = x[i] + step[i] * pixels;
+        if (to < 16 || to + 16 > 224) {
+          if (o.inside) {
+            // A move a pixel into the wall first, still facing it.
+            x[i] = to < 16 ? 15 : 208 + 1;
+            back[i] = to < 16 ? 1 : -1;
+          } else step[i] = -step[i];
+        } else x[i] = to;
+      }
+      if (meet && step[0] === 1 && step[1] === -1 && x[1] - x[0] <= 16) step = [-1, 1];
+    }
+    ram[f * 2048 + 0x40] = x[0];
+    ram[f * 2048 + 0x41] = x[1];
+    ram[f * 2048 + 0x42] = step[0] === 1 ? 1 : 0xff;
+    ram[f * 2048 + 0x43] = step[1] === 1 ? 1 : 0xff;
+  }
+  return ram;
+}
+
+describe("the walkers lesson", () => {
+  test("pace, turns at walls and meetings are read off the two walkers", () => {
+    const m = walkersMeasures(cells(walkers({})), WALKERS);
+    expect(m.pixels).toBe(1);
+    expect(m.every).toBe(2);
+    expect(m.inside).toEqual([false]);
+    expect(m.overlap).toEqual([0]);
+    expect(m.wall_turns).toBeGreaterThan(0);
+    expect(m.meetings).toBeGreaterThan(0);
+    // 2 pixels every 3 frames, and a frame spent inside each wall.
+    const q = walkersMeasures(cells(walkers({ pixels: 2, every: 3, inside: true })), WALKERS);
+    expect([q.pixels, q.every, q.inside]).toEqual([2, 3, [true]]);
+  });
+  test("walkers that never meet, or never reach a wall, are refused with the reason", () => {
+    expect(() => walkersMeasures(cells(walkers({ meet: false })), WALKERS)).toThrow("0 meetings");
+    const still = new Uint8Array(600 * 2048);
+    for (let f = 0; f < 600; f++) {
+      still[f * 2048 + 0x40] = 60;
+      still[f * 2048 + 0x41] = 160;
+      still[f * 2048 + 0x42] = 1;
+      still[f * 2048 + 0x43] = 0xff;
+    }
+    expect(() => walkersMeasures(cells(still), WALKERS)).toThrow("0 meetings and 0 turns at walls");
   });
 });
