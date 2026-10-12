@@ -5718,3 +5718,50 @@ Waiting on the owner: what Composer covers; whether to free a graphics
 card for sprites; the root disk at 99%; the sprite maker tried signed in
 with a picture from the generator; the `.window` line in the front
 door's file.
+
+## Checkpoint, 2026-10-12: walkers measured, the bench drawings at revision E
+
+Live and beta serve `6523380`, and nothing is waiting on a deploy.
+
+The website session's work since the last checkpoint:
+
+- **The walkers lesson is measured in the page** (`7519dd4`): the first
+  walker's pace, the turns at walls and whether a frame was spent inside
+  the wall, the meetings and how far the two overlap. Our own program,
+  unchanged, measures to exactly the numbers `data/lessons.json` holds,
+  on the live site too; walkers made to step every frame are measured
+  doing so, and walkers that walk through each other are refused with the
+  reason. A measure the record keeps as a list is one row with its items
+  joined.
+- **The hotbits bench page names the drawings' revision from the pull's
+  record** (`6523380`): geiger `2e4ea1a` is revision E of TM-TRNG-001,
+  which draws the optocoupler's tap as built, so the revision D note is
+  gone. The page reads the letter off the package file the record names,
+  says which two things the sheets mark not confirmed (the counter's and
+  the emitter's supplies staying separate, and the box's cable entry), and
+  sheet 3's words name the tap.
+- Jump, run, stomp and walkers are now measured; 21 lessons show no table.
+
+Also arrived, not yet taken: the console bundle at nes `68280c0` keeps the
+picture-chip, scroll, sound and mapper write logs the other seventeen
+lessons need, in the text the record's script already reads, with a test
+cartridge that writes every kind each frame. It is not boarded here. The
+hotbits service now serves a page per analysis run and its tracking routes
+answer, so a tracking page on the site is possible when wanted.
+
+Next for the website session, in order:
+
+1. Camera and platforms, measured in the Program window from memory alone,
+   each with the exact-match check.
+2. Board nes `68280c0` as a step of its own, then the lessons that need
+   the write logs, following the three rules the console session gave for
+   the worker (log on before the run and never across a loaded state; a
+   frame at a time while on; take the log or lose it).
+3. Sprites in their own output folder.
+4. Hotbits bench step 2 when geiger has its first converted page.
+5. Composer, once the owner says what it covers.
+
+Waiting on the owner: what Composer covers; whether to free a graphics
+card for sprites; the root disk at 99%; the sprite maker tried signed in
+with a picture from the generator; the `.window` line in the front
+door's file; whether a hotbits tracking page is wanted.
