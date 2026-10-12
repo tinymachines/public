@@ -5,7 +5,8 @@ import { DESK, NARROW, open, overflow } from "./lib";
 
 /**
  * /hotbits/bench: the bench the pool comes from, shelved like /nes/bench.
- * Every drawing it draws loads, each shelf lists exactly what
+ * Every drawing it draws loads under a note naming the package's revision
+ * as the pull's record has it, each shelf lists exactly what
  * docs/hotbits/shelves.json (written by pull-nesdocs.mjs) puts on it, a
  * page shelved from the NES notebook says so, the package link is a PDF,
  * the Japanese page has Japanese shelves and fits a phone, and the strip
@@ -13,11 +14,19 @@ import { DESK, NARROW, open, overflow } from "./lib";
  */
 
 type Doc = { route: string; lives?: string };
+/** The package's revision letter, from the file the pull's record names; the page states the same one. */
+const packageRev = (): string => {
+  const rec = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "nes", "bench", "artefacts.json"), "utf8")) as { artefacts: { trng?: { href: string } } };
+  const rev = rec.artefacts.trng?.href.match(/-rev([A-Z])\.pdf$/)?.[1];
+  if (!rev) throw new Error("the pull's record names no TRNG package; the revision check would pass on nothing");
+  return rev;
+};
 type Group = { key: string; ja: { heading: string }; docs: Doc[] };
 const SHELVES = path.join(__dirname, "..", "..", "docs", "hotbits", "shelves.json");
 const filled = (): Group[] => (JSON.parse(fs.readFileSync(SHELVES, "utf8")) as { groups: Group[] }).groups.filter((g) => g.docs.length);
 
-test("every drawing on the bench page loads, under the revision note", async ({ page }) => {
+test("every drawing on the bench page loads, under a note naming the record's revision", async ({ page }) => {
+  const rev = packageRev();
   await page.setViewportSize(DESK);
   await open(page, "/hotbits/bench", 300);
   await expect(page.locator("h1, .mh-title").first()).toHaveText("The bench");
@@ -28,7 +37,8 @@ test("every drawing on the bench page loads, under the revision note", async ({ 
     await figs.nth(i).scrollIntoViewIfNeeded();
     await expect.poll(() => figs.nth(i).evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   }
-  await expect(page.locator("[data-bench-revision]")).toContainText("revision D");
+  await expect(page.locator("[data-bench-revision]")).toHaveAttribute("data-bench-revision", rev);
+  await expect(page.locator("[data-bench-revision]")).toContainText(`revision ${rev}`);
 });
 
 test("each shelf lists what the generated shelves put on it, in order", async ({ page }) => {
