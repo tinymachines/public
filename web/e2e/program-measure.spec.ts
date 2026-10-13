@@ -9,10 +9,10 @@ import type { Lesson } from "../lib/lessons";
  * was measured: the lesson's own pad script, run in the page with nobody
  * watching, and the same reading of the console's memory.
  *
- * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens
- * and status lessons are measured so far; scroll, rooms and status read
- * the write logs, and screens takes only the part of its record the page
- * can.
+ * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
+ * status and sound lessons are measured so far; scroll, rooms, status and
+ * sound read the write logs, and screens takes only the part of its
+ * record the page can.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -472,10 +472,42 @@ test("a program that never sets the scroll while the picture draws is not given 
   await expect(page.locator("[data-program-measure-why]")).toContainText("never split");
 });
 
+/** The sound lesson's rows as the window keys them, from the record; a measure the record leaves out is "". */
+const soundRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "sound");
+  if (!l || l.kind !== "sound") throw new Error("no sound lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x: number | null | undefined) => (x === null || x === undefined ? "" : String(x));
+  return { music_before: v(m.music_before), starts: v(m.starts), sweep_settings: v(m.sweep_settings), sweep_frames: (m.sweep_frames ?? []).join(" "), music_back: v(m.music_back) } as Record<string, string>;
+};
+
+test("the sound lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = soundRows();
+  expect(Number(want.sweep_settings), "the record's jump sound set the sweep").toBeGreaterThan(0);
+  await assembled(page, undefined, "sound");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a jump sound without the pitch sweep shows no sweep settings and nothing that hangs on them, and the music before stays as recorded", async ({ page }) => {
+  const want = soundRows();
+  // The jump sound's sweep setting is $9B, bit 7 the sweep on; $1B is the same with it off.
+  await assembled(page, (t) => t.replace("    LDA #$9B\n    STA $4001", "    LDA #$1B\n    STA $4001"), "sound");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.sweep_settings).toEqual([want.sweep_settings, "0"]);
+  for (const k of ["starts", "sweep_frames", "music_back"]) expect(got[k], k).toEqual([want[k], ""]);
+  expect(got.music_before).toEqual([want.music_before, want.music_before]);
+});
+
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=sound", 500);
-  await expect(page.locator('[data-program-for="sound"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=pause", 500);
+  await expect(page.locator('[data-program-for="pause"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });

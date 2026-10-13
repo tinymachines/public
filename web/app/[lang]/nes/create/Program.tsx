@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -165,6 +165,13 @@ const S = {
       "timer-every": "The timer: frames between writes",
       other_bar_writes: "Other writes into the bar",
     },
+    sound: {
+      music_before: "Writes to the square channels in the second before the jump: the music",
+      starts: "Frames from the press to the jump sound's first setting with the sweep on",
+      sweep_settings: "Settings with the pitch sweep on, in the second after the press",
+      sweep_frames: "Frames of the jump sound those settings land on",
+      music_back: "Frames until the music writes to the channel again",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -317,6 +324,13 @@ const S = {
       "timer-writes": "タイマー: 書いた回数",
       "timer-every": "タイマー: 書き込みのあいだのフレーム数",
       other_bar_writes: "バーへのその他の書き込み",
+    },
+    sound: {
+      music_before: "ジャンプ前の一秒間の矩形波チャンネルへの書き込み: 音楽",
+      starts: "押してからジャンプ音の最初のスイープつき設定までのフレーム数",
+      sweep_settings: "押してからの一秒間の、ピッチスイープつきの設定の数",
+      sweep_frames: "それらの設定がジャンプ音の何フレーム目に当たるか",
+      music_back: "音楽がそのチャンネルにまた書くまでのフレーム数",
     },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
@@ -489,6 +503,18 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("timer-writes", B["timer-writes"], ours.timer.writes, yours.timer.writes),
       list("timer-every", ours.timer.every, yours.timer.every),
       row("other_bar_writes", B.other_bar_writes, ours.other_bar_writes, yours.other_bar_writes),
+    ];
+  }
+  if (measure.plan.kind === "sound") {
+    const ours = measure.ours as SoundMeasures, yours = theirs as SoundMeasures;
+    const D = T.sound;
+    const frames = (v?: number[]) => (v && v.length ? v.join(" ") : null);
+    return [
+      row("music_before", D.music_before, ours.music_before, yours.music_before),
+      row("starts", D.starts, ours.starts ?? null, yours.starts ?? null),
+      row("sweep_settings", D.sweep_settings, ours.sweep_settings, yours.sweep_settings),
+      { key: "sweep_frames", label: D.sweep_frames, ours: frames(ours.sweep_frames), yours: frames(yours.sweep_frames), oursText: ours.sweep_frames?.join(", ") || T.noValue, yoursText: yours.sweep_frames?.join(", ") || T.noValue },
+      row("music_back", D.music_back, ours.music_back ?? null, yours.music_back ?? null),
     ];
   }
   if (measure.plan.kind === "stomp") {

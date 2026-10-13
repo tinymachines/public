@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -485,5 +485,31 @@ describe("the status lesson", () => {
     expect(() => statusMeasures(a.vram, a.scroll, STATUS)).toThrow("never split");
     const b = status({ timer: false });
     expect(() => statusMeasures(b.vram, b.scroll, STATUS)).toThrow("nothing was written into the bar");
+  });
+});
+
+const SOUND: SoundPlan = { kind: "sound", script: "AT 60 80\nAT 150 81\nAT 170 80\nAT 300 00\n", frames: 400, walk_from: 60 };
+
+/** A made-up sound log: the tune writes the first square's four registers every 16 frames from frame 2; the jump at 150 sets the sweep (`sweep` on) on frames 150 and 153, and the tune's next note at 162 takes the channel back. */
+function sound(o: { sweep?: boolean }): string {
+  const sweep = o.sweep ?? true;
+  const lines: string[] = [];
+  for (let f = 2; f < 400; f += 16) for (const r of ["00", "01", "02", "03"]) lines.push(`${f} ${r} ${r === "01" ? 8 : 100}`);
+  for (const f of [150, 153]) {
+    lines.push(`${f} 00 132`);
+    lines.push(`${f} 01 ${sweep ? 155 : 27}`);
+    lines.push(`${f} 02 144`);
+  }
+  return lines.sort((a, b) => Number(a.split(" ")[0]) - Number(b.split(" ")[0])).map((l) => l + "\n").join("");
+}
+
+describe("the sound lesson", () => {
+  test("the music before, the sweep settings and the music coming back are read off the sound chip's log", () => {
+    // Four writes a note, notes at 98, 114, 130 and 146 in the second before 150: sixteen; the tune's next note is 162, twelve frames on.
+    expect(soundMeasures(sound({}), SOUND)).toEqual({ music_before: 16, starts: 0, sweep_settings: 2, sweep_frames: [0, 3], music_back: 12 });
+    expect(soundMeasures(sound({ sweep: false }), SOUND)).toEqual({ music_before: 16, sweep_settings: 0 });
+  });
+  test("a script that never presses A is refused", () => {
+    expect(() => soundMeasures(sound({}), { ...SOUND, script: "AT 60 80\n" })).toThrow("never presses A");
   });
 });

@@ -10,14 +10,15 @@
  * window's browser test measures our own cartridge with this and requires
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
- * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens
- * and status lessons are measured here so far. Every lesson has its own
- * way of being measured, and each one is added with that check or not at
- * all. Scroll, rooms and status read the write logs; screens takes the
- * part of its record that reads memory and the pad, not our autopsy's.
+ * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
+ * status and sound lessons are measured here so far. Every lesson has its
+ * own way of being measured, and each one is added with that check or not
+ * at all. Scroll, rooms, status and sound read the write logs; screens
+ * takes the part of its record that reads memory and the pad, not our
+ * autopsy's.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, StatusMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -104,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -744,5 +745,47 @@ export function statusMeasures(vram: string, scrollLog: string, plan: StatusPlan
     bar_scroll: inBlank[0].split(" ").map(Number),
     timer: { row: (a & 0x3ff) >> 5, column: a & 31, tiles: n, writes: written[1], every: [...new Set(fs.slice(1).map((f, k) => f - fs[k]))].sort((p, q) => p - q) },
     other_bar_writes: [...bar.values()].reduce((s, v) => s + v, 0) - written[1],
+  };
+}
+
+/** What the sound lesson's measurement reads, from its lesson.json: the first press of A after walk_from, and the sound chip's log. */
+export interface SoundPlan {
+  kind: "sound";
+  script: string;
+  frames: number;
+  walk_from: number;
+}
+
+/**
+ * The sound lesson's numbers (board-lessons.py's sound_measures), from the
+ * log of every write to the sound chip and the pad, never the values: the
+ * writes to the square channels in the second before the first press of A
+ * (the music), the settings with the pitch sweep on in the second after it
+ * (the jump sound), when the first comes and on which frames of the sound
+ * they land, and when the music writes to the channel again. A sound that
+ * never sets the sweep has those last three left out, as the record leaves
+ * them. A script that never presses A is refused.
+ */
+export function soundMeasures(apu: string, plan: SoundPlan): SoundMeasures {
+  const pad = padOf(parseScript(plan.script), plan.frames);
+  let press = -1;
+  for (let f = Math.max(plan.walk_from, 1); f < plan.frames && press < 0; f++) if (pad[f] & 1 && !(pad[f - 1] & 1)) press = f;
+  if (press < 0) throw new Error("the lesson's script never presses A");
+  const writes: [number, string, number][] = [];
+  for (const line of apu.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length === 3) writes.push([Number(w[0]), w[1], Number(w[2])]);
+  }
+  const before = writes.filter(([f, r]) => press - 60 <= f && f < press && ["00", "01", "02", "03"].includes(r)).length;
+  const sweepOn = writes.filter(([f, r, v]) => press <= f && f < press + 60 && r === "01" && v & 0x80).map(([f]) => f);
+  if (!sweepOn.length) return { music_before: before, sweep_settings: 0 };
+  const last = sweepOn[sweepOn.length - 1];
+  const back = writes.find(([f, r, v]) => f > last && f < press + 120 && r === "01" && !(v & 0x80));
+  return {
+    music_before: before,
+    starts: sweepOn[0] - press,
+    sweep_settings: sweepOn.length,
+    sweep_frames: [...new Set(sweepOn.map((f) => f - sweepOn[0]))].sort((p, q) => p - q),
+    music_back: back ? back[0] - sweepOn[0] : null,
   };
 }
