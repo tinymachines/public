@@ -11,14 +11,14 @@
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status and sound lessons are measured here so far. Every lesson has its
- * own way of being measured, and each one is added with that check or not
- * at all. Scroll, rooms, status and sound read the write logs; screens
- * takes the part of its record that reads memory and the pad, not our
- * autopsy's.
+ * status, sound and pause lessons are measured here so far. Every lesson
+ * has its own way of being measured, and each one is added with that check
+ * or not at all. Scroll, rooms, status, sound and pause read the write
+ * logs, and pause two pictures besides; screens takes the part of its
+ * record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -787,5 +787,91 @@ export function soundMeasures(apu: string, plan: SoundPlan): SoundMeasures {
     sweep_settings: sweepOn.length,
     sweep_frames: [...new Set(sweepOn.map((f) => f - sweepOn[0]))].sort((p, q) => p - q),
     music_back: back ? back[0] - sweepOn[0] : null,
+  };
+}
+
+/**
+ * What the pause lesson's measurement reads, from its lesson.json: the
+ * square's x and the game's own count of frames Start is still ignored,
+ * the two frames whose pictures are compared, and (fixed per cartridge by
+ * board-lessons.py) the register the chime's period-high goes to and the
+ * music's registers.
+ */
+export interface PausePlan {
+  kind: "pause";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: string; wait: string };
+  grabs: [number, number];
+  chime: string;
+  music: string[];
+}
+
+/**
+ * The pause lesson's numbers (board-lessons.py's pause_measures), from a
+ * run that holds Right and presses Start (pause), Start again too soon, A,
+ * then Start (unpause). Which presses stopped or started the world is read
+ * off the square's x: a press that changes whether it is moving three
+ * frames on took; exactly one pause and one unpause are required. Then how
+ * long the other presses came after the pause, whether A was pressed in
+ * it, the frames from each press to the square holding or moving, whether
+ * it held throughout, the game's own wait, the writes to the picture chip's
+ * memory while paused, whether the two pictures taken while paused are the
+ * same byte for byte, and from the sound chip's log whether everything was
+ * cut on the press, the chime's notes and spacing in the wait, and the
+ * frames from the unpause to the music's first write. A picture the run
+ * did not take is refused rather than compared empty.
+ */
+export function pauseMeasures(cell: (f: number, a: number) => number, vram: string, apu: string, pictures: [Uint8Array | undefined, Uint8Array | undefined], plan: PausePlan): PauseMeasures {
+  const x = addr(plan.memory.x), wait = addr(plan.memory.wait), n = plan.frames;
+  const pad = padOf(parseScript(plan.script), n);
+  const moving = (f: number) => cell(f, x) !== cell(f - 1, x);
+  const pressed = (bit: number) => (f: number) => (pad[f] & bit) !== 0 && (pad[f - 1] & bit) === 0;
+  const first = (from: number, to: number, ok: (f: number) => boolean) => {
+    for (let f = from; f < to; f++) if (ok(f)) return f;
+    return undefined;
+  };
+  const starts: number[] = [];
+  for (let f = Math.max(plan.walk_from, 1); f < n; f++) if (pressed(0x08)(f)) starts.push(f);
+  const took = starts.filter((f) => moving(f - 1) !== moving(f + 3));
+  if (took.length !== 2) throw new Error(`${took.length} of ${starts.length} presses of Start changed whether the square moved; one pause and one unpause are needed`);
+  const [on, off] = took;
+  const stopped = first(on, off, (f) => !moving(f));
+  if (stopped === undefined) throw new Error("the square never held still between the two presses");
+  const started = first(off, n, moving);
+  if (started === undefined) throw new Error("the square never moved again after the unpause");
+  const stops = stopped - on, restarts = started - off;
+  const zero = first(on, off, (f) => cell(f, wait) === 0);
+  if (zero === undefined) throw new Error("the count of frames Start is ignored never reached zero before the unpause");
+  const count = zero - on;
+  const [p, q] = pictures;
+  if (!p?.length) throw new Error(`no picture was taken at frame ${plan.grabs[0]}`);
+  if (!q?.length) throw new Error(`no picture was taken at frame ${plan.grabs[1]}`);
+  let drawn = 0;
+  for (const line of vram.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length === 4 && on + 1 <= Number(w[0]) && Number(w[0]) <= off) drawn++;
+  }
+  const writes: [number, string, number][] = [];
+  for (const line of apu.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length === 3) writes.push([Number(w[0]), w[1], Number(w[2])]);
+  }
+  const notes = [...new Set(writes.filter(([f, r]) => r === plan.chime && on <= f && f < on + count).map(([f]) => f))].sort((a, b) => a - b);
+  const back = writes.find(([f, r]) => f > off && plan.music.includes(r));
+  return {
+    ignored_after: starts.filter((f) => !took.includes(f) && on < f && f < off).map((f) => f - on),
+    a_pressed: first(on + 1, off, pressed(0x01)) !== undefined,
+    stops,
+    starts: restarts,
+    held: first(on + stops, off + restarts, moving) === undefined,
+    wait: count,
+    drawn,
+    same_picture: p.length === q.length && p.every((v, i) => v === q[i]),
+    cut: writes.some(([f, r, v]) => (f === on || f === on + 1) && r === "15" && v === 0),
+    chime_notes: notes.length,
+    chime_every: [...new Set(notes.slice(1).map((b, i) => b - notes[i]))].sort((a, b) => a - b),
+    music_back: back ? back[0] - off : null,
   };
 }

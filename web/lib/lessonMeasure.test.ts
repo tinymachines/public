@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -511,5 +511,78 @@ describe("the sound lesson", () => {
   });
   test("a script that never presses A is refused", () => {
     expect(() => soundMeasures(sound({}), { ...SOUND, script: "AT 60 80\n" })).toThrow("never presses A");
+  });
+});
+
+const PAUSE: PausePlan = {
+  kind: "pause",
+  script: "AT 100 80\nAT 150 88\nAT 156 80\nAT 165 88\nAT 171 80\nAT 180 81\nAT 190 80\nAT 220 88\nAT 226 80\nAT 320 00\n",
+  frames: 330,
+  walk_from: 100,
+  memory: { x: "$11", wait: "$54" },
+  grabs: [160, 215],
+  chime: "07",
+  music: ["00", "01", "02", "03"],
+};
+
+/**
+ * A made-up pause: the square walks a pixel a frame from frame 100, holds
+ * from the press at 150 (`late` frames after it) to the press at 220 (and
+ * `late` after that); the game's count at $54 is set to `wait` on each
+ * press and falls a frame at a time. The tune writes the first square's
+ * four registers every 16 frames from frame 2 until the pause and again
+ * from `wait` frames after the unpause; the press cuts the chip and the
+ * chime's three notes land 8 frames apart on the second square. `takes`
+ * off is a Start that never does anything.
+ */
+function pause(o: { wait?: number; late?: number; drawn?: boolean; same?: boolean; takes?: boolean }): { ram: Uint8Array; vram: string; apu: string; pictures: [Uint8Array, Uint8Array] } {
+  const wait = o.wait ?? 32, late = o.late ?? 0, takes = o.takes ?? true;
+  const ram = new Uint8Array(330 * 2048);
+  let x = 40, count = 0;
+  for (let f = 0; f < 330; f++) {
+    const paused = takes && f >= 150 + late && f < 220 + late;
+    if (f >= 100 && !paused) x = (x + 1) & 0xff;
+    if (takes && (f === 150 || f === 220)) count = wait;
+    else if (count > 0) count--;
+    ram[f * 2048 + 0x11] = x;
+    ram[f * 2048 + 0x54] = count;
+  }
+  const vram = "1 2000 960 1\n" + (o.drawn ? "170 2041 1 1\n" : "");
+  const lines: string[] = [];
+  const tune = (f: number) => ["00", "01", "02", "03"].forEach((r) => lines.push(`${f} ${r} 100`));
+  for (let f = 2; f < 330; f += 16) if (f < 150 || !takes) tune(f);
+  if (takes) {
+    for (const press of [150, 220]) {
+      lines.push(`${press} 15 0`, `${press} 15 3`);
+      for (const k of [0, 8, 16]) lines.push(`${press + k} 07 0`);
+    }
+    for (let f = 220 + wait; f < 330; f += 16) tune(f);
+  }
+  const apu = lines.map((l) => l + "\n").join("");
+  const a = Uint8Array.from([1, 2, 3, 4]), b = Uint8Array.from(o.same === false ? [1, 2, 3, 5] : [1, 2, 3, 4]);
+  return { ram, vram, apu, pictures: [a, b] };
+}
+
+describe("the pause lesson", () => {
+  test("the presses that took, the hold, the wait, what was drawn and the sound's shape are read off memory, the pad, the logs and two pictures", () => {
+    const p = pause({});
+    expect(pauseMeasures(cells(p.ram), p.vram, p.apu, p.pictures, PAUSE)).toEqual({
+      ignored_after: [15], a_pressed: true, stops: 0, starts: 0, held: true, wait: 32, drawn: 0, same_picture: true, cut: true, chime_notes: 3, chime_every: [8], music_back: 32,
+    });
+  });
+  test("a square that takes two frames to hold and to move again, a shorter wait, a write while paused and a picture that changed all show", () => {
+    const p = pause({ late: 2, wait: 16, drawn: true, same: false });
+    const m = pauseMeasures(cells(p.ram), p.vram, p.apu, p.pictures, PAUSE);
+    // The chime's third note lands at 166, past a wait of 16; the music is back 16 frames after the unpause.
+    expect(m).toMatchObject({ stops: 2, starts: 2, held: true, wait: 16, drawn: 1, same_picture: false, chime_notes: 2, chime_every: [8], music_back: 16 });
+    const s = pause({ wait: 16 }).apu.replace("150 07 0\n158 07 0\n166 07 0\n", "150 07 0\n158 07 0\n");
+    expect(pauseMeasures(cells(pause({ wait: 16 }).ram), "", s, p.pictures, { ...PAUSE, script: PAUSE.script.replace("AT 180 81\nAT 190 80\n", "") })).toMatchObject({ a_pressed: false, chime_notes: 2, chime_every: [8] });
+  });
+  test("a Start that never takes, and a picture the run did not take, are refused", () => {
+    const p = pause({ takes: false });
+    expect(() => pauseMeasures(cells(p.ram), p.vram, p.apu, p.pictures, PAUSE)).toThrow("0 of 3 presses of Start");
+    const q = pause({});
+    expect(() => pauseMeasures(cells(q.ram), q.vram, q.apu, [q.pictures[0], new Uint8Array(0)], PAUSE)).toThrow("no picture was taken at frame 215");
+    expect(() => pauseMeasures(cells(q.ram), q.vram, q.apu, [undefined, q.pictures[1]], PAUSE)).toThrow("no picture was taken at frame 160");
   });
 });

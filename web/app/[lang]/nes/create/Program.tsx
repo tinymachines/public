@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -172,6 +172,22 @@ const S = {
       sweep_frames: "Frames of the jump sound those settings land on",
       music_back: "Frames until the music writes to the channel again",
     },
+    pause: {
+      ignored_after: "Presses of Start that were ignored: frames after the pause",
+      a_pressed: "A was pressed while paused",
+      stops: "Frames from the pause to the square holding still",
+      starts: "Frames from the unpause to the square moving again",
+      held: "The square held still the whole pause",
+      wait: "Frames Start is ignored after a press",
+      drawn: "Writes to the picture while paused",
+      same_picture: "Two pictures taken while paused are the same, byte for byte",
+      cut: "The sound was cut on the press",
+      chime_notes: "Notes of the chime",
+      chime_every: "Frames between the chime's notes",
+      music_back: "Frames from the unpause to the music's first write",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -331,6 +347,22 @@ const S = {
       sweep_settings: "押してからの一秒間の、ピッチスイープつきの設定の数",
       sweep_frames: "それらの設定がジャンプ音の何フレーム目に当たるか",
       music_back: "音楽がそのチャンネルにまた書くまでのフレーム数",
+    },
+    pause: {
+      ignored_after: "無視されたStartの押下: ポーズからのフレーム数",
+      a_pressed: "ポーズ中にAが押された",
+      stops: "ポーズから四角が止まるまでのフレーム数",
+      starts: "ポーズ解除から四角がまた動くまでのフレーム数",
+      held: "四角はポーズの間ずっと止まっていた",
+      wait: "押してからStartが無視されるフレーム数",
+      drawn: "ポーズ中の絵への書き込み",
+      same_picture: "ポーズ中に撮った二枚の絵はバイト単位で同じ",
+      cut: "押した瞬間に音が切られた",
+      chime_notes: "チャイムの音の数",
+      chime_every: "チャイムの音の間のフレーム数",
+      music_back: "ポーズ解除から音楽の最初の書き込みまでのフレーム数",
+      yes: "はい",
+      no: "いいえ",
     },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
@@ -515,6 +547,28 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("sweep_settings", D.sweep_settings, ours.sweep_settings, yours.sweep_settings),
       { key: "sweep_frames", label: D.sweep_frames, ours: frames(ours.sweep_frames), yours: frames(yours.sweep_frames), oursText: ours.sweep_frames?.join(", ") || T.noValue, yoursText: yours.sweep_frames?.join(", ") || T.noValue },
       row("music_back", D.music_back, ours.music_back ?? null, yours.music_back ?? null),
+    ];
+  }
+  if (measure.plan.kind === "pause") {
+    const ours = measure.ours as PauseMeasures, yours = theirs as PauseMeasures;
+    const P = T.pause;
+    const list = (key: "ignored_after" | "chime_every", a: number[], b: number[]): Row => ({
+      key, label: P[key], ours: a.length ? a.join(" ") : null, yours: b.length ? b.join(" ") : null, oursText: a.length ? a.join(", ") : T.noValue, yoursText: b.length ? b.join(", ") : T.noValue,
+    });
+    const yn = (key: "a_pressed" | "held" | "same_picture" | "cut", a: boolean, b: boolean): Row => ({ key, label: P[key], ours: Number(a), yours: Number(b), oursText: a ? P.yes : P.no, yoursText: b ? P.yes : P.no });
+    return [
+      list("ignored_after", ours.ignored_after, yours.ignored_after),
+      yn("a_pressed", ours.a_pressed, yours.a_pressed),
+      row("stops", P.stops, ours.stops, yours.stops),
+      row("starts", P.starts, ours.starts, yours.starts),
+      yn("held", ours.held, yours.held),
+      row("wait", P.wait, ours.wait, yours.wait),
+      row("drawn", P.drawn, ours.drawn, yours.drawn),
+      yn("same_picture", ours.same_picture, yours.same_picture),
+      yn("cut", ours.cut, yours.cut),
+      row("chime_notes", P.chime_notes, ours.chime_notes, yours.chime_notes),
+      list("chime_every", ours.chime_every, yours.chime_every),
+      row("music_back", P.music_back, ours.music_back, yours.music_back),
     ];
   }
   if (measure.plan.kind === "stomp") {

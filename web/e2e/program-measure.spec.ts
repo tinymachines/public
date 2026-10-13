@@ -10,9 +10,9 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status and sound lessons are measured so far; scroll, rooms, status and
- * sound read the write logs, and screens takes only the part of its
- * record the page can.
+ * status, sound and pause lessons are measured so far; scroll, rooms,
+ * status, sound and pause read the write logs, pause two pictures besides,
+ * and screens takes only the part of its record the page can.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -506,10 +506,56 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=pause", 500);
-  await expect(page.locator('[data-program-for="pause"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=title", 500);
+  await expect(page.locator('[data-program-for="title"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
   await expect(page.locator("[data-program-measured]")).toHaveCount(0);
+});
+
+/** The pause lesson's rows as the window keys them, from the record: lists joined by a space, yes and no as 1 and 0, none as "". */
+const pauseRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "pause");
+  if (!l || l.kind !== "pause") throw new Error("no pause lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x: number | null) => (x === null ? "" : String(x));
+  const yn = (b: boolean) => (b ? "1" : "0");
+  return {
+    ignored_after: m.ignored_after.join(" "), a_pressed: yn(m.a_pressed), stops: v(m.stops), starts: v(m.starts), held: yn(m.held), wait: v(m.wait), drawn: v(m.drawn),
+    same_picture: yn(m.same_picture), cut: yn(m.cut), chime_notes: v(m.chime_notes), chime_every: m.chime_every.join(" "), music_back: v(m.music_back),
+  } as Record<string, string>;
+};
+
+test("the pause lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = pauseRows();
+  expect(want.same_picture, "the record's two pictures taken while paused are the same; a comparison of nothing would say so too").toBe("1");
+  expect(Number(want.chime_notes), "the record's chime has notes").toBeGreaterThan(0);
+  await assembled(page, undefined, "pause");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a pause that ignores Start for half as long waits 16, loses the chime's note past the wait and brings the music back in 16, and the hold stays as recorded", async ({ page }) => {
+  const want = pauseRows();
+  // The press loads $54 with the frames Start is ignored: $20 is 32, $10 is 16.
+  await assembled(page, (t) => t.replace("    LDA #$20\n    STA $54", "    LDA #$10\n    STA $54"), "pause");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.wait).toEqual([want.wait, "16"]);
+  expect(got.music_back).toEqual([want.music_back, "16"]);
+  expect(got.chime_notes).toEqual([want.chime_notes, String(Number(want.chime_notes) - 1)]);
+  for (const k of ["ignored_after", "a_pressed", "stops", "starts", "held", "drawn", "same_picture", "cut", "chime_every"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program whose Start never pauses is not given numbers, and says why", async ({ page }) => {
+  // The new press of Start is tested and acted on; jumping past it leaves every press ignored.
+  await assembled(page, (t) => t.replace("    AND #$10\n    BEQ none", "    AND #$10\n    JMP none"), "pause");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("0 of 3 presses of Start");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

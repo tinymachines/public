@@ -7,8 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
-import type { CameraMeasures, JumpMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
-import { cameraMeasures, cells, jumpMeasures, parseScript, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type LogKind, type Plan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScreensYours, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "@/lib/lessonMeasure";
+import type { CameraMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import { cameraMeasures, cells, jumpMeasures, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type LogKind, type PausePlan, type Plan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScreensYours, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -18,11 +18,11 @@ export interface Parts {
   prg: string;
   chr: string;
   /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
-  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | { plan: ScrollPlan; ours: ScrollMeasures } | { plan: RoomsPlan; ours: RoomsMeasures } | { plan: ScreensPlan; ours: ScreensMeasures } | { plan: StatusPlan; ours: StatusMeasures } | { plan: SoundPlan; ours: SoundMeasures } | null;
+  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | { plan: ScrollPlan; ours: ScrollMeasures } | { plan: RoomsPlan; ours: RoomsMeasures } | { plan: ScreensPlan; ours: ScreensMeasures } | { plan: StatusPlan; ours: StatusMeasures } | { plan: SoundPlan; ours: SoundMeasures } | { plan: PausePlan; ours: PauseMeasures } | null;
 }
 
 /** What a measurement comes to. The stomp and screens lessons' are without the autopsy's part, which the page does not take. */
-export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures | ScrollMeasures | RoomsMeasures | ScreensYours | StatusMeasures | SoundMeasures;
+export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures | ScrollMeasures | RoomsMeasures | ScreensYours | StatusMeasures | SoundMeasures | PauseMeasures;
 
 /** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
 export type Measured = { yours: Yours; why: null } | { yours: null; why: string };
@@ -122,9 +122,9 @@ export function ours() {
  * that never lands) comes back as the reason.
  */
 async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
-  type Job = { script: [number, number][]; frames: number; stop?: { from: number; cell: number }; logs?: LogKind[] };
-  /** A run: its memory a frame at a time, and the write logs it asked for (storyboard's text, by kind). */
-  type Run = { cell: (f: number, a: number) => number; logs: Partial<Record<LogKind, string>> };
+  type Job = { script: [number, number][]; frames: number; stop?: { from: number; cell: number }; logs?: LogKind[]; grabs?: number[] };
+  /** A run: its memory a frame at a time, the write logs it asked for (storyboard's text, by kind), and the pictures it asked for, by frame. */
+  type Run = { cell: (f: number, a: number) => number; logs: Partial<Record<LogKind, string>>; pictures: Record<number, Uint8Array> };
   const workers: Worker[] = [];
   /** One thread taking jobs off the list in turn until it is empty; answers land at each job's own place. */
   const crew = (jobs: Job[], out: Run[], next: { n: number }) =>
@@ -137,9 +137,9 @@ async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
         w.postMessage({ id, rom, ...jobs[id] });
       };
       w.onmessage = (e) => {
-        const d = e.data as { id: number; ok?: boolean; answer?: { ram: ArrayBuffer; logs: Partial<Record<LogKind, string>> }; error?: string };
+        const d = e.data as { id: number; ok?: boolean; answer?: { ram: ArrayBuffer; logs: Partial<Record<LogKind, string>>; pictures?: Record<number, Uint8Array> }; error?: string };
         if (!d.ok) return reject(new Error(d.error));
-        out[d.id] = { cell: cells(new Uint8Array(d.answer!.ram)), logs: d.answer!.logs ?? {} };
+        out[d.id] = { cell: cells(new Uint8Array(d.answer!.ram)), logs: d.answer!.logs ?? {}, pictures: d.answer!.pictures ?? {} };
         take();
       };
       w.onerror = () => reject(new Error("the measuring worker failed to load"));
@@ -178,6 +178,11 @@ async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
       // The sound's shape is read off the writes to the sound chip alone.
       const r = (await runs([{ ...main, logs: ["apu"] }]))[0];
       return { yours: soundMeasures(r.logs.apu ?? "", plan), why: null };
+    }
+    if (plan.kind === "pause") {
+      // The hold is read off memory and the pad, what was drawn off the picture-memory writes and two pictures, the sound off its chip's writes.
+      const r = (await runs([{ ...main, logs: ["vram", "apu"], grabs: plan.grabs }]))[0];
+      return { yours: pauseMeasures(r.cell, r.logs.vram ?? "", r.logs.apu ?? "", [r.pictures[plan.grabs[0]], r.pictures[plan.grabs[1]]], plan), why: null };
     }
     const air = parseInt(plan.memory.air.slice(1), 16);
     const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);

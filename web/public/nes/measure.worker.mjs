@@ -5,8 +5,8 @@
  * storyboard example): the script's pad byte is set, one frame runs, and
  * $0000 to $07FF is read with no side effect.
  *
- *   main -> here   { id, rom, script: [[frame, pad], ...], frames, stop?, logs? }
- *   here -> main   { id, ok: true, answer: { ram, frames, logs } } | { id, ok: false, error }
+ *   main -> here   { id, rom, script: [[frame, pad], ...], frames, stop?, logs?, grabs? }
+ *   here -> main   { id, ok: true, answer: { ram, frames, logs, pictures } } | { id, ok: false, error }
  *
  * `ram` is frames * 2048 bytes, a frame after a frame. The script is
  * sorted by frame; a pad byte holds until the next line changes it.
@@ -26,15 +26,32 @@
  * frame numbers are storyboard's. It costs something (a trace every CPU
  * cycle), so it is off unless asked for. The answer's `logs` holds the
  * text of each kind asked for; with no `logs` asked it is {}.
+ *
+ * `grabs`, a list of frame numbers, asks for the picture as each of those
+ * frames ended: the palette index of every visible pixel, 256 by 240, a
+ * byte each, row by row, which is what storyboard draws its frame-NNNNN.ppm
+ * from (the console's raster is 341 dots by 262 lines; the picture is the
+ * 256 dots from dot 1 of its first 240 lines, the index's low six bits).
+ * The answer's `pictures` maps each frame asked for to those bytes; a frame
+ * past the run is left out.
  */
 
 import initNes, { Nes } from "./wasm/nes_wasm.js";
 
 const ready = initNes();
 const CELLS = 0x800;
+// The raster (nes-bus: DOTS_PER_LINE, ACTIVE_FIRST_DOT) and the picture cut from it.
+const DOTS = 341, FIRST_DOT = 1, WIDTH = 256, HEIGHT = 240;
+
+/** The visible picture of a raster, as storyboard writes it: a palette index a pixel. */
+function picture(raster) {
+  const out = new Uint8Array(WIDTH * HEIGHT);
+  for (let row = 0; row < HEIGHT; row++) for (let x = 0; x < WIDTH; x++) out[row * WIDTH + x] = raster[row * DOTS + FIRST_DOT + x] & 63;
+  return out;
+}
 
 self.onmessage = async (e) => {
-  const { id, rom, script, frames, stop, logs = [] } = e.data;
+  const { id, rom, script, frames, stop, logs = [], grabs = [] } = e.data;
   let nes = null;
   try {
     await ready;
@@ -42,19 +59,21 @@ self.onmessage = async (e) => {
     if (logs.length) nes.set_write_log(true);
     const ram = new Uint8Array(frames * CELLS);
     let next = 0, pad = 0, ran = 0;
+    const pictures = {};
     for (let f = 0; f < frames; f++) {
       while (next < script.length && script[next][0] <= f) pad = script[next++][1];
       nes.set_pad(pad & 0xff);
       nes.run_frames(1);
       ram.set(nes.peek(0, CELLS), f * CELLS);
       ran = f + 1;
+      if (grabs.includes(f) && nes.has_frame()) pictures[f] = picture(nes.colour());
       if (stop && f >= stop.from && ram[f * CELLS + stop.cell]) break;
     }
     const kept = ran === frames ? ram : ram.slice(0, ran * CELLS);
     // Each kind's lines, which empties it; a kind the console has no log for is refused by name.
     const texts = {};
     for (const kind of logs) texts[kind] = nes.take_writes(kind);
-    self.postMessage({ id, ok: true, answer: { ram: kept.buffer, frames: ran, logs: texts } }, [kept.buffer]);
+    self.postMessage({ id, ok: true, answer: { ram: kept.buffer, frames: ran, logs: texts, pictures } }, [kept.buffer, ...Object.values(pictures).map((p) => p.buffer)]);
   } catch (err) {
     self.postMessage({ id, ok: false, error: String(err?.message ?? err) });
   } finally {
