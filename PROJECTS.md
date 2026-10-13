@@ -5765,3 +5765,69 @@ Waiting on the owner: what Composer covers; whether to free a graphics
 card for sprites; the root disk at 99%; the sprite maker tried signed in
 with a picture from the generator; the `.window` line in the front
 door's file; whether a hotbits tracking page is wanted.
+
+## Checkpoint, 2026-10-13, morning: eleven lessons measured in the Program window, the console re-boarded with write logs
+
+Live and beta serve `f323227`, and nothing is waiting on a deploy.
+
+The website session's work since the last checkpoint, in the order it
+shipped:
+
+- **Camera and platforms** measured in the Program window from memory
+  alone (`d845060`, `ea9d654`), which closed the memory-only group.
+- **The console re-boarded at nes `68280c0`** (`3e6a0f0`): 93 tests
+  green; the bundle can keep what a program writes to the picture chip,
+  the scroll, the sound chip and the cartridge's own range, in the text
+  the lessons' record already reads. The boarding's own speed figure
+  under node moved from 0.87 to 1.23 ms a frame; the console session
+  measured the before and after bundles alternately and found the same
+  band, so that bench is about 20 percent noisy on this box and the log
+  costs nothing when off.
+- **The measuring worker keeps the write logs when a measurement asks**
+  (`296a541`), held byte for byte to storyboard's files on the scroll and
+  sound runs, with the run's memory the same log on and off; the cost
+  measured in the page is 2 to 8 percent with the log on.
+- **Scroll, rooms, status and sound** measured from the logs (`29fa2da`,
+  `30d3407`, `894e642`, `3c1ddef`); **screens** measured in part
+  (`f357b9b`): the page takes what memory and the pad give and says under
+  the table that our autopsy's part (the stretches, the jump engine, the
+  table) is not taken, and the stomp window now says the same of its
+  touch routine.
+- **The hotbits bench drawings at revision F** (`6523380` for E,
+  `15cce0f` for F): the page names the revision from the pull's record,
+  and its note now says nothing on the sheets is marked not confirmed and
+  that the one thing still unread is whether the chassis is bonded to a
+  ground.
+- **The footer's family copy resynced** (`f323227`): the registry named
+  two slots and a tone, and the deploy's own check refused the drift
+  before anything was built, as it should.
+- Also on the box, by the tinypeek session on the owner's word in its
+  session: tinypeek.tinymachines.ai is live with its own vhost; the
+  submodule now carries a private tinylens gitlink, so the pin update
+  here stays non-recursive.
+
+Eleven lessons are measured in the page: jump, run, stomp, walkers,
+camera, platforms, scroll, rooms, screens (in part), status, sound. The
+other fourteen are not: pause, title, items, menu, splash, about, solid,
+flicker, lives, coins, hitbox, pit, gameover, interlude. Every one of
+them reads memory, the pad or the logs the worker now keeps, so each is
+a matter of mirroring its measure with the exact-match check, one at a
+time, as the eleven were.
+
+Not covered: the mapper log is held only to being empty, since every
+lesson is an NROM cartridge; a lesson with a mapper would be the first
+real check of it. The sound lesson has no refusal a program change can
+earn, so it has two browser tests rather than three.
+
+Next for the website session, in order:
+
+1. The fourteen remaining lessons, pause first, each with the exact-match
+   check.
+2. Sprites in their own output folder.
+3. Hotbits bench step 2 when geiger has its first converted page.
+4. Composer, once the owner says what it covers.
+
+Waiting on the owner: what Composer covers; whether to free a graphics
+card for sprites; the root disk at 99%; the sprite maker tried signed in
+with a picture from the generator; the `.window` line in the front
+door's file; whether a hotbits tracking page is wanted.
