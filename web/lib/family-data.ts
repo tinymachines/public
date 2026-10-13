@@ -24,8 +24,8 @@ export const FAMILY: readonly FamilyMember[] = [
   { hue: "spruce", hex: "#1b7d82", name: "vizmin", role: "lab", reserved: true },
   { hue: "steel", hex: "#41749d", name: "bradley.io", href: "https://bradley.io", role: "home" },
   { hue: "iris", hex: "#6a679e", name: "tinymachines.ai", href: "https://tinymachines.ai", role: "lab" },
-  { hue: "plum", hex: "#8b5c86" },
-  { hue: "rose", hex: "#995963" },
+  { hue: "plum", hex: "#8b5c86", name: "AstroStack", role: "lab", reserved: true },
+  { hue: "rose", hex: "#995963", name: "Victory Text", href: "https://victorytext.com", role: "lab" },
 ]
 
 export type ElectricId = "lime" | "cyan" | "ember" | "magenta" | "violet"
@@ -51,5 +51,5 @@ export const ELECTRIC: readonly ElectricHue[] = [
   { id: "cyan", name: "Cyan", hue: 200, who: "amy.io", href: "https://amy.io", role: "lab", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
   { id: "ember", name: "Ember", hue: 55, who: "hotbits", href: "https://tinymachines.ai/hotbits", role: "lab", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
   { id: "magenta", name: "Magenta", hue: 340, tones: { glow: "#fc00cb", core: "#b61692", dim: "#6a2f58", haze: "#31212b" } },
-  { id: "violet", name: "Violet", hue: 300, tones: { glow: "#9200fe", core: "#5f0fa7", dim: "#503975", haze: "#292333" } },
+  { id: "violet", name: "Violet", hue: 300, who: "Flux", role: "lab", reserved: true, tones: { glow: "#9200fe", core: "#5f0fa7", dim: "#503975", haze: "#292333" } },
 ]
