@@ -23,9 +23,10 @@ import { ShelfSection } from "../../nes/Shelf";
  *
  * The page names the package's revision from the pull's record rather
  * than typing it: revision D shipped 2026-10-09 with a caption saying what
- * it got wrong (the optocoupler's tap), and revision E of 2026-10-12 draws
- * the tap as built. Two things on E's sheets are marked not confirmed, and
- * the note says so.
+ * it got wrong (the optocoupler's tap), revision E of 2026-10-12 drew the
+ * tap as built with two things marked not confirmed, and revision F of
+ * 2026-10-13 settles those. The note's second sentence is about the
+ * revision in hand and is rewritten with each one.
  */
 
 const FIGURES = [
@@ -40,16 +41,16 @@ const TEXT = {
     intro:
       "The pool is what hotbits serves; this is the bench it comes from. A Geiger tube counts in a steel case on its own supply, an optocoupler carries each count across as light, and an ESP32-C6 outside the case times every edge in hardware before the server turns the gaps between them into bits. The bring-up was done the way the NES bench was: a scope driven from a script, the board flashed from the bench, and every step written down.",
     revision: (rev: string) =>
-      `These are revision ${rev} of the drawings. Two things on them are marked not confirmed: that the counter's supply and the emitter's stay separate, which is what the isolation rests on, and the box's cable entry.`,
+      `These are revision ${rev} of the drawings. Nothing on the sheets is marked not confirmed any more: the counter is alone on the chassis supply, the emitter is on its own brick outside the box, and the detector and the optocoupler are sealed in a container inside the chassis. The one thing still unread is whether the chassis is bonded to a ground.`,
     alt: {
       system: "The Geiger TRNG as three places: the case with the counter and its tube, the emitter outside it, and the server, with what crosses between them.",
-      case: "Sheet 3 of the drawing package: the counter board's connector pin by pin, on its own 5 V supply, and the optocoupler's LED between the connector's 5 V pin and the detector transistor's collector.",
+      case: "Sheet 3 of the drawing package: the counter board's connector pin by pin, alone on the chassis supply's 5 V line, and the optocoupler's LED between the connector's 5 V pin and the detector transistor's collector.",
       emitter: "The emitter: one capture pin, GPIO18, on an ESP32-C6 board, with the lead from the case and its pull-up.",
       chain: "The signal chain from the tube to the capture pin, with the three places a probe goes.",
     },
     caption: {
       system: "Three places and what crosses between them: only light crosses the case's isolation barrier, only a TCP stream leaves the emitter, and only the web server is public.",
-      case: "The case, drawn pin by pin: the counter board on a 5 V adapter of its own, nothing shared with the emitter, and the optocoupler's LED tapped at the detector transistor's collector, where a count can light it.",
+      case: "The case, drawn pin by pin: the counter board alone on the chassis supply's 5 V line, nothing shared with the emitter, and the optocoupler's LED tapped at the detector transistor's collector, where a count can light it.",
       emitter: "The emitter, outside the case on its own USB power: one pin latches the counter on each falling edge.",
       chain: "Where to put the probe, one hop at a time from the source toward the pin.",
     },
@@ -59,16 +60,16 @@ const TEXT = {
     intro:
       "hotbits が配るのはプールで、これはそのプールが生まれるベンチだ。ガイガー管は専用の電源を持つ鋼のケースの中で数え、フォトカプラが一つひとつのカウントを光として向こうへ渡し、ケースの外の ESP32-C6 があらゆるエッジの時刻をハードウェアで記録する。そのあとでサーバーが、エッジのあいだの隔たりをビットに変える。立ち上げは NES のベンチと同じやり方で進めた: スクリプトで動かすオシロスコープ、ベンチから書き込むボード、そして一歩ごとの記録。",
     revision: (rev: string) =>
-      `これらは図面の版 ${rev} だ。二つのことが未確認と記されている: カウンタの電源とエミッタの電源が別々のままであること (絶縁はそれにかかっている)、そして箱のケーブルの引き込み口だ。`,
+      `これらは図面の版 ${rev} だ。図面に未確認と記されたものはもうない: カウンタはシャーシの電源に一つだけつながり、エミッタは箱の外の専用アダプタで動き、検出器とフォトカプラは密閉した容器に入れてシャーシの中に置いてある。まだ確かめていないのは、シャーシが接地に結ばれているかどうかだ。`,
     alt: {
       system: "三つの場所としてのガイガー TRNG: カウンタと管の入ったケース、その外のエミッタ、そしてサーバー。そのあいだを何が渡るか。",
-      case: "図面一式の 3 枚目: カウンタ基板のコネクタをピンごとに、専用の 5 V 電源で、フォトカプラの LED はコネクタの 5 V ピンと検出トランジスタのコレクタのあいだに。",
+      case: "図面一式の 3 枚目: カウンタ基板のコネクタをピンごとに、シャーシ電源の 5 V 線に一つだけつないで、フォトカプラの LED はコネクタの 5 V ピンと検出トランジスタのコレクタのあいだに。",
       emitter: "エミッタ: ESP32-C6 ボードの捕捉ピン GPIO18 ひとつ、ケースからのリード線とそのプルアップ。",
       chain: "管から捕捉ピンまでの信号の連なりと、プローブを当てる三つの場所。",
     },
     caption: {
       system: "三つの場所と、そのあいだを渡るもの: ケースの絶縁の壁を越えるのは光だけ、エミッタを出るのは TCP の流れだけ、公開されているのはウェブサーバーだけ。",
-      case: "ピンごとに描いたケース: カウンタ基板は専用の 5 V アダプタで動き、エミッタと何も共有しない。フォトカプラの LED は検出トランジスタのコレクタから取り、カウントが LED を灯せる。",
+      case: "ピンごとに描いたケース: カウンタ基板はシャーシ電源の 5 V 線に一つだけつながり、エミッタと何も共有しない。フォトカプラの LED は検出トランジスタのコレクタから取り、カウントが LED を灯せる。",
       emitter: "ケースの外で専用の USB 電源から動くエミッタ: ピンひとつが、立ち下がりエッジごとにカウンタを捕まえる。",
       chain: "プローブをどこに当てるか。源からピンへ向けて、一段ずつ。",
     },
