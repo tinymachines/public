@@ -42,7 +42,7 @@ map $status $tmapex_error_cache {
 # here). A map rather than a per-location add_header, for the reason the cache map gives: one add_header for the CSP.
 map $uri $tmapex_frame_ancestors {
     default                         "'none'";
-    ~^/(?:ja/)?6502/games/?$        "'self' https://bradley.io";
+    ~^/(?:ja/)?6502/games/?$        "'self' https://bradley.io https://beta.bradley.io";
 }
 
 map $uri $tmapex_cache {
