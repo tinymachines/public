@@ -37,6 +37,14 @@ map $status $tmapex_error_cache {
     "~^[45]"   "no-store";
 }
 
+# Who may frame a page. Nobody, except the 6502 games console, which bradley.io's front page boots in an iframe
+# ("Play it: Die Runner", isenbek/bradley.io issue #2, 2026-10-14; games.tinymachines.ai/b/<handle>/<slug> 301s
+# here). A map rather than a per-location add_header, for the reason the cache map gives: one add_header for the CSP.
+map $uri $tmapex_frame_ancestors {
+    default                         "'none'";
+    ~^/(?:ja/)?6502/games/?$        "'self' https://bradley.io";
+}
+
 map $uri $tmapex_cache {
     # Quoted: nginx parses a bare { in a map key as the start of a block.
     #
@@ -170,7 +178,7 @@ server {
     # page, it is loosened for the worker too, silently. This is the one place
     # where naming a directive costs nothing and not naming it couples two
     # decisions that have no reason to be coupled.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai https://hotbits.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai https://hotbits.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors $tmapex_frame_ancestors; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
