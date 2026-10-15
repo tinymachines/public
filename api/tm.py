@@ -116,6 +116,17 @@ AS_FS = ("raw", "stat", "links")
 AS_HTTP = ("rendered", "text", "stat", "links")
 AS_GIT = ("raw", "log", "blame", "tree", "stat", "links")
 AS_ENTITY = ("stat", "links")
+# tinypeek#13: what each mount's URI can say after the ?. The templates name
+# these and a read refuses any other, so the two are one fact. The root and
+# the list of hosts take ?as=links only; cursor= rides with ?as=links anywhere.
+PARAMS: dict[str, tuple[str, ...]] = {
+    "tm": ("as",), "": ("as",),
+    "fs": ("as", "range", "cursor"),
+    "git": ("at", "as", "n", "depth", "range", "cursor"),
+    "http": ("as", "range", "cursor"),
+    "offbox": ("as",),
+    "entity": ("as", "cursor"),
+}
 
 # The kinds of thing the entity mount addresses (TM-16). A routine is
 # addressed under its game.
@@ -301,6 +312,33 @@ def _offset(cursor: str | None) -> int:
     if n < 0:
         raise TmError(BAD_PARAMS, "bad-cursor", "the cursor is not one this server issued")
     return n
+
+
+def check_params(ref: "Ref") -> None:
+    """tinypeek#13: a parameter a mount does not take is refused, naming the
+    ones it takes, where before it was dropped and the answer looked like the
+    one asked for (a page at a date it has no notion of, a file without the
+    lines asked for). A cursor continues a listing or ?as=links; anywhere else
+    it would be dropped too, so it is refused there."""
+    takes = PARAMS[ref.mount]
+    as_ = ref.facets.get("as")
+    where = {"tm": "the list of hosts", "": "the root"}.get(ref.mount, ref.mount)
+    for k, v in ref.facets.items():
+        if k not in takes and not (k == "cursor" and as_ == "links"):
+            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}")
+    if "cursor" in ref.facets and as_ != "links" and not (ref.is_collection and as_ in (None, "raw", "tree")):
+        raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing or ?as=links, and this read is neither")
+
+
+def _q(mount: str) -> str:
+    """A template's query part, from the one table: {?at,as,n,depth,range,cursor}."""
+    return "{?" + ",".join(PARAMS[mount]) + "}"
+
+
+def _cursored(uri: str, cursor: str | None) -> str:
+    """The address of one page of a listing: the listing's, with the cursor
+    that reached it, so the echo says which page this is."""
+    return uri if not cursor else f"{uri}{'&' if '?' in uri else '?'}cursor={cursor}"
 
 
 def _page(items: list, cursor: str | None, size: int) -> tuple[list, str | None]:
@@ -1188,7 +1226,7 @@ class Entities:
                 # The record itself, as an http collection names it: the
                 # entities listed here each carry their own place in it.
                 links.append(link("tm:data", f"{ROOT}fs/{self.RECORDS[self.READS[parts[0]]]}", "exact", title="the record the entities listed here are read from"))
-            return self.ns._result(ref.uri, "application/json", json.dumps(body, indent=1), links)
+            return self.ns._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), links)
         if len(parts) == 2 and parts[0] == "pattern" and parts[1] in ix["patterns"]:
             body, links = self._pattern(parts[1])
         elif len(parts) == 2 and parts[0] == "game" and parts[1] in ix["games"]:
@@ -1283,6 +1321,8 @@ class Namespace:
     # -- what the server advertises --------------------------------------
 
     def templates(self) -> list[dict]:
+        """RFC 6570. Each names every parameter its mount takes (PARAMS), so a
+        client can learn a mount's whole grammar here (tinypeek#13)."""
         return [
             {
                 "uriTemplate": TOP,
@@ -1299,7 +1339,7 @@ class Namespace:
                 "mimeType": "application/json",
             },
             {
-                "uriTemplate": f"{ROOT}fs{{/path*}}",
+                "uriTemplate": f"{ROOT}fs{{/path*}}{_q('fs')}",
                 "name": "fs",
                 "title": "A file or directory of this repository",
                 "description": (
@@ -1310,7 +1350,7 @@ class Namespace:
                 ),
             },
             {
-                "uriTemplate": f"{ROOT}git/{{repo}}{{/path*}}{{?at,as,n,depth}}",
+                "uriTemplate": f"{ROOT}git/{{repo}}{{/path*}}{_q('git')}",
                 "name": "git",
                 "title": "A file or tree of a repository, at a ref",
                 "description": (
@@ -1323,7 +1363,7 @@ class Namespace:
                 ),
             },
             {
-                "uriTemplate": f"{ROOT}http/{{site}}{{/path*}}{{?as}}",
+                "uriTemplate": f"{ROOT}http/{{site}}{{/path*}}{_q('http')}",
                 "name": "http",
                 "title": "A page of a site this box serves",
                 "description": (
@@ -1333,7 +1373,7 @@ class Namespace:
                 ),
             },
             {
-                "uriTemplate": f"{ROOT}offbox/{{name}}",
+                "uriTemplate": f"{ROOT}offbox/{{name}}{_q('offbox')}",
                 "name": "offbox",
                 "title": "Where a build chain leaves this box",
                 "description": (
@@ -1343,7 +1383,7 @@ class Namespace:
                 ),
             },
             {
-                "uriTemplate": f"{ROOT}entity/{{kind}}/{{key}}{{?as}}",
+                "uriTemplate": f"{ROOT}entity/{{kind}}/{{key}}{_q('entity')}",
                 "name": "entity",
                 "title": "A pattern, a game or a lesson of the autopsy",
                 "description": (
@@ -1356,7 +1396,7 @@ class Namespace:
                 "mimeType": "application/json",
             },
             {
-                "uriTemplate": f"{ROOT}entity/game/{{key}}/routine/{{routine}}{{?as}}",
+                "uriTemplate": f"{ROOT}entity/game/{{key}}/routine/{{routine}}{_q('entity')}",
                 "name": "routine",
                 "title": "A routine of a game that a rule named",
                 "description": (
@@ -1455,6 +1495,7 @@ class Namespace:
     async def read(self, uri: str) -> dict:
         try:
             ref = parse(uri)
+            check_params(ref)
             if ref.facets.get("as") == "links":
                 return await self._read_links(ref)
             return self._bounded(await self._read(uri), ref)
@@ -1539,6 +1580,8 @@ class Namespace:
             body = {"uri": TOP, "hosts": [{"uri": ROOT, "name": HOST, "what": "the tinymachines.ai box: its sites, its repositories and its files"}]}
             return self._result(TOP, "application/json", json.dumps(body, indent=1), [link("collection", ROOT, title="the one host this server answers for")])
         if ref.mount == "":
+            if ref.facets:
+                raise TmError(BAD_PARAMS, "bad-facet", f"the root takes no facet but as=links; read {ROOT}")
             body = {"uri": ROOT, "mounts": [
                 {"uri": f"{ROOT}fs/", "what": f"the repository's files under {', '.join(FS_ROOTS)}/"},
                 {"uri": f"{ROOT}git/", "what": f"the repositories ({', '.join(sorted(self.git))}) at any ref, with history and blame"},
@@ -1789,7 +1832,7 @@ class Namespace:
             if nxt:
                 body["nextCursor"] = nxt
                 body["next"] = f"{ref.uri}?cursor={nxt}"
-            return self._result(ref.uri, "application/json", json.dumps(body, indent=1), self._fs_links(rel, True))
+            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._fs_links(rel, True))
         abs_ = self._fs_abs(rel)
         if abs_.is_dir():
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"fs/{rel} is a directory; its listing is at {ref.uri}/", nearest=[ref.uri + "/"])
@@ -2114,7 +2157,7 @@ class Namespace:
                 body["depth"] = depth
             if nxt:
                 body["nextCursor"] = nxt
-            return self._result(body["uri"] + q + deep, "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
+            return self._result(_cursored(body["uri"] + q + deep, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
         if not path:
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"the root of {repo} is a tree; read {ROOT}git/{repo}/", nearest=[f"{ROOT}git/{repo}/"])
         if as_ == "log":
@@ -2130,7 +2173,8 @@ class Namespace:
                 full, short, author, date, subject = line.split("\x1f", 4)
                 commits.append({"commit": full, "short": short, "author": author, "date": date, "subject": subject,
                                 "uri": f"{base}?at={full}"})
-            body = {"uri": f"{base}{q}{sep}as=log", "path": path, "at": at, "n": n, "commits": commits}
+            # The echo carries n as it was used; the default spelled out is the identity (tinypeek#13).
+            body = {"uri": f"{base}{q}{sep}as=log" + (f"&n={n}" if n != LOG_DEFAULT else ""), "path": path, "at": at, "n": n, "commits": commits}
             links = self._git_links(repo, at, path, False, head)
             if pinned:
                 # A submodule answers stat and log, not blame: no link to a refusal.
@@ -2509,18 +2553,20 @@ class Namespace:
             body = {"uri": ref.uri, "children": chunk}
             if nxt:
                 body["nextCursor"] = nxt
-            return self._result(ref.uri, "application/json", json.dumps(body, indent=1), self._http_links(site, path, True))
-        if path == "/" and ref.facets.get("as") is None and ref.uri.endswith("/") and not ref.facets:
+            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._http_links(site, path, True))
+        if path == "/" and ref.uri.endswith("/") and not (set(ref.facets) - {"cursor"}):
             # The site root is both the front page and the top collection;
             # the collection is what a cold client wants first.
-            kids = self._http_children(site, "/")
+            kids, nxt = _page(self._http_children(site, "/"), ref.facets.get("cursor"), LIST_CAP)
             body = {"uri": ref.uri, "children": kids, "front_page": f"{ref.uri}?as=text"}
+            if nxt:
+                body["nextCursor"] = nxt
             # The listing and the front page share this address, so it carries
             # the front page's own links too: its source and its data.
             # Its other versions too (TM-20), or /ja's link to it goes unanswered.
             page = [ln for ln in self._http_links(site, "/", False)
                     if ln["rel"].startswith("tm:") or (ln["rel"] == "alternate" and "?as=" not in ln["href"])]
-            return self._result(ref.uri, "application/json", json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
+            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
         status, ctype, data = await self.fetch(site, path)
         base = f"{ROOT}http/{site}{quote(path)}"
         links = self._http_links(site, path, False)

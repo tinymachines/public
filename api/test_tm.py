@@ -1132,6 +1132,51 @@ def test_tm11_a_facet_a_collection_has_no_use_for_is_refused_not_dropped(built):
     assert read(built, f"{ROOT}http/tinymachines.ai/?as=stat")[0]["mimeType"] == "application/json"
 
 
+def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_carries_what_was_used(built, monkeypatch):
+    """tinypeek#13: the finding from the first walk of the live server, and the
+    two tinylens added. A parameter a mount does not take was dropped; it is
+    refused, naming the ones the mount takes. The answer's uri carries every
+    parameter the read used, so a dropped one would show. And the templates
+    name every parameter, so a client learns a mount's grammar from the server."""
+    page, file = f"{ROOT}http/tinymachines.ai/docs/nes/pile", f"{ROOT}git/public/docs/nes/alone.md"
+    for uri, takes in [
+        (f"{page}?at=2026-10-01", "as, range, cursor"),           # the live finding: answered with today's page
+        (f"{file}?lines=1-5", "at, as, n, depth, range, cursor"),  # the live finding: answered with the whole file
+        (f"{ROOT}fs/docs/nes/pile.md?at=HEAD", "as, range, cursor"),
+        (f"{ROOT}fs/docs/?depth=2", "as, range, cursor"),
+        (f"{ROOT}entity/pattern/?n=5", "as, cursor"),
+        (f"{ROOT}offbox/?range=0-4", "as"),
+        (f"{ROOT}?at=HEAD", "as"),
+        (f"{ROOT}?cursor=x", "as"),
+        (f"{page}?as=links&n=5", "as, range, cursor"),
+    ]:
+        e = refusal(built, uri)
+        assert e.reason == "bad-facet" and takes in e.message, (uri, e.message)
+    # A cursor continues a listing or ?as=links; on anything else it is refused too, not dropped.
+    for uri in (f"{ROOT}fs/docs/nes/pile.md?cursor=x", f"{file}?as=log&cursor=x", f"{ROOT}git/public/docs/?as=log&cursor=x", f"{page}?cursor=x", f"{ROOT}?as=stat"):
+        assert refusal(built, uri).reason == "bad-facet", uri
+    assert json.loads(read(built, f"{file}?as=links&cursor={tm._cursor(0)}")[0]["text"])["total"] > 0
+    # The echo: every parameter the read used, as it used it. The default spelled out is the identity and is left out.
+    assert read(built, f"{file}?as=log&n=5")[0]["uri"] == f"{file}?as=log&n=5"
+    assert read(built, f"{file}?at=v1&as=log&n=5")[0]["uri"] == f"{file}?at=v1&as=log&n=5"
+    assert read(built, f"{file}?as=log&n={tm.LOG_DEFAULT}")[0]["uri"] == f"{file}?as=log"
+    assert read(built, f"{file}?as=log&n=5000")[0]["uri"] == f"{file}?as=log&n={tm.LOG_MAX}", "a clamped n echoes as it was used"
+    monkeypatch.setattr(tm, "LIST_CAP", 1)
+    for coll in (f"{ROOT}fs/docs/", f"{ROOT}git/public/", f"{ROOT}http/tinymachines.ai/autopsy/", f"{ROOT}http/tinymachines.ai/", f"{ROOT}git/public/?at=v1&as=tree&depth=2"):
+        first = json.loads(read(built, coll)[0]["text"])
+        assert first.get("nextCursor"), coll
+        nxt = coll + ("&" if "?" in coll else "?") + f"cursor={first['nextCursor']}"
+        assert read(built, nxt)[0]["uri"] == nxt, coll
+    # The templates name every parameter the mount takes, and the refusal names the same ones: one fact.
+    by = {t["name"]: t["uriTemplate"] for t in built.templates()}
+    assert by["fs"].endswith("{?as,range,cursor}") and by["git"].endswith("{?at,as,n,depth,range,cursor}"), (by["fs"], by["git"])
+    assert by["http"].endswith("{?as,range,cursor}") and by["offbox"].endswith("{?as}"), (by["http"], by["offbox"])
+    assert by["entity"].endswith("{?as,cursor}") and by["routine"].endswith("{?as,cursor}"), (by["entity"], by["routine"])
+    for mount in tm.MOUNTS:
+        named = by["entity" if mount == "entity" else mount].rsplit("{?", 1)[1].rstrip("}").split(",")
+        assert tuple(named) == tm.PARAMS[mount], mount
+
+
 def _crawler():
     """The deploy's link crawler, for its own idea of a file's stat URI."""
     import importlib.util
