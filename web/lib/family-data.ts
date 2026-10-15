@@ -19,7 +19,7 @@ export const FAMILY_LABEL = "Meatball Labs and family"
 export const FAMILY: readonly FamilyMember[] = [
   { hue: "clay", hex: "#995d48", name: "Meatball Labs", href: "https://meatball.ai", role: "lab" },
   { hue: "ochre", hex: "#89692f", name: "SysForge", href: "https://sysforge.ai", role: "lab" },
-  { hue: "moss", hex: "#68763a" },
+  { hue: "moss", hex: "#68763a", name: "TinyKit", href: "https://tinykit.tinymachines.ai", role: "lab" },
   { hue: "sage", hex: "#427d59" },
   { hue: "spruce", hex: "#1b7d82", name: "vizmin", role: "lab", reserved: true },
   { hue: "steel", hex: "#41749d", name: "bradley.io", href: "https://bradley.io", role: "home" },
