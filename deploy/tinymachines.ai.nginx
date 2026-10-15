@@ -403,6 +403,14 @@ server {
     # The API: uvicorn with --root-path /api, so it generates its own URLs
     # under the prefix and openapi.json stays correct behind the proxy.
     #
+    # WebAuthn Related Origin Requests: tinymachines.ai is the relying party for every app on the kit, and this list
+    # (from the kit account service, kit/server/accounts/home.py) lets pages on the other domains (snailmail.ai,
+    # bradley.io, tinychase.com) use a tinymachines.ai passkey in place. Browsers fetch it themselves.
+    location = /.well-known/webauthn {
+        proxy_pass http://127.0.0.1:8120/.well-known/webauthn;
+        proxy_set_header Host accounts.tinymachines.ai;
+    }
+
     # This location deliberately declares no add_header. Adding one would
     # discard all five above.
     location /api/ {
