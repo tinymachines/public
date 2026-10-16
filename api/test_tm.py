@@ -1149,15 +1149,16 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
     name every parameter, so a client learns a mount's grammar from the server."""
     page, file = f"{ROOT}http/tinymachines.ai/docs/nes/pile", f"{ROOT}git/public/docs/nes/alone.md"
     for uri, takes in [
-        (f"{page}?at=2026-10-01", "as, range, cursor"),           # the live finding: answered with today's page
-        (f"{file}?lines=1-5", "at, as, n, depth, range, cursor"),  # the live finding: answered with the whole file
-        (f"{ROOT}fs/docs/nes/pile.md?n=5", "at, as, range, cursor"),   # at= fs takes since tinypeek#15
-        (f"{ROOT}fs/docs/?depth=2", "at, as, range, cursor"),
+        (f"{page}?at=2026-10-01", "as, range, lines, cursor"),           # the live finding: answered with today's page
+        (f"{page}?depth=2", "as, range, lines, cursor"),                 # (the other live finding, ?lines=, is taken since tinypeek#16)
+        (f"{file}?lang=ja", "at, as, n, depth, range, lines, pointer, cursor"),
+        (f"{ROOT}fs/docs/nes/pile.md?n=5", "at, as, range, lines, pointer, cursor"),   # at= fs takes since tinypeek#15
+        (f"{ROOT}fs/docs/?depth=2", "at, as, range, lines, pointer, cursor"),
         (f"{ROOT}entity/pattern/?n=5", "as, cursor"),
         (f"{ROOT}offbox/?range=0-4", "as"),
         (f"{ROOT}?at=HEAD", "as"),
         (f"{ROOT}?cursor=x", "as"),
-        (f"{page}?as=links&n=5", "as, range, cursor"),
+        (f"{page}?as=links&n=5", "as, range, lines, cursor"),
     ]:
         e = refusal(built, uri)
         assert e.reason == "bad-facet" and takes in e.message, (uri, e.message)
@@ -1178,8 +1179,8 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
         assert read(built, nxt)[0]["uri"] == nxt, coll
     # The templates name every parameter the mount takes, and the refusal names the same ones: one fact.
     by = {t["name"]: t["uriTemplate"] for t in built.templates()}
-    assert by["fs"].endswith("{?at,as,range,cursor}") and by["git"].endswith("{?at,as,n,depth,range,cursor}"), (by["fs"], by["git"])
-    assert by["http"].endswith("{?as,range,cursor}") and by["offbox"].endswith("{?as}"), (by["http"], by["offbox"])
+    assert by["fs"].endswith("{?at,as,range,lines,pointer,cursor}") and by["git"].endswith("{?at,as,n,depth,range,lines,pointer,cursor}"), (by["fs"], by["git"])
+    assert by["http"].endswith("{?as,range,lines,cursor}") and by["offbox"].endswith("{?as}"), (by["http"], by["offbox"])
     assert by["entity"].endswith("{?as,cursor}") and by["routine"].endswith("{?as,cursor}"), (by["entity"], by["routine"])
     for mount in tm.MOUNTS:
         named = by["entity" if mount == "entity" else mount].rsplit("{?", 1)[1].rstrip("}").split(",")
@@ -1449,9 +1450,10 @@ def test_tm16_an_entity_and_the_things_it_names_in_other_mounts_answer_each_othe
     assert "tm:cartridge-of" not in rels(read(ents, f"{ROOT}git/public/lessons/jump/prg.s")[1]), "the directory, as the lesson names it"
     assert "tm:cartridge" not in rels(read(ents, f"{E}lesson/rooms")[1]), "no directory is tracked for it, so none is named"
     # An entity and its record: the record names each kind once (TM-18's rule).
-    for uri, pointer in [(f"{E}pattern/pad-poll", "autopsy.json#/patterns/1"), (f"{E}game/def", "autopsy.json#/games/1"),
-                         (f"{E}game/abc/routine/b1-A000", "autopsy.json#/games/0/routine_list/2"),
-                         (f"{E}game/def/routine/b7-C150", "autopsy.json#/games/1/loop_list/0"), (f"{E}lesson/rooms", "lessons.json#/lessons/1")]:
+    # Since tinypeek#16 the pointer is a facet that reads the piece, not a fragment the server ignores.
+    for uri, pointer in [(f"{E}pattern/pad-poll", "autopsy.json?pointer=/patterns/1"), (f"{E}game/def", "autopsy.json?pointer=/games/1"),
+                         (f"{E}game/abc/routine/b1-A000", "autopsy.json?pointer=/games/0/routine_list/2"),
+                         (f"{E}game/def/routine/b7-C150", "autopsy.json?pointer=/games/1/loop_list/0"), (f"{E}lesson/rooms", "lessons.json?pointer=/lessons/1")]:
         assert rels(read(ents, uri)[1])["tm:data"] == [f"{ROOT}fs/data/{pointer}"], uri
     by = rels(read(ents, f"{ROOT}fs/data/autopsy.json?as=stat")[1])["tm:read-by"]
     assert f"{E}pattern/" in by and f"{E}game/" in by and f"{E}lesson/" not in by
@@ -2328,4 +2330,86 @@ def test_tinypeek15_one_time_axis_a_time_or_a_ref_on_git_and_on_fs(gns, gits):
     assert refusal(gns, f"{ROOT}offbox/cartridges?at=v1").reason == "bad-facet"
     # the grammar says so
     fs_tmpl = next(t for t in gns.templates() if t["name"] == "fs")["uriTemplate"]
-    assert fs_tmpl.endswith("{?at,as,range,cursor}")
+    assert fs_tmpl.endswith("{?at,as,range,lines,pointer,cursor}")
+
+
+def test_tinypeek16_a_readable_piece_lines_of_a_text_and_a_pointer_into_a_record(ents):
+    """tinypeek#16: a piece of a thing has an address and reads, so a page can
+    quote a span and keep where it came from (transclusion). ?lines=A-B is
+    lines of a text, 1-based and inclusive, the end stopping at the last
+    line; ?pointer=/a/b is a JSON pointer (RFC 6901) into a JSON file. One
+    span a read: lines, pointer or range. A span is of the content, so it is
+    refused with a stat, a listing, a log or a rendering, as range is. The
+    entity mount's tm:data now reads the piece: the pointer is a facet, not
+    a fragment the server ignores."""
+    pile = f"{ROOT}fs/docs/nes/pile.md"   # ---, title, ---, # Pile, blank, Gear on hand.
+    c, _ = read(ents, f"{pile}?lines=4-5")
+    assert (c["text"], c["uri"], c["mimeType"]) == ("# Pile\n\n", f"{pile}?lines=4-5", "text/markdown")
+    c, _ = read(ents, f"{pile}?lines=6-99")
+    assert (c["text"], c["uri"]) == ("Gear on hand.\n", f"{pile}?lines=6-6"), "the end stops at the last line and the echo says so"
+    assert read(ents, f"{pile}?lines=1-1")[0]["text"] == "---\n"
+    e = refusal(ents, f"{pile}?lines=7-9")
+    assert e.reason == "not-found" and e.data["lines"] == 6 and e.data["nearest"] == [pile]
+    for bad in ("5-4", "0-3", "abc", "3", "1-"):
+        assert refusal(ents, f"{pile}?lines={bad}").reason == "bad-facet", bad
+    for uri in (f"{pile}?lines=1-2&range=0-4", f"{pile}?lines=1-2&pointer=/a", f"{pile}?as=stat&lines=1-2", f"{pile}?as=links&lines=1-2",
+                f"{ROOT}fs/docs/?lines=1-2", f"{ROOT}fs/docs/big.bin?lines=1-2", f"{ROOT}fs/docs/big.bin?as=raw&lines=1-2"):
+        assert refusal(ents, uri).reason == "bad-facet", uri
+    # A text over the cap is the case that matters: the whole refuses, a span of it reads.
+    (ents.repo / "docs" / "long.md").write_text("x\n" * (tm.READ_CAP // 2 + 10))
+    long = f"{ROOT}fs/docs/long.md"
+    e = refusal(ents, long)
+    assert e.reason == "too-large" and e.data["lines"] == f"{long}?lines={{first}}-{{last}}" and e.data["range"] == f"{long}?range={{start}}-{{end}}"
+    assert read(ents, f"{long}?lines=3-4")[0]["text"] == "x\nx\n"
+    assert refusal(ents, f"{long}?lines=1-{tm.READ_CAP}").reason == "too-large", "a span is held to the cap like any read"
+    # A pointer into a record.
+    rec = f"{ROOT}fs/data/autopsy.json"
+    c, links = read(ents, f"{rec}?pointer=/games/1")
+    assert (json.loads(c["text"]), c["uri"], c["mimeType"]) == (AUTOPSY["games"][1], f"{rec}?pointer=/games/1", "application/json")
+    assert "tm:read-by" in rels(links), "the piece carries the file's links"
+    assert json.loads(read(ents, f"{rec}?pointer=/games/1/routine_list/0/name")[0]["text"]) == "b7_poll_E000"
+    assert json.loads(read(ents, f"{rec}?pointer=/patterns")[0]["text"]) == AUTOPSY["patterns"]
+    assert read(ents, f"{rec}?pointer=")[0]["uri"] == rec, "the empty pointer is the whole document, which is the identity"
+    (ents.repo / "data" / "keys.json").write_text('{"a/b": {"~": [1, 2]}, "n": null}')
+    assert json.loads(read(ents, f"{ROOT}fs/data/keys.json?pointer=/a~1b/~0/1")[0]["text"]) == 2, "~1 is / and ~0 is ~"
+    assert read(ents, f"{ROOT}fs/data/keys.json?pointer=/n")[0]["text"] == "null"
+    e = refusal(ents, f"{rec}?pointer=/games/9/name")
+    assert e.reason == "not-found" and (e.data["at"], e.data["length"]) == ("/games", 2), "where the pointer left the document"
+    e = refusal(ents, f"{rec}?pointer=/game")
+    assert e.reason == "not-found" and e.data["at"] == "" and e.data["keys"] == ["note", "patterns", "games"]
+    e = refusal(ents, f"{rec}?pointer=/games/1/name/x")
+    assert e.reason == "not-found" and e.data["at"] == "/games/1/name" and "keys" not in e.data and "length" not in e.data
+    for uri in (f"{rec}?pointer=games", f"{pile}?pointer=/a", f"{rec}?as=stat&pointer=/games", f"{rec}?pointer=/games&range=0-4", f"{ROOT}fs/data/?pointer=/a"):
+        assert refusal(ents, uri).reason == "bad-facet", uri
+    # The same on git, at a ref, and on fs at a ref; a listing, a log and a blame refuse it.
+    alone = f"{ROOT}git/public/docs/nes/alone.md"
+    assert read(ents, f"{alone}?lines=6-6")[0]["text"] == "Second line.\n"
+    c, _ = read(ents, f"{alone}?at=v1&lines=4-9")
+    assert (c["text"], c["uri"]) == ("# Alone\n", f"{alone}?at=v1&lines=4-4")
+    assert refusal(ents, f"{alone}?at=v1&lines=6-6").reason == "not-found", "v1 has four lines"
+    assert json.loads(read(ents, f"{ROOT}git/public/data/autopsy.json?pointer=/games/0/key")[0]["text"]) == "abc"
+    c, _ = read(ents, f"{ROOT}fs/docs/nes/alone.md?at=v1&lines=4-4")
+    assert (c["text"], c["uri"]) == ("# Alone\n", f"{ROOT}fs/docs/nes/alone.md?at=v1&lines=4-4")
+    for uri in (f"{alone}?as=log&lines=1-2", f"{alone}?as=blame&lines=1-2", f"{alone}?as=stat&lines=1-2", f"{ROOT}git/public/docs/?lines=1-2",
+                f"{ROOT}git/public/?as=tree&depth=2&lines=1-2", f"{alone}?lines=1-2&range=0-4", f"{alone}?pointer=/a"):
+        assert refusal(ents, uri).reason == "bad-facet", uri
+    # On http, lines of a page's text, with ?as=text or no ?as, as range is.
+    page = f"{ROOT}http/tinymachines.ai/docs/nes/pile"
+    want = read(ents, page)[0]["text"].splitlines(keepends=True)
+    assert len(want) > 1
+    c, _ = read(ents, f"{page}?lines=2-2")
+    assert (c["text"], c["uri"]) == (want[1], f"{page}?as=text&lines=2-2")
+    assert read(ents, f"{page}?as=text&lines=1-999")[0]["uri"] == f"{page}?as=text&lines=1-{len(want)}"
+    for uri in (f"{page}?as=rendered&lines=1-1", f"{page}?as=stat&lines=1-1", f"{page}?lines=1-1&range=0-4",
+                f"{ROOT}http/tinymachines.ai/robots.txt?lines=1-1", f"{ROOT}http/tinymachines.ai/docs/nes/?lines=1-1", f"{page}?pointer=/a"):
+        assert refusal(ents, uri).reason == "bad-facet", uri
+    # An entity's tm:data reads the piece of the record it is read from.
+    data = rels(read(ents, f"{E}game/def")[1])["tm:data"]
+    assert data == [f"{rec}?pointer=/games/1"]
+    assert json.loads(read(ents, data[0])[0]["text"])["key"] == "def"
+    assert rels(read(ents, f"{E}pattern/")[1])["tm:data"] == [rec], "a collection's record is the whole file"
+    # The templates name the two spans, and refuse them where they are not taken.
+    by = {t["name"]: t["uriTemplate"] for t in ents.templates()}
+    assert by["fs"].endswith("{?at,as,range,lines,pointer,cursor}") and by["http"].endswith("{?as,range,lines,cursor}"), (by["fs"], by["http"])
+    assert by["git"].endswith("{?at,as,n,depth,range,lines,pointer,cursor}"), by["git"]
+    assert refusal(ents, f"{E}game/def?lines=1-2").reason == "bad-facet" and refusal(ents, f"{ROOT}offbox/?pointer=/a").reason == "bad-facet"

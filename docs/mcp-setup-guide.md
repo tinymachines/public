@@ -123,6 +123,13 @@ directory as JSON, and `&depth=` how many levels of it in one read, up to
 eight. For `6502` the default ref is the commit the site is
 serving, not the newest.
 
+A piece of a thing has an address of its own. `?lines=FIRST-LAST` reads lines
+of a file, or of a page's text, counted from 1 and both included;
+`?pointer=/a/0/b` reads what a JSON pointer names in a JSON file;
+`?range=START-END` reads bytes. The answer's `uri` keeps the span, so a page
+that quotes a piece keeps where it came from. An entity's `tm:data` link
+points into its record this way.
+
 The entity mount is the first thing built on the other four. It gives the
 autopsy's patterns, games, routines and lessons addresses of
 their own, read from the two records the site already publishes:
@@ -171,7 +178,7 @@ The server keeps a record of each request: what was asked for, when, how it
 ended and how much came back. It does not record who asked: no address is
 kept, and no stand-in for one. The record is kept for thirty days at most and
 is not part of anything the namespace serves. A file over the size cap comes
-back with its size and a `?range=` template. The resource templates say the
+back with its size and a `?range=` and a `?lines=` template. The resource templates say the
 grammar and completions fill in live values, so a client can compose a URI
 it was never shown and try it.
 
@@ -321,7 +328,7 @@ A refusal is a JSON-RPC error whose `data.reason` a client can switch on:
 | `not-found` | up to five nearest URIs that do resolve |
 | `out-of-root` | the roots that are offered |
 | `denied` | nothing; the file exists and is not offered |
-| `too-large` | the size, a `?range=` template, a `?as=stat` link |
+| `too-large` | the size, a `?range=` and a `?lines=` template, a `?as=stat` link |
 | `binary` | the type and a `?as=stat` link |
 | `redirect` | the status; the visitor would be sent on |
 | `no-such-ref` | the refs that start the same way |

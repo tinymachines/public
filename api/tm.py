@@ -119,11 +119,14 @@ AS_ENTITY = ("stat", "links")
 # tinypeek#13: what each mount's URI can say after the ?. The templates name
 # these and a read refuses any other, so the two are one fact. The root and
 # the list of hosts take ?as=links only; cursor= rides with ?as=links anywhere.
+# tinypeek#16: range, lines and pointer are the three spans, a readable piece
+# of a thing's content; a read takes one of them (SPANS, check_params).
+SPANS = ("range", "lines", "pointer")
 PARAMS: dict[str, tuple[str, ...]] = {
     "tm": ("as",), "": ("as",),
-    "fs": ("at", "as", "range", "cursor"),
-    "git": ("at", "as", "n", "depth", "range", "cursor"),
-    "http": ("as", "range", "cursor"),
+    "fs": ("at", "as", "range", "lines", "pointer", "cursor"),
+    "git": ("at", "as", "n", "depth", "range", "lines", "pointer", "cursor"),
+    "http": ("as", "range", "lines", "cursor"),
     "offbox": ("as",),
     "entity": ("as", "cursor"),
 }
@@ -313,6 +316,87 @@ def byte_range(rng: str, size: int) -> tuple[int, int]:
     return start, end
 
 
+def line_span(spec: str, text: str, here: str) -> tuple[int, int, str]:
+    """?lines=FIRST-LAST: lines FIRST to LAST of a text, counted from 1 and
+    both included, the end stopping at the last line (tinypeek#16). A span
+    that starts past the last line is not there, and the answer says how
+    many lines there are, and names the whole."""
+    m = re.fullmatch(r"(\d+)-(\d+)", spec)
+    if not m or int(m[1]) < 1 or int(m[1]) > int(m[2]):
+        raise TmError(BAD_PARAMS, "bad-facet", "lines=FIRST-LAST, lines FIRST to LAST counted from 1, both included, FIRST <= LAST")
+    lines = text.splitlines(keepends=True)
+    first, last = int(m[1]), min(int(m[2]), len(lines))
+    if first > len(lines):
+        raise TmError(RESOURCE_NOT_FOUND, "not-found", f"lines {spec}: the text has {len(lines)} lines", lines=len(lines), nearest=[here])
+    return first, last, "".join(lines[first - 1:last])
+
+
+def json_pointer(spec: str, doc, here: str) -> object:
+    """?pointer=/a/0/b: the value a JSON pointer (RFC 6901) names in a
+    document (tinypeek#16). The empty pointer is the whole document. Where
+    the pointer leaves the document, the refusal says how far it got and
+    what was there: an object's keys or an array's length, and names the
+    piece that is there."""
+    if spec and not spec.startswith("/"):
+        raise TmError(BAD_PARAMS, "bad-facet", "pointer=/a/0/b, a JSON pointer (RFC 6901): empty, or starting with /")
+    here, at = doc, ""
+    for raw in spec.split("/")[1:]:
+        token = raw.replace("~1", "/").replace("~0", "~")
+        if isinstance(here, dict) and token in here:
+            here = here[token]
+        elif isinstance(here, list) and re.fullmatch(r"0|[1-9]\d*", token) and int(token) < len(here):
+            here = here[int(token)]
+        else:
+            data: dict = {"at": at, "nearest": [here if not at else f"{here}{'&' if '?' in here else '?'}pointer={at}"]}
+            if isinstance(here, dict):
+                data["keys"] = list(here)[:LIST_CAP]
+            elif isinstance(here, list):
+                data["length"] = len(here)
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"pointer {spec}: nothing at {raw!r} below {at or 'the document'}", **data)
+        at += "/" + raw
+    return here
+
+
+def span_of(ref: "Ref") -> tuple[str, str] | None:
+    """The one span a read asks for, if any: range, lines or pointer."""
+    found = [(k, ref.facets[k]) for k in SPANS if k in ref.facets]
+    if len(found) > 1:
+        raise TmError(BAD_PARAMS, "bad-facet", f"one span a read: {' and '.join(k for k, _ in found)} do not combine")
+    return found[0] if found else None
+
+
+def cut(span: tuple[str, str], data: bytes, mime: str, here: str) -> tuple[str, str, bytes]:
+    """A piece of a text by lines or by pointer: the echo (the span as it
+    was used), the type and the bytes (tinypeek#16). A byte range is cut
+    where the bytes are read, since it need not read the whole thing."""
+    kind, spec = span
+    sep = "&" if "?" in here else "?"
+    if not is_text(mime):
+        raise TmError(BAD_PARAMS, "bad-facet", f"{kind} reads a piece of a text, and this is {mime}; range reads its bytes")
+    text = data.decode("utf-8", errors="replace")
+    if kind == "lines":
+        first, last, piece = line_span(spec, text, here)
+        out = piece.encode()
+        uri = f"{here}{sep}lines={first}-{last}"
+    else:
+        if mime != "application/json":
+            raise TmError(BAD_PARAMS, "bad-facet", f"pointer reads into a JSON document, and this is {mime}; lines reads a piece of it")
+        value = json_pointer(spec, json.loads(text), here)
+        out = json.dumps(value, indent=1, ensure_ascii=False).encode()
+        uri = here if spec == "" else f"{here}{sep}pointer={spec}"
+    if len(out) > READ_CAP:
+        raise TmError(BAD_PARAMS, "too-large", f"{kind} {spec} is {len(out)} bytes; a read is at most {READ_CAP}", size=len(out))
+    return uri, mime, out
+
+
+def _too_large(what: str, size: int, here: str, stat: str | None = None) -> TmError:
+    """The refusal of a text over the cap: its size, and the three spans
+    that read a piece of it (range on any file, lines and pointer on text)."""
+    sep = "&" if "?" in here else "?"
+    return TmError(RESOURCE_NOT_FOUND, "too-large", f"{what} is {size} bytes; the cap is {READ_CAP}. Read it in ranges or in lines.",
+                   size=size, range=f"{here}{sep}range={{start}}-{{end}}", lines=f"{here}{sep}lines={{first}}-{{last}}", stat=stat or f"{here}{sep}as=stat")
+
+
 def _cursor(offset: int) -> str:
     return base64.urlsafe_b64encode(str(offset).encode()).decode()
 
@@ -344,6 +428,13 @@ def check_params(ref: "Ref") -> None:
             raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}{why}")
     if "cursor" in ref.facets and as_ != "links" and not (ref.is_collection and as_ in (None, "raw", "tree")):
         raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing or ?as=links, and this read is neither")
+    # tinypeek#16: a span is a piece of a file's or a page's content. On a
+    # listing, or with a facet that is not the content (stat, log, blame,
+    # tree, rendered, links), it is refused, as range was (tinypeek#8).
+    span = span_of(ref)
+    if span and (ref.is_collection or as_ not in (None, "raw", "text")):
+        what = "a listing" if ref.is_collection else f"?as={as_}"
+        raise TmError(BAD_PARAMS, "bad-facet", f"{span[0]} reads a piece of a file's or a page's content, and {what} is not the content")
 
 
 def _q(mount: str) -> str:
@@ -1032,7 +1123,8 @@ class Entities:
         return self.uri(kind, collection=True) if kind in ENTITY_KINDS else None
 
     def _record(self, which: str, pointer: str) -> str:
-        return f"{ROOT}fs/{self.RECORDS[which]}#{pointer}"
+        # tinypeek#16: the pointer is a facet, so the link reads the piece.
+        return f"{ROOT}fs/{self.RECORDS[which]}?pointer={pointer}"
 
     def game_pages(self, site: str, key: str) -> list[str]:
         """A game's page in each language, where the site's build made it."""
@@ -1374,7 +1466,8 @@ class Namespace:
                     f"Files under {', '.join(FS_ROOTS)}/ of the tinymachines checkout that serves the site. "
                     "A trailing slash lists a directory. at= reads it as its repository had it, at a branch, tag, commit "
                     "or time (an ISO date or instant). ?as=stat gives size, time and type without content; "
-                    "?range=START-END reads bytes [START, END) of a file over the 256 KiB cap. "
+                    "?range=START-END reads bytes [START, END) of a file over the 256 KiB cap; ?lines=FIRST-LAST reads lines of a text, "
+                    "counted from 1; ?pointer=/a/0/b reads what a JSON pointer names in a JSON file. "
                     "A notebook page's file carries a tm:renders-as link to the page it becomes."
                 ),
             },
@@ -1387,7 +1480,8 @@ class Namespace:
                     "commit (default HEAD; for 6502 that is the commit the site serves), or a time, an ISO date or instant, "
                     "which names the newest commit made at or before it. as=log gives the commits "
                     "touching the path (n= how many, default 20), as=blame the file with a commit per line, "
-                    "as=tree a directory as JSON (depth= how many levels, 1 to 8, default 1), as=stat the object's type, size and resolved commit. A pulled "
+                    "as=tree a directory as JSON (depth= how many levels, 1 to 8, default 1), as=stat the object's type, size and resolved commit. "
+                    "range=, lines= and pointer= read a piece of a file, as on fs. A pulled "
                     "notebook page's origin file carries tm:generates to the copy in this checkout and "
                     "tm:renders-as to its page."
                 ),
@@ -1399,7 +1493,7 @@ class Namespace:
                 "description": (
                     "What a visitor gets, fetched through the front door on loopback. as=text (the default for a page) is "
                     "its readable text; as=rendered is the HTML with the headers nginx adds; as=stat is the status and size "
-                    "without the body. A notebook page carries a tm:source link to the markdown behind it."
+                    "without the body; range= and lines= read a piece of the text. A notebook page carries a tm:source link to the markdown behind it."
                 ),
             },
             {
@@ -1959,20 +2053,18 @@ class Namespace:
                 "isCollection": False, "text": is_text(mime),
             }
             return self._result(f"{here}&as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", here)])
-        rng = ref.facets.get("range")
+        span = span_of(ref)
         start, end = 0, size
-        if rng is not None:
-            start, end = byte_range(rng, size)
-        elif size > READ_CAP:
-            raise TmError(
-                RESOURCE_NOT_FOUND, "too-large",
-                f"fs/{clean} is {size} bytes at {at}; the cap is {READ_CAP}. Read it in ranges.",
-                size=size, range=f"{here}&range={{start}}-{{end}}", stat=f"{here}&as=stat",
-            )
-        if not is_text(mime) and as_ != "raw":
+        if span and span[0] == "range":
+            start, end = byte_range(span[1], size)
+        elif span is None and size > READ_CAP:
+            raise _too_large(f"fs/{clean} at {at}", size, here)
+        if not is_text(mime) and as_ != "raw" and not span:
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"fs/{clean} is {mime}", mimeType=mime, stat=f"{here}&as=stat")
         data = run_git(self._git_dir(repo), "cat-file", "blob", f"{commit}:{gpath}", binary=True)[start:end]
-        uri = here if rng is None else f"{here}&range={start}-{end}"
+        uri = here if span is None else f"{here}&range={start}-{end}"
+        if span and span[0] != "range":
+            uri, mime, data = cut(span, data, mime, here)
         if is_text(mime):
             return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)
         return self._result(uri, mime, None, links, blob=data)
@@ -2010,22 +2102,20 @@ class Namespace:
                 "isCollection": False, "text": is_text(mime),
             }
             return self._result(f"{ref.uri}?as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", ref.uri)])
-        rng = ref.facets.get("range")
+        span = span_of(ref)
         start, end = 0, st.st_size
-        if rng is not None:
-            start, end = byte_range(rng, st.st_size)
-        elif st.st_size > READ_CAP:
-            raise TmError(
-                RESOURCE_NOT_FOUND, "too-large",
-                f"fs/{rel} is {st.st_size} bytes; the cap is {READ_CAP}. Read it in ranges.",
-                size=st.st_size, range=f"{ref.uri}?range={{start}}-{{end}}", stat=f"{ref.uri}?as=stat",
-            )
-        if not is_text(mime) and as_ != "raw":
+        if span and span[0] == "range":
+            start, end = byte_range(span[1], st.st_size)
+        elif span is None and st.st_size > READ_CAP:
+            raise _too_large(f"fs/{rel}", st.st_size, ref.uri)
+        if not is_text(mime) and as_ != "raw" and not span:
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"fs/{rel} is {mime}", mimeType=mime, stat=f"{ref.uri}?as=stat")
         with abs_.open("rb") as f:
             f.seek(start)
             data = f.read(end - start)
-        uri = ref.uri if rng is None else f"{ref.uri}?range={start}-{end}"
+        uri = ref.uri if span is None else f"{ref.uri}?range={start}-{end}"
+        if span and span[0] != "range":
+            uri, mime, data = cut(span, data, mime, ref.uri)
         if is_text(mime):
             return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)
         return self._result(uri, mime, None, links, blob=data)
@@ -2384,15 +2474,16 @@ class Namespace:
                 raise TmError(RESOURCE_NOT_FOUND, "too-large", f"blame of {path} is over the cap; read the file in ranges and the log instead",
                               size=len(out.encode()), log=f"{base}{q}{sep}as=log")
             return self._result(f"{base}{q}{sep}as=blame", "text/plain", out, links)
-        rng = ref.facets.get("range")
+        span = span_of(ref)
         start, end = 0, size
-        if rng is not None:
-            start, end = byte_range(rng, size)
-        elif size > READ_CAP:
-            raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{path} is {size} bytes at {at}; the cap is {READ_CAP}. Read it in ranges.",
-                          size=size, range=f"{base}{q}{sep}range={{start}}-{{end}}", stat=f"{base}{q}{sep}as=stat")
+        if span and span[0] == "range":
+            start, end = byte_range(span[1], size)
+        elif span is None and size > READ_CAP:
+            raise _too_large(f"{path} at {at}", size, base + q)
         data = run_git(self._git_dir(repo), "cat-file", "blob", f"{commit}:{path}", binary=True)[start:end]
-        uri = base + q if rng is None else f"{base}{q}{sep}range={start}-{end}"
+        uri = base + q if span is None else f"{base}{q}{sep}range={start}-{end}"
+        if span and span[0] != "range":
+            uri, mime, data = cut(span, data, mime, base + q)
         if is_text(mime):
             return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)
         return self._result(uri, mime, None, links, blob=data)
@@ -2720,11 +2811,12 @@ class Namespace:
         if as_ not in AS_HTTP:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; http offers {', '.join(AS_HTTP)}")
         site, path = ref.site, ref.path
-        rng = ref.facets.get("range")
-        if rng is not None and (as_ != "text" or ref.is_collection):
-            # tinypeek#8: a range is of a page's text. Anywhere else it is
-            # refused, as a facet a thing lacks is, not dropped (TM-11).
-            raise TmError(BAD_PARAMS, "bad-facet", "range reads a page's text; it goes with ?as=text, or with no ?as on a page")
+        span = span_of(ref)
+        if span and (as_ != "text" or ref.is_collection):
+            # tinypeek#8: a range is of a page's text, and so are its lines
+            # (tinypeek#16). Anywhere else it is refused, as a facet a thing
+            # lacks is, not dropped (TM-11).
+            raise TmError(BAD_PARAMS, "bad-facet", f"{span[0]} reads a page's text; it goes with ?as=text, or with no ?as on a page")
         if ref.is_collection and path != "/":
             if asked:
                 # TM-11: a listing has one representation. A page's facet on it
@@ -2769,15 +2861,17 @@ class Namespace:
             # tinypeek#8: a page's text is held to the byte cap like every
             # other read. It was the one read with no cap, and the default one.
             text = page_text(data.decode("utf-8", errors="replace")).encode()
-            if rng is not None:
-                start, end = byte_range(rng, len(text))
+            if span and span[0] == "range":
+                start, end = byte_range(span[1], len(text))
                 return self._result(f"{base}?as=text&range={start}-{end}", "text/plain", text[start:end].decode("utf-8", errors="replace"), links)
+            if span:
+                uri, _, piece = cut(span, text, "text/plain", f"{base}?as=text")
+                return self._result(uri, "text/plain", piece.decode("utf-8", errors="replace"), links)
             if len(text) > READ_CAP:
-                raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{site}{path} is {len(text)} bytes of text; the cap is {READ_CAP}. Read it in ranges.",
-                              size=len(text), range=f"{base}?as=text&range={{start}}-{{end}}", stat=f"{base}?as=stat")
+                raise _too_large(f"the text of {site}{path}", len(text), f"{base}?as=text", stat=f"{base}?as=stat")
             return self._result(f"{base}?as=text" if asked else base, "text/plain", text.decode("utf-8"), links)
-        if rng is not None:
-            raise TmError(BAD_PARAMS, "bad-facet", f"range reads a page's text, and {site}{path} is {mime}, not a page")
+        if span:
+            raise TmError(BAD_PARAMS, "bad-facet", f"{span[0]} reads a page's text, and {site}{path} is {mime}, not a page")
         if as_ == "text" and asked:
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"{site}{path} is {mime}, not a page", mimeType=mime, stat=f"{base}?as=stat")
         # Not a page (robots.txt, a picture): with no facet it reads as itself.

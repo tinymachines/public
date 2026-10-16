@@ -311,12 +311,16 @@ file in the repository it was pulled from and `tm:generates` back,
 in git, `tm:source` from any page to the route file that renders it and
 `tm:data` to the records its own code reads (with `tm:read-by` back from
 the record, at the same confidence, and `tm:generated-by` from the record to the script that writes
-it), `alternate` from a page to the same page in the other language and on the
+it; an entity's `tm:data` points into its record with `?pointer=`, which reads that piece), `alternate` from a page to the same page in the other language and on the
 other site, `tm:pins` from a submodule to the repository it pins, at the
 pinned commit, and `up`, `collection`, `alternate`, `describedby`, `version-history`
 and `latest-version` as the IANA registry defines them. A URI that does not resolve comes back as a
 JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
-that do, `too-large` with a range template, `out-of-root`, `denied`, `binary`).
+that do, `too-large` with a `?range=` and a `?lines=` template, `out-of-root`, `denied`, `binary`).
+A piece of a thing has an address: `?lines=FIRST-LAST` reads lines of a file or
+of a page's text, counted from 1; `?pointer=/a/0/b` reads what a JSON pointer
+(RFC 6901) names in a JSON file; `?range=START-END` reads bytes. One span a
+read, and the answer's `uri` keeps it, so a quote keeps where it came from.
 
 The git mount offers this repository and the siblings checked out beside it,
 under their GitHub names, all public under github.com/tinymachines. It runs

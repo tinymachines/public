@@ -193,6 +193,12 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 continue
             if href not in seen and identity(href) not in seen:
                 queue.append((identity(href), uri))
+            # tinypeek#16: a link to a piece of a thing (?pointer=, ?lines=)
+            # is read as given, not only as the thing: the piece must be there.
+            if any(q.split("=")[0] in ("pointer", "lines", "range") for q in urlsplit(href).query.split("&")):
+                piece = await get(href)
+                if not piece["ok"]:
+                    problems.append(f"{uri} {ln['rel']} {href}: the piece does not read ({piece['reason']})")
     # Inverses, over every page and file reached.
     for uri, got in list(seen.items()):
         if not got.get("ok"):
