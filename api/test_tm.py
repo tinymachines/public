@@ -1149,16 +1149,16 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
     name every parameter, so a client learns a mount's grammar from the server."""
     page, file = f"{ROOT}http/tinymachines.ai/docs/nes/pile", f"{ROOT}git/public/docs/nes/alone.md"
     for uri, takes in [
-        (f"{page}?at=2026-10-01", "as, range, lines, cursor"),           # the live finding: answered with today's page
-        (f"{page}?depth=2", "as, range, lines, cursor"),                 # (the other live finding, ?lines=, is taken since tinypeek#16)
-        (f"{file}?lang=ja", "at, as, n, depth, range, lines, pointer, cursor"),
-        (f"{ROOT}fs/docs/nes/pile.md?n=5", "at, as, range, lines, pointer, cursor"),   # at= fs takes since tinypeek#15
-        (f"{ROOT}fs/docs/?depth=2", "at, as, range, lines, pointer, cursor"),
-        (f"{ROOT}entity/pattern/?n=5", "as, cursor"),
-        (f"{ROOT}offbox/?range=0-4", "as"),
-        (f"{ROOT}?at=HEAD", "as"),
-        (f"{ROOT}?cursor=x", "as"),
-        (f"{page}?as=links&n=5", "as, range, lines, cursor"),
+        (f"{page}?at=2026-10-01", "as, range, lines, rel, min, cursor"),           # the live finding: answered with today's page
+        (f"{page}?depth=2", "as, range, lines, rel, min, cursor"),                 # (the other live finding, ?lines=, is taken since tinypeek#16)
+        (f"{file}?lang=ja", "at, as, n, depth, range, lines, pointer, rel, min, cursor"),
+        (f"{ROOT}fs/docs/nes/pile.md?n=5", "at, as, range, lines, pointer, rel, min, cursor"),   # at= fs takes since tinypeek#15
+        (f"{ROOT}fs/docs/?depth=2", "at, as, range, lines, pointer, rel, min, cursor"),
+        (f"{ROOT}entity/pattern/?n=5", "as, rel, min, cursor"),
+        (f"{ROOT}offbox/?range=0-4", "as, rel, min"),
+        (f"{ROOT}?at=HEAD", "as, rel, min"),
+        (f"{ROOT}?cursor=x", "as, rel, min"),
+        (f"{page}?as=links&n=5", "as, range, lines, rel, min, cursor"),
     ]:
         e = refusal(built, uri)
         assert e.reason == "bad-facet" and takes in e.message, (uri, e.message)
@@ -1179,9 +1179,9 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
         assert read(built, nxt)[0]["uri"] == nxt, coll
     # The templates name every parameter the mount takes, and the refusal names the same ones: one fact.
     by = {t["name"]: t["uriTemplate"] for t in built.templates()}
-    assert by["fs"].endswith("{?at,as,range,lines,pointer,cursor}") and by["git"].endswith("{?at,as,n,depth,range,lines,pointer,cursor}"), (by["fs"], by["git"])
-    assert by["http"].endswith("{?as,range,lines,cursor}") and by["offbox"].endswith("{?as}"), (by["http"], by["offbox"])
-    assert by["entity"].endswith("{?as,cursor}") and by["routine"].endswith("{?as,cursor}"), (by["entity"], by["routine"])
+    assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["git"].endswith("{?at,as,n,depth,range,lines,pointer,rel,min,cursor}"), (by["fs"], by["git"])
+    assert by["http"].endswith("{?as,range,lines,rel,min,cursor}") and by["offbox"].endswith("{?as,rel,min}"), (by["http"], by["offbox"])
+    assert by["entity"].endswith("{?as,rel,min,cursor}") and by["routine"].endswith("{?as,rel,min,cursor}"), (by["entity"], by["routine"])
     for mount in tm.MOUNTS:
         named = by["entity" if mount == "entity" else mount].rsplit("{?", 1)[1].rstrip("}").split(",")
         assert tuple(named) == tm.PARAMS[mount], mount
@@ -2330,7 +2330,7 @@ def test_tinypeek15_one_time_axis_a_time_or_a_ref_on_git_and_on_fs(gns, gits):
     assert refusal(gns, f"{ROOT}offbox/cartridges?at=v1").reason == "bad-facet"
     # the grammar says so
     fs_tmpl = next(t for t in gns.templates() if t["name"] == "fs")["uriTemplate"]
-    assert fs_tmpl.endswith("{?at,as,range,lines,pointer,cursor}")
+    assert fs_tmpl.endswith("{?at,as,range,lines,pointer,rel,min,cursor}")
 
 
 def test_tinypeek16_a_readable_piece_lines_of_a_text_and_a_pointer_into_a_record(ents):
@@ -2410,6 +2410,59 @@ def test_tinypeek16_a_readable_piece_lines_of_a_text_and_a_pointer_into_a_record
     assert rels(read(ents, f"{E}pattern/")[1])["tm:data"] == [rec], "a collection's record is the whole file"
     # The templates name the two spans, and refuse them where they are not taken.
     by = {t["name"]: t["uriTemplate"] for t in ents.templates()}
-    assert by["fs"].endswith("{?at,as,range,lines,pointer,cursor}") and by["http"].endswith("{?as,range,lines,cursor}"), (by["fs"], by["http"])
-    assert by["git"].endswith("{?at,as,n,depth,range,lines,pointer,cursor}"), by["git"]
+    assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["http"].endswith("{?as,range,lines,rel,min,cursor}"), (by["fs"], by["http"])
+    assert by["git"].endswith("{?at,as,n,depth,range,lines,pointer,rel,min,cursor}"), by["git"]
     assert refusal(ents, f"{E}game/def?lines=1-2").reason == "bad-facet" and refusal(ents, f"{ROOT}offbox/?pointer=/a").reason == "bad-facet"
+
+
+def test_tinypeek17_an_address_for_a_set_a_things_links_filtered_by_rel_and_by_count(ents, monkeypatch):
+    """tinypeek#17: the lens's example, a pattern's found-in links filtered by
+    count, has an address. ?as=links takes rel= (one rel) and min= (a count at
+    least this; a link with no count stands for one thing and counts as 1).
+    The set is a facet of the thing, so it is linkable, paged like any link
+    set, and says its total; its version is the thing's. The two ride with
+    ?as=links on every mount and are refused anywhere else, as cursor= is.
+    An empty set is a set, not a refusal. A saved walk is not built: it is a
+    file in a repository, read like any other thing (see #18)."""
+    pat = f"{E}pattern/pad-poll"
+    c, links = read(ents, f"{pat}?as=links&rel=tm:found-in")
+    body = json.loads(c["text"])
+    assert c["uri"] == f"{pat}?as=links&rel=tm:found-in"
+    assert (body["uri"], body["total"], body["returned"], body["rel"]) == (pat, 2, 2, "tm:found-in") and "min" not in body
+    assert [(ln["rel"], ln["href"]) for ln in links] == [("tm:found-in", f"{E}game/abc"), ("tm:found-in", f"{E}game/def")]
+    c, links = read(ents, f"{pat}?as=links&rel=tm:demonstrated-by&min=2")
+    assert [ln["href"] for ln in links] == [f"{E}lesson/rooms"] and json.loads(c["text"])["min"] == 2
+    assert c["uri"] == f"{pat}?as=links&rel=tm:demonstrated-by&min=2"
+    _, links = read(ents, f"{pat}?as=links&min=2")
+    assert {ln["href"] for ln in links} == {f"{E}lesson/rooms", f"{E}game/abc"}, "abc marks it twice; a link with no count counts as one thing, so min=2 drops it"
+    everything = json.loads(read(ents, f"{pat}?as=links")[0]["text"])["total"]
+    for m in (0, 1):
+        assert json.loads(read(ents, f"{pat}?as=links&min={m}")[0]["text"])["total"] == everything, m
+    _, links = read(ents, f"{pat}?as=links&rel=up")
+    assert [ln["href"] for ln in links] == [f"{E}pattern/"]
+    c, links = read(ents, f"{pat}?as=links&rel=tm:nothing")
+    assert (json.loads(c["text"])["total"], links) == (0, []), "an empty set is a set"
+    for uri in (f"{pat}?as=links&rel=", f"{pat}?as=links&min=-1", f"{pat}?as=links&min=x", f"{pat}?as=links&min=1.5",
+                f"{pat}?rel=up", f"{pat}?as=stat&rel=up", f"{pat}?min=2", f"{ROOT}fs/docs/nes/pile.md?rel=up", f"{ROOT}fs/docs/?min=2",
+                f"{ROOT}git/public/docs/nes/alone.md?as=log&rel=up", f"{ROOT}http/tinymachines.ai/docs/nes/pile?min=1", f"{ROOT}offbox/?rel=up"):
+        assert refusal(ents, uri).reason == "bad-facet", uri
+    # Paged like any link set, the filter staying on the way.
+    monkeypatch.setattr(tm, "LINK_CAP", 2)
+    c, links = read(ents, f"{pat}?as=links&rel=tm:found-in")
+    body = json.loads(c["text"])
+    assert (body["total"], body["returned"]) == (2, 1) and [ln["rel"] for ln in links] == ["tm:found-in", "next"]
+    nxt = links[-1]["href"]
+    assert nxt.startswith(f"{pat}?as=links&rel=tm:found-in&cursor=")
+    c, links = read(ents, nxt)
+    assert c["uri"] == nxt and json.loads(c["text"])["total"] == 2 and [ln["href"] for ln in links] == [f"{E}game/def"]
+    monkeypatch.setattr(tm, "LINK_CAP", 100)
+    # On every mount, the root and the list of hosts included.
+    assert [ln["href"] for ln in read(ents, f"{ROOT}fs/docs/nes/pile.md?as=links&rel=up")[1]] == [f"{ROOT}fs/docs/nes/"]
+    assert json.loads(read(ents, f"{ROOT}git/public/docs/nes/alone.md?at=v1&as=links&rel=latest-version")[0]["text"])["total"] == 1
+    assert json.loads(read(ents, "tm://?as=links&rel=collection")[0]["text"])["total"] == 1
+    assert json.loads(read(ents, f"{ROOT}?as=links&rel=collection")[0]["text"])["total"] == len(tm.MOUNTS)
+    # The templates name them, after the spans and before the cursor.
+    by = {t["name"]: t["uriTemplate"] for t in ents.templates()}
+    assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["entity"].endswith("{?as,rel,min,cursor}"), (by["fs"], by["entity"])
+    assert by["git"].endswith("{?at,as,n,depth,range,lines,pointer,rel,min,cursor}") and by["http"].endswith("{?as,range,lines,rel,min,cursor}")
+    assert by["offbox"].endswith("{?as,rel,min}"), by["offbox"]

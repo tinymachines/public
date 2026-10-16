@@ -81,7 +81,8 @@ holds (tm:input), a page to itself in the other language and on the other site
 version-history and latest-version do what the IANA registry says. Links come in one order (the IANA ones, then exact, then
 inferred; by rel, then href) and no read carries more than a hundred: a read with more ends in a tm:links link to
 <uri>?as=links, which gives all of them a page at a time, each page ending in next. A link that stands for several
-occurrences says how many in count. Reads are rate-limited by caller: a burst of 240, then 4 a second, a page
+occurrences says how many in count, and ?as=links&rel=<rel>&min=<count> is the set narrowed to one rel and to links
+that count at least that, an address of its own. Reads are rate-limited by caller: a burst of 240, then 4 a second, a page
 costing 5 and a git read 2; over it the answer is rate-limited with retryAfter in seconds, and waiting that long is enough. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the

@@ -122,14 +122,17 @@ AS_ENTITY = ("stat", "links")
 # tinypeek#16: range, lines and pointer are the three spans, a readable piece
 # of a thing's content; a read takes one of them (SPANS, check_params).
 SPANS = ("range", "lines", "pointer")
+# tinypeek#17: rel= and min= filter the set behind ?as=links, on every mount,
+# and ride only with it (LINKS_ONLY, check_params), as cursor= does there.
 PARAMS: dict[str, tuple[str, ...]] = {
-    "tm": ("as",), "": ("as",),
-    "fs": ("at", "as", "range", "lines", "pointer", "cursor"),
-    "git": ("at", "as", "n", "depth", "range", "lines", "pointer", "cursor"),
-    "http": ("as", "range", "lines", "cursor"),
-    "offbox": ("as",),
-    "entity": ("as", "cursor"),
+    "tm": ("as", "rel", "min"), "": ("as", "rel", "min"),
+    "fs": ("at", "as", "range", "lines", "pointer", "rel", "min", "cursor"),
+    "git": ("at", "as", "n", "depth", "range", "lines", "pointer", "rel", "min", "cursor"),
+    "http": ("as", "range", "lines", "rel", "min", "cursor"),
+    "offbox": ("as", "rel", "min"),
+    "entity": ("as", "rel", "min", "cursor"),
 }
+LINKS_ONLY = ("rel", "min")
 
 # The kinds of thing the entity mount addresses (TM-16). A routine is
 # addressed under its game.
@@ -423,11 +426,14 @@ def check_params(ref: "Ref") -> None:
     as_ = ref.facets.get("as")
     where = {"tm": "the list of hosts", "": "the root"}.get(ref.mount, ref.mount)
     for k, v in ref.facets.items():
-        if k not in takes and not (k == "cursor" and as_ == "links"):
+        if k not in takes and not (k in ("cursor",) + LINKS_ONLY and as_ == "links"):
             why = f"; {NO_PAST[ref.mount]}" if k == "at" and ref.mount in NO_PAST else ""
             raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}{why}")
     if "cursor" in ref.facets and as_ != "links" and not (ref.is_collection and as_ in (None, "raw", "tree")):
         raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing or ?as=links, and this read is neither")
+    for k in LINKS_ONLY:
+        if k in ref.facets and as_ != "links":
+            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={ref.facets[k]!r} filters the set behind ?as=links, and this read is not it")
     # tinypeek#16: a span is a piece of a file's or a page's content. On a
     # listing, or with a facet that is not the content (stat, log, blame,
     # tree, rendered, links), it is refused, as range was (tinypeek#8).
@@ -1677,19 +1683,41 @@ class Namespace:
         size = LINK_CAP - 1
         return links[offset:offset + size], (offset + size if offset + size < len(links) else None)
 
+    @staticmethod
+    def _filter(ref: Ref, links: list[dict]) -> tuple[list[dict], str, dict]:
+        """tinypeek#17: the set behind ?as=links, narrowed. rel= keeps one
+        rel; min= keeps a link whose count is at least it, a link with no
+        count standing for one thing. The filter rides in the echo and the
+        body, so the narrowed set is an address of its own."""
+        rel, low = ref.facets.get("rel"), ref.facets.get("min")
+        tail, said = "", {}
+        if rel is not None:
+            if not rel:
+                raise TmError(BAD_PARAMS, "bad-facet", "rel=<rel>: one link relation, such as tm:found-in or up")
+            links = [ln for ln in links if ln["rel"] == rel]
+            tail, said["rel"] = f"&rel={rel}", rel
+        if low is not None:
+            if not re.fullmatch(r"\d+", low):
+                raise TmError(BAD_PARAMS, "bad-facet", "min=<count>: a whole number, zero or more; a link with no count stands for one thing")
+            links = [ln for ln in links if ln.get("count", 1) >= int(low)]
+            tail, said["min"] = tail + f"&min={low}", int(low)
+        return links, tail, said
+
     async def _read_links(self, ref: Ref) -> dict:
         """?as=links: a thing's links and no content, a page at a time. The
         set is the one its ?as=stat carries (a collection's own, since a
         listing has no stat), so a file over the byte cap and a page that
-        would have to be fetched whole still give up their links."""
+        would have to be fetched whole still give up their links. rel= and
+        min= narrow it (tinypeek#17)."""
         here = self._links_uri(ref)
         whole = here[:-len("as=links")].rstrip("?&")
         leaf = not ref.is_collection and ref.mount != ""
         got = await self._read(whole + (("&" if "?" in whole else "?") + "as=stat" if leaf else ""))
-        links = ordered(self._own(got["_meta"][META_LINKS], ref))
+        links, tail, said = self._filter(ref, ordered(self._own(got["_meta"][META_LINKS], ref)))
+        here += tail
         offset = _offset(ref.facets.get("cursor"))
         page, nxt = self._links_page(links, offset)
-        body: dict[str, Any] = {"uri": whole, "total": len(links), "returned": len(page)}
+        body: dict[str, Any] = {"uri": whole, "total": len(links), "returned": len(page), **said}
         if nxt is not None:
             body["nextCursor"] = _cursor(nxt)
             page = page + [link("next", f"{here}&cursor={body['nextCursor']}", title=f"{len(links) - nxt} more links")]

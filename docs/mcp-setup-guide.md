@@ -163,7 +163,10 @@ several occurrences says how many in `count`. Links come in one order: the
 IANA ones first, then the exact, then the inferred, and by relation and
 address within each. No read carries more than a hundred of them: one with
 more ends in a `tm:links` link to `?as=links`, which gives the whole set and
-no content, a page at a time, each page ending in `next`. Through resources the links sit in the
+no content, a page at a time, each page ending in `next`. The set can be
+narrowed: `?as=links&rel=tm:found-in&min=2` is one relation only, and only
+the links that count at least twice, and the narrowed set is an address of
+its own. Through resources the links sit in the
 result's `_meta` under `tinymachines.ai/links`; through `resolve` they are in
 the body.
 
