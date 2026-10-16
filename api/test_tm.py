@@ -448,10 +448,19 @@ def test_resolve_is_the_same_read_with_the_links_in_the_body(ns):
 # ---------------------------------------------------------------------------
 
 
-def git(d: Path, *args: str) -> str:
+def git(d: Path, *args: str, when: str | None = None) -> str:
+    """`when` dates a commit (author and committer alike), so a test can ask
+    for a time between two commits and know which one it names."""
     env = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t",
            "GIT_COMMITTER_EMAIL": "t@x", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    if when:
+        env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = when
     return subprocess.run(["git", "-C", str(d), *args], capture_output=True, text=True, check=True, env=env).stdout
+
+
+# When the fixture's two commits were made (tinypeek#15): a time between them
+# names the first, a time after both the second.
+FIRST, SECOND = "2026-01-01T00:00:00Z", "2026-02-01T00:00:00Z"
 
 
 @pytest.fixture
@@ -465,11 +474,11 @@ def gits(repo: Path) -> dict[str, Path]:
     )
     git(repo, "init", "-q", "-b", "main")
     git(repo, "add", "docs/index.md", "docs/nes/index.md", "docs/nes/alone.md", "notes/plan.md", "data/figures.json", "data/secret-key.json", "web")
-    git(repo, "commit", "-q", "-m", "first")
+    git(repo, "commit", "-q", "-m", "first", when=FIRST)
     git(repo, "tag", "v1")
     (repo / "docs" / "nes" / "alone.md").write_text("---\ntitle: Alone\n---\n# Alone\n\nSecond line.\n")
     git(repo, "add", "docs/nes/alone.md")
-    git(repo, "commit", "-q", "-m", "second: alone grows a line")
+    git(repo, "commit", "-q", "-m", "second: alone grows a line", when=SECOND)
     bench = repo.parent / (repo.name + "-bench")   # a sibling of the checkout, as the real ones are
     (bench / "docs").mkdir(parents=True)
     (bench / "docs" / "pile.md").write_text("# Pile, at the bench\n")
@@ -1078,7 +1087,7 @@ def test_tm19_no_refusal_offers_the_uri_it_refused(gns, monkeypatch):
     # The loop TM-19 found, forced: a refusal whose nearest names the address
     # it refused. The read drops it on the way out.
     loop = f"{ROOT}git/public/docs/nes/nope.md"
-    monkeypatch.setattr(gns, "_git_missing", lambda repo, at, path: TmError(tm.RESOURCE_NOT_FOUND, "not-found", "x", nearest=[loop, loop + "/"]))
+    monkeypatch.setattr(gns, "_git_missing", lambda repo, at, path, rev=None: TmError(tm.RESOURCE_NOT_FOUND, "not-found", "x", nearest=[loop, loop + "/"]))
     assert refusal(gns, loop).data["nearest"] == [loop + "/"], "x/ for x is a different address, and stays"
     monkeypatch.undo()
     # A file asked for as a directory, and a name with a near twin: the
@@ -1142,8 +1151,8 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
     for uri, takes in [
         (f"{page}?at=2026-10-01", "as, range, cursor"),           # the live finding: answered with today's page
         (f"{file}?lines=1-5", "at, as, n, depth, range, cursor"),  # the live finding: answered with the whole file
-        (f"{ROOT}fs/docs/nes/pile.md?at=HEAD", "as, range, cursor"),
-        (f"{ROOT}fs/docs/?depth=2", "as, range, cursor"),
+        (f"{ROOT}fs/docs/nes/pile.md?n=5", "at, as, range, cursor"),   # at= fs takes since tinypeek#15
+        (f"{ROOT}fs/docs/?depth=2", "at, as, range, cursor"),
         (f"{ROOT}entity/pattern/?n=5", "as, cursor"),
         (f"{ROOT}offbox/?range=0-4", "as"),
         (f"{ROOT}?at=HEAD", "as"),
@@ -1169,7 +1178,7 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
         assert read(built, nxt)[0]["uri"] == nxt, coll
     # The templates name every parameter the mount takes, and the refusal names the same ones: one fact.
     by = {t["name"]: t["uriTemplate"] for t in built.templates()}
-    assert by["fs"].endswith("{?as,range,cursor}") and by["git"].endswith("{?at,as,n,depth,range,cursor}"), (by["fs"], by["git"])
+    assert by["fs"].endswith("{?at,as,range,cursor}") and by["git"].endswith("{?at,as,n,depth,range,cursor}"), (by["fs"], by["git"])
     assert by["http"].endswith("{?as,range,cursor}") and by["offbox"].endswith("{?as}"), (by["http"], by["offbox"])
     assert by["entity"].endswith("{?as,cursor}") and by["routine"].endswith("{?as,cursor}"), (by["entity"], by["routine"])
     for mount in tm.MOUNTS:
@@ -2235,3 +2244,88 @@ def test_a_host_this_server_does_not_answer_for_is_refused_and_names_the_ones_it
     assert content["uri"] == f"{ROOT}fs/docs/"
     e = refusal(ns, "tm://TinyMachines/fs/Docs/")
     assert e.reason == "out-of-root", "a path keeps its case: Docs is not docs"
+
+
+def test_tinypeek15_one_time_axis_a_time_or_a_ref_on_git_and_on_fs(gns, gits):
+    """tinypeek#15: at= is one axis with two spellings. A ref names a commit;
+    a time (an ISO date or instant) names the newest commit on the main line
+    made at or before it. fs takes it too, as the repository behind the file
+    had it, and a mount with no past goes on refusing it."""
+    v1 = git(gits["public"], "rev-parse", "v1").strip()
+    head = git(gits["public"], "rev-parse", "HEAD").strip()
+    alone = f"{ROOT}git/public/docs/nes/alone.md"
+    # -- a time on git: between the commits it is the first; echoed as given, resolved in stat
+    then, then_links = read(gns, f"{alone}?at=2026-01-15")
+    assert "Second line." not in then["text"] and then["uri"] == f"{alone}?at=2026-01-15"
+    st = json.loads(read(gns, f"{alone}?at=2026-01-15&as=stat")[0]["text"])
+    assert st["at"] == "2026-01-15" and st["commit"] == v1
+    assert rels(then_links)["latest-version"] == [alone]
+    assert rels(then_links)["up"] == [f"{ROOT}git/public/docs/nes/?at=2026-01-15"]
+    # at or before: the instant of a commit names that commit; the day alone is its start, UTC
+    assert json.loads(read(gns, f"{alone}?at={FIRST}&as=stat")[0]["text"])["commit"] == v1
+    assert json.loads(read(gns, f"{alone}?at=2026-02-01&as=stat")[0]["text"])["commit"] == head
+    assert json.loads(read(gns, f"{alone}?at=2026-01-31T23:59:59Z&as=stat")[0]["text"])["commit"] == v1
+    assert json.loads(read(gns, f"{alone}?at=2026-02-01T00:00:00%2B01:00&as=stat")[0]["text"])["commit"] == v1, "an offset is honoured"
+    # a time after the newest commit is HEAD, and says so in the echo only by its spelling
+    now = read(gns, f"{alone}?at=2030-01-01")[0]
+    assert "Second line." in now["text"] and now["uri"] == f"{alone}?at=2030-01-01"
+    # a tree at a time
+    tree = json.loads(read(gns, f"{ROOT}git/public/docs/nes/?at=2026-01-15")[0]["text"])
+    assert tree["commit"] == v1 and tree["at"] == "2026-01-15"
+    assert all(k["uri"].endswith("?at=2026-01-15") for k in tree["children"])
+    # the log says when each commit was made, so a client can pick a time that lands
+    log = json.loads(read(gns, f"{alone}?as=log")[0]["text"])
+    assert [c["committed"] for c in log["commits"]] == ["2026-02-01T00:00:00+00:00", "2026-01-01T00:00:00+00:00"]
+    # before the first commit: no-such-ref, and the nearest is the first commit's time
+    e = refusal(gns, f"{alone}?at=2025-12-31")
+    assert e.reason == "no-such-ref" and e.data["nearest"] == [f"{ROOT}git/public/?at=2026-01-01T00:00:00Z"]
+    # a time that is not one; "2026-1-1" is not time-shaped, so it is a ref name and no-such-ref
+    for bad in ("2026-13-01", "2026-01-01T25:00:00Z"):
+        assert refusal(gns, f"{alone}?at={bad}").reason == "bad-facet", bad
+    # -- fs takes the same axis: the file as its repository had it
+    fs_alone = f"{ROOT}fs/docs/nes/alone.md"
+    then, links = read(gns, f"{fs_alone}?at=v1")
+    assert "Second line." not in then["text"] and then["uri"] == f"{fs_alone}?at=v1"
+    r = rels(links)
+    assert r["latest-version"] == [fs_alone]
+    assert r["up"] == [f"{ROOT}fs/docs/nes/?at=v1"] and r["collection"] == r["up"]
+    assert r["describedby"] == [f"{fs_alone}?at=v1&as=stat"]
+    assert r["version-history"] == [f"{alone}?at=v1&as=log"]
+    assert r["tm:repository"] == [f"{alone}?at=v1"]
+    assert rels(read(gns, f"{alone}?at=v1")[1])["tm:working-copy"] == [f"{fs_alone}?at=v1"], "the pair holds at a ref"
+    assert "Second line." not in read(gns, f"{fs_alone}?at=2026-01-15")[0]["text"]
+    st = json.loads(read(gns, f"{fs_alone}?at=v1&as=stat")[0]["text"])
+    assert st["commit"] == v1 and st["at"] == "v1" and st["modified"] == "2026-01-01T00:00:00+00:00" and st["size"] == len(then["text"].encode())
+    # HEAD is not fs's default (the checkout is), so it stays in the echo
+    assert read(gns, f"{fs_alone}?at=HEAD")[0]["uri"] == f"{fs_alone}?at=HEAD"
+    # a directory at a ref lists what the repository had, as fs addresses at that ref
+    kids = json.loads(read(gns, f"{ROOT}fs/docs/nes/?at=v1")[0]["text"])
+    assert kids["uri"] == f"{ROOT}fs/docs/nes/" and kids["at"] == "v1" and kids["commit"] == v1
+    assert {k["uri"] for k in kids["children"]} == {f"{fs_alone}?at=v1", f"{ROOT}fs/docs/nes/index.md?at=v1"}, "the pulled page is not in the repository"
+    roots = json.loads(read(gns, f"{ROOT}fs/?at=v1")[0]["text"])
+    assert {k["name"] for k in roots["children"]} == {"docs/", "data/", "notes/"}
+    assert rels(read(gns, f"{ROOT}fs/docs/nes/?at=v1")[1])["up"] == [f"{ROOT}fs/docs/?at=v1"]
+    # a pulled page's past is its origin's
+    pile = f"{ROOT}fs/docs/nes/pile.md"
+    got, links = read(gns, f"{pile}?at=main")
+    assert "at the bench" in got["text"] and got["uri"] == f"{pile}?at=main"
+    assert rels(links)["tm:generated-by"] == [f"{ROOT}git/bench/docs/pile.md?at=main"]
+    assert rels(read(gns, f"{ROOT}git/bench/docs/pile.md?at=main")[1])["tm:generates"] == [f"{pile}?at=main"]
+    # refusals: the same ones git gives, spelled for fs
+    e = refusal(gns, f"{fs_alone}?at=v2")
+    assert e.reason == "no-such-ref" and e.data["nearest"][0] == f"{ROOT}git/public/?at=v1"
+    e = refusal(gns, f"{ROOT}fs/docs/nes/alon.md?at=v1")
+    assert e.reason == "not-found" and e.data["nearest"][0] == f"{fs_alone}?at=v1"
+    assert refusal(gns, f"{ROOT}fs/docs/nes/?at=v1&as=stat").reason == "bad-facet"
+    assert refusal(gns, f"{ROOT}fs/docs/nes?at=v1").data["nearest"] == [f"{ROOT}fs/docs/nes/?at=v1"]
+    assert refusal(gns, f"{ROOT}fs/web/x?at=v1").reason == "out-of-root"
+    assert refusal(gns, f"{ROOT}fs/data/secret-key.json?at=v1").reason == "denied"
+    bare = Namespace(gits["public"], fetch=canned_fetch, git_repos={})
+    assert refusal(bare, f"{ROOT}fs/docs/index.md?at=v1").reason == "bad-facet", "no repository behind fs, no past"
+    # a mount with no past refuses, and says where the past is
+    e = refusal(gns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?at=v1")
+    assert e.reason == "bad-facet" and "tm:source" in e.message
+    assert refusal(gns, f"{ROOT}offbox/cartridges?at=v1").reason == "bad-facet"
+    # the grammar says so
+    fs_tmpl = next(t for t in gns.templates() if t["name"] == "fs")["uriTemplate"]
+    assert fs_tmpl.endswith("{?at,as,range,cursor}")

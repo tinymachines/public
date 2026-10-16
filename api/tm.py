@@ -121,7 +121,7 @@ AS_ENTITY = ("stat", "links")
 # the list of hosts take ?as=links only; cursor= rides with ?as=links anywhere.
 PARAMS: dict[str, tuple[str, ...]] = {
     "tm": ("as",), "": ("as",),
-    "fs": ("as", "range", "cursor"),
+    "fs": ("at", "as", "range", "cursor"),
     "git": ("at", "as", "n", "depth", "range", "cursor"),
     "http": ("as", "range", "cursor"),
     "offbox": ("as",),
@@ -143,6 +143,21 @@ ORIENTATION = (
 # A ref a client may name: a branch, a tag, a commit. Nothing that git would
 # read as an option, nothing that walks.
 REF_OK = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+
+# tinypeek#15: at= is one axis with two spellings. A value shaped like an ISO
+# 8601 date or instant is a time, and names the newest commit on the main
+# line made at or before it; anything else is a ref. A date alone is the
+# start of that day, UTC; an instant with no offset is UTC. A ref that
+# happens to be spelled like a date is reached by its commit instead.
+TIME_OK = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})?)?$")
+
+# Why a mount refuses at=: the mounts with no past of their own, and where
+# their past is (tinypeek#15).
+NO_PAST = {
+    "http": "a page keeps no past of its own; the route that renders it does, at the page's tm:source link",
+    "entity": "an entity's past is its record's, at its tm:data link",
+    "offbox": "what is kept off this box has no past here",
+}
 
 META_LINKS = "tinymachines.ai/links"
 
@@ -325,7 +340,8 @@ def check_params(ref: "Ref") -> None:
     where = {"tm": "the list of hosts", "": "the root"}.get(ref.mount, ref.mount)
     for k, v in ref.facets.items():
         if k not in takes and not (k == "cursor" and as_ == "links"):
-            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}")
+            why = f"; {NO_PAST[ref.mount]}" if k == "at" and ref.mount in NO_PAST else ""
+            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}{why}")
     if "cursor" in ref.facets and as_ != "links" and not (ref.is_collection and as_ in (None, "raw", "tree")):
         raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing or ?as=links, and this read is neither")
 
@@ -351,6 +367,18 @@ def _page(items: list, cursor: str | None, size: int) -> tuple[list, str | None]
 # ---------------------------------------------------------------------------
 # The URI
 # ---------------------------------------------------------------------------
+
+
+def as_time(at: str) -> datetime | None:
+    """The instant an at= names, when it is spelled as one (TIME_OK), else
+    None. A spelling that is time-shaped but not a time is refused here."""
+    if not TIME_OK.match(at):
+        return None
+    try:
+        t = datetime.fromisoformat(at.replace("Z", "+00:00"))
+    except ValueError:
+        raise TmError(BAD_PARAMS, "bad-facet", f"at={at!r} is shaped like a time and is not one") from None
+    return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
 
 
 @dataclass
@@ -1341,10 +1369,11 @@ class Namespace:
             {
                 "uriTemplate": f"{ROOT}fs{{/path*}}{_q('fs')}",
                 "name": "fs",
-                "title": "A file or directory of this repository",
+                "title": "A file or directory of this repository, now or at a ref",
                 "description": (
                     f"Files under {', '.join(FS_ROOTS)}/ of the tinymachines checkout that serves the site. "
-                    "A trailing slash lists a directory. ?as=stat gives size, time and type without content; "
+                    "A trailing slash lists a directory. at= reads it as its repository had it, at a branch, tag, commit "
+                    "or time (an ISO date or instant). ?as=stat gives size, time and type without content; "
                     "?range=START-END reads bytes [START, END) of a file over the 256 KiB cap. "
                     "A notebook page's file carries a tm:renders-as link to the page it becomes."
                 ),
@@ -1352,10 +1381,11 @@ class Namespace:
             {
                 "uriTemplate": f"{ROOT}git/{{repo}}{{/path*}}{_q('git')}",
                 "name": "git",
-                "title": "A file or tree of a repository, at a ref",
+                "title": "A file or tree of a repository, at a ref or a time",
                 "description": (
                     f"Repositories: {', '.join(sorted(self.git))}. A path is a tree path; at= is a branch, tag or "
-                    "commit (default HEAD; for 6502 that is the commit the site serves). as=log gives the commits "
+                    "commit (default HEAD; for 6502 that is the commit the site serves), or a time, an ISO date or instant, "
+                    "which names the newest commit made at or before it. as=log gives the commits "
                     "touching the path (n= how many, default 20), as=blame the file with a commit per line, "
                     "as=tree a directory as JSON (depth= how many levels, 1 to 8, default 1), as=stat the object's type, size and resolved commit. A pulled "
                     "notebook page's origin file carries tm:generates to the copy in this checkout and "
@@ -1817,10 +1847,142 @@ class Namespace:
                         return c
         return None
 
+    # -- fs at a ref (tinypeek#15) ------------------------------------------
+
+    def _fs_behind(self, clean: str) -> tuple[str, str]:
+        """The repository and path an fs path's past is kept in: the origin a
+        pulled page came from, else this checkout's own repository."""
+        top = clean.split("/", 1)[0] if clean else ""
+        if clean and top not in FS_ROOTS:
+            raise TmError(
+                RESOURCE_NOT_FOUND, "out-of-root",
+                f"fs/{top} is not offered; the roots are {', '.join(FS_ROOTS)}",
+                nearest=[f"{ROOT}fs/{r}/" for r in FS_ROOTS],
+            )
+        if clean and denied(clean):
+            raise TmError(RESOURCE_NOT_FOUND, "denied", f"fs/{clean} is on the deny-list; it exists and is not offered")
+        origin = self.origins.by_fs.get(clean)
+        if origin and origin[0] in self.git:
+            return origin
+        if "public" not in self.git:
+            raise TmError(BAD_PARAMS, "bad-facet", "at= names a repository's past, and no repository is mounted behind fs here")
+        return "public", clean
+
+    @staticmethod
+    def _fs_at_uri(rel: str, at: str, collection: bool = False) -> str:
+        base = f"{ROOT}fs/{quote(rel)}" if rel else f"{ROOT}fs/"
+        return f"{base}{'/' if collection and rel else ''}?at={at}"
+
+    def _fs_children_at(self, rel_dir: str, at: str, commit: str) -> list[dict]:
+        """A directory's listing as the checkout's repository had it at a
+        ref, addressed through fs at that ref. What the build pulls in is not
+        in the repository and is not here."""
+        if rel_dir == "":
+            return [{"uri": self._fs_at_uri(r, at, True), "name": r + "/", "mimeType": "application/json", "isCollection": True}
+                    for r in FS_ROOTS if self._git_has("public", commit, r)]
+        kids = []
+        for k in self._git_children("public", at, rel_dir, rev=commit):
+            name = k["name"].rstrip("/")
+            kid = {**k, "uri": self._fs_at_uri(f"{rel_dir}/{name}", at, k["isCollection"])}
+            kids.append(kid)
+        return kids
+
+    def _fs_missing_at(self, clean: str, at: str, commit: str) -> TmError:
+        parts = clean.split("/")
+        sibs: list[dict] = []
+        for i in range(len(parts) - 1, 0, -1):
+            try:
+                sibs = rank_children(parts[i], self._fs_children_at("/".join(parts[:i]), at, commit))
+                break
+            except TmError:
+                continue
+        return TmError(RESOURCE_NOT_FOUND, "not-found", f"fs/{clean} is not in the repository at {at}", nearest=[c["uri"] for c in sibs[:5]])
+
+    def _fs_at_links(self, clean: str, is_dir: bool, at: str, repo: str, gpath: str) -> list[dict]:
+        """The links of an fs thing at a ref: its own, at that ref, and the
+        checkout as its latest version. The pair into git holds at the ref."""
+        parent = clean.rpartition("/")[0]
+        up = self._fs_at_uri(parent, at, True) if clean else ROOT
+        links = [link("up", up)]
+        if clean:
+            links.append(link("latest-version", f"{ROOT}fs/{quote(clean)}" + ("/" if is_dir else ""), title="the checked-out file, which is fs without at="))
+        if not is_dir:
+            there = f"{ROOT}git/{repo}/{quote(gpath)}?at={at}"
+            links.append(link("collection", up))
+            links.append(link("describedby", f"{self._fs_at_uri(clean, at)}&as=stat"))
+            links.append(link("version-history", f"{there}&as=log"))
+            if repo == "public" and gpath == clean:
+                links.append(link("tm:repository", there, "exact", title=f"this file in the repository, at {at}"))
+            else:
+                links.append(link("tm:generated-by", there, "exact", title=f"pulled at build time from {repo}/{gpath}, here at {at}"))
+        return links
+
+    def _read_fs_at(self, ref: Ref, at: str, as_: str) -> dict:
+        """fs at a ref or a time: the file or directory as the repository
+        behind it had it. The echo keeps at= whatever it is, since fs's
+        default is the checkout and HEAD is not it."""
+        clean = ref.path.rstrip("/")
+        repo, gpath = ("public", clean) if ref.is_collection else self._fs_behind(clean)
+        if ref.is_collection and "public" not in self.git:
+            raise TmError(BAD_PARAMS, "bad-facet", "at= names a repository's past, and no repository is mounted behind fs here")
+        commit = self._git_at(repo, at)
+        if ref.is_collection:
+            if as_ != "raw":
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an fs collection is a listing and offers no facets; read {ref.uri}?at={at} without ?as")
+            if clean and not self._git_has("public", commit, clean):
+                raise self._fs_missing_at(clean, at, commit)
+            kids = self._fs_children_at(clean, at, commit)
+            chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
+            body: dict[str, Any] = {"uri": ref.uri, "at": at, "commit": commit, "children": chunk}
+            echo = self._fs_at_uri(clean, at, True)
+            if nxt:
+                body["nextCursor"] = nxt
+                body["next"] = f"{echo}&cursor={nxt}"
+            return self._result(_cursored(echo, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._fs_at_links(clean, True, at, repo, gpath))
+        try:
+            kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{commit}:{gpath}").strip()
+        except TmError:
+            raise self._fs_missing_at(clean, at, commit) from None
+        here = self._fs_at_uri(clean, at)
+        if kind == "tree":
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"fs/{clean} is a directory at {at}; its listing is at {ref.uri}/", nearest=[self._fs_at_uri(clean, at, True)])
+        if kind != "blob":
+            raise TmError(RESOURCE_NOT_FOUND, "binary", f"fs/{clean} is a {kind} (a submodule) at {at}, not a file", mimeType="application/x-git-" + kind)
+        size = int(run_git(self._git_dir(repo), "cat-file", "-s", f"{commit}:{gpath}").strip())
+        mime = mime_for(gpath) if not needs_sniff(gpath) else mime_for(gpath, run_git(self._git_dir(repo), "cat-file", "blob", f"{commit}:{gpath}", binary=True)[:SNIFF])
+        links = self._fs_at_links(clean, False, at, repo, gpath)
+        if as_ == "stat":
+            made = run_git(self._git_dir(repo), "log", "-1", "--format=%cI", commit, "--", gpath).strip()
+            stat = {
+                "uri": ref.uri, "name": clean.rpartition("/")[2], "at": at, "commit": commit, "size": size, "mimeType": mime,
+                "modified": datetime.fromisoformat(made).astimezone(timezone.utc).isoformat(timespec="seconds") if made else None,
+                "isCollection": False, "text": is_text(mime),
+            }
+            return self._result(f"{here}&as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", here)])
+        rng = ref.facets.get("range")
+        start, end = 0, size
+        if rng is not None:
+            start, end = byte_range(rng, size)
+        elif size > READ_CAP:
+            raise TmError(
+                RESOURCE_NOT_FOUND, "too-large",
+                f"fs/{clean} is {size} bytes at {at}; the cap is {READ_CAP}. Read it in ranges.",
+                size=size, range=f"{here}&range={{start}}-{{end}}", stat=f"{here}&as=stat",
+            )
+        if not is_text(mime) and as_ != "raw":
+            raise TmError(RESOURCE_NOT_FOUND, "binary", f"fs/{clean} is {mime}", mimeType=mime, stat=f"{here}&as=stat")
+        data = run_git(self._git_dir(repo), "cat-file", "blob", f"{commit}:{gpath}", binary=True)[start:end]
+        uri = here if rng is None else f"{here}&range={start}-{end}"
+        if is_text(mime):
+            return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)
+        return self._result(uri, mime, None, links, blob=data)
+
     def _read_fs(self, ref: Ref) -> dict:
         as_ = ref.facets.get("as", "raw")
         if as_ not in AS_FS:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; fs offers {', '.join(AS_FS)}")
+        if "at" in ref.facets:
+            return self._read_fs_at(ref, ref.facets["at"], as_)
         rel = ref.path
         if ref.is_collection:
             if as_ != "raw":
@@ -1891,7 +2053,21 @@ class Namespace:
         return clean
 
     def _git_at(self, repo: str, at: str) -> str:
-        """The ref as given, checked, and its commit."""
+        """The ref as given, checked, and its commit; or, for a time, the
+        newest commit on HEAD's first-parent line made at or before it
+        (tinypeek#15). Committer time, which is the order the history is in."""
+        when = as_time(at)
+        if when is not None:
+            iso = when.isoformat(timespec="seconds")
+            found = run_git(self._git_dir(repo), "rev-list", "-1", "--first-parent", f"--before={iso}", "HEAD").strip()
+            if found:
+                return found
+            first = run_git(self._git_dir(repo), "log", "--first-parent", "--format=%cI", "HEAD").split()[-1]
+            first = datetime.fromisoformat(first).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            raise TmError(
+                RESOURCE_NOT_FOUND, "no-such-ref", f"{repo} has nothing at or before {at}; its first commit was made at {first}",
+                nearest=[f"{ROOT}git/{repo}/?at={first}"],
+            )
         if not REF_OK.match(at) or ".." in at:
             raise TmError(BAD_PARAMS, "bad-facet", f"at={at!r} is not a ref name")
         try:
@@ -1958,7 +2134,7 @@ class Namespace:
         base = f"{ROOT}git/{repo}/{quote(path)}"
         if as_ not in ("raw", "tree", "stat"):
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; a submodule offers stat and log")
-        url = self._git_submodule_url(repo, at, path)
+        url = self._git_submodule_url(repo, commit, path)
         served = self._served_repo(url)
         # Linked only when this server's copy of that repository has the
         # pinned commit: a link that would not resolve is worse than none.
@@ -1979,18 +2155,21 @@ class Namespace:
         uri = f"{base}{q}{sep}as=stat" if as_ == "stat" else base + q
         return self._result(uri, "application/json", json.dumps(body, indent=1), links)
 
-    def _git_children(self, repo: str, at: str, tree: str, depth: int = 1) -> list[dict]:
+    def _git_children(self, repo: str, at: str, tree: str, depth: int = 1, rev: str | None = None) -> list[dict]:
         """A tree's entries. One level is the listing: directories first, then
         names. Deeper (tinypeek#4) is one `git ls-tree -r` whatever the depth,
         each entry named by its path below the tree and carrying its level, in
         path order so a directory comes just before what is in it. A
         submodule is listed and never entered: what it pins is another
         repository's. A listing at a ref names its children at that ref."""
-        spec = f"{at}:{tree}" if tree else at
+        # `at` is how the URIs spell the ref; `rev` is what git is asked for
+        # (a time is not a revision, tinypeek#15).
+        rev = rev or (self._git_at(repo, at) if as_time(at) else at)
+        spec = f"{rev}:{tree}" if tree else rev
         try:
             out = run_git(self._git_dir(repo), "ls-tree", "-l", *(("-r", "-t") if depth > 1 else ()), spec)
         except TmError:
-            raise self._git_missing(repo, at, tree) from None
+            raise self._git_missing(repo, at, tree, rev) from None
         kids = []
         lines = [l.partition("\t") for l in out.splitlines()]
         lines = [(meta, name) for meta, _, name in lines if name.count("/") < depth]
@@ -2034,13 +2213,13 @@ class Namespace:
             i += n + 1
         return heads
 
-    def _git_missing(self, repo: str, at: str, path: str) -> TmError:
+    def _git_missing(self, repo: str, at: str, path: str, rev: str | None = None) -> TmError:
         clean = path.rstrip("/")
         parts = clean.split("/")
         sibs: list[dict] = []
         for i in range(len(parts) - 1, -1, -1):
             try:
-                sibs = rank_children(parts[i], self._git_children(repo, at, "/".join(parts[:i])))
+                sibs = rank_children(parts[i], self._git_children(repo, at, "/".join(parts[:i]), rev=rev))
                 break
             except TmError:
                 continue
@@ -2083,7 +2262,9 @@ class Namespace:
         links.append(link("version-history", f"{base}{q}{sep}as=log"))
         links.append(link("alternate", f"{base}{q}{sep}as=blame", title="the file with a commit per line"))
         if repo == "public" and clean.split("/")[0] in FS_ROOTS and (self.repo / clean).is_file():
-            links.append(link("tm:working-copy", f"{ROOT}fs/{quote(clean)}", "exact", title="the checked-out file"))
+            # At a ref the pair holds at that ref: fs takes the same at= (tinypeek#15).
+            links.append(link("tm:working-copy", f"{ROOT}fs/{quote(clean)}{q}", "exact",
+                              title="the checked-out file" if head else f"the checked-out file's path, as the repository had it at {at}"))
         if repo == "public" and head:
             # A route renders every page the site's build made from it (the
             # build's prerender manifest), dynamic routes included.
@@ -2101,12 +2282,13 @@ class Namespace:
                         if script == clean:
                             links.append(link("tm:generates", f"{ROOT}fs/data/{quote(name)}", conf, title="a record this script writes"))
         pulled = self.origins.by_git.get((repo, clean))
-        if pulled and head:
+        if pulled:
             # The origin of a pulled page generates its copy here and the pages
             # made from that copy, which name it back as what generated them.
-            links.append(link("tm:generates", f"{ROOT}fs/{quote(pulled)}", "exact", title=f"the copy the build pulls to {pulled}"))
+            # At a ref, the copy as it was then (tinypeek#15); a page has no then.
+            links.append(link("tm:generates", f"{ROOT}fs/{quote(pulled)}{q}", "exact", title=f"the copy the build pulls to {pulled}"))
             page = self.page_for(pulled)
-            if page:
+            if page and head:
                 for site in (x for x in self.sites if self.serves(x, page)):
                     links.append(link("tm:generates", f"{ROOT}http/{site}{page}", "exact", title=f"the page it becomes on {site}"))
         return links
@@ -2132,7 +2314,7 @@ class Namespace:
         # TM-19: a submodule is neither a tree nor a blob here, and its commit
         # lives in another repository; it reads as what it pins (and as=log is
         # the commits that moved the pin).
-        pinned = self._git_gitlink(repo, at, path) if path else None
+        pinned = self._git_gitlink(repo, commit, path) if path else None
         if pinned and as_ != "log":
             return self._read_submodule(repo, at, commit, path, pinned, as_, head)
         if ref.is_collection and as_ not in ("tree", "raw", "log"):
@@ -2149,7 +2331,7 @@ class Namespace:
                 raise TmError(BAD_PARAMS, "bad-facet", f"depth={d!r}; depth is 1 to {TREE_DEPTH_MAX}, the levels a git tree lists (?as=tree&depth=N on a collection)")
             depth = int(d)
         if listing:
-            kids = self._git_children(repo, at, path, depth)
+            kids = self._git_children(repo, at, path, depth, rev=commit)
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
             body: dict[str, Any] = {"uri": base + ("/" if path else ""), "at": at, "commit": commit, "children": chunk}
             deep = f"{'&' if q else '?'}as=tree&depth={depth}" if depth > 1 else ""
@@ -2165,13 +2347,15 @@ class Namespace:
                 n = max(1, min(int(ref.facets.get("n", LOG_DEFAULT)), LOG_MAX))
             except ValueError:
                 raise TmError(BAD_PARAMS, "bad-facet", "n= must be a number") from None
-            if not pinned and not self._git_has(repo, at, path):
-                raise self._git_missing(repo, at, path)
-            out = run_git(self._git_dir(repo), "log", f"-n{n}", "--format=%H%x1f%h%x1f%an%x1f%aI%x1f%s", at, "--", path)
+            if not pinned and not self._git_has(repo, commit, path):
+                raise self._git_missing(repo, at, path, commit)
+            out = run_git(self._git_dir(repo), "log", f"-n{n}", "--format=%H%x1f%h%x1f%an%x1f%aI%x1f%cI%x1f%s", commit, "--", path)
             commits = []
             for line in out.splitlines():
-                full, short, author, date, subject = line.split("\x1f", 4)
-                commits.append({"commit": full, "short": short, "author": author, "date": date, "subject": subject,
+                full, short, author, date, made, subject = line.split("\x1f", 5)
+                # `date` is the author's; `committed` is when the commit was
+                # made, the time at= compares with (tinypeek#15).
+                commits.append({"commit": full, "short": short, "author": author, "date": date, "committed": made, "subject": subject,
                                 "uri": f"{base}?at={full}"})
             # The echo carries n as it was used; the default spelled out is the identity (tinypeek#13).
             body = {"uri": f"{base}{q}{sep}as=log" + (f"&n={n}" if n != LOG_DEFAULT else ""), "path": path, "at": at, "n": n, "commits": commits}
@@ -2181,21 +2365,21 @@ class Namespace:
                 links = [ln for ln in links if "as=blame" not in ln["href"]]
             return self._result(body["uri"], "application/json", json.dumps(body, indent=1), links)
         try:
-            kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{at}:{path}").strip()
+            kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{commit}:{path}").strip()
         except TmError:
-            raise self._git_missing(repo, at, path) from None
+            raise self._git_missing(repo, at, path, commit) from None
         if kind == "tree":
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{path} is a tree; its listing is at {base}/", nearest=[f"{base}/{q}"])
         if kind != "blob":
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"{path} is a {kind} (a submodule), not a file", mimeType="application/x-git-" + kind)
-        size = int(run_git(self._git_dir(repo), "cat-file", "-s", f"{at}:{path}").strip())
-        mime = mime_for(path) if not needs_sniff(path) else mime_for(path, run_git(self._git_dir(repo), "cat-file", "blob", f"{at}:{path}", binary=True)[:SNIFF])
+        size = int(run_git(self._git_dir(repo), "cat-file", "-s", f"{commit}:{path}").strip())
+        mime = mime_for(path) if not needs_sniff(path) else mime_for(path, run_git(self._git_dir(repo), "cat-file", "blob", f"{commit}:{path}", binary=True)[:SNIFF])
         links = self._git_links(repo, at, path, False, head)
         if as_ == "stat":
             stat = {"uri": base, "path": path, "at": at, "commit": commit, "type": kind, "size": size, "mimeType": mime, "text": is_text(mime)}
             return self._result(f"{base}{q}{sep}as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", base + q)])
         if as_ == "blame":
-            out = run_git(self._git_dir(repo), "blame", "-l", "--root", "--date=short", at, "--", path)
+            out = run_git(self._git_dir(repo), "blame", "-l", "--root", "--date=short", commit, "--", path)
             if len(out.encode()) > READ_CAP:
                 raise TmError(RESOURCE_NOT_FOUND, "too-large", f"blame of {path} is over the cap; read the file in ranges and the log instead",
                               size=len(out.encode()), log=f"{base}{q}{sep}as=log")
@@ -2207,7 +2391,7 @@ class Namespace:
         elif size > READ_CAP:
             raise TmError(RESOURCE_NOT_FOUND, "too-large", f"{path} is {size} bytes at {at}; the cap is {READ_CAP}. Read it in ranges.",
                           size=size, range=f"{base}{q}{sep}range={{start}}-{{end}}", stat=f"{base}{q}{sep}as=stat")
-        data = run_git(self._git_dir(repo), "cat-file", "blob", f"{at}:{path}", binary=True)[start:end]
+        data = run_git(self._git_dir(repo), "cat-file", "blob", f"{commit}:{path}", binary=True)[start:end]
         uri = base + q if rng is None else f"{base}{q}{sep}range={start}-{end}"
         if is_text(mime):
             return self._result(uri, mime, data.decode("utf-8", errors="replace"), links)

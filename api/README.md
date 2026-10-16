@@ -287,7 +287,8 @@ tm://tinymachines/                           the mounts
 tm://tinymachines/fs/docs/nes/pile.md        a file; ?as=stat for its metadata
 tm://tinymachines/fs/docs/nes/               a directory: reading it lists it
 tm://tinymachines/git/nes-bench/docs/pile.md?at=v1.0
-                                             a file of a repository, at a ref;
+                                             a file of a repository, at a ref or a time
+                                             (?at=2026-10-01; fs takes it too);
                                              ?as=log, ?as=blame, ?as=tree, ?as=stat
 tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
                                              a page, as its readable text
