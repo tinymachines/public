@@ -77,7 +77,8 @@ markdown it is rendered from (tm:source), the file links back to its page
 tm:repository), any page links to its route file (tm:source) and to the records
 its own code reads (tm:data), a script to what it reads that no repository
 holds (tm:input), a page to itself in the other language and on the other site
-(alternate), a submodule to the repository it pins (tm:pins), and up, collection, alternate, describedby,
+(alternate), a submodule to the repository it pins (tm:pins), a trail (a JSON file under fs/notes/trails/, a named
+ordered list of addresses) to each of its steps (tm:step) and every step back to the trails it is on (tm:step-of), and up, collection, alternate, describedby,
 version-history and latest-version do what the IANA registry says. Links come in one order (the IANA ones, then exact, then
 inferred; by rel, then href) and no read carries more than a hundred: a read with more ends in a tm:links link to
 <uri>?as=links, which gives all of them a page at a time, each page ending in next. A link that stands for several

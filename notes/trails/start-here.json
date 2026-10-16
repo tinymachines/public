@@ -1,0 +1,10 @@
+{
+ "title": "Start here",
+ "note": "The box's own orientation documents, in the order a fresh session reads them. The same three are named at connect and at the root (TM-12); this is the trail form of that list (tinypeek#18).",
+ "steps": [
+  {"uri": "tm://tinymachines/git/public/START-HERE.md", "note": "the brief: what this site is and the order the work goes in"},
+  {"uri": "tm://tinymachines/git/public/CLAUDE.md", "note": "the house rules of the repository that serves the site"},
+  {"uri": "tm://tinymachines/git/6502/CLAUDE.md", "note": "the 6502 project's own rules, the chip work the site is the front door for"},
+  {"uri": "tm://tinymachines/fs/docs/words.md?lines=1-40", "note": "the first words of the working vocabulary, a quote kept with its address (tinypeek#16)"}
+ ]
+}

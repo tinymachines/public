@@ -313,7 +313,9 @@ in git, `tm:source` from any page to the route file that renders it and
 the record, at the same confidence, and `tm:generated-by` from the record to the script that writes
 it; an entity's `tm:data` points into its record with `?pointer=`, which reads that piece), `alternate` from a page to the same page in the other language and on the
 other site, `tm:pins` from a submodule to the repository it pins, at the
-pinned commit, and `up`, `collection`, `alternate`, `describedby`, `version-history`
+pinned commit, `tm:step` from a trail (a JSON file under `notes/trails/`, a
+named ordered list of addresses) to each step it lists and `tm:step-of` from
+every step back to the trails it is on, and `up`, `collection`, `alternate`, `describedby`, `version-history`
 and `latest-version` as the IANA registry defines them. A URI that does not resolve comes back as a
 JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
 that do, `too-large` with a `?range=` and a `?lines=` template, `out-of-root`, `denied`, `binary`).

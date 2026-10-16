@@ -60,14 +60,15 @@ import tm  # noqa: E402
 
 PAIRS = {"tm:source": "tm:renders-as", "tm:renders-as": "tm:source", "tm:generates": "tm:generated-by",
          "tm:generated-by": "tm:generates", "tm:working-copy": "tm:repository", "tm:repository": "tm:working-copy",
-         "tm:data": "tm:read-by", "tm:read-by": "tm:data", "tm:input": "tm:input-of", "tm:input-of": "tm:input"}
+         "tm:data": "tm:read-by", "tm:read-by": "tm:data", "tm:input": "tm:input-of", "tm:input-of": "tm:input",
+         "tm:step": "tm:step-of", "tm:step-of": "tm:step"}
 # The entity mount's pairs (TM-16).
 ENTITY_PAIRS = {"tm:found-in": "tm:exhibits", "tm:instance": "tm:instance-of", "tm:demonstrated-by": "tm:demonstrates",
                 "tm:measures": "tm:measured-by", "tm:cartridge": "tm:cartridge-of"}
 PAIRS.update(ENTITY_PAIRS)
 PAIRS.update({v: k for k, v in ENTITY_PAIRS.items()})
 # Pairs whose two ends must agree on how sure they are.
-SAME_CONFIDENCE = {"tm:data", "tm:read-by"} | set(ENTITY_PAIRS) | set(ENTITY_PAIRS.values())
+SAME_CONFIDENCE = {"tm:data", "tm:read-by", "tm:step", "tm:step-of"} | set(ENTITY_PAIRS) | set(ENTITY_PAIRS.values())
 
 
 def identity(uri: str) -> str:

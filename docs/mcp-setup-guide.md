@@ -151,8 +151,10 @@ the route file that renders it (`tm:source`) and to the records its own
 code reads (`tm:data`), a record links back to its readers
 (`tm:read-by`) and to the script that writes it (`tm:generated-by`); a page
 links to the same page in the other language and on the other site
-(`alternate`), and a submodule to the repository it pins, at the commit it
-pins (`tm:pins`); a pattern links to each game it was found in
+(`alternate`), a submodule to the repository it pins, at the commit it
+pins (`tm:pins`), and a trail, a JSON file under `fs/notes/trails/` that is
+a named, ordered list of addresses, to each of its steps (`tm:step`), every
+step linking back to the trails it is on (`tm:step-of`); a pattern links to each game it was found in
 (`tm:found-in`), each routine a rule named (`tm:instance`) and each lesson
 that uses it (`tm:demonstrated-by`), and those link back (`tm:exhibits`,
 `tm:instance-of`, `tm:demonstrates`); a lesson links to its cartridge's source

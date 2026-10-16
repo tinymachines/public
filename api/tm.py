@@ -134,6 +134,11 @@ PARAMS: dict[str, tuple[str, ...]] = {
 }
 LINKS_ONLY = ("rel", "min")
 
+# tinypeek#18: where a trail (a named, ordered list of addresses) is a file.
+# A trail is read through fs like any file; what makes it a trail is the
+# links the server adds, to each step and from each step back.
+TRAILS_DIR = "notes/trails"
+
 # The kinds of thing the entity mount addresses (TM-16). A routine is
 # addressed under its game.
 ENTITY_KINDS = ("game", "lesson", "pattern")
@@ -1376,6 +1381,83 @@ class Entities:
 # ---------------------------------------------------------------------------
 
 
+class Trails:
+    """tinypeek#18: the memex trail with no grammar change. A trail is a JSON
+    file under TRAILS_DIR, {title, note, steps: [{uri, note}]}, written by
+    whoever commits it and read through fs as itself. The server links the
+    file to each step as the step is written (tm:step) and every step back to
+    the trails it is on (tm:step-of), on whichever mount the step lives. The
+    order is the file's and the titles say the position; the links come in
+    the namespace's one order like every other link. A file there that is
+    not of that shape is a file and nothing more; a step that is not a tm://
+    URI stays in the body and gets no link; the copy in git is the file's
+    history, not a second trail."""
+
+    def __init__(self, ns: "Namespace"):
+        self.ns = ns
+        self._stamp: tuple | None = None
+        self._ix: dict[str, Any] = {}
+
+    @staticmethod
+    def _key(ref: Ref) -> str:
+        """What a step matches on: the thing's identity, with a git ref since
+        that is part of what the thing is, and no other facet."""
+        at = ref.facets.get("at")
+        return ref.uri + (f"?at={at}" if at and ref.mount in ("git", "fs") else "")
+
+    def index(self) -> dict[str, Any]:
+        """Every trail, and every step's trails, rebuilt when a file there
+        changes, so a deploy's trail is served without a restart."""
+        d = self.ns.repo / TRAILS_DIR
+        files = sorted(p for p in d.glob("*.json") if p.is_file() and not denied(f"{TRAILS_DIR}/{p.name}")) if d.is_dir() else []
+        stamp = tuple((p.name, p.stat().st_mtime) for p in files)
+        if stamp == self._stamp:
+            return self._ix
+        trails: dict[str, dict] = {}
+        on: dict[str, list[tuple[str, int, int, str]]] = {}
+        for p in files:
+            try:
+                doc = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            steps = doc.get("steps") if isinstance(doc, dict) else None
+            if not isinstance(steps, list) or not steps:
+                continue
+            here = f"{ROOT}fs/{TRAILS_DIR}/{quote(p.name)}"
+            title = doc.get("title") if isinstance(doc.get("title"), str) else p.stem
+            links: list[dict] = []
+            seen: set[str] = set()
+            for i, step in enumerate(steps, 1):
+                step = {"uri": step} if isinstance(step, str) else step
+                uri = step.get("uri") if isinstance(step, dict) else None
+                if not isinstance(uri, str) or uri in seen:
+                    continue
+                try:
+                    ref = parse(uri)
+                except TmError:
+                    continue
+                seen.add(uri)
+                note = step.get("note") if isinstance(step.get("note"), str) else None
+                where = f"step {i} of {len(steps)}"
+                links.append(link("tm:step", uri, "exact", title=f"{where}: {note}" if note else where))
+                key = self._key(ref)
+                if not any(h == here for h, _, _, _ in on.get(key, [])):
+                    on.setdefault(key, []).append((here, i, len(steps), title))
+            trails[here] = {"title": title, "links": links}
+        self._stamp, self._ix = stamp, {"trails": trails, "on": on}
+        return self._ix
+
+    def links_for(self, ref: Ref) -> list[dict]:
+        """What a read gains: a trail's steps, and a step's trails."""
+        ix = self.index()
+        out: list[dict] = []
+        if ref.mount == "fs" and "at" not in ref.facets:
+            out += ix["trails"].get(ref.uri, {}).get("links", [])
+        for here, i, n, title in ix["on"].get(self._key(ref), []):
+            out.append(link("tm:step-of", here, "exact", title=f"step {i} of {n} on the trail {title}"))
+        return out
+
+
 class Namespace:
     def __init__(
         self,
@@ -1392,6 +1474,7 @@ class Namespace:
         self.graph = SiteGraph(self.repo)
         self._built: dict[str, tuple] = {}
         self.entities = Entities(self)
+        self.trails = Trails(self)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -1725,6 +1808,16 @@ class Namespace:
         return self._result(uri, "application/json", json.dumps(body, indent=1), page)
 
     async def _read(self, uri: str) -> dict:
+        """Every read, before the namespace's own rules on its links: the
+        mount answers, and a trail's links are added (tinypeek#18), here so
+        that they ride on a thing, its stat and its ?as=links alike."""
+        got = await self._read_mount(uri)
+        more = self.trails.links_for(parse(uri))
+        if more:
+            got["_meta"][META_LINKS] = got["_meta"][META_LINKS] + more
+        return got
+
+    async def _read_mount(self, uri: str) -> dict:
         ref = parse(uri)
         if ref.mount == "tm":
             if ref.facets:

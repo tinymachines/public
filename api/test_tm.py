@@ -2466,3 +2466,57 @@ def test_tinypeek17_an_address_for_a_set_a_things_links_filtered_by_rel_and_by_c
     assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["entity"].endswith("{?as,rel,min,cursor}"), (by["fs"], by["entity"])
     assert by["git"].endswith("{?at,as,n,depth,range,lines,pointer,rel,min,cursor}") and by["http"].endswith("{?as,range,lines,rel,min,cursor}")
     assert by["offbox"].endswith("{?as,rel,min}"), by["offbox"]
+
+
+def test_tinypeek18_a_trail_is_a_file_in_a_repository_read_as_a_named_ordered_list_of_addresses(ents):
+    """tinypeek#18: the memex trail, with no grammar change. A trail is a
+    JSON file under notes/trails/ (title, note, steps: [{uri, note}]), read
+    through fs like any file; the server links it to each step (tm:step, as
+    the step is written, facets and all) and every step back to the trails
+    it is on (tm:step-of), on whichever mount the step lives. The order is
+    the file's, and the titles say the position for a person. A file there
+    that is not of that shape is a file and nothing more; a step that is not
+    a tm:// URI stays in the body and gets no link. The copy in git is the
+    file's history, not a second trail."""
+    T = f"{ROOT}fs/notes/trails/"
+    pile, quote_ = f"{ROOT}fs/docs/nes/pile.md", f"{ROOT}fs/docs/nes/pile.md?lines=4-5"
+    alone_v1, page, pat = f"{ROOT}git/public/docs/nes/alone.md?at=v1", f"{ROOT}http/tinymachines.ai/docs/nes/pile", f"{E}pattern/pad-poll"
+    (ents.repo / "notes" / "trails").mkdir()
+    trail = {"title": "The pile, three ways", "note": "what a reader sees first",
+             "steps": [{"uri": pile, "note": "the file"}, {"uri": quote_, "note": "the heading alone"}, {"uri": alone_v1},
+                       {"uri": page, "note": "the page"}, pat, {"uri": "https://example.com/", "note": "not ours"}]}
+    (ents.repo / "notes" / "trails" / "pile.json").write_text(json.dumps(trail, indent=1))
+    (ents.repo / "notes" / "trails" / "notes.json").write_text('{"title": "a file that is not a trail", "items": [1, 2]}')
+    git(ents.repo, "add", "notes/trails")
+    git(ents.repo, "commit", "-q", "-m", "a trail")
+    here = f"{T}pile.json"
+    c, links = read(ents, here)
+    assert json.loads(c["text"]) == trail, "the file is the trail; it reads as itself"
+    steps = [ln for ln in links if ln["rel"] == "tm:step"]
+    assert [ln["href"] for ln in steps] == sorted([pile, quote_, alone_v1, page, pat]), "every tm:// step, as written, in the namespace's one order"
+    by = {ln["href"]: ln for ln in steps}
+    assert by[pile]["title"] == "step 1 of 6: the file" and by[quote_]["title"] == "step 2 of 6: the heading alone" and by[pat]["title"] == "step 5 of 6"
+    assert all(ln["confidence"] == "exact" for ln in steps)
+    assert rels(read(ents, f"{here}?as=stat")[1])["tm:step"] == [ln["href"] for ln in steps], "the stat carries the same links"
+    assert json.loads(read(ents, f"{here}?as=links&rel=tm:step")[0]["text"])["total"] == 5
+    # Every step says which trails it is on, whatever mount it lives on; the identity is what matches, so a quote of a thing is the thing.
+    for uri in (pile, quote_, f"{pile}?as=stat", alone_v1, f"{alone_v1}&as=stat", page, f"{page}?as=stat", pat, f"{pat}?as=stat"):
+        back = [ln for ln in read(ents, uri)[1] if ln["rel"] == "tm:step-of"]
+        assert [ln["href"] for ln in back] == [here], uri
+        assert back[0]["confidence"] == "exact" and back[0]["title"].startswith("step ") and "The pile, three ways" in back[0]["title"], back[0]
+    assert [ln for ln in read(ents, pile)[1] if ln["rel"] == "tm:step-of"][0]["title"].startswith("step 1 of 6"), "one link back a trail, at the first step"
+    assert "tm:step-of" not in rels(read(ents, f"{ROOT}git/public/docs/nes/alone.md")[1]), "the trail names the file at v1, not at HEAD"
+    assert "tm:step-of" not in rels(read(ents, f"{ROOT}fs/docs/nes/alone.md")[1])
+    # Not a trail: the other file there, and the trail's own copy in git.
+    assert "tm:step" not in rels(read(ents, f"{T}notes.json")[1])
+    git_copy = f"{ROOT}git/public/notes/trails/pile.json"
+    assert "tm:step" not in rels(read(ents, git_copy)[1]) and rels(read(ents, git_copy)[1])["tm:working-copy"] == [here]
+    assert [k["name"] for k in json.loads(read(ents, T)[0]["text"])["children"]] == ["notes.json", "pile.json"], "the trails directory is a directory"
+    assert "tm:step" not in rels(read(ents, T)[1])
+    # The crawler holds the pair both ways, at the same confidence.
+    crawl = _crawler()
+    assert crawl.PAIRS["tm:step"] == "tm:step-of" and crawl.PAIRS["tm:step-of"] == "tm:step" and {"tm:step", "tm:step-of"} <= crawl.SAME_CONFIDENCE
+    # A trail edited on disk is read anew, so a deploy's trail is served without a restart.
+    trail["steps"].append({"uri": f"{ROOT}fs/docs/", "note": "and the docs"})
+    (ents.repo / "notes" / "trails" / "pile.json").write_text(json.dumps(trail))
+    assert "tm:step-of" in rels(read(ents, f"{ROOT}fs/docs/")[1])
