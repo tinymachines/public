@@ -49,7 +49,7 @@ export interface ElectricHue {
 export const ELECTRIC: readonly ElectricHue[] = [
   { id: "lime", name: "Lime", hue: 141, who: "snailmail.ai", href: "https://snailmail.ai", role: "lab", tones: { glow: "#3ffe00", core: "#3dc820", dim: "#25541d", haze: "#1e2a1c" } },
   { id: "cyan", name: "Cyan", hue: 200, who: "amy.io", href: "https://amy.io", role: "lab", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
-  { id: "ember", name: "Ember", hue: 55, who: "hotbits", href: "https://tinymachines.ai/hotbits", role: "lab", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
+  { id: "ember", name: "Ember", hue: 55, who: "hotbits", href: "https://hotbits.tinymachines.ai", role: "lab", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
   { id: "magenta", name: "Magenta", hue: 340, tones: { glow: "#fc00cb", core: "#b61692", dim: "#6a2f58", haze: "#31212b" } },
   { id: "violet", name: "Violet", hue: 300, who: "Flux", role: "lab", reserved: true, tones: { glow: "#9200fe", core: "#5f0fa7", dim: "#503975", haze: "#292333" } },
 ]
