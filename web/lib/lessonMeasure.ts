@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1277,5 +1277,74 @@ export function splashMeasures(cell: (f: number, a: number) => number, vram: str
     fade_frames: fade[fade.length - 1] - fade[0],
     fall: mode(down),
     loop: mode(back.slice(1).map((b, k) => b - back[k])),
+  };
+}
+
+/** What the about lesson's measurement reads, from its lesson.json: the frame after which the crawl is looked for. */
+export interface AboutPlan {
+  kind: "about";
+  script: string;
+  frames: number;
+  walk_from: number;
+}
+
+/**
+ * The about lesson's numbers (board-lessons.py's about_measures), from a
+ * run that touches nothing, from the first whole row (32 tiles) written
+ * after walk_from to the run's end. From the scroll log, the frame's last
+ * setting: the most common step down (counted round 240, where the scroll
+ * passes into the other screen) and frames between steps, the pixels
+ * crawled, and whether the scroll was set while the picture drew (a
+ * split). From the writes to the picture: the whole rows, how many frames
+ * apart and so how many pixels of crawl each stands for, the colour bytes
+ * (attribute tables), and any other tile written. A run that never writes
+ * a whole row is refused with the reason.
+ */
+export function aboutMeasures(vram: string, scrollLog: string, plan: AboutPlan): AboutMeasures {
+  const n = plan.frames, after = plan.walk_from;
+  const writes: [number, number, number, number][] = [];
+  for (const [f, ws] of vramWrites(vram)) for (const [a, c, s] of ws) writes.push([f, a, c, s]);
+  const isRow = (a: number, c: number, s: number) => 0x2000 <= a && a < 0x3000 && c === 32 && s === 1 && a % 32 === 0;
+  const first = writes.find(([f, a, c, s]) => f > after && isRow(a, c, s));
+  if (!first) throw new Error("no whole row of words was written: no write of 32 tiles across");
+  const start = first[0];
+  const rows: number[] = [];
+  let colours = 0, other = 0;
+  for (const [f, a, c, s] of writes) {
+    if (f < start || !(0x2000 <= a && a < 0x3000)) continue;
+    if ((a & 0x3ff) >= 0x3c0) colours += c;
+    else if (c === 32 && s === 1 && a % 32 === 0) rows.push(f);
+    else other += c;
+  }
+  const y = new Map<number, number>();
+  let split = false;
+  for (const line of scrollLog.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const [f, at, , v] = w.map(Number);
+    if (f < start) continue;
+    y.set(f, v);
+    split = split || at < 240;
+  }
+  const fs = [...y.keys()].sort((a, b) => a - b);
+  const moves: [number, number][] = [];
+  for (let k = 1; k < fs.length; k++) {
+    const a = y.get(fs[k - 1])!, b = y.get(fs[k])!;
+    if (a !== b) moves.push([fs[k], pmod(b - a, 240)]);
+  }
+  const step = mode(moves.map(([, d]) => d));
+  const every = mode(moves.slice(1).map(([f], k) => f - moves[k][0]));
+  const gap = mode(rows.slice(1).map((f, k) => f - rows[k]));
+  return {
+    step,
+    every,
+    crawled: moves.reduce((t, [, d]) => t + d, 0),
+    split,
+    rows: rows.length,
+    row_every: gap,
+    row_pixels: gap && every && step !== null ? Math.floor((gap * step) / every) : null,
+    colours,
+    other,
+    frames: n - start,
   };
 }

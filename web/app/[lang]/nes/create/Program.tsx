@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -244,6 +244,20 @@ const S = {
       fall: "Pixels the drops fall a frame",
       loop: "Frames before the drops jump back up",
     },
+    aboutLesson: {
+      step: "Pixels the words move up a step",
+      every: "Frames between steps",
+      crawled: "Pixels crawled in all",
+      split: "The scroll is set while the picture draws",
+      rows: "Rows of words written",
+      row_every: "Frames between rows",
+      row_pixels: "Pixels of crawl a row stands for",
+      colours: "Colour bytes written",
+      other: "Other tiles written",
+      frames: "Frames from the first row to the run's end",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -476,6 +490,20 @@ const S = {
       fall: "しずくが一フレームに落ちるピクセル数",
       loop: "しずくが上へ戻るまでのフレーム数",
     },
+    aboutLesson: {
+      step: "文字が一回に上がるピクセル数",
+      every: "上がる間隔のフレーム数",
+      crawled: "上がったピクセル数の合計",
+      split: "絵を描いている間にスクロールが設定される",
+      rows: "書かれた文字の行の数",
+      row_every: "行と行の間のフレーム数",
+      row_pixels: "一行が表す上がりのピクセル数",
+      colours: "書かれた色のバイト数",
+      other: "そのほかに書かれたタイル数",
+      frames: "最初の行から走行の終わりまでのフレーム数",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -677,6 +705,22 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "about") {
+    const ours = measure.ours as AboutMeasures, yours = theirs as AboutMeasures;
+    const A = T.aboutLesson;
+    return [
+      row("step", A.step, ours.step, yours.step),
+      row("every", A.every, ours.every, yours.every),
+      row("crawled", A.crawled, ours.crawled, yours.crawled),
+      { key: "split", label: A.split, ours: Number(ours.split), yours: Number(yours.split), oursText: ours.split ? A.yes : A.no, yoursText: yours.split ? A.yes : A.no },
+      row("rows", A.rows, ours.rows, yours.rows),
+      row("row_every", A.row_every, ours.row_every, yours.row_every),
+      row("row_pixels", A.row_pixels, ours.row_pixels, yours.row_pixels),
+      row("colours", A.colours, ours.colours, yours.colours),
+      row("other", A.other, ours.other, yours.other),
+      row("frames", A.frames, ours.frames, yours.frames),
     ];
   }
   if (measure.plan.kind === "splash") {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -749,5 +749,35 @@ describe("the splash lesson", () => {
   test("colours that never turn are refused", () => {
     const t = splash({ colours: false });
     expect(() => splashMeasures(cells(t.ram), t.vram, SPLASH)).toThrow("no colours turned");
+  });
+});
+
+const ABOUT: AboutPlan = { kind: "about", script: "", frames: 400, walk_from: 10 };
+
+/** A made-up crawl: a row at 5 (too early), then a whole row every 16 frames from 20, the scroll a pixel down every 2 frames from 230 and round past 240, a colour write, two other tiles and a write that is not a row. */
+function about(o: { rows?: boolean; split?: boolean }) {
+  const vram: string[] = ["5 2000 32 1", "100 23C0 8 1", "150 2045 2 1"];
+  if (o.rows !== false) for (let k = 0, f = 20; f < 400; k++, f += 16) vram.push(`${f} ${(0x2000 + (k % 30) * 32).toString(16).toUpperCase()} 32 1`);
+  vram.sort((a, b) => Number(a.split(" ")[0]) - Number(b.split(" ")[0]));
+  const scroll: string[] = [];
+  for (let f = 0; f < 400; f++) {
+    if (o.split && f === 200) scroll.push("200 100 0 0");
+    scroll.push(`${f} 246 0 ${(230 + Math.max(0, Math.floor((f - 20) / 2))) % 240}`);
+  }
+  return { vram: vram.join("\n") + "\n", scroll: scroll.join("\n") + "\n" };
+}
+
+describe("the about lesson", () => {
+  test("the crawl, the rows and every other write are read off the scroll and the writes from the first row, counted round 240", () => {
+    const t = about({});
+    expect(aboutMeasures(t.vram, t.scroll, ABOUT)).toEqual({ step: 1, every: 2, crawled: 189, split: false, rows: 24, row_every: 16, row_pixels: 8, colours: 8, other: 2, frames: 380 });
+  });
+  test("the scroll set while the picture draws is a split", () => {
+    const t = about({ split: true });
+    expect(aboutMeasures(t.vram, t.scroll, ABOUT).split).toBe(true);
+  });
+  test("a run that never writes a whole row is refused", () => {
+    const t = about({ rows: false });
+    expect(() => aboutMeasures(t.vram, t.scroll, ABOUT)).toThrow("no whole row of words was written");
   });
 });

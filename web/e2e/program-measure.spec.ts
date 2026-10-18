@@ -10,9 +10,9 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause, title, items, menu and splash lessons are measured
- * so far; scroll, rooms, status, sound, pause, title, items, menu and splash
- * read the write logs, pause two
+ * status, sound, pause, title, items, menu, splash and about lessons are
+ * measured so far; scroll, rooms, status, sound, pause, title, items, menu,
+ * splash and about read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=about", 500);
-  await expect(page.locator('[data-program-for="about"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=solid", 500);
+  await expect(page.locator('[data-program-for="solid"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -731,5 +731,49 @@ test("a splash whose colours never turn is not given numbers, and the page says 
   await assembled(page, (t) => t.replace("    LDA #$01\n    STA $46\ncount:", "    LDA #$00\n    STA $46\ncount:"), "splash");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("no colours turned");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The about lesson's rows as the window keys them, from the record: yes and no as 1 and 0. */
+const aboutRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "about");
+  if (!l || l.kind !== "about") throw new Error("no about lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x: number | null) => (x === null ? "" : String(x));
+  return {
+    step: v(m.step), every: v(m.every), crawled: v(m.crawled), split: m.split ? "1" : "0", rows: v(m.rows),
+    row_every: v(m.row_every), row_pixels: v(m.row_pixels), colours: v(m.colours), other: v(m.other), frames: v(m.frames),
+  } as Record<string, string>;
+};
+
+test("the about lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = aboutRows();
+  for (const k of ["step", "every", "row_every", "row_pixels"]) expect(want[k], `the record holds ${k}; a match of two empty cells would pass on nothing`).not.toBe("");
+  await assembled(page, undefined, "about");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("words that crawl every frame instead of every second one write a row every 8 frames, and a row still stands for 8 pixels", async ({ page }) => {
+  const want = aboutRows();
+  // $42 flips every frame and the crawl waits while it is 1; flipped by nothing it stays 0, and the words move every frame.
+  await assembled(page, (t) => t.replace("    LDA $42\n    EOR #$01\n    STA $42", "    LDA $42\n    EOR #$00\n    STA $42"), "about");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.every).toEqual([want.every, "1"]);
+  expect(got.row_every).toEqual([want.row_every, String(Number(want.row_every) / 2)]);
+  expect(Number(got.crawled[1]), "farther in the same time").toBeGreaterThan(Number(want.crawled));
+  for (const k of ["step", "split", "row_pixels", "colours", "other"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("rows written half across are no rows of words, and the page says why rather than giving numbers", async ({ page }) => {
+  // A row is 32 tiles; stopping the copy at $10 writes 16.
+  await assembled(page, (t) => t.replace("    INX\n    CPX #$20\n    BNE row", "    INX\n    CPX #$10\n    BNE row"), "about");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no whole row of words was written");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

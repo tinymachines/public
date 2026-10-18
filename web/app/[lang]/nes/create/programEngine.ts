@@ -7,8 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
-import { cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type LogKind, type PausePlan, type Plan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScreensYours, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "@/lib/lessonMeasure";
+import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import { aboutMeasures, cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type LogKind, type PausePlan, type Plan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScreensYours, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -18,11 +18,11 @@ export interface Parts {
   prg: string;
   chr: string;
   /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
-  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | { plan: ScrollPlan; ours: ScrollMeasures } | { plan: RoomsPlan; ours: RoomsMeasures } | { plan: ScreensPlan; ours: ScreensMeasures } | { plan: StatusPlan; ours: StatusMeasures } | { plan: SoundPlan; ours: SoundMeasures } | { plan: PausePlan; ours: PauseMeasures } | { plan: TitlePlan; ours: TitleMeasures } | { plan: ItemsPlan; ours: ItemsMeasures } | { plan: MenuPlan; ours: MenuMeasures } | { plan: SplashPlan; ours: SplashMeasures } | null;
+  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | { plan: ScrollPlan; ours: ScrollMeasures } | { plan: RoomsPlan; ours: RoomsMeasures } | { plan: ScreensPlan; ours: ScreensMeasures } | { plan: StatusPlan; ours: StatusMeasures } | { plan: SoundPlan; ours: SoundMeasures } | { plan: PausePlan; ours: PauseMeasures } | { plan: TitlePlan; ours: TitleMeasures } | { plan: ItemsPlan; ours: ItemsMeasures } | { plan: MenuPlan; ours: MenuMeasures } | { plan: SplashPlan; ours: SplashMeasures } | { plan: AboutPlan; ours: AboutMeasures } | null;
 }
 
 /** What a measurement comes to. The stomp and screens lessons' are without the autopsy's part, which the page does not take. */
-export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures | ScrollMeasures | RoomsMeasures | ScreensYours | StatusMeasures | SoundMeasures | PauseMeasures | TitleMeasures | ItemsMeasures | MenuMeasures | SplashMeasures;
+export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures | ScrollMeasures | RoomsMeasures | ScreensYours | StatusMeasures | SoundMeasures | PauseMeasures | TitleMeasures | ItemsMeasures | MenuMeasures | SplashMeasures | AboutMeasures;
 
 /** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
 export type Measured = { yours: Yours; why: null } | { yours: null; why: string };
@@ -203,6 +203,11 @@ async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
       // The colours, the fade and the tiles are read off the picture-memory writes, the falling drops off the sprites in memory.
       const r = (await runs([{ ...main, logs: ["vram"] }]))[0];
       return { yours: splashMeasures(r.cell, r.logs.vram ?? "", plan), why: null };
+    }
+    if (plan.kind === "about") {
+      // The crawl is read off the scroll, the rows off the picture-memory writes.
+      const r = (await runs([{ ...main, logs: ["vram", "scroll"] }]))[0];
+      return { yours: aboutMeasures(r.logs.vram ?? "", r.logs.scroll ?? "", plan), why: null };
     }
     const air = parseInt(plan.memory.air.slice(1), 16);
     const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);
