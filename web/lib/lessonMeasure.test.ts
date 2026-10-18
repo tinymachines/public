@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, flickerMeasures, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type FlickerPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -819,5 +819,41 @@ describe("the solid lesson", () => {
   test("a bump that writes no block is refused", () => {
     const t = solid({ block: false });
     expect(() => solidMeasures(cells(t.ram), t.vram, SOLID)).toThrow("no block's tiles were written near the touch at frame 84");
+  });
+});
+
+const FLICKER: FlickerPlan = { kind: "flicker", script: "AT 120 04\nAT 124 00\n", frames: 240 };
+
+/** A made-up line of nine sprites, one more than the chip draws: the order kept until Select at 120, then each frame starting one sprite further on, round all nine. The first, tile 6, is the one followed. */
+function flicker(o: { select?: boolean; empty?: boolean }) {
+  const ram = new Uint8Array(240 * 2048);
+  for (let f = 0; f < 240; f++) {
+    const m = f * 2048;
+    ram.fill(0xff, m + 0x200, m + 0x300);
+    if (o.empty && f < 20) continue;
+    const turn = f >= 120 ? (f - 120) % 9 : 0;
+    for (let k = 0; k < 9; k++) {
+      const s = m + 0x200 + ((k - turn + 9) % 9) * 4;
+      ram.set([100, k === 0 ? 6 : 7, 0, 20 + 20 * k], s);
+    }
+  }
+  return { ram, plan: o.select === false ? { ...FLICKER, script: "AT 120 00\n" } : FLICKER };
+}
+
+describe("the flicker lesson", () => {
+  test("the line, what it leaves out and the turning order are read off sprite memory", () => {
+    const t = flicker({});
+    expect(flickerMeasures(cells(t.ram), t.plan)).toEqual({
+      kept: { most: 9, left_out: 1, never_drawn: 1, cycle: 1, frames: 110 },
+      turned: { most: 9, left_out: 1, never_drawn: 0, cycle: 9, frames: 110 },
+    });
+  });
+  test("a run with no press of Select is refused", () => {
+    const t = flicker({ select: false });
+    expect(() => flickerMeasures(cells(t.ram), t.plan)).toThrow("Select was never pressed");
+  });
+  test("a run with nothing on the screen at frame 10 is refused", () => {
+    const t = flicker({ empty: true });
+    expect(() => flickerMeasures(cells(t.ram), t.plan)).toThrow("no sprite was on the screen at frame 10");
   });
 });

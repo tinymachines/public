@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, FlickerMeasures, FlickerOne, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1419,5 +1419,80 @@ export function solidMeasures(cell: (f: number, a: number) => number, vram: stri
     zeroed: zeroed.length,
     zeroed_every: [...new Set(zeroed.slice(1).map((f, k) => f - zeroed[k]))].sort((p, q) => p - q),
     pushing_frames: pushing.length,
+  };
+}
+
+/** What the flicker lesson's measurement reads, from its lesson.json: the pad script (Select turns the order) and the frames it runs. */
+export interface FlickerPlan {
+  kind: "flicker";
+  script: string;
+  frames: number;
+}
+
+/** board-lessons.py measures from frame 10, and the turned order from 10 frames after Select. */
+const FLICKER_SETTLE = 10;
+
+/**
+ * Sprites on one line (board-lessons.py's flicker_measures), from the
+ * sprite memory the program hands the picture chip each frame (page
+ * $0200). The chip draws the first eight sprites it finds on a line and
+ * leaves the rest out. Over a window of frames: the most sprites on one
+ * line, how many of them were left out, how many sprites (by their x)
+ * were never drawn, and for one sprite, the first slot its tile and x sit
+ * in each frame and the frames before that comes round again (1 if it
+ * never moves), the shortest cycle held on nine frames in ten.
+ */
+function flickerOne(cell: (f: number, a: number) => number, start: number, end: number, tile: number, x0: number): FlickerOne {
+  let most = 0, left = 0;
+  const seen = new Set<number>(), drawn = new Set<number>(), slots: number[] = [];
+  for (let f = start; f < end; f++) {
+    const oam = Array.from({ length: 64 }, (_, i) => [0, 1, 2, 3].map((b) => cell(f, 0x200 + i * 4 + b)));
+    const lines = new Map<number, [number, number][]>();
+    oam.forEach(([y, , , x], i) => {
+      if (y >= 0xef) return;
+      seen.add(x);
+      // A sprite with y in memory is drawn on lines y+1 to y+8.
+      for (let line = y + 1; line < y + 9; line++) {
+        if (!lines.has(line)) lines.set(line, []);
+        lines.get(line)!.push([i, x]);
+      }
+    });
+    for (const on of lines.values()) {
+      most = Math.max(most, on.length);
+      left = Math.max(left, on.length - 8);
+      for (const [, x] of on.slice(0, 8)) drawn.add(x);
+    }
+    const mine = oam.findIndex(([y, t, , x]) => y < 0xef && t === tile && x === x0);
+    if (mine >= 0) slots.push(mine);
+  }
+  let cycle: number | null = null;
+  for (let p = 1; p < Math.floor(slots.length / 2) && cycle === null; p++) {
+    let same = 0;
+    for (let k = 0; k < slots.length - p; k++) if (slots[k] === slots[k + p]) same++;
+    if (same >= 0.9 * (slots.length - p)) cycle = p;
+  }
+  return { most, left_out: left, never_drawn: [...seen].filter((x) => !drawn.has(x)).length, cycle, frames: end - start };
+}
+
+/**
+ * The flicker lesson's numbers: the order kept, from frame 10 to the first
+ * press of Select, and the order turning, from 10 frames after it to the
+ * run's end. The sprite followed is the first one on the screen at frame
+ * 10, by its tile and x. A run with no press of Select, or nothing on the
+ * screen to follow, is refused with the reason.
+ */
+export function flickerMeasures(cell: (f: number, a: number) => number, plan: FlickerPlan): FlickerMeasures {
+  const n = plan.frames;
+  const pad = padOf(parseScript(plan.script), n);
+  let select: number | undefined;
+  for (let f = 1; f < n && select === undefined; f++) if (pad[f] & 0x04 && !(pad[f - 1] & 0x04)) select = f;
+  if (select === undefined) throw new Error("Select was never pressed");
+  let first = -1;
+  for (let i = 0; i < 64 && first < 0; i++) if (cell(FLICKER_SETTLE, 0x200 + i * 4) < 0xef) first = i;
+  if (first < 0) throw new Error(`no sprite was on the screen at frame ${FLICKER_SETTLE}, so there is none to follow`);
+  const tile = cell(FLICKER_SETTLE, 0x201 + first * 4), x0 = cell(FLICKER_SETTLE, 0x203 + first * 4);
+  return {
+    kept: flickerOne(cell, FLICKER_SETTLE, select, tile, x0),
+    turned: flickerOne(cell, select + FLICKER_SETTLE, n, tile, x0),
   };
 }

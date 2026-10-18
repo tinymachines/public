@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, FlickerMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -271,6 +271,18 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    flickerLesson: {
+      "kept-most": "Most sprites on one line, the order kept",
+      "kept-left_out": "Sprites left out of that line, the order kept",
+      "kept-never_drawn": "Sprites never drawn, the order kept",
+      "kept-cycle": "Frames before a sprite is back in its place, the order kept",
+      "kept-frames": "Frames read, the order kept",
+      "turned-most": "Most sprites on one line, the order turning",
+      "turned-left_out": "Sprites left out of that line, the order turning",
+      "turned-never_drawn": "Sprites never drawn, the order turning",
+      "turned-cycle": "Frames before a sprite is back in its place, the order turning",
+      "turned-frames": "Frames read, the order turning",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -530,6 +542,18 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    flickerLesson: {
+      "kept-most": "一本の線に並んだスプライトの最大数（順番そのまま）",
+      "kept-left_out": "その線で描かれなかったスプライトの数（順番そのまま）",
+      "kept-never_drawn": "一度も描かれなかったスプライトの数（順番そのまま）",
+      "kept-cycle": "スプライトが元の場所に戻るまでのフレーム数（順番そのまま）",
+      "kept-frames": "読んだフレーム数（順番そのまま）",
+      "turned-most": "一本の線に並んだスプライトの最大数（順番が回る）",
+      "turned-left_out": "その線で描かれなかったスプライトの数（順番が回る）",
+      "turned-never_drawn": "一度も描かれなかったスプライトの数（順番が回る）",
+      "turned-cycle": "スプライトが元の場所に戻るまでのフレーム数（順番が回る）",
+      "turned-frames": "読んだフレーム数（順番が回る）",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -732,6 +756,13 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
     ];
+  }
+  if (measure.plan.kind === "flicker") {
+    const ours = measure.ours as FlickerMeasures, yours = theirs as FlickerMeasures;
+    const F = T.flickerLesson;
+    return (["kept", "turned"] as const).flatMap((w) =>
+      (["most", "left_out", "never_drawn", "cycle", "frames"] as const).map((k) => row(`${w}-${k}`, F[`${w}-${k}`], ours[w][k], yours[w][k])),
+    );
   }
   if (measure.plan.kind === "solid") {
     const ours = measure.ours as SolidMeasures, yours = theirs as SolidMeasures;

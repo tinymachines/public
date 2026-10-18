@@ -10,8 +10,8 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause, title, items, menu, splash, about and solid lessons
- * are measured so far; scroll, rooms, status, sound, pause, title, items,
+ * status, sound, pause, title, items, menu, splash, about, solid and flicker
+ * lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
  * menu, splash, about and solid read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=flicker", 500);
-  await expect(page.locator('[data-program-for="flicker"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=lives", 500);
+  await expect(page.locator('[data-program-for="lives"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -816,5 +816,44 @@ test("a bump that never draws its block is not given numbers, and the page says 
   await assembled(page, (t) => t.replace("    LDA #$01\n    STA $30\n    LDA #$0C", "    LDA #$00\n    STA $30\n    LDA #$0C"), "solid");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("no block's tiles were written near the touch");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The flicker lesson's rows as the window keys them, from the record: the order kept and turning, each its five numbers. */
+const flickerRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "flicker");
+  if (!l || l.kind !== "flicker") throw new Error("no flicker lesson in the record; the spec would pass on nothing");
+  const out: Record<string, string> = {};
+  for (const w of ["kept", "turned"] as const) for (const [k, v] of Object.entries(l.measures[w])) out[`${w}-${k}`] = v === null ? "" : String(v);
+  return out;
+};
+
+test("the flicker lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = flickerRows();
+  expect(want["turned-cycle"], "the record holds the turning's cycle; a match of two empty cells would pass on nothing").not.toBe("");
+  await assembled(page, undefined, "flicker");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("an order that turns round five figures instead of ten comes back every 5 frames, and the line stays as recorded", async ({ page }) => {
+  const want = flickerRows();
+  // The figure written first goes back to the first after $0A; $05 turns it round half of them.
+  await assembled(page, (t) => t.replace("    CMP #$0A\n    BCC kept", "    CMP #$05\n    BCC kept"), "flicker");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got["turned-cycle"]).toEqual([want["turned-cycle"], "5"]);
+  for (const k of Object.keys(want).filter((k) => k !== "turned-cycle")) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program that never writes its figures is not given numbers, and the page says why", async ({ page }) => {
+  // The NMI sets the frame flag the main loop waits for; setting it to 0 means the figures are never written.
+  await assembled(page, (t) => t.replace("    LDA #$01\n    STA $00\n    PLA", "    LDA #$00\n    STA $00\n    PLA"), "flicker");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no sprite was on the screen at frame 10");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });
