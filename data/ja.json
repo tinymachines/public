@@ -321,6 +321,8 @@
  "Making the signal bench fast": "信号のベンチを速くする",
  "How the signal path got several times faster, fast enough to run live in the browser: three changes named before they were built, a filter shortcut the comb tests caught being wrong, and the speeds before and after.": "信号経路が数倍速くなり、ブラウザで生きて走るだけの速さになった経緯: 組む前に名指しした三つの変更、コムのテストが間違いを捕まえたフィルタの近道、そして前と後の速度。",
  "Super Mario Bros., dissected": "Super Mario Bros. を解剖する",
+ "Super Mario Bros., level by level, on the part": "Super Mario Bros. を一面ずつ、実機の上で",
+ "The bench playing Super Mario Bros. on a real console from power-on, twelve levels from 1-1 to 3-4 in one schedule of button presses found on the model: how each level was searched, replayed and played on the part, a drawing per level made from numbers alone, and what each one taught.": "ベンチが本物のコンソールで、電源投入から Super Mario Bros. を遊ぶ。1-1 から 3-4 までの十二面を、模型の上で見つけたボタンの押し方の一本のスケジュールで: それぞれの面をどう探し、どう通しで再生し、どう実機で遊んだか、数字だけから描いた面ごとの図、そしてそれぞれが教えたこと。",
  "The first game taken apart on the model: the loop inside the interrupt, the frame scanline by scanline, the routine tree through the jump engine, the VRAM pipeline, and the pad's byte on its way to a jump; shape only, never the code": "模型の上で分解した最初のゲーム: 割り込みの中のループ、走査線ごとのフレーム、ジャンプエンジンを通るルーチンの木、VRAM のパイプライン、そしてジャンプへ向かうパッドのバイト。形だけで、コードは決して出さない",
  "Building the calibration cart": "較正カートリッジを作る",
  "From the idea of a frame that names itself, through a cartridge written with a sixty-line assembler, to the ROM in the model, its checksums, and the cartridge in a console.": "自分の名を名乗るフレームという着想から、60 行のアセンブラで書いたカートリッジを経て、模型に載った ROM、そのチェックサム、そしてコンソールに差したカートリッジまで。",
