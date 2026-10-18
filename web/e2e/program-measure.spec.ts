@@ -10,9 +10,9 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause, title, items, menu, splash and about lessons are
- * measured so far; scroll, rooms, status, sound, pause, title, items, menu,
- * splash and about read the write logs, pause two
+ * status, sound, pause, title, items, menu, splash, about and solid lessons
+ * are measured so far; scroll, rooms, status, sound, pause, title, items,
+ * menu, splash, about and solid read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=solid", 500);
-  await expect(page.locator('[data-program-for="solid"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=flicker", 500);
+  await expect(page.locator('[data-program-for="flicker"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -775,5 +775,46 @@ test("rows written half across are no rows of words, and the page says why rathe
   await assembled(page, (t) => t.replace("    INX\n    CPX #$20\n    BNE row", "    INX\n    CPX #$10\n    BNE row"), "about");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("no whole row of words was written");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The solid lesson's rows as the window keys them, from the record: a list joined by a space, yes and no as 1 and 0. */
+const solidRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "solid");
+  if (!l || l.kind !== "solid") throw new Error("no solid lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  return {
+    rising: String(m.rising), fall_frames: String(m.fall_frames), block_after: String(m.block_after), block_back: String(m.block_back),
+    wall_x: String(m.wall_x), pushed_back: m.pushed_back ? "1" : "0", zeroed: String(m.zeroed), zeroed_every: m.zeroed_every.join(" "), pushing_frames: String(m.pushing_frames),
+  } as Record<string, string>;
+};
+
+test("the solid lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = solidRows();
+  expect(want.zeroed_every, "the record holds the wall's beat; a match of two empty cells would pass on nothing").not.toBe("");
+  await assembled(page, undefined, "solid");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a bumped block that waits 6 frames instead of 12 comes back 6 frames sooner, and the jump and the wall stay as recorded", async ({ page }) => {
+  const want = solidRows();
+  // The bumped block waits $0C frames before its tiles come back; $06 is half.
+  await assembled(page, (t) => t.replace("    LDA #$0C\n    STA $31", "    LDA #$06\n    STA $31"), "solid");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.block_back).toEqual([want.block_back, String(Number(want.block_back) - 6)]);
+  for (const k of ["rising", "fall_frames", "block_after", "wall_x", "pushed_back", "zeroed", "zeroed_every", "pushing_frames"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a bump that never draws its block is not given numbers, and the page says why", async ({ page }) => {
+  // A bump sets the block's tiles to be blanked; setting nothing to do draws none.
+  await assembled(page, (t) => t.replace("    LDA #$01\n    STA $30\n    LDA #$0C", "    LDA #$00\n    STA $30\n    LDA #$0C"), "solid");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no block's tiles were written near the touch");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

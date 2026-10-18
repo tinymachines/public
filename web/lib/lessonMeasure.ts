@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1346,5 +1346,78 @@ export function aboutMeasures(vram: string, scrollLog: string, plan: AboutPlan):
     colours,
     other,
     frames: n - start,
+  };
+}
+
+/** What the solid lesson's measurement reads, from its lesson.json: where the square's x, y, speed down and speed across are, and the frame the reading starts from. */
+export interface SolidPlan {
+  kind: "solid";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: string; y: string; vy: string; speed: string };
+}
+
+/**
+ * The solid lesson's numbers (board-lessons.py's solid_measures), from a
+ * run that holds Right, jumps under a block (A held) and walks on into a
+ * wall. From memory: the touch (the first frame after A that the speed
+ * down is no longer rising when a frame before it rose by 3 or more, so
+ * not the top of a jump), how fast it was rising then, and the frames from
+ * the touch to standing where it took off. From the writes to the
+ * picture: the block's tiles (a write of two tiles and another 32 on, the
+ * block's two rows) on or just after the touch, and how many frames later
+ * the same tiles are written again. And at the wall, with Right held:
+ * where x stops, whether it is ever pushed back a pixel, and how many
+ * frames apart the speed across is taken away. A run missing any of these
+ * is refused with the reason.
+ */
+export function solidMeasures(cell: (f: number, a: number) => number, vram: string, plan: SolidPlan): SolidMeasures {
+  const n = plan.frames;
+  const [X, Y, VY, SPEED] = [plan.memory.x, plan.memory.y, plan.memory.vy, plan.memory.speed].map(addr);
+  const pad = padOf(parseScript(plan.script), n);
+  const c = cell;
+  const sv = (f: number) => signed(c(f, VY));
+  const find = (from: number, to: number, ok: (f: number) => boolean) => {
+    for (let f = from; f < to; f++) if (ok(f)) return f;
+    return undefined;
+  };
+  const press = find(Math.max(plan.walk_from, 1), n, (f) => !!(pad[f] & 0x01) && !(pad[f - 1] & 0x01));
+  if (press === undefined) throw new Error("A was never pressed");
+  const ground = c(press - 1, Y);
+  const touch = find(press + 1, n, (f) => sv(f) >= 0 && sv(f - 1) <= -3);
+  if (touch === undefined) throw new Error("the jump never met anything on the way up: it slowed to its top by itself");
+  const landed = find(touch, n, (f) => c(f, Y) === ground);
+  if (landed === undefined) throw new Error(`the square never stood at its height before the jump again after the touch at frame ${touch}`);
+  const runs = new Map<number, Set<number>>();
+  for (const [f, ws] of vramWrites(vram)) for (const [a, k] of ws) if (k === 2) runs.set(f, (runs.get(f) ?? new Set()).add(a));
+  let hit: [number, number] | undefined;
+  for (let f = touch - 1; f < touch + 4 && !hit; f++) {
+    for (const a of [...(runs.get(f) ?? [])].sort((p, q) => p - q)) if (runs.get(f)!.has(a + 32)) { hit = [f, a]; break; }
+  }
+  if (!hit) throw new Error(`no block's tiles were written near the touch at frame ${touch}`);
+  const [hf, ha] = hit;
+  const again = find(hf + 1, n, (f) => !!runs.get(f)?.has(ha) && !!runs.get(f)?.has(ha + 32));
+  if (again === undefined) throw new Error(`the block's tiles were never written again after frame ${hf}`);
+  // The wall: from the first frame x holds for 30 frames with Right held.
+  const held = (f: number) => !!(pad[f] & 0x80);
+  const stop = find(landed, n - 30, (f) => {
+    for (let g = f; g < f + 30; g++) if (!(held(g) && (c(g, X) === c(f, X) || c(g, X) === c(f, X) - 1))) return false;
+    return true;
+  });
+  if (stop === undefined) throw new Error("the square never stopped at a wall with Right held");
+  const pushing: number[] = [];
+  for (let f = stop + 1; f < n; f++) if (held(f)) pushing.push(f);
+  const zeroed = pushing.filter((f) => c(f, SPEED) === 0 && c(f - 1, SPEED) > 0);
+  return {
+    rising: -sv(touch - 1),
+    fall_frames: landed - touch,
+    block_after: hf - touch,
+    block_back: again - hf,
+    wall_x: c(stop, X),
+    pushed_back: pushing.some((f) => c(f, X) === c(f - 1, X) - 1),
+    zeroed: zeroed.length,
+    zeroed_every: [...new Set(zeroed.slice(1).map((f, k) => f - zeroed[k]))].sort((p, q) => p - q),
+    pushing_frames: pushing.length,
   };
 }

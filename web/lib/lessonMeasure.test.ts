@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -779,5 +779,45 @@ describe("the about lesson", () => {
   test("a run that never writes a whole row is refused", () => {
     const t = about({ rows: false });
     expect(() => aboutMeasures(t.vram, t.scroll, ABOUT)).toThrow("no whole row of words was written");
+  });
+});
+
+const SOLID: SolidPlan = { kind: "solid", script: "AT 20 80\nAT 78 81\nAT 103 80\n", frames: 300, walk_from: 20, memory: { x: "$11", y: "$15", vy: "$17", speed: "$12" } };
+
+/** A made-up bump: from 176 the square rises 4 a frame from 79, meets the block at 84, falls 2 a frame to stand at 94; the block's two rows written at 85 and again at 97; x walks a pixel a frame to the wall at 176 (frame 196), where the speed is taken away every 7 frames. */
+function solid(o: { block?: boolean; back?: boolean }) {
+  const ram = new Uint8Array(300 * 2048);
+  let y = 176;
+  for (let f = 0; f < 300; f++) {
+    const m = f * 2048;
+    let vy = 0;
+    if (f >= 79 && f <= 83) vy = -4;
+    else if (f > 84 && y < 176) vy = 2;
+    y += vy;
+    ram[m + 0x15] = y;
+    ram[m + 0x17] = vy & 0xff;
+    ram[m + 0x11] = o.back && f === 200 ? 175 : Math.min(176, Math.max(0, f - 20));
+    ram[m + 0x12] = f >= 177 && (f - 177) % 7 === 0 ? 0 : 10;
+  }
+  const vram = o.block === false ? "" : "85 2046 2 1\n85 2066 2 1\n97 2046 2 1\n97 2066 2 1\n";
+  return { ram, vram };
+}
+
+describe("the solid lesson", () => {
+  test("the bump, the fall, the block and the wall are read off memory, the writes and the pad", () => {
+    const t = solid({});
+    expect(solidMeasures(cells(t.ram), t.vram, SOLID)).toEqual({
+      rising: 4, fall_frames: 10, block_after: 1, block_back: 12, wall_x: 176, pushed_back: false, zeroed: 15, zeroed_every: [7], pushing_frames: 103,
+    });
+  });
+  test("a pixel lost against the wall is a push back, and the wall still holds", () => {
+    const t = solid({ back: true });
+    const m = solidMeasures(cells(t.ram), t.vram, SOLID);
+    expect(m.pushed_back).toBe(true);
+    expect(m.wall_x).toBe(176);
+  });
+  test("a bump that writes no block is refused", () => {
+    const t = solid({ block: false });
+    expect(() => solidMeasures(cells(t.ram), t.vram, SOLID)).toThrow("no block's tiles were written near the touch at frame 84");
   });
 });

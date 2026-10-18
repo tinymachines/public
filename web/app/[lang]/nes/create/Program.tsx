@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -258,6 +258,19 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    solidLesson: {
+      rising: "Pixels a frame it was rising when it met the block",
+      fall_frames: "Frames from the touch to standing again",
+      block_after: "Frames from the touch to the block's tiles written",
+      block_back: "Frames until the block's tiles are written again",
+      wall_x: "Where x stops at the wall",
+      pushed_back: "Pushed back a pixel at the wall",
+      zeroed: "Times the speed across is taken away at the wall",
+      zeroed_every: "Frames between those times",
+      pushing_frames: "Frames spent pushing against the wall",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -504,6 +517,19 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    solidLesson: {
+      rising: "ブロックに当たったとき一フレームに上がっていたピクセル数",
+      fall_frames: "当たってからまた立つまでのフレーム数",
+      block_after: "当たってからブロックのタイルが書かれるまでのフレーム数",
+      block_back: "ブロックのタイルがまた書かれるまでのフレーム数",
+      wall_x: "壁で止まる x",
+      pushed_back: "壁で一ピクセル押し戻される",
+      zeroed: "壁で横の速さが取り去られる回数",
+      zeroed_every: "その間のフレーム数",
+      pushing_frames: "壁を押していたフレーム数",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -705,6 +731,21 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "solid") {
+    const ours = measure.ours as SolidMeasures, yours = theirs as SolidMeasures;
+    const D = T.solidLesson;
+    return [
+      row("rising", D.rising, ours.rising, yours.rising),
+      row("fall_frames", D.fall_frames, ours.fall_frames, yours.fall_frames),
+      row("block_after", D.block_after, ours.block_after, yours.block_after),
+      row("block_back", D.block_back, ours.block_back, yours.block_back),
+      row("wall_x", D.wall_x, ours.wall_x, yours.wall_x),
+      { key: "pushed_back", label: D.pushed_back, ours: Number(ours.pushed_back), yours: Number(yours.pushed_back), oursText: ours.pushed_back ? D.yes : D.no, yoursText: yours.pushed_back ? D.yes : D.no },
+      row("zeroed", D.zeroed, ours.zeroed, yours.zeroed),
+      { key: "zeroed_every", label: D.zeroed_every, ours: ours.zeroed_every.join(" ") || null, yours: yours.zeroed_every.join(" ") || null, oursText: ours.zeroed_every.join(", ") || T.noValue, yoursText: yours.zeroed_every.join(", ") || T.noValue },
+      row("pushing_frames", D.pushing_frames, ours.pushing_frames, yours.pushing_frames),
     ];
   }
   if (measure.plan.kind === "about") {
