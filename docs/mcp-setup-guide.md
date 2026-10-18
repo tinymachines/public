@@ -116,7 +116,8 @@ headers a visitor gets.
 The git mount offers the site's own repository and the ones beside it that
 the notebook pulls pages from, all public on GitHub under the same names.
 `?at=` is a branch, tag or commit, or a time (an ISO date or instant, which
-names the newest commit made at or before it; `fs` takes it too), `?as=log`
+names the newest commit made at or before it; `fs` takes it too, and so does
+`entity`, which reads an entity as its records had it then), `?as=log`
 the commits touching a path
 (`&n=` how many), `?as=blame` the file with a commit per line, `?as=tree` a
 directory as JSON, and `&depth=` how many levels of it in one read, up to

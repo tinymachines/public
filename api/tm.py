@@ -130,7 +130,7 @@ PARAMS: dict[str, tuple[str, ...]] = {
     "git": ("at", "as", "n", "depth", "range", "lines", "pointer", "rel", "min", "cursor"),
     "http": ("as", "range", "lines", "rel", "min", "cursor"),
     "offbox": ("as", "rel", "min"),
-    "entity": ("as", "rel", "min", "cursor"),
+    "entity": ("at", "as", "rel", "min", "cursor"),
 }
 LINKS_ONLY = ("rel", "min")
 
@@ -166,7 +166,6 @@ TIME_OK = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2
 # their past is (tinypeek#15).
 NO_PAST = {
     "http": "a page keeps no past of its own; the route that renders it does, at the page's tm:source link",
-    "entity": "an entity's past is its record's, at its tm:data link",
     "offbox": "what is kept off this box has no past here",
 }
 
@@ -1041,6 +1040,7 @@ class Entities:
         self.ns = ns
         self._stamp: tuple | None = None
         self._ix: dict[str, Any] = {}
+        self._views: dict[str, "EntitiesAt"] = {}
 
     # -- the records ---------------------------------------------------------
 
@@ -1066,6 +1066,11 @@ class Entities:
             return self._ix
         _, auto = self._load("autopsy")
         _, less = self._load("lessons")
+        self._stamp, self._ix = stamp, self._build(auto, less, {which: s is not None for which, s in zip(self.RECORDS, stamp)})
+        return self._ix
+
+    def _build(self, auto: dict, less: dict, has: dict[str, bool]) -> dict[str, Any]:
+        """The index from the two records' contents, wherever they were read."""
         patterns: dict[str, dict] = {
             p: {"i": i, "games": {}, "instances": [], "lessons": {}}
             for i, p in enumerate(auto.get("patterns") or []) if isinstance(p, str)
@@ -1116,11 +1121,37 @@ class Entities:
             for p, n in (x.get("patterns") or {}).items():
                 if p in patterns:
                     patterns[p]["lessons"][x["key"]] = n
-        self._stamp, self._ix = stamp, {
-            "patterns": patterns, "games": games, "lessons": lessons,
-            "has": {which: s is not None for which, s in zip(self.RECORDS, stamp)},
-        }
-        return self._ix
+        return {"patterns": patterns, "games": games, "lessons": lessons, "has": has}
+
+    # -- an entity at a time (tinypeek#21) --------------------------------------
+
+    def at(self, at: str) -> "EntitiesAt":
+        """The entity mount as its records were at the commit a ref or a time
+        names, on the repository that holds them. Kept by commit, a few at a
+        time, since a commit's records never change."""
+        if "public" not in self.ns.git:
+            raise TmError(BAD_PARAMS, "bad-facet", "at= reads the records as their repository had them, and no repository holds them here")
+        commit = self.ns._git_at("public", at)
+        view = self._views.pop(commit, None) or EntitiesAt(self, commit)
+        self._views[commit] = view
+        while len(self._views) > 8:
+            self._views.pop(next(iter(self._views)))
+        return view
+
+    def history(self, kind: str) -> list[dict]:
+        """version-history: an entity's times are its record's, whose log is
+        in git. Every entity carries it, now or at a time (tinypeek#21)."""
+        rec = self.RECORDS[self.READS["game" if kind == "routine" else kind]]
+        if "public" in self.ns.git and self.ns._git_has("public", "HEAD", rec):
+            return [link("version-history", f"{ROOT}git/public/{rec}?as=log", title="the record's commits: this entity's times")]
+        return []
+
+    def _mark(self, uri: str) -> str:
+        """An entity's address in this answer: itself, now."""
+        return uri
+
+    def _then(self, kind: str, parts: list[str]) -> list[dict]:
+        return []
 
     # -- addresses ---------------------------------------------------------
 
@@ -1152,7 +1183,7 @@ class Entities:
     # -- links ---------------------------------------------------------------
 
     def _frame(self, uri: str, coll: str) -> list[dict]:
-        return [link("up", coll), link("collection", coll), link("describedby", f"{uri}?as=stat")]
+        return [link("up", coll), link("collection", coll), link("describedby", f"{uri}{'&' if '?' in uri else '?'}as=stat")]
 
     def _pattern(self, key: str) -> tuple[dict, list[dict]]:
         ix = self.index()
@@ -1338,8 +1369,12 @@ class Entities:
         as_ = ref.facets.get("as")
         if as_ not in (None, *AS_ENTITY):
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; entity offers {', '.join(AS_ENTITY)}")
+        if "at" in ref.facets and not isinstance(self, EntitiesAt):
+            return self.at(ref.facets["at"]).read(ref)
         parts = [p for p in ref.path.split("/") if p]
         ix = self.index()
+        me = self._mark(ref.uri)
+        sep = "&" if "?" in me else "?"
         if ref.is_collection:
             kids = self._kids(parts)
             if kids is None:
@@ -1348,16 +1383,16 @@ class Entities:
                 # TM-11: a listing has one representation.
                 raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an entity collection is a listing and offers no facets; read {ref.uri} without ?as")
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
-            body: dict[str, Any] = {"uri": ref.uri, "children": chunk}
+            body: dict[str, Any] = {"uri": me, "children": chunk}
             if nxt:
                 body["nextCursor"] = nxt
-                body["next"] = f"{ref.uri}?cursor={nxt}"
+                body["next"] = f"{me}{sep}cursor={nxt}"
             links = [link("up", self.uri(*parts[:-1], collection=True) if parts else ROOT)]
             if len(parts) == 1 and ix["has"][self.READS[parts[0]]]:
                 # The record itself, as an http collection names it: the
                 # entities listed here each carry their own place in it.
-                links.append(link("tm:data", f"{ROOT}fs/{self.RECORDS[self.READS[parts[0]]]}", "exact", title="the record the entities listed here are read from"))
-            return self.ns._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), links)
+                links.append(link("tm:data", self._whole(self.RECORDS[self.READS[parts[0]]]), "exact", title="the record the entities listed here are read from"))
+            return self.ns._result(_cursored(me, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), links)
         if len(parts) == 2 and parts[0] == "pattern" and parts[1] in ix["patterns"]:
             body, links = self._pattern(parts[1])
         elif len(parts) == 2 and parts[0] == "game" and parts[1] in ix["games"]:
@@ -1368,12 +1403,91 @@ class Entities:
             body, links = self._routine(parts[1], parts[3])
         else:
             raise self._missing(parts, False)
+        links = links + self.history(body["entity"]) + self._then(body["entity"], parts)
         text = json.dumps(body, indent=1)
         if as_ == "stat":
-            stat = {"uri": ref.uri, "entity": body["entity"], "key": body["key"], "name": body.get("name") or body.get("title") or body["key"],
-                    "mimeType": "application/json", "size": len(text.encode()), "isCollection": False, "text": True}
-            return self.ns._result(f"{ref.uri}?as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", ref.uri)])
-        return self.ns._result(ref.uri, "application/json", text, links)
+            stat = {"uri": me, "entity": body["entity"], "key": body["key"], "name": body.get("name") or body.get("title") or body["key"],
+                    "mimeType": "application/json", "size": len(text.encode()), "isCollection": False, "text": True, **self._when()}
+            return self.ns._result(f"{me}{sep}as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", me)])
+        return self.ns._result(me, "application/json", text, links)
+
+    def _when(self) -> dict:
+        return {}
+
+    def _whole(self, rec: str) -> str:
+        return f"{ROOT}fs/{rec}"
+
+
+class EntitiesAt(Entities):
+    """tinypeek#21: the entity mount at one commit. The same reading, from the
+    two records as the repository had them there; every entity address it
+    gives carries the ?at= it was asked with, so pairs between entities hold
+    at that time, and tm:data reads the record at that time. What has no past
+    (a game's page, a lesson's cartridge directory) is not named, so those
+    pairs are not offered one way. latest-version is the entity now."""
+
+    def __init__(self, now: Entities, commit: str):
+        super().__init__(now.ns)
+        self.now, self.commit, self.spelled = now, commit, None
+        got: dict[str, dict] = {}
+        has: dict[str, bool] = {}
+        for which, rec in self.RECORDS.items():
+            try:
+                doc = json.loads(run_git(self.ns._git_dir("public"), "cat-file", "blob", f"{commit}:{rec}"))
+                got[which], has[which] = (doc if isinstance(doc, dict) else {}), True
+            except (TmError, ValueError):
+                got[which], has[which] = {}, False
+        self._fixed = self._build(got["autopsy"], got["lessons"], has)
+
+    def read(self, ref: "Ref") -> dict:
+        # One view a commit; the spelling of the time is the asker's, so it is set per read.
+        self.spelled = ref.facets["at"]
+        return super().read(ref)
+
+    def index(self) -> dict[str, Any]:
+        return self._fixed
+
+    def _q(self) -> str:
+        return f"?at={quote(self.spelled, safe=':')}"
+
+    def uri(self, *parts: str, collection: bool = False) -> str:  # type: ignore[override]
+        return Entities.uri(*parts, collection=collection) + self._q()
+
+    def _mark(self, uri: str) -> str:
+        return uri + self._q()
+
+    def _record(self, which: str, pointer: str) -> str:
+        return f"{ROOT}fs/{self.RECORDS[which]}{self._q()}&pointer={pointer}"
+
+    def _whole(self, rec: str) -> str:
+        return f"{ROOT}fs/{rec}{self._q()}"
+
+    def game_pages(self, site: str, key: str) -> list[str]:
+        return []
+
+    def cartridge(self, key: str) -> str | None:
+        return None
+
+    def _when(self) -> dict:
+        return {"at": self.spelled, "commit": self.commit}
+
+    def _then(self, kind: str, parts: list[str]) -> list[dict]:
+        try:
+            self.now.read(Ref("entity", None, "/".join(parts), {"as": "stat"}))
+        except TmError:
+            return []
+        return [link("latest-version", Entities.uri(*parts), title="this entity in the records now")]
+
+    def _missing(self, parts: list[str], coll: bool) -> TmError:
+        err = super()._missing(parts, coll)
+        try:
+            self.now.read(Ref("entity", None, "/".join(parts) + ("/" if coll else ""), {}))
+        except TmError:
+            return err
+        here = Entities.uri(*parts, collection=coll)
+        err.message = f"{err.message}; at {self.spelled} the records did not have it, and it is there now"
+        err.data["nearest"] = [here] + [n for n in err.data.get("nearest", []) if n != here][:4]
+        return err
 
 
 # ---------------------------------------------------------------------------

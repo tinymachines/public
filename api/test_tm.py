@@ -1154,7 +1154,7 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
         (f"{file}?lang=ja", "at, as, n, depth, range, lines, pointer, rel, min, cursor"),
         (f"{ROOT}fs/docs/nes/pile.md?n=5", "at, as, range, lines, pointer, rel, min, cursor"),   # at= fs takes since tinypeek#15
         (f"{ROOT}fs/docs/?depth=2", "at, as, range, lines, pointer, rel, min, cursor"),
-        (f"{ROOT}entity/pattern/?n=5", "as, rel, min, cursor"),
+        (f"{ROOT}entity/pattern/?n=5", "at, as, rel, min, cursor"),
         (f"{ROOT}offbox/?range=0-4", "as, rel, min"),
         (f"{ROOT}?at=HEAD", "as, rel, min"),
         (f"{ROOT}?cursor=x", "as, rel, min"),
@@ -1181,7 +1181,7 @@ def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_ca
     by = {t["name"]: t["uriTemplate"] for t in built.templates()}
     assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["git"].endswith("{?at,as,n,depth,range,lines,pointer,rel,min,cursor}"), (by["fs"], by["git"])
     assert by["http"].endswith("{?as,range,lines,rel,min,cursor}") and by["offbox"].endswith("{?as,rel,min}"), (by["http"], by["offbox"])
-    assert by["entity"].endswith("{?as,rel,min,cursor}") and by["routine"].endswith("{?as,rel,min,cursor}"), (by["entity"], by["routine"])
+    assert by["entity"].endswith("{?at,as,rel,min,cursor}") and by["routine"].endswith("{?at,as,rel,min,cursor}"), (by["entity"], by["routine"])
     for mount in tm.MOUNTS:
         named = by["entity" if mount == "entity" else mount].rsplit("{?", 1)[1].rstrip("}").split(",")
         assert tuple(named) == tm.PARAMS[mount], mount
@@ -1690,29 +1690,29 @@ def _walk(ns: Namespace, uri: str) -> tuple[list[dict], int]:
 def test_a_large_link_set_is_capped_inline_and_whole_behind_as_links(ents, monkeypatch):
     uri = f"{E}pattern/pad-poll"
     _, full = read(ents, uri)
-    assert len(full) == 10 and "tm:links" not in rels(full), "under the cap a read is whole and says nothing of paging"
+    assert len(full) == 11 and "tm:links" not in rels(full), "under the cap a read is whole and says nothing of paging"
     monkeypatch.setattr(tm, "LINK_CAP", 4)
     c, inline = read(ents, uri)
     assert len(inline) == 4, "no single read returns more than the cap"
     assert inline[:3] == full[:3], "the first page, in the stated order"
     more = inline[-1]
-    assert (more["rel"], more["href"], more["confidence"], more["count"]) == ("tm:links", f"{uri}?as=links", "exact", 10), "and the way to the rest, with how many there are"
+    assert (more["rel"], more["href"], more["confidence"], more["count"]) == ("tm:links", f"{uri}?as=links", "exact", 11), "and the way to the rest, with how many there are"
     assert json.loads(c["text"])["key"] == "pad-poll", "the content is untouched"
     walked, reads = _walk(ents, uri)
-    assert reads == 4 and walked == full, "three a page, and the same ten in the same order as the read under no cap"
+    assert reads == 4 and walked == full, "three a page, and the same eleven in the same order as the read under no cap"
     assert sorted(map(json.dumps, walked)) == sorted(set(map(json.dumps, walked))), "every link exactly once"
     assert all(ln in walked for ln in full), "nothing is unreachable"
     first, _ = read(ents, f"{uri}?as=links")
     body = json.loads(first["text"])
-    assert first["uri"] == f"{uri}?as=links" and first["mimeType"] == "application/json" and (body["uri"], body["total"]) == (uri, 10) and "key" not in body
+    assert first["uri"] == f"{uri}?as=links" and first["mimeType"] == "application/json" and (body["uri"], body["total"]) == (uri, 11) and "key" not in body
     assert read(ents, f"{uri}?as=links") == read(ents, f"{uri}?as=links"), "stable across reads"
     # Through the tool the same page comes back in the body.
     got = run(ents.resolve({"uri": uri}))
     assert len(got["links"]) == 4 and got["links"][-1]["rel"] == "tm:links"
-    # Its stat is over the cap too, and counts the same ten: the pointer a
+    # Its stat is over the cap too, and counts the same eleven: the pointer a
     # stat keeps back to its thing is the stat's, not one of the thing's.
     _, st = read(ents, f"{uri}?as=stat")
-    assert len(st) == 4 and (st[-1]["rel"], st[-1]["href"], st[-1]["count"]) == ("tm:links", f"{uri}?as=links", 10)
+    assert len(st) == 4 and (st[-1]["rel"], st[-1]["href"], st[-1]["count"]) == ("tm:links", f"{uri}?as=links", 11)
     assert refusal(ents, f"{uri}?as=links&cursor=nonsense").reason == "bad-cursor"
     assert refusal(ents, f"{E}pattern/nope?as=links").reason == "not-found", "links of nothing are refused as the thing is"
 
@@ -2463,7 +2463,7 @@ def test_tinypeek17_an_address_for_a_set_a_things_links_filtered_by_rel_and_by_c
     assert json.loads(read(ents, f"{ROOT}?as=links&rel=collection")[0]["text"])["total"] == len(tm.MOUNTS)
     # The templates name them, after the spans and before the cursor.
     by = {t["name"]: t["uriTemplate"] for t in ents.templates()}
-    assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["entity"].endswith("{?as,rel,min,cursor}"), (by["fs"], by["entity"])
+    assert by["fs"].endswith("{?at,as,range,lines,pointer,rel,min,cursor}") and by["entity"].endswith("{?at,as,rel,min,cursor}"), (by["fs"], by["entity"])
     assert by["git"].endswith("{?at,as,n,depth,range,lines,pointer,rel,min,cursor}") and by["http"].endswith("{?as,range,lines,rel,min,cursor}")
     assert by["offbox"].endswith("{?as,rel,min}"), by["offbox"]
 
@@ -2520,3 +2520,75 @@ def test_tinypeek18_a_trail_is_a_file_in_a_repository_read_as_a_named_ordered_li
     trail["steps"].append({"uri": f"{ROOT}fs/docs/", "note": "and the docs"})
     (ents.repo / "notes" / "trails" / "pile.json").write_text(json.dumps(trail))
     assert "tm:step-of" in rels(read(ents, f"{ROOT}fs/docs/")[1])
+
+
+def test_tinypeek21_an_entity_at_a_time_is_read_from_its_records_as_the_repository_had_them(ents):
+    """tinypeek#21: ?at= on the entity mount, with the one meaning it has on
+    git and fs (tinypeek#15). The index is built from the two records as the
+    repository had them at the commit a ref or a time names; every entity
+    address in that answer carries the same ?at=, so the pairs between
+    entities hold at that time; tm:data reads the record at that time. A page
+    has no past, so a game at a time names no page, and a lesson no cartridge.
+    latest-version goes to the entity now, and every entity, now or then,
+    carries version-history to its record's log, which is where its times
+    are. A thing that was not there then is not-found, naming it now."""
+    import copy
+    repo = ents.repo
+    git(repo, "tag", "rec1")
+    later = copy.deepcopy(AUTOPSY)
+    later["games"].append({"key": "ghi", "name": "Kid Icarus (USA)", "mapper": 1, "patterns": {"pad-poll": 1},
+                           "routine_list": [{"name": "b0_poll_8000", "bank": "prg0", "addr": 0x8000, "kind": "call", "entered": 1, "is": [_mark("pad-poll")]}],
+                           "loop_list": []})
+    fewer = copy.deepcopy(LESSONS)
+    fewer["lessons"] = [x for x in fewer["lessons"] if x["key"] != "rooms"]
+    (repo / "data" / "autopsy.json").write_text(json.dumps(later))
+    (repo / "data" / "lessons.json").write_text(json.dumps(fewer))
+    git(repo, "add", "-f", "data/autopsy.json", "data/lessons.json")
+    git(repo, "commit", "-q", "-m", "a third game; a lesson goes", when="2030-01-01T00:00:00Z")
+    pad, then = f"{E}pattern/pad-poll", f"{E}pattern/pad-poll?at=rec1"
+    log = f"{ROOT}git/public/data/autopsy.json?as=log"
+    # Now: three games, and the way to its times.
+    now, links = read(ents, pad)
+    assert [f["key"] for f in json.loads(now["text"])["found_in"]] == ["abc", "def", "ghi"]
+    assert rels(links)["version-history"] == [log] and "latest-version" not in rels(links)
+    # Then: two games, every address at the same time, the record at that time.
+    c, links = read(ents, then)
+    body = json.loads(c["text"])
+    assert c["uri"] == then and body["uri"] == then and [f["key"] for f in body["found_in"]] == ["abc", "def"]
+    assert [f["uri"] for f in body["found_in"]] == [f"{E}game/abc?at=rec1", f"{E}game/def?at=rec1"]
+    r = rels(links)
+    assert r["tm:found-in"] == [f"{E}game/abc?at=rec1", f"{E}game/def?at=rec1"]
+    assert all(h.endswith("?at=rec1") for h in r["tm:instance"] + r["tm:demonstrated-by"])
+    assert (r["up"], r["collection"], r["describedby"]) == ([f"{E}pattern/?at=rec1"], [f"{E}pattern/?at=rec1"], [f"{then}&as=stat"])
+    assert r["tm:data"] == [f"{ROOT}fs/data/autopsy.json?at=rec1&pointer=/patterns/1"]
+    assert json.loads(read(ents, r["tm:data"][0])[0]["text"]) == "pad-poll", "the record at that time reads the piece"
+    assert r["latest-version"] == [pad] and r["version-history"] == [log]
+    # The pairs between entities hold at that time.
+    back = rels(read(ents, f"{E}game/abc?at=rec1")[1])
+    assert then in back["tm:exhibits"] and all(h.endswith("?at=rec1") for h in back["tm:exhibits"])
+    # A time names the commit the way it does on git: before the later commit, then; after it, now.
+    assert [f["key"] for f in json.loads(read(ents, f"{pad}?at=2029-12-31")[0]["text"])["found_in"]] == ["abc", "def"]
+    assert [f["key"] for f in json.loads(read(ents, f"{pad}?at=2030-06-01")[0]["text"])["found_in"]] == ["abc", "def", "ghi"]
+    st = json.loads(read(ents, f"{then}&as=stat")[0]["text"])
+    assert st["uri"] == then and st["at"] == "rec1" and st["commit"] == git(repo, "rev-parse", "rec1").strip()
+    # A page has no past: a game at a time names no page; a lesson, no cartridge.
+    assert "tm:renders-as" in rels(read(ents, f"{E}game/abc")[1]) and "tm:renders-as" not in rels(read(ents, f"{E}game/abc?at=rec1")[1])
+    assert "tm:cartridge" in rels(read(ents, f"{E}lesson/jump")[1]) and "tm:cartridge" not in rels(read(ents, f"{E}lesson/jump?at=rec1")[1])
+    assert rels(read(ents, f"{E}lesson/jump?at=rec1")[1])["version-history"] == [f"{ROOT}git/public/data/lessons.json?as=log"]
+    # Listings at a time list what was there, at that time.
+    kids = json.loads(read(ents, f"{E}game/?at=rec1")[0]["text"])["children"]
+    assert f"{E}game/abc?at=rec1" in [k["uri"] for k in kids] and not any("ghi" in k["uri"] for k in kids)
+    assert read(ents, f"{E}game/abc/routine/?at=rec1")[0]["uri"] == f"{E}game/abc/routine/?at=rec1"
+    # What was not there then, or is not there now.
+    e = refusal(ents, f"{E}game/ghi?at=rec1")
+    assert e.reason == "not-found" and e.data["nearest"][0] == f"{E}game/ghi" and "rec1" in e.message, "not there then; here now"
+    assert json.loads(read(ents, f"{E}lesson/rooms?at=rec1")[0]["text"])["key"] == "rooms"
+    assert refusal(ents, f"{E}lesson/rooms").reason == "not-found"
+    assert refusal(ents, f"{pad}?at=nope").reason == "no-such-ref"
+    assert refusal(ents, f"{pad}?at=2001-01-01").reason == "no-such-ref"
+    assert refusal(ents, f"{pad}?at=a..b").reason == "bad-facet"
+    # The links set at a time keeps the time, as on git.
+    assert json.loads(read(ents, f"{then}&as=links&rel=tm:found-in")[0]["text"])["total"] == 2
+    # The grammar says so.
+    by = {t["name"]: t["uriTemplate"] for t in ents.templates()}
+    assert by["entity"].endswith("{?at,as,rel,min,cursor}") and by["routine"].endswith("{?at,as,rel,min,cursor}")
