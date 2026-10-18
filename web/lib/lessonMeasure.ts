@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1198,5 +1198,84 @@ export function menuMeasures(cell: (f: number, a: number) => number, vram: strin
     blink: [mode(on) ?? 0, mode(off) ?? 0],
     moves: moves.length,
     clicks: moves.filter((m) => sound.has(m) || sound.has(m + 1) || sound.has(m + 2)).length,
+  };
+}
+
+/** What the splash lesson's measurement reads, from its lesson.json: the frame the reading starts from. */
+export interface SplashPlan {
+  kind: "splash";
+  script: string;
+  frames: number;
+  after: number;
+}
+
+/**
+ * The splash lesson's numbers (board-lessons.py's splash_measures), from a
+ * run that touches nothing: the palette writes of a few colours (the
+ * turning colours) and how many frames apart; the fade, the first run of
+ * whole-palette writes (32) each within 10 frames of the last, its steps
+ * and frames; the frames shown between the first turn and the fade; every
+ * tile written meanwhile; and the falling column: in the column of sprites
+ * whose heights change most, the most common step down a frame and how
+ * many frames apart it jumps back up. Colours that never turn, a picture
+ * that never fades, or sprites that never move are refused with the reason.
+ */
+export function splashMeasures(cell: (f: number, a: number) => number, vram: string, plan: SplashPlan): SplashMeasures {
+  const after = plan.after;
+  const small: number[] = [], whole: number[] = [];
+  const tiles = new Map<number, number>();
+  for (const [f, ws] of vramWrites(vram)) {
+    if (f <= after) continue;
+    for (const [a, c] of ws) {
+      if (0x3f00 <= a && a < 0x4000) (c === 32 ? whole : small).push(f);
+      else tiles.set(f, (tiles.get(f) ?? 0) + c);
+    }
+  }
+  if (!small.length) throw new Error("no colours turned: nothing wrote a few colours of the palette");
+  const turn = small[0];
+  let fade: number[] = [];
+  for (const f of whole) {
+    if (f < turn) continue;
+    if (fade.length && f - fade[fade.length - 1] > 10) {
+      if (fade.length >= 3) break;
+      fade = [];
+    }
+    fade.push(f);
+  }
+  if (!fade.length) throw new Error("the picture never faded: the whole palette was never rewritten after the colours turned");
+  const gaps = small.slice(1).map((b, k) => [small[k], b]).filter(([, b]) => b < fade[0]).map(([a, b]) => b - a);
+  const shown = (f: number, i: number) => cell(f, 0x200 + i * 4) < 0xef;
+  const column = (f: number, x: number) => {
+    const ys: number[] = [];
+    for (let i = 0; i < 64; i++) if (shown(f, i) && cell(f, 0x203 + i * 4) === x) ys.push(cell(f, 0x200 + i * 4));
+    return ys.sort((p, q) => p - q);
+  };
+  const moves = new Map<number, [number, number[]][]>();
+  for (let f = turn; f < fade[0] - 1; f++) {
+    const xs = new Set<number>();
+    for (let i = 0; i < 64; i++) if (shown(f, i)) xs.add(cell(f, 0x203 + i * 4));
+    for (const x of [...xs].sort((p, q) => p - q)) {
+      const a = column(f, x), b = column(f + 1, x);
+      if (a.length !== b.length) continue;
+      const d = a.map((p, k) => b[k] - p).filter((v) => v !== 0);
+      if (d.length) moves.set(x, [...(moves.get(x) ?? []), [f, d]]);
+    }
+  }
+  if (!moves.size) throw new Error("no sprite moved while the splash showed");
+  let x = -1;
+  for (const [k, v] of moves) if (x < 0 || v.length > moves.get(x)!.length) x = k;
+  const down = moves.get(x)!.flatMap(([, d]) => d.filter((v) => v > 0));
+  const back = moves.get(x)!.filter(([, d]) => d.some((v) => v < 0)).map(([f]) => f);
+  let drawn = 0;
+  for (const [f, c] of tiles) if (turn <= f && f <= fade[fade.length - 1]) drawn += c;
+  return {
+    shown: fade[0] - turn,
+    tiles: drawn,
+    turn_every: mode(gaps),
+    turns: small.filter((f) => f < fade[0]).length,
+    fade_steps: fade.length,
+    fade_frames: fade[fade.length - 1] - fade[0],
+    fall: mode(down),
+    loop: mode(back.slice(1).map((b, k) => b - back[k])),
   };
 }

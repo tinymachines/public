@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -715,5 +715,39 @@ describe("the menu lesson", () => {
   test("a run without the presses is refused", () => {
     const t = menu({});
     expect(() => menuMeasures(cells(t.ram), t.vram, t.apu, { ...MENU, script: "AT 20 80\nAT 24 00\nAT 80 01\nAT 84 00\n" })).toThrow("three of A, and has 1 and 1");
+  });
+});
+
+const SPLASH: SplashPlan = { kind: "splash", script: "", frames: 500, after: 0 };
+
+/** A made-up splash: a tile row at 5, a few colours rewritten every 8 frames from 10, the whole palette 5 times 4 frames apart from 410, and four drops falling 3 a frame that jump back every 8. */
+function splash(o: { colours?: boolean; drawn?: boolean }) {
+  const ram = new Uint8Array(500 * 2048), vram = ["5 2040 32 1"];
+  if (o.colours !== false) for (let f = 10; f < 410; f += 8) vram.push(`${f} 3F05 3 1`);
+  if (o.drawn) vram.push("200 2040 4 1");
+  for (let k = 0; k < 5; k++) vram.push(`${410 + 4 * k} 3F00 32 1`);
+  vram.sort((a, b) => Number(a.split(" ")[0]) - Number(b.split(" ")[0]));
+  for (let f = 0; f < 500; f++) {
+    for (let i = 0; i < 64; i++) ram[f * 2048 + 0x200 + i * 4] = 0xff;
+    for (let i = 0; i < 4; i++) {
+      ram[f * 2048 + 0x200 + i * 4] = 120 + 3 * (f % 8) + 24 * i;
+      ram[f * 2048 + 0x203 + i * 4] = 0x7c;
+    }
+  }
+  return { ram, vram: vram.join("\n") + "\n" };
+}
+
+describe("the splash lesson", () => {
+  test("the turning colours, the fade, the tiles and the falling drops are read off the writes and the sprites", () => {
+    const t = splash({});
+    expect(splashMeasures(cells(t.ram), t.vram, SPLASH)).toEqual({ shown: 400, tiles: 0, turn_every: 8, turns: 50, fade_steps: 5, fade_frames: 16, fall: 3, loop: 8 });
+  });
+  test("a tile written while the splash shows is counted, and one drawn before it is not", () => {
+    const t = splash({ drawn: true });
+    expect(splashMeasures(cells(t.ram), t.vram, SPLASH).tiles).toBe(4);
+  });
+  test("colours that never turn are refused", () => {
+    const t = splash({ colours: false });
+    expect(() => splashMeasures(cells(t.ram), t.vram, SPLASH)).toThrow("no colours turned");
   });
 });

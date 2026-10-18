@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -234,6 +234,16 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    splashLesson: {
+      shown: "Frames from the colours' first turn to the fade",
+      tiles: "Tiles written meanwhile",
+      turn_every: "Frames between turns of the colours",
+      turns: "Turns of the colours before the fade",
+      fade_steps: "Steps of the fade",
+      fade_frames: "Frames from the fade's first step to its last",
+      fall: "Pixels the drops fall a frame",
+      loop: "Frames before the drops jump back up",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -456,6 +466,16 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    splashLesson: {
+      shown: "色が最初に変わってからフェードまでのフレーム数",
+      tiles: "その間に書かれたタイル数",
+      turn_every: "色が変わる間隔のフレーム数",
+      turns: "フェードまでに色が変わった回数",
+      fade_steps: "フェードの段数",
+      fade_frames: "フェードの最初の段から最後の段までのフレーム数",
+      fall: "しずくが一フレームに落ちるピクセル数",
+      loop: "しずくが上へ戻るまでのフレーム数",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -658,6 +678,11 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
     ];
+  }
+  if (measure.plan.kind === "splash") {
+    const ours = measure.ours as SplashMeasures, yours = theirs as SplashMeasures;
+    const K = T.splashLesson;
+    return (["shown", "tiles", "turn_every", "turns", "fade_steps", "fade_frames", "fall", "loop"] as const).map((k) => row(k, K[k], ours[k], yours[k]));
   }
   if (measure.plan.kind === "menu") {
     const ours = measure.ours as MenuMeasures, yours = theirs as MenuMeasures;

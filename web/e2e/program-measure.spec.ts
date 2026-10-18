@@ -10,9 +10,9 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause, title, items and menu lessons are measured so far;
- * scroll, rooms, status, sound, pause, title, items and menu read the write
- * logs, pause two
+ * status, sound, pause, title, items, menu and splash lessons are measured
+ * so far; scroll, rooms, status, sound, pause, title, items, menu and splash
+ * read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=splash", 500);
-  await expect(page.locator('[data-program-for="splash"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=about", 500);
+  await expect(page.locator('[data-program-for="about"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -692,5 +692,44 @@ test("a cursor that never answers the pad is not given numbers, and the page say
   await assembled(page, (t) => t.replace("    LDA $01\n    AND #$0F\n    BEQ still\n    LDA $02", "    LDA $01\n    AND #$00\n    BEQ still\n    LDA $02"), "menu");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("the cursor never moved after the press at frame 20");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The splash lesson's rows as the window keys them, from the record. */
+const splashRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "splash");
+  if (!l || l.kind !== "splash") throw new Error("no splash lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  return Object.fromEntries((["shown", "tiles", "turn_every", "turns", "fade_steps", "fade_frames", "fall", "loop"] as const).map((k) => [k, m[k] === null ? "" : String(m[k])])) as Record<string, string>;
+};
+
+test("the splash lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = splashRows();
+  for (const k of ["turn_every", "fall", "loop"]) expect(want[k], `the record holds ${k}; a match of two empty cells would pass on nothing`).not.toBe("");
+  await assembled(page, undefined, "splash");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("colours that turn every 4 frames instead of 8 turn twice as often, and the fade, the drops and the tiles stay as recorded", async ({ page }) => {
+  const want = splashRows();
+  // The word's colours turn when $44 counts to $08; $04 is twice as often.
+  await assembled(page, (t) => t.replace("    LDA $44\n    CMP #$08", "    LDA $44\n    CMP #$04"), "splash");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.turn_every).toEqual([want.turn_every, "4"]);
+  expect(Number(got.turns[1]), "more turns before the same fade").toBeGreaterThan(Number(want.turns));
+  for (const k of ["tiles", "fade_steps", "fade_frames", "fall", "loop"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a splash whose colours never turn is not given numbers, and the page says why", async ({ page }) => {
+  // A turn asks for the word's four colours to be written; asking for nothing writes none.
+  await assembled(page, (t) => t.replace("    LDA #$01\n    STA $46\ncount:", "    LDA #$00\n    STA $46\ncount:"), "splash");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no colours turned");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });
