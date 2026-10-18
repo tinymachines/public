@@ -11,14 +11,14 @@
  * the numbers the record holds (e2e/program-measure.spec.ts).
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound and pause lessons are measured here so far. Every lesson
- * has its own way of being measured, and each one is added with that check
- * or not at all. Scroll, rooms, status, sound and pause read the write
- * logs, and pause two pictures besides; screens takes the part of its
- * record that reads memory and the pad, not our autopsy's.
+ * status, sound, pause and title lessons are measured here so far. Every
+ * lesson has its own way of being measured, and each one is added with that
+ * check or not at all. Scroll, rooms, status, sound, pause and title read
+ * the write logs, and pause two pictures besides; screens takes the part of
+ * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, JumpMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -874,4 +874,140 @@ export function pauseMeasures(cell: (f: number, a: number) => number, vram: stri
     chime_every: [...new Set(notes.slice(1).map((b, i) => b - notes[i]))].sort((a, b) => a - b),
     music_back: back ? back[0] - off : null,
   };
+}
+
+/** What the title lesson's measurement reads, from its lesson.json: the square's x, and the frame the reading starts from. */
+export interface TitlePlan {
+  kind: "title";
+  script: string;
+  frames: number;
+  after: number;
+  memory: { x: string };
+}
+
+/**
+ * The title lesson's numbers (board-lessons.py's title_measures), from the
+ * picture-memory writes, the scroll, the square's x and the pad. A run need
+ * not hold every part, and a part it does not hold is left out, as the
+ * record leaves it. The title's drawing: from the first write after a
+ * clear of whole name tables to the last (gaps of up to four frames), the
+ * tables cleared and the tiles written besides. The cursor: what a Select
+ * writes in the four frames from it. The countdown: frames from a Select
+ * to the demo, the first frame the square moves with nothing held, three
+ * moves in sixteen frames at least. The demo: frames from its first move
+ * to the title drawn again, with nothing pressed, and whether the scroll
+ * moved meanwhile. And the frames from Start to the next write, during the
+ * demo and on the title. A run of writes the log split where a frame
+ * began is one run, counted at the frame it began. A run whose name tables
+ * are never cleared whole has no title, and is refused.
+ */
+export function titleMeasures(cell: (f: number, a: number) => number, vram: string, scrollLog: string, plan: TitlePlan): TitleMeasures {
+  const x = addr(plan.memory.x), n = plan.frames, after = plan.after;
+  const pad = padOf(parseScript(plan.script), n);
+  /** Each frame's runs of writes to the name tables, as [count, step]. */
+  const nt = new Map<number, [number, number][]>();
+  let last: { began: number; at: number; count: number; step: number; f: number } | null = null;
+  for (const line of vram.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const f = Number(w[0]), a = parseInt(w[1], 16), c = Number(w[2]), step = Number(w[3]);
+    if (!(0x2000 <= a && a < 0x3000)) continue;
+    if (last && step === 1 && last.step === 1 && a === last.at + last.count && f - last.f <= 1) {
+      const runs = nt.get(last.began)!;
+      runs[runs.length - 1] = [runs[runs.length - 1][0] + c, 1];
+      last = { began: last.began, at: last.at, count: last.count + c, step: 1, f };
+      continue;
+    }
+    if (!nt.has(f)) nt.set(f, []);
+    nt.get(f)!.push([c, step]);
+    last = { began: f, at: a, count: c, step, f };
+  }
+  const frames = [...nt.keys()];
+  const press = (bit: number) => {
+    const out: number[] = [];
+    for (let f = Math.max(after, 1); f < n; f++) if (pad[f] & bit && !(pad[f - 1] & bit)) out.push(f);
+    return out;
+  };
+  const selects = press(0x04), starts = press(0x08);
+  const firstAfter = (from: number, strict: boolean) => {
+    const later = frames.filter((g) => (strict ? g > from : g >= from));
+    return later.length ? Math.min(...later) : undefined;
+  };
+  /** The run of frames with writes from `first`, gaps of up to 4. */
+  const drawing = (first: number): [number, number] | undefined => {
+    const f = firstAfter(first, false);
+    if (f === undefined) return undefined;
+    let end = f;
+    for (;;) {
+      let next: number | undefined;
+      for (let g = end + 1; g < end + 5; g++) if (nt.has(g)) { next = g; break; }
+      if (next === undefined) break;
+      end = next;
+    }
+    return [f, end];
+  };
+  // The first move of at least three in 16 frames, with nothing held: being placed once is not a demo.
+  const moved = (g: number) => cell(g, x) !== cell(g - 1, x) && !(pad[g] & 0xc3);
+  const demoFrom = (f0: number) => {
+    for (let f = f0 + 1; f < n - 16; f++) {
+      if (!moved(f)) continue;
+      let k = 0;
+      for (let g = f; g < f + 16; g++) if (moved(g)) k++;
+      if (k >= 3) return f;
+    }
+    return undefined;
+  };
+  const out = {} as TitleMeasures;
+  // Each drawing of the title starts by clearing whole name tables.
+  const clears = frames.filter((f) => f >= after && nt.get(f)!.some(([c]) => c >= 1024)).sort((a, b) => a - b);
+  const titles: [number, number][] = [];
+  for (const c of clears) if (!titles.length || c > titles[titles.length - 1][1]) titles.push(drawing(c)!);
+  if (!titles.length) throw new Error("no title was drawn: the name tables were never cleared whole");
+  const [first, end] = titles[0];
+  const writes: [number, number][] = [];
+  for (let f = first; f <= end; f++) writes.push(...(nt.get(f) ?? []));
+  out.title = {
+    frames: end - first + 1,
+    cleared: Math.floor(writes.filter(([c]) => c >= 1024).reduce((s, [c]) => s + c, 0) / 1024),
+    tiles: writes.filter(([c]) => c < 1024).reduce((s, [c]) => s + c, 0),
+  };
+  const nextTitle = (f: number) => {
+    const later = titles.map(([t0]) => t0).filter((t0) => t0 > f);
+    return later.length ? Math.min(...later) : n;
+  };
+  const pressed = (lo: number, hi: number) => [...selects, ...starts].some((q) => lo < q && q <= hi);
+  const scrolls: [number, number][] = [];
+  for (const line of scrollLog.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length === 4) scrolls.push([Number(w[0]), Number(w[2])]);
+  }
+  // A demo that ran to its end by itself: from its first move to the next drawing.
+  for (const [, t1] of titles) {
+    const d = demoFrom(t1), next = nextTitle(t1);
+    if (d !== undefined && d < next && next < n && !pressed(d, next) && out.demo === undefined) {
+      const across = scrolls.filter(([f]) => d <= f && f < next).map(([, sx]) => sx);
+      out.demo = { frames: next - d, scrolled: Math.max(0, ...across) > 0 };
+    }
+  }
+  for (const p of selects) {
+    const d = demoFrom(p);
+    const w: [number, number][] = [];
+    for (let f = p; f < p + 4; f++) w.push(...(nt.get(f) ?? []));
+    if (w.length && out.cursor === undefined) out.cursor = { tiles: w.reduce((s, [c]) => s + c, 0), step: Math.max(...w.map(([, s]) => s)) };
+    // A Select with nothing pressed after it before the demo: the countdown.
+    if (d !== undefined && d < nextTitle(p) && !pressed(p, d) && out.countdown === undefined) out.countdown = d - p;
+  }
+  // Each demo, from its first move to the next drawing of the title.
+  const demos: [number, number][] = [];
+  for (const [, t1] of titles) {
+    const d = demoFrom(t1);
+    if (d !== undefined && d < nextTitle(t1)) demos.push([d, nextTitle(t1)]);
+  }
+  for (const p of starts) {
+    const nxt = firstAfter(p, true);
+    if (nxt === undefined) continue;
+    const key = demos.some(([d, e]) => d <= p && p < e) ? "start_demo" : "start_title";
+    if (out[key] === undefined) out[key] = nxt - p;
+  }
+  return out;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -188,6 +188,20 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    titleLesson: {
+      "title-frames": "The title's drawing: frames from its first write to its last",
+      "title-cleared": "Whole name tables cleared on the way",
+      "title-tiles": "Tiles written besides",
+      "demo-frames": "The demo: frames from its first move to the title drawn again",
+      "demo-scrolled": "The demo scrolls the title away",
+      "cursor-tiles": "Tiles a Select rewrites for the cursor",
+      "cursor-step": "The cursor's tiles apart in the picture's memory (32 is a row down)",
+      countdown: "Frames from a Select to the demo",
+      start_demo: "Frames from Start in the demo to the next write to the picture",
+      start_title: "Frames from Start on the title to the next write to the picture",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -361,6 +375,20 @@ const S = {
       chime_notes: "チャイムの音の数",
       chime_every: "チャイムの音の間のフレーム数",
       music_back: "ポーズ解除から音楽の最初の書き込みまでのフレーム数",
+      yes: "はい",
+      no: "いいえ",
+    },
+    titleLesson: {
+      "title-frames": "タイトルの描画: 最初の書き込みから最後までのフレーム数",
+      "title-cleared": "途中で丸ごと消されたネームテーブルの数",
+      "title-tiles": "そのほかに書かれたタイル数",
+      "demo-frames": "デモ: 最初の動きからタイトルがまた描かれるまでのフレーム数",
+      "demo-scrolled": "デモがタイトルをスクロールで送り出す",
+      "cursor-tiles": "Selectでカーソルとして書き直されるタイル数",
+      "cursor-step": "カーソルのタイルの絵のメモリでの間隔 (32 は一行下)",
+      countdown: "Selectからデモまでのフレーム数",
+      start_demo: "デモ中のStartから次の絵への書き込みまでのフレーム数",
+      start_title: "タイトルでのStartから次の絵への書き込みまでのフレーム数",
       yes: "はい",
       no: "いいえ",
     },
@@ -547,6 +575,24 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("sweep_settings", D.sweep_settings, ours.sweep_settings, yours.sweep_settings),
       { key: "sweep_frames", label: D.sweep_frames, ours: frames(ours.sweep_frames), yours: frames(yours.sweep_frames), oursText: ours.sweep_frames?.join(", ") || T.noValue, yoursText: yours.sweep_frames?.join(", ") || T.noValue },
       row("music_back", D.music_back, ours.music_back ?? null, yours.music_back ?? null),
+    ];
+  }
+  if (measure.plan.kind === "title") {
+    const ours = measure.ours as TitleMeasures, yours = theirs as TitleMeasures;
+    const L = T.titleLesson;
+    const yn = (b?: boolean) => (b === undefined ? null : Number(b));
+    const ynText = (b?: boolean) => (b === undefined ? T.noValue : b ? L.yes : L.no);
+    return [
+      row("title-frames", L["title-frames"], ours.title.frames, yours.title.frames),
+      row("title-cleared", L["title-cleared"], ours.title.cleared, yours.title.cleared),
+      row("title-tiles", L["title-tiles"], ours.title.tiles, yours.title.tiles),
+      row("demo-frames", L["demo-frames"], ours.demo?.frames ?? null, yours.demo?.frames ?? null),
+      { key: "demo-scrolled", label: L["demo-scrolled"], ours: yn(ours.demo?.scrolled), yours: yn(yours.demo?.scrolled), oursText: ynText(ours.demo?.scrolled), yoursText: ynText(yours.demo?.scrolled) },
+      row("cursor-tiles", L["cursor-tiles"], ours.cursor?.tiles ?? null, yours.cursor?.tiles ?? null),
+      row("cursor-step", L["cursor-step"], ours.cursor?.step ?? null, yours.cursor?.step ?? null),
+      row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
+      row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
+      row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
     ];
   }
   if (measure.plan.kind === "pause") {

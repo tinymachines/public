@@ -10,9 +10,10 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound and pause lessons are measured so far; scroll, rooms,
- * status, sound and pause read the write logs, pause two pictures besides,
- * and screens takes only the part of its record the page can.
+ * status, sound, pause and title lessons are measured so far; scroll,
+ * rooms, status, sound, pause and title read the write logs, pause two
+ * pictures besides, and screens takes only the part of its record the page
+ * can.
  *
  * The first test of each is the check that holds the page's measuring to the
  * record's: our own program, unchanged, must come out with exactly the
@@ -506,8 +507,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=title", 500);
-  await expect(page.locator('[data-program-for="title"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=items", 500);
+  await expect(page.locator('[data-program-for="items"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -557,5 +558,48 @@ test("a program whose Start never pauses is not given numbers, and says why", as
   await assembled(page, (t) => t.replace("    AND #$10\n    BEQ none", "    AND #$10\n    JMP none"), "pause");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("0 of 3 presses of Start");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The title lesson's rows as the window keys them, from the record: yes and no as 1 and 0, a part the record leaves out as "". */
+const titleRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "title");
+  if (!l || l.kind !== "title") throw new Error("no title lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x?: number | null) => (x === null || x === undefined ? "" : String(x));
+  return {
+    "title-frames": v(m.title.frames), "title-cleared": v(m.title.cleared), "title-tiles": v(m.title.tiles),
+    "demo-frames": v(m.demo?.frames), "demo-scrolled": m.demo ? (m.demo.scrolled ? "1" : "0") : "",
+    "cursor-tiles": v(m.cursor?.tiles), "cursor-step": v(m.cursor?.step), countdown: v(m.countdown), start_demo: v(m.start_demo), start_title: v(m.start_title),
+  } as Record<string, string>;
+};
+
+test("the title lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = titleRows();
+  for (const k of ["demo-frames", "cursor-tiles", "countdown", "start_demo", "start_title"]) expect(want[k], `the record holds ${k}; a match of two empty cells would pass on nothing`).not.toBe("");
+  await assembled(page, undefined, "title");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a countdown of 9 steps instead of 18 runs out 180 frames sooner, and the title, the cursor and the demo stay as recorded", async ({ page }) => {
+  const want = titleRows();
+  // A Select starts the countdown over at $12 steps of 20 frames; $09 is half as many.
+  await assembled(page, (t) => t.replace("    STA $44\n    LDA #$12\n    STA $45\n    RTS\nnoselect:", "    STA $44\n    LDA #$09\n    STA $45\n    RTS\nnoselect:"), "title");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.countdown).toEqual([want.countdown, String(Number(want.countdown) - 180)]);
+  for (const k of ["title-frames", "title-cleared", "title-tiles", "demo-frames", "demo-scrolled", "cursor-tiles", "cursor-step"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program that clears only half of each name table draws no title the page can find, and says why", async ({ page }) => {
+  // Each table is cleared 4 times 256 writes; 2 times is half a table, never a whole one.
+  await assembled(page, (t) => t.replace("    LDY #$04\n    TAX\nempty:", "    LDY #$02\n    TAX\nempty:"), "title");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no title was drawn");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

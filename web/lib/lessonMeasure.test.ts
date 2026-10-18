@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, walkersMeasures, type CameraPlan, type JumpPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type JumpPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -584,5 +584,53 @@ describe("the pause lesson", () => {
     const q = pause({});
     expect(() => pauseMeasures(cells(q.ram), q.vram, q.apu, [q.pictures[0], new Uint8Array(0)], PAUSE)).toThrow("no picture was taken at frame 215");
     expect(() => pauseMeasures(cells(q.ram), q.vram, q.apu, [undefined, q.pictures[1]], PAUSE)).toThrow("no picture was taken at frame 160");
+  });
+});
+
+const TITLE: TitlePlan = { kind: "title", script: "AT 60 04\nAT 66 00\nAT 300 08\nAT 306 00\n", frames: 400, after: 0, memory: { x: "$11" } };
+
+/**
+ * A made-up title: both name tables cleared on frames 1 and 2, twenty
+ * tiles a frame down a column on frames 3 to 6; Select at 60 rewrites
+ * three tiles a row apart on 61; the square moves a pixel a frame from 160
+ * to 249 with the scroll following, and the title is cleared and drawn
+ * again from 260. `split` cuts the first clear across two frames, as the
+ * log does when a clear with the picture off outlasts a blank; `clears`
+ * off leaves the tables never cleared whole.
+ */
+function title(o: { split?: boolean; clears?: boolean }): { ram: Uint8Array; vram: string; scroll: string } {
+  const ram = new Uint8Array(400 * 2048);
+  let x = 40;
+  const scroll: string[] = [];
+  for (let f = 0; f < 400; f++) {
+    if (f >= 160 && f < 250) x++;
+    ram[f * 2048 + 0x11] = x;
+    if (f >= 2) scroll.push(`${f} 0 ${f >= 160 && f < 260 ? f - 159 : 0} 0`);
+  }
+  const big = o.clears === false ? 512 : 1024;
+  const lines = o.split ? ["1 2000 600 1", "2 2258 424 1", `2 2400 ${big} 1`] : [`1 2000 ${big} 1`, `2 2400 ${big} 1`];
+  for (let f = 3; f <= 6; f++) lines.push(`${f} ${(0x2000 + f).toString(16).toUpperCase()} 20 32`);
+  lines.push("61 2187 3 32", `260 2000 ${big} 1`, `261 2400 ${big} 1`, "262 20C0 10 1", "301 2300 5 1");
+  return { ram, vram: lines.map((l) => l + "\n").join(""), scroll: scroll.map((l) => l + "\n").join("") };
+}
+
+describe("the title lesson", () => {
+  test("the drawing, the cursor, the countdown, the demo and a Start on the title are read off the writes, the scroll, x and the pad", () => {
+    const t = title({});
+    expect(titleMeasures(cells(t.ram), t.vram, t.scroll, TITLE)).toEqual({
+      title: { frames: 6, cleared: 2, tiles: 80 }, demo: { frames: 100, scrolled: true }, cursor: { tiles: 3, step: 32 }, countdown: 100, start_title: 1,
+    });
+  });
+  test("a clear the log split where a frame began counts as one, and a Start in the demo is timed to the next write and leaves no demo that ran by itself", () => {
+    const t = title({ split: true });
+    expect(titleMeasures(cells(t.ram), t.vram, t.scroll, TITLE).title).toEqual({ frames: 6, cleared: 2, tiles: 80 });
+    const m = titleMeasures(cells(t.ram), t.vram, t.scroll, { ...TITLE, script: "AT 60 04\nAT 66 00\nAT 200 08\nAT 206 00\n" });
+    expect(m.start_demo).toBe(60);
+    expect(m.demo).toBeUndefined();
+    expect(m.countdown).toBe(100);
+  });
+  test("name tables never cleared whole are refused", () => {
+    const t = title({ clears: false });
+    expect(() => titleMeasures(cells(t.ram), t.vram, t.scroll, TITLE)).toThrow("no title was drawn");
   });
 });
