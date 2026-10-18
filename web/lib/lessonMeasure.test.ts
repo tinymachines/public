@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, itemsMeasures, jumpMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, itemsMeasures, jumpMeasures, menuMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -668,5 +668,52 @@ describe("the items lesson", () => {
   test("a run without three presses of Start is refused", () => {
     const t = items({});
     expect(() => itemsMeasures(t.vram, t.scroll, { ...ITEMS, script: "AT 60 88\nAT 66 80\nAT 150 88\nAT 156 80\n" })).toThrow("2 presses of Start");
+  });
+});
+
+const MENU: MenuPlan = {
+  kind: "menu", frames: 300, after: 0, memory: { cell: "$40" },
+  script: "AT 20 80\nAT 24 00\nAT 40 80\nAT 44 00\nAT 60 20\nAT 64 00\nAT 80 01\nAT 84 00\nAT 100 40\nAT 104 00\nAT 120 01\nAT 124 00\nAT 140 10\nAT 144 00\nAT 160 01\nAT 164 00\nAT 200 40\nAT 260 00\n",
+};
+
+/** A made-up grid 10 by 4: a press moves the cursor that frame, held it moves again after 20 and then every 6, round the grid; a click with each move, a tile the frame after each A, and a cursor sprite 16 frames on and 16 off. */
+function menu(o: { front?: boolean }) {
+  const pad = padOf(parseScript(MENU.script), 300), ram = new Uint8Array(300 * 2048);
+  const vram: string[] = [], apu: string[] = [];
+  let c = 0, wait = 0;
+  for (let f = 1; f < 300; f++) {
+    const d = pad[f] & 0xf0, was = pad[f - 1] & 0xf0;
+    let go = false;
+    if (d && !was) { go = true; wait = 20; }
+    else if (d && --wait === 0) { go = true; wait = 6; }
+    if (go) {
+      c = d & 0x80 ? c + 1 : d & 0x40 ? c - 1 : d & 0x20 ? c + 10 : c - 10;
+      c = ((c % 40) + 40) % 40;
+      apu.push(`${f} 08 1`);
+    }
+    if (pad[f] & 0x01 && !(pad[f - 1] & 0x01)) vram.push(`${f + 1} 2050 1 1`);
+    ram[f * 2048 + 0x40] = c;
+    for (let i = 0; i < 64; i++) ram[f * 2048 + 0x200 + i * 4] = 0xff;
+    if (!((f >> 4) & 1)) { ram[f * 2048 + 0x200] = 0x50; ram[f * 2048 + 0x202] = o.front ? 0 : 0x20; }
+  }
+  return { ram, vram: vram.join("\n") + "\n", apu: apu.join("\n") + "\n" };
+}
+
+describe("the menu lesson", () => {
+  test("the moves, the wait and the beat, the grid's width and size, the letters, the blink and the clicks are read off memory, the writes and the pad", () => {
+    const t = menu({});
+    expect(menuMeasures(cells(t.ram), t.vram, t.apu, MENU)).toEqual({
+      after_press: [0], wait: 20, every: 6, width: 10, wraps_to: 39, typed: [[1, 1], [1, 1], [1, 1]], behind: true, blink: [16, 16], moves: 13, clicks: 13,
+    });
+  });
+  test("a cursor drawn in front of the letters is not behind them and has no blink to read", () => {
+    const t = menu({ front: true });
+    const m = menuMeasures(cells(t.ram), t.vram, t.apu, MENU);
+    expect(m.behind).toBe(false);
+    expect(m.blink).toEqual([0, 0]);
+  });
+  test("a run without the presses is refused", () => {
+    const t = menu({});
+    expect(() => menuMeasures(cells(t.ram), t.vram, t.apu, { ...MENU, script: "AT 20 80\nAT 24 00\nAT 80 01\nAT 84 00\n" })).toThrow("three of A, and has 1 and 1");
   });
 });

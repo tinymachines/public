@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1099,5 +1099,104 @@ export function itemsMeasures(vram: string, scrollLog: string, plan: ItemsPlan):
     every: mode(gaps),
     rows_closing: closing,
     mirroring: { fixed: true, changes: 0 },
+  };
+}
+
+/** What the menu lesson's measurement reads, from its lesson.json: the cell under the cursor, and the frame the reading starts from. */
+export interface MenuPlan {
+  kind: "menu";
+  script: string;
+  frames: number;
+  after: number;
+  memory: { cell: string };
+}
+
+/**
+ * The menu lesson's numbers (board-lessons.py's menu_measures), from a run
+ * that presses Right, Right, Down, A, Left, A, Up, A and then holds Left:
+ * the cell under the cursor (the program's own byte at `cell`), the frames
+ * from each press to the move, the moves while the direction is held (the
+ * wait, then the beat), what a step down adds (the grid's width), where a
+ * step left from the first cell goes (the grid's size), the writes to the
+ * picture after each A, whether the cursor's sprites are drawn behind the
+ * background and how they blink, and a write to a sound channel (anything
+ * but $4015 and $4017) within two frames of each move. A run without the
+ * presses, or a cursor that does not move after one, is refused with the
+ * reason.
+ */
+export function menuMeasures(cell: (f: number, a: number) => number, vram: string, apu: string, plan: MenuPlan): MenuMeasures {
+  const at = addr(plan.memory.cell), n = plan.frames, after = plan.after;
+  const pad = padOf(parseScript(plan.script), n);
+  const c = (f: number) => cell(f, at);
+  const DIRS = 0xf0;
+  const presses: number[] = [], types: number[] = [], moves: number[] = [];
+  for (let f = Math.max(after, 1); f < n; f++) {
+    if (pad[f] & DIRS && !(pad[f - 1] & DIRS)) presses.push(f);
+    if (pad[f] & 0x01 && !(pad[f - 1] & 0x01)) types.push(f);
+    if (c(f) !== c(f - 1)) moves.push(f);
+  }
+  if (presses.length < 5 || types.length < 3) throw new Error(`the run needs five presses of a direction and three of A, and has ${presses.length} and ${types.length}`);
+  const nextMove = (p: number) => {
+    const m = moves.find((g) => g >= p);
+    if (m === undefined) throw new Error(`the cursor never moved after the press at frame ${p}`);
+    return m;
+  };
+  const first = presses.map((p) => nextMove(p) - p);
+  // The held press: the last, held for the longest.
+  const hp = presses[presses.length - 1];
+  let release = n;
+  for (let f = hp; f < n; f++) if (!(pad[f] & DIRS)) { release = f; break; }
+  const held = moves.filter((m) => hp <= m && m < release);
+  const gaps = held.slice(1).map((m, k) => m - held[k]);
+  const down = presses.find((p) => pad[p] & 0x20);
+  if (down === undefined) throw new Error("Down was never pressed");
+  const dm = nextMove(down);
+  const wrap = moves.find((m) => c(m - 1) === 0 && c(m) > 1);
+  const nt = new Map<number, number[]>();
+  for (const [f, ws] of vramWrites(vram)) for (const [a, k] of ws) if (0x2000 <= a && a < 0x3000) nt.set(f, [...(nt.get(f) ?? []), k]);
+  const typed: [number, number][] = [];
+  for (const p of types) {
+    for (let f = p; f < p + 4; f++) {
+      if (!nt.has(f)) continue;
+      typed.push([f - p, nt.get(f)!.reduce((s, k) => s + k, 0)]);
+      break;
+    }
+  }
+  // The cursor's sprites: those drawn behind the background (attribute bit 5).
+  const behind = (f: number) => {
+    let k = 0;
+    for (let i = 0; i < 64; i++) if (cell(f, 0x200 + i * 4) < 0xef && cell(f, 0x202 + i * 4) & 0x20) k++;
+    return k;
+  };
+  const runs: [boolean, number][] = [];
+  let cur = behind(after + 1) > 0, k = 0;
+  for (let f = after + 1; f < n; f++) {
+    const v = behind(f) > 0;
+    if (v === cur) k++;
+    else {
+      runs.push([cur, k]);
+      cur = v;
+      k = 1;
+    }
+  }
+  // The first run and the last may be cut short by the run's ends.
+  const whole = runs.slice(1);
+  const on = whole.filter(([v]) => v).map(([, r]) => r), off = whole.filter(([v]) => !v).map(([, r]) => r);
+  const sound = new Set<number>();
+  for (const line of apu.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length === 3 && w[1] !== "15" && w[1] !== "17") sound.add(Number(w[0]));
+  }
+  return {
+    after_press: [...new Set(first)].sort((a, b) => a - b),
+    wait: gaps.length ? gaps[0] : null,
+    every: gaps.length > 1 ? mode(gaps.slice(1)) : null,
+    width: c(dm) - c(dm - 1),
+    wraps_to: wrap === undefined ? null : c(wrap),
+    typed,
+    behind: on.length > 0,
+    blink: [mode(on) ?? 0, mode(off) ?? 0],
+    moves: moves.length,
+    clicks: moves.filter((m) => sound.has(m) || sound.has(m + 1) || sound.has(m + 2)).length,
   };
 }

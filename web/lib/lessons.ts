@@ -441,7 +441,7 @@ export function parts(key: string) {
   const l = lesson(key)!;
   // What the page needs to take the lesson's measurements again on the
   // reader's cartridge, and our own numbers to set beside them. The jump,
-  // run, stomp, walkers, camera, platforms, scroll, rooms, screens, status, sound, pause, title and items lessons so far (lib/lessonMeasure.ts says why).
+  // run, stomp, walkers, camera, platforms, scroll, rooms, screens, status, sound, pause, title, items and menu lessons so far (lib/lessonMeasure.ts says why).
   const script = () => fs.readFileSync(path.join(d, meta.script as string), "utf8");
   const measure =
     l.kind === "jump"
@@ -593,7 +593,19 @@ export function parts(key: string) {
                                     },
                                     ours: l.measures,
                                   }
-                                : null;
+                                : l.kind === "menu"
+                                  ? {
+                                      plan: {
+                                        kind: "menu" as const,
+                                        script: script(),
+                                        frames: meta.frames as number,
+                                        // board-lessons.py reads our grid from power on.
+                                        after: 0,
+                                        memory: meta.memory as { cell: string },
+                                      },
+                                      ours: l.measures,
+                                    }
+                                  : null;
   return {
     measure,
     key,

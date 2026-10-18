@@ -10,8 +10,9 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause, title and items lessons are measured so far; scroll,
- * rooms, status, sound, pause, title and items read the write logs, pause two
+ * status, sound, pause, title, items and menu lessons are measured so far;
+ * scroll, rooms, status, sound, pause, title, items and menu read the write
+ * logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -507,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=menu", 500);
-  await expect(page.locator('[data-program-for="menu"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=splash", 500);
+  await expect(page.locator('[data-program-for="splash"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -647,5 +648,49 @@ test("a program that never reads Start never slides, and the page says why rathe
   await assembled(page, (t) => t.replace("    AND $01\n    AND #$10\n    TAX", "    AND $01\n    AND #$00\n    TAX"), "items");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("the picture never slid after the Start that opens it");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The menu lesson's rows as the window keys them, from the record: lists joined by a space, each A's pair as frames/tiles, yes and no as 1 and 0. */
+const menuRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "menu");
+  if (!l || l.kind !== "menu") throw new Error("no menu lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x: number | null) => (x === null ? "" : String(x));
+  return {
+    after_press: m.after_press.join(" "), wait: v(m.wait), every: v(m.every), width: v(m.width), wraps_to: v(m.wraps_to),
+    typed: m.typed.map(([a, b]) => `${a}/${b}`).join(" "), behind: m.behind ? "1" : "0", "blink-on": v(m.blink[0]), "blink-off": v(m.blink[1]),
+    moves: v(m.moves), clicks: v(m.clicks),
+  } as Record<string, string>;
+};
+
+test("the menu lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = menuRows();
+  for (const k of ["wait", "every", "wraps_to", "typed"]) expect(want[k], `the record holds ${k}; a match of two empty cells would pass on nothing`).not.toBe("");
+  await assembled(page, undefined, "menu");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a held cursor that moves every 3 frames instead of 6 shows in the beat and the count, and the wait, the grid and the letters stay as recorded", async ({ page }) => {
+  const want = menuRows();
+  // Held, the cursor moves again every $06 frames after the first wait; $03 is twice as fast.
+  await assembled(page, (t) => t.replace("    LDA #$06\n    STA $06\nstep:", "    LDA #$03\n    STA $06\nstep:"), "menu");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.every).toEqual([want.every, "3"]);
+  expect(Number(got.moves[1]), "more moves in the same held second").toBeGreaterThan(Number(want.moves));
+  for (const k of ["after_press", "wait", "width", "wraps_to", "typed", "behind", "blink-on", "blink-off"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a cursor that never answers the pad is not given numbers, and the page says why", async ({ page }) => {
+  // The steering reads the pad's directions; masked to nothing, no press moves it.
+  await assembled(page, (t) => t.replace("    LDA $01\n    AND #$0F\n    BEQ still\n    LDA $02", "    LDA $01\n    AND #$00\n    BEQ still\n    LDA $02"), "menu");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("the cursor never moved after the press at frame 20");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

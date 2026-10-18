@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, ItemsMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -219,6 +219,21 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    menuLesson: {
+      after_press: "Frames from a press to the cursor moving",
+      wait: "Held: frames before it moves again",
+      every: "Held: frames between moves after that",
+      width: "Cells a step down moves (the grid's width)",
+      wraps_to: "Left from the first cell lands on",
+      typed: "Each A: frames to the write, and tiles written",
+      behind: "The cursor is drawn behind the letters",
+      "blink-on": "The cursor's blink: frames shown",
+      "blink-off": "The cursor's blink: frames hidden",
+      moves: "Moves of the cursor",
+      clicks: "Moves with a click",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -426,6 +441,21 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    menuLesson: {
+      after_press: "押してからカーソルが動くまでのフレーム数",
+      wait: "押し続け: また動くまでのフレーム数",
+      every: "押し続け: その後の動きの間のフレーム数",
+      width: "一つ下へ動くと進むマス数 (格子の幅)",
+      wraps_to: "最初のマスから左へ行くと着くマス",
+      typed: "Aごと: 書き込みまでのフレーム数と書かれたタイル数",
+      behind: "カーソルは文字の後ろに描かれる",
+      "blink-on": "カーソルの点滅: 見えるフレーム数",
+      "blink-off": "カーソルの点滅: 消えるフレーム数",
+      moves: "カーソルの動いた回数",
+      clicks: "クリック音つきの動き",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -627,6 +657,24 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "menu") {
+    const ours = measure.ours as MenuMeasures, yours = theirs as MenuMeasures;
+    const M = T.menuLesson;
+    const pairs = (v: [number, number][]) => (v.length ? v.map(([a, b]) => `${a}/${b}`).join(" ") : null);
+    return [
+      { key: "after_press", label: M.after_press, ours: ours.after_press.join(" ") || null, yours: yours.after_press.join(" ") || null, oursText: ours.after_press.join(", ") || T.noValue, yoursText: yours.after_press.join(", ") || T.noValue },
+      row("wait", M.wait, ours.wait, yours.wait),
+      row("every", M.every, ours.every, yours.every),
+      row("width", M.width, ours.width, yours.width),
+      row("wraps_to", M.wraps_to, ours.wraps_to, yours.wraps_to),
+      { key: "typed", label: M.typed, ours: pairs(ours.typed), yours: pairs(yours.typed), oursText: pairs(ours.typed)?.split(" ").join(", ") ?? T.noValue, yoursText: pairs(yours.typed)?.split(" ").join(", ") ?? T.noValue },
+      { key: "behind", label: M.behind, ours: Number(ours.behind), yours: Number(yours.behind), oursText: ours.behind ? M.yes : M.no, yoursText: yours.behind ? M.yes : M.no },
+      row("blink-on", M["blink-on"], ours.blink[0], yours.blink[0]),
+      row("blink-off", M["blink-off"], ours.blink[1], yours.blink[1]),
+      row("moves", M.moves, ours.moves, yours.moves),
+      row("clicks", M.clicks, ours.clicks, yours.clicks),
     ];
   }
   if (measure.plan.kind === "items") {
