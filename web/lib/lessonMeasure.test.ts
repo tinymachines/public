@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cameraMeasures, cells, jumpMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type JumpPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { cameraMeasures, cells, itemsMeasures, jumpMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type CameraPlan, type ItemsPlan, type JumpPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -632,5 +632,41 @@ describe("the title lesson", () => {
   test("name tables never cleared whole are refused", () => {
     const t = title({ clears: false });
     expect(() => titleMeasures(cells(t.ram), t.vram, t.scroll, TITLE)).toThrow("no title was drawn");
+  });
+});
+
+const ITEMS: ItemsPlan = { kind: "items", script: "AT 20 80\nAT 60 88\nAT 66 80\nAT 80 88\nAT 86 80\nAT 150 88\nAT 156 80\n", frames: 300, walk_from: 20 };
+
+/** A made-up slide: Start at 60 sends the picture to 240 and up 4 a frame to 64, a row drawn every 2 frames from the bottom; Start at 150 slides it back. */
+function items(o: { split?: boolean }) {
+  const scroll: string[] = [], vram: string[] = ["10 2000 32 1"];
+  let y = 0;
+  for (let f = 0; f < 300; f++) {
+    if (f === 61) y = 240;
+    else if (f > 61 && f <= 105) y -= 4;
+    else if (f > 150 && f <= 195) y += 4;
+    else if (f === 196) y = 0;
+    scroll.push(`${f} 246 0 ${y}`);
+  }
+  if (o.split) scroll.push("120 100 0 0");
+  for (let k = 0; k < 22; k++) vram.push(`${62 + 2 * k} ${(0x2800 + (21 - k) * 32).toString(16).toUpperCase()} 32 1`);
+  return { vram: vram.join("\n") + "\n", scroll: scroll.join("\n") + "\n" };
+}
+
+describe("the items lesson", () => {
+  test("the slide, the Start between and the rows are read off the scroll, the writes and the pad", () => {
+    const t = items({});
+    expect(itemsMeasures(t.vram, t.scroll, ITEMS)).toEqual({
+      step: 4, travel: 176, open_frames: 45, close_frames: 46, close_step: 4, ignored: true, split: false,
+      rows: 22, bottom_up: true, every: 2, rows_closing: 0, mirroring: { fixed: true, changes: 0 },
+    });
+  });
+  test("the scroll set while the picture draws is a split", () => {
+    const t = items({ split: true });
+    expect(itemsMeasures(t.vram, t.scroll, ITEMS).split).toBe(true);
+  });
+  test("a run without three presses of Start is refused", () => {
+    const t = items({});
+    expect(() => itemsMeasures(t.vram, t.scroll, { ...ITEMS, script: "AT 60 88\nAT 66 80\nAT 150 88\nAT 156 80\n" })).toThrow("2 presses of Start");
   });
 });

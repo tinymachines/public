@@ -10,8 +10,8 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause and title lessons are measured so far; scroll,
- * rooms, status, sound, pause and title read the write logs, pause two
+ * status, sound, pause, title and items lessons are measured so far; scroll,
+ * rooms, status, sound, pause, title and items read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -507,8 +507,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=items", 500);
-  await expect(page.locator('[data-program-for="items"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=menu", 500);
+  await expect(page.locator('[data-program-for="menu"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -601,5 +601,51 @@ test("a program that clears only half of each name table draws no title the page
   await assembled(page, (t) => t.replace("    LDY #$04\n    TAX\nempty:", "    LDY #$02\n    TAX\nempty:"), "title");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("no title was drawn");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The items lesson's rows as the window keys them, from the record: yes and no as 1 and 0. */
+const itemsRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "items");
+  if (!l || l.kind !== "items") throw new Error("no items lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  const v = (x: number | null) => (x === null ? "" : String(x));
+  const yn = (b: boolean) => (b ? "1" : "0");
+  return {
+    step: v(m.step), travel: v(m.travel), open_frames: v(m.open_frames), close_frames: v(m.close_frames), close_step: v(m.close_step),
+    ignored: yn(m.ignored), split: yn(m.split), rows: v(m.rows), bottom_up: yn(m.bottom_up), every: v(m.every), rows_closing: v(m.rows_closing),
+    fixed: yn(m.mirroring.fixed), changes: v(m.mirroring.changes),
+  } as Record<string, string>;
+};
+
+test("the items lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = itemsRows();
+  expect(Number(want.rows), "the record holds rows drawn; a match of no rows would pass on nothing").toBeGreaterThan(0);
+  await assembled(page, undefined, "items");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("an item screen that stops 64 pixels short slides 16 frames less each way, at the same 4 pixels a frame", async ({ page }) => {
+  const want = itemsRows();
+  // The opening slide stops when the scroll is $40 down; $80 is 64 pixels, 16 frames of 4, sooner.
+  await assembled(page, (t) => t.replace("    SBC #$04\n    STA $41\n    CMP #$40", "    SBC #$04\n    STA $41\n    CMP #$80"), "items");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.travel).toEqual([want.travel, String(Number(want.travel) - 64)]);
+  expect(got.open_frames).toEqual([want.open_frames, String(Number(want.open_frames) - 16)]);
+  expect(got.close_frames).toEqual([want.close_frames, String(Number(want.close_frames) - 16)]);
+  for (const k of ["step", "close_step", "ignored", "split", "bottom_up", "every", "fixed", "changes"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a program that never reads Start never slides, and the page says why rather than giving numbers", async ({ page }) => {
+  // The stage reads the pad's new presses masked to Start; masked to nothing, no press is ever seen.
+  await assembled(page, (t) => t.replace("    AND $01\n    AND #$10\n    TAX", "    AND $01\n    AND #$00\n    TAX"), "items");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("the picture never slid after the Start that opens it");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

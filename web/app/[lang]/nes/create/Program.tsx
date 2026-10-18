@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { CameraMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { CameraMeasures, ItemsMeasures, JumpMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -202,6 +202,23 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    itemsLesson: {
+      step: "Pixels the picture slides a frame, opening",
+      travel: "Pixels it slides in all",
+      open_frames: "Frames from Start to the screen open",
+      close_frames: "Frames from Start to the screen closed",
+      close_step: "Pixels it slides a frame, closing",
+      ignored: "A Start while it slides is ignored",
+      split: "The scroll is set while the picture draws",
+      rows: "Rows drawn while it opens",
+      bottom_up: "The rows are drawn from the bottom up",
+      every: "Frames between the rows",
+      rows_closing: "Rows drawn while it closes",
+      fixed: "The board's mirroring is fixed",
+      changes: "Changes of mirroring",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -389,6 +406,23 @@ const S = {
       countdown: "Selectからデモまでのフレーム数",
       start_demo: "デモ中のStartから次の絵への書き込みまでのフレーム数",
       start_title: "タイトルでのStartから次の絵への書き込みまでのフレーム数",
+      yes: "はい",
+      no: "いいえ",
+    },
+    itemsLesson: {
+      step: "開くとき絵が一フレームに滑るピクセル数",
+      travel: "滑るピクセル数の合計",
+      open_frames: "Startから画面が開き切るまでのフレーム数",
+      close_frames: "Startから画面が閉じ切るまでのフレーム数",
+      close_step: "閉じるとき一フレームに滑るピクセル数",
+      ignored: "滑っている間のStartは無視される",
+      split: "絵を描いている間にスクロールが設定される",
+      rows: "開く間に描かれる行の数",
+      bottom_up: "行は下から上へ描かれる",
+      every: "行と行の間のフレーム数",
+      rows_closing: "閉じる間に描かれる行の数",
+      fixed: "基板のミラーリングは固定",
+      changes: "ミラーリングの切り替えの回数",
       yes: "はい",
       no: "いいえ",
     },
@@ -593,6 +627,26 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "items") {
+    const ours = measure.ours as ItemsMeasures, yours = theirs as ItemsMeasures;
+    const I = T.itemsLesson;
+    const yn = (key: "ignored" | "split" | "bottom_up" | "fixed", a: boolean, b: boolean): Row => ({ key, label: I[key], ours: Number(a), yours: Number(b), oursText: a ? I.yes : I.no, yoursText: b ? I.yes : I.no });
+    return [
+      row("step", I.step, ours.step, yours.step),
+      row("travel", I.travel, ours.travel, yours.travel),
+      row("open_frames", I.open_frames, ours.open_frames, yours.open_frames),
+      row("close_frames", I.close_frames, ours.close_frames, yours.close_frames),
+      row("close_step", I.close_step, ours.close_step, yours.close_step),
+      yn("ignored", ours.ignored, yours.ignored),
+      yn("split", ours.split, yours.split),
+      row("rows", I.rows, ours.rows, yours.rows),
+      yn("bottom_up", ours.bottom_up, yours.bottom_up),
+      row("every", I.every, ours.every, yours.every),
+      row("rows_closing", I.rows_closing, ours.rows_closing, yours.rows_closing),
+      yn("fixed", ours.mirroring.fixed, yours.mirroring.fixed),
+      row("changes", I.changes, ours.mirroring.changes, yours.mirroring.changes),
     ];
   }
   if (measure.plan.kind === "pause") {

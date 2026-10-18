@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { CameraMeasures, JumpMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { CameraMeasures, ItemsMeasures, JumpMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1010,4 +1010,94 @@ export function titleMeasures(cell: (f: number, a: number) => number, vram: stri
     if (out[key] === undefined) out[key] = nxt - p;
   }
   return out;
+}
+
+/** What the items lesson's measurement reads, from its lesson.json: the presses of Start after walk_from. */
+export interface ItemsPlan {
+  kind: "items";
+  script: string;
+  frames: number;
+  walk_from: number;
+}
+
+/**
+ * The items lesson's numbers (board-lessons.py's items_measures), from a
+ * run that presses Start (open), Start again while it slides, and Start
+ * (close). From the scroll log, the frame's last setting (the one the
+ * picture is drawn with): how many pixels a frame and how far it slides,
+ * frames from each Start to the slide's end, whether the Start in between
+ * changed the step, and whether the scroll was set while the picture drew
+ * (a split). From the writes to the picture: the whole rows written into
+ * the lower name table ($2800 to $2BBF) while it opened and while it
+ * closed, whether they went from the bottom up, and how many frames apart.
+ * Our board is soldered NROM, so its mirroring is fixed. A run without
+ * three presses of Start, or a slide that never stops or never comes
+ * back, is refused with the reason.
+ */
+export function itemsMeasures(vram: string, scrollLog: string, plan: ItemsPlan): ItemsMeasures {
+  const n = plan.frames;
+  const pad = padOf(parseScript(plan.script), n);
+  const starts: number[] = [];
+  for (let f = Math.max(plan.walk_from, 1); f < n; f++) if (pad[f] & 0x08 && !(pad[f - 1] & 0x08)) starts.push(f);
+  if (starts.length !== 3) throw new Error(`${starts.length} presses of Start; the run opens the item screen, presses Start while it slides, and closes it, three in all`);
+  const [opened, between, closed] = starts;
+  const y = new Map<number, number>();
+  let split = false;
+  for (const line of scrollLog.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const [f, at, , v] = w.map(Number);
+    y.set(f, v);
+    if (opened <= f && at < 240) split = true;
+  }
+  const set = [...y.keys()].sort((a, b) => a - b);
+  /** The scroll the picture was drawn with on frame f: the last set on or before it. */
+  const at = (f: number) => {
+    let v = 0;
+    for (const g of set) {
+      if (g > f) break;
+      v = y.get(g)!;
+    }
+    return v;
+  };
+  const held = at(closed - 1);
+  let openEnd: number | undefined;
+  for (let f = opened; f < closed; f++) if (at(f) === held) { openEnd = f; break; }
+  if (openEnd === undefined) throw new Error("the picture never stopped sliding before the Start that closes it");
+  let back: number | undefined;
+  for (let f = closed; f < n; f++) if (at(f) === 0) { back = f; break; }
+  if (back === undefined) throw new Error("the picture never slid back after the Start that closes it");
+  const steps: number[] = [], closeSteps: number[] = [];
+  for (let f = opened + 1; f <= openEnd; f++) if (at(f) !== at(f - 1) && at(f - 1) !== 0) steps.push(Math.abs(at(f) - at(f - 1)));
+  for (let f = closed + 1; f < back; f++) if (at(f) !== at(f - 1)) closeSteps.push(Math.abs(at(f) - at(f - 1)));
+  const step = mode(steps), closeStep = mode(closeSteps);
+  if (step === null) throw new Error("the picture never slid after the Start that opens it");
+  if (closeStep === null) throw new Error("the picture went back at once rather than sliding after the Start that closes it");
+  const opening: [number, number][] = [];
+  let closing = 0;
+  for (const [f, ws] of vramWrites(vram)) {
+    for (const [a, c, s] of ws) {
+      if (!(0x2800 <= a && a < 0x2bc0 && c === 32 && s === 1 && a % 32 === 0)) continue;
+      if (opened <= f && f <= openEnd) opening.push([f, a]);
+      else if (closed <= f && f <= back) closing++;
+    }
+  }
+  const gaps = opening.slice(1).map(([g], k) => g - opening[k][0]);
+  let ignored = between < openEnd;
+  for (let f = between; f <= openEnd && ignored; f++) if (![0, step].includes(at(f - 1) - at(f))) ignored = false;
+  return {
+    step,
+    travel: 240 - held,
+    open_frames: openEnd - opened,
+    close_frames: back - closed,
+    close_step: closeStep,
+    // The Start pressed mid-slide: the slide went on up the same way.
+    ignored,
+    split,
+    rows: opening.length,
+    bottom_up: opening.slice(1).every(([, b], k) => b < opening[k][1]),
+    every: mode(gaps),
+    rows_closing: closing,
+    mirroring: { fixed: true, changes: 0 },
+  };
 }
