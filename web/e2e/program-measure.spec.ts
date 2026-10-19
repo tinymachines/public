@@ -11,8 +11,10 @@ import type { Lesson } from "../lib/lessons";
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
  * status, sound, pause, title, items, menu, splash, about, solid, flicker,
- * lives, coins, hitbox, pit and gameover lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
- * menu, splash, about, solid, lives, coins, pit and gameover read the write logs, pause two
+ * lives, coins, hitbox, pit, gameover and interlude lessons are measured,
+ * which is every one of them (lib/lessonMeasure.test.ts fails on a lesson
+ * the page has no plan for); scroll, rooms, status, sound, pause, title, items,
+ * menu, splash, about, solid, lives, coins, pit, gameover and interlude read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -504,16 +506,6 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
   expect(got.sweep_settings).toEqual([want.sweep_settings, "0"]);
   for (const k of ["starts", "sweep_frames", "music_back"]) expect(got[k], k).toEqual([want[k], ""]);
   expect(got.music_before).toEqual([want.music_before, want.music_before]);
-});
-
-test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
-  await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=interlude", 500);
-  await expect(page.locator('[data-program-for="interlude"]')).toHaveCount(1, { timeout: 15000 });
-  await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
-  await page.locator("[data-program-assemble]").click();
-  await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
-  await expect(page.locator("[data-program-measured]")).toHaveCount(0);
 });
 
 /** The pause lesson's rows as the window keys them, from the record: lists joined by a space, yes and no as 1 and 0, none as "". */
@@ -1059,5 +1051,45 @@ test("a title that never hears Start is not given numbers, and the page says why
   await assembled(page, (t) => t.replace("    AND #$10\n    BEQ main\n    LDA #$03", "    AND #$00\n    BEQ main\n    LDA #$03"), "gameover");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("play never began again after Start");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The interlude lesson's rows as the window keys them, from the record: the levels joined by a space, yes and no as 1 and 0. */
+const interludeRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "interlude");
+  if (!l || l.kind !== "interlude") throw new Error("no interlude lesson in the record; the spec would pass on nothing");
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(l.measures)) out[k] = Array.isArray(v) ? v.join(" ") : typeof v === "boolean" ? (v ? "1" : "0") : String(v);
+  return out;
+};
+
+test("the interlude lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = interludeRows();
+  expect(want.levels, "the record holds the levels before and after; a match of two empty cells would pass on nothing").not.toBe("");
+  await assembled(page, undefined, "interlude");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a count of twenty points a unit instead of fifty is measured so, and the slide, the walk and the card stay as recorded", async ({ page }) => {
+  const want = interludeRows();
+  // Fifty points is five on the tens digit; two on it is twenty.
+  await assembled(page, (t) => t.replace("    ADC #$05\n    STA $62", "    ADC #$02\n    STA $62"), "interlude");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(want.per_unit).toBe("50");
+  expect(got.per_unit).toEqual([want.per_unit, "20"]);
+  for (const k of ["slide", "walk", "ignored", "count_frames", "units", "counted", "card_after", "card", "levels"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a pole that never starts the slide is not given numbers, and the page says why", async ({ page }) => {
+  // Touching the pole sets the round to 7, the slide; 0 keeps playing.
+  await assembled(page, (t) => t.replace("    LDA #$07\n    STA $50", "    LDA #$00\n    STA $50"), "interlude");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("the square never slid");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

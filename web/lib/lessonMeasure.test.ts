@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, gameoverMeasures, hitboxMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type GameoverPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, gameoverMeasures, hitboxMeasures, interludeMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type GameoverPlan, type HitboxPlan, type InterludePlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { lessons, parts } from "./lessons";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -1030,5 +1031,54 @@ describe("the gameover lesson", () => {
   test("a clear the log split across two frames is one clear; two runs that do not join are none, and the run is refused", () => {
     const t = gameover({ split: false });
     expect(() => gameoverMeasures(cells(t.ram), t.vram, GAMEOVER)).toThrow("the picture was never cleared again for the title after the GAME OVER screen at frame 410");
+  });
+});
+
+const INTERLUDE: InterludePlan = {
+  kind: "interlude", script: "AT 20 80\nAT 135 40\nAT 150 00\n", frames: 600, walk_from: 20,
+  memory: { x: "$11", y: "$15", round: "$50", level: "$53", time: ["$56", "$57", "$58"], score: ["$60", "$61", "$62", "$63"] },
+};
+
+/** A made-up level's end: the pole caught at frame 100, a slide of 30 frames, a walk of a pixel a frame for 30 with Left held on some of them, the time counted from 100 a unit a frame into the score at 50 a unit, the card's clear at 260, level 2 played from 381 with its own clock, a unit every 24 frames. */
+function interlude(o: { back?: boolean }) {
+  const ram = new Uint8Array(600 * 2048);
+  for (let f = 0; f < 600; f++) {
+    const m = f * 2048;
+    ram[m + 0x50] = f < 100 ? 0 : f < 130 ? 7 : f < 160 ? 8 : f < 260 ? 9 : f < 381 ? 10 : 0;
+    let x = f < 130 ? Math.min(150, f) : f < 160 ? 150 + (f - 129) : 180;
+    if (o.back && f === 140) x -= 2;
+    ram[m + 0x11] = f >= 381 ? 20 : x;
+    ram[m + 0x53] = f < 381 ? 1 : 2;
+    const time = f < 160 ? 100 : f < 260 ? 100 - (f - 159) : f < 381 ? 0 : 400 - Math.floor((f - 381) / 24);
+    ram.set(String(time).padStart(3, "0").split("").map(Number), m + 0x56);
+    const score = f < 160 ? 1000 : 1000 + 50 * (Math.min(f, 259) - 159);
+    ram.set(String(score).padStart(4, "0").split("").map(Number), m + 0x60);
+  }
+  return { ram, vram: "5 2000 1024 1\n260 2000 1024 1\n" };
+}
+
+describe("the interlude lesson", () => {
+  test("the slide, the walk, the pad ignored, the count, the card and the levels are read off memory, the pad and the writes", () => {
+    const t = interlude({});
+    expect(interludeMeasures(cells(t.ram), t.vram, INTERLUDE)).toEqual({
+      slide: 30, walk: 30, ignored: true, count_frames: 100, units: 1, per_unit: 50, counted: 100, card_after: 1, card: 121, levels: [1, 2],
+    });
+  });
+  test("a step back while Left is held is the pad not ignored", () => {
+    const t = interlude({ back: true });
+    expect(interludeMeasures(cells(t.ram), t.vram, INTERLUDE).ignored).toBe(false);
+  });
+  test("a run whose pole is never caught is refused", () => {
+    const t = interlude({});
+    for (let f = 0; f < 600; f++) if (t.ram[f * 2048 + 0x50] === 7) t.ram[f * 2048 + 0x50] = 0;
+    expect(() => interludeMeasures(cells(t.ram), t.vram, INTERLUDE)).toThrow("the square never slid");
+  });
+});
+
+describe("every lesson", () => {
+  test("is measured in the page: the record's lessons each come with a plan, so a lesson added without one fails here", () => {
+    const all = lessons();
+    expect(all.length, "the record holds lessons; a check over none would pass on nothing").toBeGreaterThan(20);
+    expect(all.filter((l) => parts(l.key).measure === null).map((l) => l.key)).toEqual([]);
   });
 });

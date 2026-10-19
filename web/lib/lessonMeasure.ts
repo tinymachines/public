@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, GameoverMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, GameoverMeasures, HitboxMeasures, InterludeMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan | PitPlan | GameoverPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan | PitPlan | GameoverPlan | InterludePlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1825,5 +1825,90 @@ export function gameoverMeasures(cell: (f: number, a: number) => number, vram: s
     start_to_play: played - press,
     lives_back: c(played, LIVES) === c(begun, LIVES),
     lives: [c(begun, LIVES), c(played, LIVES)],
+  };
+}
+
+/** What the interlude lesson's measurement reads, from its lesson.json: where x, y, the round (0 playing, 7 sliding, 8 walking by itself), the level and the time's and the score's digits are, the pad script and the frame the reading starts from; and the vram log. */
+export interface InterludePlan {
+  kind: "interlude";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: string; y: string; round: string; level: string; time: string[]; score: string[] };
+}
+
+/** Python's round(): a half goes to the even neighbour. */
+function roundHalfEven(v: number): number {
+  const r = Math.round(v);
+  return Math.abs(v % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
+
+/**
+ * The interlude lesson's numbers (board-lessons.py's interlude_measures),
+ * from memory, the pad script and the writes to the picture: from the
+ * first frame after walk_from the square is sliding, the frames of the
+ * slide, the frames of the walk by itself (to its last step before the
+ * count), and whether Left was held meanwhile and ignored (x never
+ * falling); then the count, the first unbroken run of frames the time
+ * falls on (a gap of more than three frames ends it): its frames, the
+ * units it falls by on a frame (the most common), the points the score
+ * rises by for each unit, and the units counted; the frames from the
+ * count's end to the picture being cleared for the card and from that to
+ * playing again; and the level's number before and after. A run missing
+ * any of these is refused with the reason.
+ */
+export function interludeMeasures(cell: (f: number, a: number) => number, vram: string, plan: InterludePlan): InterludeMeasures {
+  const n = plan.frames, m = plan.memory;
+  const [X, ROUND, LEVEL] = [m.x, m.round, m.level].map(addr);
+  const c = cell;
+  const pad = padOf(parseScript(plan.script), n);
+  const digits = (as: number[]) => (f: number) => Number(as.map((a) => String(c(f, a))).join(""));
+  const time = digits(m.time.map(addr)), score = digits(m.score.map(addr));
+  const sliding = (f: number) => c(f, ROUND) === 7;
+  const walking = (f: number) => c(f, ROUND) === 8;
+  const playing = (f: number) => c(f, ROUND) === 0;
+  const find = (from: number, to: number, ok: (f: number) => boolean) => {
+    for (let f = from; f < to; f++) if (ok(f)) return f;
+    return undefined;
+  };
+  const touch = find(Math.max(plan.walk_from, 1), n, (f) => sliding(f) && !sliding(f - 1));
+  if (touch === undefined) throw new Error(`the square never slid: the round never turned to 7 after frame ${plan.walk_from}`);
+  const before = c(touch - 1, LEVEL);
+  const slid = find(touch, n, (f) => !sliding(f));
+  if (slid === undefined) throw new Error(`the slide that began at frame ${touch} never ended`);
+  const falls: number[] = [];
+  for (let f = slid; f < n; f++) {
+    if (time(f) < time(f - 1)) {
+      if (falls.length && f - falls[falls.length - 1] > 3) break;
+      falls.push(f);
+    }
+  }
+  if (!falls.length) throw new Error(`the time never counted down after frame ${slid}`);
+  const first = falls[0], last = falls[falls.length - 1];
+  // The walk ends with its last step before the count.
+  const steps: number[] = [];
+  for (let f = slid; f < first; f++) if (walking(f) && c(f, X) > c(f - 1, X)) steps.push(f);
+  const walkEnd = steps.length ? steps[steps.length - 1] + 1 : slid;
+  let left = false, held = true;
+  for (let f = touch; f < walkEnd; f++) if (pad[f] & 0x40) left = true;
+  for (let f = touch + 1; f < walkEnd; f++) if (c(f, X) < c(f - 1, X)) held = false;
+  const units = falls.map((f) => time(f - 1) - time(f));
+  const counted = time(first - 1) - time(last);
+  const run = joinedRuns(vram).find(([f, , k]) => f >= last && k >= 1000);
+  if (!run) throw new Error(`the picture was never cleared for the card after the count ended at frame ${last}`);
+  const cleared = run[0];
+  const again = find(cleared, n, playing);
+  if (again === undefined) throw new Error(`play never began again after the card at frame ${cleared}`);
+  return {
+    slide: slid - touch,
+    walk: walkEnd - slid,
+    ignored: left && held,
+    count_frames: last - first + 1,
+    units: mode(units)!,
+    per_unit: roundHalfEven((score(last) - score(first - 1)) / Math.max(1, counted)),
+    counted,
+    card_after: cleared - last,
+    card: again - cleared,
+    levels: [before, c(again, LEVEL)],
   };
 }

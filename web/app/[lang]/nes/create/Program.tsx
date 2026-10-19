@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, GameoverMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, GameoverMeasures, HitboxMeasures, InterludeMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -341,6 +341,20 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    interludeLesson: {
+      slide: "Frames of the slide down the pole",
+      walk: "Frames of the walk by itself",
+      ignored: "The pad held the other way is ignored",
+      count_frames: "Frames the time is counted on",
+      units: "Units of time counted a frame",
+      per_unit: "Points for each unit",
+      counted: "Units of time counted in all",
+      card_after: "Frames from the count's end to the card",
+      card: "Frames from the card to playing again",
+      levels: "The level before, and after",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -670,6 +684,20 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    interludeLesson: {
+      slide: "ポールを滑り下りるフレーム数",
+      walk: "ひとりでに歩くフレーム数",
+      ignored: "逆向きに押したパッドは無視される",
+      count_frames: "時間が数えられるフレーム数",
+      units: "一フレームに数えられる時間の単位",
+      per_unit: "一単位あたりの点数",
+      counted: "数えられた時間の単位の合計",
+      card_after: "数え終わってから面の札までのフレーム数",
+      card: "札からまた遊べるまでのフレーム数",
+      levels: "前の面と、そのあとの面",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -871,6 +899,17 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "interlude") {
+    const ours = measure.ours as InterludeMeasures, yours = theirs as InterludeMeasures;
+    const I = T.interludeLesson;
+    return [
+      row("slide", I.slide, ours.slide, yours.slide),
+      row("walk", I.walk, ours.walk, yours.walk),
+      { key: "ignored", label: I.ignored, ours: Number(ours.ignored), yours: Number(yours.ignored), oursText: ours.ignored ? I.yes : I.no, yoursText: yours.ignored ? I.yes : I.no },
+      ...(["count_frames", "units", "per_unit", "counted", "card_after", "card"] as const).map((k) => row(k, I[k], ours[k], yours[k])),
+      { key: "levels", label: I.levels, ours: ours.levels.join(" ") || null, yours: yours.levels.join(" ") || null, oursText: ours.levels.join(", ") || T.noValue, yoursText: yours.levels.join(", ") || T.noValue },
     ];
   }
   if (measure.plan.kind === "gameover") {

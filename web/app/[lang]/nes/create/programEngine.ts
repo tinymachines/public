@@ -7,8 +7,8 @@
  */
 
 import { load, snapshot as console_, toggleRun } from "../play/playEngine";
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, GameoverMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
-import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, gameoverMeasures, hitboxMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type GameoverPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type LogKind, type PausePlan, type Plan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScreensYours, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "@/lib/lessonMeasure";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, GameoverMeasures, HitboxMeasures, InterludeMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, gameoverMeasures, hitboxMeasures, interludeMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type GameoverPlan, type HitboxPlan, type InterludePlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type LogKind, type PausePlan, type Plan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScreensYours, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "@/lib/lessonMeasure";
 
 export interface Parts {
   key: string;
@@ -18,11 +18,11 @@ export interface Parts {
   prg: string;
   chr: string;
   /** How to measure the lesson again here, and our own numbers; null where the page cannot yet. */
-  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | { plan: ScrollPlan; ours: ScrollMeasures } | { plan: RoomsPlan; ours: RoomsMeasures } | { plan: ScreensPlan; ours: ScreensMeasures } | { plan: StatusPlan; ours: StatusMeasures } | { plan: SoundPlan; ours: SoundMeasures } | { plan: PausePlan; ours: PauseMeasures } | { plan: TitlePlan; ours: TitleMeasures } | { plan: ItemsPlan; ours: ItemsMeasures } | { plan: MenuPlan; ours: MenuMeasures } | { plan: SplashPlan; ours: SplashMeasures } | { plan: AboutPlan; ours: AboutMeasures } | { plan: SolidPlan; ours: SolidMeasures } | { plan: FlickerPlan; ours: FlickerMeasures } | { plan: LivesPlan; ours: LivesMeasures } | { plan: CoinsPlan; ours: CoinsMeasures } | { plan: HitboxPlan; ours: HitboxMeasures } | { plan: PitPlan; ours: PitMeasures } | { plan: GameoverPlan; ours: GameoverMeasures } | null;
+  measure: { plan: JumpPlan; ours: JumpMeasures } | { plan: RunPlan; ours: RunMeasures } | { plan: StompPlan; ours: StompMeasures } | { plan: WalkersPlan; ours: WalkersMeasures } | { plan: CameraPlan; ours: CameraMeasures } | { plan: PlatformsPlan; ours: PlatformsMeasures } | { plan: ScrollPlan; ours: ScrollMeasures } | { plan: RoomsPlan; ours: RoomsMeasures } | { plan: ScreensPlan; ours: ScreensMeasures } | { plan: StatusPlan; ours: StatusMeasures } | { plan: SoundPlan; ours: SoundMeasures } | { plan: PausePlan; ours: PauseMeasures } | { plan: TitlePlan; ours: TitleMeasures } | { plan: ItemsPlan; ours: ItemsMeasures } | { plan: MenuPlan; ours: MenuMeasures } | { plan: SplashPlan; ours: SplashMeasures } | { plan: AboutPlan; ours: AboutMeasures } | { plan: SolidPlan; ours: SolidMeasures } | { plan: FlickerPlan; ours: FlickerMeasures } | { plan: LivesPlan; ours: LivesMeasures } | { plan: CoinsPlan; ours: CoinsMeasures } | { plan: HitboxPlan; ours: HitboxMeasures } | { plan: PitPlan; ours: PitMeasures } | { plan: GameoverPlan; ours: GameoverMeasures } | { plan: InterludePlan; ours: InterludeMeasures } | null;
 }
 
 /** What a measurement comes to. The stomp and screens lessons' are without the autopsy's part, which the page does not take. */
-export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures | ScrollMeasures | RoomsMeasures | ScreensYours | StatusMeasures | SoundMeasures | PauseMeasures | TitleMeasures | ItemsMeasures | MenuMeasures | SplashMeasures | AboutMeasures | SolidMeasures | FlickerMeasures | LivesMeasures | CoinsMeasures | HitboxMeasures | PitMeasures | GameoverMeasures;
+export type Yours = JumpMeasures | RunMeasures | Omit<StompMeasures, "compare"> | WalkersMeasures | CameraMeasures | PlatformsMeasures | ScrollMeasures | RoomsMeasures | ScreensYours | StatusMeasures | SoundMeasures | PauseMeasures | TitleMeasures | ItemsMeasures | MenuMeasures | SplashMeasures | AboutMeasures | SolidMeasures | FlickerMeasures | LivesMeasures | CoinsMeasures | HitboxMeasures | PitMeasures | GameoverMeasures | InterludeMeasures;
 
 /** The reader's cartridge measured the way the lesson was: the numbers, or why there are none. */
 export type Measured = { yours: Yours; why: null } | { yours: null; why: string };
@@ -243,6 +243,11 @@ async function measure(rom: ArrayBuffer, plan: Plan): Promise<Measured> {
       // The touch and the lives are read off memory, Start off the pad, the screens off the picture-memory writes.
       const r = (await runs([{ ...main, logs: ["vram"] }]))[0];
       return { yours: gameoverMeasures(r.cell, r.logs.vram ?? "", plan), why: null };
+    }
+    if (plan.kind === "interlude") {
+      // The slide, the walk, the count and the levels are read off memory and the pad, the card off the picture-memory writes.
+      const r = (await runs([{ ...main, logs: ["vram"] }]))[0];
+      return { yours: interludeMeasures(r.cell, r.logs.vram ?? "", plan), why: null };
     }
     const air = parseInt(plan.memory.air.slice(1), 16);
     const [first, ...swept] = await runs([main, ...sweeps().map((s) => ({ script: s.script, frames: s.frames, stop: { from: s.from, cell: air } }))]);
