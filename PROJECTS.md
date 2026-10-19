@@ -5831,3 +5831,63 @@ Waiting on the owner: what Composer covers; whether to free a graphics
 card for sprites; the root disk at 99%; the sprite maker tried signed in
 with a picture from the generator; the `.window` line in the front
 door's file; whether a hotbits tracking page is wanted.
+
+## Checkpoint, 2026-10-19: every lesson measured in the Program window, the plan log to twenty-two levels
+
+Live and beta serve `a320900`, and nothing is waiting on a deploy. This
+tree, the beta worktree and nes-bench are clean and pushed.
+
+The website session's work since the last checkpoint, in the order it
+shipped:
+
+- **The fourteen remaining lessons measured in the page**, one at a time,
+  each held to the record by the exact-match check before any browser
+  test: pause (`8e71962`, with picture grabs in the worker), title
+  (`778de0c`), items, menu, splash, about, solid (`3013cc0` to
+  `f66a852`), flicker (`1b26ef6`), lives, coins, hitbox, pit (`2d9f6c1`
+  to `d2b266e`), gameover and interlude (`fc8a581`, `5afd580`). All
+  twenty-five are measured now. Each lesson has three browser tests
+  (unchanged, one number changed, a refusal), 76 with the Program window
+  spec; the "cannot measure yet" test went, since it would pass on
+  nothing, and a unit check in `web/lib/lessonMeasure.test.ts` fails on
+  any lesson with no plan instead (watched red with interlude's plan
+  removed).
+- **The plan log**, Super Mario Bros. played level by level on the part
+  from one schedule (`01f2e5c`), pulled from nes-bench with its drawings
+  and kept in Japanese as each level clears: 4-1 to 6-2 here
+  (`5555caa` to `a320900`), twenty-two levels, five castles and the
+  water with no life lost.
+- Also in this tree, by the tinypeek session: the tm namespace's
+  readable pieces (`?lines=`, `?pointer=`), one time axis (`at=`), sets
+  as addresses, trails and entities, with the spec pins dated live;
+  the 6502 release v0.367 boarded; the games console framed by
+  bradley.io only; the family copy resynced twice.
+
+Learned the hard way, worth keeping:
+
+- **The docs pull refuses when nes-bench is dirty**, and it should. Twice
+  an uncommitted planner file held a fold-in up; the bench session now
+  keeps its tree clean between commits.
+- **The box runs at a load of 12 to 25.** The long lesson browser tests
+  then time out at 90 seconds showing "wait"; with `--workers 2` all of
+  them pass. That is the machine, not the page.
+- **A sabotage can wrap instead of refusing.** Pit started with no lives
+  counts down to 255 and plays on, so the page was right to give
+  numbers; the refusal sabotage had to stop play from beginning instead.
+
+Not covered: the untranslated spec's inLanguage pairing test fails, on
+live as well as on every local build, and has not been looked into. The
+sound lesson still has two browser tests rather than three.
+
+Next for the website session, in order:
+
+1. Each new plan log level as nes-bench sends it (6-3 next), folded in
+   from a throwaway worktree.
+2. The inLanguage pairing test.
+3. Sprites in their own output folder.
+4. Hotbits bench step 2 when geiger has its first converted page.
+5. Composer, once the owner says what it covers.
+
+Waiting on the owner: what Composer covers; the refuse-on-dirty hook
+nes-bench proposed for its own commits; the sites inventory plan update;
+whether to free a graphics card for sprites.
