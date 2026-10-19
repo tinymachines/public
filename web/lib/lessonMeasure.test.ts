@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, flickerMeasures, itemsMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type FlickerPlan, type ItemsPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, flickerMeasures, itemsMeasures, livesMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type FlickerPlan, type ItemsPlan, type LivesPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -855,5 +855,43 @@ describe("the flicker lesson", () => {
   test("a run with nothing on the screen at frame 10 is refused", () => {
     const t = flicker({ empty: true });
     expect(() => flickerMeasures(cells(t.ram), t.plan)).toThrow("no sprite was on the screen at frame 10");
+  });
+});
+
+const LIVES: LivesPlan = { kind: "lives", script: "AT 20 80\n", frames: 300, memory: { x: "$11", y: "$15", lives: "$52", round: "$50" } };
+
+/** A made-up life lost: the square walks from 0, touches at frame 50 and hangs at 192 until 70, hops 4 a frame to 172 and falls; the life goes at 100, with the picture cleared there, and play begins again at 220 from x 0 (or 5). Every frame also writes the palette, which is not a clear. */
+function lives(o: { clear?: boolean; elsewhere?: boolean }) {
+  const ram = new Uint8Array(300 * 2048);
+  let y = 192;
+  for (let f = 0; f < 300; f++) {
+    const m = f * 2048;
+    const round = f < 50 || f >= 220 ? 0 : f < 71 ? 1 : f < 100 ? 2 : 3;
+    if (f >= 70 && f < 75) y -= 4;
+    else if (f >= 75 && f < 100) y = Math.min(255, y + 4);
+    else if (f >= 220) y = 192;
+    ram[m + 0x50] = round;
+    ram[m + 0x52] = f < 100 ? 3 : 2;
+    ram[m + 0x15] = y;
+    ram[m + 0x11] = f >= 220 ? (o.elsewhere ? 5 : 0) + Math.max(0, f - 240) : Math.min(50, Math.max(0, f - 20));
+  }
+  let vram = "";
+  for (let f = 0; f < 300; f++) vram += `${f} 3F00 1000 1\n`;
+  if (o.clear !== false) vram += "100 2000 1024 1\n";
+  return { ram, vram };
+}
+
+describe("the lives lesson", () => {
+  test("the hang, the hop, the life, the clear and the start again are read off memory and the writes", () => {
+    const t = lives({});
+    expect(livesMeasures(cells(t.ram), t.vram, LIVES)).toEqual({ hang: 20, rise: 20, to_life: 50, clear_after: 0, screen: 120, from_start: true, lives: [3, 2] });
+  });
+  test("play that begins again somewhere else is not from the start", () => {
+    const t = lives({ elsewhere: true });
+    expect(livesMeasures(cells(t.ram), t.vram, LIVES).from_start).toBe(false);
+  });
+  test("a life taken with the picture never cleared is refused, and colours are not a clear", () => {
+    const t = lives({ clear: false });
+    expect(() => livesMeasures(cells(t.ram), t.vram, LIVES)).toThrow("the picture was never cleared after the life was taken at frame 100");
   });
 });

@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, FlickerMeasures, FlickerOne, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, FlickerMeasures, FlickerOne, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1494,5 +1494,67 @@ export function flickerMeasures(cell: (f: number, a: number) => number, plan: Fl
   return {
     kept: flickerOne(cell, FLICKER_SETTLE, select, tile, x0),
     turned: flickerOne(cell, select + FLICKER_SETTLE, n, tile, x0),
+  };
+}
+
+/** What the lives lesson's measurement reads, from its lesson.json: where x, y, the lives and the round are (0 playing, 1 hanging after a touch); and the vram log. */
+export interface LivesPlan {
+  kind: "lives";
+  script: string;
+  frames: number;
+  memory: { x: string; y: string; lives: string; round: string };
+}
+
+/** board-lessons.py reads our run from frame 10. */
+const LIVES_FROM = 10;
+
+/**
+ * The lives lesson's numbers (board-lessons.py's lives_measures), from
+ * memory and the writes to the picture. From the first frame of play
+ * after frame 10: the first touch (the round turning to 1), the frames the
+ * square hangs there (y unchanged), how high the hop goes, the frames from
+ * the touch to the life being taken, from that to the picture being
+ * cleared (a thousand writes or more, not counting colours, in a frame
+ * and the next), and from the clear to playing again; and whether play
+ * begins again at the x it began at. A run missing any of these is
+ * refused with the reason.
+ */
+export function livesMeasures(cell: (f: number, a: number) => number, vram: string, plan: LivesPlan): LivesMeasures {
+  const n = plan.frames;
+  const [X, Y, LIVES, ROUND] = [plan.memory.x, plan.memory.y, plan.memory.lives, plan.memory.round].map(addr);
+  const c = cell;
+  const dying = (f: number) => c(f, ROUND) === 1;
+  const playing = (f: number) => c(f, ROUND) === 0 && c(f, LIVES) > 0;
+  const find = (from: number, to: number, ok: (f: number) => boolean) => {
+    for (let f = from; f < to; f++) if (ok(f)) return f;
+    return undefined;
+  };
+  const begun = find(LIVES_FROM, n, playing);
+  if (begun === undefined) throw new Error("play never began: the round was never 0 with a life left");
+  const touch = find(Math.max(begun, 1), n, (f) => dying(f) && !dying(f - 1));
+  if (touch === undefined) throw new Error("the square never lost a life: the round never turned to 1");
+  const y0 = c(touch, Y);
+  const moved = find(touch + 1, n, (f) => c(f, Y) !== y0);
+  if (moved === undefined) throw new Error(`the square never moved after the touch at frame ${touch}`);
+  let top: number | undefined;
+  for (let f = moved; f < Math.min(moved + 60, n); f++) if (c(f, Y) <= y0) top = Math.min(top ?? 255, c(f, Y));
+  if (top === undefined) throw new Error(`the square never hopped after the touch at frame ${touch}: it only fell`);
+  const taken = find(touch, n, (f) => c(f, LIVES) !== c(touch, LIVES));
+  if (taken === undefined) throw new Error(`no life was taken after the touch at frame ${touch}`);
+  const writes = new Map<number, number>();
+  for (const [f, ws] of vramWrites(vram)) for (const [a, k] of ws) if (a >> 8 !== 0x3f) writes.set(f, (writes.get(f) ?? 0) + k);
+  // A clear with the picture off can outlast a frame, so two neighbouring frames are counted together.
+  const cleared = find(taken, n, (f) => (writes.get(f) ?? 0) + (writes.get(f + 1) ?? 0) >= 1000);
+  if (cleared === undefined) throw new Error(`the picture was never cleared after the life was taken at frame ${taken}`);
+  const again = find(cleared, n, playing);
+  if (again === undefined) throw new Error(`play never began again after the clear at frame ${cleared}`);
+  return {
+    hang: moved - touch,
+    rise: y0 - top,
+    to_life: taken - touch,
+    clear_after: cleared - taken,
+    screen: again - cleared,
+    from_start: c(again, X) === c(begun, X),
+    lives: [c(touch, LIVES), c(taken, LIVES)],
   };
 }

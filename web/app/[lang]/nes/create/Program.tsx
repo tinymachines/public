@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, FlickerMeasures, ItemsMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, FlickerMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -283,6 +283,17 @@ const S = {
       "turned-cycle": "Frames before a sprite is back in its place, the order turning",
       "turned-frames": "Frames read, the order turning",
     },
+    livesLesson: {
+      hang: "Frames the square hangs at the touch",
+      rise: "Pixels the hop rises",
+      to_life: "Frames from the touch to the life taken",
+      clear_after: "Frames from the life taken to the picture cleared",
+      screen: "Frames from the clear to playing again",
+      from_start: "Play begins again where the level began",
+      lives: "Lives at the touch, and after it",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -554,6 +565,17 @@ const S = {
       "turned-cycle": "スプライトが元の場所に戻るまでのフレーム数（順番が回る）",
       "turned-frames": "読んだフレーム数（順番が回る）",
     },
+    livesLesson: {
+      hang: "当たったところで四角が止まっているフレーム数",
+      rise: "跳ね上がるピクセル数",
+      to_life: "当たってから命が一つ減るまでのフレーム数",
+      clear_after: "命が減ってから絵が消されるまでのフレーム数",
+      screen: "消されてからまた遊べるまでのフレーム数",
+      from_start: "面の始まりからまた遊ぶ",
+      lives: "当たったときの命の数と、そのあと",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -755,6 +777,19 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "lives") {
+    const ours = measure.ours as LivesMeasures, yours = theirs as LivesMeasures;
+    const L = T.livesLesson;
+    return [
+      row("hang", L.hang, ours.hang, yours.hang),
+      row("rise", L.rise, ours.rise, yours.rise),
+      row("to_life", L.to_life, ours.to_life, yours.to_life),
+      row("clear_after", L.clear_after, ours.clear_after, yours.clear_after),
+      row("screen", L.screen, ours.screen, yours.screen),
+      { key: "from_start", label: L.from_start, ours: Number(ours.from_start), yours: Number(yours.from_start), oursText: ours.from_start ? L.yes : L.no, yoursText: yours.from_start ? L.yes : L.no },
+      { key: "lives", label: L.lives, ours: ours.lives.join(" ") || null, yours: yours.lives.join(" ") || null, oursText: ours.lives.join(", ") || T.noValue, yoursText: yours.lives.join(", ") || T.noValue },
     ];
   }
   if (measure.plan.kind === "flicker") {
