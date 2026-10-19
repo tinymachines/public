@@ -11,8 +11,8 @@ import type { Lesson } from "../lib/lessons";
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
  * status, sound, pause, title, items, menu, splash, about, solid, flicker,
- * lives, coins, hitbox and pit lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
- * menu, splash, about, solid, lives, coins and pit read the write logs, pause two
+ * lives, coins, hitbox, pit and gameover lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
+ * menu, splash, about, solid, lives, coins, pit and gameover read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=gameover", 500);
-  await expect(page.locator('[data-program-for="gameover"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=interlude", 500);
+  await expect(page.locator('[data-program-for="interlude"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -1020,5 +1020,44 @@ test("a level that begins on the lives screen is never played, is not given numb
   await assembled(page, (t) => t.replace("    STA $43\n    LDA #$00\n    STA $10", "    STA $43\n    LDA #$03\n    STA $10"), "pit");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("play never began");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The gameover lesson's rows as the window keys them, from the record: the lives joined by a space, yes and no as 1 and 0. */
+const gameoverRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "gameover");
+  if (!l || l.kind !== "gameover") throw new Error("no gameover lesson in the record; the spec would pass on nothing");
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(l.measures)) out[k] = Array.isArray(v) ? v.join(" ") : typeof v === "boolean" ? (v ? "1" : "0") : String(v);
+  return out;
+};
+
+test("the gameover lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = gameoverRows();
+  expect(want.lives, "the record holds the lives at the start and after Start; a match of two empty cells would pass on nothing").not.toBe("");
+  await assembled(page, undefined, "gameover");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a GAME OVER screen that waits 128 frames instead of 255 holds 127 frames less, and the rest stays as recorded", async ({ page }) => {
+  const want = gameoverRows();
+  // The GAME OVER screen waits $FF frames before the title; $80 is 128.
+  await assembled(page, (t) => t.replace("    LDA #$04\n    STA $50\n    LDA #$FF\n    STA $51", "    LDA #$04\n    STA $50\n    LDA #$80\n    STA $51"), "gameover");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.held).toEqual([want.held, String(Number(want.held) - 127)]);
+  for (const k of ["to_screen", "screen_tiles", "title_tiles", "start_to_play", "lives_back", "lives"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a title that never hears Start is not given numbers, and the page says why", async ({ page }) => {
+  // The title waits for a new press of Start, bit $10 as the program reads the pad; no bit is never pressed.
+  await assembled(page, (t) => t.replace("    AND #$10\n    BEQ main\n    LDA #$03", "    AND #$00\n    BEQ main\n    LDA #$03"), "gameover");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("play never began again after Start");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

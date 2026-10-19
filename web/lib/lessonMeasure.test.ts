@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, hitboxMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, gameoverMeasures, hitboxMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type GameoverPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -999,5 +999,36 @@ describe("the pit lesson", () => {
   test("a square that never falls is refused", () => {
     const t = pit({ fall: false });
     expect(() => pitMeasures(cells(t.ram), t.vram, PIT)).toThrow("the square never went lower than it stood at frame 10");
+  });
+});
+
+const GAMEOVER: GameoverPlan = { kind: "gameover", script: "AT 20 80\nAT 500 08\nAT 506 80\n", frames: 600, memory: { x: "$11", y: "$15", lives: "$52", round: "$50" } };
+
+/** A made-up end: play from frame 10 with 3 lives, down to the last by 50, the last touch at 100; the GAME OVER clear at 155, written across two frames the log splits (600 tiles, then 424 more), its words at 160; the title's clear at 410, its words and colours at 412; Start at 500 and play again from 501 with 3 lives (or 1). */
+function gameover(o: { back?: boolean; split?: boolean }) {
+  const ram = new Uint8Array(600 * 2048);
+  for (let f = 0; f < 600; f++) {
+    const m = f * 2048;
+    ram[m + 0x50] = f >= 100 && f < 121 ? 1 : f >= 121 && f < 410 ? 4 : f >= 410 && f <= 500 ? 6 : 0;
+    ram[m + 0x52] = f < 50 ? 3 : f < 130 ? 1 : f <= 500 ? 0 : o.back === false ? 1 : 3;
+  }
+  const clear = o.split === false ? "155 2000 600 1\n158 2400 424 1\n" : "155 2000 600 1\n156 2258 424 1\n";
+  return { ram, vram: clear + "160 21CC 9 1\n410 2000 1024 1\n412 2100 19 1\n412 3F00 32 1\n" };
+}
+
+describe("the gameover lesson", () => {
+  test("the last touch, the GAME OVER screen, the title, Start and the lives back are read off memory, the pad and the writes", () => {
+    const t = gameover({});
+    expect(gameoverMeasures(cells(t.ram), t.vram, GAMEOVER)).toEqual({ to_screen: 55, screen_tiles: 9, held: 255, title_tiles: 19, start_to_play: 1, lives_back: true, lives: [3, 3] });
+  });
+  test("a game begun again with fewer lives is told apart", () => {
+    const t = gameover({ back: false });
+    const m = gameoverMeasures(cells(t.ram), t.vram, GAMEOVER);
+    expect(m.lives_back).toBe(false);
+    expect(m.lives).toEqual([3, 1]);
+  });
+  test("a clear the log split across two frames is one clear; two runs that do not join are none, and the run is refused", () => {
+    const t = gameover({ split: false });
+    expect(() => gameoverMeasures(cells(t.ram), t.vram, GAMEOVER)).toThrow("the picture was never cleared again for the title after the GAME OVER screen at frame 410");
   });
 });

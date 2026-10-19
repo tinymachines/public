@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, GameoverMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -330,6 +330,17 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    gameoverLesson: {
+      to_screen: "Frames from the last touch to the GAME OVER screen",
+      screen_tiles: "Tiles that screen is written with",
+      held: "Frames the GAME OVER screen holds",
+      title_tiles: "Tiles the title is written with",
+      start_to_play: "Frames from Start to playing",
+      lives_back: "The lives are back to what the game began with",
+      lives: "Lives when the game began, and after Start",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -648,6 +659,17 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    gameoverLesson: {
+      to_screen: "最後に当たってから GAME OVER の画面までのフレーム数",
+      screen_tiles: "その画面に書かれたタイル数",
+      held: "GAME OVER の画面が続くフレーム数",
+      title_tiles: "タイトルに書かれたタイル数",
+      start_to_play: "Start から遊べるまでのフレーム数",
+      lives_back: "命の数がゲームの始まりと同じに戻る",
+      lives: "ゲームの始まりの命の数と、Start のあと",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -849,6 +871,15 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "gameover") {
+    const ours = measure.ours as GameoverMeasures, yours = theirs as GameoverMeasures;
+    const G = T.gameoverLesson;
+    return [
+      ...(["to_screen", "screen_tiles", "held", "title_tiles", "start_to_play"] as const).map((k) => row(k, G[k], ours[k], yours[k])),
+      { key: "lives_back", label: G.lives_back, ours: Number(ours.lives_back), yours: Number(yours.lives_back), oursText: ours.lives_back ? G.yes : G.no, yoursText: yours.lives_back ? G.yes : G.no },
+      { key: "lives", label: G.lives, ours: ours.lives.join(" ") || null, yours: yours.lives.join(" ") || null, oursText: ours.lives.join(", ") || T.noValue, yoursText: yours.lives.join(", ") || T.noValue },
     ];
   }
   if (measure.plan.kind === "pit") {

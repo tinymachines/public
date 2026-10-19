@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, GameoverMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan | PitPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan | PitPlan | GameoverPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1743,5 +1743,87 @@ export function pitMeasures(cell: (f: number, a: number) => number, vram: string
     screen: again - cleared,
     from_start: c(again, X) === c(begun, X),
     lives: [c(edge, LIVES), c(taken, LIVES)],
+  };
+}
+
+/** What the gameover lesson's measurement reads, from its lesson.json: where the lives and the round (0 playing, 1 hanging after a touch) are, and the pad script; and the vram log. */
+export interface GameoverPlan {
+  kind: "gameover";
+  script: string;
+  frames: number;
+  memory: { x: string; y: string; lives: string; round: string };
+}
+
+/** board-lessons.py reads our run from frame 10, the game's start and the last touch both. */
+const GAMEOVER_FROM = 10;
+
+/**
+ * The vram log as runs (board-lessons.py's joined_runs), in the log's
+ * order: a run the log split where a frame began (a clear with the
+ * picture off outlasts a blank) joined back together and counted at the
+ * frame it began, as [frame, address, tiles, step].
+ */
+function joinedRuns(vram: string): [number, number, number, number][] {
+  const out: [number, number, number, number, number][] = [];
+  for (const line of vram.split("\n")) {
+    const w = line.trim().split(/\s+/);
+    if (w.length !== 4) continue;
+    const [f, a, k, step] = [Number(w[0]), parseInt(w[1], 16), Number(w[2]), Number(w[3])];
+    const last = out[out.length - 1];
+    if (last && step === 1 && last[3] === 1 && a === last[1] + last[2] && f - last[4] <= 1) {
+      last[2] += k;
+      last[4] = f;
+    } else out.push([f, a, k, step, f]);
+  }
+  return out.map(([f, a, k, step]) => [f, a, k, step]);
+}
+
+/**
+ * The gameover lesson's numbers (board-lessons.py's gameover_measures),
+ * from memory, the pad script and the writes to the picture: from the
+ * last touch (the round turning to 1 with one life left), the frames
+ * until the picture is cleared for the GAME OVER screen (a run of a
+ * thousand tiles or more); the tiles that screen is written with besides
+ * its clear (the thirty frames after it, colours not counted); the frames
+ * it holds until the next clear, the title's; the tiles the title is
+ * written with; from the first press of Start after that, the frames
+ * until the game is played; and whether the lives are then what they were
+ * when the game first began. A run missing any of these is refused with
+ * the reason.
+ */
+export function gameoverMeasures(cell: (f: number, a: number) => number, vram: string, plan: GameoverPlan): GameoverMeasures {
+  const n = plan.frames;
+  const [LIVES, ROUND] = [plan.memory.lives, plan.memory.round].map(addr);
+  const c = cell;
+  const pad = padOf(parseScript(plan.script), n);
+  const playing = (f: number) => c(f, ROUND) === 0 && c(f, LIVES) > 0;
+  const dying = (f: number) => c(f, ROUND) === 1 && c(f, LIVES) === 1;
+  const find = (from: number, to: number, ok: (f: number) => boolean) => {
+    for (let f = from; f < to; f++) if (ok(f)) return f;
+    return undefined;
+  };
+  const begun = find(GAMEOVER_FROM, n, playing);
+  if (begun === undefined) throw new Error("play never began: the round was never 0 with a life left");
+  const touch = find(GAMEOVER_FROM, n, (f) => dying(f) && !dying(f - 1));
+  if (touch === undefined) throw new Error("the last life was never lost: the round never turned to 1 with one life left");
+  const runs = joinedRuns(vram);
+  // A clear of both tables in one frame is two runs of a thousand; one clear.
+  const clears = [...new Set(runs.filter(([f, , k]) => k >= 1000 && f > touch).map(([f]) => f))].sort((a, b) => a - b);
+  if (!clears.length) throw new Error(`the picture was never cleared for the GAME OVER screen after the touch at frame ${touch}`);
+  if (clears.length < 2) throw new Error(`the picture was never cleared again for the title after the GAME OVER screen at frame ${clears[0]}`);
+  const [cleared, title] = clears;
+  const tiles = (f0: number) => runs.filter(([f, a, k]) => f >= f0 && f < f0 + 30 && k < 1000 && !(a >= 0x3f00 && a < 0x4000)).reduce((s, [, , k]) => s + k, 0);
+  const press = find(title, n, (f) => !!(pad[f] & 0x08) && !(pad[f - 1] & 0x08));
+  if (press === undefined) throw new Error(`Start was never pressed on the title after frame ${title}`);
+  const played = find(press, n, playing);
+  if (played === undefined) throw new Error(`play never began again after Start at frame ${press}`);
+  return {
+    to_screen: cleared - touch,
+    screen_tiles: tiles(cleared),
+    held: title - cleared,
+    title_tiles: tiles(title),
+    start_to_play: played - press,
+    lives_back: c(played, LIVES) === c(begun, LIVES),
+    lives: [c(begun, LIVES), c(played, LIVES)],
   };
 }
