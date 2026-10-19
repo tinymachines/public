@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, flickerMeasures, itemsMeasures, livesMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type FlickerPlan, type ItemsPlan, type LivesPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, itemsMeasures, livesMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type ItemsPlan, type LivesPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -893,5 +893,41 @@ describe("the lives lesson", () => {
   test("a life taken with the picture never cleared is refused, and colours are not a clear", () => {
     const t = lives({ clear: false });
     expect(() => livesMeasures(cells(t.ram), t.vram, LIVES)).toThrow("the picture was never cleared after the life was taken at frame 100");
+  });
+});
+
+const COINS: CoinsPlan = {
+  kind: "coins", script: "AT 20 80\n", frames: 200, walk_from: 20,
+  memory: { coins: ["$66", "$67"], score: ["$60", "$61", "$62", "$63", "$64", "$65"], coin_tiles: [8, 11], points_tiles: [42, 44] },
+};
+
+/** A made-up bump at frame 50: a coin, its picture turning every second frame through tiles 8 to 11, rises 3 a frame from y 100 for 10 frames and falls 2 a frame for 8; then the points, tile 42, float up a pixel every second frame for 40. The bar's score and coins are written on the bump, the level long before. */
+function coins(o: { score?: boolean; coin?: boolean }) {
+  const ram = new Uint8Array(200 * 2048);
+  for (let f = 0; f < 200; f++) {
+    const m = f * 2048;
+    ram.fill(0xff, m + 0x200, m + 0x300);
+    ram[m + 0x67] = f >= 50 ? 1 : 0;
+    ram[m + 0x63] = f >= 50 && o.score !== false ? 2 : 0;
+    if (f >= 50 && f < 68 && o.coin !== false) ram.set([f < 60 ? 100 - 3 * (f - 50) : 73 + 2 * (f - 59), 8 + (((f - 50) >> 1) % 4), 0, 80], m + 0x210);
+    if (f >= 68 && f < 108 && o.coin !== false) ram.set([73 - ((f - 68) >> 1), 42, 0, 80], m + 0x210);
+  }
+  return { ram, vram: "10 2000 1024 1\n50 2042 6 1\n50 204A 3 1\n" };
+}
+
+describe("the coins lesson", () => {
+  test("the bump, the bar, the coin's flight and the points are read off memory and the writes", () => {
+    const t = coins({});
+    expect(coinsMeasures(cells(t.ram), t.vram, COINS)).toEqual({
+      score_too: true, bar_tiles: 9, coin_frames: 18, coin_rise: 27, coin_pictures: 4, picture_frames: 2, points_frames: 40, points_rise: 19,
+    });
+  });
+  test("a coin counted with the score unchanged is told apart", () => {
+    const t = coins({ score: false });
+    expect(coinsMeasures(cells(t.ram), t.vram, COINS).score_too).toBe(false);
+  });
+  test("a bump with no coin seen is refused", () => {
+    const t = coins({ coin: false });
+    expect(() => coinsMeasures(cells(t.ram), t.vram, COINS)).toThrow("no coin was seen after the bump at frame 50");
   });
 });

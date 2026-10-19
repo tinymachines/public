@@ -10,9 +10,9 @@ import type { Lesson } from "../lib/lessons";
  * watching, and the same reading of the console's memory.
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
- * status, sound, pause, title, items, menu, splash, about, solid, flicker and
- * lives lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
- * menu, splash, about, solid and lives read the write logs, pause two
+ * status, sound, pause, title, items, menu, splash, about, solid, flicker,
+ * lives and coins lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
+ * menu, splash, about, solid, lives and coins read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
  *
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=coins", 500);
-  await expect(page.locator('[data-program-for="coins"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=hitbox", 500);
+  await expect(page.locator('[data-program-for="hitbox"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -897,5 +897,45 @@ test("a touch that never ends the round is not given numbers, and the page says 
   await assembled(page, (t) => t.replace("    LDA #$01\n    STA $50\n    LDA #$14", "    LDA #$00\n    STA $50\n    LDA #$14"), "lives");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("the square never lost a life");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The coins lesson's rows as the window keys them, from the record: yes and no as 1 and 0. */
+const coinsRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "coins");
+  if (!l || l.kind !== "coins") throw new Error("no coins lesson in the record; the spec would pass on nothing");
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(l.measures)) out[k] = typeof v === "boolean" ? (v ? "1" : "0") : String(v);
+  return out;
+};
+
+test("the coins lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = coinsRows();
+  expect(want.points_frames, "the record holds the points' flight; a match of two zeros would pass on nothing").not.toBe("0");
+  await assembled(page, undefined, "coins");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("points shown for 20 frames instead of 40 are seen 20 frames fewer and float half as high, and the coin stays as recorded", async ({ page }) => {
+  const want = coinsRows();
+  // The points stay $28 frames, rising a pixel every second one; $14 is half.
+  await assembled(page, (t) => t.replace("    LDA #$28\n    STA $6D", "    LDA #$14\n    STA $6D"), "coins");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(got.points_frames).toEqual([want.points_frames, String(Number(want.points_frames) - 20)]);
+  expect(got.points_rise).toEqual([want.points_rise, String(Number(want.points_rise) - 10)]);
+  for (const k of ["score_too", "bar_tiles", "coin_frames", "coin_rise", "coin_pictures", "picture_frames"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a bump whose coin never flies is not given numbers, and the page says why", async ({ page }) => {
+  // The coin flies for $12 frames from the bump; 0 frames draws none.
+  await assembled(page, (t) => t.replace("    LDA #$12\n    STA $69", "    LDA #$00\n    STA $69"), "coins");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("no coin was seen after the bump");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

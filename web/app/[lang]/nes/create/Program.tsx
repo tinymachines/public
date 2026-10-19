@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, FlickerMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -294,6 +294,18 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    coinsLesson: {
+      score_too: "The score goes up on the frame of the bump",
+      bar_tiles: "Tiles written to the bar around the bump",
+      coin_frames: "Frames the coin is seen",
+      coin_rise: "Pixels the coin rises",
+      coin_pictures: "Pictures the coin turns through",
+      picture_frames: "Frames each picture is shown",
+      points_frames: "Frames the points are seen",
+      points_rise: "Pixels the points float up",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -576,6 +588,18 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    coinsLesson: {
+      score_too: "叩いたフレームで点数も上がる",
+      bar_tiles: "叩いたころに上の帯へ書かれたタイル数",
+      coin_frames: "コインが見えているフレーム数",
+      coin_rise: "コインが上がるピクセル数",
+      coin_pictures: "コインが回って見せる絵の数",
+      picture_frames: "一つの絵が見えているフレーム数",
+      points_frames: "点数が見えているフレーム数",
+      points_rise: "点数が浮かび上がるピクセル数",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -777,6 +801,14 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "coins") {
+    const ours = measure.ours as CoinsMeasures, yours = theirs as CoinsMeasures;
+    const C = T.coinsLesson;
+    return [
+      { key: "score_too", label: C.score_too, ours: Number(ours.score_too), yours: Number(yours.score_too), oursText: ours.score_too ? C.yes : C.no, yoursText: yours.score_too ? C.yes : C.no },
+      ...(["bar_tiles", "coin_frames", "coin_rise", "coin_pictures", "picture_frames", "points_frames", "points_rise"] as const).map((k) => row(k, C[k], ours[k], yours[k])),
     ];
   }
   if (measure.plan.kind === "lives") {

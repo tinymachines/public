@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, FlickerMeasures, FlickerOne, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1556,5 +1556,71 @@ export function livesMeasures(cell: (f: number, a: number) => number, vram: stri
     screen: again - cleared,
     from_start: c(again, X) === c(begun, X),
     lives: [c(touch, LIVES), c(taken, LIVES)],
+  };
+}
+
+/** What the coins lesson's measurement reads, from its lesson.json: where the coins' and the score's digits are, the coin's tiles (first to last) and the points' tiles, and the frame the reading starts from; and the vram log. */
+export interface CoinsPlan {
+  kind: "coins";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { coins: string[]; score: string[]; coin_tiles: [number, number]; points_tiles: number[] };
+}
+
+/**
+ * The coins lesson's numbers (board-lessons.py's coins_measures), from
+ * memory and the writes to the picture: the first frame from walk_from
+ * the coin count changes (the bump), whether the score changed on that
+ * frame too, and the tiles written to the bar (rows 0 to 5 of the first
+ * name table) on that frame and the one either side. From sprite memory,
+ * for the coin's sprites (by tile) and then the points': the frames each
+ * is seen, how far it rises from where it first appears, and for the coin
+ * how many pictures it turns through and how many frames each is shown.
+ * A run with no bump, or no coin after it, is refused with the reason.
+ */
+export function coinsMeasures(cell: (f: number, a: number) => number, vram: string, plan: CoinsPlan): CoinsMeasures {
+  const n = plan.frames;
+  const c = cell;
+  const digits = (as: number[], f: number) => as.map((a) => c(f, a)).join(" ");
+  const COINS = plan.memory.coins.map(addr), SCORE = plan.memory.score.map(addr);
+  let bump: number | undefined;
+  for (let f = Math.max(plan.walk_from, 1); f < n && bump === undefined; f++) if (digits(COINS, f) !== digits(COINS, f - 1)) bump = f;
+  if (bump === undefined) throw new Error(`the coin count never changed after frame ${plan.walk_from}`);
+  let bar = 0;
+  for (const [f, ws] of vramWrites(vram)) if (f >= bump - 1 && f <= bump + 1) for (const [a, k] of ws) if (a >= 0x2000 && a < 0x20c0) bar += k;
+  const [lo, hi] = plan.memory.coin_tiles;
+  const coinTile = (t: number) => t >= lo && t <= hi;
+  const pointsTile = (t: number) => plan.memory.points_tiles.includes(t);
+  // The sprites on the screen with one of the tiles, in sprite-memory order: [y, tile].
+  const sprites = (f: number, tiles: (t: number) => boolean) => {
+    const out: [number, number][] = [];
+    for (let i = 0; i < 64; i++) {
+      const y = c(f, 0x200 + i * 4), t = c(f, 0x201 + i * 4);
+      if (y < 0xef && tiles(t)) out.push([y, t]);
+    }
+    return out;
+  };
+  const flight = (tiles: (t: number) => boolean, after: number) => {
+    const seen: number[] = [];
+    for (let f = after; f < Math.min(after + 200, n); f++) if (sprites(f, tiles).length) seen.push(f);
+    return { seen, ys: seen.map((f) => Math.min(...sprites(f, tiles).map(([y]) => y))) };
+  };
+  const coin = flight(coinTile, bump - 1);
+  if (!coin.seen.length) throw new Error(`no coin was seen after the bump at frame ${bump}`);
+  const pics = coin.seen.map((f) => sprites(f, coinTile)[0][1]);
+  const runs: number[] = [];
+  pics.forEach((p, k) => (k && p === pics[k - 1] ? runs[runs.length - 1]++ : runs.push(1)));
+  const inner = runs.slice(1, -1);
+  const points = flight(pointsTile, coin.seen[coin.seen.length - 1]);
+  return {
+    score_too: digits(SCORE, bump) !== digits(SCORE, bump - 1),
+    bar_tiles: bar,
+    coin_frames: coin.seen.length,
+    coin_rise: coin.ys[0] - Math.min(...coin.ys),
+    coin_pictures: new Set(pics).size,
+    picture_frames: mode(inner.length ? inner : runs)!,
+    points_frames: points.seen.length,
+    points_rise: points.seen.length ? points.ys[0] - Math.min(...points.ys) : 0,
   };
 }
