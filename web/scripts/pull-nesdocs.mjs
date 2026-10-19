@@ -234,7 +234,7 @@ const SHEETS = ["bench-v1.svg", "bench-v1b-1.svg", "bench-v1b-2.svg", "bench-v1b
                 "bench-v2b-1.svg", "bench-v2b-2.svg", "bench-v2b-3.svg", "bench-v2b-4.svg",
                 "breadboard-v1b.svg", "wiring-v1b.svg", "wiring-v1b-build.svg", "wiring-v1b-head.svg", "logical-timing.svg", "pad-adapter.svg", "exercise-stack.svg",
                 "pad-ble.svg", "wiring-pad-ble.svg", "breadboard-pad-ble.svg",
-                "plan-log-overview.svg", "plan-log-1-1.svg", "plan-log-1-2.svg", "plan-log-1-3.svg", "plan-log-1-4.svg", "plan-log-2-1.svg", "plan-log-2-2.svg", "plan-log-2-3.svg", "plan-log-2-4.svg", "plan-log-3-1.svg", "plan-log-3-2.svg", "plan-log-3-3.svg", "plan-log-3-4.svg", "plan-log-4-1.svg", "plan-log-4-2.svg", "plan-log-4-3.svg", "plan-log-4-4.svg", "plan-log-5-1.svg", "plan-log-5-2.svg", "plan-log-5-3.svg", "plan-log-5-4.svg", "plan-log-6-1.svg", "plan-log-6-2.svg"];
+                "plan-log-overview.svg", "plan-log-1-1.svg", "plan-log-1-2.svg", "plan-log-1-3.svg", "plan-log-1-4.svg", "plan-log-2-1.svg", "plan-log-2-2.svg", "plan-log-2-3.svg", "plan-log-2-4.svg", "plan-log-3-1.svg", "plan-log-3-2.svg", "plan-log-3-3.svg", "plan-log-3-4.svg", "plan-log-4-1.svg", "plan-log-4-2.svg", "plan-log-4-3.svg", "plan-log-4-4.svg", "plan-log-5-1.svg", "plan-log-5-2.svg", "plan-log-5-3.svg", "plan-log-5-4.svg", "plan-log-6-1.svg", "plan-log-6-2.svg", "plan-log-6-3.svg"];
 
 // The lab notebook's photographs. Whatever is in nes-bench/docs/lab/ is
 // served from /nes/lab/; the notebook only links a picture that exists,
