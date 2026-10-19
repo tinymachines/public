@@ -441,7 +441,7 @@ export function parts(key: string) {
   const l = lesson(key)!;
   // What the page needs to take the lesson's measurements again on the
   // reader's cartridge, and our own numbers to set beside them. The jump,
-  // run, stomp, walkers, camera, platforms, scroll, rooms, screens, status, sound, pause, title, items, menu, splash, about, solid, flicker, lives and coins lessons so far (lib/lessonMeasure.ts says why).
+  // run, stomp, walkers, camera, platforms, scroll, rooms, screens, status, sound, pause, title, items, menu, splash, about, solid, flicker, lives, coins and hitbox lessons so far (lib/lessonMeasure.ts says why).
   const script = () => fs.readFileSync(path.join(d, meta.script as string), "utf8");
   const measure =
     l.kind === "jump"
@@ -667,7 +667,18 @@ export function parts(key: string) {
                                                   },
                                                   ours: l.measures,
                                                 }
-                                              : null;
+                                              : l.kind === "hitbox"
+                                                ? {
+                                                    plan: {
+                                                      kind: "hitbox" as const,
+                                                      script: script(),
+                                                      frames: meta.frames as number,
+                                                      walk_from: meta.walk_from as number,
+                                                      memory: meta.memory as { x: string; y: string; walker_x: string; walker_y: string; box: string[]; walker_box: string[]; touches: string; shown: string },
+                                                    },
+                                                    ours: l.measures,
+                                                  }
+                                                : null;
   return {
     measure,
     key,

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -306,6 +306,17 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    hitboxLesson: {
+      player: "The square's box, in from its picture's left, top, right and bottom",
+      walker: "The walker's box, in from its picture's left, top, right and bottom",
+      pictures: "Pixels the pictures overlap across and down, the frame before the touch",
+      boxes: "Pixels the boxes overlap across and down, that frame",
+      before: "Frames the pictures overlapped before the boxes did",
+      after: "The touch is known the frame after the boxes meet",
+      frame: "The frame of the touch",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -600,6 +611,17 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    hitboxLesson: {
+      player: "四角の箱が、絵の左・上・右・下から内側へ入るピクセル数",
+      walker: "歩くものの箱が、絵の左・上・右・下から内側へ入るピクセル数",
+      pictures: "当たる一フレーム前に、絵どうしが横と縦に重なるピクセル数",
+      boxes: "そのフレームで、箱どうしが横と縦に重なるピクセル数",
+      before: "箱より先に絵が重なっていたフレーム数",
+      after: "箱が重なった次のフレームで当たりがわかる",
+      frame: "当たったフレーム",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -801,6 +823,20 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "hitbox") {
+    const ours = measure.ours as HitboxMeasures, yours = theirs as HitboxMeasures;
+    const H = T.hitboxLesson;
+    const list = (key: "player" | "walker" | "pictures" | "boxes") => ({ key, label: H[key], ours: ours[key].join(" "), yours: yours[key].join(" "), oursText: ours[key].join(", "), yoursText: yours[key].join(", ") });
+    return [
+      list("player"),
+      list("walker"),
+      list("pictures"),
+      list("boxes"),
+      row("before", H.before, ours.before, yours.before),
+      { key: "after", label: H.after, ours: Number(ours.after), yours: Number(yours.after), oursText: ours.after ? H.yes : H.no, yoursText: yours.after ? H.yes : H.no },
+      row("frame", H.frame, ours.frame, yours.frame),
     ];
   }
   if (measure.plan.kind === "coins") {

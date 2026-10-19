@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, HitboxMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1623,4 +1623,61 @@ export function coinsMeasures(cell: (f: number, a: number) => number, vram: stri
     points_frames: points.seen.length,
     points_rise: points.seen.length ? points.ys[0] - Math.min(...points.ys) : 0,
   };
+}
+
+/** What the hitbox lesson's measurement reads, from its lesson.json: where the square's and the walker's x and y are, their boxes (left, top, right, bottom), the touch count, and the frame the reading starts from. */
+export interface HitboxPlan {
+  kind: "hitbox";
+  script: string;
+  frames: number;
+  walk_from: number;
+  memory: { x: string; y: string; walker_x: string; walker_y: string; box: string[]; walker_box: string[]; touches: string; shown: string };
+}
+
+/**
+ * The hitbox lesson's numbers (board-lessons.py's hitbox_measures), from
+ * memory: each picture is 16 pixels square at its x and y, and each box is
+ * kept beside it (right and bottom one past the last pixel). The touch is
+ * the first frame after walk_from the touch count changes. Each box's
+ * distance in from its picture's four edges, the most common over the
+ * frames from walk_from to the touch; and the frame before the touch, how
+ * far the two pictures overlapped across and down, how far the boxes did,
+ * and for how many frames before that the pictures had overlapped while
+ * the boxes did not. A run with no touch is refused with the reason.
+ */
+export function hitboxMeasures(cell: (f: number, a: number) => number, plan: HitboxPlan): HitboxMeasures {
+  const n = plan.frames, start = plan.walk_from, m = plan.memory;
+  const c = cell;
+  const TOUCHES = addr(m.touches);
+  const pic = (xa: number, ya: number) => (f: number) => [c(f, xa), c(f, ya), c(f, xa) + 16, c(f, ya) + 16];
+  const box = (as: number[]) => (f: number) => as.map((a) => c(f, a));
+  const player = pic(addr(m.x), addr(m.y)), walker = pic(addr(m.walker_x), addr(m.walker_y));
+  const pb = box(m.box.map(addr)), wb = box(m.walker_box.map(addr));
+  let t: number | undefined;
+  for (let f = start + 1; f < n && t === undefined; f++) if (c(f, TOUCHES) !== c(f - 1, TOUCHES)) t = f;
+  if (t === undefined) throw new Error(`the touch count never changed after frame ${start}`);
+  const touch = t;
+  // The most common inset, on a tie the first seen.
+  const inset = (p: (f: number) => number[], b: (f: number) => number[]) => {
+    const count = new Map<string, number>();
+    for (let f = start; f < touch; f++) if (b(f)[0] < 240) {
+      const k = p(f).map((v, i) => Math.abs(b(f)[i] - v)).join(",");
+      count.set(k, (count.get(k) ?? 0) + 1);
+    }
+    if (!count.size) throw new Error(`no box was in memory on the screen before the touch at frame ${touch}`);
+    let best = "";
+    for (const [k, v] of count) if (!best || v > count.get(best)!) best = k;
+    return best.split(",").map(Number);
+  };
+  const ov = (a: number[], b: number[]) => [Math.min(a[2], b[2]) - Math.max(a[0], b[0]), Math.min(a[3], b[3]) - Math.max(a[1], b[1])];
+  // The frame before the touch is known: the last frame both are where they met.
+  const f = touch - 1;
+  const pics = ov(player(f), walker(f)), bx = ov(pb(f), wb(f));
+  let before = 0;
+  let g = Math.min(...bx) <= 0 ? f : f - 1;
+  while (g > start && Math.min(...ov(player(g), walker(g))) > 0 && Math.min(...ov(pb(g), wb(g))) <= 0) {
+    before++;
+    g--;
+  }
+  return { player: inset(player, pb), walker: inset(walker, wb), pictures: pics, boxes: bx, before, after: Math.min(...bx) > 0, frame: touch };
 }

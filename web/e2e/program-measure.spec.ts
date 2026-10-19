@@ -11,7 +11,7 @@ import type { Lesson } from "../lib/lessons";
  *
  * The jump, run, stomp, walkers, camera, platforms, scroll, rooms, screens,
  * status, sound, pause, title, items, menu, splash, about, solid, flicker,
- * lives and coins lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
+ * lives, coins and hitbox lessons are measured so far; scroll, rooms, status, sound, pause, title, items,
  * menu, splash, about, solid, lives and coins read the write logs, pause two
  * pictures besides, and screens takes only the part of its record the page
  * can.
@@ -508,8 +508,8 @@ test("a jump sound without the pitch sweep shows no sweep settings and nothing t
 
 test("a lesson the page cannot measure yet shows no measurements", async ({ page }) => {
   await page.setViewportSize(DESK);
-  await open(page, "/nes/create?lesson=hitbox", 500);
-  await expect(page.locator('[data-program-for="hitbox"]')).toHaveCount(1, { timeout: 15000 });
+  await open(page, "/nes/create?lesson=pit", 500);
+  await expect(page.locator('[data-program-for="pit"]')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator("[data-program-assemble]")).toBeVisible({ timeout: 20000 });
   await page.locator("[data-program-assemble]").click();
   await expect(page.locator("[data-program-built]")).toHaveCount(1, { timeout: 30000 });
@@ -937,5 +937,49 @@ test("a bump whose coin never flies is not given numbers, and the page says why"
   await assembled(page, (t) => t.replace("    LDA #$12\n    STA $69", "    LDA #$00\n    STA $69"), "coins");
   await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
   await expect(page.locator("[data-program-measure-why]")).toContainText("no coin was seen after the bump");
+  await expect(page.locator("[data-program-measure]")).toHaveCount(0);
+});
+
+/** The hitbox lesson's rows as the window keys them, from the record: lists joined by a space, yes and no as 1 and 0. */
+const hitboxRows = () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "lessons.json"), "utf8")) as { lessons: Lesson[] };
+  const l = r.lessons.find((x) => x.key === "hitbox");
+  if (!l || l.kind !== "hitbox") throw new Error("no hitbox lesson in the record; the spec would pass on nothing");
+  const m = l.measures;
+  return {
+    player: m.player.join(" "), walker: m.walker.join(" "), pictures: m.pictures.join(" "), boxes: m.boxes.join(" "),
+    before: String(m.before), after: m.after ? "1" : "0", frame: String(m.frame),
+  } as Record<string, string>;
+};
+
+test("the hitbox lesson, unchanged, measures in the page to exactly the numbers the record holds", async ({ page }) => {
+  const want = hitboxRows();
+  expect(want.player, "the record holds the square's box; a match of two empty cells would pass on nothing").not.toBe("");
+  await assembled(page, undefined, "hitbox");
+  await expect(page.locator("[data-program-built]")).toHaveAttribute("data-program-same", "true");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+  for (const k of Object.keys(want)) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a walker's box 2 down from its top instead of 6 is measured so, and overlaps the square's by 2 pixels less, with the touch as recorded", async ({ page }) => {
+  const want = hitboxRows();
+  // The walker's box starts $06 below the top of its picture and is $06 tall; from $02 it ends 4 higher.
+  await assembled(page, (t) => t.replace("    LDA $64\n    CLC\n    ADC #$06\n    STA $75", "    LDA $64\n    CLC\n    ADC #$02\n    STA $75"), "hitbox");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "yes", { timeout: 90000 });
+  const got = await readText(page);
+  expect(want.walker).toBe("3 6 3 4");
+  expect(got.walker).toEqual([want.walker, "3 2 3 8"]);
+  const [across, down] = want.boxes.split(" ").map(Number);
+  expect(got.boxes).toEqual([want.boxes, `${across} ${down - 2}`]);
+  for (const k of ["player", "pictures", "before", "after", "frame"]) expect(got[k], k).toEqual([want[k], want[k]]);
+});
+
+test("a walker whose box is below the square's never touches, and the page says why rather than giving numbers", async ({ page }) => {
+  // From $40 down, the walker's box is under the ground the square walks on.
+  await assembled(page, (t) => t.replace("    LDA $64\n    CLC\n    ADC #$06\n    STA $75", "    LDA $64\n    CLC\n    ADC #$40\n    STA $75"), "hitbox");
+  await expect(page.locator("[data-program-measured]")).toHaveAttribute("data-program-measured", "no", { timeout: 90000 });
+  await expect(page.locator("[data-program-measure-why]")).toContainText("the touch count never changed");
   await expect(page.locator("[data-program-measure]")).toHaveCount(0);
 });

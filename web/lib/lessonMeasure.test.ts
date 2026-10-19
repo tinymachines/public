@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, itemsMeasures, livesMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type ItemsPlan, type LivesPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, hitboxMeasures, itemsMeasures, livesMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -929,5 +929,37 @@ describe("the coins lesson", () => {
   test("a bump with no coin seen is refused", () => {
     const t = coins({ coin: false });
     expect(() => coinsMeasures(cells(t.ram), t.vram, COINS)).toThrow("no coin was seen after the bump at frame 50");
+  });
+});
+
+const HITBOX: HitboxPlan = {
+  kind: "hitbox", script: "AT 60 80\n", frames: 200, walk_from: 60,
+  memory: { x: "$11", y: "$15", walker_x: "$60", walker_y: "$64", box: ["$70", "$71", "$72", "$73"], walker_box: ["$74", "$75", "$76", "$77"], touches: "$65", shown: "$68" },
+};
+
+/** A made-up meeting: from frame 60 the square walks right from x 20 and the walker left from 120, a pixel a frame each, both at y 100; the square's box 3 in from each side and 4 down, the walker's 3 in and 6 down and 4 up; the boxes first overlap at frame 106, the touch counted then. */
+function hitbox(o: { touch?: boolean }) {
+  const ram = new Uint8Array(200 * 2048);
+  for (let f = 0; f < 200; f++) {
+    const m = f * 2048, k = Math.max(0, f - 60);
+    const x = 20 + k, w = 120 - k;
+    ram.set([x], m + 0x11);
+    ram.set([100], m + 0x15);
+    ram.set([w], m + 0x60);
+    ram.set([100], m + 0x64);
+    ram.set([x + 3, 104, x + 13, 116, w + 3, 106, w + 13, 112], m + 0x70);
+    ram[m + 0x65] = o.touch !== false && f >= 106 ? 1 : 0;
+  }
+  return ram;
+}
+
+describe("the hitbox lesson", () => {
+  test("the boxes' insets, the overlaps the frame before the touch and the frames only the pictures met are read off memory", () => {
+    expect(hitboxMeasures(cells(hitbox({})), HITBOX)).toEqual({
+      player: [3, 4, 3, 0], walker: [3, 6, 3, 4], pictures: [6, 16], boxes: [0, 6], before: 3, after: false, frame: 106,
+    });
+  });
+  test("a run with no touch is refused", () => {
+    expect(() => hitboxMeasures(cells(hitbox({ touch: false })), HITBOX)).toThrow("the touch count never changed after frame 60");
   });
 });
