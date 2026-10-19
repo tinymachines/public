@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, hitboxMeasures, itemsMeasures, livesMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
+import { aboutMeasures, cameraMeasures, cells, coinsMeasures, flickerMeasures, hitboxMeasures, itemsMeasures, livesMeasures, pitMeasures, jumpMeasures, menuMeasures, splashMeasures, padOf, parseScript, pauseMeasures, platformsMeasures, roomsMeasures, runMeasures, screensMeasures, scrollMeasures, solidMeasures, soundMeasures, statusMeasures, stompMeasures, sweeps, titleMeasures, walkersMeasures, type AboutPlan, type CameraPlan, type CoinsPlan, type FlickerPlan, type HitboxPlan, type ItemsPlan, type LivesPlan, type PitPlan, type JumpPlan, type MenuPlan, type SplashPlan, type PausePlan, type PlatformsPlan, type RoomsPlan, type RunPlan, type ScreensPlan, type ScrollPlan, type SolidPlan, type SoundPlan, type StatusPlan, type StompPlan, type TitlePlan, type WalkersPlan } from "./lessonMeasure";
 
 const PLAN: JumpPlan = {
   kind: "jump", script: "", frames: 600, presses: [[200, 204], [300, 320]], walk_from: 60,
@@ -961,5 +961,43 @@ describe("the hitbox lesson", () => {
   });
   test("a run with no touch is refused", () => {
     expect(() => hitboxMeasures(cells(hitbox({ touch: false })), HITBOX)).toThrow("the touch count never changed after frame 60");
+  });
+});
+
+const PIT: PitPlan = { kind: "pit", script: "AT 20 80\n", frames: 400, memory: { x: "$11", y: "$15", lives: "$52", round: "$50", walker_x: "$40" } };
+
+/** A made-up fall: the square stands at 176 and walks a pixel a frame from frame 20, off the edge at 51, falling 4 a frame, past the bottom at 66 (round 5); the life goes at 156 with the picture cleared there, and play begins again at 277 from x 20. The walker walks a pixel a frame throughout (or stands). */
+function pit(o: { hop?: boolean; still?: boolean; fall?: boolean }) {
+  const ram = new Uint8Array(400 * 2048);
+  for (let f = 0; f < 400; f++) {
+    const m = f * 2048;
+    let y = 176;
+    if (o.fall !== false && f > 50 && f < 156) y = Math.min(250, 176 + 4 * (f - 50));
+    if (o.hop && f >= 45 && f < 50) y = 168;
+    ram[m + 0x15] = y;
+    ram[m + 0x11] = f < 156 ? 20 + Math.max(0, f - 20) : 20;
+    ram[m + 0x50] = f < 66 || f >= 277 || o.fall === false ? 0 : f < 156 ? 5 : 3;
+    ram[m + 0x52] = f < 156 || o.fall === false ? 3 : 2;
+    ram[m + 0x40] = o.still ? 100 : f % 200;
+  }
+  return { ram, vram: "5 2000 1024 1\n156 2000 1024 1\n" };
+}
+
+describe("the pit lesson", () => {
+  test("the fall, the steering, the wait, the clear and the start again are read off memory and the writes", () => {
+    const t = pit({});
+    expect(pitMeasures(cells(t.ram), t.vram, PIT)).toEqual({
+      to_bottom: 15, moved: 15, rise: 0, to_life: 90, walker_moved: true, clear_after: 0, screen: 121, from_start: true, lives: [3, 2],
+    });
+  });
+  test("a hop before the fall shows as a rise, and a walker that stands is told apart", () => {
+    const t = pit({ hop: true, still: true });
+    const m = pitMeasures(cells(t.ram), t.vram, PIT);
+    expect(m.rise).toBe(8);
+    expect(m.walker_moved).toBe(false);
+  });
+  test("a square that never falls is refused", () => {
+    const t = pit({ fall: false });
+    expect(() => pitMeasures(cells(t.ram), t.vram, PIT)).toThrow("the square never went lower than it stood at frame 10");
   });
 });

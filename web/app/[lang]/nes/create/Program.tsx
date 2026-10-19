@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, PauseMeasures, PlatformsMeasures, RoomsMeasures, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, WalkersMeasures } from "@/lib/lessons";
 import * as program from "./programEngine";
 
 /**
@@ -317,6 +317,19 @@ const S = {
       yes: "yes",
       no: "no",
     },
+    pitLesson: {
+      to_bottom: "Frames from the edge to the bottom of the screen",
+      moved: "Pixels steered across on the way down",
+      rise: "Pixels it rose before falling",
+      to_life: "Frames from the bottom to the life taken",
+      walker_moved: "The walkers walk on meanwhile",
+      clear_after: "Frames from the life taken to the picture cleared",
+      screen: "Frames from the clear to playing again",
+      from_start: "Play begins again where the level began",
+      lives: "Lives at the edge, and after it",
+      yes: "yes",
+      no: "no",
+    },
     noValue: "none",
     notMeasured: (why: string) => `It could not be measured: ${why}.`,
   },
@@ -622,6 +635,19 @@ const S = {
       yes: "はい",
       no: "いいえ",
     },
+    pitLesson: {
+      to_bottom: "ふちから画面の下までのフレーム数",
+      moved: "落ちながら横へ動かしたピクセル数",
+      rise: "落ちる前に上がったピクセル数",
+      to_life: "画面の下から命が一つ減るまでのフレーム数",
+      walker_moved: "その間も歩くものは歩く",
+      clear_after: "命が減ってから絵が消されるまでのフレーム数",
+      screen: "消されてからまた遊べるまでのフレーム数",
+      from_start: "面の始まりからまた遊ぶ",
+      lives: "ふちでの命の数と、そのあと",
+      yes: "はい",
+      no: "いいえ",
+    },
     noValue: "なし",
     notMeasured: (why: string) => `測れなかった: ${why}。`,
   },
@@ -823,6 +849,22 @@ function rows(T: (typeof S)[Lang], measure: Measure, theirs: program.Yours, n: (
       row("countdown", L.countdown, ours.countdown ?? null, yours.countdown ?? null),
       row("start_demo", L.start_demo, ours.start_demo ?? null, yours.start_demo ?? null),
       row("start_title", L.start_title, ours.start_title ?? null, yours.start_title ?? null),
+    ];
+  }
+  if (measure.plan.kind === "pit") {
+    const ours = measure.ours as PitMeasures, yours = theirs as PitMeasures;
+    const L = T.pitLesson;
+    const yn = (key: "walker_moved" | "from_start") => ({ key, label: L[key], ours: Number(ours[key]), yours: Number(yours[key]), oursText: ours[key] ? L.yes : L.no, yoursText: yours[key] ? L.yes : L.no });
+    return [
+      row("to_bottom", L.to_bottom, ours.to_bottom, yours.to_bottom),
+      row("moved", L.moved, ours.moved, yours.moved),
+      row("rise", L.rise, ours.rise, yours.rise),
+      row("to_life", L.to_life, ours.to_life, yours.to_life),
+      yn("walker_moved"),
+      row("clear_after", L.clear_after, ours.clear_after, yours.clear_after),
+      row("screen", L.screen, ours.screen, yours.screen),
+      yn("from_start"),
+      { key: "lives", label: L.lives, ours: ours.lives.join(" ") || null, yours: yours.lives.join(" ") || null, oursText: ours.lives.join(", ") || T.noValue, yoursText: yours.lives.join(", ") || T.noValue },
     ];
   }
   if (measure.plan.kind === "hitbox") {

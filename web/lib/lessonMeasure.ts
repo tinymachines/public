@@ -18,7 +18,7 @@
  * its record that reads memory and the pad, not our autopsy's.
  */
 
-import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, HitboxMeasures, ItemsMeasures, LivesMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
+import type { AboutMeasures, CameraMeasures, CoinsMeasures, FlickerMeasures, FlickerOne, HitboxMeasures, ItemsMeasures, LivesMeasures, PitMeasures, JumpMeasures, MenuMeasures, SplashMeasures, OneJump, PauseMeasures, PlatformsMeasures, RoomsMeasures, RoomsUp, RunMeasures, ScreensMeasures, ScrollMeasures, SolidMeasures, SoundMeasures, StatusMeasures, StompMeasures, TitleMeasures, Touch, WalkersMeasures } from "./lessons";
 
 /** What the jump lesson's measurement reads, from its lesson.json. */
 export interface JumpPlan {
@@ -105,7 +105,7 @@ export interface RunPlan {
   memory: { air: string; y: string; speed_x: [string, string]; speed_down: [string, string] };
 }
 
-export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan;
+export type Plan = JumpPlan | RunPlan | StompPlan | WalkersPlan | CameraPlan | PlatformsPlan | ScrollPlan | RoomsPlan | ScreensPlan | StatusPlan | SoundPlan | PausePlan | TitlePlan | ItemsPlan | MenuPlan | SplashPlan | AboutPlan | SolidPlan | FlickerPlan | LivesPlan | CoinsPlan | HitboxPlan | PitPlan;
 
 /** The pad byte held during each frame of a script. */
 export function padOf(script: [number, number][], frames: number): Uint8Array {
@@ -1680,4 +1680,68 @@ export function hitboxMeasures(cell: (f: number, a: number) => number, plan: Hit
     g--;
   }
   return { player: inset(player, pb), walker: inset(walker, wb), pictures: pics, boxes: bx, before, after: Math.min(...bx) > 0, frame: touch };
+}
+
+/** What the pit lesson's measurement reads, from its lesson.json: where x, y, the lives, the round (0 playing) and a walker's x are; and the vram log. */
+export interface PitPlan {
+  kind: "pit";
+  script: string;
+  frames: number;
+  memory: { x: string; y: string; lives: string; round: string; walker_x: string };
+}
+
+/** board-lessons.py reads our run from frame 10, the level's start and the ground before the hole both. */
+const PIT_FROM = 10;
+
+/**
+ * The pit lesson's numbers (board-lessons.py's pit_measures), from memory
+ * and the writes to the picture: where the level began (the first frame
+ * of play from frame 10), the height the square stood at on frame 10, the
+ * edge (the first frame it is lower), the bottom (the first frame its y
+ * passes the bottom of the screen or wraps round), the frames between and
+ * the pixels moved across meanwhile, how high it rose first (a hop would
+ * show here), the frames from the bottom until the life is taken, whether
+ * a walker kept moving between the two, the frames from the life to the
+ * picture being cleared (as in the lives lesson) and from that to playing
+ * again, and whether play begins again where the level began. A run
+ * missing any of these is refused with the reason.
+ */
+export function pitMeasures(cell: (f: number, a: number) => number, vram: string, plan: PitPlan): PitMeasures {
+  const n = plan.frames;
+  const [X, Y, LIVES, ROUND, WALKER] = [plan.memory.x, plan.memory.y, plan.memory.lives, plan.memory.round, plan.memory.walker_x].map(addr);
+  const c = cell;
+  const playing = (f: number) => c(f, ROUND) === 0 && c(f, LIVES) > 0;
+  const find = (from: number, to: number, ok: (f: number) => boolean) => {
+    for (let f = from; f < to; f++) if (ok(f)) return f;
+    return undefined;
+  };
+  const begun = find(PIT_FROM, n, playing);
+  if (begun === undefined) throw new Error("play never began: the round was never 0 with a life left");
+  const y0 = c(PIT_FROM, Y);
+  const edge = find(PIT_FROM + 1, n, (f) => c(f, Y) > y0);
+  if (edge === undefined) throw new Error(`the square never went lower than it stood at frame ${PIT_FROM}`);
+  const bottom = find(edge, n, (f) => c(f, Y) >= 240 || c(f, Y) < c(f - 1, Y) - 100);
+  if (bottom === undefined) throw new Error(`the square never fell past the bottom of the screen after the edge at frame ${edge}`);
+  const taken = find(edge, n, (f) => c(f, LIVES) !== c(edge, LIVES));
+  if (taken === undefined) throw new Error(`no life was taken after the edge at frame ${edge}`);
+  const writes = new Map<number, number>();
+  for (const [f, ws] of vramWrites(vram)) for (const [a, k] of ws) if (a >> 8 !== 0x3f) writes.set(f, (writes.get(f) ?? 0) + k);
+  // A clear with the picture off can outlast a frame, so two neighbouring frames are counted together.
+  const cleared = find(taken, n, (f) => (writes.get(f) ?? 0) + (writes.get(f + 1) ?? 0) >= 1000);
+  if (cleared === undefined) throw new Error(`the picture was never cleared after the life was taken at frame ${taken}`);
+  const again = find(cleared, n, playing);
+  if (again === undefined) throw new Error(`play never began again after the clear at frame ${cleared}`);
+  let top = 255;
+  for (let f = PIT_FROM; f < bottom; f++) top = Math.min(top, c(f, Y));
+  return {
+    to_bottom: bottom - edge,
+    moved: c(bottom, X) - c(edge, X),
+    rise: y0 - top,
+    to_life: taken - bottom,
+    walker_moved: c(taken, WALKER) !== c(bottom, WALKER),
+    clear_after: cleared - taken,
+    screen: again - cleared,
+    from_start: c(again, X) === c(begun, X),
+    lives: [c(edge, LIVES), c(taken, LIVES)],
+  };
 }
