@@ -20,7 +20,7 @@ export const FAMILY: readonly FamilyMember[] = [
   { hue: "clay", hex: "#995d48", name: "Meatball Labs", href: "https://meatball.ai", role: "lab" },
   { hue: "ochre", hex: "#89692f", name: "SysForge", href: "https://sysforge.ai", role: "lab" },
   { hue: "moss", hex: "#68763a", name: "TinyKit", href: "https://tinykit.tinymachines.ai", role: "lab" },
-  { hue: "sage", hex: "#427d59" },
+  { hue: "sage", hex: "#427d59", name: "Amy.io", href: "https://amy.io", role: "lab" },
   { hue: "spruce", hex: "#1b7d82", name: "vizmin", role: "lab", reserved: true },
   { hue: "steel", hex: "#41749d", name: "bradley.io", href: "https://bradley.io", role: "home" },
   { hue: "iris", hex: "#6a679e", name: "tinymachines.ai", href: "https://tinymachines.ai", role: "lab" },
@@ -48,7 +48,7 @@ export interface ElectricHue {
 /** The electric set (electric.json). */
 export const ELECTRIC: readonly ElectricHue[] = [
   { id: "lime", name: "Lime", hue: 141, who: "snailmail.ai", href: "https://snailmail.ai", role: "lab", tones: { glow: "#3ffe00", core: "#3dc820", dim: "#25541d", haze: "#1e2a1c" } },
-  { id: "cyan", name: "Cyan", hue: 200, who: "amy.io", href: "https://amy.io", role: "lab", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
+  { id: "cyan", name: "Cyan", hue: 200, who: "gopher", href: "https://gopher.bradley.io", role: "lab", tones: { glow: "#00f4fe", core: "#25c1c8", dim: "#005256", haze: "#132b2c" } },
   { id: "ember", name: "Ember", hue: 55, who: "hotbits", href: "https://hotbits.tinymachines.ai", role: "lab", tones: { glow: "#ff8505", core: "#be6515", dim: "#6f3600", haze: "#322318" } },
   { id: "magenta", name: "Magenta", hue: 340, tones: { glow: "#fc00cb", core: "#b61692", dim: "#6a2f58", haze: "#31212b" } },
   { id: "violet", name: "Violet", hue: 300, who: "Flux", role: "lab", reserved: true, tones: { glow: "#9200fe", core: "#5f0fa7", dim: "#503975", haze: "#292333" } },
