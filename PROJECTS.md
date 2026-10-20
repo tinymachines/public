@@ -5891,3 +5891,83 @@ Next for the website session, in order:
 Waiting on the owner: what Composer covers; the refuse-on-dirty hook
 nes-bench proposed for its own commits; the sites inventory plan update;
 whether to free a graphics card for sprites.
+
+## Checkpoint, 2026-10-20: the plan log to thirty-one levels, the first app carved onto the kit
+
+Live and beta serve `0ffb2e0`, and nothing is waiting on a deploy. This
+tree and the beta worktree are clean and pushed; nes-bench is at its 8-3
+commit and planning 8-4, the last castle.
+
+The website session's work since the last checkpoint, in the order it
+shipped:
+
+- **The plan log from 6-3 to 8-3**, nine levels folded in as nes-bench
+  cleared each one on the part (`cf8bfa6` to `0ffb2e0`), each from a
+  throwaway worktree, each with its drawing and its Japanese row and
+  section. Thirty-one levels now, from power-on in one schedule, and the
+  beam crossed every one of them on its own since 7-2, where the planner
+  learned that a pipe passed stays passed. From 7-3 on no planner rule
+  changed.
+- **The kit plan**, `notes/kit-plan.md`: the stock-take of this site
+  (424 pages, 174 TSX files, 305 browser tests in 50 specs, 173
+  documents), what the app kit is, and the recommendation the owner
+  accepted: the roof stays on Next, and the apps are carved out onto the
+  kit one at a time, the engine boarding gate untouched. Two of its four
+  decisions are taken (carved-out apps are private and wear the kit's
+  kiosk look); the roof's chrome and the sign-in migration stay open.
+- **The first carve-out**: sprites.tinymachines.ai, a private kit app
+  with the maker, a colours page and its own API in front of the
+  generator, its 64 colours a record measured through the ntsc-crt bundle
+  this repository boarded. Nothing here changed for it; then, on the
+  owner's word, `/sprites` and `/sprites/` became a 301 to the app
+  (`0aa4ec6`) and the `.window` line reached `windows/` (`37cc434`), both
+  installed by hand, since the deploy script never touches nginx.
+- Also in this tree: the family copy resynced to the brand library of
+  2026-10-19 (`e32eade`, by the family session).
+
+Learned the hard way, worth keeping:
+
+- **A throwaway worktree is not a build until it has its submodules, its
+  packages and the generated bundle.** `extern/pretext` and
+  `extern/tinypeek` need `git submodule update --init` (non-recursive),
+  `web/` needs `bun install --frozen-lockfile`, and the gitignored NES
+  bundle under `web/public/nes` (`bars.nes`, `cal.nes`, `cal.json`,
+  `wasm/`) has to be copied in from the main checkout before `bun run
+  build`, or check-build fails on four missing files.
+- **Next indexes `public/` at build time.** A file dropped into
+  `web/public` after the build is a 404 from `next start` until the next
+  build. The cart spec failed on exactly that in the worktree, and the
+  failure was the worktree's, not the change's.
+- **A nested nginx location inherits `auth_request`.** The `/sprites`
+  redirects had to sit at server level or a stranger would be asked to
+  sign in before being sent to the app.
+- **A sprite takes longer than nginx gives `/api/`.** Thirty seconds is
+  the kit's proxy timeout, so making a sprite is a job with an id and a
+  poll, not a request that waits.
+- **A regex alternative can swallow the directory it was meant to
+  reach.** The `.window` line as drafted matched `windows/` into the
+  path group and 404ed; the page only worked because its second try hit
+  the chip alias. The fix excludes `windows/` from the walk and names it
+  in the asset group.
+
+Not covered: the untranslated spec's inLanguage pairing test still fails
+on live and on every local build. The sound lesson still has two browser
+tests rather than three. The tm protocol session has not been running
+since 2026-10-20 midday, so deploy holds could not reach it; its last
+word was clean. The check-ja-docs line about the mcp-setup-guide shadow
+drifting is the tinypeek session's and does not stop the build.
+
+Next for the website session, in order, kept in `notes/TODO-2026-10-20.md`:
+
+1. Plan log 8-4 as nes-bench sends it, which also rewrites the log's
+   intro and whole-game facts, so the Japanese shadow needs a
+   sentence-by-sentence pass rather than a row and a section.
+2. The NES desk onto the kit, once the owner takes the sign-in decision.
+3. The inLanguage pairing test.
+4. Hotbits bench step 2 when geiger has its first converted page.
+5. Composer, once the owner says what it covers.
+
+Waiting on the owner: the roof's chrome and the sign-in migration (kit
+plan decisions 3 and 4); what Composer covers; the refuse-on-dirty hook
+nes-bench proposed; the sites inventory plan update; whether to free a
+graphics card for sprites.
