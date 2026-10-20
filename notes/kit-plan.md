@@ -20,8 +20,9 @@ checkout `../sprites`) with the maker page, a colours page, and its own API in f
 check ends `ALL OK` against the live host. The 64 colours there are a record measured through the ntsc-crt bundle
 this repository boarded (`scripts/board-palette.ts` there reads `web/public/nes/palette.mjs` and `data/ntsc.json`
 here), so a re-board of the bundle here is a re-measure there. Nothing in this repository changed for it; the desk's
-Sprite maker and the `/sprites` location still work as before, and `/sprites` here becomes a link to the app on the
-owner's word.
+Sprite maker and the `/sprites` location still work as before. Later the same day, on the owner's word, `/sprites`
+and `/sprites/` here became a 301 to the app (`deploy/tinymachines.ai.nginx`, installed by hand); what stays under
+`/sprites/` is the machinery the desk's Sprite maker and programs with a dev key still use, until the desk moves.
 
 One word is overloaded, so it is pinned first. In this repository "the kit"
 has meant `style/components.css`, the site's own CSS kit, since 2026-08-24

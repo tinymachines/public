@@ -331,7 +331,20 @@ server {
 
     # The sprite generator: MeatballAI/ComfyUI's fastapi_proxy.py, the
     # cbcomfy-api unit on 127.0.0.1:32520 with uvicorn --root-path /sprites,
-    # in front of ComfyUI on :8188. Signed-in users only (owner's call,
+    # in front of ComfyUI on :8188.
+    #
+    # The front door moved (owner's word, 2026-10-20): /sprites is the app on
+    # the kit, sprites.tinymachines.ai, which reaches the generator through
+    # its own API behind the kit's passkey sign-in. The two exact matches
+    # below send a visitor there before any sign-in is asked; they sit at
+    # server level because a location nested in /sprites/ would inherit its
+    # auth_request. What stays under /sprites/ is the machinery the desk's
+    # Sprite maker and programs with a dev key still use (the MCP endpoint, a
+    # sprite's picture, the health pages and docs), until the desk moves too.
+    location = /sprites { return 301 https://sprites.tinymachines.ai/; }
+    location = /sprites/ { return 301 https://sprites.tinymachines.ai/; }
+    #
+    # Signed-in users only (owner's call,
     # 2026-10-04): every request is first put to the API's /v1/auth/pass,
     # which answers 204 for a session and 401 for nobody, and nobody is
     # sent to sign in and brought back. Each request can run the GPUs,
@@ -363,7 +376,6 @@ server {
         if ($http_authorization) { return 401 '{"detail":"That key is unknown or revoked. A dev key looks like tmk_... and is sent as Authorization: Bearer."}'; }
         return 302 /api/v1/auth/github?next=/sprites/;
     }
-    location = /sprites { return 301 /sprites/; }
     location /sprites/ {
         auth_request /internal/sprites-auth;
         error_page 401 = @sprites_signin;
@@ -378,7 +390,6 @@ server {
         proxy_read_timeout 900s;
         proxy_buffering off;
 
-        location = /sprites/ { return 302 /sprites/docs; }
         location ~ "^/sprites/(?:health|backend/status|docs|openapi\.json)$" {
             limit_except GET { deny all; }
             rewrite ^/sprites(/.*)$ $1 break;
