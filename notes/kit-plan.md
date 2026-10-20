@@ -10,8 +10,18 @@ written ("yes to all of your recommends; keep the gate in place"). The engine
 boarding gate, `scripts/board-engine.py --board` and deploy stage 2e
 (`notes/modules.md`), stays as it is throughout: the roof keeps boarding the
 6502 release, and nothing in this plan loosens it. The four decisions in
-section 6 are still open and still the owner's; the first step in section 5
-waits on the first two of them.
+section 6 were still open at that point. Later the same day the owner took the
+first two: **the carved-out apps are private, and they wear the kit's kiosk
+look** ("private, kit's kiosk look - go"). Decisions 3 and 4 stay open. The
+first step, the sprite maker as a kit app, started on that word.
+
+**The first step is done, 2026-10-20:** sprites.tinymachines.ai is live, a private kit app (`tinymachines/sprites`,
+checkout `../sprites`) with the maker page, a colours page, and its own API in front of the generator; the kit's
+check ends `ALL OK` against the live host. The 64 colours there are a record measured through the ntsc-crt bundle
+this repository boarded (`scripts/board-palette.ts` there reads `web/public/nes/palette.mjs` and `data/ntsc.json`
+here), so a re-board of the bundle here is a re-measure there. Nothing in this repository changed for it; the desk's
+Sprite maker and the `/sprites` location still work as before, and `/sprites` here becomes a link to the app on the
+owner's word.
 
 One word is overloaded, so it is pinned first. In this repository "the kit"
 has meant `style/components.css`, the site's own CSS kit, since 2026-08-24
