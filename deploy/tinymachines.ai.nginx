@@ -244,11 +244,16 @@ server {
     # (this regex once swallowed /6502/api/openapi.json, and the deploy's
     # door check caught it).
     # ...and .window: a window of a console's record (the chip's Halfshot
-    # and Trace pages' ?window=name), plain text served beside the pages.
-    # Until this line is installed the pages fetch it from the chip's own
-    # host (web/windows.js there), which the connect-src above allows.
-    location ~ "^/(?:ja/)?6502/(?:(?!pkg/|api/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm|window))$" {
+    # and Trace pages' ?window=name), plain text the pages fetch as
+    # windows/NAME.window beside themselves (web/windows.js there), so the
+    # windows/ folder travels in the capture: it is kept out of the swallowed
+    # path and into $chipasset. Installed 2026-10-20; before that the pages'
+    # second try, the /6502/chip/ alias below, answered it. The types block is
+    # this location's whole table (a types block replaces, never adds), so
+    # .window is plain text and the wasm stays application/wasm.
+    location ~ "^/(?:ja/)?6502/(?:(?!pkg/|api/|windows/)[a-z0-9-]+/)*(?<chipasset>(?:pkg/|windows/)?[A-Za-z0-9._-]+\.(?:bin|json|wasm|window))$" {
         alias /var/www/6502.tinymachines.ai/current/$chipasset;
+        types { application/octet-stream bin; application/json json; application/wasm wasm; text/plain window; }
     }
 
     # The archive: 174 MB of visual6502.org recovered from the Wayback
