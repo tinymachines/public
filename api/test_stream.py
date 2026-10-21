@@ -176,7 +176,7 @@ def test_the_games_are_the_served_cartridges_and_nothing_else(client, desk, dev_
 
 def test_outputs_say_whether_not_what(client, desk, dev_key, monkeypatch):
     o = client.get("/v1/stream/outputs", headers=auth(dev_key)).json()
-    assert o == {"file": True, "rtmp": False, "youtube": False, "runner": True}
+    assert o == {"file": True, "hls": True, "rtmp": False, "youtube": False, "runner": True}
     monkeypatch.setenv("YOUTUBE_STREAM_KEY", "abcd-efgh-ijkl-mnop-qrst")
     monkeypatch.setenv("RTMP_URL", "rtmps://x.example/live/")
     monkeypatch.setenv("RTMP_KEY", "zzzz-yyyy")
@@ -426,3 +426,14 @@ def test_the_picture_is_readable_by_another_user_and_the_log_is_not(client, desk
             assert mode(d / private) & 0o077 == 0, (private, oct(mode(d / private)))
     finally:
         os.umask(old)
+
+
+def test_hls_is_refused_until_a_served_home_is_named(client, desk, admin_key, dev_key, monkeypatch):
+    """Under systemd the default home is inside the unit's private tmp and
+    nginx cannot see it, which the first live run found as a 404 at the
+    player. So hls is configured only when TM_STREAM_HOME is named."""
+    monkeypatch.delenv("TM_STREAM_HOME")
+    assert client.get("/v1/stream/outputs", headers=auth(dev_key)).json()["hls"] is False
+    r = client.post("/v1/stream/runs", json={"game": "bars", "output": "hls", "seconds": 1}, headers=auth(admin_key))
+    assert r.status_code == 409 and "TM_STREAM_HOME" in r.json()["detail"]
+    assert client.get("/v1/stream/runs", headers=auth(dev_key)).json()["runs"] == []

@@ -1077,6 +1077,7 @@ class StreamOutputs(BaseModel):
     """Which outputs the desk can send to, as booleans: never the keys themselves."""
 
     file: bool = Field(description="Always true: the chain writes an MP4 beside the run.")
+    hls: bool = Field(description="True when TM_STREAM_HOME names a directory nginx serves at /nes/live/, outside the service's private tmp; the monitor's live picture needs it.")
     rtmp: bool = Field(description="True when RTMP_URL and RTMP_KEY are in the service's environment.")
     youtube: bool = Field(description="True when YOUTUBE_STREAM_KEY is in the service's environment.")
     runner: bool = Field(description="True when the stream tool's binary is where the service expects it; a start is refused with 503 otherwise.")

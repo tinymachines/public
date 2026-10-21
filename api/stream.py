@@ -160,9 +160,36 @@ def games() -> dict[str, Path]:
     return dict(sorted(found.items()))
 
 
+def hls_served() -> bool:
+    """Whether an hls run's parts can reach nginx: TM_STREAM_HOME named
+    explicitly and traversable by another user.
+
+    The default home is under /var/tmp, and the API unit runs with
+    PrivateTmp, so under systemd that directory exists only inside the
+    service's own namespace: a run there plays nowhere, and the first live
+    run found that out as a 404 at the player. A home nginx can reach is a
+    deploy decision (the unit's environment and the nginx alias agree on
+    it), so the desk treats hls as configured only when that decision has
+    been made, and refuses an hls run otherwise as it refuses a live
+    output without its key.
+    """
+    given = os.environ.get("TM_STREAM_HOME", "").strip()
+    if not given:
+        return False
+    h = Path(given)
+    try:
+        h.mkdir(parents=True, exist_ok=True)
+        os.chmod(h, 0o711)
+        return bool(h.stat().st_mode & 0o011)
+    except OSError:
+        return False
+
+
 def configured(output: str) -> bool:
     if output == "file":
         return True
+    if output == "hls":
+        return hls_served()
     return all(os.environ.get(name, "").strip() for name in SECRETS.get(output, ()))
 
 
@@ -396,7 +423,7 @@ def list_games(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamGames:
     description="Whether each ingest's key is in the service's environment, and whether the tool's binary is where it should be. Never the values.",
 )
 def list_outputs(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamOutputs:
-    return StreamOutputs(file=True, rtmp=configured("rtmp"), youtube=configured("youtube"), runner=bin_path().is_file())
+    return StreamOutputs(file=True, hls=configured("hls"), rtmp=configured("rtmp"), youtube=configured("youtube"), runner=bin_path().is_file())
 
 
 @router.get(
@@ -430,6 +457,8 @@ def start_run(body: NewStreamRun, _: sqlite3.Row = Depends(admin.require_admin))
     if rom is None:
         raise HTTPException(status_code=404, detail=f"no game with id {body.game!r}; GET /v1/stream/games lists them")
     if not configured(body.output):
+        if body.output == "hls":
+            raise HTTPException(status_code=409, detail="output 'hls' is not configured: TM_STREAM_HOME must name a directory nginx serves at /nes/live/, outside the service's private tmp")
         names = " and ".join(SECRETS[body.output])
         raise HTTPException(status_code=409, detail=f"output {body.output!r} is not configured: {names} must be in the service's environment")
     binary = bin_path()
