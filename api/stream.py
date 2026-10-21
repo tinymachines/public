@@ -449,6 +449,14 @@ def start_run(body: NewStreamRun, _: sqlite3.Row = Depends(admin.require_admin))
             started_at=now(),
         )
         run.dir.mkdir(parents=True, exist_ok=True)
+        # nginx (another user) serves <run>/hls/ for an hls run and must
+        # traverse to it; the API unit's umask is 0077, so the home and
+        # the run directory are made traversable, not listable, by hand,
+        # and the tool is started with umask 022 so the parts it writes
+        # are readable. The log, the record and the pipe keep the umask's
+        # 0600: nothing in them is nginx's business.
+        for d in (home(), run.dir):
+            os.chmod(d, 0o711)
         script = run.dir / "script.txt"
         script.write_text(body.script)
         if body.output == "file":
@@ -473,6 +481,7 @@ def start_run(body: NewStreamRun, _: sqlite3.Row = Depends(admin.require_admin))
                 cwd=str(run.dir),
                 env=env,
                 start_new_session=True,
+                umask=0o022,
             )
         finally:
             log.close()

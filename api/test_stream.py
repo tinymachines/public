@@ -403,3 +403,26 @@ def test_a_control_the_tool_does_not_echo_answers_the_floor(client, desk, admin_
     assert time.monotonic() - t >= 0.3
     assert a == {"kind": "pad", "frame": 600, "landed": False}
     client.post(f"/v1/stream/runs/{run['id']}/stop", headers=auth(admin_key))
+
+
+def test_the_picture_is_readable_by_another_user_and_the_log_is_not(client, desk, admin_key, dev_key):
+    """The API unit runs with UMask=0077 and nginx serves the hls directory as
+    www-data. Under that umask: the home and the run directory are
+    traversable by others, the hls directory and its files readable, and the
+    log, the record and the pipe still private."""
+    import stat as _stat
+    old = os.umask(0o077)
+    try:
+        run = client.post("/v1/stream/runs", json={"game": "bars", "output": "hls", "seconds": 1}, headers=auth(admin_key)).json()
+        wait_until(client, dev_key, run["id"], "done")
+        d = desk["home"] / run["id"]
+        mode = lambda p: _stat.S_IMODE(p.stat().st_mode)
+        assert mode(desk["home"]) & 0o011 == 0o011, oct(mode(desk["home"]))
+        assert mode(d) & 0o011 == 0o011, oct(mode(d))
+        assert mode(d / "hls") & 0o055 == 0o055, oct(mode(d / "hls"))
+        assert mode(d / "hls" / "index.m3u8") & 0o044 == 0o044
+        assert mode(d / "hls" / "init.mp4") & 0o044 == 0o044
+        for private in ("stream.log", "run.json", "control.fifo", "script.txt"):
+            assert mode(d / private) & 0o077 == 0, (private, oct(mode(d / private)))
+    finally:
+        os.umask(old)
