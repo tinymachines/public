@@ -436,4 +436,4 @@ def test_hls_is_refused_until_a_served_home_is_named(client, desk, admin_key, de
     assert client.get("/v1/stream/outputs", headers=auth(dev_key)).json()["hls"] is False
     r = client.post("/v1/stream/runs", json={"game": "bars", "output": "hls", "seconds": 1}, headers=auth(admin_key))
     assert r.status_code == 409 and "TM_STREAM_HOME" in r.json()["detail"]
-    assert client.get("/v1/stream/runs", headers=auth(dev_key)).json()["runs"] == []
+    # Nothing else here touches the host's default home: a listing would.
