@@ -47,7 +47,32 @@ fi
 wanted=$((secs * 60))
 echo "# script $(wc -l < "$script") lines, rom $(basename "$rom")" >&2
 echo "# 600 of $wanted frames, 10.0 s${PACE:+, worst lag 7 ms, 2 frames late}" >&2
-if [ -n "$FAKE_HOLD" ]; then sleep "$FAKE_HOLD"; fi
+case "$out" in hls:*)
+  dir="${out#hls:}"
+  # SABOTAGE knob: the playlist written one directory up, where the
+  # desk must not find it.
+  [ -n "$FAKE_HLS_UP" ] && dir="$(dirname "$dir")"
+  mkdir -p "$dir" && printf '#EXTM3U\n#EXT-X-TARGETDURATION:1\n' > "$dir/index.m3u8" && : > "$dir/init.mp4"
+  out=/dev/null;;
+esac
+if [ -n "$FAKE_HOLD" ]; then
+  if [ -n "$CONTROL" ] && [ -n "$FAKE_DEAF" ]; then
+    # An older tool: holds the pipe open, reads it, writes nothing back.
+    exec 3<>"$CONTROL"; sleep "$FAKE_HOLD"
+  elif [ -n "$CONTROL" ]; then
+    # The pipe as the tool reads it: open read-write, poll, echo each
+    # line back with the frame it lands on.
+    exec 3<>"$CONTROL"; end=$((SECONDS + FAKE_HOLD)); frame=600
+    while [ $SECONDS -lt $end ]; do
+      if read -t 0.05 -r line <&3; then
+        case "$line" in "PAD "*|RESET) echo "# control: $line at frame $frame" >&2;; *) echo "# control: unread line \"$line\"" >&2;; esac
+        frame=$((frame + 1))
+      fi
+    done
+  else
+    sleep "$FAKE_HOLD"
+  fi
+fi
 echo "# ms per frame: console 6.7 | encode 4.1 | gpu 3.3, read-back 2.4, convert 2.9, hand-off 0.1" >&2
 echo "# $wanted frames ($secs.0 s of console time) in 1.0 s, ffmpeg ok" >&2
 echo fake-mp4 > "$out"
@@ -312,3 +337,69 @@ def test_a_run_from_an_earlier_process_is_listed_as_lost_not_running(client, des
     # And it does not hold the chain.
     r = client.post("/v1/stream/runs", json={"game": "cal", "output": "file", "seconds": 1}, headers=auth(admin_key))
     assert r.status_code == 201, r.text
+
+
+# ---------------------------------------------------------------------------
+# The monitor's side: hls and the control pipe (stream-monitor-spec.md 5.1, 5.2)
+# ---------------------------------------------------------------------------
+
+
+def test_an_hls_run_names_its_playlist_once_it_exists_and_only_under_the_run(client, desk, admin_key, dev_key, monkeypatch):
+    run = client.post("/v1/stream/runs", json={"game": "bars", "output": "hls", "seconds": 1}, headers=auth(admin_key)).json()
+    done = wait_until(client, dev_key, run["id"], "done")
+    assert done["output"] == "hls"
+    assert done["picture"] == f"/nes/live/{run['id']}/index.m3u8"
+    assert (desk["home"] / run["id"] / "hls" / "index.m3u8").is_file()
+    assert done["file_ready"] is False
+    # A file run has no picture.
+    other = client.post("/v1/stream/runs", json={"game": "bars", "output": "file", "seconds": 1}, headers=auth(admin_key)).json()
+    assert wait_until(client, dev_key, other["id"], "done")["picture"] is None
+    # SABOTAGE: the playlist written one directory up is not the run's.
+    monkeypatch.setenv("FAKE_HLS_UP", "1")
+    up = client.post("/v1/stream/runs", json={"game": "bars", "output": "hls", "seconds": 1}, headers=auth(admin_key)).json()
+    assert wait_until(client, dev_key, up["id"], "done")["picture"] is None
+    assert (desk["home"] / up["id"] / "index.m3u8").is_file(), "the sabotage did not fire"
+
+
+def test_a_control_lands_on_a_frame_the_tool_names(client, desk, admin_key, dev_key, monkeypatch):
+    monkeypatch.setenv("FAKE_HOLD", "4")
+    run = client.post("/v1/stream/runs", json={"game": "bars", "output": "hls", "seconds": 20}, headers=auth(admin_key)).json()
+    assert (desk["home"] / run["id"] / "control.fifo").exists()
+    # A dev key may not control.
+    assert client.post(f"/v1/stream/runs/{run['id']}/control", json={"kind": "pad", "bits": 8}, headers=auth(dev_key)).status_code == 403
+    a = client.post(f"/v1/stream/runs/{run['id']}/control", json={"kind": "pad", "bits": 8}, headers=auth(admin_key))
+    assert a.status_code == 200, a.text
+    assert a.json() == {"kind": "pad", "frame": 600, "landed": True}
+    b = client.post(f"/v1/stream/runs/{run['id']}/control", json={"kind": "pad", "player": 2, "bits": 255}, headers=auth(admin_key)).json()
+    assert b == {"kind": "pad", "frame": 601, "landed": True}
+    r = client.post(f"/v1/stream/runs/{run['id']}/control", json={"kind": "reset"}, headers=auth(admin_key)).json()
+    assert r == {"kind": "reset", "frame": 602, "landed": True}
+    # The lines reached the pipe as the tool expects them, and reset left its marker.
+    log = client.get(f"/v1/stream/runs/{run['id']}/log", headers=auth(dev_key)).json()["lines"]
+    assert "# control: PAD 1 08 at frame 600" in log
+    assert "# control: PAD 2 ff at frame 601" in log
+    assert "# control: RESET at frame 602" in log
+    markers = client.get(f"/v1/stream/runs/{run['id']}/markers", headers=auth(dev_key)).json()["markers"]
+    assert [(m["frame"], m["text"]) for m in markers] == [(602, "reset")]
+    # The body is held.
+    for body in ({"kind": "pad", "bits": 256}, {"kind": "pad", "player": 3}, {"kind": "power"}):
+        assert client.post(f"/v1/stream/runs/{run['id']}/control", json=body, headers=auth(admin_key)).status_code == 422, body
+    client.post(f"/v1/stream/runs/{run['id']}/stop", headers=auth(admin_key))
+    # A run that is not running takes no control.
+    assert client.post(f"/v1/stream/runs/{run['id']}/control", json={"kind": "pad", "bits": 8}, headers=auth(admin_key)).status_code == 409
+
+
+def test_a_control_the_tool_does_not_echo_answers_the_floor(client, desk, admin_key, dev_key, monkeypatch):
+    """A tool that reads the pipe but never writes the line back (an older
+    build): the route still answers, after its wait, with the last reported
+    frame and landed false. The wait is asserted so a route that gave up at
+    once could not pass."""
+    monkeypatch.setenv("FAKE_HOLD", "4")
+    monkeypatch.setenv("FAKE_DEAF", "1")
+    monkeypatch.setattr(stream, "CONTROL_WAIT_S", 0.3)
+    run = client.post("/v1/stream/runs", json={"game": "bars", "output": "file", "seconds": 20}, headers=auth(admin_key)).json()
+    t = time.monotonic()
+    a = client.post(f"/v1/stream/runs/{run['id']}/control", json={"kind": "pad", "bits": 1}, headers=auth(admin_key)).json()
+    assert time.monotonic() - t >= 0.3
+    assert a == {"kind": "pad", "frame": 600, "landed": False}
+    client.post(f"/v1/stream/runs/{run['id']}/stop", headers=auth(admin_key))

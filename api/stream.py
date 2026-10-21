@@ -14,6 +14,10 @@ hold it.
 - **One run at a time.** The chain is one GPU and one encoder, and two runs
   would share them and both fall behind the wall clock. A second start while
   one is running is a 409 that names the running one.
+- **A control is a line on a pipe.** `POST .../control` writes `PAD n hh`
+  or `RESET` to a FIFO the tool reads once per frame, and the tool writes
+  the line back to its log with the frame it landed on, which is the
+  number the route answers with. No channel is held open.
 - **The games are the list.** A run names a cartridge by id and the ids are
   the `.nes` files the site already serves, so nothing this desk can be asked
   to play is a cartridge the site may not show. The ROM rule is kept by
@@ -59,6 +63,7 @@ import signal
 import sqlite3
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -67,6 +72,8 @@ from fastapi.responses import FileResponse
 
 import admin
 from models import (
+    ControlAck,
+    ControlEvent,
     NewMarker,
     NewStreamRun,
     StreamGame,
@@ -106,6 +113,11 @@ PACED = re.compile(r"^# paced: worst lag (\d+) ms, (\d+) of (\d+) frames more th
 
 STOP_GRACE_S = 3.0
 LOG_TAIL = 60
+# How long a control event waits for the tool to write the line back with
+# the frame it landed on. A frame is 16.6 ms; the tool reads the pipe once
+# per frame, so a line lands within two frames when the run is on time.
+CONTROL_WAIT_S = 1.0
+CONTROL_LINE = re.compile(r"^# control: (.+) at frame (\d+)$")
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +279,14 @@ def _file(run: Run) -> Path:
     return run.dir / "out.mp4"
 
 
+def _playlist(run: Run) -> Path:
+    return run.dir / "hls" / "index.m3u8"
+
+
+def _fifo(run: Run) -> Path:
+    return run.dir / "control.fifo"
+
+
 def _view(run: Run) -> StreamRun:
     """The run as the API shows it, with progress read out of its log."""
     sent, wanted, elapsed = 0, round(run.seconds / FRAME_S), 0.0
@@ -304,6 +324,7 @@ def _view(run: Run) -> StreamRun:
         frames_late=late,
         ffmpeg_ok=ffmpeg_ok,
         file_ready=run.output == "file" and run.state == "done" and _file(run).is_file(),
+        picture=f"/nes/live/{run.id}/index.m3u8" if run.output == "hls" and _playlist(run).is_file() else None,
         markers=len(_markers(run)),
     )
 
@@ -430,10 +451,18 @@ def start_run(body: NewStreamRun, _: sqlite3.Row = Depends(admin.require_admin))
         run.dir.mkdir(parents=True, exist_ok=True)
         script = run.dir / "script.txt"
         script.write_text(body.script)
-        out_arg = str(_file(run)) if body.output == "file" else body.output
+        if body.output == "file":
+            out_arg = str(_file(run))
+        elif body.output == "hls":
+            out_arg = f"hls:{run.dir / 'hls'}"
+        else:
+            out_arg = body.output
         env = dict(os.environ)
         if body.pace:
             env["PACE"] = "1"
+        # The control pipe: made here, read by the tool once per frame.
+        os.mkfifo(_fifo(run))
+        env["CONTROL"] = str(_fifo(run))
         log = open(run.dir / "stream.log", "ab")
         try:
             run.proc = subprocess.Popen(
@@ -513,6 +542,60 @@ def add_marker(run_id: str, body: NewMarker, _: sqlite3.Row = Depends(admin.requ
         with open(run.dir / "markers.jsonl", "a") as f:
             f.write(json.dumps(marker.model_dump()) + "\n")
     return marker
+
+
+@router.post(
+    "/runs/{run_id}/control",
+    response_model=ControlAck,
+    summary="Send a control to a running game",
+    description=(
+        "A pad byte for a controller, held until the next, or a press of reset. Written to the "
+        "tool's control pipe and applied before the next frame it runs. 409 unless the run is "
+        "running under this service. The answer carries the frame the tool says it landed on; "
+        "a reset also places a marker named `reset` there."
+    ),
+)
+def control_run(run_id: str, body: ControlEvent, _: sqlite3.Row = Depends(admin.require_admin)) -> ControlAck:
+    run = _get(run_id)
+    if run.state != "running" or run.proc is None:
+        raise HTTPException(status_code=409, detail=f"run {run.id} is {run.state}; only a run running under this service takes a control")
+    line = f"PAD {body.player} {body.bits:02x}" if body.kind == "pad" else "RESET"
+    before = sum(1 for l in _log_lines(run) if CONTROL_LINE.match(l))
+    # A non-blocking open of a FIFO with no reader fails at once (ENXIO),
+    # and the tool opens its end only after the GPU is up, a second or so
+    # after the start. So the open is retried inside the wait, and a 409
+    # means the tool never came to the pipe.
+    deadline = time.monotonic() + CONTROL_WAIT_S
+    while True:
+        try:
+            fd = os.open(_fifo(run), os.O_WRONLY | os.O_NONBLOCK)
+            break
+        except OSError as e:
+            if time.monotonic() >= deadline:
+                raise HTTPException(status_code=409, detail=f"run {run.id} is not reading its control pipe ({e.strerror})") from e
+            time.sleep(0.02)
+    try:
+        os.write(fd, (line + "\n").encode())
+    finally:
+        os.close(fd)
+    # The tool writes the line back with the frame it landed on. Wait a
+    # little for it; answer with the floor if it does not come.
+    frame, landed = None, False
+    while time.monotonic() < deadline:
+        found = [m for l in _log_lines(run) if (m := CONTROL_LINE.match(l))]
+        if len(found) > before:
+            m = found[-1]
+            if m[1] == line:
+                frame, landed = int(m[2]), True
+                break
+        time.sleep(0.02)
+    if frame is None:
+        frame = _view(run).frames_sent
+    if body.kind == "reset":
+        with LOCK:
+            with open(run.dir / "markers.jsonl", "a") as f:
+                f.write(json.dumps(StreamMarker(frame=frame, at=now(), text="reset").model_dump()) + "\n")
+    return ControlAck(kind=body.kind, frame=frame, landed=landed)
 
 
 @router.get(

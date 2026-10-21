@@ -1086,7 +1086,7 @@ class NewStreamRun(BaseModel):
     """What starting a run asks for."""
 
     game: str = Field(description="A game id from GET /v1/stream/games.", examples=["bars"])
-    output: Literal["file", "rtmp", "youtube"] = Field(description="Where the picture goes. `file` is an MP4 beside the run; the other two are live ingests and pace the console to the wall clock.")
+    output: Literal["file", "hls", "rtmp", "youtube"] = Field(description="Where the picture goes. `file` is an MP4 beside the run; `hls` is a live playlist the monitor plays, written beside the run and served at `/nes/live/{id}/`; the other two are live ingests. All but `file` pace the console to the wall clock.")
     seconds: int = Field(ge=1, le=7200, description="How much console time to play, in seconds.", examples=[60])
     script: str = Field(default="", max_length=200_000, description="A bench script, the planner's format: `WAIT s S`, `RESET`, `SET hh`, `AT n hh`. Empty plays the game from power-on with no presses.")
     pace: bool = Field(default=False, description="Hold a file run to the wall clock as a live one is held; a measurement of lag, not a faster way to a file.")
@@ -1104,7 +1104,7 @@ class StreamRun(BaseModel):
 
     id: str = Field(description="Eight hex characters, the run's name on disk.")
     game: str = Field(description="The game id.")
-    output: Literal["file", "rtmp", "youtube"] = Field(description="Where the picture went.")
+    output: Literal["file", "hls", "rtmp", "youtube"] = Field(description="Where the picture went.")
     seconds: int = Field(description="Console seconds asked for.")
     pace: bool = Field(description="Whether the run was held to the wall clock.")
     state: Literal["running", "done", "failed", "stopped", "lost"] = Field(description="See the model's note.")
@@ -1118,6 +1118,7 @@ class StreamRun(BaseModel):
     frames_late: Optional[int] = Field(description="Paced runs only: frames more than a frame late.")
     ffmpeg_ok: Optional[bool] = Field(description="At the end: whether ffmpeg exited cleanly.")
     file_ready: bool = Field(description="True when the run wrote an MP4 that can be fetched from GET .../file.")
+    picture: Optional[str] = Field(description="For an `hls` run whose playlist exists: the playlist's site path, `/nes/live/{id}/index.m3u8`. Null for every other run, and for an `hls` run before its first part is written.")
     markers: int = Field(description="How many markers have been placed on this run.")
 
 
@@ -1153,3 +1154,19 @@ class StreamMarkers(BaseModel):
 
     run: str = Field(description="The run id.")
     markers: list[StreamMarker] = Field(description="Oldest first.")
+
+
+class ControlEvent(BaseModel):
+    """A control sent to a running game: a pad byte or a press of reset."""
+
+    kind: Literal["pad", "reset"] = Field(description="`pad` sets a controller's register byte, held until the next pad event; `reset` presses the console's reset for its measured hold and the run continues.")
+    player: Literal[1, 2] = Field(default=1, description="Which controller a `pad` event sets.")
+    bits: int = Field(default=0, ge=0, le=255, description="The register byte for a `pad` event: bit 0 A, 1 B, 2 Select, 3 Start, 4 Up, 5 Down, 6 Left, 7 Right.")
+
+
+class ControlAck(BaseModel):
+    """What the tool did with a control event."""
+
+    kind: Literal["pad", "reset"] = Field(description="The event's kind.")
+    frame: int = Field(description="The frame the event landed on, read back from the tool's log: the next frame it ran after reading the line. When the tool had not written the line back within the wait, the run's last reported frame count instead, which is a floor.")
+    landed: bool = Field(description="True when the frame is the tool's own number; false when it is the floor.")

@@ -131,12 +131,13 @@ and no other image can be named.
 | `GET /v1/stream/games` | The cartridges the desk may run, with their sizes and digests |
 | `GET /v1/stream/outputs` | Which outputs are configured, as booleans: `file`, `rtmp`, `youtube`, and whether the tool is built. Never a key |
 | `GET /v1/stream/runs` | Every run, newest first, progress read from each run's log |
-| `POST /v1/stream/runs` | Start a run: a game, an output, seconds, an optional bench script. 409 while one is running or when the output's key is not in the environment |
+| `POST /v1/stream/runs` | Start a run: a game, an output (`file`, `hls` for the monitor's live picture, `rtmp`, `youtube`), seconds, an optional bench script. 409 while one is running or when the output's key is not in the environment |
 | `GET /v1/stream/runs/{run_id}` | One run as it stands |
 | `POST /v1/stream/runs/{run_id}/stop` | Stop it: SIGTERM to the tool and its ffmpeg, SIGKILL after three seconds |
 | `GET /v1/stream/runs/{run_id}/log` | The last sixty lines of the tool's output, every configured key cut out |
 | `GET /v1/stream/runs/{run_id}/markers` | The markers placed on it |
 | `POST /v1/stream/runs/{run_id}/markers` | Place a marker, stamped with the frame the log last reported |
+| `POST /v1/stream/runs/{run_id}/control` | A pad byte or a reset to a running game, through the tool's control pipe; answers with the frame it landed on |
 | `GET /v1/stream/runs/{run_id}/file` | The MP4 a finished file run wrote |
 
 ## The administered surface
