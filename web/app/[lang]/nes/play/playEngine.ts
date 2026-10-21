@@ -28,6 +28,7 @@
 import { getSave, putSave, type Cart } from "@/lib/shelf";
 import { framesIn, loadMoment as readMoment, saveMoment as keepMoment, saveRecording, type MomentMeta, type RecordingMeta } from "@/lib/flowStore";
 import { latest as newestEvery } from "@/lib/latest";
+import { KEYS, KEYS2 } from "@/lib/padKeys";
 
 export interface DriftStats {
   presented: number;
@@ -327,28 +328,6 @@ let painted: number[] = [];
 let audio: AudioContext | null = null;
 let cursor = 0;
 
-/** The pad as the register's byte: A, B, Select, Start, Up, Down, Left, Right from bit 0. */
-const KEYS: Record<string, number> = {
-  KeyX: 1,
-  KeyZ: 2,
-  ShiftRight: 4,
-  Enter: 8,
-  ArrowUp: 16,
-  ArrowDown: 32,
-  ArrowLeft: 64,
-  ArrowRight: 128,
-};
-/** Controller 2, on the left hand: W A S D for the cross, G is A, F is B, R Select, T Start. */
-const KEYS2: Record<string, number> = {
-  KeyG: 1,
-  KeyF: 2,
-  KeyR: 4,
-  KeyT: 8,
-  KeyW: 16,
-  KeyS: 32,
-  KeyA: 64,
-  KeyD: 128,
-};
 let pad2 = 0;
 
 function onKey(e: KeyboardEvent) {

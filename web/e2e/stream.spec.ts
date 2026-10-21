@@ -76,11 +76,11 @@ const MARKERS = [
   { frame: 1200, at: "2026-10-21T15:00:20Z", text: "now" },
 ];
 
-async function mockApi(page: Page, admin: boolean) {
+async function mockApi(page: Page, admin: boolean, run: object = FIXTURE, extraMarkers: object[] = []) {
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/api/v1/admin/whoami", (route) => route.fulfill(json({ key: null, user: null, can_administer: admin })));
-  await page.route(`**/api/v1/stream/runs/${RUN_ID}`, (route) => route.fulfill(json(FIXTURE)));
-  await page.route(`**/api/v1/stream/runs/${RUN_ID}/markers`, (route) => route.fulfill(json({ run: RUN_ID, markers: MARKERS })));
+  await page.route(`**/api/v1/stream/runs/${RUN_ID}`, (route) => route.fulfill(json(run)));
+  await page.route(`**/api/v1/stream/runs/${RUN_ID}/markers`, (route) => route.fulfill(json({ run: RUN_ID, markers: [...MARKERS, ...extraMarkers] })));
 }
 
 async function signIn(page: Page) {
@@ -141,4 +141,135 @@ test("the monitor fits a phone", async ({ page }) => {
   await signIn(page);
   const o = await overflow(page);
   expect(o.px, o.out.join("\n")).toBe(0);
+});
+
+// ---------------------------------------------------------------------------
+// M2, the picture. The player attaches through MediaSource, whose URL on the
+// <video> is a blob:, so the live CSP must carry media-src blob:; the
+// sabotage (the token stripped from the policy) is run as its own test so
+// the check is seen to bite every time. The playlist itself needs the GPU
+// and a run, so here it is answered 404 by the route mock: the attach is what
+// is checked, and the picture region's words for a run that has no picture.
+// ---------------------------------------------------------------------------
+
+const HLS_RUN = { ...FIXTURE, output: "hls", picture: `/nes/live/${RUN_ID}/index.m3u8` };
+
+async function recordViolations(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __cspv: string[] };
+    w.__cspv = [];
+    document.addEventListener("securitypolicyviolation", (e) => w.__cspv.push(`${e.violatedDirective} ${e.blockedURI}`));
+  });
+}
+const violations = (page: Page) => page.evaluate(() => (window as unknown as { __cspv: string[] }).__cspv);
+
+test("a file run has no player and says so", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await mockApi(page, true);
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await signIn(page);
+  await expect(page.getByTestId("monitor-picture")).toContainText("No live picture: a file run");
+  await expect(page.locator("video")).toHaveCount(0);
+  await expect(page.getByTestId("monitor-picture-frame")).toHaveText("no live picture");
+});
+
+test("an hls run attaches the player under the live policy with no violation", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await recordViolations(page);
+  await mockApi(page, true, HLS_RUN);
+  await page.route(`**/nes/live/${RUN_ID}/**`, (route) => route.fulfill({ status: 404, body: "not yet" }));
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await signIn(page);
+  const video = page.locator("video");
+  await expect(video).toHaveCount(1);
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.src), { timeout: 10_000 }).toMatch(/^blob:/);
+  expect(await violations(page)).toEqual([]);
+});
+
+test("without media-src blob: the attach is refused (the check bites)", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await recordViolations(page);
+  await mockApi(page, true, HLS_RUN);
+  await page.route(`**/nes/live/${RUN_ID}/**`, (route) => route.fulfill({ status: 404, body: "not yet" }));
+  // The document as served, with the token cut out of its policy. A page
+  // served without a policy at all (a dev server) gets a tightened one.
+  await page.route(`**/nes/stream/${RUN_ID}`, async (route) => {
+    const r = await route.fetch();
+    const headers = { ...r.headers() };
+    const policy = headers["content-security-policy"] ?? "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; media-src 'self'";
+    headers["content-security-policy"] = policy.replace(/\s*blob:/g, "");
+    await route.fulfill({ response: r, headers });
+  });
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await signIn(page);
+  await expect(page.locator("video")).toHaveCount(1);
+  await expect.poll(() => violations(page), { timeout: 10_000 }).toContainEqual(expect.stringMatching(/^media-src/));
+});
+
+test("the live directory has no key and an unknown run is a 404", async ({ request }) => {
+  const r = await request.get("/nes/live/00000000/index.m3u8");
+  expect(r.status()).toBe(404);
+  expect(r.headers()["www-authenticate"] ?? "").toBe("");
+});
+
+// ---------------------------------------------------------------------------
+// M3, the controls. A press is a post whose answer carries a frame, drawn on
+// the strip; one post in flight, and the newest byte wins a wait. The
+// sabotage is the rule inverted (the first waiting byte kept): three changes
+// in one tick must become two posts, the first and the last.
+// ---------------------------------------------------------------------------
+
+test("a press answers with a frame and the strip draws it; reset places its marker", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const sent: { kind: string; bits?: number }[] = [];
+  const placed: { frame: number; at: string; text: string }[] = [];
+  await mockApi(page, true, HLS_RUN, placed);
+  await page.route(`**/api/v1/stream/runs/${RUN_ID}/control`, async (route) => {
+    const body = route.request().postDataJSON() as { kind: string; bits?: number };
+    sent.push(body);
+    const frame = body.kind === "reset" ? 1300 : 1500 + sent.length;
+    if (body.kind === "reset") placed.push({ frame, at: "2026-10-21T15:00:30Z", text: "reset" });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ kind: body.kind, frame, landed: true }) });
+  });
+  await page.route(`**/nes/live/${RUN_ID}/**`, (route) => route.fulfill({ status: 404, body: "not yet" }));
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await signIn(page);
+  await expect(page.getByTestId("monitor-pad")).toHaveAttribute("data-live", "1");
+  await page.keyboard.down("KeyX");
+  await expect(page.locator("[data-press]")).toHaveCount(1);
+  await page.keyboard.up("KeyX");
+  await expect(page.locator("[data-press]")).toHaveCount(2);
+  expect(sent.map((s) => s.bits)).toEqual([1, 0]);
+  await page.getByTestId("monitor-reset").click();
+  await expect(page.locator('[data-press="1300"]')).toHaveCount(1);
+  await expect(page.locator('[data-marker="1300"]')).toHaveCount(1);
+  expect(sent[2]).toEqual({ kind: "reset" });
+});
+
+test("one post in flight, and the newest byte wins the wait", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  const sent: number[] = [];
+  await mockApi(page, true, HLS_RUN);
+  await page.route(`**/api/v1/stream/runs/${RUN_ID}/control`, async (route) => {
+    const body = route.request().postDataJSON() as { bits: number };
+    sent.push(body.bits);
+    await new Promise((r) => setTimeout(r, 400));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ kind: "pad", frame: 1500 + sent.length, landed: true }) });
+  });
+  await page.route(`**/nes/live/${RUN_ID}/**`, (route) => route.fulfill({ status: 404, body: "not yet" }));
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await signIn(page);
+  await expect(page.getByTestId("monitor-pad")).toHaveAttribute("data-live", "1");
+  // Three changes inside the first post's flight: A down (1), B down (3), A up (2).
+  await page.evaluate(() => {
+    for (const [type, code] of [
+      ["keydown", "KeyX"],
+      ["keydown", "KeyZ"],
+      ["keyup", "KeyX"],
+    ] as const)
+      window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
+  });
+  await expect(page.locator("[data-press]")).toHaveCount(2);
+  await page.waitForTimeout(600);
+  expect(sent).toEqual([1, 2]);
 });

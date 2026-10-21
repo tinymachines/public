@@ -79,6 +79,11 @@ map $uri $tmapex_cache {
     # The link cards. Rendered on demand from the page's own words, which
     # change with a deploy, so an hour, like any other image here.
     "~^/og(/|$)"                                                "public, max-age=3600";
+    # The stream monitor's live picture: the playlist changes every second
+    # and must be fetched every time; a part never changes once written and
+    # the name of a deleted one is never asked for again.
+    "~^/nes/live/.*\.m3u8$"                                     "no-store";
+    "~^/nes/live/.*\.(?:m4s|mp4)$"                              "public, max-age=3600";
     default                                                    "no-cache";
 }
 
@@ -171,6 +176,13 @@ server {
     # and without it the explorer's chip module fails to instantiate with a
     # console error and a blank canvas, which reads as a broken renderer.
     #
+    # media-src carries blob: for the stream monitor (/nes/stream/{id}): hls.js
+    # plays a live run through MediaSource, whose URL on the <video> is a
+    # blob:, and without the token the attach is refused and the picture
+    # region stays black with a console error. 'self' stays beside it so a
+    # browser that plays HLS natively can take the playlist by its URL.
+    # This is the one place the token goes: on this line, never in an
+    # add_header inside a location (the trap below).
     # worker-src is stated rather than inherited. The site registers a service
     # worker, and with the directive absent a worker falls back through
     # child-src to script-src, which carries 'unsafe-inline' for the reason
@@ -178,7 +190,7 @@ server {
     # page, it is loosened for the worker too, silently. This is the one place
     # where naming a directive costs nothing and not naming it couples two
     # decisions that have no reason to be coupled.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai https://hotbits.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors $tmapex_frame_ancestors; object-src 'none'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self' blob:; connect-src 'self' https://6502.tinymachines.ai https://games.tinymachines.ai https://halfwave.tinymachines.ai https://hotbits.tinymachines.ai; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors $tmapex_frame_ancestors; object-src 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
@@ -422,6 +434,28 @@ server {
     # WebAuthn Related Origin Requests: tinymachines.ai is the relying party for every app on the kit, and this list
     # (from the kit account service, kit/server/accounts/home.py) lets pages on the other domains (snailmail.ai,
     # bradley.io, tinychase.com) use a tinymachines.ai passkey in place. Browsers fetch it themselves.
+    # ---------------------------------------------------------------------
+    # The stream monitor's live picture. A run of output hls (api/stream.py)
+    # writes an fMP4 playlist and one-second parts under its own directory,
+    # TM_STREAM_HOME/{id}/hls/, and the API tells the page the playlist's path
+    # here. Only the hls/ directory of a run is reachable: the run directory
+    # beside it holds the log, the control pipe and run.json, and the id is
+    # the API's eight hex characters, so nothing else maps. No key on this
+    # path, on purpose: the pictures are the family's own cartridges' and
+    # nothing else can be run (the desk lists only what the site serves), and
+    # a key on a media path would land in every part URL the player logs.
+    # Quoted, for the {8}: nginx reads a bare { as a block. No add_header
+    # here (the trap above); the cache map says the playlist is no-store.
+    location ~ "^/nes/live/(?<streamrun>[0-9a-f]{8})/(?<streamfile>index\.m3u8|[A-Za-z0-9_-]+\.(?:m4s|mp4))$" {
+        alias /var/tmp/tm-stream/$streamrun/hls/$streamfile;
+        autoindex off;
+        types {
+            application/vnd.apple.mpegurl m3u8;
+            video/iso.segment m4s;
+            video/mp4 mp4;
+        }
+    }
+
     location = /.well-known/webauthn {
         proxy_pass http://127.0.0.1:8120/.well-known/webauthn;
         proxy_set_header Host accounts.tinymachines.ai;

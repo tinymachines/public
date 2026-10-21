@@ -63,3 +63,25 @@
   .monitor-regions { grid-template-columns: 1fr; }
   .monitor-part { aspect-ratio: auto; padding: calc(var(--u) * 2); }
 }
+
+/* The player fills the picture region; the pad's styles are nes.css's. */
+.monitor-player { width: 100%; height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.monitor-player video { display: block; width: 100%; flex: 1 1 auto; min-height: 0; background: var(--color-panel); object-fit: contain; }
+.monitor-player-bar { display: flex; align-items: center; gap: calc(var(--u) * 2); justify-content: center; margin-top: calc(var(--u) * 1); font-size: var(--text-fine); }
+.monitor-picture:has(.monitor-player) { padding: calc(var(--u) * 1); align-items: stretch; }
+.monitor-pad { max-width: 28rem; margin: calc(var(--u) * 3) auto 0; }
+.monitor-pad[data-live="0"] { opacity: 0.5; }
+
+/* The picture's cursor on the strip, and a press: an event the API gave a
+   frame to. A floor (the tool did not echo) is drawn hollow. */
+.strip-cursor.picture { background: var(--color-blue-ink); }
+.strip-press {
+  position: absolute;
+  bottom: 0;
+  height: 50%;
+  width: 4px;
+  margin-left: -2px;
+  background: var(--color-blue-ink);
+  text-decoration: none;
+}
+.strip-press.floor { background: transparent; border: 1px solid var(--color-blue-ink); }

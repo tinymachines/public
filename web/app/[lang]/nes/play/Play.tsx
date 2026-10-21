@@ -3,7 +3,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Lang } from "@/lib/lang";
 import { Gamepad } from "./Gamepad";
-import { attach, detach, load, subscribe, snapshot, serverSnapshot, toggleRun, type DriftStats, type PlayState } from "./playEngine";
+import { attach, detach, load, setTouchPad, subscribe, snapshot, serverSnapshot, toggleRun, type DriftStats, type PlayState } from "./playEngine";
 import Link from "next/link";
 import { localize } from "@/lib/lang";
 import { ShelfPicker } from "@/app/components/ShelfPicker";
@@ -158,7 +158,7 @@ export function Screen({ lang, stage = true }: { lang: Lang; stage?: boolean }) 
             <canvas ref={canvasRef} width={2048} height={240} className="bench-screen" role="img" aria-label={T.canvasLabel} />
           </div>
         </div>
-        {stage ? <Gamepad labels={{ select: T.select, start: T.start }} /> : null}
+        {stage ? <Gamepad onPad={setTouchPad} labels={{ select: T.select, start: T.start }} /> : null}
       </div>
     </section>
   );

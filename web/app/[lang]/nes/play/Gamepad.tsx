@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { setTouchPad } from "./playEngine";
 import { press, release, rocker, type Rocker } from "@/lib/rocker";
 
 /**
@@ -18,7 +17,9 @@ import { press, release, rocker, type Rocker } from "@/lib/rocker";
  * the cross by its geometry (the thumb's offset from the fulcrum, in the
  * key's units), a button by the element under the pointer, so a thumb
  * can slide off A onto B without lifting; the bits of every held pointer
- * are ORed and handed to the engine, which ORs the keyboard in.
+ * are ORed and handed to onPad: on /nes/play that is the engine's touch
+ * byte, which ORs the keyboard in; on the stream monitor it is a byte
+ * posted to the console on the box. The pad itself knows no console.
  *
  * The grip is the bar above the pad: press it, slide, and let go, and the
  * whole pad has moved with the thumb (owner, 2026-09-23: press, slide,
@@ -101,13 +102,15 @@ export function Gamepad({ onPad, labels }: { onPad?: (bits: number) => void; lab
     });
     const onTurn = () => setPlace(loadPlacement());
     window.addEventListener("resize", onTurn);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", onTurn); setTouchPad(0); };
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", onTurn); onPad?.(0); };
+    // onPad is read once, at unmount, to release every button; a pad that
+    // re-ran this effect on every new callback would lose its placement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const publish = useCallback(() => {
     let bits = 0;
     for (const b of held.current.values()) bits |= b;
-    setTouchPad(bits);
     // A contact closing is the click: one pulse per rising edge, asked for
     // here in the pointer's own event, where the browser allows the motor.
     if (haptics && canBuzz && (bits & ~litRef.current) !== 0) navigator.vibrate(PULSE_MS);

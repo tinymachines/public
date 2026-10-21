@@ -4,12 +4,13 @@ import { isLang } from "@/lib/lang";
 import { Shell } from "@/app/components/SiteFrame";
 import { Untranslated } from "@/app/components/Untranslated";
 import { StreamMonitor } from "./StreamMonitor";
+import "../../nes.css";
 import "./monitor.css";
 
 /**
  * /nes/stream/{id}: the stream monitor, one page per run. The model's
- * picture as it runs (from M2 of nes-bench/docs/stream-monitor-spec.md), the
- * real console's region reserved beside it, a ledger of what the API says
+ * picture as it runs, live over HLS (nes-bench/docs/stream-monitor-spec.md),
+ * the real console's region reserved beside it, a ledger of what the API says
  * about the run, the markers on a frame axis, and a bar to act on it.
  *
  * Everything on it is a view of /api/v1/stream. The page decides nothing:
