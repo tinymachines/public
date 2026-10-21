@@ -72,6 +72,16 @@ Environment=TM_REGISTRY_SERVICE=/home/bisenbek/projects/tinymachines/6502/servic
 # secret is NOT here: api/mint.py creates it once, 0600, beside the database.
 Environment=TM_CHIP_API=http://127.0.0.1:6502
 Environment=TM_STARTER_CART=tinymachines/die-runner
+# The stream desk's runs (api/stream.py): a directory per run, with the
+# hls/ directory of an hls run served by nginx at /nes/live/{id}/ for the
+# monitor's live picture. It has to be outside the service's private tmp
+# (PrivateTmp below hides /var/tmp from nginx and from the host, which is
+# how the first live hls run came out invisible, 2026-10-21) and outside
+# StateDirectory, whose 0700 nginx cannot traverse. The deploy makes it
+# owned by the unit's user, mode 0711; the API keeps it traversable and
+# makes each run's hls/ world-readable, the rest of the run 0600.
+# ProtectSystem=full leaves /var/lib writable, so no ReadWritePaths line.
+Environment=TM_STREAM_HOME=/var/lib/tm-stream
 
 # Modest hardening, added when this service stopped being stateless. Each line
 # is here because it costs nothing that this service does: it reads its own

@@ -437,8 +437,9 @@ server {
     # ---------------------------------------------------------------------
     # The stream monitor's live picture. A run of output hls (api/stream.py)
     # writes an fMP4 playlist and one-second parts under its own directory,
-    # TM_STREAM_HOME/{id}/hls/, and the API tells the page the playlist's path
-    # here. Only the hls/ directory of a run is reachable: the run directory
+    # TM_STREAM_HOME/{id}/hls/ (the unit names /var/lib/tm-stream: outside the
+    # service's private tmp, which nginx cannot see), and the API tells the
+    # page the playlist's path here. Only the hls/ directory of a run is reachable: the run directory
     # beside it holds the log, the control pipe and run.json, and the id is
     # the API's eight hex characters, so nothing else maps. No key on this
     # path, on purpose: the pictures are the family's own cartridges' and
@@ -447,7 +448,7 @@ server {
     # Quoted, for the {8}: nginx reads a bare { as a block. No add_header
     # here (the trap above); the cache map says the playlist is no-store.
     location ~ "^/nes/live/(?<streamrun>[0-9a-f]{8})/(?<streamfile>index\.m3u8|[A-Za-z0-9_-]+\.(?:m4s|mp4))$" {
-        alias /var/tmp/tm-stream/$streamrun/hls/$streamfile;
+        alias /var/lib/tm-stream/$streamrun/hls/$streamfile;
         autoindex off;
         types {
             application/vnd.apple.mpegurl m3u8;

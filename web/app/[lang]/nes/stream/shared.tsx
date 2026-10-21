@@ -27,6 +27,8 @@ export interface Game {
 
 export interface Outputs {
   file: boolean;
+  /** True when the service names a stream home nginx serves at /nes/live/: the monitor's live picture. */
+  hls: boolean;
   rtmp: boolean;
   youtube: boolean;
   runner: boolean;

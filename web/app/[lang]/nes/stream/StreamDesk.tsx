@@ -154,7 +154,8 @@ function Desk({ lang, apiKey, onSignOut }: { lang: Lang; apiKey: string; onSignO
           <dd>
             {outputs ? (
               <>
-                <span className="tag live">file</span> <span className={outputs.rtmp ? "tag live" : "tag"}>rtmp</span>{" "}
+                <span className="tag live">file</span> <span className={outputs.hls ? "tag live" : "tag"}>hls</span>{" "}
+                <span className={outputs.rtmp ? "tag live" : "tag"}>rtmp</span>{" "}
                 <span className={outputs.youtube ? "tag live" : "tag"}>youtube</span>
               </>
             ) : (
@@ -197,6 +198,9 @@ function Desk({ lang, apiKey, onSignOut }: { lang: Lang; apiKey: string; onSignO
             <label htmlFor="stream-output">Output</label>
             <select id="stream-output" className="input" value={output} onChange={(e) => setOutput(e.target.value as Output)}>
               <option value="file">file (an MP4 on the box)</option>
+              <option value="hls" disabled={!outputs?.hls}>
+                hls (the live picture on the monitor) {outputs?.hls ? "" : "(no stream home in the service)"}
+              </option>
               <option value="rtmp" disabled={!outputs?.rtmp}>
                 rtmp {outputs?.rtmp ? "" : "(no key in the service)"}
               </option>
