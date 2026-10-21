@@ -199,6 +199,12 @@ export const PAGES: Record<string, FixedPage> = {
     description:
       "The console with every tool on one desk: the screen, the code, the CPU, the memory, the palettes, the sprite editor, and a recorder whose runs the flow tools read back, each a window you can move, size and close.",
   },
+  "/nes/stream": {
+    title: "Stream desk",
+    description:
+      "Start one of the family's cartridges through the console's stream chain to a file or a live ingest, watch it, stop it, mark it. An operator's desk behind a key.",
+    noindex: true,
+  },
   "/nes/shelf": {
     title: "Your cartridges",
     description:

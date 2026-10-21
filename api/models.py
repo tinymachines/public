@@ -1044,3 +1044,112 @@ class Visitors(BaseModel):
     sites: list[VisitorsSite] = Field(description="One entry per vhost, present or not.")
     totals: VisitorsTotals = Field(description="The sums a reader wants first.")
 
+
+
+# ---------------------------------------------------------------------------
+# The stream desk: games running through the console's stream chain, and the
+# streams they go out on. api/stream.py. No field here ever carries a key or a
+# path on the host: a stream key is read from the process environment and the
+# desk reports only whether it is there.
+# ---------------------------------------------------------------------------
+
+
+class StreamGame(BaseModel):
+    """A cartridge the desk may run: one of the family's own, served by the site already.
+
+    The list is the rule. A run names a game by this id and nothing else, so a
+    cartridge the site does not serve cannot be streamed through this desk by
+    construction, which is how the ROM rule is kept without a flag.
+    """
+
+    id: str = Field(description="The cartridge's name, the file's stem.", examples=["bars"])
+    bytes: int = Field(description="The image's size in bytes.", examples=[40976])
+    sha256: str = Field(description="SHA-256 of the image, so a run can say which bytes it played.")
+
+
+class StreamGames(BaseModel):
+    """Every game the desk may run."""
+
+    games: list[StreamGame] = Field(description="In name order.")
+
+
+class StreamOutputs(BaseModel):
+    """Which outputs the desk can send to, as booleans: never the keys themselves."""
+
+    file: bool = Field(description="Always true: the chain writes an MP4 beside the run.")
+    rtmp: bool = Field(description="True when RTMP_URL and RTMP_KEY are in the service's environment.")
+    youtube: bool = Field(description="True when YOUTUBE_STREAM_KEY is in the service's environment.")
+    runner: bool = Field(description="True when the stream tool's binary is where the service expects it; a start is refused with 503 otherwise.")
+
+
+class NewStreamRun(BaseModel):
+    """What starting a run asks for."""
+
+    game: str = Field(description="A game id from GET /v1/stream/games.", examples=["bars"])
+    output: Literal["file", "rtmp", "youtube"] = Field(description="Where the picture goes. `file` is an MP4 beside the run; the other two are live ingests and pace the console to the wall clock.")
+    seconds: int = Field(ge=1, le=7200, description="How much console time to play, in seconds.", examples=[60])
+    script: str = Field(default="", max_length=200_000, description="A bench script, the planner's format: `WAIT s S`, `RESET`, `SET hh`, `AT n hh`. Empty plays the game from power-on with no presses.")
+    pace: bool = Field(default=False, description="Hold a file run to the wall clock as a live one is held; a measurement of lag, not a faster way to a file.")
+
+
+class StreamRun(BaseModel):
+    """One run: a game through the chain to an output, as it stands now.
+
+    Progress is read out of the tool's own log, which it writes every ten
+    seconds of console time and once at the end, so `frames_sent` moves in
+    steps and `elapsed_s` with it. `state` is `running`, `done` (exit 0),
+    `failed` (any other exit, a refused ingest included), `stopped` (by
+    POST .../stop) or `lost` (a run this process did not start and cannot see).
+    """
+
+    id: str = Field(description="Eight hex characters, the run's name on disk.")
+    game: str = Field(description="The game id.")
+    output: Literal["file", "rtmp", "youtube"] = Field(description="Where the picture went.")
+    seconds: int = Field(description="Console seconds asked for.")
+    pace: bool = Field(description="Whether the run was held to the wall clock.")
+    state: Literal["running", "done", "failed", "stopped", "lost"] = Field(description="See the model's note.")
+    started_at: str = Field(description="UTC, ISO 8601, when the process was started.")
+    ended_at: Optional[str] = Field(description="UTC, when it exited or was stopped; null while running.")
+    exit_code: Optional[int] = Field(description="The tool's exit status once it has one.")
+    frames_sent: int = Field(description="Frames handed to the encoder so far, from the last progress line.")
+    frames_wanted: int = Field(description="Frames the run will send in all: seconds at the console's own rate.")
+    elapsed_s: float = Field(description="Wall seconds at the last progress line.")
+    worst_lag_ms: Optional[float] = Field(description="Paced runs only: the worst a frame was late.")
+    frames_late: Optional[int] = Field(description="Paced runs only: frames more than a frame late.")
+    ffmpeg_ok: Optional[bool] = Field(description="At the end: whether ffmpeg exited cleanly.")
+    file_ready: bool = Field(description="True when the run wrote an MP4 that can be fetched from GET .../file.")
+    markers: int = Field(description="How many markers have been placed on this run.")
+
+
+class StreamRuns(BaseModel):
+    """Every run this service knows, newest first."""
+
+    runs: list[StreamRun] = Field(description="Newest first; one at most is `running`.")
+
+
+class StreamLog(BaseModel):
+    """The tail of a run's log, with any stream key cut out before it leaves."""
+
+    run: str = Field(description="The run id.")
+    lines: list[str] = Field(description="The last lines of the tool's stderr, oldest first.")
+
+
+class NewMarker(BaseModel):
+    """A note placed on a run at the frame it is placed."""
+
+    text: str = Field(min_length=1, max_length=500, description="What happened, in words. `reset` and `cart` are what the wire spec reserves; here they are text like any other.")
+
+
+class StreamMarker(BaseModel):
+    """A marker as placed."""
+
+    frame: int = Field(description="The run's `frames_sent` when the marker was placed.")
+    at: str = Field(description="UTC, ISO 8601.")
+    text: str = Field(description="The note.")
+
+
+class StreamMarkers(BaseModel):
+    """A run's markers in the order they were placed."""
+
+    run: str = Field(description="The run id.")
+    markers: list[StreamMarker] = Field(description="Oldest first.")

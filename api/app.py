@@ -41,6 +41,7 @@ from fastapi.routing import APIRoute
 import admin
 import auth
 import carts
+import stream
 import mint as mint_mod
 import db
 import mcp_server
@@ -191,6 +192,9 @@ app.add_middleware(HeadAsGet)
 app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(carts.router)
+# The stream desk: games through the console's stream chain, one at a time, on
+# a dev key to read and an admin key to start or stop. api/stream.py.
+app.include_router(stream.router)
 
 
 def _caller_ip(request: Request) -> str:
