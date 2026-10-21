@@ -4,6 +4,7 @@ import { isLang } from "@/lib/lang";
 import { Shell } from "@/app/components/SiteFrame";
 import { Untranslated } from "@/app/components/Untranslated";
 import { StreamMonitor } from "./StreamMonitor";
+import { streamMonitorRecord } from "@/lib/streamMonitor";
 import "../../nes.css";
 import "./monitor.css";
 
@@ -25,6 +26,10 @@ import "./monitor.css";
  * and nowhere else. The page prerenders as the signed-out monitor and ships
  * no run.
  *
+ * The note under the ledger states what was measured about the picture's
+ * clock and a press (data/stream-monitor.json, read in lib/streamMonitor.ts);
+ * no figure on this page is typed.
+ *
  * Not in the navigation, not in the sitemap, and not in lib/pages.ts, which
  * keys fixed paths: the entry is passed here, as /6502/builders/{handle}
  * does, so the id rides the title.
@@ -45,7 +50,7 @@ export default async function StreamMonitorPage({ params }: PageProps<"/[lang]/n
   return (
     <Shell lang={lang} die="NES" title="Stream monitor">
       <Untranslated lang={lang} />
-      <StreamMonitor lang={lang} id={id} />
+      <StreamMonitor lang={lang} id={id} measured={streamMonitorRecord()} />
     </Shell>
   );
 }

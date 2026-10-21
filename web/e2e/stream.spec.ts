@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { DESK, PHONE, open, overflow } from "./lib";
+import record from "../../data/stream-monitor.json";
 
 /**
  * The stream desk, /nes/stream, and its control plane, /api/v1/stream.
@@ -272,4 +273,20 @@ test("one post in flight, and the newest byte wins the wait", async ({ page }) =
   await expect(page.locator("[data-press]")).toHaveCount(2);
   await page.waitForTimeout(600);
   expect(sent).toEqual([1, 2]);
+});
+
+// The note's figures are the record's, data/stream-monitor.json, not typed.
+
+test("the note states what the record measured", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await mockApi(page, true);
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await signIn(page);
+  const note = page.getByTestId("monitor-measured");
+  await expect(note).toContainText(record.measured);
+  for (const n of [record.clock.ahead_frames_max, record.start_press.landed_frame, record.start_press.seen_frame, record.reset.landed_frame, record.reset.seen_frame, record.reset.hold_frames]) {
+    await expect(note, String(n)).toContainText(String(n));
+  }
+  expect(record.start_press.seen_frame - record.start_press.landed_frame).toBe(record.start_press.frames);
+  expect(record.reset.seen_frame - record.reset.landed_frame).toBe(record.reset.frames);
 });

@@ -1,0 +1,31 @@
+{
+  "note": "What the stream monitor's note states, measured by the console session on 2026-10-21 through the tool at nes 6f78b8d (every part captured as the playlist listed it, decoded, and the frame of change found against the frame the tool wrote back). Edited by hand only when the measurement is redone; the page reads it and types no figure of its own.",
+  "measured": "2026-10-21",
+  "tool": "nes 6f78b8d",
+  "clock": {
+    "console_frames": 541,
+    "output_frames": 543,
+    "seconds": 9,
+    "ahead_frames_max": 3,
+    "ahead_ms_max": 50,
+    "why": "the fps filter from the console's rate to 60 adds two or three frames at the start, so the media-time formula reads at most that many frames ahead of the console, never behind"
+  },
+  "start_press": {
+    "cart": "a title screen",
+    "landed_frame": 247,
+    "seen_frame": 263,
+    "frames": 16,
+    "ms": 273,
+    "why": "the game reads the pad in its NMI and changes screens some frames later; the game's own latency, not the ledger's"
+  },
+  "reset": {
+    "cart": "the test cart",
+    "landed_frame": 223,
+    "seen_frame": 258,
+    "frames": 35,
+    "ms": 590,
+    "hold_frames": 30,
+    "why": "the tool holds reset for half a second, thirty frames, and the cartridge redraws after"
+  },
+  "hls_lag": null
+}

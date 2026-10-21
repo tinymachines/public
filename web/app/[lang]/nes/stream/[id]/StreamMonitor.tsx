@@ -8,6 +8,7 @@ import { KEYS } from "@/lib/padKeys";
 import { Gamepad } from "../../play/Gamepad";
 import { call, seconds, stamp, SignIn } from "../shared";
 import type { Marker, Run, WhoAmI } from "../shared";
+import type { StreamMonitorRecord } from "@/lib/streamMonitor";
 
 /**
  * The stream monitor: one run, watched and acted on.
@@ -75,7 +76,7 @@ interface Clock {
   why: string | null;
 }
 
-export function StreamMonitor({ lang, id }: { lang: Lang; id: string }) {
+export function StreamMonitor({ lang, id, measured }: { lang: Lang; id: string; measured: StreamMonitorRecord }) {
   const [key, setKey] = useState<string | null>(null);
   const [who, setWho] = useState<WhoAmI | null>(null);
   if (!key || !who) {
@@ -97,10 +98,24 @@ export function StreamMonitor({ lang, id }: { lang: Lang; id: string }) {
       />
     );
   }
-  return <Monitor lang={lang} id={id} apiKey={key} admin={who.can_administer} onSignOut={() => setKey(null)} />;
+  return <Monitor lang={lang} id={id} apiKey={key} admin={who.can_administer} measured={measured} onSignOut={() => setKey(null)} />;
 }
 
-function Monitor({ lang, id, apiKey, admin, onSignOut }: { lang: Lang; id: string; apiKey: string; admin: boolean; onSignOut: () => void }) {
+function Monitor({
+  lang,
+  id,
+  apiKey,
+  admin,
+  measured,
+  onSignOut,
+}: {
+  lang: Lang;
+  id: string;
+  apiKey: string;
+  admin: boolean;
+  measured: StreamMonitorRecord;
+  onSignOut: () => void;
+}) {
   const [run, setRun] = useState<Run | null>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [presses, setPresses] = useState<Press[]>([]);
@@ -336,7 +351,31 @@ function Monitor({ lang, id, apiKey, admin, onSignOut }: { lang: Lang; id: strin
       <section className="monitor-ledger" aria-label="The ledger">
         {run ? <Ledger run={run} markers={markers} presses={presses} clock={clock} fps={fps} /> : error ? null : <p className="quiet">Asking the API for the run.</p>}
       </section>
+
+      <Measured m={measured} />
     </div>
+  );
+}
+
+/** What was measured about the clock and a press, from data/stream-monitor.json. */
+function Measured({ m }: { m: StreamMonitorRecord }) {
+  return (
+    <section className="monitor-measured" aria-label="What was measured" data-testid="monitor-measured">
+      <h3>What the numbers are worth</h3>
+      <p>
+        Measured on {m.measured} through the tool at {m.tool}, every part decoded and the frame of change found. The picture&rsquo;s frame
+        is read off the stream&rsquo;s media time and is within <span className="data">{m.clock.ahead_frames_max}</span> frames (
+        <span className="data">{m.clock.ahead_ms_max}</span> ms) of the console, ahead if anything: {m.clock.why} (
+        <span className="data">{m.clock.output_frames}</span> output frames from <span className="data">{m.clock.console_frames}</span> console frames
+        in <span className="data">{m.clock.seconds}</span> s). A press tick sits at the frame the tool says it landed on; what a viewer sees comes
+        later. Start pressed on {m.start_press.cart} landed at <span className="data">{m.start_press.landed_frame}</span> and the picture changed at{" "}
+        <span className="data">{m.start_press.seen_frame}</span>, <span className="data">{m.start_press.frames}</span> frames ({m.start_press.ms} ms)
+        on: {m.start_press.why}. Reset on {m.reset.cart} landed at <span className="data">{m.reset.landed_frame}</span> and the picture changed at{" "}
+        <span className="data">{m.reset.seen_frame}</span>, <span className="data">{m.reset.frames}</span> frames on, <span className="data">{m.reset.hold_frames}</span>{" "}
+        of them the hold: {m.reset.why}.{" "}
+        {m.hls_lag === null ? "The HLS lag on this box is not measured yet; the ledger's picture lag line is the live reading." : `The HLS lag on this box measured ${m.hls_lag} s.`}
+      </p>
+    </section>
   );
 }
 
