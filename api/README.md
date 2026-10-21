@@ -184,7 +184,10 @@ journal: a place only somebody already on the host can read.
     sudo journalctl -u tinymachines-api | grep -A4 'has been minted'
 
 The condition is "no live admin key" rather than "the database is new", which
-makes the same code the recovery path. Revoke every admin key by accident and a
+makes the same code the recovery path. `scripts/recover-admin-key.sh` walks it
+from the host when the key you had is gone and the journal has rotated: it
+revokes the live admin keys in the database, restarts the service and prints
+the key the restart mints, once. Revoke every admin key by accident and a
 restart mints another, so there is no break-glass flag to maintain and no
 second mechanism to get wrong. Revoking the **last** live admin key is refused
 anyway, with a 409 that says to mint the replacement first.
