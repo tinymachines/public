@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import type { Lang } from "@/lib/lang";
+import { localize } from "@/lib/lang";
+import { call, seconds, stamp, SignIn } from "./shared";
+import type { Game, Marker, Output, Outputs, Run } from "./shared";
 
 /**
  * The stream desk: sign in with a dev key, start a family cartridge through
@@ -20,177 +25,38 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * Everything drawn is from the kit (style/components.css): .ledger, .field,
  * .input, .btn, .tag, .notice, .rail, .kv, .chip. No colour is chosen here.
+ *
+ * The shapes, the call and the sign-in form are in shared.tsx, read by this
+ * desk and by the monitor at /nes/stream/{id}, which a run's id opens.
  */
-
-// ---------------------------------------------------------------------------
-// The shapes the API returns, kept to what this desk reads.
-// ---------------------------------------------------------------------------
-
-interface Game {
-  id: string;
-  bytes: number;
-  sha256: string;
-}
-
-interface Outputs {
-  file: boolean;
-  rtmp: boolean;
-  youtube: boolean;
-  runner: boolean;
-}
-
-type Output = "file" | "rtmp" | "youtube";
-type State = "running" | "done" | "failed" | "stopped" | "lost";
-
-interface Run {
-  id: string;
-  game: string;
-  output: Output;
-  seconds: number;
-  pace: boolean;
-  state: State;
-  started_at: string;
-  ended_at: string | null;
-  exit_code: number | null;
-  frames_sent: number;
-  frames_wanted: number;
-  elapsed_s: number;
-  worst_lag_ms: number | null;
-  frames_late: number | null;
-  ffmpeg_ok: boolean | null;
-  file_ready: boolean;
-  markers: number;
-}
-
-interface Marker {
-  frame: number;
-  at: string;
-  text: string;
-}
-
-class ApiError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-function explain(status: number, body: unknown): string {
-  if (body && typeof body === "object" && "detail" in body) {
-    const detail = (body as { detail: unknown }).detail;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((d) => {
-          const item = d as { loc?: unknown[]; msg?: string };
-          const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : null;
-          return field ? `${String(field)}: ${item.msg ?? "invalid"}` : String(item.msg ?? "invalid");
-        })
-        .join("; ");
-    }
-  }
-  return `The API answered ${status} and said nothing more.`;
-}
-
-async function call<T>(key: string, method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${key}`,
-      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    cache: "no-store",
-  });
-  const text = await res.text();
-  const parsed: unknown = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new ApiError(res.status, explain(res.status, parsed));
-  return parsed as T;
-}
-
-function stamp(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : `${d.toISOString().slice(11, 19)}Z`;
-}
-
-function seconds(n: number): string {
-  const m = Math.floor(n / 60);
-  const s = Math.round(n - m * 60);
-  return m ? `${m} min ${s} s` : `${s} s`;
-}
 
 // ---------------------------------------------------------------------------
 // The desk
 // ---------------------------------------------------------------------------
 
-export function StreamDesk() {
+export function StreamDesk({ lang }: { lang: Lang }) {
   const [key, setKey] = useState<string | null>(null);
-  if (!key) return <SignIn onKey={setKey} />;
-  return <Desk apiKey={key} onSignOut={() => setKey(null)} />;
-}
-
-function SignIn({ onKey }: { onKey: (k: string) => void }) {
-  const [value, setValue] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    try {
-      await call<Outputs>(value.trim(), "GET", "/v1/stream/outputs");
-      onKey(value.trim());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="prose" data-testid="stream-desk">
-      <p>
-        The stream desk starts one of the family&rsquo;s own cartridges through the console&rsquo;s
-        stream chain: the model, the composite signal, the CRT stage on the GPU, ffmpeg. To a file
-        on the box, or to a live ingest whose key the service holds. One run at a time, and only
-        the cartridges this site already serves.
-      </p>
-      <form onSubmit={(e) => void submit(e)}>
-        <div className={error ? "field bad" : "field"}>
-          <label htmlFor="stream-key">Dev key</label>
-          <input
-            id="stream-key"
-            className="input data"
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            aria-describedby="stream-key-hint"
-          />
-          <span className="hint" id="stream-key-hint">
-            Any live key reads the desk; starting and stopping takes an admin key. Held in this tab only.
-          </span>
-        </div>
-        {error ? (
-          <p className="notice fail" role="alert">
-            {error}
+  if (!key) {
+    return (
+      <SignIn
+        testId="stream-desk"
+        button="Open the desk"
+        onKey={(k) => setKey(k)}
+        intro={
+          <p>
+            The stream desk starts one of the family&rsquo;s own cartridges through the console&rsquo;s
+            stream chain: the model, the composite signal, the CRT stage on the GPU, ffmpeg. To a file
+            on the box, or to a live ingest whose key the service holds. One run at a time, and only
+            the cartridges this site already serves.
           </p>
-        ) : null}
-        <div className="toolbar" style={{ marginTop: "1rem" }}>
-          <button className="btn btn-primary" type="submit" disabled={busy || !value.trim()}>
-            Open the desk
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+        }
+      />
+    );
+  }
+  return <Desk lang={lang} apiKey={key} onSignOut={() => setKey(null)} />;
 }
 
-function Desk({ apiKey, onSignOut }: { apiKey: string; onSignOut: () => void }) {
+function Desk({ lang, apiKey, onSignOut }: { lang: Lang; apiKey: string; onSignOut: () => void }) {
   const [games, setGames] = useState<Game[]>([]);
   const [outputs, setOutputs] = useState<Outputs | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
@@ -403,8 +269,11 @@ function Desk({ apiKey, onSignOut }: { apiKey: string; onSignOut: () => void }) 
               {runs.map((r) => (
                 <tr key={r.id} data-run={r.id} data-state={r.state}>
                   <td>
-                    <button type="button" className="chip" onClick={() => setOpen(open === r.id ? null : r.id)}>
+                    <Link href={localize(lang, `/nes/stream/${r.id}`)} className="data" title="Open this run's monitor">
                       {r.id}
+                    </Link>{" "}
+                    <button type="button" className="chip" aria-pressed={open === r.id} onClick={() => setOpen(open === r.id ? null : r.id)}>
+                      log
                     </button>
                   </td>
                   <td>{r.game}</td>

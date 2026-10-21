@@ -1,0 +1,65 @@
+/* The stream monitor's layout: two picture regions side by side, the bar, the
+   ledger and the marker strip below. Route-local on the rule registry.css
+   follows: a 4:3 picture region and a frame axis are not design system
+   components, and everything they are made of is the kit's. No colour here
+   is not a token; no size is not the unit.
+   =========================================================================== */
+
+.monitor-regions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 3);
+  margin-bottom: calc(var(--u) * 3);
+}
+.monitor-picture,
+.monitor-part {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: calc(var(--u) * 3);
+  border: 1px solid var(--color-rule);
+  background: var(--color-panel);
+  color: var(--color-glass);
+  min-width: 0;
+}
+.monitor-picture .quiet,
+.monitor-part .quiet { color: var(--color-glass-muted); margin: 0; }
+.monitor-picture a { color: inherit; }
+.monitor-bar { margin-bottom: calc(var(--u) * 3); }
+.monitor-bar .toolbar { flex-wrap: wrap; }
+.monitor-bar form.toolbar { margin: 0; }
+.monitor-bar .hint { display: block; margin-top: calc(var(--u) * 1.5); }
+.monitor-ledger .rail { margin-bottom: calc(var(--u) * 3); }
+
+/* The strip: frames 0 to frames_wanted across the width. The console's
+   position fills from the left and carries a cursor; each marker is a tick
+   at its frame. The picture's cursor joins in M2. */
+.strip { margin-bottom: calc(var(--u) * 3); }
+.strip-axis {
+  position: relative;
+  height: calc(var(--u) * 5);
+  background: var(--color-paper-sunk);
+  border: 1px solid var(--color-ink-faint);
+  overflow: hidden;
+}
+.strip-done { position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-forest-ink); opacity: 0.25; }
+.strip-cursor { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--color-forest-ink); }
+.strip-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-orange-ink);
+  text-decoration: none;
+}
+.strip-ends { display: flex; justify-content: space-between; font-size: var(--text-micro); color: var(--color-ink-muted); margin-top: calc(var(--u) * 1); }
+.strip-list { padding-left: calc(var(--u) * 5); }
+
+/* A phone: one column, the picture first, the part collapsed to its line. */
+@media (max-width: 720px) {
+  .monitor-regions { grid-template-columns: 1fr; }
+  .monitor-part { aspect-ratio: auto; padding: calc(var(--u) * 2); }
+}

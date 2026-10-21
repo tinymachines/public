@@ -21,6 +21,7 @@ import { StreamDesk } from "./StreamDesk";
  * ships no data: every row needs a key, and the key arrives in a browser.
  *
  * Not in the navigation and not in the sitemap. It is an operator's tool.
+ * A run's id on it opens that run's monitor, /nes/stream/{id}.
  */
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -33,7 +34,7 @@ export default async function NesStreamPage({ params }: { params: Promise<{ lang
   return (
     <Shell lang={lang} die="NES" title="Stream desk">
       <Untranslated lang={lang} />
-      <StreamDesk />
+      <StreamDesk lang={lang} />
     </Shell>
   );
 }
