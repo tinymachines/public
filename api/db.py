@@ -263,6 +263,22 @@ MIGRATIONS: list[str] = [
     );
     CREATE UNIQUE INDEX cart_blocks_seq ON cart_blocks(cart_id, seq);
     """,
+    # 2026-10-21: the stream desk's operators. An operator is an account on the
+    # kit's account service (api/kitaccounts.py) whose passkey session may work
+    # the desk and the monitor as an admin key may. The service holds the
+    # account; this holds the account's id, the handle it had when added (a
+    # label, never looked up), and who added it. A removed operator keeps its
+    # row with removed_at, as the record that it was one. api/operators.py.
+    """
+    CREATE TABLE operators (
+        account_id  TEXT PRIMARY KEY,
+        handle      TEXT NOT NULL,
+        note        TEXT NOT NULL DEFAULT '',
+        added_at    TEXT NOT NULL,
+        added_by    TEXT REFERENCES api_keys(id),
+        removed_at  TEXT
+    );
+    """,
 ]
 
 

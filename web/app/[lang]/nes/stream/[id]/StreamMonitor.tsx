@@ -7,7 +7,7 @@ import { localize } from "@/lib/lang";
 import { KEYS } from "@/lib/padKeys";
 import { Gamepad } from "../../play/Gamepad";
 import { call, seconds, stamp, SignIn } from "../shared";
-import type { Marker, Run, WhoAmI } from "../shared";
+import type { Marker, Run, Session } from "../shared";
 import type { StreamMonitorRecord } from "@/lib/streamMonitor";
 
 /**
@@ -46,9 +46,10 @@ import type { StreamMonitorRecord } from "@/lib/streamMonitor";
  * answers with the frame the tool says it landed on, and the strip draws
  * it there. This is control, not play, and the bar says so once.
  *
- * A dev key reads; the bar needs an admin key and says so in its hint
- * rather than letting a press fail with a 403. The key was proved against
- * /v1/admin/whoami at sign-in, which is what says which it is.
+ * A dev key reads; the bar needs an admin key, or an operator's passkey,
+ * and says so in its hint rather than letting a press fail with a 403. What
+ * the session may do was asked of /v1/stream/me at sign-in, which is what
+ * says which it is.
  */
 
 const POLL_MS = 2000;
@@ -77,17 +78,13 @@ interface Clock {
 }
 
 export function StreamMonitor({ lang, id, measured }: { lang: Lang; id: string; measured: StreamMonitorRecord }) {
-  const [key, setKey] = useState<string | null>(null);
-  const [who, setWho] = useState<WhoAmI | null>(null);
-  if (!key || !who) {
+  const [session, setSession] = useState<Session | null>(null);
+  if (!session) {
     return (
       <SignIn
         testId="stream-monitor"
         button="Open the monitor"
-        onKey={(k, w) => {
-          setKey(k);
-          setWho(w);
-        }}
+        onSession={setSession}
         intro={
           <p>
             The monitor shows one run of a family cartridge through the console&rsquo;s stream chain as
@@ -98,7 +95,19 @@ export function StreamMonitor({ lang, id, measured }: { lang: Lang; id: string; 
       />
     );
   }
-  return <Monitor lang={lang} id={id} apiKey={key} admin={who.can_administer} measured={measured} onSignOut={() => setKey(null)} />;
+  return (
+    <Monitor
+      lang={lang}
+      id={id}
+      apiKey={session.key}
+      admin={session.can_administer}
+      measured={measured}
+      onSignOut={async () => {
+        if (session.via === "passkey") await call(null, "POST", "/v1/stream/sign-out").catch(() => undefined);
+        setSession(null);
+      }}
+    />
+  );
 }
 
 function Monitor({
@@ -111,7 +120,7 @@ function Monitor({
 }: {
   lang: Lang;
   id: string;
-  apiKey: string;
+  apiKey: string | null;
   admin: boolean;
   measured: StreamMonitorRecord;
   onSignOut: () => void;

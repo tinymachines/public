@@ -1171,3 +1171,63 @@ class ControlAck(BaseModel):
     kind: Literal["pad", "reset"] = Field(description="The event's kind.")
     frame: int = Field(description="The frame the event landed on, read back from the tool's log: the next frame it ran after reading the line. When the tool had not written the line back within the wait, the run's last reported frame count instead, which is a floor.")
     landed: bool = Field(description="True when the frame is the tool's own number; false when it is the floor.")
+
+
+# ---------------------------------------------------------------------------
+# The stream desk's operators (api/operators.py)
+# ---------------------------------------------------------------------------
+
+
+class Operator(BaseModel):
+    """An account on the kit's account service whose passkey works the stream
+    desk, as an admin key does. The account itself lives on the service; this
+    is the roof's note that it may operate."""
+
+    account_id: str = Field(
+        description="The account's id on the account service (accounts.tinymachines.ai), as GET /v1/stream/me reports it for a signed-in person.",
+        examples=["u_9f2c41ab73d05e18"],
+    )
+    handle: str = Field(description="The handle the account had on this site when it was added. A label for the list, never looked up.")
+    note: str = Field(description="Why, in a few words. May be empty.")
+    added_at: datetime = Field(description="When it became an operator (UTC).")
+    added_by: Optional[str] = Field(default=None, description="The admin key that added it, by key id.")
+    removed_at: Optional[datetime] = Field(default=None, description="When it stopped being an operator, or null while it is one.")
+    active: bool = Field(description="True while removed_at is null.")
+
+
+class NewOperator(BaseModel):
+    account_id: str = Field(
+        min_length=3,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9_-]+$",
+        description="The account's id on the account service. A person reads their own from GET /v1/stream/me after signing in with a passkey.",
+        examples=["u_9f2c41ab73d05e18"],
+    )
+    handle: str = Field(default="", max_length=40, description="The handle to show beside it. Optional.")
+    note: str = Field(default="", max_length=200, description="Why, in a few words. Optional.")
+
+
+class OperatorsResponse(BaseModel):
+    operators: list[Operator] = Field(description="Every operator ever added, newest first, removed ones included with their removed_at.")
+
+
+class StreamSignIn(BaseModel):
+    home: str = Field(description="The accounts site. Its hand-off page, `{home}/?site={site}&next={url}`, runs the passkey ceremony and sends the browser back to `next` signed in.", examples=["https://accounts.tinymachines.ai"])
+    site: str = Field(description="This site's id on the account service, for the hand-off page's `site`.", examples=["tinymachines"])
+
+
+class StreamMe(BaseModel):
+    """Who this request is to the stream desk, and what it may do there.
+
+    Answers 200 for everybody, nobody included, because the desk's first
+    question is which way in to offer, and a 401 cannot carry the answer.
+    """
+
+    via: Optional[Literal["key", "passkey"]] = Field(description="How the request authenticated: a bearer key, a passkey session on the account service, or null for nobody.")
+    handle: Optional[str] = Field(default=None, description="For a passkey: the account's handle on this site. For a key: its note. Null for nobody.")
+    account_id: Optional[str] = Field(default=None, description="For a passkey: the account's id on the account service, which is what POST /v1/admin/operators takes. Null otherwise.")
+    operator: bool = Field(description="True for a passkey session on the operators list.")
+    can_read: bool = Field(description="True when this request may read the desk: any live key, or an operator's session.")
+    can_administer: bool = Field(description="True when this request may start, stop, mark and control: an admin key, or an operator's session.")
+    sign_in: Optional[StreamSignIn] = Field(default=None, description="Where a passkey sign-in for this host happens, when the account service can be asked; null when it cannot.")
+    why: Optional[str] = Field(default=None, description="For a request that cannot work the desk, the reason in a sentence: nobody is signed in, the person is signed in but is not an operator, or the account service did not answer.")

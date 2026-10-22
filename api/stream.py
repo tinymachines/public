@@ -70,7 +70,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 
-import admin
+import operators  # a key as admin.py takes it, or an operator's passkey session
 from models import (
     ControlAck,
     ControlEvent,
@@ -408,7 +408,7 @@ def _stop(run: Run) -> None:
     summary="The games the desk may run",
     description="The family's own cartridges, the ones the site serves. A run names one of these ids and no other image can be asked for.",
 )
-def list_games(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamGames:
+def list_games(_: operators.Who = Depends(operators.reader)) -> StreamGames:
     out = []
     for name, p in games().items():
         data = p.read_bytes()
@@ -422,7 +422,7 @@ def list_games(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamGames:
     summary="Which outputs are configured, as booleans",
     description="Whether each ingest's key is in the service's environment, and whether the tool's binary is where it should be. Never the values.",
 )
-def list_outputs(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamOutputs:
+def list_outputs(_: operators.Who = Depends(operators.reader)) -> StreamOutputs:
     return StreamOutputs(file=True, hls=configured("hls"), rtmp=configured("rtmp"), youtube=configured("youtube"), runner=bin_path().is_file())
 
 
@@ -432,7 +432,7 @@ def list_outputs(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamOutputs:
     summary="Every run, newest first",
     description="Runs this process started and runs an earlier one left on disk. Progress is read from each run's log as it stands now.",
 )
-def list_runs(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamRuns:
+def list_runs(_: operators.Who = Depends(operators.reader)) -> StreamRuns:
     with LOCK:
         _load_from_disk()
         for run in RUNS.values():
@@ -452,7 +452,7 @@ def list_runs(_: sqlite3.Row = Depends(admin.require_dev)) -> StreamRuns:
         "503 when the tool's binary is missing."
     ),
 )
-def start_run(body: NewStreamRun, _: sqlite3.Row = Depends(admin.require_admin)) -> StreamRun:
+def start_run(body: NewStreamRun, _: operators.Who = Depends(operators.operator)) -> StreamRun:
     rom = games().get(body.game)
     if rom is None:
         raise HTTPException(status_code=404, detail=f"no game with id {body.game!r}; GET /v1/stream/games lists them")
@@ -526,7 +526,7 @@ def start_run(body: NewStreamRun, _: sqlite3.Row = Depends(admin.require_admin))
     summary="One run as it stands",
     description="The run with its progress read from its log now. 404 for an id this service has no record of.",
 )
-def get_run(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> StreamRun:
+def get_run(run_id: str, _: operators.Who = Depends(operators.reader)) -> StreamRun:
     return _view(_get(run_id))
 
 
@@ -536,7 +536,7 @@ def get_run(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> StreamR
     summary="Stop a run",
     description="SIGTERM to the tool and its ffmpeg together, SIGKILL after three seconds. A run that has already ended is returned as it is.",
 )
-def stop_run(run_id: str, _: sqlite3.Row = Depends(admin.require_admin)) -> StreamRun:
+def stop_run(run_id: str, _: operators.Who = Depends(operators.operator)) -> StreamRun:
     run = _get(run_id)
     with LOCK:
         if run.state == "running" and run.proc is not None:
@@ -550,7 +550,7 @@ def stop_run(run_id: str, _: sqlite3.Row = Depends(admin.require_admin)) -> Stre
     summary="The tail of a run's log",
     description=f"The last {LOG_TAIL} lines of the tool's output, every configured key cut out of them.",
 )
-def get_log(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> StreamLog:
+def get_log(run_id: str, _: operators.Who = Depends(operators.reader)) -> StreamLog:
     run = _get(run_id)
     return StreamLog(run=run.id, lines=_log_lines(run)[-LOG_TAIL:])
 
@@ -561,7 +561,7 @@ def get_log(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> StreamL
     summary="A run's markers",
     description="Every marker placed on the run, oldest first, each with the frame it was placed at.",
 )
-def get_markers(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> StreamMarkers:
+def get_markers(run_id: str, _: operators.Who = Depends(operators.reader)) -> StreamMarkers:
     run = _get(run_id)
     return StreamMarkers(run=run.id, markers=_markers(run))
 
@@ -573,7 +573,7 @@ def get_markers(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> Str
     summary="Place a marker on a run",
     description="A note stamped with the run's frame count as the log last reported it. What the wire spec's marker channel will carry; kept beside the run until then.",
 )
-def add_marker(run_id: str, body: NewMarker, _: sqlite3.Row = Depends(admin.require_admin)) -> StreamMarker:
+def add_marker(run_id: str, body: NewMarker, _: operators.Who = Depends(operators.operator)) -> StreamMarker:
     run = _get(run_id)
     marker = StreamMarker(frame=_view(run).frames_sent, at=now(), text=body.text)
     with LOCK:
@@ -593,7 +593,7 @@ def add_marker(run_id: str, body: NewMarker, _: sqlite3.Row = Depends(admin.requ
         "a reset also places a marker named `reset` there."
     ),
 )
-def control_run(run_id: str, body: ControlEvent, _: sqlite3.Row = Depends(admin.require_admin)) -> ControlAck:
+def control_run(run_id: str, body: ControlEvent, _: operators.Who = Depends(operators.operator)) -> ControlAck:
     run = _get(run_id)
     if run.state != "running" or run.proc is None:
         raise HTTPException(status_code=409, detail=f"run {run.id} is {run.state}; only a run running under this service takes a control")
@@ -642,7 +642,7 @@ def control_run(run_id: str, body: ControlEvent, _: sqlite3.Row = Depends(admin.
     description="404 until the run is done. A family cartridge's picture, nothing else can have been run.",
     response_class=FileResponse,
 )
-def get_file(run_id: str, _: sqlite3.Row = Depends(admin.require_dev)) -> FileResponse:
+def get_file(run_id: str, _: operators.Who = Depends(operators.reader)) -> FileResponse:
     run = _get(run_id)
     if not _view(run).file_ready:
         raise HTTPException(status_code=404, detail="no file: the run is not a finished file run")

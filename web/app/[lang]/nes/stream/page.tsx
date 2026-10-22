@@ -16,9 +16,13 @@ import { StreamDesk } from "./StreamDesk";
  *
  * Same split as /admin, for the same reason: the shell is a server
  * component so it can carry metadata (noindex), and everything that talks
- * to the API is in StreamDesk, a client component that holds the key in a
- * useState and nowhere else. The page prerenders as the signed-out desk and
- * ships no data: every row needs a key, and the key arrives in a browser.
+ * to the API is in StreamDesk, a client component that holds a key, when a
+ * key is the way in, in a useState and nowhere else. The other way in is a
+ * tinymachines.ai passkey: the kit's account service holds that session as
+ * a cookie and the API asks it who the cookie is (api/kitaccounts.py), so
+ * the page holds nothing for it. The page prerenders as the signed-out desk
+ * and ships no data: every row needs one or the other, and both arrive in a
+ * browser.
  *
  * Not in the navigation and not in the sitemap. It is an operator's tool.
  * A run's id on it opens that run's monitor, /nes/stream/{id}.

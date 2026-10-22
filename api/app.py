@@ -41,6 +41,7 @@ from fastapi.routing import APIRoute
 import admin
 import auth
 import carts
+import operators
 import stream
 import mint as mint_mod
 import db
@@ -195,6 +196,11 @@ app.include_router(carts.router)
 # The stream desk: games through the console's stream chain, one at a time, on
 # a dev key to read and an admin key to start or stop. api/stream.py.
 app.include_router(stream.router)
+# Who may work the desk: a key, or an operator's tinymachines passkey through
+# the kit's account service; and the operators list, admin key only.
+# api/operators.py, api/kitaccounts.py.
+app.include_router(operators.stream_router)
+app.include_router(operators.admin_router)
 
 
 def _caller_ip(request: Request) -> str:

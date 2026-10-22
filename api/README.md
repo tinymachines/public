@@ -123,8 +123,10 @@ one. `GET /` says so in `interactive_docs`.
 Games through the console's stream chain, and the streams they go out on:
 the control plane over the console repository's `stream` tool (`api/stream.py`
 says what is deliberately small about it). Reads take any live key, writes an
-admin key. One run at a time; the games are the cartridges the site serves
-and no other image can be named.
+admin key; or, since 2026-10-21, a tinymachines.ai passkey: the desk is the
+one surface here that also takes a signed-in person, see "Operators" below.
+One run at a time; the games are the cartridges the site serves and no other
+image can be named.
 
 | Route | What it does |
 |---|---|
@@ -139,6 +141,44 @@ and no other image can be named.
 | `POST /v1/stream/runs/{run_id}/markers` | Place a marker, stamped with the frame the log last reported |
 | `POST /v1/stream/runs/{run_id}/control` | A pad byte or a reset to a running game, through the tool's control pipe; answers with the frame it landed on |
 | `GET /v1/stream/runs/{run_id}/file` | The MP4 a finished file run wrote |
+| `GET /v1/stream/me` | Who this request is to the desk and what it may do: a key, a passkey session (and whether it is an operator's), or nobody, with where a passkey signs in. 200 for everybody |
+| `POST /v1/stream/sign-out` | End a passkey session on the account service; relays the header that clears its cookie here |
+
+### Operators: the same passkey as the other apps
+
+The owner asked for the sign-in the kit's apps have (sprites, events,
+hotbits), which is one tinymachines.ai passkey on the kit's shared account
+service, kit-accounts, on the box and at accounts.tinymachines.ai. This site is
+registered there as a site, so the same passkey opens the stream desk, and
+the roof keeps **no passkeys and no sessions** for it (`api/kitaccounts.py`):
+a request carries the service's cookie, the roof asks the service who it is
+over loopback (`GET /v1/auth/check`, with this host's name), and the service
+answers an account id and handle, nobody, or a refusal of a write from another
+origin, which is relayed as it stands.
+
+Who may operate is the roof's own list, the `operators` table
+(`api/operators.py`): an account on it reads and writes the desk as an admin
+key does; a signed-in account not on it is told so by handle (403); nobody is
+the same 401 as before, with the Bearer challenge. An operator is
+admin-equivalent on the desk on purpose: a person trusted to watch a run from
+the monitor is trusted to stop it. Keys keep working unchanged, and a key that
+is presented is judged as a key even when a cookie sits beside it.
+
+| Route | What it does |
+|---|---|
+| `GET /v1/admin/operators` | Every account ever made an operator, removed ones included. Admin key |
+| `POST /v1/admin/operators` | Make an account an operator, by the id `GET /v1/stream/me` shows a signed-in person. Admin key |
+| `DELETE /v1/admin/operators/{account_id}` | Stop it operating; the row stays as the record. Admin key |
+
+The first operator is therefore made with the admin key once, from the desk's
+sign-in page, which offers the field to a signed-in non-operator; after that
+the key stays in the drawer. How the browser gets the cookie without any
+WebAuthn code in this repository: the page sends the reader to the accounts
+site's hand-off page, which runs the ceremony on accounts.tinymachines.ai and
+sends the browser back through `GET /api/v1/auth/hand-off` on this host, the
+one `/api/` path nginx hands to the service (`deploy/tinymachines.ai.nginx`).
+The page's address for that is read from the service's own answer, never
+typed.
 
 ## The administered surface
 
@@ -195,6 +235,9 @@ anyway, with a 409 that says to mint the replacement first.
 ### What authenticates, and what does not
 
 `Authorization: Bearer tmk_...`. Not a cookie, not a session, not a form post.
+(The stream desk is the one exception, and it is somebody else's cookie: the
+kit's account service holds the session and this service asks it, see "The
+stream desk". The administered surface itself stays key-only.)
 
 That is a decision, not a first draft. A cookie needs a session table, an
 expiry policy, a CSRF answer and a logout that invalidates something, and every

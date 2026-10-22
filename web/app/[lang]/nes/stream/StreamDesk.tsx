@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Lang } from "@/lib/lang";
 import { localize } from "@/lib/lang";
 import { call, seconds, stamp, SignIn } from "./shared";
+import type { Session } from "./shared";
 import type { Game, Marker, Output, Outputs, Run } from "./shared";
 
 /**
@@ -35,13 +36,13 @@ import type { Game, Marker, Output, Outputs, Run } from "./shared";
 // ---------------------------------------------------------------------------
 
 export function StreamDesk({ lang }: { lang: Lang }) {
-  const [key, setKey] = useState<string | null>(null);
-  if (!key) {
+  const [session, setSession] = useState<Session | null>(null);
+  if (!session) {
     return (
       <SignIn
         testId="stream-desk"
         button="Open the desk"
-        onKey={(k) => setKey(k)}
+        onSession={setSession}
         intro={
           <p>
             The stream desk starts one of the family&rsquo;s own cartridges through the console&rsquo;s
@@ -53,10 +54,19 @@ export function StreamDesk({ lang }: { lang: Lang }) {
       />
     );
   }
-  return <Desk lang={lang} apiKey={key} onSignOut={() => setKey(null)} />;
+  return (
+    <Desk
+      lang={lang}
+      apiKey={session.key}
+      onSignOut={async () => {
+        if (session.via === "passkey") await call(null, "POST", "/v1/stream/sign-out").catch(() => undefined);
+        setSession(null);
+      }}
+    />
+  );
 }
 
-function Desk({ lang, apiKey, onSignOut }: { lang: Lang; apiKey: string; onSignOut: () => void }) {
+function Desk({ lang, apiKey, onSignOut }: { lang: Lang; apiKey: string | null; onSignOut: () => void }) {
   const [games, setGames] = useState<Game[]>([]);
   const [outputs, setOutputs] = useState<Outputs | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
@@ -314,7 +324,7 @@ function Desk({ lang, apiKey, onSignOut }: { lang: Lang; apiKey: string; onSignO
   );
 }
 
-function RunDetail({ apiKey, run, onChange }: { apiKey: string; run: Run | null; onChange: () => Promise<void> }) {
+function RunDetail({ apiKey, run, onChange }: { apiKey: string | null; run: Run | null; onChange: () => Promise<void> }) {
   const [lines, setLines] = useState<string[]>([]);
   const [markers, setMarkers] = useState<Marker[]>([]);
   const [text, setText] = useState("");

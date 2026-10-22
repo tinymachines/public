@@ -50,6 +50,7 @@ def fresh_db():
     """
     conn = db.connect()
     with conn:
+        conn.execute("DELETE FROM operators")
         conn.execute("DELETE FROM api_keys")
         conn.execute("DELETE FROM users")
         conn.execute("DELETE FROM token_mints")

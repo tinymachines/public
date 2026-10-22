@@ -10,14 +10,17 @@ import record from "../../data/stream-monitor.json";
  * and the chain, and api/test_stream.py holds the control plane with a fake
  * tool. Here: the page serves as the signed-out desk, with no data in it;
  * the routes are in the generated document; and a read without a key is a
- * 401, which is the gate the page is behind.
+ * 401, which is the gate the page is behind. The second way in, a passkey
+ * session on the kit's account service, is played by a mocked /v1/stream/me:
+ * the real service's ceremony needs a device.
  */
 
-test("the desk serves signed out, asks for a key and ships no run", async ({ page }) => {
+test("the desk serves signed out, offers both ways in and ships no run", async ({ page }) => {
   await page.setViewportSize(DESK);
   await open(page, "/nes/stream", 500);
   await expect(page.getByTestId("stream-desk")).toBeVisible();
   await expect(page.locator("#stream-key")).toBeVisible();
+  await expect(page.getByTestId("stream-passkey")).toBeVisible();
   const html = await page.content();
   expect(html).not.toContain("data-run=");
   expect(html, "an em dash").not.toContain("—");
@@ -77,9 +80,18 @@ const MARKERS = [
   { frame: 1200, at: "2026-10-21T15:00:20Z", text: "now" },
 ];
 
-async function mockApi(page: Page, admin: boolean, run: object = FIXTURE, extraMarkers: object[] = []) {
+/** GET /v1/stream/me for nobody: the two ways in, the hand-off page's address from the service. */
+const NOBODY = { via: null, handle: null, account_id: null, operator: false, can_read: false, can_administer: false, sign_in: { home: "https://accounts.example", site: "tinymachines" }, why: "Nobody is signed in." };
+/** The same for a passkey session: an operator, or a member who is not one yet. */
+const passkey = (operator: boolean) => ({ via: "passkey", handle: "isenbek", account_id: "u_test", operator, can_read: operator, can_administer: operator, sign_in: NOBODY.sign_in, why: operator ? null : "Signed in as isenbek, who is not an operator of the stream desk yet." });
+
+async function mockApi(page: Page, admin: boolean, run: object = FIXTURE, extraMarkers: object[] = [], cookieMe: object = NOBODY) {
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-  await page.route("**/api/v1/admin/whoami", (route) => route.fulfill(json({ key: null, user: null, can_administer: admin })));
+  // The page asks who it is first: a key presented is judged as a key, a bare call is the cookie.
+  await page.route("**/api/v1/stream/me", (route) => {
+    const key = route.request().headers()["authorization"];
+    route.fulfill(json(key ? { via: "key", handle: "test", account_id: null, operator: false, can_read: true, can_administer: admin, sign_in: null, why: null } : cookieMe));
+  });
   await page.route(`**/api/v1/stream/runs/${RUN_ID}`, (route) => route.fulfill(json(run)));
   await page.route(`**/api/v1/stream/runs/${RUN_ID}/markers`, (route) => route.fulfill(json({ run: RUN_ID, markers: [...MARKERS, ...extraMarkers] })));
 }
@@ -103,6 +115,38 @@ test("the monitor serves noindex in both languages and ships no run", async ({ p
     expect(html, p).not.toContain("data-marker=");
     expect(html, `${p}: an em dash`).not.toContain("—");
   }
+});
+
+test("nobody is offered the passkey, to the hand-off page and back to this page", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await mockApi(page, false);
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  const button = page.getByTestId("stream-passkey");
+  await expect(button).toHaveAttribute("href", /^https:\/\/accounts\.example\/\?site=tinymachines&next=/);
+  const href = (await button.getAttribute("href")) ?? "";
+  expect(new URL(href).searchParams.get("next")).toBe(page.url());
+  await expect(page.locator("#stream-key")).toBeVisible();
+});
+
+test("a passkey operator opens the monitor with no key at all", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await mockApi(page, false, FIXTURE, [], passkey(true));
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await expect(page.getByTestId("monitor-strip")).toBeVisible();
+  await expect(page.locator("#stream-key")).toHaveCount(0);
+  await expect(page.getByTestId("monitor-bar").getByRole("button", { name: "Stop" })).toBeEnabled();
+});
+
+test("a signed-in person who is not an operator is told so and offered the one-time field", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await mockApi(page, false, FIXTURE, [], passkey(false));
+  await open(page, `/nes/stream/${RUN_ID}`, 500);
+  await expect(page.getByTestId("stream-signed-in")).toContainText("isenbek");
+  await expect(page.getByTestId("stream-signed-in")).toContainText("not yet an operator");
+  await expect(page.getByRole("button", { name: "Make me an operator" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByTestId("stream-passkey")).toHaveCount(0);
+  await expect(page.getByTestId("monitor-strip")).toHaveCount(0);
 });
 
 test("a dev key sees the bar disabled with its reason", async ({ page }) => {
