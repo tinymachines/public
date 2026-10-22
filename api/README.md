@@ -367,6 +367,11 @@ tm://tinymachines/mcp/terrapulse/tools/get_slot
                                              a tool of an MCP server this box reads,
                                              as the server described it; mcp/<server>/
                                              is the server's record and whether it answered
+tm://tinymachines/mcp/terrapulse/map         the server's map: which of its tools read
+                                             as addresses, and how sure each entry is
+tm://tinymachines/mcp/terrapulse/dex/earthquake/<id>
+                                             one thing of the server's data, read by the
+                                             tool the map names, typed by the kind it gives
 tm://tinymachines/kinds/pattern              one kind of thing this host has served: its
                                              media type, how often, and the links it carried
 ```
@@ -421,7 +426,22 @@ says how often, as which media types, and with which link relations; a kind
 never served is not listed. A link may carry its target's `type`, as RFC
 8288 allows, wherever the address settles it. On the entity mount,
 `?as=set&rel=<rel>` reads a set and its members in one: the things behind one
-link relation, each as its own address reads it, a page at a time
+link relation, each as its own address reads it, a page at a time.
+
+A server's map (tinyhelper#6, spec 13.1) is what makes its data
+addressable. tinyhelper's index driver derives `notes/maps/<server>.json`
+from the server's own schemas; a person corrects one entry at a time in
+`notes/maps/<server>.override.json`; the mount merges the two and serves
+them as `mcp/<server>/map`, every entry with `confidence: inferred` or
+`exact` and what the driver could not decide beside them. A path the map
+names reads by calling the tool its entry names with the path's segments as
+arguments, coerced by the tool's schema; the answer is the thing, typed by
+the entry's kind (`application/vnd.tm.slot+json; kind=earthquake`), linked
+as the entry says (`tm:read-with` the tool, `describedby`, `related` from a
+field of edges), its provenance fields carried into `_meta` untouched. A
+mapped collection lists its items as addresses and takes the query its
+entry lists. The map reads from two files and costs the server nothing; the
+crawler samples each mapped collection at three children a run
 (`entity/<kind>/?as=set` inlines a listing).
 
 The git mount offers this repository and the siblings checked out beside it,

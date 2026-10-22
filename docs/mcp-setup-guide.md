@@ -106,6 +106,8 @@ tm://tinymachines/entity/pattern/pad-poll          a pattern the autopsy found, 
                                                    link to every game and routine it is in
 tm://tinymachines/mcp/terrapulse/tools/get_slot    a tool of another MCP server this box
                                                    reads, as that server described it
+tm://tinymachines/mcp/terrapulse/map               that server's map: which of its tools
+                                                   read as addresses, and how sure each is
 tm://tinymachines/kinds/pattern                    one kind of thing this host has served,
                                                    counted: its media type and its links
 ```
@@ -151,10 +153,18 @@ the servers the box reads; `mcp/<server>/` is one server's record (what it
 is, whether it answered when the box asked, what it declared) and lists its
 `tools/`, `resources/` and `prompts/`; `mcp/<server>/tools/<name>` is one
 tool as the server described it, with its schema readable as a piece of it
-(`?pointer=/inputSchema`). Nothing is called through it: a tool is listed
-and described, never run. A server behind a token the box does not hold
-reads as `gated`, and one that does not answer as `unreachable`; the record
-says which, and when the box last asked.
+(`?pointer=/inputSchema`). A tool is listed and described, and it is run
+only where the server's map names it: `mcp/<server>/map` is the map
+tinyhelper's index driver derived from the server's own schemas and a person
+corrected one entry at a time, each entry saying how sure it is, and a path
+the map names (`mcp/terrapulse/dex/earthquake/<id>`, say) reads by calling
+the tool its entry names with the path's segments as arguments. The answer
+is the thing, typed by the kind the map gives it, linked to the tool it was
+read with (`tm:read-with`) and to what its fields name, with the server's
+provenance (`sources`, `licence_basis`) carried into `_meta` untouched. A
+server with no map reads as before. A server behind a token the box does not
+hold reads as `gated`, and one that does not answer as `unreachable`; the
+record says which, and when the box last asked.
 
 Every read says what it is in its `mimeType`. A thing the server composes is
 `application/vnd.tm.<kind>+json` (`listing`, `stat`, `record`, `pattern`,

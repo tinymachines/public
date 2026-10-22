@@ -80,6 +80,8 @@ tm://tinymachines/offbox/autopsy-models            ビルドの連なりがこ�
                                                    名前はあるが、中身は出さない
 tm://tinymachines/mcp/terrapulse/tools/get_slot    この箱が読む別の MCP サーバーのツール。
                                                    そのサーバーが述べたとおりに
+tm://tinymachines/mcp/terrapulse/map               そのサーバーの地図。どのツールがアドレス
+                                                   として読めるか、各項目がどれだけ確かか
 tm://tinymachines/entity/pattern/pad-poll          解剖が見つけたパターン。それを持つ
                                                    ゲームとルーチンすべてへのリンクつき
 tm://tinymachines/kinds/pattern                    このホストが配信してきたものの種類の
@@ -96,7 +98,7 @@ entity マウントは、ほかの四つの上に最初に建てたものだ。�
 
 どの読み取りもリンクを運ぶ。ノートのページは元になった markdown へ（`tm:source`）、markdown はそのページへ戻る（`tm:renders-as`）。ビルドが他のリポジトリから取り込んだページとここにある写しは、出所のファイルへ（`tm:generated-by`）、そのファイルは前向きに（`tm:generates`）。ここにあるファイルと git の同じファイルは双方向に結ばれる（`tm:repository`、`tm:working-copy`）。どのページも、それを描画するルートのファイルへ（`tm:source`）と、ページ自身のコードが読む記録へ（`tm:data`）、記録は読み手へ（`tm:read-by`）と書き手のスクリプトへ（`tm:generated-by`）。ページは同じページの別の言語版と別のサイト版へ（`alternate`）、サブモジュールは固定しているコミットのリポジトリへ（`tm:pins`）結ばれる。トレイル（`fs/notes/trails/` の下の JSON ファイルで、名前つきの順序あるアドレスの一覧）はその各段へ（`tm:step`）、各段はそれが載っているトレイルへ（`tm:step-of`）結ばれる。パターンは見つかったゲームへ（`tm:found-in`）、規則が名前をつけたルーチンへ（`tm:instance`）、それを使うレッスンへ（`tm:demonstrated-by`）、そしてそれぞれが戻る（`tm:exhibits`、`tm:instance-of`、`tm:demonstrates`）。レッスンはカートリッジのソースへ（`tm:cartridge`）、ゲームはそのページへ（`tm:renders-as`）。ルートは最初に読む文書へ（`help`）結ばれる。そして `up`、`collection`、`alternate`、`describedby`、`version-history`、`latest-version` は IANA のレジストリの言う通りの意味だ。いくつもの出現をまとめて表すリンクは、その数を `count` に持つ。リンクの並びはひとつに決まっている。IANA のものが先、次に exact、次に inferred、その中では関係の名前、番地の順。ひとつの読み取りが運ぶリンクは百本まで。それを超えるものは最後に `?as=links` への `tm:links` を置く。`?as=links` は中身なしで全部のリンクをページごとに返し、各ページの終わりに `next` がある。集合は絞り込める。`?as=links&rel=tm:found-in&min=2` は一つの関係だけ、しかも二回以上数えられたリンクだけで、絞り込んだ集合もそれ自身のアドレスになる。リソースを通すとリンクは結果の `_meta` の `tinymachines.ai/links` の下に、`resolve` を通すと本文にある。
 
-mcp マウントは、ほかの MCP サーバーをこのホストのマウントとして読む。`mcp/` は箱が読むサーバーの一覧、`mcp/<server>/` はひとつのサーバーの記録（何であるか、箱が尋ねたとき答えたか、何を宣言したか）で、その `tools/`、`resources/`、`prompts/` を並べる。`mcp/<server>/tools/<name>` はサーバーが述べたとおりのひとつのツールで、そのスキーマはその一部として読める（`?pointer=/inputSchema`）。ここから何も呼び出されない。ツールは並べられ、述べられるだけで、走らせはしない。箱が持たないトークンを求めるサーバーは `gated`、答えないサーバーは `unreachable` と読め、記録がどちらかと、箱が最後に尋ねた時刻を言う。
+mcp マウントは、ほかの MCP サーバーをこのホストのマウントとして読む。`mcp/` は箱が読むサーバーの一覧、`mcp/<server>/` はひとつのサーバーの記録（何であるか、箱が尋ねたとき答えたか、何を宣言したか）で、その `tools/`、`resources/`、`prompts/` を並べる。`mcp/<server>/tools/<name>` はサーバーが述べたとおりのひとつのツールで、そのスキーマはその一部として読める（`?pointer=/inputSchema`）。ツールは並べられ、述べられる。走るのは、サーバーの地図がそれを名指す所だけだ。`mcp/<server>/map` は、tinyhelper の索引ドライバーがサーバー自身のスキーマから導き、人が一項目ずつ直した地図で、各項目がどれだけ確かかを言う。地図が名指すパス（たとえば `mcp/terrapulse/dex/earthquake/<id>`）は、その項目が名指すツールをパスの各節を引数にして呼び、答えがそのものになる。地図が与える種類でタイプづけされ、読むのに使ったツール（`tm:read-with`）とフィールドが名指すものにリンクし、サーバーの出所（`sources`、`licence_basis`）は `_meta` にそのまま運ばれる。地図のないサーバーは、これまでどおりに読める。箱が持たないトークンを求めるサーバーは `gated`、答えないサーバーは `unreachable` と読め、記録がどちらかと、箱が最後に尋ねた時刻を言う。
 
 どの読み取りも、自分が何であるかを `mimeType` で言う。サーバーが組み立てるものは `application/vnd.tm.<kind>+json`（`listing`、`stat`、`record`、`pattern`、`tool` など）か `text/vnd.tm.<kind>`（ページの本文は `text/vnd.tm.page`）。サーバーがただ持っているだけのファイルはそのファイル自身のタイプのままで、markdown は `text/markdown` のままだ。クライアントがパスから種類を推し量る必要はない。`kinds/` はこのホストが記録を始めてから配信してきた種類をすべて並べ、`kinds/<kind>` はそれが何回、どのメディアタイプで、どのリンク関係を運んで配信されたかを言う。測られたものなので、一度も配信されていない種類はそこにない。リンクは行き先の `type` を運ぶことがある。entity マウントでは `?as=set&rel=<rel>` が、ひとつのリンク関係の先にあるものをまとめて、ページごとに読む。メンバーひとつにつき一回の読み取りが省ける。
 

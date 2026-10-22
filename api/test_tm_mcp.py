@@ -122,7 +122,7 @@ def test_a_server_reads_as_its_record_and_its_tools_as_things_with_addresses(rep
     srv, links = read(ns, f"{ROOT}mcp/fake/")
     body = json.loads(srv["text"])
     assert body["status"] == "up" and body["serverInfo"] == {"name": "fake", "version": "1.0"}
-    assert body["counts"] == {"tools": 2, "resources": 1, "templates": 1, "prompts": 1}
+    assert body["counts"] == {"tools": 2, "resources": 1, "templates": 1, "prompts": 1, "reads": 0}
     assert body["auth"] == "none" and body["transport"] == "streamable-http" and body["checked"]
     assert [c["uri"] for c in body["children"]] == [f"{ROOT}mcp/fake/tools/", f"{ROOT}mcp/fake/resources/", f"{ROOT}mcp/fake/prompts/"]
     assert rels(links)["up"] == [f"{ROOT}mcp/"]
@@ -194,7 +194,7 @@ def test_a_server_that_declares_no_resources_or_prompts_lists_neither(repo):
     ns = make(repo, fake)
     srv, _ = read(ns, f"{ROOT}mcp/fake/")
     body = json.loads(srv["text"])
-    assert [c["name"] for c in body["children"]] == ["tools/"] and body["counts"] == {"tools": 2, "resources": 0, "templates": 0, "prompts": 0}
+    assert [c["name"] for c in body["children"]] == ["tools/"] and body["counts"] == {"tools": 2, "resources": 0, "templates": 0, "prompts": 0, "reads": 0}
     e = refusal(ns, f"{ROOT}mcp/fake/prompts/")
     assert e.reason == "not-found" and "declares no prompts" in e.message and e.data["nearest"] == [f"{ROOT}mcp/fake/"]
     assert [m for m, _ in fake.calls] == ["initialize", "notifications/initialized", "tools/list"]

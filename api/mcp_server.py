@@ -73,7 +73,10 @@ routine a rule named (tm:instance) and the lessons that use it
 (tm:demonstrated-by), with no need to read the record they come from; mcp/ holds the MCP
 servers this box reads, each with its tools, resources and prompts as things with addresses
 (mcp/<server>/ is the server's record and whether it answered; mcp/<server>/tools/<name> is one
-tool as the server described it, tm:served-by its server, tm:schema its schema as a piece of itself); kinds/ lists the
+tool as the server described it, tm:served-by its server, tm:schema its schema as a piece of itself; mcp/<server>/map is the
+server's map, derived from its schemas by tinyhelper and corrected by an override, each entry saying how sure, and every path the
+map names reads by calling the tool it names, typed by the kind the map gives it, tm:read-with that tool, the server's provenance
+fields in _meta under "tinymachines.ai/provenance"; a mapped collection takes the query its entry lists); kinds/ lists the
 kinds of thing this host has served, measured as they go out, and kinds/<kind> says how often and with which links. Every read's
 mimeType says what it is: application/vnd.tm.<kind>+json for a thing this server composes (listing, stat, record, pattern, tool, ...),
 text/vnd.tm.page for a page's text, a file's own type for a file it merely holds; a link may carry its target's type. On an entity,

@@ -62,7 +62,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Awaitable, Callable
-from urllib.parse import parse_qsl, quote, unquote, urljoin, urlsplit
+from urllib.parse import parse_qsl, quote, unquote, urlencode, urljoin, urlsplit
 
 import httpx
 
@@ -193,6 +193,16 @@ MCP_TIMEOUT_S = 10.0
 MCP_PROTOCOL = "2025-03-26"
 MCP_KINDS = ("tools", "resources", "prompts")
 MCP_TYPE = {k: f"application/vnd.tm.{k}+json" for k in ("server", "tool", "resource", "prompt")}
+# tinyhelper#6: a server's map (spec 13.1). The derived map is
+# notes/maps/<server>.json, written by tinyhelper's index driver; the
+# override beside it, notes/maps/<server>.override.json, is the one
+# hand-written thing. The mount's own paths under a server, which no map may
+# claim; the body fields a server's answer carries as provenance, lifted into
+# _meta untouched; how many tool answers are kept MCP_TTL_S each.
+MAPS_DIR = "notes/maps"
+MCP_OWN = MCP_KINDS + ("map",)
+PROVENANCE = ("sources", "licence_basis", "source", "citation", "checked_at")
+MCP_CALL_CAP = 2000
 
 
 # tinypeek#23: what a thing is, said in its media type. A thing the server
@@ -208,7 +218,7 @@ def tm_type(kind: str, text: bool = False) -> str:
 def kind_of(mime: str) -> str:
     """The kind a media type names: the vendor part, or `file` for a type
     the server did not mint."""
-    m = re.fullmatch(r"(?:application|text)/vnd\.tm\.([a-z-]+)(?:\+json)?", mime)
+    m = re.fullmatch(r"(?:application|text)/vnd\.tm\.([a-z-]+)(?:\+json)?", mime.split(";", 1)[0].strip())
     return m[1] if m else "file"
 
 
@@ -222,6 +232,7 @@ T_RECORD = tm_type("record")
 T_TRAIL = tm_type("trail")
 T_SET = tm_type("set")
 T_KIND = tm_type("kind")
+T_MAP = tm_type("map")
 T_PAGE = tm_type("page", text=True)
 T_BLAME = tm_type("blame", text=True)
 
@@ -247,10 +258,13 @@ KINDS: dict[str, str] = {
     "prompt": "a prompt of an MCP server, as described",
     "set": "a set and its members in one read (?as=set)",
     "kind": "one kind this host has served: its media types, how often, and the links it carried",
+    "map": "an MCP server's map: which of its tools read as addresses, derived from its schemas and corrected by an override",
 }
 SET_CAP = 25            # members a page of ?as=set inlines
 
 META_LINKS = "tinymachines.ai/links"
+META_MAP = "tinymachines.ai/map"                # a mapped read: the map, the entry, the tool, how sure
+META_PROVENANCE = "tinymachines.ai/provenance"  # a mapped read: the server's provenance fields, untouched
 
 # JSON-RPC codes. -32002 is what the MCP spec reserves for a resource that
 # does not exist; the rest are the standard ones.
@@ -360,7 +374,8 @@ def ordered(links: list[dict]) -> list[dict]:
 def is_json(mime: str) -> bool:
     """application/json, or a vendor type that says it is JSON underneath
     (application/vnd.tm.tool+json), which every generic client can parse."""
-    return mime == "application/json" or (mime.startswith("application/") and mime.endswith("+json"))
+    bare = mime.split(";", 1)[0].strip()
+    return bare == "application/json" or (bare.startswith("application/") and bare.endswith("+json"))
 
 
 def is_text(mime: str) -> bool:
@@ -517,19 +532,26 @@ def _offset(cursor: str | None) -> int:
     return n
 
 
-def check_params(ref: "Ref") -> None:
+def check_params(ref: "Ref", own: tuple[tuple[str, ...], bool] | None = None) -> None:
     """tinypeek#13: a parameter a mount does not take is refused, naming the
     ones it takes, where before it was dropped and the answer looked like the
     one asked for (a page at a date it has no notion of, a file without the
     lines asked for). A cursor continues a listing or ?as=links; anywhere else
-    it would be dropped too, so it is refused there."""
+    it would be dropped too, so it is refused there. `own` is a mapped mcp
+    collection's query (tinyhelper#6): the names its map entry lists, and
+    whether it passes any other name through to the tool; the mount's own
+    names are never passed through, so they keep their meaning everywhere."""
     takes = PARAMS[ref.mount]
+    names, star = own or ((), False)
     as_ = ref.facets.get("as")
     where = {"tm": "the list of hosts", "": "the root"}.get(ref.mount, ref.mount)
     for k, v in ref.facets.items():
-        if k not in takes and not (k in ("cursor",) + LINKS_ONLY and as_ in SETS):
+        if k in takes or k in names or (star and k != "at"):
+            continue
+        if not (k in ("cursor",) + LINKS_ONLY and as_ in SETS):
             why = f"; {NO_PAST[ref.mount]}" if k == "at" and ref.mount in NO_PAST else ""
-            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}{why}")
+            more = f" and this collection's own query takes {', '.join(names) if names else 'nothing'}" if own else ""
+            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}{more}{why}")
     if "cursor" in ref.facets and as_ not in SETS and not (ref.is_collection and as_ in (None, "raw", "tree")):
         raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing, ?as=links or ?as=set, and this read is none of them")
     for k in LINKS_ONLY:
@@ -1773,6 +1795,153 @@ def sse_events(text: str) -> list[tuple[str, str]]:
     return out
 
 
+class Map:
+    """One server's map (tinyhelper#6, spec 13.1): which of its tools read as
+    addresses. Merged from the derived file, whose entries read `inferred`,
+    and the override, whose entries read `exact` and whose null removes one.
+    A key is a path of segments, each a name or one {argument}, with a
+    trailing slash for a collection; an entry names its tool, and may name
+    its kind (the media type, with {argument}s substituted), its collection's
+    query, which field holds its items and which item field keys them, links
+    to fill from the arguments and the body, and a field of edges to lift.
+    What a key may not do is claim the mount's own paths. An entry that does
+    not parse is dropped and said, never guessed at."""
+
+    def __init__(self, server: str, derived: dict | None, override: dict | None):
+        self.server = server
+        self.derived = derived if isinstance(derived, dict) else {}
+        self.override = override if isinstance(override, dict) else {}
+        self.reads: dict[str, dict] = {}
+        self.ignored: dict[str, str] = {}
+        for src, conf in ((self.derived, "inferred"), (self.override, "exact")):
+            reads = src.get("reads")
+            for key, entry in (reads.items() if isinstance(reads, dict) else ()):
+                if entry is None:
+                    self.reads.pop(key, None)
+                    continue
+                parsed = self.parse(key)
+                if parsed is None:
+                    self.ignored[key] = "a path is segments, each a name or one {argument}, with a trailing slash for a collection"
+                elif parsed[0][0] in MCP_OWN:
+                    self.ignored[key] = f"{', '.join(k + '/' for k in MCP_KINDS)} and map are the mount's own paths"
+                elif not isinstance(entry, dict) or not isinstance(entry.get("tool"), str):
+                    self.ignored[key] = "an entry names its tool"
+                else:
+                    self.reads[key] = {**entry, "confidence": conf}
+        und = self.derived.get("undecided")
+        self.undecided = {k: v for k, v in (und.items() if isinstance(und, dict) else ()) if isinstance(v, str)}
+        self._parsed: dict[str, tuple[list[str], bool]] = {k: self.parse(k) for k in self.reads}  # type: ignore[misc]
+
+    @staticmethod
+    def parse(key: Any) -> tuple[list[str], bool] | None:
+        if not isinstance(key, str) or not key or key.startswith("/"):
+            return None
+        coll = key.endswith("/")
+        segs = key.rstrip("/").split("/")
+        for seg in segs:
+            if not seg or "{" in seg[1:] or "}" in seg[:-1]:
+                return None
+            if seg.startswith("{") and not re.fullmatch(r"\{[A-Za-z_][A-Za-z0-9_-]*\}", seg):
+                return None
+        return segs, coll
+
+    @staticmethod
+    def arg(seg: str) -> str | None:
+        return seg[1:-1] if seg.startswith("{") and seg.endswith("}") else None
+
+    def segments(self, key: str) -> tuple[list[str], bool]:
+        return self._parsed[key]
+
+    def match(self, parts: list[str], coll: bool) -> tuple[str, dict, dict[str, str]] | None:
+        """The entry a path reads by, and the arguments the path binds; where
+        two fit, the one with more names and fewer arguments."""
+        best: tuple[int, str, dict[str, str]] | None = None
+        for key, (segs, c) in self._parsed.items():
+            if c != coll or len(segs) != len(parts):
+                continue
+            args: dict[str, str] = {}
+            for seg, part in zip(segs, parts):
+                a = self.arg(seg)
+                if a is not None:
+                    args[a] = part
+                elif seg != part:
+                    break
+            else:
+                lits = len(segs) - len(args)
+                if best is None or lits > best[0]:
+                    best = (lits, key, args)
+        return (best[1], self.reads[best[1]], best[2]) if best else None
+
+    def deeper(self, key: str) -> tuple[str, bool] | None:
+        """What a collection lists: the template one segment deeper that
+        takes an argument there, a collection before a thing."""
+        segs, _ = self._parsed[key]
+        found: dict[bool, str] = {}
+        for k2, (s2, c2) in self._parsed.items():
+            if len(s2) == len(segs) + 1 and s2[:-1] == segs and self.arg(s2[-1]) is not None:
+                found.setdefault(c2, k2)
+        return (found[True], True) if True in found else ((found[False], False) if False in found else None)
+
+    def above(self, key: str) -> str | None:
+        """The collection one segment up, when the map names it: a thing's up."""
+        segs, _ = self._parsed[key]
+        for k2, (s2, c2) in self._parsed.items():
+            if c2 and s2 == segs[:-1]:
+                return k2
+        return None
+
+    def beside(self, key: str) -> str | None:
+        """The same path's other shape (the thing for a collection, the
+        collection for a thing), when the map names both."""
+        segs, coll = self._parsed[key]
+        for k2, (s2, c2) in self._parsed.items():
+            if c2 != coll and s2 == segs:
+                return k2
+        return None
+
+    def roots(self) -> list[tuple[str, bool]]:
+        """The templates with no argument, which a server lists as children."""
+        return sorted((k, c) for k, (segs, c) in self._parsed.items() if not any(self.arg(x) is not None for x in segs))
+
+    def kinds(self) -> dict[str, str]:
+        """Every kind the map names, and the first tool it is read with."""
+        out: dict[str, str] = {}
+        for key in sorted(self.reads):
+            e, (_, coll) = self.reads[key], self._parsed[key]
+            k = e.get("kind")
+            if coll or not isinstance(k, str) or k == "from-result" or not k:
+                continue
+            out.setdefault(kind_of(k if "/" in k else f"application/{k}"), e["tool"])
+        return out
+
+    @staticmethod
+    def fill(template: str, args: dict[str, Any], body: Any = None) -> str | None:
+        """A template with its {argument}s substituted from the arguments,
+        then from the body's own fields; None while one is left."""
+        def sub(m: re.Match) -> str:
+            k = m[1]
+            if k in args:
+                return str(args[k])
+            v = body.get(k) if isinstance(body, dict) else None
+            return str(v) if isinstance(v, (str, int, float)) and not isinstance(v, bool) else m[0]
+        out = re.sub(r"\{([A-Za-z_][A-Za-z0-9_-]*)\}", sub, template)
+        return None if "{" in out else out
+
+    def type_at(self, key: str, args: dict[str, Any]) -> str | None:
+        """What a path under the entry reads as: a listing for a collection,
+        the entry's kind with the path's arguments in it, a record with no
+        kind, and nothing for from-result, since only the server knows."""
+        if self._parsed[key][1]:
+            return T_LISTING
+        kind = self.reads[key].get("kind")
+        if kind == "from-result":
+            return None
+        if not isinstance(kind, str) or not kind:
+            return T_RECORD
+        filled = self.fill(kind, args)
+        return None if filled is None else (filled if "/" in filled else f"application/{filled}")
+
+
 class Mcp:
     """tinypeek#22: an MCP server as a mount. A server is named in a file of
     the checkout (MCP_SERVERS_FILE) and the box keeps the connection; a
@@ -1804,6 +1973,8 @@ class Mcp:
             self.servers[name] = {"endpoint": s["endpoint"], "transport": s.get("transport", "streamable-http"),
                                   "what": s.get("what", ""), "auth": s.get("auth")}
         self._snap: dict[str, dict] = {}
+        self._maps: dict[str, tuple[tuple, Map | None]] = {}
+        self._calls: dict[tuple[str, str, str], tuple[float, dict]] = {}
 
     @staticmethod
     def _load(f: Path) -> dict:
@@ -1818,6 +1989,11 @@ class Mcp:
     @staticmethod
     def uri(*parts: str, collection: bool = False) -> str:
         return f"{ROOT}mcp/" + "/".join(quote(p) for p in parts) + ("/" if collection and parts else "")
+
+    @staticmethod
+    def path_uri(name: str, segs: list[str], collection: bool) -> str:
+        """A mapped path's address; a template's braces stay as they are."""
+        return f"{ROOT}mcp/{quote(name)}/" + "/".join(quote(s, safe="{}") for s in segs) + ("/" if collection else "")
 
     def names(self) -> list[str]:
         return list(self.servers)
@@ -1838,33 +2014,65 @@ class Mcp:
         value = os.environ.get(var)
         return ("held by this box", value) if value else ("named, not held by this box", None)
 
+    async def _connect(self, name: str, work: Callable[[Callable, dict], Awaitable[Any]]) -> Any:
+        """One session with a server: open the transport, initialize, then
+        run `work` with the way to post and what initialize answered. A
+        token it wanted is _Gate, no MCP answer is _Down, and the kind of
+        failure is all that is kept: an exception's text can quote the
+        endpoint and the answer."""
+        conf = self.servers[name]
+        _, token = self._auth(conf)
+        headers = {"Authorization": token} if token else {}
+        try:
+            async with httpx.AsyncClient(timeout=MCP_TIMEOUT_S, follow_redirects=False, transport=self.transport) as c:
+                if conf["transport"] == "sse":
+                    return await self._over_sse(c, conf["endpoint"], headers, work)
+                return await self._over_streamable(c, conf["endpoint"], headers, work)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
+            raise _Down(type(e).__name__) from None
+
     async def snapshot(self, name: str) -> dict:
         """What the server lists, measured now or lately."""
         snap = self._snap.get(name)
         now = time.monotonic()
         if snap and now - snap["at"] < (MCP_TTL_S if snap["status"] == "up" else MCP_RETRY_S):
             return snap
-        conf = self.servers[name]
-        said, token = self._auth(conf)
+        said, _ = self._auth(self.servers[name])
         snap = {"at": now, "checked": datetime.now(timezone.utc).isoformat(timespec="seconds"), "auth": said,
                 "status": "up", "tools": [], "resources": [], "templates": [], "prompts": []}
-        headers = {"Authorization": token} if token else {}
+
+        async def lists(post: Callable, init: dict) -> None:
+            snap["init"] = init
+            for method, field_, keep in self._wants(snap):
+                got = await post(method, {})
+                snap[keep] = [t for t in got.get(field_, []) if isinstance(t, dict) and isinstance(t.get("name"), str)]
+
         try:
-            async with httpx.AsyncClient(timeout=MCP_TIMEOUT_S, follow_redirects=False, transport=self.transport) as c:
-                if conf["transport"] == "sse":
-                    await self._over_sse(c, conf["endpoint"], headers, snap)
-                else:
-                    await self._over_streamable(c, conf["endpoint"], headers, snap)
+            await self._connect(name, lists)
         except _Gate as e:
             snap.update(status="gated", statusCode=e.status)
         except _Down as e:
             snap.update(status="unreachable", reason=e.reason, **({"statusCode": e.status} if e.status else {}))
-        except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
-            # The exception's text can quote the endpoint and the answer; the
-            # record keeps the kind of failure and nothing more.
-            snap.update(status="unreachable", reason=type(e).__name__)
         self._snap[name] = snap
         return snap
+
+    async def call(self, name: str, tool: str, args: dict) -> dict:
+        """One tool's answer, asked for now or lately: a thing and its stat
+        cost the server one call, and a crawl's second look costs nothing."""
+        key = (name, tool, json.dumps(args, sort_keys=True))
+        hit = self._calls.get(key)
+        now = time.monotonic()
+        if hit and now - hit[0] < MCP_TTL_S:
+            return hit[1]
+
+        async def one(post: Callable, init: dict) -> dict:
+            return await post("tools/call", {"name": tool, "arguments": args})
+
+        got = await self._connect(name, one)
+        while len(self._calls) >= MCP_CALL_CAP:
+            del self._calls[next(iter(self._calls))]
+        self._calls[key] = (now, got)
+        return got
 
     def _wants(self, snap: dict) -> list[tuple[str, str, str]]:
         """The lists to ask for, by the capabilities the server declared."""
@@ -1901,7 +2109,7 @@ class Mcp:
             raise _Down(f"{method}: no result")
         return got
 
-    async def _over_streamable(self, c: httpx.AsyncClient, endpoint: str, headers: dict, snap: dict) -> None:
+    async def _over_streamable(self, c: httpx.AsyncClient, endpoint: str, headers: dict, work: Callable) -> Any:
         """Streamable HTTP: every message is a POST; an answer is JSON or a
         short event stream; the session id rides in a header."""
         hdrs = {**headers, "Accept": "application/json, text/event-stream", "Content-Type": "application/json",
@@ -1930,13 +2138,11 @@ class Mcp:
                 raise _Down(f"{method}: no answer in the stream")
             return self._result(r.json(), method)
 
-        snap["init"] = await post("initialize", self._init_params())
+        init = await post("initialize", self._init_params())
         await post("notifications/initialized", None, notify=True)
-        for method, field_, keep in self._wants(snap):
-            got = await post(method, {})
-            snap[keep] = [t for t in got.get(field_, []) if isinstance(t, dict) and isinstance(t.get("name"), str)]
+        return await work(post, init)
 
-    async def _over_sse(self, c: httpx.AsyncClient, endpoint: str, headers: dict, snap: dict) -> None:
+    async def _over_sse(self, c: httpx.AsyncClient, endpoint: str, headers: dict, work: Callable) -> Any:
         """The older transport: one GET holds an event stream open; its first
         event names where to POST, and every answer comes back on the stream."""
         async with c.stream("GET", endpoint, headers={**headers, "Accept": "text/event-stream"}) as s:
@@ -1981,11 +2187,90 @@ class Mcp:
                     return None
                 return self._result(json.loads(await event(msg["id"])), method)
 
-            snap["init"] = await post("initialize", self._init_params())
+            init = await post("initialize", self._init_params())
             await post("notifications/initialized", None, notify=True)
-            for method, field_, keep in self._wants(snap):
-                got = await post(method, {})
-                snap[keep] = [t for t in got.get(field_, []) if isinstance(t, dict) and isinstance(t.get("name"), str)]
+            return await work(post, init)
+
+    # -- the map (tinyhelper#6) ----------------------------------------------
+
+    def map_files(self, name: str) -> tuple[Path, Path]:
+        d = self.ns.repo / MAPS_DIR
+        return d / f"{name}.json", d / f"{name}.override.json"
+
+    def map(self, name: str) -> Map | None:
+        """The server's map as its two files now are, re-read when either
+        changes, so a map the driver just wrote is served with no restart.
+        No derived file, no map: an override alone corrects nothing."""
+        derived, override = self.map_files(name)
+
+        def stamp(f: Path) -> tuple[int, int] | None:
+            try:
+                st = f.stat()
+                return st.st_mtime_ns, st.st_size
+            except OSError:
+                return None
+
+        key = (stamp(derived), stamp(override))
+        hit = self._maps.get(name)
+        if hit and hit[0] == key:
+            return hit[1]
+        m = Map(name, self._load(derived), self._load(override) if key[1] else None) if key[0] else None
+        self._maps[name] = (key, m)
+        return m
+
+    def takes(self, ref: Ref) -> tuple[tuple[str, ...], bool] | None:
+        """A mapped collection's own query, for check_params: the names its
+        entry lists and whether * passes the rest through. None elsewhere."""
+        if ref.mount != "mcp" or not ref.is_collection:
+            return None
+        parts = [p for p in ref.path.split("/") if p]
+        if len(parts) < 2 or parts[0] not in self.servers or parts[1] in MCP_OWN:
+            return None
+        m = self.map(parts[0])
+        hit = m.match(parts[1:], True) if m else None
+        if not hit:
+            return None
+        q = hit[1].get("query")
+        names = [x for x in q if isinstance(x, str)] if isinstance(q, list) else []
+        return tuple(sorted(x for x in names if x != "*" and x not in PARAMS["mcp"] and x != "at")), "*" in names
+
+    def type_of(self, name: str, parts: list[str], coll: bool) -> str | None:
+        """What a mapped address reads as, from the address alone."""
+        if name not in self.servers or not parts or parts[0] in MCP_KINDS:
+            return None
+        if parts == ["map"]:
+            return None if coll else T_MAP
+        m = self.map(name)
+        hit = m.match(parts, coll) if m else None
+        return m.type_at(hit[0], hit[2]) if m and hit else None
+
+    def kinds(self) -> dict[str, dict]:
+        """The kinds the maps name that the vocabulary does not: one line
+        each, and the address of the schema the server published for it,
+        when the tool was seen to have one. The registry points there,
+        never at a copy."""
+        out: dict[str, dict] = {}
+        for name in self.servers:
+            m = self.map(name)
+            if not m:
+                continue
+            snap = self.cached(name)
+            for kind, tool in m.kinds().items():
+                if kind in out or kind in KINDS:
+                    continue
+                e = {"what": f"a kind the map of {name} names, read with its tool {tool}"}
+                t = self._find("tools", tool, snap) if snap else None
+                if t and isinstance(t.get("outputSchema"), dict):
+                    e["schema"] = f"{self.uri(name, 'tools', tool)}?pointer=/outputSchema"
+                out[kind] = e
+        return out
+
+    def inbound(self, path: str) -> list[dict]:
+        """What a map's file says back: the map read from it."""
+        m = re.fullmatch(re.escape(MAPS_DIR) + r"/([^/]+?)(\.override)?\.json", path)
+        if m and m[1] in self.servers and self.map(m[1]) is not None:
+            return [link("tm:read-by", self.uri(m[1], "map"), "exact", title=f"the map of {m[1]}, read from this file")]
+        return []
 
     # -- read ----------------------------------------------------------------
 
@@ -2024,22 +2309,30 @@ class Mcp:
         conf = self.servers[name]
         here = self.uri(name, collection=True)
         init = snap.get("init") or {}
+        m = self.map(name)
+        map_kid = [{"uri": self.uri(name, "map"), "name": "map", "mimeType": T_MAP, "isCollection": False}] if m else []
         body: dict[str, Any] = {"uri": here, "server": name, "what": conf["what"], "endpoint": conf["endpoint"],
-                                "transport": conf["transport"], "auth": snap["auth"], "status": snap["status"], "checked": snap["checked"]}
+                                "transport": conf["transport"], "auth": snap["auth"], "status": snap["status"], "checked": snap["checked"],
+                                "map": self.uri(name, "map") if m else None}
         links = [link("up", f"{ROOT}mcp/")]
         if snap["status"] != "up":
             for k in ("statusCode", "reason"):
                 if k in snap:
                     body[k] = snap[k]
-            body["children"] = []
+            body["children"] = map_kid
             return body, links
         for k in ("protocolVersion", "serverInfo", "capabilities", "instructions"):
             if k in init:
                 body[k] = init[k]
         body["counts"] = {k: len(snap[k]) for k in ("tools", "resources", "templates", "prompts")}
+        body["counts"]["reads"] = len(m.reads) if m else 0
         caps = init.get("capabilities") or {}
         body["children"] = [{"uri": self.uri(name, k, collection=True), "name": f"{k}/", "mimeType": T_LISTING, "isCollection": True}
-                            for k in MCP_KINDS if k in caps]
+                            for k in MCP_KINDS if k in caps] + map_kid
+        for key, coll in (m.roots() if m else []):
+            segs, _ = m.segments(key)
+            t = m.type_at(key, {})
+            body["children"].append({"uri": self.path_uri(name, segs, coll), "name": key, **({"mimeType": t} if t else {}), "isCollection": coll})
         for t in snap["tools"]:
             links.append(link("tm:serves", self.uri(name, "tools", t["name"]), "exact", title=f"a tool of {name}: {self._title(t) or t['name']}"))
         return body, links
@@ -2088,8 +2381,12 @@ class Mcp:
             body, links = self._server(name, snap)
             return self._listing(ref, body.pop("children"), body, links, MCP_TYPE["server"])
         kind = parts[1]
+        if kind == "map":
+            if len(parts) > 2 or coll:
+                raise self._no(f"{ref.uri}: the map is one thing, at {self.uri(name, 'map')}", [self.uri(name, "map")])
+            return self._map_read(ref, name, as_)
         if kind not in MCP_KINDS:
-            raise self._no(f"mcp/{name}/{kind}: a server has tools, resources and prompts, and nothing else is addressed under it", [here])
+            return await self._mapped(ref, name, parts[1:], coll, as_, snap)
         if snap["status"] != "up":
             raise self._closed(name, snap)
         caps = (snap.get("init") or {}).get("capabilities") or {}
@@ -2110,21 +2407,251 @@ class Mcp:
         if coll:
             raise self._no(f"{me}/ is not a collection; the {kind[:-1]} is at {me}", [me])
         body, links = self._thing(name, kind, t)
-        mime = MCP_TYPE[kind[:-1]]
-        text = json.dumps(body, indent=1, ensure_ascii=False)
+        return self._emit(ref, me, MCP_TYPE[kind[:-1]], json.dumps(body, indent=1, ensure_ascii=False).encode(), True, links,
+                          {"uri": me, "name": t["name"], "server": self.uri(name, collection=True), "checked": snap["checked"]}, as_)
+
+    def _emit(self, ref: Ref, me: str, mime: str, data: bytes, text: bool, links: list[dict], stat: dict, as_: str | None) -> dict:
+        """A thing, its stat or a piece of it: one tail for a tool, a prompt,
+        a resource, a map and a mapped read alike."""
         if as_ == "stat":
-            stat = {"uri": me, "name": t["name"], "server": self.uri(name, collection=True), "mimeType": mime, "size": len(text.encode()),
-                    "isCollection": False, "text": True, "checked": snap["checked"]}
-            return self.ns._result(f"{me}?as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", me)])
+            st = {**stat, "mimeType": mime, "size": len(data), "isCollection": False, "text": text}
+            return self.ns._result(f"{me}?as=stat", T_STAT, json.dumps(st, indent=1), links + [link("alternate", me)])
         span = span_of(ref)
-        data = text.encode()
         if span and span[0] == "range":
             start, end = byte_range(span[1], len(data))
-            return self.ns._result(f"{me}?range={start}-{end}", mime, data[start:end].decode("utf-8", errors="replace"), links)
+            piece = data[start:end]
+            return self.ns._result(f"{me}?range={start}-{end}", mime, piece.decode("utf-8", errors="replace") if text else None, links, blob=None if text else piece)
         if span:
+            if not text:
+                raise TmError(BAD_PARAMS, "bad-facet", f"{span[0]} reads a piece of a text, and this reads as {mime}; range= reads its bytes")
             uri, mime, data = cut(span, data, mime, me)
             return self.ns._result(uri, mime, data.decode("utf-8", errors="replace"), links)
-        return self.ns._result(me, mime, text, links)
+        return self.ns._result(me, mime, data.decode("utf-8", errors="replace") if text else None, links, blob=None if text else data)
+
+    # -- the map and what it makes addressable (tinyhelper#6) -----------------
+
+    def _map_read(self, ref: Ref, name: str, as_: str | None) -> dict:
+        """The merged map: every entry with its confidence and its address
+        template, what the driver could not decide, what was dropped, and the
+        two files it is read from."""
+        m = self.map(name)
+        me, here = self.uri(name, "map"), self.uri(name, collection=True)
+        if m is None:
+            raise self._no(f"mcp/{name}/map: no map is derived for {name} yet, so only its tools, resources and prompts are addressed",
+                           [here])
+        derived_f, override_f = self.map_files(name)
+        reads = {}
+        for key in sorted(m.reads):
+            segs, coll = m.segments(key)
+            reads[key] = {**m.reads[key], "uri": self.path_uri(name, segs, coll)}
+        counts = {"reads": len(reads), "exact": sum(1 for e in reads.values() if e["confidence"] == "exact"),
+                  "inferred": sum(1 for e in reads.values() if e["confidence"] == "inferred"), "undecided": len(m.undecided)}
+        src = f"{ROOT}fs/{MAPS_DIR}/{quote(name)}.json"
+        ovr = f"{ROOT}fs/{MAPS_DIR}/{quote(name)}.override.json" if override_f.exists() else None
+        body = {"uri": me, "server": here, "derived": m.derived.get("derived"), "from": m.derived.get("from"), "source": src, "override": ovr,
+                "counts": counts, "reads": reads, "undecided": m.undecided, "ignored": m.ignored}
+        links = [link("up", here), link("describedby", f"{me}?as=stat"),
+                 link("tm:data", src, "exact", title=f"the derived map of {name}, as the index driver wrote it", mime=T_RECORD)]
+        if ovr:
+            links.append(link("tm:data", ovr, "exact", title=f"the override for {name}: what a person corrected", mime=T_RECORD))
+        return self._emit(ref, me, T_MAP, json.dumps(body, indent=1, ensure_ascii=False).encode(), True, links, {"uri": me, "name": "map", "server": here}, as_)
+
+    def _coerce(self, name: str, k: str, v: str, props: dict) -> Any:
+        """An argument as the tool's schema types it; a value that is not
+        of that type is refused before the server is asked."""
+        t = (props.get(k) or {}).get("type") if isinstance(props.get(k), dict) else None
+        try:
+            if t == "integer":
+                return int(v)
+            if t == "number":
+                return float(v)
+            if t == "boolean":
+                if v in ("true", "1"):
+                    return True
+                if v in ("false", "0"):
+                    return False
+                raise ValueError(v)
+        except ValueError:
+            raise self._no(f"mcp/{name}: {k}={v!r} is not {'an' if t == 'integer' else 'a'} {t}, which is what the tool's schema says {k} is", [self.uri(name, "map")]) from None
+        return v
+
+    @staticmethod
+    def _words(got: dict) -> str:
+        for c in got.get("content") or []:
+            if isinstance(c, dict) and c.get("type") == "text" and isinstance(c.get("text"), str):
+                return c["text"]
+        return ""
+
+    @staticmethod
+    def _body(got: dict, kind: Any, args: dict) -> tuple[Any, str | None, bytes | None]:
+        """What a tool answered, as a thing: structuredContent when the
+        server gave it, else its first content; with its type by the map's
+        kind, by the server's own for from-result, a record for JSON with no
+        kind, and words as words. Bytes come back as bytes."""
+        sc = got.get("structuredContent")
+        content = got.get("content") or []
+        first = content[0] if content and isinstance(content[0], dict) else {}
+        own: str | None = None
+        if isinstance(sc, (dict, list)):
+            data: Any = sc
+        elif first.get("type") == "resource" and isinstance(first.get("resource"), dict):
+            res = first["resource"]
+            own = res.get("mimeType") if isinstance(res.get("mimeType"), str) else None
+            if isinstance(res.get("blob"), str):
+                return None, own or "application/octet-stream", base64.b64decode(res["blob"])
+            data = res.get("text", "")
+        else:
+            data = first.get("text", "") if first.get("type") == "text" else json.dumps(content)
+            own = first.get("mimeType") if isinstance(first.get("mimeType"), str) else None
+        if isinstance(data, str) and data[:1] in ("{", "["):
+            try:
+                data = json.loads(data)
+            except ValueError:
+                pass
+        structured = isinstance(data, (dict, list))
+        if kind == "from-result":
+            mime = (T_RECORD if own in (None, "application/json") else own) if structured else (own or "text/plain")
+        elif isinstance(kind, str) and kind and structured:
+            filled = Map.fill(kind, args)
+            mime = (filled if "/" in filled else f"application/{filled}") if filled else T_RECORD
+        else:
+            mime = T_RECORD if structured else "text/plain"
+        return data, mime, None
+
+    def _children(self, m: Map, name: str, key: str, args: dict, data: Any) -> tuple[list[dict], int | None]:
+        """What a mapped collection lists: each item of the answer at the
+        address one segment deeper, keyed by the field the entry names, else
+        the argument's own name, else id. An item with no key is not listed."""
+        entry = m.reads[key]
+        items: list = []
+        if isinstance(data, dict):
+            # The field the entry names; failing that (the entry is inferred),
+            # the first field that holds a list, which is how a server that
+            # wraps a list answer as {"result": [...]} still lists.
+            field_ = entry.get("items")
+            got = data.get(field_) if isinstance(field_, str) else None
+            if not isinstance(got, list):
+                got = next((v for v in data.values() if isinstance(v, list)), None)
+            items = got if isinstance(got, list) else []
+        elif isinstance(data, list):
+            items = data
+        total = data.get("total") if isinstance(data, dict) and isinstance(data.get("total"), int) else None
+        deeper = m.deeper(key)
+        if not deeper:
+            return [], total
+        dkey, dcoll = deeper
+        segs, _ = m.segments(dkey)
+        argname = Map.arg(segs[-1]) or "id"
+        keyfield = entry.get("key") if isinstance(entry.get("key"), str) else argname
+        kids = []
+        for it in items:
+            title = None
+            if isinstance(it, dict):
+                val = it.get(keyfield, it.get("id"))
+                title = next((it[t] for t in ("title", "label") if isinstance(it.get(t), str) and it[t]), None)
+            else:
+                val = it
+            if isinstance(val, bool) or not isinstance(val, (str, int)):
+                continue
+            a2 = {**args, argname: str(val)}
+            t = m.type_at(dkey, a2)
+            kids.append({"uri": self.path_uri(name, [Map.fill(x, a2) or x for x in segs], dcoll), "name": str(val),
+                         **({"title": title} if title else {}), **({"mimeType": t} if t else {}), "isCollection": dcoll})
+        return kids, total
+
+    async def _mapped(self, ref: Ref, name: str, parts: list[str], coll: bool, as_: str | None, snap: dict) -> dict:
+        """A path the map names: the tool it names is called with the path's
+        arguments (and a collection's own query), and the answer is the thing,
+        typed by the entry's kind, linked as the entry says, its provenance
+        in _meta untouched and the entry's confidence beside it."""
+        here = self.uri(name, collection=True)
+        where = f"mcp/{name}/{'/'.join(parts)}{'/' if coll else ''}"
+        m = self.map(name)
+        if m is None:
+            raise self._no(f"{where}: no map is derived for {name} yet, so only its tools, resources and prompts are addressed", [here])
+        hit = m.match(parts, coll)
+        if hit is None:
+            other = m.match(parts, not coll)
+            if other:
+                me = self.path_uri(name, parts, not coll)
+                raise self._no(f"{where} is not {'a collection' if coll else 'a thing'} the map of {name} names; {me} is", [me])
+            raise self._no(f"{where}: the map of {name} names no such path; it says what is addressed", [self.uri(name, "map")])
+        key, entry, args = hit
+        if snap["status"] != "up":
+            raise self._closed(name, snap)
+        tool = self._find("tools", entry["tool"], snap)
+        if tool is None:
+            raise self._no(f"{where}: the map reads this with {entry['tool']}, a tool {name} does not list", [self.uri(name, "map")])
+        props = (tool.get("inputSchema") or {}).get("properties") if isinstance(tool.get("inputSchema"), dict) else {}
+        props = props if isinstance(props, dict) else {}
+        call_args = {k: self._coerce(name, k, v, props) for k, v in args.items()}
+        query: dict[str, Any] = {}
+        if coll:
+            for k, v in ref.facets.items():
+                if k not in PARAMS["mcp"] and k != "at":
+                    query[k] = self._coerce(name, k, v, props)
+            call_args.update(query)
+        try:
+            got = await self.call(name, entry["tool"], call_args)
+        except _Gate as e:
+            raise self._closed(name, {"status": "gated", "statusCode": e.status}) from None
+        except _Down as e:
+            raise self._closed(name, {"status": "unreachable", "reason": e.reason, **({"statusCode": e.status} if e.status else {})}) from None
+        above = m.above(key)
+        up = self.path_uri(name, [Map.fill(x, args) or x for x in m.segments(above)[0]], True) if above else here
+        if got.get("isError"):
+            raise self._no(f"{where}: {name} answered an error through {entry['tool']}: {self._words(got)[:200]}", [up])
+        data, mime, blob = self._body(got, entry.get("kind"), args)
+        me = self.path_uri(name, parts, coll)
+        tool_uri = self.uri(name, "tools", entry["tool"])
+        conf = entry["confidence"]
+        links = [link("up", up)]
+        if coll:
+            if query:
+                me += "?" + urlencode(sorted(query.items()))
+            kids, total = self._children(m, name, key, args, data)
+            chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
+            body: dict[str, Any] = {"uri": me, "server": here, "tool": tool_uri, **({"query": query} if query else {}),
+                                    **({"total": total} if total is not None else {}), "children": chunk}
+            if nxt:
+                body["nextCursor"] = nxt
+                body["next"] = f"{me}{'&' if '?' in me else '?'}cursor={nxt}"
+            body["result"] = data
+            beside = m.beside(key)
+            if beside:
+                links.append(link("describedby", self.path_uri(name, [Map.fill(x, args) or x for x in m.segments(beside)[0]], False)))
+            mime, data, blob = T_LISTING, body, None
+        else:
+            if above:
+                links.append(link("collection", up))
+            links.append(link("describedby", f"{me}?as=stat"))
+        links.append(link("tm:read-with", tool_uri, conf, title=f"the tool of {name} this is read with"))
+        more = entry.get("links")
+        for rel, tmpl in (more.items() if isinstance(more, dict) else ()):
+            filled = Map.fill(tmpl, args, data) if isinstance(tmpl, str) else None
+            if filled:
+                links.append(link(rel, self.path_uri(name, filled.rstrip("/").split("/"), filled.endswith("/")), conf if rel.startswith("tm:") else None))
+        edges = entry.get("edges")
+        if isinstance(edges, str) and isinstance(data, dict) and isinstance(data.get(edges), list) and not coll:
+            segs, _ = m.segments(key)
+            last = Map.arg(segs[-1])
+            for e in data[edges]:
+                val = e if isinstance(e, (str, int)) and not isinstance(e, bool) else (next((e[k] for k in ("id", "target", "node") if isinstance(e.get(k), (str, int))), None) if isinstance(e, dict) else None)
+                if val is None or last is None:
+                    continue
+                a2 = {**args, last: str(val)}
+                title = next((e[t] for t in ("title", "label", "name") if isinstance(e.get(t), str)), None) if isinstance(e, dict) else None
+                links.append(link("related", self.path_uri(name, [Map.fill(x, a2) or x for x in segs], False), title=title))
+        if blob is not None:
+            got_out = self._emit(ref, me, mime, blob, False, links, {"uri": me, "server": here, "checked": snap["checked"]}, as_)
+        else:
+            text = json.dumps(data, indent=1, ensure_ascii=False) if isinstance(data, (dict, list)) else str(data)
+            got_out = self._emit(ref, me, mime, text.encode(), True, links, {"uri": me, "server": here, "checked": snap["checked"]}, as_)
+        got_out["_meta"][META_MAP] = {"map": self.uri(name, "map"), "entry": key, "tool": entry["tool"], "confidence": conf}
+        prov = {k: data[k] for k in PROVENANCE if isinstance(data, dict) and k in data}
+        if prov:
+            got_out["_meta"][META_PROVENANCE] = prov
+        return got_out
 
     def _listing(self, ref: Ref, kids: list[dict], extra: dict, links: list[dict], mime: str = T_LISTING) -> dict:
         """A listing, or the server's record, which is a listing whose body is
@@ -2144,6 +2671,9 @@ class Mcp:
         snap = self.cached(server)
         caps = ((snap or {}).get("init") or {}).get("capabilities") or {}
         values = [f"{k}/" for k in MCP_KINDS if not snap or k in caps]
+        m = self.map(server)
+        if m:
+            values += ["map"] + [k for k, _ in m.roots()]
         if snap:
             for kind in MCP_KINDS:
                 values += [f"{kind}/{t['name']}" for t in snap[kind] + (snap["templates"] if kind == "resources" else [])]
@@ -2255,7 +2785,8 @@ class Kinds:
         if not parts:
             if as_:
                 raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; the registry is a listing and offers no facets; read {self.uri()} without ?as")
-            kids = [{"uri": self.uri(k), "name": k, **({"title": KINDS[k]} if k in KINDS else {}), "mimeType": T_KIND, "isCollection": False, "served": self.data[k]["served"]}
+            vocab = self.ns.vocabulary()
+            kids = [{"uri": self.uri(k), "name": k, **({"title": vocab[k]} if k in vocab else {}), "mimeType": T_KIND, "isCollection": False, "served": self.data[k]["served"]}
                     for k in self.names()]
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
             body: dict[str, Any] = {"uri": self.uri(), "since": self.since, "served": sum(e["served"] for e in self.data.values()), "children": chunk}
@@ -2273,9 +2804,13 @@ class Kinds:
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{why}; the registry lists what has been served", nearest=near or [self.uri()])
         e = self.data[kind]
         me = self.uri(kind)
-        body = {"uri": me, "kind": kind, **({"what": KINDS[kind]} if kind in KINDS else {}), "mediaTypes": dict(sorted(e["types"].items())),
+        vocab, schema = self.ns.vocabulary(), self.ns.kind_schema(kind)
+        body = {"uri": me, "kind": kind, **({"what": vocab[kind]} if kind in vocab else {}), **({"schema": schema} if schema else {}),
+                "mediaTypes": dict(sorted(e["types"].items())),
                 "served": e["served"], "first": e["first"], "last": e["last"], "since": self.since, "rels": dict(sorted(e["rels"].items()))}
         links = [link("up", self.uri()), link("collection", self.uri()), link("describedby", f"{me}?as=stat")]
+        if schema:
+            links.append(link("describedby", schema, title="the schema the server published for this kind, as a piece of its tool"))
         text = json.dumps(body, indent=1)
         if as_ == "stat":
             stat = {"uri": me, "kind": kind, "mimeType": T_KIND, "size": len(text.encode()), "isCollection": False, "text": True, "last": e["last"]}
@@ -2577,7 +3112,7 @@ class Namespace:
     async def read(self, uri: str) -> dict:
         try:
             ref = parse(uri)
-            check_params(ref)
+            check_params(ref, self.mcp.takes(ref))
             got = await self._read_links(ref) if ref.facets.get("as") == "links" else self._bounded(await self._read(uri), ref)
             got["_meta"][META_LINKS] = self._typed(got["_meta"][META_LINKS])
             self.kinds.record(got["contents"][0]["mimeType"], got["_meta"][META_LINKS])
@@ -2639,6 +3174,15 @@ class Namespace:
             out.append(ln)
         return out
 
+    def vocabulary(self) -> dict[str, str]:
+        """Every kind this host can say: KINDS, and the kinds its maps name
+        (tinyhelper#6), one line each."""
+        return {**KINDS, **{k: v["what"] for k, v in self.mcp.kinds().items()}}
+
+    def kind_schema(self, kind: str) -> str | None:
+        """Where the server that owns a mapped kind published its schema."""
+        return (self.mcp.kinds().get(kind) or {}).get("schema")
+
     def target_type(self, href: str) -> str | None:
         """What reading an address would come back as, from the address
         alone: its facet, its mount, its path's shape. None where the address
@@ -2655,9 +3199,11 @@ class Namespace:
             return T_LISTING
         parts = [p for p in ref.path.split("/") if p]
         if ref.mount == "mcp":
-            if ref.is_collection:
-                return MCP_TYPE["server"] if len(parts) == 1 else T_LISTING
-            return MCP_TYPE.get(parts[1][:-1]) if len(parts) >= 3 and parts[1] in MCP_KINDS else None
+            if len(parts) <= 1:
+                return (MCP_TYPE["server"] if parts else T_LISTING) if ref.is_collection else None
+            if parts[1] in MCP_KINDS:
+                return T_LISTING if ref.is_collection else (MCP_TYPE[parts[1][:-1]] if len(parts) >= 3 else None)
+            return self.mcp.type_of(parts[0], parts[1:], ref.is_collection)
         if ref.is_collection:
             return T_LISTING
         if ref.mount == "offbox":
@@ -2933,6 +3479,7 @@ class Namespace:
                         links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the page this file becomes on {site}"))
             links.extend(self._origin_links(clean))
             links.extend(self._record_links(clean))
+            links.extend(self.mcp.inbound(clean))
         return links
 
     def _record_links(self, rel: str) -> list[dict]:
@@ -3695,6 +4242,9 @@ class Namespace:
         ref = parse(uri)
         if ref.mount == "entity":
             return self.entities.stands_for(ref)
+        if ref.mount == "mcp":
+            # A map is read from its files and names itself back (tinyhelper#6).
+            return uri
         if ref.mount != "http" or ref.site is None:
             return None
         if ref.is_collection:

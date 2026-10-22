@@ -79,6 +79,20 @@ PAIRS.update({v: k for k, v in ENTITY_PAIRS.items()})
 MCP_PAIRS = {"tm:served-by": "tm:serves"}
 PAIRS.update(MCP_PAIRS)
 PAIRS.update({v: k for k, v in MCP_PAIRS.items()})
+# tinyhelper#6: a mapped collection (mcp/<server>/<path>/ that a map names)
+# lists a server's data, which can be thousands of things read live from the
+# server. The walk samples each at this many children, so the deploy's check
+# reads each mapped shape without reading a whole dex.
+MCP_SAMPLE = 3
+
+
+def mapped(uri: str) -> bool:
+    """A read of what a server's map makes addressable (not the map itself,
+    which is two files and reads whether or not any address works)."""
+    parts = urlsplit(uri).path.strip("/").split("/")
+    return len(parts) >= 3 and parts[0] == "mcp" and parts[2] not in tm.MCP_OWN
+
+
 # Pairs whose two ends must agree on how sure they are.
 SAME_CONFIDENCE = {"tm:data", "tm:read-by", "tm:step", "tm:step-of"} | set(ENTITY_PAIRS) | set(ENTITY_PAIRS.values()) | set(MCP_PAIRS) | set(MCP_PAIRS.values())
 
@@ -156,7 +170,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 mime = r["contents"][0].get("mimeType") or ""
                 if mime == "application/json":
                     problems.append(f"{uri}: reads as bare application/json; a thing the server composes says its kind")
-                elif tm.kind_of(mime) != "file" and tm.kind_of(mime) not in tm.KINDS:
+                elif tm.kind_of(mime) != "file" and tm.kind_of(mime) not in ns.vocabulary():
                     problems.append(f"{uri}: reads as {mime}, a kind the vocabulary does not know")
                 kinds_served.add(tm.kind_of(mime))
             except tm.TmError as e:
@@ -182,11 +196,14 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     kinds_served: set[str] = set()
     typed = 0
     reads = 0
+    mapped_reads = 0
     while queue and reads < budget:
         uri, via = queue.popleft()
         if uri in seen:
             continue
         reads += 1
+        if mapped(uri):
+            mapped_reads += 1
         # A file or a page is read as its stat: it carries the same links, the
         # type, and nothing too large to read.
         probe = stat_of(uri)
@@ -212,9 +229,14 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
         text = got["content"].get("text") or ""
         if uri.endswith("/") and tm.is_json(got["content"].get("mimeType") or "") and text.startswith("{"):
             body = json.loads(text)
+            sample = MCP_SAMPLE if mapped(uri) else None
             for child in body.get("children", []):
                 if child.get("redacted"):
                     continue
+                if sample is not None:
+                    if sample == 0:
+                        break
+                    sample -= 1
                 d = git_depth(child["uri"])
                 if d is not None and d > 2:
                     continue
@@ -285,6 +307,10 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[me]} back")
     if typed == 0:
         problems.append("no link carried its target's type, so none was checked (tinypeek#23)")
+    # tinyhelper#6: a server with a map has data with addresses, and the walk
+    # must have read some of it, or the maps were checked on nothing.
+    if mapped_reads == 0 and any(ns.mcp.map(n) is not None for n in ns.mcp.names()):
+        problems.append("a map is derived and no mapped read was made, so no map was checked (tinyhelper#6)")
     # tinypeek#23: the registry lists what the walk was served, and each kind reads.
     try:
         reg = json.loads((await ns.read(f"{tm.ROOT}kinds/"))["contents"][0]["text"])
@@ -297,7 +323,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 problems.append(f"kinds/{kind}: listed with no count or no media type")
     except tm.TmError as e:
         problems.append(f"kinds/: the registry does not read ({e.reason})")
-    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {len(kinds_served)} kinds served")
+    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {mapped_reads} mapped reads, {len(kinds_served)} kinds served")
     unread = [u for u, _ in queue if u not in seen]
     if unread:
         problems.append(f"the budget of {budget} reads ran out with {len(unread)} URIs still queued and unchecked; raise --budget")
@@ -306,7 +332,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     if problems:
         print(f"check-tm-links: {len(problems)} problem(s)")
         return 1
-    print("check-tm-links: every link resolves, no up names itself, every listing's type holds, every typed link reads as it says, every pair has its inverse, every version links back, the registry lists every kind served")
+    print(f"check-tm-links: every link resolves, no up names itself, every listing's type holds, every typed link reads as it says, every pair has its inverse, every version links back, the registry lists every kind served, the mapped collections were sampled at {MCP_SAMPLE} children each")
     return 0
 
 
