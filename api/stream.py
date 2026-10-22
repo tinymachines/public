@@ -110,6 +110,13 @@ SECRETS = {
 PROGRESS = re.compile(r"^# (\d+) of (\d+) frames, ([\d.]+) s(?:, worst lag (\d+) ms, (\d+) frames late)?")
 CLOSING = re.compile(r"^# (\d+) frames \(([\d.]+) s of console time\) in ([\d.]+) s, ffmpeg (ok|FAILED)")
 PACED = re.compile(r"^# paced: worst lag (\d+) ms, (\d+) of (\d+) frames more than a frame late")
+# The cost line, printed once after the frame loop ends (nes-shell's stream
+# example): milliseconds per frame, averaged over the frames the decode thread
+# finished, two decimals. Null on a running run for its whole life.
+COST = re.compile(
+    r"^# ms per frame: console ([\d.]+) \| encode ([\d.]+) \| gpu ([\d.]+), "
+    r"read-back ([\d.]+), convert ([\d.]+), hand-off ([\d.]+)"
+)
 
 STOP_GRACE_S = 3.0
 LOG_TAIL = 60
@@ -320,6 +327,7 @@ def _view(run: Run) -> StreamRun:
     worst: Optional[float] = None
     late: Optional[int] = None
     ffmpeg_ok: Optional[bool] = None
+    cost: list[Optional[float]] = [None] * 6
     for line in _log_lines(run):
         m = PROGRESS.match(line)
         if m:
@@ -330,6 +338,10 @@ def _view(run: Run) -> StreamRun:
         m = PACED.match(line)
         if m:
             worst, late = float(m[1]), int(m[2])
+            continue
+        m = COST.match(line)
+        if m:
+            cost = [float(m[i]) for i in range(1, 7)]
             continue
         m = CLOSING.match(line)
         if m:
@@ -350,6 +362,12 @@ def _view(run: Run) -> StreamRun:
         worst_lag_ms=worst,
         frames_late=late,
         ffmpeg_ok=ffmpeg_ok,
+        ms_console=cost[0],
+        ms_encode=cost[1],
+        ms_gpu=cost[2],
+        ms_readback=cost[3],
+        ms_convert=cost[4],
+        ms_handoff=cost[5],
         file_ready=run.output == "file" and run.state == "done" and _file(run).is_file(),
         picture=f"/nes/live/{run.id}/index.m3u8" if run.output == "hls" and _playlist(run).is_file() else None,
         markers=len(_markers(run)),

@@ -241,6 +241,27 @@ def test_a_paced_run_reports_its_lag(client, desk, admin_key, dev_key):
     assert done["worst_lag_ms"] == 7.0 and done["frames_late"] == 2
 
 
+def test_the_cost_per_frame_line_is_read_once_the_run_ends(client, desk, admin_key, dev_key, monkeypatch):
+    """The tool prints its cost line once, after the frame loop; the six fields
+    are null for the whole life of a running run and filled when it ends. The
+    sabotage is the regex dropped: the done run keeps six nulls."""
+    cost = ("ms_console", "ms_encode", "ms_gpu", "ms_readback", "ms_convert", "ms_handoff")
+    monkeypatch.setenv("FAKE_HOLD", "2")
+    run = client.post("/v1/stream/runs", json={"game": "bars", "output": "file", "seconds": 1}, headers=auth(admin_key)).json()
+    live = client.get(f"/v1/stream/runs/{run['id']}", headers=auth(dev_key)).json()
+    assert live["state"] == "running" and all(live[k] is None for k in cost)
+    done = wait_until(client, dev_key, run["id"], "done")
+    assert [done[k] for k in cost] == [6.7, 4.1, 3.3, 2.4, 2.9, 0.1]
+    # The line is the fake's own, as the real tool writes it, so a rewording
+    # of the format is caught here and not on the history page.
+    raw = (desk["home"] / run["id"] / "stream.log").read_text()
+    assert "# ms per frame: console 6.7 | encode 4.1 | gpu 3.3, read-back 2.4, convert 2.9, hand-off 0.1" in raw
+    # A run with no such line says so with nulls: the earlier process's lost run.
+    (desk["home"] / run["id"] / "stream.log").write_text("# 60 of 60 frames, 1.0 s\n")
+    again = client.get(f"/v1/stream/runs/{run['id']}", headers=auth(dev_key)).json()
+    assert all(again[k] is None for k in cost)
+
+
 def test_a_missing_tool_is_a_503_not_a_failed_run(client, desk, admin_key, dev_key, monkeypatch):
     monkeypatch.setenv("TM_STREAM_BIN", str(desk["binary"]) + ".missing")
     r = client.post("/v1/stream/runs", json={"game": "bars", "output": "file", "seconds": 1}, headers=auth(admin_key))

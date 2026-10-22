@@ -39,6 +39,11 @@ test("the control plane is documented and gated", async ({ request }) => {
   }
   const r = await request.post("/api/v1/stream/runs", { data: { game: "bars", output: "file", seconds: 1 } });
   expect(r.status()).toBe(401);
+  // The cost per frame, six fields the history page draws, each described.
+  const props = doc.components.schemas.StreamRun.properties;
+  for (const f of ["ms_console", "ms_encode", "ms_gpu", "ms_readback", "ms_convert", "ms_handoff"]) {
+    expect(props[f]?.description ?? "", f).toContain("per frame");
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -333,4 +338,102 @@ test("the note states what the record measured", async ({ page }) => {
   }
   expect(record.start_press.seen_frame - record.start_press.landed_frame).toBe(record.start_press.frames);
   expect(record.reset.seen_frame - record.reset.landed_frame).toBe(record.reset.frames);
+});
+
+// ---------------------------------------------------------------------------
+// The run history, /nes/stream/history: every run as GET /v1/stream/runs
+// tells it. A run needs the GPU and the chain, so the list is answered here
+// by a route mock with three runs whose numbers are known: a done hls run
+// with a cost line, a done paced file run without one, and a lost run. What
+// is checked is that each lands where the page says it does: the last run in
+// full, every row in the ledger with the lost one marked, one cost row, and
+// a point per paced run in each trend drawing.
+// ---------------------------------------------------------------------------
+
+const NO_COST = { ms_console: null, ms_encode: null, ms_gpu: null, ms_readback: null, ms_convert: null, ms_handoff: null };
+const HISTORY = [
+  {
+    ...FIXTURE, ...NO_COST, id: "deadbeef", output: "hls", state: "done", started_at: "2026-10-21T15:30:00Z", ended_at: "2026-10-21T15:31:01Z", exit_code: 0,
+    frames_sent: 3606, frames_wanted: 3606, elapsed_s: 60.9, worst_lag_ms: 37, frames_late: 14, ffmpeg_ok: true, markers: 2,
+    ms_console: 9.25, ms_encode: 4.5, ms_gpu: 6.75, ms_readback: 3.25, ms_convert: 3.4, ms_handoff: 0.1,
+  },
+  {
+    ...FIXTURE, ...NO_COST, id: "cafe0001", game: "cal", state: "done", started_at: "2026-10-21T15:10:00Z", ended_at: "2026-10-21T15:11:00Z", exit_code: 0,
+    frames_sent: 3600, frames_wanted: 3600, elapsed_s: 60.2, worst_lag_ms: 9, frames_late: 1, ffmpeg_ok: true, markers: 0,
+  },
+  {
+    ...FIXTURE, ...NO_COST, id: "0badf00d", pace: false, state: "lost", started_at: "2026-10-21T15:00:00Z", ended_at: "2026-10-21T15:05:00Z",
+    frames_sent: 600, elapsed_s: 10, worst_lag_ms: null, frames_late: null, markers: 0,
+  },
+];
+
+async function mockHistory(page: Page) {
+  await mockApi(page, false, FIXTURE, [], passkey(true));
+  await page.route("**/api/v1/stream/runs", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ runs: HISTORY }) }));
+}
+
+test("the history serves signed out in both languages, noindex, and ships no run", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  for (const p of ["/nes/stream/history", "/ja/nes/stream/history"]) {
+    await open(page, p, 500);
+    await expect(page.getByTestId("stream-history"), p).toBeVisible();
+    await expect(page.locator("#stream-key"), p).toBeVisible();
+    const robots = await page.locator('meta[name="robots"]').getAttribute("content");
+    expect(robots ?? "", p).toContain("noindex");
+    const html = await page.content();
+    expect(html, p).not.toContain("data-run=");
+    expect(html, p).not.toContain("data-cost=");
+    expect(html, `${p}: an em dash`).not.toContain("—");
+  }
+});
+
+test("a passkey operator reads the ledger, the cost row and the trend with no key", async ({ page }) => {
+  await page.setViewportSize(DESK);
+  await mockHistory(page);
+  await open(page, "/nes/stream/history", 500);
+  await expect(page.getByTestId("history-ledger")).toBeVisible();
+  await expect(page.locator("#stream-key")).toHaveCount(0);
+  // The last run, in full.
+  const last = page.getByTestId("history-last");
+  for (const s of ["deadbeef", "bars", "hls", "3606 of 3606", "60 s asked", "60.9 s", "37 ms", "14", "ok", "done", "2026-10-21 15:30:00Z"]) {
+    await expect(last, s).toContainText(s);
+  }
+  // The ledger: every run, newest first, the lost one marked and not hidden.
+  const rows = page.locator("[data-testid=history-ledger] tr[data-run]");
+  await expect(rows).toHaveCount(HISTORY.length);
+  expect(await rows.evaluateAll((els) => els.map((e) => e.getAttribute("data-run")))).toEqual(HISTORY.map((r) => r.id));
+  const lost = page.locator('tr[data-run="0badf00d"]');
+  await expect(lost).toHaveAttribute("data-state", "lost");
+  await expect(lost).toContainText("lost");
+  await expect(lost).toHaveClass(/history-off/);
+  await expect(page.locator('tr[data-run="deadbeef"] a[href$="/nes/stream/deadbeef"]')).toHaveCount(1);
+  // One cost row, with the six figures; the two runs without a line are named.
+  const cost = page.locator("[data-cost]");
+  await expect(cost).toHaveCount(1);
+  for (const s of ["deadbeef", "9.25", "4.5", "6.75", "3.25", "3.4", "0.1"]) await expect(cost, s).toContainText(s);
+  await expect(page.getByTestId("history-no-cost")).toContainText("cafe0001");
+  await expect(page.getByTestId("history-no-cost")).toContainText("0badf00d");
+  // The trend: two drawings, a point per paced run in each, a series per game.
+  const trend = page.getByTestId("history-trend");
+  await expect(trend.locator("svg")).toHaveCount(2);
+  await expect(trend.locator("[data-point]")).toHaveCount(4);
+  await expect(trend.locator('[data-point="0badf00d"]')).toHaveCount(0);
+  await expect(trend.locator('[data-series="bars"]')).toHaveCount(2);
+  await expect(trend.locator('[data-series="cal"]')).toHaveCount(2);
+  expect(await trend.locator('svg >> nth=0 >> [data-point="deadbeef"]').getAttribute("data-value")).toBe("37");
+  expect(await trend.locator('svg >> nth=1 >> [data-point="deadbeef"]').getAttribute("data-value")).toBe("14");
+  await expect(trend.locator(".trend-key")).toContainText("bars");
+  await expect(trend.locator(".trend-key")).toContainText("cal");
+  // The source line names the route and the count.
+  await expect(page.getByTestId("history-source")).toContainText("/api/v1/stream/runs");
+  await expect(page.getByTestId("history-source")).toContainText("3 runs");
+});
+
+test("the history fits a phone", async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await mockHistory(page);
+  await open(page, "/nes/stream/history", 500);
+  await expect(page.getByTestId("history-ledger")).toBeVisible();
+  const o = await overflow(page);
+  expect(o.px, o.out.join("\n")).toBe(0);
 });

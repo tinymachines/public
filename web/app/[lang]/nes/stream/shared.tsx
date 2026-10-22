@@ -53,6 +53,13 @@ export interface Run {
   worst_lag_ms: number | null;
   frames_late: number | null;
   ffmpeg_ok: boolean | null;
+  /** Cost per frame in ms, from the line the tool prints once after its frame loop ends; null while running and on a run whose log has no such line. */
+  ms_console: number | null;
+  ms_encode: number | null;
+  ms_gpu: number | null;
+  ms_readback: number | null;
+  ms_convert: number | null;
+  ms_handoff: number | null;
   file_ready: boolean;
   markers: number;
   /** The live playlist's site path for an hls run, once the API has it (the monitor's M2); absent or null otherwise. */

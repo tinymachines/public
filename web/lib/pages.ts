@@ -205,6 +205,12 @@ export const PAGES: Record<string, FixedPage> = {
       "Start one of the family's cartridges through the console's stream chain to a file or a live ingest, watch it, stop it, mark it. An operator's desk behind a key.",
     noindex: true,
   },
+  "/nes/stream/history": {
+    title: "Run history",
+    description:
+      "Every run of the stream desk, newest first: how far each got, how late its frames ran, what each stage of the chain cost per frame, and the trend across runs. Operators only.",
+    noindex: true,
+  },
   "/nes/shelf": {
     title: "Your cartridges",
     description:

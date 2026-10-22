@@ -132,7 +132,7 @@ image can be named.
 |---|---|
 | `GET /v1/stream/games` | The cartridges the desk may run, with their sizes and digests |
 | `GET /v1/stream/outputs` | Which outputs are configured, as booleans: `file`, `rtmp`, `youtube`, and whether the tool is built. Never a key |
-| `GET /v1/stream/runs` | Every run, newest first, progress read from each run's log |
+| `GET /v1/stream/runs` | Every run, newest first, progress read from each run's log; once a run ends, the cost per frame of each stage of the chain (`ms_console` to `ms_handoff`), from the line the tool prints last. The run history at /nes/stream/history is a view of this route and nothing else |
 | `POST /v1/stream/runs` | Start a run: a game, an output (`file`, `hls` for the monitor's live picture, `rtmp`, `youtube`), seconds, an optional bench script. 409 while one is running or when the output's key is not in the environment |
 | `GET /v1/stream/runs/{run_id}` | One run as it stands |
 | `POST /v1/stream/runs/{run_id}/stop` | Stop it: SIGTERM to the tool and its ffmpeg, SIGKILL after three seconds |

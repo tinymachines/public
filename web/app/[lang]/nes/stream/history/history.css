@@ -1,0 +1,31 @@
+/* The run history's own few rules: a dimmed row for a run that is lost or
+   failed (marked, not hidden), and the trend drawing. Route-local on the rule
+   registry.css follows: a series colour per game is not a design system
+   component, and everything here is made of the kit's tokens. No colour here
+   is not a token; no size is not the unit.
+   =========================================================================== */
+
+.history .ledger .num { text-align: right; }
+.history tr.history-off td { color: var(--color-ink-muted); }
+.history tr.history-off .data { opacity: 0.7; }
+
+/* The trend: two drawings, worst lag and frames late per run in run order,
+   one series per game. The series take their colour from the element's
+   currentColor, so one rule per series sets the line, its points and the
+   swatch in the key alike. */
+.trend { margin-bottom: calc(var(--u) * 3); }
+.trend figure { margin: 0 0 calc(var(--u) * 2); }
+.trend svg { display: block; width: 100%; height: auto; max-width: 100%; color: var(--color-ink); }
+.trend .axis { stroke: currentColor; stroke-opacity: 0.4; }
+.trend .grid { stroke: currentColor; stroke-opacity: 0.12; }
+.trend text { font-family: var(--font-mono); font-size: 11px; fill: currentColor; }
+.trend .label { font-family: var(--font-sans); fill: var(--color-ink-muted); }
+.trend polyline { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.trend circle { fill: var(--color-paper); stroke: currentColor; stroke-width: 1.5; }
+.trend-s0 { color: var(--color-forest-ink); }
+.trend-s1 { color: var(--color-orange-ink); }
+.trend-s2 { color: var(--color-blue-ink); }
+.trend-s3 { color: var(--color-red-ink); }
+.trend-key { display: flex; flex-wrap: wrap; gap: calc(var(--u) * 1) calc(var(--u) * 3); list-style: none; padding: 0; margin: 0 0 calc(var(--u) * 2); font-size: var(--text-fine); }
+.trend-key .swatch { display: inline-block; width: 10px; height: 10px; margin-right: calc(var(--u) * 1); vertical-align: middle; background: currentColor; }
+.trend figcaption { font-size: var(--text-fine); color: var(--color-ink-muted); }
