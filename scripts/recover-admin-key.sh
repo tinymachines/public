@@ -24,6 +24,11 @@
 #
 #   ./scripts/recover-admin-key.sh          show, ask, do
 #   ./scripts/recover-admin-key.sh --yes    do
+#   ./scripts/recover-admin-key.sh --show   print the key the service minted
+#                                           last, from the journal; changes
+#                                           nothing. For when a run of this
+#                                           script restarted the service and
+#                                           then could not read the journal.
 #
 # Not covered: a database somewhere other than the unit's StateDirectory (set
 # TM_DB to point at it), and a service run outside systemd (then the key is on
@@ -32,10 +37,12 @@ set -euo pipefail
 
 UNIT=tinymachines-api
 YES=0
+SHOW=0
 for a in "$@"; do
   case "$a" in
     --yes) YES=1 ;;
-    -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --show) SHOW=1 ;;
+    -h|--help) sed -n '2,35p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "recover-admin-key: unknown argument $a" >&2; exit 2 ;;
   esac
 done
@@ -43,6 +50,16 @@ done
 for tool in sqlite3 systemctl journalctl; do
   command -v "$tool" >/dev/null || { echo "recover-admin-key: $tool is not installed" >&2; exit 1; }
 done
+
+if [ "$SHOW" -eq 1 ]; then
+  key=$(sudo journalctl -u "$UNIT" --no-pager -o cat | grep -o 'tmk_[A-Za-z0-9_-]*' | tail -1 || true)
+  [ -n "$key" ] || { echo "recover-admin-key: the journal of $UNIT holds no minted key." >&2; exit 1; }
+  echo "recover-admin-key: the admin key $UNIT minted last (it is live unless something revoked it since):"
+  echo
+  echo "    $key"
+  echo
+  exit 0
+fi
 
 # The database is where the unit keeps it: $STATE_DIRECTORY/roof.db
 # (api/db.py), unless TM_DB names another.
@@ -70,8 +87,13 @@ if [ "$YES" -ne 1 ]; then
 fi
 
 # The time is the same source the API uses (UTC, ISO 8601), so the row reads
-# like one the API revoked.
-since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+# like one the API revoked. The journal gets the same instant as seconds since
+# the epoch (@N): journalctl 249 refuses the Z form ("Failed to parse
+# timestamp"), which is how the first two runs of this script revoked and
+# restarted correctly and then reported no key (2026-10-21).
+now=$(date +%s)
+since=$(date -u -d "@$now" +%Y-%m-%dT%H:%M:%SZ)
+jsince="@$now"
 if [ -n "$live" ]; then
   sql "update api_keys set revoked_at = '$since' where scope = 'admin' and revoked_at is null;"
 fi
@@ -83,13 +105,13 @@ sudo systemctl restart "$UNIT"
 key=""
 for _ in $(seq 1 20); do
   sleep 0.5
-  key=$(sudo journalctl -u "$UNIT" --since "$since" --no-pager -o cat 2>/dev/null | grep -o 'tmk_[A-Za-z0-9_-]*' | tail -1 || true)
+  key=$(sudo journalctl -u "$UNIT" --since "$jsince" --no-pager -o cat | grep -o 'tmk_[A-Za-z0-9_-]*' | tail -1 || true)
   [ -n "$key" ] && break
 done
 state=$(systemctl is-active "$UNIT" || true)
 if [ -z "$key" ]; then
   echo "recover-admin-key: $UNIT is $state but no key appeared in the journal since $since." >&2
-  echo "recover-admin-key: look yourself: sudo journalctl -u $UNIT --since '$since' --no-pager | grep -A4 'has been minted'" >&2
+  echo "recover-admin-key: look yourself: $0 --show" >&2
   exit 1
 fi
 echo
