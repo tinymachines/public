@@ -60,7 +60,7 @@ TM_INSTRUCTIONS = """
 
 The same server is also a read-only namespace, tm://, spoken as MCP resources:
 start by reading tm://tinymachines/ (the mounts), then read any URI ending in /
-to list its children, and read a file or page to get it. Five mounts: fs/ is
+to list its children, and read a file or page to get it. Six mounts: fs/ is
 the repository's docs/, data/ and notes/; git/<repo>/ is a repository at any ref or time
 (?at=, a branch, tag, commit or ISO date, which fs and entity/ take too, an entity as its records had it; with ?as=log, blame, tree, stat); http/<site>/ is what a visitor gets from
 a site this box serves, a page read as its text (?as=rendered for the HTML). A piece of a thing has an address and reads:
@@ -70,7 +70,10 @@ offbox/ names the places a build chain leaves this box; entity/ holds the
 autopsy's patterns, games, routines and lessons as things of their own, so
 entity/pattern/pad-poll links to every game it was found in (tm:found-in), each
 routine a rule named (tm:instance) and the lessons that use it
-(tm:demonstrated-by), with no need to read the record they come from. Every read carries
+(tm:demonstrated-by), with no need to read the record they come from; mcp/ holds the MCP
+servers this box reads, each with its tools, resources and prompts as things with addresses
+(mcp/<server>/ is the server's record and whether it answered; mcp/<server>/tools/<name> is one
+tool as the server described it, tm:served-by its server, tm:schema its schema as a piece of itself). Every read carries
 typed links in _meta under "tinymachines.ai/links": a notebook page links to the
 markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as) and to the repository it came from (tm:generated-by or
@@ -84,7 +87,7 @@ inferred; by rel, then href) and no read carries more than a hundred: a read wit
 <uri>?as=links, which gives all of them a page at a time, each page ending in next. A link that stands for several
 occurrences says how many in count, and ?as=links&rel=<rel>&min=<count> is the set narrowed to one rel and to links
 that count at least that, an address of its own. Reads are rate-limited by caller: a burst of 240, then 4 a second, a page
-costing 5 and a git read 2; over it the answer is rate-limited with retryAfter in seconds, and waiting that long is enough. A URI that does not resolve comes back with the nearest ones that
+costing 5 and a git or mcp read 2; over it the answer is rate-limited with retryAfter in seconds, and waiting that long is enough. A URI that does not resolve comes back with the nearest ones that
 do. Resource templates and completions give the grammar and live values, so you
 can compose a URI you were never shown and try it. The resolve tool reads the
 same URIs and returns the links in its body, for a client that prefers tools."""
@@ -139,6 +142,7 @@ RATE_PER_SECOND = 4.0     # units a caller earns back each second
 RATE_CALLERS = 10_000     # buckets kept; past it the longest idle are dropped
 COST_HTTP = 5             # a page, fetched through the front door
 COST_GIT = 2              # a git process
+COST_MCP = 2              # a server behind this one may be asked, once in a while
 
 
 class RateLimit:
@@ -320,6 +324,8 @@ def cost(msg: Any) -> int:
             return COST_HTTP
         if mount == ["git"]:
             return COST_GIT
+        if mount == ["mcp"]:
+            return COST_MCP
     return 1
 
 

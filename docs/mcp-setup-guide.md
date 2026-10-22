@@ -104,6 +104,8 @@ tm://tinymachines/offbox/autopsy-models            where a build chain leaves th
                                                    box: named, never exposed
 tm://tinymachines/entity/pattern/pad-poll          a pattern the autopsy found, with a
                                                    link to every game and routine it is in
+tm://tinymachines/mcp/terrapulse/tools/get_slot    a tool of another MCP server this box
+                                                   reads, as that server described it
 ```
 
 A URI ending in `/` is a collection, and reading one returns its children
@@ -141,6 +143,16 @@ routine that a rule named has an address, and no byte of any cartridge is in
 any of them. A lesson's record keeps the key of the game it was measured
 beside, so each lesson links to that game (`tm:measures`) and the game links
 back (`tm:measured-by`).
+
+The mcp mount reads other MCP servers as mounts of this host. `mcp/` lists
+the servers the box reads; `mcp/<server>/` is one server's record (what it
+is, whether it answered when the box asked, what it declared) and lists its
+`tools/`, `resources/` and `prompts/`; `mcp/<server>/tools/<name>` is one
+tool as the server described it, with its schema readable as a piece of it
+(`?pointer=/inputSchema`). Nothing is called through it: a tool is listed
+and described, never run. A server behind a token the box does not hold
+reads as `gated`, and one that does not answer as `unreachable`; the record
+says which, and when the box last asked.
 
 Every read carries links. A notebook page links to the markdown it is
 rendered from (`tm:source`), the markdown links back to its page

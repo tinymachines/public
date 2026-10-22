@@ -363,6 +363,10 @@ tm://tinymachines/http/tinymachines.ai/docs/nes/pile?as=text
 tm://tinymachines/offbox/autopsy-models      where a build chain leaves the box
 tm://tinymachines/entity/pattern/pad-poll    a pattern, a game, a routine or a lesson
                                              of the autopsy, as a thing with links
+tm://tinymachines/mcp/terrapulse/tools/get_slot
+                                             a tool of an MCP server this box reads,
+                                             as the server described it; mcp/<server>/
+                                             is the server's record and whether it answered
 ```
 
 Three verbs, `resources/list`, `resources/read` and `completion/complete`,
@@ -383,7 +387,9 @@ it; an entity's `tm:data` points into its record with `?pointer=`, which reads t
 other site, `tm:pins` from a submodule to the repository it pins, at the
 pinned commit, `tm:step` from a trail (a JSON file under `notes/trails/`, a
 named ordered list of addresses) to each step it lists and `tm:step-of` from
-every step back to the trails it is on, and `up`, `collection`, `alternate`, `describedby`, `version-history`
+every step back to the trails it is on, `tm:served-by` from a tool of an MCP
+server to the server and `tm:serves` back, `tm:schema` from a tool to its
+schema as a piece of itself (`?pointer=/inputSchema`), and `up`, `collection`, `alternate`, `describedby`, `version-history`
 and `latest-version` as the IANA registry defines them. A URI that does not resolve comes back as a
 JSON-RPC error whose `data.reason` says why (`not-found` with the nearest URIs
 that do, `too-large` with a `?range=` and a `?lines=` template, `out-of-root`, `denied`, `binary`).
@@ -391,6 +397,17 @@ A piece of a thing has an address: `?lines=FIRST-LAST` reads lines of a file or
 of a page's text, counted from 1; `?pointer=/a/0/b` reads what a JSON pointer
 (RFC 6901) names in a JSON file; `?range=START-END` reads bytes. One span a
 read, and the answer's `uri` keeps it, so a quote keeps where it came from.
+
+The mcp mount (`api/mcp_servers.json`) reads other MCP servers as mounts of
+this host: the box keeps the connection, and a client sees addresses. With
+no map yet, a server exposes what MCP itself lists: its record (what it is,
+whether it answered when the box asked, what it declared at `initialize`),
+its tools, resources and prompts, each as the server described it, with a
+vendor media type (`application/vnd.tm.tool+json`). Nothing is called. A
+server that wants a token the box does not hold reads as `gated`, one that
+does not answer as `unreachable`; the token, where there is one, is named in
+the file and held in the service's environment, and never appears in a URI,
+a body or a refusal.
 
 The git mount offers this repository and the siblings checked out beside it,
 under their GitHub names, all public under github.com/tinymachines. It runs

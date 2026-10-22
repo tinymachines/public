@@ -67,8 +67,13 @@ ENTITY_PAIRS = {"tm:found-in": "tm:exhibits", "tm:instance": "tm:instance-of", "
                 "tm:measures": "tm:measured-by", "tm:cartridge": "tm:cartridge-of"}
 PAIRS.update(ENTITY_PAIRS)
 PAIRS.update({v: k for k, v in ENTITY_PAIRS.items()})
+# The mcp mount's pair (tinypeek#22): a tool and the server that lists it.
+# tm:schema is unpaired: it names a piece of the tool itself.
+MCP_PAIRS = {"tm:served-by": "tm:serves"}
+PAIRS.update(MCP_PAIRS)
+PAIRS.update({v: k for k, v in MCP_PAIRS.items()})
 # Pairs whose two ends must agree on how sure they are.
-SAME_CONFIDENCE = {"tm:data", "tm:read-by", "tm:step", "tm:step-of"} | set(ENTITY_PAIRS) | set(ENTITY_PAIRS.values())
+SAME_CONFIDENCE = {"tm:data", "tm:read-by", "tm:step", "tm:step-of"} | set(ENTITY_PAIRS) | set(ENTITY_PAIRS.values()) | set(MCP_PAIRS) | set(MCP_PAIRS.values())
 
 
 def identity(uri: str) -> str:

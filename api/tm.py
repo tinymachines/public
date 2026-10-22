@@ -53,14 +53,16 @@ import html
 import json
 import mimetypes
 import posixpath
+import os
 import re
 import subprocess
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Awaitable, Callable
-from urllib.parse import parse_qsl, quote, unquote, urlsplit
+from urllib.parse import parse_qsl, quote, unquote, urljoin, urlsplit
 
 import httpx
 
@@ -71,7 +73,7 @@ ROOT = f"tm://{HOST}/"
 TOP = "tm://"
 
 # The mounts, in the order the root lists them.
-MOUNTS = ("fs", "git", "http", "offbox", "entity")
+MOUNTS = ("fs", "git", "http", "offbox", "entity", "mcp")
 
 # The directories the fs mount can see. Public on GitHub already; the rest of
 # the checkout (deploy/, the database, the build outputs) is not offered.
@@ -116,6 +118,7 @@ AS_FS = ("raw", "stat", "links")
 AS_HTTP = ("rendered", "text", "stat", "links")
 AS_GIT = ("raw", "log", "blame", "tree", "stat", "links")
 AS_ENTITY = ("stat", "links")
+AS_MCP = ("stat", "links")
 # tinypeek#13: what each mount's URI can say after the ?. The templates name
 # these and a read refuses any other, so the two are one fact. The root and
 # the list of hosts take ?as=links only; cursor= rides with ?as=links anywhere.
@@ -131,6 +134,7 @@ PARAMS: dict[str, tuple[str, ...]] = {
     "http": ("as", "range", "lines", "rel", "min", "cursor"),
     "offbox": ("as", "rel", "min"),
     "entity": ("at", "as", "rel", "min", "cursor"),
+    "mcp": ("as", "range", "lines", "pointer", "rel", "min", "cursor"),
 }
 LINKS_ONLY = ("rel", "min")
 
@@ -167,7 +171,22 @@ TIME_OK = re.compile(r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2
 NO_PAST = {
     "http": "a page keeps no past of its own; the route that renders it does, at the page's tm:source link",
     "offbox": "what is kept off this box has no past here",
+    "mcp": "an MCP server's answers have no past here; its tools are read as it lists them now",
 }
+
+# tinypeek#22: the mcp mount. The servers it reads are named in a file of the
+# checkout (endpoint, transport, what; auth names the variable in the
+# service's environment that holds the Authorization header's value, never
+# the value). What a server lists is kept for a while, so a walk of its
+# tools asks it once; a failure stands for less, so a server that comes back
+# is seen to.
+MCP_SERVERS_FILE = "api/mcp_servers.json"
+MCP_TTL_S = 300
+MCP_RETRY_S = 60
+MCP_TIMEOUT_S = 10.0
+MCP_PROTOCOL = "2025-03-26"
+MCP_KINDS = ("tools", "resources", "prompts")
+MCP_TYPE = {k: f"application/vnd.tm.{k}+json" for k in ("server", "tool", "resource", "prompt")}
 
 META_LINKS = "tinymachines.ai/links"
 
@@ -272,8 +291,14 @@ def ordered(links: list[dict]) -> list[dict]:
     return sorted(links, key=lambda ln: (CONFIDENCE_ORDER.get(ln.get("confidence"), 9), ln["rel"], ln["href"]))
 
 
+def is_json(mime: str) -> bool:
+    """application/json, or a vendor type that says it is JSON underneath
+    (application/vnd.tm.tool+json), which every generic client can parse."""
+    return mime == "application/json" or (mime.startswith("application/") and mime.endswith("+json"))
+
+
 def is_text(mime: str) -> bool:
-    return mime.startswith("text/") or mime in ("application/json", "image/svg+xml")
+    return mime.startswith("text/") or is_json(mime) or mime == "image/svg+xml"
 
 
 def mime_for(name: str, head: bytes | None = None) -> str:
@@ -386,7 +411,7 @@ def cut(span: tuple[str, str], data: bytes, mime: str, here: str) -> tuple[str, 
         out = piece.encode()
         uri = f"{here}{sep}lines={first}-{last}"
     else:
-        if mime != "application/json":
+        if not is_json(mime):
             raise TmError(BAD_PARAMS, "bad-facet", f"pointer reads into a JSON document, and this is {mime}; lines reads a piece of it")
         value = json_pointer(spec, json.loads(text), here)
         out = json.dumps(value, indent=1, ensure_ascii=False).encode()
@@ -484,7 +509,7 @@ def as_time(at: str) -> datetime | None:
 
 @dataclass
 class Ref:
-    mount: str                      # "" (the root), "tm" (the list of hosts), "fs", "git", "http", "offbox" or "entity"
+    mount: str                      # "" (the root), "tm" (the list of hosts), "fs", "git", "http", "offbox", "entity" or "mcp"
     site: str | None                # http only; the repository name for git
     path: str                       # the backend's path: "docs/nes/pile.md", "/docs/nes/pile"
     facets: dict[str, str] = field(default_factory=dict)
@@ -504,7 +529,7 @@ class Ref:
             return f"{ROOT}fs/{quote(self.path)}"
         if self.mount == "git":
             return f"{ROOT}git/{self.site}/{quote(self.path)}" if self.site else f"{ROOT}git/"
-        if self.mount in ("offbox", "entity"):
+        if self.mount in ("offbox", "entity", "mcp"):
             return f"{ROOT}{self.mount}/{quote(self.path)}"
         return f"{ROOT}http/{self.site}{quote(self.path)}"
 
@@ -543,6 +568,8 @@ def parse(uri: str) -> Ref:
         return Ref("offbox", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "entity":
         return Ref("entity", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
+    if mount == "mcp":
+        return Ref("mcp", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -1572,6 +1599,417 @@ class Trails:
         return out
 
 
+# ---------------------------------------------------------------------------
+# Layer 5, the second application: the mcp mount (tinypeek#22)
+# ---------------------------------------------------------------------------
+
+
+class _Gate(Exception):
+    """The server behind an address wants a token this box did not give."""
+
+    def __init__(self, status: int):
+        super().__init__(str(status))
+        self.status = status
+
+
+class _Down(Exception):
+    """The server behind an address did not answer as an MCP server does."""
+
+    def __init__(self, reason: str, status: int | None = None):
+        super().__init__(reason)
+        self.reason, self.status = reason, status
+
+
+def sse_events(text: str) -> list[tuple[str, str]]:
+    """The (event, data) pairs of an event stream already read whole."""
+    out, event, data = [], "message", []
+    for line in text.splitlines() + [""]:
+        if line == "":
+            if data:
+                out.append((event, "\n".join(data)))
+            event, data = "message", []
+        elif line.startswith("event:"):
+            event = line[6:].strip()
+        elif line.startswith("data:"):
+            data.append(line[5:].strip())
+    return out
+
+
+class Mcp:
+    """tinypeek#22: an MCP server as a mount. A server is named in a file of
+    the checkout (MCP_SERVERS_FILE) and the box keeps the connection; a
+    client only ever sees addresses. With no map (tinyhelper#6) a server
+    exposes what MCP itself lists:
+
+        mcp/<server>/                   the server: its record, and tools/, resources/, prompts/
+        mcp/<server>/tools/<name>       one tool, as the server described it
+        mcp/<server>/resources/<name>   one resource or template, as described
+        mcp/<server>/prompts/<name>     one prompt
+
+    Each collection is there only where the server declares the capability,
+    and a tool's listing is what tools/list answered, so the mount asserts
+    nothing it did not measure. What the server lists is kept MCP_TTL_S and
+    then asked for again; a server that wanted a token the box does not
+    hold reads as gated, one that did not answer as unreachable, each in
+    the server's record, and its collections refuse with the same word.
+    The token comes from the service's environment and goes in a header,
+    never in a URI, a body or a refusal."""
+
+    def __init__(self, ns: "Namespace", servers: dict | None = None, transport: httpx.AsyncBaseTransport | None = None):
+        self.ns = ns
+        self.transport = transport
+        self.servers: dict[str, dict] = {}
+        conf = servers if servers is not None else self._load(ns.repo / MCP_SERVERS_FILE)
+        for name, s in sorted(conf.items()):
+            if name.startswith("_") or not isinstance(s, dict) or not isinstance(s.get("endpoint"), str):
+                continue
+            self.servers[name] = {"endpoint": s["endpoint"], "transport": s.get("transport", "streamable-http"),
+                                  "what": s.get("what", ""), "auth": s.get("auth")}
+        self._snap: dict[str, dict] = {}
+
+    @staticmethod
+    def _load(f: Path) -> dict:
+        try:
+            got = json.loads(f.read_text())
+            return got if isinstance(got, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    # -- addresses -----------------------------------------------------------
+
+    @staticmethod
+    def uri(*parts: str, collection: bool = False) -> str:
+        return f"{ROOT}mcp/" + "/".join(quote(p) for p in parts) + ("/" if collection and parts else "")
+
+    def names(self) -> list[str]:
+        return list(self.servers)
+
+    def cached(self, name: str) -> dict | None:
+        """The server's lists if they were asked for lately, else nothing:
+        completions read this and never wait on a network."""
+        snap = self._snap.get(name)
+        return snap if snap and snap.get("status") == "up" else None
+
+    # -- the connection -------------------------------------------------------
+
+    def _auth(self, conf: dict) -> tuple[str, str | None]:
+        """What the record says about the token, and the header's value."""
+        var = conf.get("auth")
+        if not var:
+            return "none", None
+        value = os.environ.get(var)
+        return ("held by this box", value) if value else ("named, not held by this box", None)
+
+    async def snapshot(self, name: str) -> dict:
+        """What the server lists, measured now or lately."""
+        snap = self._snap.get(name)
+        now = time.monotonic()
+        if snap and now - snap["at"] < (MCP_TTL_S if snap["status"] == "up" else MCP_RETRY_S):
+            return snap
+        conf = self.servers[name]
+        said, token = self._auth(conf)
+        snap = {"at": now, "checked": datetime.now(timezone.utc).isoformat(timespec="seconds"), "auth": said,
+                "status": "up", "tools": [], "resources": [], "templates": [], "prompts": []}
+        headers = {"Authorization": token} if token else {}
+        try:
+            async with httpx.AsyncClient(timeout=MCP_TIMEOUT_S, follow_redirects=False, transport=self.transport) as c:
+                if conf["transport"] == "sse":
+                    await self._over_sse(c, conf["endpoint"], headers, snap)
+                else:
+                    await self._over_streamable(c, conf["endpoint"], headers, snap)
+        except _Gate as e:
+            snap.update(status="gated", statusCode=e.status)
+        except _Down as e:
+            snap.update(status="unreachable", reason=e.reason, **({"statusCode": e.status} if e.status else {}))
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
+            # The exception's text can quote the endpoint and the answer; the
+            # record keeps the kind of failure and nothing more.
+            snap.update(status="unreachable", reason=type(e).__name__)
+        self._snap[name] = snap
+        return snap
+
+    def _wants(self, snap: dict) -> list[tuple[str, str, str]]:
+        """The lists to ask for, by the capabilities the server declared."""
+        caps = (snap.get("init") or {}).get("capabilities") or {}
+        wants = [("tools/list", "tools", "tools")] if "tools" in caps else []
+        if "resources" in caps:
+            wants += [("resources/list", "resources", "resources"), ("resources/templates/list", "resourceTemplates", "templates")]
+        if "prompts" in caps:
+            wants.append(("prompts/list", "prompts", "prompts"))
+        return wants
+
+    @staticmethod
+    def _msg(id_: int | None, method: str, params: dict | None = None) -> dict:
+        msg: dict[str, Any] = {"jsonrpc": "2.0", "method": method}
+        if id_ is not None:
+            msg["id"] = id_
+        if params is not None:
+            msg["params"] = params
+        return msg
+
+    @staticmethod
+    def _init_params() -> dict:
+        return {"protocolVersion": MCP_PROTOCOL, "capabilities": {}, "clientInfo": {"name": "tm", "version": "0.22"}}
+
+    @staticmethod
+    def _result(answer: Any, method: str) -> dict:
+        if not isinstance(answer, dict):
+            raise _Down(f"{method}: not a JSON-RPC answer")
+        if "error" in answer:
+            err = answer["error"] if isinstance(answer["error"], dict) else {}
+            raise _Down(f"{method}: the server answered error {err.get('code')}")
+        got = answer.get("result")
+        if not isinstance(got, dict):
+            raise _Down(f"{method}: no result")
+        return got
+
+    async def _over_streamable(self, c: httpx.AsyncClient, endpoint: str, headers: dict, snap: dict) -> None:
+        """Streamable HTTP: every message is a POST; an answer is JSON or a
+        short event stream; the session id rides in a header."""
+        hdrs = {**headers, "Accept": "application/json, text/event-stream", "Content-Type": "application/json",
+                "MCP-Protocol-Version": MCP_PROTOCOL}
+        n = 0
+
+        async def post(method: str, params: dict | None, notify: bool = False) -> dict | None:
+            nonlocal n
+            n += 1
+            msg = self._msg(None if notify else n, method, params)
+            r = await c.post(endpoint, content=json.dumps(msg).encode(), headers=hdrs)
+            if r.status_code in (401, 403):
+                raise _Gate(r.status_code)
+            if r.status_code >= 400:
+                raise _Down(f"{method}: answered {r.status_code}", r.status_code)
+            sid = r.headers.get("mcp-session-id")
+            if sid:
+                hdrs["Mcp-Session-Id"] = sid
+            if notify or r.status_code == 202 or not r.content:
+                return None
+            if r.headers.get("content-type", "").startswith("text/event-stream"):
+                for _, data in sse_events(r.text):
+                    obj = json.loads(data)
+                    if isinstance(obj, dict) and obj.get("id") == msg["id"]:
+                        return self._result(obj, method)
+                raise _Down(f"{method}: no answer in the stream")
+            return self._result(r.json(), method)
+
+        snap["init"] = await post("initialize", self._init_params())
+        await post("notifications/initialized", None, notify=True)
+        for method, field_, keep in self._wants(snap):
+            got = await post(method, {})
+            snap[keep] = [t for t in got.get(field_, []) if isinstance(t, dict) and isinstance(t.get("name"), str)]
+
+    async def _over_sse(self, c: httpx.AsyncClient, endpoint: str, headers: dict, snap: dict) -> None:
+        """The older transport: one GET holds an event stream open; its first
+        event names where to POST, and every answer comes back on the stream."""
+        async with c.stream("GET", endpoint, headers={**headers, "Accept": "text/event-stream"}) as s:
+            if s.status_code in (401, 403):
+                raise _Gate(s.status_code)
+            if s.status_code >= 400:
+                raise _Down(f"the stream answered {s.status_code}", s.status_code)
+            lines = s.aiter_lines()
+
+            async def event(want_id: int | None) -> str:
+                ev, data = "message", []
+                async for line in lines:
+                    if line == "":
+                        if data:
+                            if want_id is None and ev == "endpoint":
+                                return data[0]
+                            if want_id is not None and ev == "message":
+                                obj = json.loads("\n".join(data))
+                                if isinstance(obj, dict) and obj.get("id") == want_id:
+                                    return "\n".join(data)
+                        ev, data = "message", []
+                    elif line.startswith("event:"):
+                        ev = line[6:].strip()
+                    elif line.startswith("data:"):
+                        data.append(line[5:].strip())
+                raise _Down("the stream ended before it answered")
+
+            post_to = urljoin(endpoint, await event(None))
+            hdrs = {**headers, "Content-Type": "application/json"}
+            n = 0
+
+            async def post(method: str, params: dict | None, notify: bool = False) -> dict | None:
+                nonlocal n
+                n += 1
+                msg = self._msg(None if notify else n, method, params)
+                r = await c.post(post_to, content=json.dumps(msg).encode(), headers=hdrs)
+                if r.status_code in (401, 403):
+                    raise _Gate(r.status_code)
+                if r.status_code >= 400:
+                    raise _Down(f"{method}: answered {r.status_code}", r.status_code)
+                if notify:
+                    return None
+                return self._result(json.loads(await event(msg["id"])), method)
+
+            snap["init"] = await post("initialize", self._init_params())
+            await post("notifications/initialized", None, notify=True)
+            for method, field_, keep in self._wants(snap):
+                got = await post(method, {})
+                snap[keep] = [t for t in got.get(field_, []) if isinstance(t, dict) and isinstance(t.get("name"), str)]
+
+    # -- read ----------------------------------------------------------------
+
+    def _no(self, msg: str, nearest: list[str]) -> TmError:
+        return TmError(RESOURCE_NOT_FOUND, "not-found", msg, nearest=nearest[:5])
+
+    def _closed(self, name: str, snap: dict) -> TmError:
+        """The refusal a server's collections and things give while the
+        server is not up: the same word its record says, and the record."""
+        here = self.uri(name, collection=True)
+        if snap["status"] == "gated":
+            return TmError(RESOURCE_NOT_FOUND, "gated", f"mcp/{name} wants a token this box did not give; its record says so",
+                           status=snap.get("statusCode"), nearest=[here])
+        return TmError(RESOURCE_NOT_FOUND, "unreachable", f"mcp/{name} did not answer as an MCP server does ({snap.get('reason')}); its record says so",
+                       **({"status": snap["statusCode"]} if snap.get("statusCode") else {}), nearest=[here])
+
+    @staticmethod
+    def _title(d: dict) -> str | None:
+        t = d.get("title") or (d.get("description") or "").strip().split("\n", 1)[0]
+        return t[:120] if t else None
+
+    def _kids(self, name: str, kind: str, snap: dict) -> list[dict]:
+        one = kind[:-1]
+        return [{"uri": self.uri(name, kind, t["name"]), "name": t["name"], **({"title": self._title(t)} if self._title(t) else {}),
+                 "mimeType": MCP_TYPE[one], "isCollection": False}
+                for t in (snap[kind] + (snap["templates"] if kind == "resources" else []))]
+
+    def _find(self, kind: str, which: str, snap: dict) -> dict | None:
+        pool = snap[kind] + (snap["templates"] if kind == "resources" else [])
+        for t in pool:
+            if t["name"] == which:
+                return t
+        return None
+
+    def _server(self, name: str, snap: dict) -> tuple[dict, list[dict]]:
+        conf = self.servers[name]
+        here = self.uri(name, collection=True)
+        init = snap.get("init") or {}
+        body: dict[str, Any] = {"uri": here, "server": name, "what": conf["what"], "endpoint": conf["endpoint"],
+                                "transport": conf["transport"], "auth": snap["auth"], "status": snap["status"], "checked": snap["checked"]}
+        links = [link("up", f"{ROOT}mcp/")]
+        if snap["status"] != "up":
+            for k in ("statusCode", "reason"):
+                if k in snap:
+                    body[k] = snap[k]
+            body["children"] = []
+            return body, links
+        for k in ("protocolVersion", "serverInfo", "capabilities", "instructions"):
+            if k in init:
+                body[k] = init[k]
+        body["counts"] = {k: len(snap[k]) for k in ("tools", "resources", "templates", "prompts")}
+        caps = init.get("capabilities") or {}
+        body["children"] = [{"uri": self.uri(name, k, collection=True), "name": f"{k}/", "mimeType": "application/json", "isCollection": True}
+                            for k in MCP_KINDS if k in caps]
+        for t in snap["tools"]:
+            links.append(link("tm:serves", self.uri(name, "tools", t["name"]), "exact", title=f"a tool of {name}: {self._title(t) or t['name']}"))
+        return body, links
+
+    def _thing(self, name: str, kind: str, t: dict) -> tuple[dict, list[dict]]:
+        """A tool, a resource or a prompt as the server described it, with
+        its address and its server's."""
+        here = self.uri(name, kind, t["name"])
+        coll = self.uri(name, kind, collection=True)
+        body: dict[str, Any] = {"uri": here, "server": self.uri(name, collection=True)}
+        if kind == "resources":
+            body["resource"] = t.get("uri") or t.get("uriTemplate")
+            body["template"] = "uriTemplate" in t
+        body.update(t)
+        links = [link("up", coll), link("collection", coll), link("describedby", f"{here}?as=stat"),
+                 link("tm:served-by", self.uri(name, collection=True), "exact", title=f"the server that lists this {kind[:-1]}")]
+        if kind == "tools":
+            for which in ("inputSchema", "outputSchema"):
+                if isinstance(t.get(which), dict):
+                    links.append(link("tm:schema", f"{here}?pointer=/{which}", "exact", title=f"its {which[:-6]} schema, as the server published it"))
+        return body, links
+
+    async def read(self, ref: Ref) -> dict:
+        as_ = ref.facets.get("as")
+        if as_ not in (None, *AS_MCP):
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; mcp offers {', '.join(AS_MCP)}")
+        parts = [p for p in ref.path.split("/") if p]
+        coll = ref.is_collection
+        if not parts:
+            if as_:
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an mcp collection is a listing and offers no facets; read {ref.uri} without ?as")
+            kids = [{"uri": self.uri(n, collection=True), "name": n, "title": self.servers[n]["what"], "mimeType": "application/json", "isCollection": True}
+                    for n in self.servers]
+            return self._listing(ref, kids, {}, [link("up", ROOT)])
+        name = parts[0]
+        if name not in self.servers:
+            raise self._no(f"mcp/{name}: no MCP server of that name is read here; the servers are {', '.join(self.servers) or 'none'}",
+                           [self.uri(n, collection=True) for n in closest(name, list(self.servers))])
+        here = self.uri(name, collection=True)
+        if len(parts) == 1 and not coll:
+            raise self._no(f"mcp/{name} is a collection; the server is at {here}", [here])
+        if coll and as_:
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an mcp collection is a listing and offers no facets; read {ref.uri} without ?as")
+        snap = await self.snapshot(name)
+        if len(parts) == 1:
+            body, links = self._server(name, snap)
+            return self._listing(ref, body.pop("children"), body, links)
+        kind = parts[1]
+        if kind not in MCP_KINDS:
+            raise self._no(f"mcp/{name}/{kind}: a server has tools, resources and prompts, and nothing else is addressed under it", [here])
+        if snap["status"] != "up":
+            raise self._closed(name, snap)
+        caps = (snap.get("init") or {}).get("capabilities") or {}
+        if kind not in caps:
+            raise self._no(f"mcp/{name}/{kind}/: this server declares no {kind}; its record says what it has", [here])
+        listing = self.uri(name, kind, collection=True)
+        if len(parts) == 2:
+            if not coll:
+                raise self._no(f"mcp/{name}/{kind} is a collection; its listing is at {listing}", [listing])
+            extra = {"templates": snap["templates"]} if kind == "resources" else {}
+            return self._listing(ref, self._kids(name, kind, snap), extra, [link("up", here), link("collection", here)])
+        which = "/".join(parts[2:])
+        t = self._find(kind, which, snap)
+        if t is None:
+            names = [x["name"] for x in snap[kind] + (snap["templates"] if kind == "resources" else [])]
+            raise self._no(f"mcp/{name}/{kind}/{which}: {name} lists no {kind[:-1]} of that name", [self.uri(name, kind, n) for n in closest(which, names)] or [listing])
+        me = self.uri(name, kind, which)
+        if coll:
+            raise self._no(f"{me}/ is not a collection; the {kind[:-1]} is at {me}", [me])
+        body, links = self._thing(name, kind, t)
+        mime = MCP_TYPE[kind[:-1]]
+        text = json.dumps(body, indent=1, ensure_ascii=False)
+        if as_ == "stat":
+            stat = {"uri": me, "name": t["name"], "server": self.uri(name, collection=True), "mimeType": mime, "size": len(text.encode()),
+                    "isCollection": False, "text": True, "checked": snap["checked"]}
+            return self.ns._result(f"{me}?as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", me)])
+        span = span_of(ref)
+        data = text.encode()
+        if span and span[0] == "range":
+            start, end = byte_range(span[1], len(data))
+            return self.ns._result(f"{me}?range={start}-{end}", mime, data[start:end].decode("utf-8", errors="replace"), links)
+        if span:
+            uri, mime, data = cut(span, data, mime, me)
+            return self.ns._result(uri, mime, data.decode("utf-8", errors="replace"), links)
+        return self.ns._result(me, mime, text, links)
+
+    def _listing(self, ref: Ref, kids: list[dict], extra: dict, links: list[dict]) -> dict:
+        chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
+        body: dict[str, Any] = {"uri": ref.uri, **extra, "children": chunk}
+        if nxt:
+            body["nextCursor"] = nxt
+            body["next"] = f"{ref.uri}?cursor={nxt}"
+        return self.ns._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1, ensure_ascii=False), links)
+
+    def complete(self, server: str | None, typed: str) -> list[str]:
+        """The paths under a server: its three collections, and what a
+        collection lists when the server was asked lately."""
+        if server not in self.servers:
+            return []
+        snap = self.cached(server)
+        caps = ((snap or {}).get("init") or {}).get("capabilities") or {}
+        values = [f"{k}/" for k in MCP_KINDS if not snap or k in caps]
+        if snap:
+            for kind in MCP_KINDS:
+                values += [f"{kind}/{t['name']}" for t in snap[kind] + (snap["templates"] if kind == "resources" else [])]
+        return [v for v in values if v.startswith(typed)]
+
+
 class Namespace:
     def __init__(
         self,
@@ -1579,6 +2017,8 @@ class Namespace:
         fetch: Fetch = fetch_loopback,
         sites: tuple[str, ...] = SITES,
         git_repos: dict[str, Path] | None = None,
+        mcp_servers: dict | None = None,
+        mcp_transport: httpx.AsyncBaseTransport | None = None,
     ):
         self.repo = repo.resolve()
         self.fetch = fetch
@@ -1589,6 +2029,7 @@ class Namespace:
         self._built: dict[str, tuple] = {}
         self.entities = Entities(self)
         self.trails = Trails(self)
+        self.mcp = Mcp(self, mcp_servers, mcp_transport)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -1610,6 +2051,8 @@ class Namespace:
                 "links back (tm:renders-as); up, collection, alternate and describedby are the IANA "
                 "relations. tm://tinymachines/entity/ holds the autopsy's patterns, games, routines and lessons as "
                 "things with links between them (entity/pattern/pad-poll names every game and routine it was found in). "
+                "tm://tinymachines/mcp/ holds the MCP servers this box reads, each with its tools, resources and prompts as "
+                "things with addresses (mcp/<server>/tools/<name> is one tool, its schema as the server published it). "
                 "?as=stat gives metadata without content, ?as=links every link of a thing a page at a time (a read "
                 "with more than a hundred ends in a tm:links link to it). A URI that does not resolve "
                 "is refused with the nearest ones that do, so try the nearest rather than guessing."
@@ -1732,6 +2175,19 @@ class Namespace:
                 ),
                 "mimeType": "application/json",
             },
+            {
+                "uriTemplate": f"{ROOT}mcp/{{server}}{{/path*}}{_q('mcp')}",
+                "name": "mcp",
+                "title": "An MCP server this box reads, and its tools, resources and prompts",
+                "description": (
+                    f"server is one of {', '.join(self.mcp.names()) or 'none yet'}. mcp/<server>/ is the server's record (what it is, "
+                    "whether it answered, what it declares) and lists tools/, resources/ and prompts/ as the server declares them; "
+                    "tools/<name> is one tool as the server described it, with tm:served-by to its server and tm:schema to its "
+                    "input schema as a pointer address. pointer=, lines= and range= read a piece of one. There is no past here: a "
+                    "server is read as it answers now."
+                ),
+                "mimeType": "application/json",
+            },
         ]
 
     def list_resources(self, cursor: str | None) -> dict:
@@ -1746,7 +2202,10 @@ class Namespace:
             {"uri": f"{ROOT}http/", "name": "http", "title": "The sites this box serves", "mimeType": "application/json"},
             {"uri": f"{ROOT}offbox/", "name": "offbox", "title": "Where a build chain leaves this box", "mimeType": "application/json"},
             {"uri": f"{ROOT}entity/", "name": "entity", "title": "The autopsy's patterns, games, routines and lessons", "mimeType": "application/json"},
+            {"uri": f"{ROOT}mcp/", "name": "mcp", "title": "The MCP servers this box reads", "mimeType": "application/json"},
         ]
+        for name in self.mcp.names():
+            items.append({"uri": Mcp.uri(name, collection=True), "name": f"mcp/{name}/", "title": self.mcp.servers[name]["what"], "mimeType": "application/json"})
         for root in FS_ROOTS:
             base = self.repo / root
             if not base.is_dir():
@@ -1786,7 +2245,7 @@ class Namespace:
         elif name == "repo":
             values = [r for r in sorted(self.git) if r.startswith(value)]
         elif name == "as":
-            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_ENTITY if "/entity/" in tmpl else AS_FS
+            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_ENTITY if "/entity/" in tmpl else AS_MCP if "/mcp/" in tmpl else AS_FS
             values = [a for a in pool if a.startswith(value)]
         elif name == "n":
             values = [str(n) for n in (LOG_DEFAULT, 50, LOG_MAX) if str(n).startswith(value)]
@@ -1799,6 +2258,10 @@ class Namespace:
             values = [k for kind in kinds for k in self.entities.keys(kind) if k.startswith(value)]
         elif name == "routine":
             values = [r for r in self.entities.routines(ctx.get("key") or "") if r.startswith(value)]
+        elif name == "server":
+            values = [n for n in self.mcp.names() if n.startswith(value)]
+        elif name == "path" and "/mcp/" in tmpl:
+            values = self.mcp.complete(ctx.get("server"), value)
         elif name == "at":
             repo = ctx.get("repo") or "public"
             values = self._git_refs(repo, value) if repo in self.git else []
@@ -1947,6 +2410,7 @@ class Namespace:
                 {"uri": f"{ROOT}http/", "what": "the sites this box serves, page by page"},
                 {"uri": f"{ROOT}offbox/", "what": "where a build chain leaves this box: named, described, never exposed"},
                 {"uri": f"{ROOT}entity/", "what": "the autopsy's patterns, games, routines and lessons, each with links to the others"},
+                {"uri": f"{ROOT}mcp/", "what": "the MCP servers this box reads, each with its tools, resources and prompts as things with addresses"},
             ], "start_here": self.start_here()}
             # TM-12: the documents a fresh session should read first.
             return self._result(ROOT, "application/json", json.dumps(body, indent=1),
@@ -1957,6 +2421,8 @@ class Namespace:
             return self._read_offbox(ref)
         if ref.mount == "entity":
             return self.entities.read(ref)
+        if ref.mount == "mcp":
+            return await self.mcp.read(ref)
         if ref.mount == "fs":
             return self._read_fs(ref)
         if ref.mount == "git":

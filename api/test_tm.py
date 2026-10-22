@@ -146,7 +146,7 @@ def test_a_link_cannot_get_its_confidence_wrong():
 
 def test_the_root_lists_the_mounts_and_a_collection_lists_its_children(ns):
     root, links = read(ns, ROOT)
-    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/", f"{ROOT}entity/"}
+    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/", f"{ROOT}entity/", f"{ROOT}mcp/"}
     top, _ = read(ns, f"{ROOT}fs/")
     assert [c["name"] for c in json.loads(top["text"])["children"]] == ["docs/", "data/", "notes/"]
     nes, links = read(ns, f"{ROOT}fs/docs/nes/")
@@ -381,9 +381,9 @@ def test_http_refusals_are_structured(ns):
 
 
 def test_resources_list_is_the_map_not_the_inventory(ns, monkeypatch):
-    monkeypatch.setattr(tm, "RESOURCES_PAGE", 7)
+    monkeypatch.setattr(tm, "RESOURCES_PAGE", 8)
     first = ns.list_resources(None)
-    assert [r["name"] for r in first["resources"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity"]
+    assert [r["name"] for r in first["resources"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "mcp"]
     rest = ns.list_resources(first["nextCursor"])
     names = [r["name"] for r in rest["resources"]]
     assert names[0] == "docs/" and "docs/nes/" in names and "docs/ja/nes/" in names
@@ -402,7 +402,7 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
         run(handler({"jsonrpc": "2.0", "id": 3, "method": "resources/read", "params": {"uri": f"{ROOT}fs/docs/nes/pil.md"}}))
     assert e.value.code == tm.RESOURCE_NOT_FOUND and e.value.data["reason"] == "not-found"
     tmpl = run(handler({"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list"}))["result"]
-    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine"]
+    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine", "mcp"]
     bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
     plain = run(bare({"jsonrpc": "2.0", "id": 5, "method": "initialize", "params": {}}))["result"]
     assert "resources" not in plain["capabilities"]
@@ -1515,7 +1515,7 @@ def test_tm16_a_lesson_names_its_game_only_where_the_names_agree(ents):
 
 def test_tm16_templates_resources_and_completions_know_the_mount(ents):
     names = [t["name"] for t in ents.templates()]
-    assert names == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine"]
+    assert names == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine", "mcp"]
     listed = []
     cur = None
     while True:
