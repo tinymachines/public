@@ -1,0 +1,85 @@
+{
+ "server": "terrapulse",
+ "derived": "2026-10-22T20:33:11+00:00",
+ "from": [
+  "tools/list"
+ ],
+ "driver": {
+  "name": "index",
+  "version": 1
+ },
+ "reads": {
+  "graph/": {
+   "tool": "graph_search",
+   "query": [
+    "q",
+    "type",
+    "limit",
+    "offset"
+   ],
+   "items": "nodes",
+   "key": "id"
+  },
+  "graph/stats": {
+   "tool": "graph_stats",
+   "kind": "vnd.tm.graph-stats+json"
+  },
+  "graph/{id}": {
+   "tool": "graph_node",
+   "kind": "vnd.tm.graph-node+json",
+   "edges": "edges"
+  },
+  "kinds/": {
+   "tool": "list_kinds",
+   "items": "result",
+   "key": "kind"
+  },
+  "kinds/{kind}": {
+   "tool": "describe_kind",
+   "kind": "vnd.tm.kind-description+json; kind={kind}"
+  },
+  "kinds/{kind}/": {
+   "tool": "search_slots",
+   "query": [
+    "start",
+    "end",
+    "name_contains",
+    "sort",
+    "desc",
+    "limit",
+    "offset"
+   ],
+   "items": "slots"
+  },
+  "kinds/{kind}/{slot_id}": {
+   "tool": "get_slot",
+   "kind": "vnd.tm.slot+json; kind={kind}",
+   "links": {
+    "describedby": "kinds/{kind}"
+   }
+  },
+  "lab/": {
+   "tool": "lab_workspaces",
+   "query": [
+    "tag",
+    "q"
+   ],
+   "items": "result",
+   "key": "slug"
+  },
+  "lab/{slug}": {
+   "tool": "lab_workspace",
+   "kind": "vnd.tm.workspace+json"
+  },
+  "lab/{slug}/{folder}/{name}": {
+   "tool": "lab_file",
+   "kind": "vnd.tm.lab-file+json",
+   "links": {
+    "describedby": "lab/{slug}"
+   }
+  }
+ },
+ "undecided": {
+  "get_slots": "takes a list (slot_ids), so it is a batch and not one address"
+ }
+}

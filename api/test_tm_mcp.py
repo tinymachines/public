@@ -186,7 +186,9 @@ def test_the_lists_are_asked_for_once_and_kept(repo, monkeypatch):
     # Past its keep, the server is asked again.
     monkeypatch.setattr(tm, "MCP_TTL_S", 0)
     read(ns, f"{ROOT}mcp/fake/")
-    assert len(fake.calls) == 12
+    # The session the server gave an id is kept (tinyhelper#6), so the lists
+    # are asked for again and initialize is not.
+    assert [m for m, _ in fake.calls[6:]] == ["tools/list", "resources/list", "resources/templates/list", "prompts/list"]
 
 
 def test_a_server_that_declares_no_resources_or_prompts_lists_neither(repo):

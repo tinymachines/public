@@ -1780,6 +1780,18 @@ class _Down(Exception):
         self.reason, self.status = reason, status
 
 
+class _Throttle(Exception):
+    """The server answered 429: it is rate-limiting this box, for now."""
+
+    def __init__(self, retry_after: int | None):
+        super().__init__("429")
+        self.retry_after = retry_after
+
+
+class _Stale(Exception):
+    """The server no longer knows the session this box kept (404): open another."""
+
+
 def sse_events(text: str) -> list[tuple[str, str]]:
     """The (event, data) pairs of an event stream already read whole."""
     out, event, data = [], "message", []
@@ -1975,6 +1987,7 @@ class Mcp:
         self._snap: dict[str, dict] = {}
         self._maps: dict[str, tuple[tuple, Map | None]] = {}
         self._calls: dict[tuple[str, str, str], tuple[float, dict]] = {}
+        self._sessions: dict[str, dict] = {}
 
     @staticmethod
     def _load(f: Path) -> dict:
@@ -2027,8 +2040,17 @@ class Mcp:
             async with httpx.AsyncClient(timeout=MCP_TIMEOUT_S, follow_redirects=False, transport=self.transport) as c:
                 if conf["transport"] == "sse":
                     return await self._over_sse(c, conf["endpoint"], headers, work)
-                return await self._over_streamable(c, conf["endpoint"], headers, work)
+                try:
+                    return await self._over_streamable(c, conf["endpoint"], headers, work, name)
+                except _Stale:
+                    # The session the box kept is gone: open one more, once.
+                    self._sessions.pop(name, None)
+                    return await self._over_streamable(c, conf["endpoint"], headers, work, name, fresh=True)
+        except (_Gate, _Down, _Throttle):
+            self._sessions.pop(name, None)
+            raise
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
+            self._sessions.pop(name, None)
             raise _Down(type(e).__name__) from None
 
     async def snapshot(self, name: str) -> dict:
@@ -2053,6 +2075,11 @@ class Mcp:
             snap.update(status="gated", statusCode=e.status)
         except _Down as e:
             snap.update(status="unreachable", reason=e.reason, **({"statusCode": e.status} if e.status else {}))
+        except _Throttle as e:
+            # Not down, throttling: the record says so, and is asked again
+            # when the server said to, not a minute from now.
+            snap.update(status="unreachable", reason="answered 429, rate-limiting this box", statusCode=429,
+                        at=now - MCP_RETRY_S + (e.retry_after or 1))
         self._snap[name] = snap
         return snap
 
@@ -2109,12 +2136,17 @@ class Mcp:
             raise _Down(f"{method}: no result")
         return got
 
-    async def _over_streamable(self, c: httpx.AsyncClient, endpoint: str, headers: dict, work: Callable) -> Any:
+    async def _over_streamable(self, c: httpx.AsyncClient, endpoint: str, headers: dict, work: Callable, name: str, fresh: bool = False) -> Any:
         """Streamable HTTP: every message is a POST; an answer is JSON or a
-        short event stream; the session id rides in a header."""
-        hdrs = {**headers, "Accept": "application/json, text/event-stream", "Content-Type": "application/json",
-                "MCP-Protocol-Version": MCP_PROTOCOL}
-        n = 0
+        short event stream; the session id rides in a header. A session the
+        server gave an id is kept and reused, so a tool call costs one POST
+        and not three; a 404 on it means the server forgot it (_Stale); a
+        429 means the server is rate-limiting the box (_Throttle), which is
+        neither down nor gated."""
+        sess = None if fresh else self._sessions.get(name)
+        hdrs = dict(sess["hdrs"]) if sess else {**headers, "Accept": "application/json, text/event-stream", "Content-Type": "application/json",
+                                                 "MCP-Protocol-Version": MCP_PROTOCOL}
+        n = sess["n"] if sess else 0
 
         async def post(method: str, params: dict | None, notify: bool = False) -> dict | None:
             nonlocal n
@@ -2123,6 +2155,11 @@ class Mcp:
             r = await c.post(endpoint, content=json.dumps(msg).encode(), headers=hdrs)
             if r.status_code in (401, 403):
                 raise _Gate(r.status_code)
+            if r.status_code == 429:
+                ra = r.headers.get("retry-after")
+                raise _Throttle(int(ra) if ra and ra.isdigit() else None)
+            if r.status_code == 404 and sess is not None:
+                raise _Stale()
             if r.status_code >= 400:
                 raise _Down(f"{method}: answered {r.status_code}", r.status_code)
             sid = r.headers.get("mcp-session-id")
@@ -2138,9 +2175,15 @@ class Mcp:
                 raise _Down(f"{method}: no answer in the stream")
             return self._result(r.json(), method)
 
-        init = await post("initialize", self._init_params())
-        await post("notifications/initialized", None, notify=True)
-        return await work(post, init)
+        if sess:
+            init = sess["init"]
+        else:
+            init = await post("initialize", self._init_params())
+            await post("notifications/initialized", None, notify=True)
+        out = await work(post, init)
+        if "Mcp-Session-Id" in hdrs:
+            self._sessions[name] = {"hdrs": hdrs, "n": n, "init": init}
+        return out
 
     async def _over_sse(self, c: httpx.AsyncClient, endpoint: str, headers: dict, work: Callable) -> Any:
         """The older transport: one GET holds an event stream open; its first
@@ -2181,6 +2224,9 @@ class Mcp:
                 r = await c.post(post_to, content=json.dumps(msg).encode(), headers=hdrs)
                 if r.status_code in (401, 403):
                     raise _Gate(r.status_code)
+                if r.status_code == 429:
+                    ra = r.headers.get("retry-after")
+                    raise _Throttle(int(ra) if ra and ra.isdigit() else None)
                 if r.status_code >= 400:
                     raise _Down(f"{method}: answered {r.status_code}", r.status_code)
                 if notify:
@@ -2476,6 +2522,21 @@ class Mcp:
         return v
 
     @staticmethod
+    def _edge(e: Any) -> tuple[str | int | None, str | None]:
+        """One edge of a result: its id and a title. An id stands alone, or
+        is the edge's own id, target or node, or sits one level down under
+        neighbour, neighbor or to; a title is the first title, label or name
+        at either level."""
+        if isinstance(e, (str, int)) and not isinstance(e, bool):
+            return e, None
+        if not isinstance(e, dict):
+            return None, None
+        levels = [e] + [e[k] for k in ("neighbour", "neighbor", "to") if isinstance(e.get(k), dict)]
+        val = next((lv[k] for lv in levels for k in ("id", "target", "node") if isinstance(lv.get(k), (str, int)) and not isinstance(lv.get(k), bool)), None)
+        title = next((lv[t] for lv in levels for t in ("title", "label", "name") if isinstance(lv.get(t), str)), None)
+        return val, title
+
+    @staticmethod
     def _words(got: dict) -> str:
         for c in got.get("content") or []:
             if isinstance(c, dict) and c.get("type") == "text" and isinstance(c.get("text"), str):
@@ -2508,6 +2569,18 @@ class Mcp:
                 data = json.loads(data)
             except ValueError:
                 pass
+        # A framework that wraps a tool's return as {"result": <value>}, the
+        # value sometimes a JSON string: the wrapper is the transport's, not
+        # the thing's, so one sole key named result is unwrapped once.
+        if isinstance(data, dict) and list(data) == ["result"]:
+            inner = data["result"]
+            if isinstance(inner, str) and inner[:1] in ("{", "["):
+                try:
+                    inner = json.loads(inner)
+                except ValueError:
+                    pass
+            if isinstance(inner, (dict, list)):
+                data = inner
         structured = isinstance(data, (dict, list))
         if kind == "from-result":
             mime = (T_RECORD if own in (None, "application/json") else own) if structured else (own or "text/plain")
@@ -2597,6 +2670,9 @@ class Mcp:
             raise self._closed(name, {"status": "gated", "statusCode": e.status}) from None
         except _Down as e:
             raise self._closed(name, {"status": "unreachable", "reason": e.reason, **({"statusCode": e.status} if e.status else {})}) from None
+        except _Throttle as e:
+            raise TmError(RESOURCE_NOT_FOUND, "throttled", f"mcp/{name} is rate-limiting this box right now (it answered 429); the same read a moment later is the way",
+                          status=429, nearest=[here], **({"retryAfter": e.retry_after} if e.retry_after else {})) from None
         above = m.above(key)
         up = self.path_uri(name, [Map.fill(x, args) or x for x in m.segments(above)[0]], True) if above else here
         if got.get("isError"):
@@ -2636,11 +2712,10 @@ class Mcp:
             segs, _ = m.segments(key)
             last = Map.arg(segs[-1])
             for e in data[edges]:
-                val = e if isinstance(e, (str, int)) and not isinstance(e, bool) else (next((e[k] for k in ("id", "target", "node") if isinstance(e.get(k), (str, int))), None) if isinstance(e, dict) else None)
+                val, title = self._edge(e)
                 if val is None or last is None:
                     continue
                 a2 = {**args, last: str(val)}
-                title = next((e[t] for t in ("title", "label", "name") if isinstance(e.get(t), str)), None) if isinstance(e, dict) else None
                 links.append(link("related", self.path_uri(name, [Map.fill(x, a2) or x for x in segs], False), title=title))
         if blob is not None:
             got_out = self._emit(ref, me, mime, blob, False, links, {"uri": me, "server": here, "checked": snap["checked"]}, as_)

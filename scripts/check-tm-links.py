@@ -84,6 +84,30 @@ PAIRS.update({v: k for k, v in MCP_PAIRS.items()})
 # server. The walk samples each at this many children, so the deploy's check
 # reads each mapped shape without reading a whole dex.
 MCP_SAMPLE = 3
+# TerraPulse allows 10 posts a second (a burst of 30), so mapped reads are
+# paced under that, and a 429 is waited out as the server says, three times.
+MCP_PACE_S = 0.12
+MCP_RETRIES = 3
+# The links of a mapped thing that lead somewhere bounded; any other link from
+# a mapped thing to a mapped thing (a node's related edges, say) is sampled the
+# same way, or the walk would read a server's whole graph live.
+MCP_STRUCTURAL = {"up", "collection", "describedby", "alternate", "tm:read-with", "tm:links", "next"}
+
+
+def sampled_links(uri: str, links: list) -> list:
+    """The links of a read the walk follows: all of them, unless the read is
+    mapped, when links to other mapped things beyond the structural ones are
+    kept to MCP_SAMPLE."""
+    if not mapped(uri):
+        return links
+    out, kept = [], 0
+    for ln in links:
+        if ln["rel"] in MCP_STRUCTURAL or not mapped(ln["href"]):
+            out.append(ln)
+        elif kept < MCP_SAMPLE:
+            out.append(ln)
+            kept += 1
+    return out
 
 
 def mapped(uri: str) -> bool:
@@ -158,10 +182,26 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
             problems.append(f"{uri}: {len(missing)} inline link(s) are not behind ?as=links, first {missing[0]['rel']} {missing[0]['href']}")
         return out
 
+    waited = 0
+
+    async def read_patiently(uri: str):
+        nonlocal waited
+        for attempt in range(MCP_RETRIES + 1):
+            try:
+                return await ns.read(uri)
+            except tm.TmError as e:
+                if e.reason != "throttled" or attempt == MCP_RETRIES:
+                    raise
+                waited += 1
+                await asyncio.sleep(e.data.get("retryAfter") or 1)
+        raise AssertionError("unreachable")
+
     async def get(uri: str):
         if uri not in seen:
             try:
-                r = await ns.read(uri)
+                if mapped(uri):
+                    await asyncio.sleep(MCP_PACE_S)
+                r = await read_patiently(uri)
                 links = r["_meta"][tm.META_LINKS]
                 if len(links) > tm.LINK_CAP:
                     problems.append(f"{uri}: {len(links)} links in one read, over the cap of {tm.LINK_CAP}")
@@ -174,7 +214,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                     problems.append(f"{uri}: reads as {mime}, a kind the vocabulary does not know")
                 kinds_served.add(tm.kind_of(mime))
             except tm.TmError as e:
-                seen[uri] = {"ok": False, "reason": e.reason}
+                seen[uri] = {"ok": False, "reason": e.reason, "message": e.message}
         return seen[uri]
 
     async def reads_as(href: str) -> str | None:
@@ -211,9 +251,11 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
         seen[uri] = got
         if not got["ok"]:
             if got["reason"] not in ("too-large", "denied"):
-                problems.append(f"{uri} (from {via}) does not resolve: {got['reason']}")
+                problems.append(f"{uri} (from {via}) does not resolve: {got['reason']} ({got.get('message', '')[:160]})")
             continue
         links = got["links"]
+        if mapped(uri):
+            got["links"] = links = sampled_links(uri, links)
         for ln in links:
             if ln["rel"] == "up" and identity(ln["href"]) == identity(uri):
                 problems.append(f"{uri}: up names itself")
@@ -323,7 +365,8 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 problems.append(f"kinds/{kind}: listed with no count or no media type")
     except tm.TmError as e:
         problems.append(f"kinds/: the registry does not read ({e.reason})")
-    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {mapped_reads} mapped reads, {len(kinds_served)} kinds served")
+    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {mapped_reads} mapped reads"
+          + (f" (waited out {waited} 429s)" if waited else "") + f", {len(kinds_served)} kinds served")
     unread = [u for u, _ in queue if u not in seen]
     if unread:
         problems.append(f"the budget of {budget} reads ran out with {len(unread)} URIs still queued and unchecked; raise --budget")

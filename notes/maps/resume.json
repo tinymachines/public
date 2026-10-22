@@ -1,0 +1,38 @@
+{
+ "server": "resume",
+ "derived": "2026-10-22T20:33:11+00:00",
+ "from": [
+  "tools/list",
+  "tools/call"
+ ],
+ "driver": {
+  "name": "index",
+  "version": 1
+ },
+ "reads": {
+  "contact": {
+   "tool": "get_contact"
+  },
+  "projects": {
+   "tool": "get_projects"
+  },
+  "roles/": {
+   "tool": "list_roles",
+   "query": [
+    "from_year",
+    "to_year",
+    "keyword"
+   ],
+   "items": "roles"
+  },
+  "skills": {
+   "tool": "get_skills"
+  },
+  "summary": {
+   "tool": "get_summary"
+  }
+ },
+ "undecided": {
+  "search_experience": "its required input query is free text, and a free-text search stays a tool (decision C)"
+ }
+}

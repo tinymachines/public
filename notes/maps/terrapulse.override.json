@@ -1,0 +1,7 @@
+{
+ "_": "Two kinds renamed to the words section 14 of the spec already uses. kinds/{kind}: the model is KindDescription, so the driver inferred vnd.tm.kind-description+json; the spec's table calls a dex kind dex-kind, and a media kind named 'kind' would collide in sense with the host's own kinds/ registry. graph/{id}: the model is GraphNode and the driver inferred vnd.tm.graph-node+json; the spec's table calls it node. Nothing else corrected: every other entry reads as the rules derived it.",
+ "reads": {
+  "kinds/{kind}": {"tool": "describe_kind", "kind": "vnd.tm.dex-kind+json; kind={kind}"},
+  "graph/{id}": {"tool": "graph_node", "kind": "vnd.tm.node+json", "edges": "edges"}
+ }
+}
