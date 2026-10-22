@@ -117,7 +117,7 @@ def test_a_server_reads_as_its_record_and_its_tools_as_things_with_addresses(rep
     assert f"{ROOT}mcp/" in rels(links)["collection"]
     top, links = read(ns, f"{ROOT}mcp/")
     kids = json.loads(top["text"])["children"]
-    assert kids == [{"uri": f"{ROOT}mcp/fake/", "name": "fake", "title": "a fake server", "mimeType": "application/json", "isCollection": True}]
+    assert kids == [{"uri": f"{ROOT}mcp/fake/", "name": "fake", "title": "a fake server", "mimeType": tm.MCP_TYPE["server"], "isCollection": True}]
     assert rels(links)["up"] == [ROOT]
     srv, links = read(ns, f"{ROOT}mcp/fake/")
     body = json.loads(srv["text"])

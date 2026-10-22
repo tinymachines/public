@@ -146,7 +146,7 @@ def test_a_link_cannot_get_its_confidence_wrong():
 
 def test_the_root_lists_the_mounts_and_a_collection_lists_its_children(ns):
     root, links = read(ns, ROOT)
-    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/", f"{ROOT}entity/", f"{ROOT}mcp/"}
+    assert {m["uri"] for m in json.loads(root["text"])["mounts"]} == {f"{ROOT}fs/", f"{ROOT}git/", f"{ROOT}http/", f"{ROOT}offbox/", f"{ROOT}entity/", f"{ROOT}mcp/", f"{ROOT}kinds/"}
     top, _ = read(ns, f"{ROOT}fs/")
     assert [c["name"] for c in json.loads(top["text"])["children"]] == ["docs/", "data/", "notes/"]
     nes, links = read(ns, f"{ROOT}fs/docs/nes/")
@@ -330,7 +330,7 @@ def test_a_page_reads_as_what_the_visitor_gets_and_links_to_its_source(ns):
 
 def test_text_is_the_main_without_the_chrome(ns):
     c, _ = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text")
-    assert c["mimeType"] == "text/plain"
+    assert c["mimeType"] == tm.T_PAGE
     assert c["text"] == "What is in the pile\nGear on hand.\none\ntwo\n"
     assert "Menu" not in c["text"] and "var a" not in c["text"]
     assert tm.page_text("<p>no  main</p><p>here</p>") == "no main\nhere\n"
@@ -381,9 +381,9 @@ def test_http_refusals_are_structured(ns):
 
 
 def test_resources_list_is_the_map_not_the_inventory(ns, monkeypatch):
-    monkeypatch.setattr(tm, "RESOURCES_PAGE", 8)
+    monkeypatch.setattr(tm, "RESOURCES_PAGE", 9)
     first = ns.list_resources(None)
-    assert [r["name"] for r in first["resources"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "mcp"]
+    assert [r["name"] for r in first["resources"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "mcp", "kinds"]
     rest = ns.list_resources(first["nextCursor"])
     names = [r["name"] for r in rest["resources"]]
     assert names[0] == "docs/" and "docs/nes/" in names and "docs/ja/nes/" in names
@@ -402,7 +402,7 @@ def test_the_handler_advertises_the_namespace_and_relays_its_refusals(ns):
         run(handler({"jsonrpc": "2.0", "id": 3, "method": "resources/read", "params": {"uri": f"{ROOT}fs/docs/nes/pil.md"}}))
     assert e.value.code == tm.RESOURCE_NOT_FOUND and e.value.data["reason"] == "not-found"
     tmpl = run(handler({"jsonrpc": "2.0", "id": 4, "method": "resources/templates/list"}))["result"]
-    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine", "mcp"]
+    assert [t["name"] for t in tmpl["resourceTemplates"]] == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine", "mcp", "kinds"]
     bare = mcp_server.make_handler({t["name"]: (lambda _: {}) for t in mcp_server.TOOLS})
     plain = run(bare({"jsonrpc": "2.0", "id": 5, "method": "initialize", "params": {}}))["result"]
     assert "resources" not in plain["capabilities"]
@@ -529,7 +529,7 @@ def test_log_blame_and_stat_are_representations_of_the_file(gns):
     one = json.loads(read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=log&n=1")[0]["text"])
     assert len(one["commits"]) == 1
     blame, _ = read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=blame")
-    assert blame["mimeType"] == "text/plain"
+    assert blame["mimeType"] == tm.T_BLAME
     lines = blame["text"].splitlines()
     assert any("Second line." in ln and log["commits"][0]["commit"] in ln for ln in lines)
     assert any("# Alone" in ln and log["commits"][1]["commit"] in ln for ln in lines)
@@ -900,7 +900,7 @@ def test_tm4_a_page_with_no_facet_reads_as_its_text(ns):
     plain, _ = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile")
     text, _ = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/pile?as=text")
     assert plain["text"] == text["text"] == "What is in the pile\nGear on hand.\none\ntwo\n"
-    assert plain["mimeType"] == "text/plain"
+    assert plain["mimeType"] == tm.T_PAGE
     assert plain["uri"] == f"{ROOT}http/tinymachines.ai/docs/nes/pile", "the identity answers for itself"
     # Something that is not a page reads as itself, not as a refusal.
     robots, _ = read(ns, f"{ROOT}http/tinymachines.ai/robots.txt")
@@ -1055,7 +1055,7 @@ def test_tm19_a_submodule_reads_as_what_it_pins_not_as_a_dead_end(gns, gits):
     _pin(gns.repo, "extern/pretext", elsewhere, "https://github.com/chenglou/pretext.git")
     _pin(gns.repo, "extern/lookalike", elsewhere, "https://github.com/someone/bench.git")
     kids = {k["name"]: k for k in json.loads(read(gns, f"{ROOT}git/public/extern/")[0]["text"])["children"]}
-    assert kids["bench"]["submodule"] is True and kids["bench"]["mimeType"] == "application/json"
+    assert kids["bench"]["submodule"] is True and kids["bench"]["mimeType"] == tm.T_SUBMODULE
     for uri in (f"{ROOT}git/public/extern/bench", f"{ROOT}git/public/extern/bench/", f"{ROOT}git/public/extern/bench?as=stat"):
         c, links = read(gns, uri)
         body = json.loads(c["text"])
@@ -1138,7 +1138,7 @@ def test_tm11_a_facet_a_collection_has_no_use_for_is_refused_not_dropped(built):
     assert json.loads(read(built, f"{ROOT}git/public/docs/?as=log")[0]["text"])["commits"]
     # The listing itself, and a site's front page (its root is both), still read.
     assert json.loads(read(built, f"{ROOT}http/tinymachines.ai/autopsy/")[0]["text"])["children"]
-    assert read(built, f"{ROOT}http/tinymachines.ai/?as=stat")[0]["mimeType"] == "application/json"
+    assert read(built, f"{ROOT}http/tinymachines.ai/?as=stat")[0]["mimeType"] == tm.T_STAT
 
 
 def test_tinypeek13_a_parameter_a_mount_does_not_take_is_refused_and_the_echo_carries_what_was_used(built, monkeypatch):
@@ -1203,7 +1203,7 @@ def test_tm19_the_crawl_faults_a_submodule_record_states_its_type_and_its_pin_re
     bench_sha = git(gits["bench"], "rev-parse", "HEAD").strip()
     _pin(gns.repo, "extern/bench", bench_sha, "https://github.com/tinymachines/bench.git")
     c, links = read(gns, f"{ROOT}git/public/extern/bench?as=stat")
-    assert json.loads(c["text"])["mimeType"] == "application/json", "what the listing claimed"
+    assert json.loads(c["text"])["mimeType"] == tm.T_SUBMODULE, "what the listing claimed"
     crawl = _crawler()
     pin = rels(links)["tm:pins"][0]
     assert crawl.stat_of(pin) == pin, "a collection at a ref is a collection: no ?as=stat added"
@@ -1351,7 +1351,7 @@ def test_tm16_an_entity_fits_the_grammar_the_other_mounts_use(ents):
 def test_tm16_from_a_pattern_a_client_reaches_its_games_routines_and_lessons(ents):
     c, links = read(ents, f"{E}pattern/pad-poll")
     body = json.loads(c["text"])
-    assert c["mimeType"] == "application/json" and (body["entity"], body["key"]) == ("pattern", "pad-poll")
+    assert c["mimeType"] == tm.tm_type("pattern") and (body["entity"], body["key"]) == ("pattern", "pad-poll")
     r = rels(links)
     assert r["tm:found-in"] == [f"{E}game/abc", f"{E}game/def"]
     assert r["tm:instance"] == [f"{E}game/abc/routine/b0-8E5C", f"{E}game/def/routine/b7-E000"]
@@ -1398,7 +1398,7 @@ def test_tm16_an_entity_reads_as_its_record_and_carries_no_rom_byte(ents):
 def test_tm16_listings_name_only_what_the_rules_named_and_refusals_teach(ents):
     games = json.loads(read(ents, f"{E}game/")[0]["text"])["children"]
     assert [(k["name"], k["isCollection"]) for k in games] == [("abc", False), ("abc/", True), ("def", False), ("def/", True)]
-    assert games[0]["title"] == "Metroid (USA)" and games[0]["mimeType"] == "application/json"
+    assert games[0]["title"] == "Metroid (USA)" and games[0]["mimeType"] == tm.tm_type("game")
     assert [k["name"] for k in json.loads(read(ents, f"{E}game/abc/")[0]["text"])["children"]] == ["routine/"]
     c, links = read(ents, f"{E}game/abc/routine/")
     kids = json.loads(c["text"])["children"]
@@ -1422,7 +1422,7 @@ def test_tm16_listings_name_only_what_the_rules_named_and_refusals_teach(ents):
     # Facets: stat and nothing else; a listing offers none (TM-11).
     st, links = read(ents, f"{E}pattern/pad-poll?as=stat")
     stat = json.loads(st["text"])
-    assert st["uri"] == f"{E}pattern/pad-poll?as=stat" and stat["mimeType"] == "application/json" and stat["isCollection"] is False and stat["size"] > 0
+    assert st["uri"] == f"{E}pattern/pad-poll?as=stat" and stat["mimeType"] == tm.tm_type("pattern") and stat["isCollection"] is False and stat["size"] > 0
     assert rels(links)["alternate"] == [f"{E}pattern/pad-poll"] and f"{E}game/abc" in rels(links)["tm:found-in"]
     assert refusal(ents, f"{E}pattern/pad-poll?as=raw").reason == "bad-facet"
     assert refusal(ents, f"{E}pattern/?as=stat").reason == "bad-facet"
@@ -1515,7 +1515,7 @@ def test_tm16_a_lesson_names_its_game_only_where_the_names_agree(ents):
 
 def test_tm16_templates_resources_and_completions_know_the_mount(ents):
     names = [t["name"] for t in ents.templates()]
-    assert names == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine", "mcp"]
+    assert names == ["hosts", "root", "fs", "git", "http", "offbox", "entity", "routine", "mcp", "kinds"]
     listed = []
     cur = None
     while True:
@@ -1539,7 +1539,7 @@ def test_tm16_templates_resources_and_completions_know_the_mount(ents):
     assert comp(et, "key", "a", kind="game") == ["abc"]
     assert comp(rt, "key", "") == ["abc", "def"]
     assert comp(rt, "routine", "b1", key="abc") == ["b1-A000"]
-    assert comp(et, "as", "") == ["stat", "links"]
+    assert comp(et, "as", "") == ["stat", "links", "set"]
 
 
 def test_tm16_a_checkout_without_the_records_has_an_empty_mount_not_a_broken_one(gns):
@@ -1704,7 +1704,7 @@ def test_a_large_link_set_is_capped_inline_and_whole_behind_as_links(ents, monke
     assert all(ln in walked for ln in full), "nothing is unreachable"
     first, _ = read(ents, f"{uri}?as=links")
     body = json.loads(first["text"])
-    assert first["uri"] == f"{uri}?as=links" and first["mimeType"] == "application/json" and (body["uri"], body["total"]) == (uri, 11) and "key" not in body
+    assert first["uri"] == f"{uri}?as=links" and first["mimeType"] == tm.T_LINKS and (body["uri"], body["total"]) == (uri, 11) and "key" not in body
     assert read(ents, f"{uri}?as=links") == read(ents, f"{uri}?as=links"), "stable across reads"
     # Through the tool the same page comes back in the body.
     got = run(ents.resolve({"uri": uri}))
@@ -1799,7 +1799,7 @@ def test_a_page_whose_text_is_over_the_cap_is_refused_with_a_range_that_reads(ns
     while at < size:
         end = min(at + tm.READ_CAP, size)
         c, links = read(ns, refusal(ns, page).data["range"].format(start=at, end=end))
-        assert c["mimeType"] == "text/plain" and c["uri"] == f"{page}?as=text&range={at}-{end}"
+        assert c["mimeType"] == tm.T_PAGE and c["uri"] == f"{page}?as=text&range={at}-{end}"
         assert rels(links)["up"], "a range carries the page's links"
         got, at = got + c["text"], end
     assert got == want
@@ -1854,7 +1854,7 @@ def test_a_git_tree_reads_to_a_stated_depth_in_one_git_call(gns, monkeypatch):
     assert "docs/nes/alone.md" not in names, "two levels, not three"
     assert names == sorted(names), "in path order, a directory just before what is in it"
     by = {c["name"]: c for c in two["children"]}
-    assert by["docs/nes/"] == {"uri": f"{top}docs/nes/", "name": "docs/nes/", "mimeType": "application/json", "isCollection": True, "depth": 2}, "a directory at the last level is listed, to be read on"
+    assert by["docs/nes/"] == {"uri": f"{top}docs/nes/", "name": "docs/nes/", "mimeType": tm.T_LISTING, "isCollection": True, "depth": 2}, "a directory at the last level is listed, to be read on"
     assert by["docs/index.md"]["uri"] == f"{top}docs/index.md" and by["docs/index.md"]["mimeType"] == "text/markdown" and by["docs/index.md"]["size"] > 0 and by["docs"+"/"]["depth"] == 1
     three = _tree(gns, f"{top}?depth=3")
     assert "docs/nes/alone.md" in [c["name"] for c in three["children"]]
@@ -2214,7 +2214,7 @@ def test_tm_with_no_host_lists_the_hosts_this_server_answers_for(ns):
     for uri in ("tm://", "tm:///"):
         content, links = read(ns, uri)
         body = json.loads(content["text"])
-        assert content["uri"] == tm.TOP == "tm://" and content["mimeType"] == "application/json"
+        assert content["uri"] == tm.TOP == "tm://" and content["mimeType"] == tm.T_LISTING
         assert [h["uri"] for h in body["hosts"]] == [ROOT] and body["hosts"][0]["name"] == tm.HOST and body["hosts"][0]["what"]
         assert [(ln["rel"], ln["href"]) for ln in links] == [("collection", ROOT)]
     _, links = read(ns, ROOT)
@@ -2365,7 +2365,7 @@ def test_tinypeek16_a_readable_piece_lines_of_a_text_and_a_pointer_into_a_record
     # A pointer into a record.
     rec = f"{ROOT}fs/data/autopsy.json"
     c, links = read(ents, f"{rec}?pointer=/games/1")
-    assert (json.loads(c["text"]), c["uri"], c["mimeType"]) == (AUTOPSY["games"][1], f"{rec}?pointer=/games/1", "application/json")
+    assert (json.loads(c["text"]), c["uri"], c["mimeType"]) == (AUTOPSY["games"][1], f"{rec}?pointer=/games/1", tm.T_RECORD)
     assert "tm:read-by" in rels(links), "the piece carries the file's links"
     assert json.loads(read(ents, f"{rec}?pointer=/games/1/routine_list/0/name")[0]["text"]) == "b7_poll_E000"
     assert json.loads(read(ents, f"{rec}?pointer=/patterns")[0]["text"]) == AUTOPSY["patterns"]

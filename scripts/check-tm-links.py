@@ -39,7 +39,14 @@ What it asserts, for every URI it reaches:
     those links to carry a reader from the one route it names;
   - a submodule is listed with a type and resolves to what it pins (TM-19:
     it used to be skipped, which is how a submodule that read as not-found
-    went unnoticed).
+    went unnoticed);
+  - every read carries a media type that says what it is (tinypeek#23): a
+    vendor type whose kind the namespace's vocabulary knows, or a file's own
+    type, and never bare application/json; every link that carries its
+    target's type (RFC 8288 `type`) is followed and the target reads as that
+    type, and at least one did, since a check that can pass on nothing is
+    not a check; and when the walk is done the kind registry at kinds/ lists
+    every kind the walk was served, each reading with a count.
 
 Git mounts are walked by their links and two levels of listing, not file by
 file: nine repositories' every file would be most of the budget and prove
@@ -145,10 +152,35 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 if len(links) > tm.LINK_CAP:
                     problems.append(f"{uri}: {len(links)} links in one read, over the cap of {tm.LINK_CAP}")
                 seen[uri] = {"ok": True, "links": await whole(uri, links), "content": r["contents"][0]}
+                # tinypeek#23: the type says what the thing is, in words the vocabulary knows.
+                mime = r["contents"][0].get("mimeType") or ""
+                if mime == "application/json":
+                    problems.append(f"{uri}: reads as bare application/json; a thing the server composes says its kind")
+                elif tm.kind_of(mime) != "file" and tm.kind_of(mime) not in tm.KINDS:
+                    problems.append(f"{uri}: reads as {mime}, a kind the vocabulary does not know")
+                kinds_served.add(tm.kind_of(mime))
             except tm.TmError as e:
                 seen[uri] = {"ok": False, "reason": e.reason}
         return seen[uri]
 
+    async def reads_as(href: str) -> str | None:
+        """What following a link comes back as: a facet or a piece read as
+        given; a leaf by its stat, which names the thing's type; a collection
+        as itself."""
+        keys = {q.split("=")[0] for q in urlsplit(href).query.split("&") if q}
+        if keys & {"as", "pointer", "lines", "range"}:
+            got = await get(href)
+            return got["content"].get("mimeType") if got["ok"] else None
+        got = await get(stat_of(href))
+        if not got["ok"]:
+            return None
+        mime = got["content"].get("mimeType")
+        if mime == tm.T_STAT:
+            return json.loads(got["content"]["text"]).get("mimeType")
+        return mime
+
+    kinds_served: set[str] = set()
+    typed = 0
     reads = 0
     while queue and reads < budget:
         uri, via = queue.popleft()
@@ -173,14 +205,12 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
         if urlsplit(uri).path.startswith("/entity/") and not uri.endswith("/") and not any(ln["rel"] == "tm:data" for ln in links):
             problems.append(f"{uri}: an entity with no tm:data to its record")
         if uri in claimed and not uri.endswith("/"):
-            import json as _j
-            st = _j.loads(got["content"]["text"]) if got["content"].get("text", "").startswith("{") else {}
+            st = json.loads(got["content"]["text"]) if got["content"].get("text", "").startswith("{") else {}
             mime = st.get("mimeType") or (st.get("contentType", "").split(";")[0].strip() or None)
             if claimed[uri] != mime:
                 problems.append(f"{uri}: listed as {claimed[uri]}, read as {mime}")
         text = got["content"].get("text") or ""
-        if uri.endswith("/") and got["content"].get("mimeType") == "application/json" and text.startswith("{"):
-            import json
+        if uri.endswith("/") and tm.is_json(got["content"].get("mimeType") or "") and text.startswith("{"):
             body = json.loads(text)
             for child in body.get("children", []):
                 if child.get("redacted"):
@@ -205,10 +235,23 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 piece = await get(href)
                 if not piece["ok"]:
                     problems.append(f"{uri} {ln['rel']} {href}: the piece does not read ({piece['reason']})")
-    # Inverses, over every page and file reached.
+    # Inverses, over every page and file reached; and every type a link claims.
     for uri, got in list(seen.items()):
         if not got.get("ok"):
             continue
+        for ln in got["links"]:
+            if "type" in ln and "{" not in ln["href"] and not any(f"as={a}" in ln["href"] for a in ("rendered", "log", "blame")):
+                # A target that does not resolve is the resolution rule's
+                # finding, above; here only what reads is held to its type.
+                # A facet's type is the facet's by construction, and the three
+                # that cost a fetch or a git process each (a page's HTML, a
+                # log, a blame) are not read a second time for it: that
+                # doubled the walk's time when they were.
+                actual = await reads_as(ln["href"])
+                if actual is not None:
+                    typed += 1
+                    if actual != ln["type"]:
+                        problems.append(f"{uri} {ln['rel']} {ln['href']}: the link says {ln['type']}, the target reads as {actual}")
         for ln in got["links"]:
             if ln["rel"] == "alternate" and identity(ln["href"]) != identity(uri) and "/http/" in uri:
                 # Another version of the page, not another facet of it (TM-20).
@@ -240,7 +283,21 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
                 problems.append(f"{uri} {ln['rel']} {target}: count {ln['count']} one way, {counts.get(me)} back")
             elif ln["rel"] in SAME_CONFIDENCE and back[me] != ln.get("confidence"):
                 problems.append(f"{uri} {ln['rel']} {target}: {ln.get('confidence')} one way, {back[me]} back")
-    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused")
+    if typed == 0:
+        problems.append("no link carried its target's type, so none was checked (tinypeek#23)")
+    # tinypeek#23: the registry lists what the walk was served, and each kind reads.
+    try:
+        reg = json.loads((await ns.read(f"{tm.ROOT}kinds/"))["contents"][0]["text"])
+        listed = {c["name"] for c in reg.get("children", [])}
+        for kind in sorted(kinds_served - listed):
+            problems.append(f"kinds/: {kind} was served during the walk and is not listed")
+        for kind in sorted(listed):
+            entry = json.loads((await ns.read(f"{tm.ROOT}kinds/{kind}"))["contents"][0]["text"])
+            if entry.get("served", 0) < 1 or not entry.get("mediaTypes"):
+                problems.append(f"kinds/{kind}: listed with no count or no media type")
+    except tm.TmError as e:
+        problems.append(f"kinds/: the registry does not read ({e.reason})")
+    print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {len(kinds_served)} kinds served")
     unread = [u for u, _ in queue if u not in seen]
     if unread:
         problems.append(f"the budget of {budget} reads ran out with {len(unread)} URIs still queued and unchecked; raise --budget")
@@ -249,7 +306,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     if problems:
         print(f"check-tm-links: {len(problems)} problem(s)")
         return 1
-    print("check-tm-links: every link resolves, no up names itself, every listing's type holds, every pair has its inverse, every version links back")
+    print("check-tm-links: every link resolves, no up names itself, every listing's type holds, every typed link reads as it says, every pair has its inverse, every version links back, the registry lists every kind served")
     return 0
 
 

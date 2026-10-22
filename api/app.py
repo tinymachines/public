@@ -532,7 +532,8 @@ _MCP = mcp_server.make_handler(
     # and the sites this box serves, as read-only MCP resources with typed
     # links between a page and its source. The checkout is the one that
     # serves live, so what the fs mount shows is what the site was built from.
-    namespace=tm.Namespace(Path(__file__).resolve().parent.parent),
+    # tinypeek#23: the kind registry's counts live in the state directory, never under the checkout.
+    namespace=tm.Namespace(Path(__file__).resolve().parent.parent, kinds_file=tm.kinds_file_from_env(Path(__file__).resolve().parent.parent)),
     # tinypeek#6: each caller is held to a rate; mcp_endpoint says who is calling.
     limiter=mcp_server.RateLimit(),
     # tinypeek#7: one record a request, outside the checkout, or none where there is nowhere to write.

@@ -60,7 +60,7 @@ TM_INSTRUCTIONS = """
 
 The same server is also a read-only namespace, tm://, spoken as MCP resources:
 start by reading tm://tinymachines/ (the mounts), then read any URI ending in /
-to list its children, and read a file or page to get it. Six mounts: fs/ is
+to list its children, and read a file or page to get it. Seven mounts: fs/ is
 the repository's docs/, data/ and notes/; git/<repo>/ is a repository at any ref or time
 (?at=, a branch, tag, commit or ISO date, which fs and entity/ take too, an entity as its records had it; with ?as=log, blame, tree, stat); http/<site>/ is what a visitor gets from
 a site this box serves, a page read as its text (?as=rendered for the HTML). A piece of a thing has an address and reads:
@@ -73,7 +73,11 @@ routine a rule named (tm:instance) and the lessons that use it
 (tm:demonstrated-by), with no need to read the record they come from; mcp/ holds the MCP
 servers this box reads, each with its tools, resources and prompts as things with addresses
 (mcp/<server>/ is the server's record and whether it answered; mcp/<server>/tools/<name> is one
-tool as the server described it, tm:served-by its server, tm:schema its schema as a piece of itself). Every read carries
+tool as the server described it, tm:served-by its server, tm:schema its schema as a piece of itself); kinds/ lists the
+kinds of thing this host has served, measured as they go out, and kinds/<kind> says how often and with which links. Every read's
+mimeType says what it is: application/vnd.tm.<kind>+json for a thing this server composes (listing, stat, record, pattern, tool, ...),
+text/vnd.tm.page for a page's text, a file's own type for a file it merely holds; a link may carry its target's type. On an entity,
+?as=set&rel=<rel> reads the things behind one link relation inlined, a page at a time. Every read carries
 typed links in _meta under "tinymachines.ai/links": a notebook page links to the
 markdown it is rendered from (tm:source), the file links back to its page
 (tm:renders-as) and to the repository it came from (tm:generated-by or

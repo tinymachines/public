@@ -106,6 +106,8 @@ tm://tinymachines/entity/pattern/pad-poll          a pattern the autopsy found, 
                                                    link to every game and routine it is in
 tm://tinymachines/mcp/terrapulse/tools/get_slot    a tool of another MCP server this box
                                                    reads, as that server described it
+tm://tinymachines/kinds/pattern                    one kind of thing this host has served,
+                                                   counted: its media type and its links
 ```
 
 A URI ending in `/` is a collection, and reading one returns its children
@@ -153,6 +155,18 @@ tool as the server described it, with its schema readable as a piece of it
 and described, never run. A server behind a token the box does not hold
 reads as `gated`, and one that does not answer as `unreachable`; the record
 says which, and when the box last asked.
+
+Every read says what it is in its `mimeType`. A thing the server composes is
+`application/vnd.tm.<kind>+json` (`listing`, `stat`, `record`, `pattern`,
+`tool`, and so on) or `text/vnd.tm.<kind>` (a page's text is
+`text/vnd.tm.page`); a file the server merely holds keeps its own type, so a
+markdown file is still `text/markdown`. A client never has to guess a kind
+from a path. `kinds/` lists every kind this host has served since its record
+began, and `kinds/<kind>` says how often, as which media types and with
+which link relations; it is measured, so a kind never served is not there.
+A link may carry its target's `type`. On the entity mount `?as=set&rel=<rel>`
+reads the things behind one link relation inlined, a page at a time, which
+saves a client one read a member.
 
 Every read carries links. A notebook page links to the markdown it is
 rendered from (`tm:source`), the markdown links back to its page

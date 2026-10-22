@@ -367,6 +367,8 @@ tm://tinymachines/mcp/terrapulse/tools/get_slot
                                              a tool of an MCP server this box reads,
                                              as the server described it; mcp/<server>/
                                              is the server's record and whether it answered
+tm://tinymachines/kinds/pattern              one kind of thing this host has served: its
+                                             media type, how often, and the links it carried
 ```
 
 Three verbs, `resources/list`, `resources/read` and `completion/complete`,
@@ -408,6 +410,19 @@ server that wants a token the box does not hold reads as `gated`, one that
 does not answer as `unreachable`; the token, where there is one, is named in
 the file and held in the service's environment, and never appears in a URI,
 a body or a refusal.
+
+Every read says what it is in its media type (tinypeek#23): a thing the
+server composes is `application/vnd.tm.<kind>+json` (a listing, a stat, a
+record, a pattern, a tool) or `text/vnd.tm.<kind>` (a page's text, a blame),
+and a file the server merely holds keeps its own type. Nothing reads as bare
+`application/json`. `kinds/` is the registry of kinds, measured: it lists
+every kind this host has served since its record began, and `kinds/<kind>`
+says how often, as which media types, and with which link relations; a kind
+never served is not listed. A link may carry its target's `type`, as RFC
+8288 allows, wherever the address settles it. On the entity mount,
+`?as=set&rel=<rel>` reads a set and its members in one: the things behind one
+link relation, each as its own address reads it, a page at a time
+(`entity/<kind>/?as=set` inlines a listing).
 
 The git mount offers this repository and the siblings checked out beside it,
 under their GitHub names, all public under github.com/tinymachines. It runs

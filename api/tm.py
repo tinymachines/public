@@ -73,7 +73,7 @@ ROOT = f"tm://{HOST}/"
 TOP = "tm://"
 
 # The mounts, in the order the root lists them.
-MOUNTS = ("fs", "git", "http", "offbox", "entity", "mcp")
+MOUNTS = ("fs", "git", "http", "offbox", "entity", "mcp", "kinds")
 
 # The directories the fs mount can see. Public on GitHub already; the rest of
 # the checkout (deploy/, the database, the build outputs) is not offered.
@@ -117,8 +117,9 @@ PAGE_EXT = (".md", ".mdx")
 AS_FS = ("raw", "stat", "links")
 AS_HTTP = ("rendered", "text", "stat", "links")
 AS_GIT = ("raw", "log", "blame", "tree", "stat", "links")
-AS_ENTITY = ("stat", "links")
+AS_ENTITY = ("stat", "links", "set")
 AS_MCP = ("stat", "links")
+AS_KINDS = ("stat", "links")
 # tinypeek#13: what each mount's URI can say after the ?. The templates name
 # these and a read refuses any other, so the two are one fact. The root and
 # the list of hosts take ?as=links only; cursor= rides with ?as=links anywhere.
@@ -135,8 +136,12 @@ PARAMS: dict[str, tuple[str, ...]] = {
     "offbox": ("as", "rel", "min"),
     "entity": ("at", "as", "rel", "min", "cursor"),
     "mcp": ("as", "range", "lines", "pointer", "rel", "min", "cursor"),
+    "kinds": ("as", "rel", "min", "cursor"),
 }
+# rel= and min= narrow a set of links; they ride with ?as=links and, on the
+# entity mount, with ?as=set (tinypeek#23), which inlines what they keep.
 LINKS_ONLY = ("rel", "min")
+SETS = ("links", "set")
 
 # tinypeek#18: where a trail (a named, ordered list of addresses) is a file.
 # A trail is read through fs like any file; what makes it a trail is the
@@ -172,6 +177,7 @@ NO_PAST = {
     "http": "a page keeps no past of its own; the route that renders it does, at the page's tm:source link",
     "offbox": "what is kept off this box has no past here",
     "mcp": "an MCP server's answers have no past here; its tools are read as it lists them now",
+    "kinds": "the registry counts what has been served since its record began, and keeps no past",
 }
 
 # tinypeek#22: the mcp mount. The servers it reads are named in a file of the
@@ -188,6 +194,62 @@ MCP_PROTOCOL = "2025-03-26"
 MCP_KINDS = ("tools", "resources", "prompts")
 MCP_TYPE = {k: f"application/vnd.tm.{k}+json" for k in ("server", "tool", "resource", "prompt")}
 
+
+# tinypeek#23: what a thing is, said in its media type. A thing the server
+# composes is application/vnd.tm.<kind>+json, or text/vnd.tm.<kind> when it is
+# a text; a file the server merely holds keeps the file's own type, except
+# that a JSON file reads as a record. KINDS is the vocabulary, every kind this
+# server can say with one line each; what it has served is measured, not
+# asserted, by the Kinds class, and the registry at kinds/ lists only that.
+def tm_type(kind: str, text: bool = False) -> str:
+    return f"text/vnd.tm.{kind}" if text else f"application/vnd.tm.{kind}+json"
+
+
+def kind_of(mime: str) -> str:
+    """The kind a media type names: the vendor part, or `file` for a type
+    the server did not mint."""
+    m = re.fullmatch(r"(?:application|text)/vnd\.tm\.([a-z-]+)(?:\+json)?", mime)
+    return m[1] if m else "file"
+
+
+T_LISTING = tm_type("listing")
+T_STAT = tm_type("stat")
+T_LINKS = tm_type("links")
+T_LOG = tm_type("log")
+T_SUBMODULE = tm_type("submodule")
+T_OFFBOX = tm_type("offbox")
+T_RECORD = tm_type("record")
+T_TRAIL = tm_type("trail")
+T_SET = tm_type("set")
+T_KIND = tm_type("kind")
+T_PAGE = tm_type("page", text=True)
+T_BLAME = tm_type("blame", text=True)
+
+KINDS: dict[str, str] = {
+    "listing": "a collection's children, a page at a time; the hosts and the root are listings too",
+    "file": "a file the server holds, read as its own type",
+    "record": "a JSON file the server did not compose",
+    "trail": "a named, ordered list of addresses, a JSON file under notes/trails/",
+    "page": "a page's readable text",
+    "stat": "metadata and links, no content (?as=stat)",
+    "links": "a thing's links and no content, a page at a time (?as=links)",
+    "log": "the commits touching a path (?as=log)",
+    "blame": "a file with a commit per line (?as=blame)",
+    "submodule": "a submodule of a repository: what it pins",
+    "offbox": "a place a build chain leaves the box, named and never served",
+    "pattern": "a pattern the autopsy's rules find",
+    "game": "a game the autopsy measured",
+    "routine": "a routine of a game that a rule named",
+    "lesson": "a lesson, with its cartridge",
+    "server": "an MCP server the box reads: its record and its collections",
+    "tool": "a tool of an MCP server, as the server described it",
+    "resource": "a resource or resource template of an MCP server, as described",
+    "prompt": "a prompt of an MCP server, as described",
+    "set": "a set and its members in one read (?as=set)",
+    "kind": "one kind this host has served: its media types, how often, and the links it carried",
+}
+SET_CAP = 25            # members a page of ?as=set inlines
+
 META_LINKS = "tinymachines.ai/links"
 
 # JSON-RPC codes. -32002 is what the MCP spec reserves for a resource that
@@ -201,7 +263,7 @@ TEXT_TYPES = {
     ".mdx": "text/markdown",
     ".txt": "text/plain",
     ".py": "text/x-python",
-    ".json": "application/json",
+    ".json": T_RECORD,
     ".csv": "text/csv",
     ".ts": "text/typescript",
     ".tsx": "text/typescript",
@@ -260,13 +322,15 @@ class TmError(Exception):
         self.data = {"reason": reason, **data}
 
 
-def link(rel: str, href: str, confidence: str | None = None, title: str | None = None, count: int | None = None) -> dict:
+def link(rel: str, href: str, confidence: str | None = None, title: str | None = None, count: int | None = None, mime: str | None = None) -> dict:
     """One typed link. `confidence` is mandatory on tm: relations and absent
     on IANA ones, which are exact by construction; the asymmetry is checked
     here so no caller can get it wrong quietly. `count` is for a link that
     stands for several occurrences (a pattern found 41 times in a game): a
     whole number a client can sort on, where the title says it for a person
-    (tinypeek#3)."""
+    (tinypeek#3). `mime` is the target's media type, RFC 8288's `type`
+    (tinypeek#23): the namespace fills it in for every target whose kind the
+    address itself says, so a caller rarely needs to."""
     ours = rel.startswith("tm:")
     assert ours == (confidence is not None), f"{rel}: confidence {'required' if ours else 'not allowed'}"
     out: dict[str, Any] = {"rel": rel, "href": href}
@@ -277,6 +341,8 @@ def link(rel: str, href: str, confidence: str | None = None, title: str | None =
     if count is not None:
         assert type(count) is int and count >= 0, f"{rel}: count is a whole number, not {count!r}"
         out["count"] = count
+    if mime:
+        out["type"] = mime
     return out
 
 
@@ -299,6 +365,12 @@ def is_json(mime: str) -> bool:
 
 def is_text(mime: str) -> bool:
     return mime.startswith("text/") or is_json(mime) or mime == "image/svg+xml"
+
+
+def http_type(mime: str) -> str:
+    """What something fetched through the front door reads as when it is not
+    a page: itself, a JSON answer being a record (tinypeek#23)."""
+    return T_RECORD if mime == "application/json" else mime
 
 
 def mime_for(name: str, head: bytes | None = None) -> str:
@@ -455,14 +527,14 @@ def check_params(ref: "Ref") -> None:
     as_ = ref.facets.get("as")
     where = {"tm": "the list of hosts", "": "the root"}.get(ref.mount, ref.mount)
     for k, v in ref.facets.items():
-        if k not in takes and not (k in ("cursor",) + LINKS_ONLY and as_ == "links"):
+        if k not in takes and not (k in ("cursor",) + LINKS_ONLY and as_ in SETS):
             why = f"; {NO_PAST[ref.mount]}" if k == "at" and ref.mount in NO_PAST else ""
             raise TmError(BAD_PARAMS, "bad-facet", f"{k}={v!r} is not a parameter {where} takes; it takes {', '.join(takes)}{why}")
-    if "cursor" in ref.facets and as_ != "links" and not (ref.is_collection and as_ in (None, "raw", "tree")):
-        raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing or ?as=links, and this read is neither")
+    if "cursor" in ref.facets and as_ not in SETS and not (ref.is_collection and as_ in (None, "raw", "tree")):
+        raise TmError(BAD_PARAMS, "bad-facet", f"cursor={ref.facets['cursor']!r} continues a listing, ?as=links or ?as=set, and this read is none of them")
     for k in LINKS_ONLY:
-        if k in ref.facets and as_ != "links":
-            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={ref.facets[k]!r} filters the set behind ?as=links, and this read is not it")
+        if k in ref.facets and as_ not in SETS:
+            raise TmError(BAD_PARAMS, "bad-facet", f"{k}={ref.facets[k]!r} narrows the set behind ?as=links or ?as=set, and this read is neither")
     # tinypeek#16: a span is a piece of a file's or a page's content. On a
     # listing, or with a facet that is not the content (stat, log, blame,
     # tree, rendered, links), it is refused, as range was (tinypeek#8).
@@ -509,7 +581,7 @@ def as_time(at: str) -> datetime | None:
 
 @dataclass
 class Ref:
-    mount: str                      # "" (the root), "tm" (the list of hosts), "fs", "git", "http", "offbox", "entity" or "mcp"
+    mount: str                      # "" (the root), "tm" (the list of hosts), "fs", "git", "http", "offbox", "entity", "mcp" or "kinds"
     site: str | None                # http only; the repository name for git
     path: str                       # the backend's path: "docs/nes/pile.md", "/docs/nes/pile"
     facets: dict[str, str] = field(default_factory=dict)
@@ -529,7 +601,7 @@ class Ref:
             return f"{ROOT}fs/{quote(self.path)}"
         if self.mount == "git":
             return f"{ROOT}git/{self.site}/{quote(self.path)}" if self.site else f"{ROOT}git/"
-        if self.mount in ("offbox", "entity", "mcp"):
+        if self.mount in ("offbox", "entity", "mcp", "kinds"):
             return f"{ROOT}{self.mount}/{quote(self.path)}"
         return f"{ROOT}http/{self.site}{quote(self.path)}"
 
@@ -570,6 +642,8 @@ def parse(uri: str) -> Ref:
         return Ref("entity", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "mcp":
         return Ref("mcp", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
+    if mount == "kinds":
+        return Ref("kinds", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -1033,6 +1107,16 @@ def times(n: int) -> str:
     return "once" if n == 1 else f"{n} times"
 
 
+def _entity_href(href: str) -> bool:
+    """Whether a link's target is a thing of the entity mount, which a set
+    can inline (tinypeek#23)."""
+    try:
+        ref = parse(href)
+    except TmError:
+        return False
+    return ref.mount == "entity" and not ref.is_collection
+
+
 class Entities:
     """The first application on the platform: patterns, games, routines and
     lessons as things with addresses of their own, read from the two records
@@ -1316,32 +1400,32 @@ class Entities:
         """The children of a collection, or None when it is not one."""
         ix = self.index()
 
-        def leaf(uri: str, name: str, title: Any) -> dict:
-            out = {"uri": uri, "name": name, "mimeType": "application/json", "isCollection": False}
+        def leaf(uri: str, name: str, title: Any, kind: str) -> dict:
+            out = {"uri": uri, "name": name, "mimeType": tm_type(kind), "isCollection": False}
             if title:
                 out["title"] = str(title)
             return out
 
         def coll(uri: str, name: str) -> dict:
-            return {"uri": uri, "name": name, "mimeType": "application/json", "isCollection": True}
+            return {"uri": uri, "name": name, "mimeType": T_LISTING, "isCollection": True}
 
         if not parts:
             return [coll(self.uri(k, collection=True), f"{k}/") for k in ENTITY_KINDS]
         if parts == ["pattern"]:
-            return [leaf(self.uri("pattern", k), k, f"found {times(sum(p['games'].values()))} in {len(p['games'])} of the games") for k, p in sorted(ix["patterns"].items())]
+            return [leaf(self.uri("pattern", k), k, f"found {times(sum(p['games'].values()))} in {len(p['games'])} of the games", "pattern") for k, p in sorted(ix["patterns"].items())]
         if parts == ["lesson"]:
-            return [leaf(self.uri("lesson", k), k, x["rec"].get("title")) for k, x in sorted(ix["lessons"].items())]
+            return [leaf(self.uri("lesson", k), k, x["rec"].get("title"), "lesson") for k, x in sorted(ix["lessons"].items())]
         if parts == ["game"]:
             out = []
             for k, g in sorted(ix["games"].items()):
-                out.append(leaf(self.uri("game", k), k, g["rec"].get("name")))
+                out.append(leaf(self.uri("game", k), k, g["rec"].get("name"), "game"))
                 out.append(coll(self.uri("game", k, collection=True), f"{k}/"))
             return out
         if len(parts) == 2 and parts[0] == "game" and parts[1] in ix["games"]:
             return [coll(self.uri("game", parts[1], "routine", collection=True), "routine/")]
         if len(parts) == 3 and parts[0] == "game" and parts[1] in ix["games"] and parts[2] == "routine":
             rs = ix["games"][parts[1]]["routines"]
-            return [leaf(self.uri("game", parts[1], "routine", rid), rid, f"{r['rec'].get('name')}: {', '.join(r['patterns'])}") for rid, r in sorted(rs.items())]
+            return [leaf(self.uri("game", parts[1], "routine", rid), rid, f"{r['rec'].get('name')}: {', '.join(r['patterns'])}", "routine") for rid, r in sorted(rs.items())]
         return None
 
     def keys(self, kind: str) -> list[str]:
@@ -1402,13 +1486,15 @@ class Entities:
         ix = self.index()
         me = self._mark(ref.uri)
         sep = "&" if "?" in me else "?"
+        if as_ == "set":
+            return self._set(ref, parts, me, sep)
         if ref.is_collection:
             kids = self._kids(parts)
             if kids is None:
                 raise self._missing(parts, True)
             if as_:
-                # TM-11: a listing has one representation.
-                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an entity collection is a listing and offers no facets; read {ref.uri} without ?as")
+                # TM-11: a listing has one representation (and, since tinypeek#23, its set).
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an entity collection is a listing and offers no facet but set; read {ref.uri} without ?as")
             chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
             body: dict[str, Any] = {"uri": me, "children": chunk}
             if nxt:
@@ -1419,7 +1505,7 @@ class Entities:
                 # The record itself, as an http collection names it: the
                 # entities listed here each carry their own place in it.
                 links.append(link("tm:data", self._whole(self.RECORDS[self.READS[parts[0]]]), "exact", title="the record the entities listed here are read from"))
-            return self.ns._result(_cursored(me, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), links)
+            return self.ns._result(_cursored(me, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), links)
         if len(parts) == 2 and parts[0] == "pattern" and parts[1] in ix["patterns"]:
             body, links = self._pattern(parts[1])
         elif len(parts) == 2 and parts[0] == "game" and parts[1] in ix["games"]:
@@ -1432,11 +1518,63 @@ class Entities:
             raise self._missing(parts, False)
         links = links + self.history(body["entity"]) + self._then(body["entity"], parts)
         text = json.dumps(body, indent=1)
+        mime = tm_type(body["entity"])
         if as_ == "stat":
             stat = {"uri": me, "entity": body["entity"], "key": body["key"], "name": body.get("name") or body.get("title") or body["key"],
-                    "mimeType": "application/json", "size": len(text.encode()), "isCollection": False, "text": True, **self._when()}
-            return self.ns._result(f"{me}{sep}as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", me)])
-        return self.ns._result(me, "application/json", text, links)
+                    "mimeType": mime, "size": len(text.encode()), "isCollection": False, "text": True, **self._when()}
+            return self.ns._result(f"{me}{sep}as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", me)])
+        return self.ns._result(me, mime, text, links)
+
+    def _set(self, ref: "Ref", parts: list[str], me: str, sep: str) -> dict:
+        """tinypeek#23: ?as=set, a set and its members in one read, which is
+        the bend the lens had left (a pattern's page took one read a
+        routine). On a collection the set is its leaf children; on a thing it
+        is the targets of one rel, named by rel= and narrowed by min= as
+        ?as=links is, and only a rel whose targets are things of this mount
+        can be inlined. Each member is read as its own address would read it,
+        body and type, with no links of its own: a client follows the member's
+        address for those. Paged, SET_CAP members a page, and held to the byte
+        cap like any read."""
+        here = f"{me}{sep}as=set"
+        if ref.is_collection:
+            if "rel" in ref.facets or "min" in ref.facets:
+                raise TmError(BAD_PARAMS, "bad-facet", f"a collection's set is its children; rel= and min= narrow a thing's links, so read a thing with ?as=set&rel=<rel>")
+            kids = self._kids(parts)
+            if kids is None:
+                raise self._missing(parts, True)
+            hrefs = [k["uri"] for k in kids if not k["isCollection"]]
+            said: dict[str, Any] = {}
+            whole = self.read(parse(me))
+            links = [ln for ln in whole["_meta"][META_LINKS]]
+        else:
+            whole = self.read(parse(me))
+            own = whole["_meta"][META_LINKS]
+            inlinable = sorted({ln["rel"] for ln in own if _entity_href(ln["href"])})
+            rel = ref.facets.get("rel")
+            if not rel:
+                raise TmError(BAD_PARAMS, "bad-facet", f"?as=set on a thing needs rel=; the rels here whose targets can be inlined are {', '.join(inlinable) or 'none'}")
+            if rel not in inlinable:
+                raise TmError(BAD_PARAMS, "bad-facet", f"rel={rel!r}: {me} carries no such link to a thing of this mount; it carries {', '.join(inlinable) or 'none'}")
+            chosen, tail, said = Namespace._filter(ref, ordered(own))
+            here += tail
+            hrefs = [ln["href"] for ln in chosen]
+            links = own
+        chunk, nxt = _page(hrefs, ref.facets.get("cursor"), SET_CAP)
+        members = [self._member(href) for href in chunk]
+        body: dict[str, Any] = {"uri": me, **said, "total": len(hrefs), "returned": len(members), "members": members}
+        if nxt:
+            body["nextCursor"] = nxt
+            body["next"] = f"{here}&cursor={nxt}"
+        text = json.dumps(body, indent=1)
+        if len(text.encode()) > READ_CAP:
+            raise TmError(RESOURCE_NOT_FOUND, "too-large", f"this page of the set is {len(text.encode())} bytes, over the cap of {READ_CAP}; read the members one by one", size=len(text.encode()))
+        return self.ns._result(_cursored(here, ref.facets.get("cursor")), T_SET, text, links + [link("alternate", me, title="the thing the set is of")])
+
+    def _member(self, href: str) -> dict:
+        """One member of a set: what its own address reads, body and type."""
+        got = self.read(parse(href))
+        c = got["contents"][0]
+        return {"uri": c["uri"], "mimeType": c["mimeType"], "body": json.loads(c["text"])}
 
     def _when(self) -> dict:
         return {}
@@ -1900,7 +2038,7 @@ class Mcp:
                 body[k] = init[k]
         body["counts"] = {k: len(snap[k]) for k in ("tools", "resources", "templates", "prompts")}
         caps = init.get("capabilities") or {}
-        body["children"] = [{"uri": self.uri(name, k, collection=True), "name": f"{k}/", "mimeType": "application/json", "isCollection": True}
+        body["children"] = [{"uri": self.uri(name, k, collection=True), "name": f"{k}/", "mimeType": T_LISTING, "isCollection": True}
                             for k in MCP_KINDS if k in caps]
         for t in snap["tools"]:
             links.append(link("tm:serves", self.uri(name, "tools", t["name"]), "exact", title=f"a tool of {name}: {self._title(t) or t['name']}"))
@@ -1933,7 +2071,7 @@ class Mcp:
         if not parts:
             if as_:
                 raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; an mcp collection is a listing and offers no facets; read {ref.uri} without ?as")
-            kids = [{"uri": self.uri(n, collection=True), "name": n, "title": self.servers[n]["what"], "mimeType": "application/json", "isCollection": True}
+            kids = [{"uri": self.uri(n, collection=True), "name": n, "title": self.servers[n]["what"], "mimeType": MCP_TYPE["server"], "isCollection": True}
                     for n in self.servers]
             return self._listing(ref, kids, {}, [link("up", ROOT)])
         name = parts[0]
@@ -1948,7 +2086,7 @@ class Mcp:
         snap = await self.snapshot(name)
         if len(parts) == 1:
             body, links = self._server(name, snap)
-            return self._listing(ref, body.pop("children"), body, links)
+            return self._listing(ref, body.pop("children"), body, links, MCP_TYPE["server"])
         kind = parts[1]
         if kind not in MCP_KINDS:
             raise self._no(f"mcp/{name}/{kind}: a server has tools, resources and prompts, and nothing else is addressed under it", [here])
@@ -1977,7 +2115,7 @@ class Mcp:
         if as_ == "stat":
             stat = {"uri": me, "name": t["name"], "server": self.uri(name, collection=True), "mimeType": mime, "size": len(text.encode()),
                     "isCollection": False, "text": True, "checked": snap["checked"]}
-            return self.ns._result(f"{me}?as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", me)])
+            return self.ns._result(f"{me}?as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", me)])
         span = span_of(ref)
         data = text.encode()
         if span and span[0] == "range":
@@ -1988,13 +2126,15 @@ class Mcp:
             return self.ns._result(uri, mime, data.decode("utf-8", errors="replace"), links)
         return self.ns._result(me, mime, text, links)
 
-    def _listing(self, ref: Ref, kids: list[dict], extra: dict, links: list[dict]) -> dict:
+    def _listing(self, ref: Ref, kids: list[dict], extra: dict, links: list[dict], mime: str = T_LISTING) -> dict:
+        """A listing, or the server's record, which is a listing whose body is
+        the record and whose type says so (tinypeek#23)."""
         chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
         body: dict[str, Any] = {"uri": ref.uri, **extra, "children": chunk}
         if nxt:
             body["nextCursor"] = nxt
             body["next"] = f"{ref.uri}?cursor={nxt}"
-        return self.ns._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1, ensure_ascii=False), links)
+        return self.ns._result(_cursored(ref.uri, ref.facets.get("cursor")), mime, json.dumps(body, indent=1, ensure_ascii=False), links)
 
     def complete(self, server: str | None, typed: str) -> list[str]:
         """The paths under a server: its three collections, and what a
@@ -2010,6 +2150,139 @@ class Mcp:
         return [v for v in values if v.startswith(typed)]
 
 
+# ---------------------------------------------------------------------------
+# The kind registry (tinypeek#23): measured, like reachability
+# ---------------------------------------------------------------------------
+
+
+def kinds_file_from_env(repo: Path) -> Path | None:
+    """Where the registry keeps its counts between restarts: $TM_KINDS_FILE,
+    else tm-kinds.json in the service's state directory, else nowhere (a
+    test, a dev run, the crawler), in which case it counts from the start of
+    the process. A place under the checkout is refused, as the audit log's
+    is: the namespace serves parts of the checkout."""
+    explicit, state = os.environ.get("TM_KINDS_FILE"), os.environ.get("STATE_DIRECTORY")
+    where = Path(explicit) if explicit else Path(state.split(":")[0]) / "tm-kinds.json" if state else None
+    if where is None:
+        return None
+    here, checkout = where.resolve(), repo.resolve()
+    if here == checkout or checkout in here.parents:
+        print("kinds: the registry may not be kept under the checkout, which the namespace serves parts of; counting from this start", flush=True)
+        return None
+    return where
+
+
+class Kinds:
+    """tinypeek#23: the kinds this host has served, counted as they go out.
+    Every read that leaves the namespace is recorded by the kind its media
+    type names (kind_of), with the type itself, the time, and the rels of the
+    links it carried, so `kinds/` lists exactly what has been served and
+    `kinds/<kind>` says how often, since when, and which links such a thing
+    carries here. A kind the host has never served is not listed: the
+    registry is measured, not asserted, like a server's status (§13). It
+    keeps no address: what was read is the request log's business, and that
+    is not served. The counts persist in one file outside the checkout when
+    the service has one, and otherwise from the start of the process; either
+    way `since` says when the record began."""
+
+    SAVE_EVERY_S = 60
+
+    def __init__(self, ns: "Namespace", file: Path | None = None, now: Callable[[], float] = time.time):
+        self.ns, self.file, self.now = ns, file, now
+        self.since = self._iso(now())
+        self.data: dict[str, dict[str, Any]] = {}
+        self._saved = 0.0
+        self._dirty = False
+        if file is not None:
+            self._load()
+
+    @staticmethod
+    def _iso(t: float) -> str:
+        return datetime.fromtimestamp(t, timezone.utc).isoformat(timespec="seconds")
+
+    def _load(self) -> None:
+        try:
+            got = json.loads(self.file.read_text(encoding="utf-8"))
+            if isinstance(got, dict) and isinstance(got.get("kinds"), dict):
+                self.data = got["kinds"]
+                self.since = got.get("since") or self.since
+        except (OSError, ValueError):
+            pass
+
+    def _save(self, force: bool = False) -> None:
+        if self.file is None or not self._dirty or (not force and self.now() - self._saved < self.SAVE_EVERY_S):
+            return
+        try:
+            self.file.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.file.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"since": self.since, "kinds": self.data}, indent=1), encoding="utf-8")
+            os.replace(tmp, self.file)
+            self._saved, self._dirty = self.now(), False
+        except OSError:
+            pass
+
+    def record(self, mime: str, links: list[dict]) -> None:
+        """One read went out: count it under its kind."""
+        kind = kind_of(mime)
+        now = self._iso(self.now())
+        e = self.data.get(kind)
+        fresh = e is None
+        if e is None:
+            e = self.data[kind] = {"served": 0, "first": now, "last": now, "types": {}, "rels": {}}
+        e["served"] += 1
+        e["last"] = now
+        fresh = fresh or mime not in e["types"]
+        e["types"][mime] = e["types"].get(mime, 0) + 1
+        for ln in links:
+            rel = ln["rel"]
+            fresh = fresh or rel not in e["rels"]
+            e["rels"][rel] = e["rels"].get(rel, 0) + 1
+        self._dirty = True
+        self._save(force=fresh)
+
+    def names(self) -> list[str]:
+        return sorted(self.data)
+
+    @staticmethod
+    def uri(kind: str | None = None) -> str:
+        return f"{ROOT}kinds/" + (quote(kind) if kind else "")
+
+    def read(self, ref: Ref) -> dict:
+        as_ = ref.facets.get("as")
+        if as_ not in (None, *AS_KINDS):
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; kinds offers {', '.join(AS_KINDS)}")
+        parts = [p for p in ref.path.split("/") if p]
+        if not parts:
+            if as_:
+                raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; the registry is a listing and offers no facets; read {self.uri()} without ?as")
+            kids = [{"uri": self.uri(k), "name": k, **({"title": KINDS[k]} if k in KINDS else {}), "mimeType": T_KIND, "isCollection": False, "served": self.data[k]["served"]}
+                    for k in self.names()]
+            chunk, nxt = _page(kids, ref.facets.get("cursor"), LIST_CAP)
+            body: dict[str, Any] = {"uri": self.uri(), "since": self.since, "served": sum(e["served"] for e in self.data.values()), "children": chunk}
+            if nxt:
+                body["nextCursor"] = nxt
+                body["next"] = f"{self.uri()}?cursor={nxt}"
+            return self.ns._result(_cursored(self.uri(), ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), [link("up", ROOT)])
+        kind = parts[0]
+        if len(parts) > 1 or ref.is_collection:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"kinds/{ref.path}: a kind has nothing under it; the kind is at {self.uri(kind)}" if kind in self.data else f"kinds/{ref.path}: nothing is addressed there",
+                          nearest=[self.uri(kind)] if kind in self.data else [self.uri()])
+        if kind not in self.data:
+            near = [self.uri(k) for k in closest(kind, self.names())[:5]]
+            why = f"kinds/{kind} is a kind this server can say and has not served since {self.since}" if kind in KINDS else f"kinds/{kind}: no kind of that name has been served here"
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{why}; the registry lists what has been served", nearest=near or [self.uri()])
+        e = self.data[kind]
+        me = self.uri(kind)
+        body = {"uri": me, "kind": kind, **({"what": KINDS[kind]} if kind in KINDS else {}), "mediaTypes": dict(sorted(e["types"].items())),
+                "served": e["served"], "first": e["first"], "last": e["last"], "since": self.since, "rels": dict(sorted(e["rels"].items()))}
+        links = [link("up", self.uri()), link("collection", self.uri()), link("describedby", f"{me}?as=stat")]
+        text = json.dumps(body, indent=1)
+        if as_ == "stat":
+            stat = {"uri": me, "kind": kind, "mimeType": T_KIND, "size": len(text.encode()), "isCollection": False, "text": True, "last": e["last"]}
+            return self.ns._result(f"{me}?as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", me)])
+        return self.ns._result(me, T_KIND, text, links)
+
+
 class Namespace:
     def __init__(
         self,
@@ -2019,6 +2292,7 @@ class Namespace:
         git_repos: dict[str, Path] | None = None,
         mcp_servers: dict | None = None,
         mcp_transport: httpx.AsyncBaseTransport | None = None,
+        kinds_file: Path | None = None,
     ):
         self.repo = repo.resolve()
         self.fetch = fetch
@@ -2030,6 +2304,7 @@ class Namespace:
         self.entities = Entities(self)
         self.trails = Trails(self)
         self.mcp = Mcp(self, mcp_servers, mcp_transport)
+        self.kinds = Kinds(self, kinds_file)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -2053,6 +2328,9 @@ class Namespace:
                 "things with links between them (entity/pattern/pad-poll names every game and routine it was found in). "
                 "tm://tinymachines/mcp/ holds the MCP servers this box reads, each with its tools, resources and prompts as "
                 "things with addresses (mcp/<server>/tools/<name> is one tool, its schema as the server published it). "
+                "Every read's mimeType says what kind of thing it is (application/vnd.tm.<kind>+json for a thing this server composes, "
+                "a file's own type otherwise), tm://tinymachines/kinds/ lists the kinds this host has served, and a link may carry "
+                "its target's type. ?as=set on an entity, with rel=, reads a set and its members in one. "
                 "?as=stat gives metadata without content, ?as=links every link of a thing a page at a time (a read "
                 "with more than a hundred ends in a tm:links link to it). A URI that does not resolve "
                 "is refused with the nearest ones that do, so try the nearest rather than guessing."
@@ -2095,14 +2373,14 @@ class Namespace:
                 "name": "hosts",
                 "title": "The hosts",
                 "description": "The hosts this server answers for. Here that is one, and everything is under it.",
-                "mimeType": "application/json",
+                "mimeType": T_LISTING,
             },
             {
                 "uriTemplate": ROOT,
                 "name": "root",
                 "title": "The mounts",
                 "description": "Start here. Reading it lists the mounts; reading any collection (a URI ending in /) lists its children with a cursor.",
-                "mimeType": "application/json",
+                "mimeType": T_LISTING,
             },
             {
                 "uriTemplate": f"{ROOT}fs{{/path*}}{_q('fs')}",
@@ -2161,9 +2439,9 @@ class Namespace:
                     "twelve hex digits, jump). Each reads as JSON, its record's fields, with links: a pattern to the games "
                     "it was found in (tm:found-in), each routine a rule named (tm:instance) and the lessons that use it "
                     "(tm:demonstrated-by); a game to its patterns (tm:exhibits) and its page (tm:renders-as); a lesson to "
-                    "its cartridge's source (tm:cartridge) and its patterns (tm:demonstrates). entity/<kind>/ lists the keys."
+                    "its cartridge's source (tm:cartridge) and its patterns (tm:demonstrates). entity/<kind>/ lists the keys. "
+                    "?as=set&rel=<rel> reads the things behind one rel inlined, a page at a time; ?as=set on entity/<kind>/ inlines the listing."
                 ),
-                "mimeType": "application/json",
             },
             {
                 "uriTemplate": f"{ROOT}entity/game/{{key}}/routine/{{routine}}{_q('entity')}",
@@ -2173,7 +2451,7 @@ class Namespace:
                     "routine is a bank and an address, b0-8E5C. Only routines that carry a pattern have an address; "
                     "entity/game/<key>/routine/ lists them. Each links to its patterns (tm:instance-of)."
                 ),
-                "mimeType": "application/json",
+                "mimeType": tm_type("routine"),
             },
             {
                 "uriTemplate": f"{ROOT}mcp/{{server}}{{/path*}}{_q('mcp')}",
@@ -2186,7 +2464,18 @@ class Namespace:
                     "input schema as a pointer address. pointer=, lines= and range= read a piece of one. There is no past here: a "
                     "server is read as it answers now."
                 ),
-                "mimeType": "application/json",
+            },
+            {
+                "uriTemplate": f"{ROOT}kinds/{{kind}}{_q('kinds')}",
+                "name": "kinds",
+                "title": "A kind of thing this host has served",
+                "description": (
+                    "kinds/ lists every kind this host has served since its record began, each named by the vendor part of its media type "
+                    "(listing, record, page, stat, pattern, tool, ...; file is anything served as its own type). kinds/<kind> is one: its media "
+                    "types and how often each was served, when first and last, and the link relations such a thing carried. Measured, not "
+                    "asserted: a kind never served is not listed."
+                ),
+                "mimeType": T_KIND,
             },
         ]
 
@@ -2195,17 +2484,18 @@ class Namespace:
         Leaves are reached by reading their collection, which keeps this list
         a map rather than an inventory."""
         items: list[dict] = [
-            {"uri": TOP, "name": "hosts", "title": "The hosts this server answers for", "mimeType": "application/json"},
-            {"uri": ROOT, "name": "root", "title": "The mounts", "mimeType": "application/json"},
-            {"uri": f"{ROOT}fs/", "name": "fs", "title": "The repository's files", "mimeType": "application/json"},
-            {"uri": f"{ROOT}git/", "name": "git", "title": "The repositories, at any ref", "mimeType": "application/json"},
-            {"uri": f"{ROOT}http/", "name": "http", "title": "The sites this box serves", "mimeType": "application/json"},
-            {"uri": f"{ROOT}offbox/", "name": "offbox", "title": "Where a build chain leaves this box", "mimeType": "application/json"},
-            {"uri": f"{ROOT}entity/", "name": "entity", "title": "The autopsy's patterns, games, routines and lessons", "mimeType": "application/json"},
-            {"uri": f"{ROOT}mcp/", "name": "mcp", "title": "The MCP servers this box reads", "mimeType": "application/json"},
+            {"uri": TOP, "name": "hosts", "title": "The hosts this server answers for", "mimeType": T_LISTING},
+            {"uri": ROOT, "name": "root", "title": "The mounts", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}fs/", "name": "fs", "title": "The repository's files", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}git/", "name": "git", "title": "The repositories, at any ref", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}http/", "name": "http", "title": "The sites this box serves", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}offbox/", "name": "offbox", "title": "Where a build chain leaves this box", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}entity/", "name": "entity", "title": "The autopsy's patterns, games, routines and lessons", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}mcp/", "name": "mcp", "title": "The MCP servers this box reads", "mimeType": T_LISTING},
+            {"uri": f"{ROOT}kinds/", "name": "kinds", "title": "The kinds of thing this host has served", "mimeType": T_LISTING},
         ]
         for name in self.mcp.names():
-            items.append({"uri": Mcp.uri(name, collection=True), "name": f"mcp/{name}/", "title": self.mcp.servers[name]["what"], "mimeType": "application/json"})
+            items.append({"uri": Mcp.uri(name, collection=True), "name": f"mcp/{name}/", "title": self.mcp.servers[name]["what"], "mimeType": MCP_TYPE["server"]})
         for root in FS_ROOTS:
             base = self.repo / root
             if not base.is_dir():
@@ -2213,15 +2503,15 @@ class Namespace:
             dirs = [base] + sorted(p for p in base.rglob("*") if p.is_dir() and not denied(p.relative_to(self.repo).as_posix()))
             for d in dirs:
                 rel = d.relative_to(self.repo).as_posix() + "/"
-                items.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": rel, "mimeType": "application/json"})
+                items.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": rel, "mimeType": T_LISTING})
         for name in sorted(self.git):
-            items.append({"uri": f"{ROOT}git/{name}/", "name": name, "title": f"tinymachines/{name} at HEAD", "mimeType": "application/json"})
+            items.append({"uri": f"{ROOT}git/{name}/", "name": name, "title": f"tinymachines/{name} at HEAD", "mimeType": T_LISTING})
         for site in self.sites:
-            items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": "application/json"})
+            items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": T_LISTING})
         for kind in ENTITY_KINDS:
-            items.append({"uri": Entities.uri(kind, collection=True), "name": f"entity/{kind}/", "mimeType": "application/json"})
+            items.append({"uri": Entities.uri(kind, collection=True), "name": f"entity/{kind}/", "mimeType": T_LISTING})
         for key in self.entities.keys("game"):
-            items.append({"uri": Entities.uri("game", key, "routine", collection=True), "name": f"entity/game/{key}/routine/", "mimeType": "application/json"})
+            items.append({"uri": Entities.uri("game", key, "routine", collection=True), "name": f"entity/game/{key}/routine/", "mimeType": T_LISTING})
         chunk, nxt = _page(items, cursor, RESOURCES_PAGE)
         out: dict[str, Any] = {"resources": chunk}
         if nxt:
@@ -2245,12 +2535,14 @@ class Namespace:
         elif name == "repo":
             values = [r for r in sorted(self.git) if r.startswith(value)]
         elif name == "as":
-            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_ENTITY if "/entity/" in tmpl else AS_MCP if "/mcp/" in tmpl else AS_FS
+            pool = AS_HTTP if "/http/" in tmpl else AS_GIT if "/git/" in tmpl else AS_ENTITY if "/entity/" in tmpl else AS_MCP if "/mcp/" in tmpl else AS_KINDS if "/kinds/" in tmpl else AS_FS
             values = [a for a in pool if a.startswith(value)]
         elif name == "n":
             values = [str(n) for n in (LOG_DEFAULT, 50, LOG_MAX) if str(n).startswith(value)]
         elif name == "depth":
             values = [str(n) for n in range(1, TREE_DEPTH_MAX + 1) if str(n).startswith(value)]
+        elif name == "kind" and "/kinds/" in tmpl:
+            values = [k for k in self.kinds.names() if k.startswith(value)]
         elif name == "kind":
             values = [k for k in ENTITY_KINDS if k.startswith(value)]
         elif name == "key" and "/entity/" in tmpl:
@@ -2286,9 +2578,10 @@ class Namespace:
         try:
             ref = parse(uri)
             check_params(ref)
-            if ref.facets.get("as") == "links":
-                return await self._read_links(ref)
-            return self._bounded(await self._read(uri), ref)
+            got = await self._read_links(ref) if ref.facets.get("as") == "links" else self._bounded(await self._read(uri), ref)
+            got["_meta"][META_LINKS] = self._typed(got["_meta"][META_LINKS])
+            self.kinds.record(got["contents"][0]["mimeType"], got["_meta"][META_LINKS])
+            return got
         except OSError as e:
             # A path the filesystem will not even look up (a name too long, a
             # loop of links) is a path that is not there. And nothing the
@@ -2329,6 +2622,78 @@ class Namespace:
                                                  title=f"all {total} links, a page at a time; this read carries the first {LINK_CAP - 1}")]
         got["_meta"][META_LINKS] = links
         return got
+
+    def _typed(self, links: list[dict]) -> list[dict]:
+        """tinypeek#23: a link carries its target's media type (`type`, as
+        RFC 8288 allows) wherever the address says what the target is, so a
+        client can draw a card's shape before following it. Here and not in a
+        mount, so the rule is one rule; a link that already says is left as
+        it is, and a target whose type the address does not settle (a file
+        with no known extension, a page that is not a page) carries none."""
+        out = []
+        for ln in links:
+            if "type" not in ln:
+                t = self.target_type(ln["href"])
+                if t:
+                    ln = {**ln, "type": t}
+            out.append(ln)
+        return out
+
+    def target_type(self, href: str) -> str | None:
+        """What reading an address would come back as, from the address
+        alone: its facet, its mount, its path's shape. None where the address
+        does not say. The crawler holds every link that says to it."""
+        try:
+            ref = parse(href)
+        except TmError:
+            return None
+        as_ = ref.facets.get("as")
+        if as_:
+            return {"stat": T_STAT, "links": T_LINKS, "log": T_LOG, "blame": T_BLAME, "tree": T_LISTING,
+                    "rendered": "text/html", "text": T_PAGE, "set": T_SET}.get(as_)
+        if ref.mount in ("tm", ""):
+            return T_LISTING
+        parts = [p for p in ref.path.split("/") if p]
+        if ref.mount == "mcp":
+            if ref.is_collection:
+                return MCP_TYPE["server"] if len(parts) == 1 else T_LISTING
+            return MCP_TYPE.get(parts[1][:-1]) if len(parts) >= 3 and parts[1] in MCP_KINDS else None
+        if ref.is_collection:
+            return T_LISTING
+        if ref.mount == "offbox":
+            return T_OFFBOX
+        if ref.mount == "kinds":
+            return T_KIND
+        if ref.mount == "entity":
+            if len(parts) == 4 and parts[2] == "routine":
+                return tm_type("routine")
+            return tm_type(parts[0]) if len(parts) == 2 and parts[0] in ENTITY_KINDS else None
+        if ref.mount == "http":
+            # A built page has no extension; anything with one reads as itself.
+            return T_PAGE if "." not in ref.path.rsplit("/", 1)[-1] else None
+        if ref.mount == "git" and ref.site and ref.path and self._git_gitlink_quiet(ref.site, ref.facets.get("at", "HEAD"), ref.path):
+            return T_SUBMODULE
+        mime = mime_for(ref.path)
+        if ref.mount == "fs":
+            mime = self._fs_type(ref.path, mime)
+        return None if mime == "application/octet-stream" else mime
+
+    def _git_gitlink_quiet(self, repo: str, at: str, path: str) -> str | None:
+        """A submodule's pinned commit at a ref, or None, with no refusal
+        raised: the typed pass asks about addresses it did not make."""
+        if repo not in self.git:
+            return None
+        try:
+            return self._git_gitlink(repo, self._git_at(repo, at), path)
+        except TmError:
+            return None
+
+    def _fs_type(self, rel: str, mime: str) -> str:
+        """A file's type on fs, where a JSON file that is a trail is a trail
+        (tinypeek#18, #23): what makes it one is the shape the server read."""
+        if mime == T_RECORD and f"{ROOT}fs/{quote(rel)}" in self.trails.index()["trails"]:
+            return T_TRAIL
+        return mime
 
     def _own(self, links: list[dict], ref: Ref) -> list[dict]:
         """A thing's own links. Its ?as=stat also points back at the thing it
@@ -2382,7 +2747,7 @@ class Namespace:
             body["nextCursor"] = _cursor(nxt)
             page = page + [link("next", f"{here}&cursor={body['nextCursor']}", title=f"{len(links) - nxt} more links")]
         uri = here if offset == 0 else f"{here}&cursor={ref.facets['cursor']}"
-        return self._result(uri, "application/json", json.dumps(body, indent=1), page)
+        return self._result(uri, T_LINKS, json.dumps(body, indent=1), page)
 
     async def _read(self, uri: str) -> dict:
         """Every read, before the namespace's own rules on its links: the
@@ -2400,7 +2765,7 @@ class Namespace:
             if ref.facets:
                 raise TmError(BAD_PARAMS, "bad-facet", f"the list of hosts takes no facet but as=links; read {TOP}")
             body = {"uri": TOP, "hosts": [{"uri": ROOT, "name": HOST, "what": "the tinymachines.ai box: its sites, its repositories and its files"}]}
-            return self._result(TOP, "application/json", json.dumps(body, indent=1), [link("collection", ROOT, title="the one host this server answers for")])
+            return self._result(TOP, T_LISTING, json.dumps(body, indent=1), [link("collection", ROOT, title="the one host this server answers for")])
         if ref.mount == "":
             if ref.facets:
                 raise TmError(BAD_PARAMS, "bad-facet", f"the root takes no facet but as=links; read {ROOT}")
@@ -2411,9 +2776,10 @@ class Namespace:
                 {"uri": f"{ROOT}offbox/", "what": "where a build chain leaves this box: named, described, never exposed"},
                 {"uri": f"{ROOT}entity/", "what": "the autopsy's patterns, games, routines and lessons, each with links to the others"},
                 {"uri": f"{ROOT}mcp/", "what": "the MCP servers this box reads, each with its tools, resources and prompts as things with addresses"},
+                {"uri": f"{ROOT}kinds/", "what": "the kinds of thing this host has served, each with its media type, measured as they go out"},
             ], "start_here": self.start_here()}
             # TM-12: the documents a fresh session should read first.
-            return self._result(ROOT, "application/json", json.dumps(body, indent=1),
+            return self._result(ROOT, T_LISTING, json.dumps(body, indent=1),
                                 [link("up", TOP, title="the hosts this server answers for")]
                                 + [link("collection", f"{ROOT}{m}/") for m in MOUNTS]
                                 + [link("help", s["uri"], title=s["what"]) for s in body["start_here"]])
@@ -2423,6 +2789,8 @@ class Namespace:
             return self.entities.read(ref)
         if ref.mount == "mcp":
             return await self.mcp.read(ref)
+        if ref.mount == "kinds":
+            return self.kinds.read(ref)
         if ref.mount == "fs":
             return self._read_fs(ref)
         if ref.mount == "git":
@@ -2452,20 +2820,20 @@ class Namespace:
         if ref.facets.get("as") not in (None, "stat"):
             raise TmError(BAD_PARAMS, "bad-facet", f"as={ref.facets['as']!r}; offbox offers stat, links")
         if not name:
-            kids = [{"uri": f"{ROOT}offbox/{quote(n)}", "name": n, "mimeType": "application/json", "isCollection": False} for n in sorted(nodes)]
-            return self._result(f"{ROOT}offbox/", "application/json", json.dumps({"uri": f"{ROOT}offbox/", "children": kids}, indent=1), [link("up", ROOT)])
+            kids = [{"uri": f"{ROOT}offbox/{quote(n)}", "name": n, "mimeType": T_OFFBOX, "isCollection": False} for n in sorted(nodes)]
+            return self._result(f"{ROOT}offbox/", T_LISTING, json.dumps({"uri": f"{ROOT}offbox/", "children": kids}, indent=1), [link("up", ROOT)])
         if name not in nodes:
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"offbox/{name} is not a place this box names",
                           nearest=[f"{ROOT}offbox/{quote(n)}" for n in closest(name, sorted(nodes))[:5]])
         node = nodes[name]
         uri = f"{ROOT}offbox/{quote(name)}"
-        body = {"uri": uri, "mimeType": "application/json", "exposed": False, "reason": "not-exposed", "what": node.get("what"), "why": node.get("why")}
+        body = {"uri": uri, "mimeType": T_OFFBOX, "exposed": False, "reason": "not-exposed", "what": node.get("what"), "why": node.get("why")}
         links = [link("up", f"{ROOT}offbox/"), link("collection", f"{ROOT}offbox/")]
         for p in node.get("generated_by", []):
             links.append(link("tm:generated-by", f"{ROOT}git/public/{quote(p)}", "exact", title="what makes it, on this box"))
         for p in node.get("input_of", []):
             links.append(link("tm:input-of", f"{ROOT}git/public/{quote(p)}", "exact", title="what reads it, on this box"))
-        return self._result(uri if "as" not in ref.facets else f"{uri}?as=stat", "application/json", json.dumps(body, indent=1), links)
+        return self._result(uri if "as" not in ref.facets else f"{uri}?as=stat", T_OFFBOX if "as" not in ref.facets else T_STAT, json.dumps(body, indent=1), links)
 
     def _result(self, uri: str, mime: str, text: str | None, links: list[dict], blob: bytes | None = None) -> dict:
         content: dict[str, Any] = {"uri": uri, "mimeType": mime}
@@ -2511,12 +2879,12 @@ class Namespace:
         for p in names:
             rel = p.relative_to(self.repo).as_posix()
             if p.is_dir():
-                out.append({"uri": f"{ROOT}fs/{quote(rel)}/", "name": p.name + "/", "mimeType": "application/json", "isCollection": True})
+                out.append({"uri": f"{ROOT}fs/{quote(rel)}/", "name": p.name + "/", "mimeType": T_LISTING, "isCollection": True})
             elif denied(rel):
                 out.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": p.name, "redacted": True, "isCollection": False})
             else:
                 st = p.stat()
-                out.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": p.name, "mimeType": fs_mime(p), "size": st.st_size, "isCollection": False})
+                out.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": p.name, "mimeType": self._fs_type(rel, fs_mime(p)), "size": st.st_size, "isCollection": False})
         return out
 
     def _fs_missing(self, rel: str) -> TmError:
@@ -2673,7 +3041,7 @@ class Namespace:
         ref, addressed through fs at that ref. What the build pulls in is not
         in the repository and is not here."""
         if rel_dir == "":
-            return [{"uri": self._fs_at_uri(r, at, True), "name": r + "/", "mimeType": "application/json", "isCollection": True}
+            return [{"uri": self._fs_at_uri(r, at, True), "name": r + "/", "mimeType": T_LISTING, "isCollection": True}
                     for r in FS_ROOTS if self._git_has("public", commit, r)]
         kids = []
         for k in self._git_children("public", at, rel_dir, rev=commit):
@@ -2733,7 +3101,7 @@ class Namespace:
             if nxt:
                 body["nextCursor"] = nxt
                 body["next"] = f"{echo}&cursor={nxt}"
-            return self._result(_cursored(echo, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._fs_at_links(clean, True, at, repo, gpath))
+            return self._result(_cursored(echo, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), self._fs_at_links(clean, True, at, repo, gpath))
         try:
             kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{commit}:{gpath}").strip()
         except TmError:
@@ -2753,7 +3121,7 @@ class Namespace:
                 "modified": datetime.fromisoformat(made).astimezone(timezone.utc).isoformat(timespec="seconds") if made else None,
                 "isCollection": False, "text": is_text(mime),
             }
-            return self._result(f"{here}&as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", here)])
+            return self._result(f"{here}&as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", here)])
         span = span_of(ref)
         start, end = 0, size
         if span and span[0] == "range":
@@ -2787,14 +3155,14 @@ class Namespace:
             if nxt:
                 body["nextCursor"] = nxt
                 body["next"] = f"{ref.uri}?cursor={nxt}"
-            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._fs_links(rel, True))
+            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), self._fs_links(rel, True))
         abs_ = self._fs_abs(rel)
         if abs_.is_dir():
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"fs/{rel} is a directory; its listing is at {ref.uri}/", nearest=[ref.uri + "/"])
         if not abs_.is_file():
             raise self._fs_missing(rel)
         st = abs_.stat()
-        mime = fs_mime(abs_)
+        mime = self._fs_type(rel, fs_mime(abs_))
         links = self._fs_links(rel, False)
         if as_ == "stat":
             stat = {
@@ -2802,7 +3170,7 @@ class Namespace:
                 "modified": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(timespec="seconds"),
                 "isCollection": False, "text": is_text(mime),
             }
-            return self._result(f"{ref.uri}?as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", ref.uri)])
+            return self._result(f"{ref.uri}?as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", ref.uri)])
         span = span_of(ref)
         start, end = 0, st.st_size
         if span and span[0] == "range":
@@ -2935,7 +3303,7 @@ class Namespace:
             except TmError:
                 served = None
         target = f"{ROOT}git/{served}/?at={pinned}" if served else None
-        body = {"uri": base, "mimeType": "application/json", "type": "submodule", "path": path, "at": at, "commit": commit,
+        body = {"uri": base, "mimeType": T_SUBMODULE, "type": "submodule", "path": path, "at": at, "commit": commit,
                 "pinned": pinned, "url": url, "repository": target}
         parent = path.rpartition("/")[0]
         up = f"{ROOT}git/{repo}/{quote(parent)}/{q}" if parent else f"{ROOT}git/{repo}/{q}"
@@ -2944,7 +3312,7 @@ class Namespace:
         if target:
             links.append(link("tm:pins", target, "exact", title=f"the repository this submodule pins, at {pinned[:12]}"))
         uri = f"{base}{q}{sep}as=stat" if as_ == "stat" else base + q
-        return self._result(uri, "application/json", json.dumps(body, indent=1), links)
+        return self._result(uri, T_STAT if as_ == "stat" else T_SUBMODULE, json.dumps(body, indent=1), links)
 
     def _git_children(self, repo: str, at: str, tree: str, depth: int = 1, rev: str | None = None) -> list[dict]:
         """A tree's entries. One level is the listing: directories first, then
@@ -2972,10 +3340,10 @@ class Namespace:
             rel = f"{tree}/{name}" if tree else name
             base = f"{ROOT}git/{repo}/{quote(rel)}"
             if kind == "tree":
-                kid = {"uri": base + "/" + q, "name": name + "/", "mimeType": "application/json", "isCollection": True}
+                kid = {"uri": base + "/" + q, "name": name + "/", "mimeType": T_LISTING, "isCollection": True}
             elif kind == "commit":
                 # TM-19: a submodule reads as a record of what it pins.
-                kid = {"uri": base + q, "name": name, "submodule": True, "mimeType": "application/json", "isCollection": False}
+                kid = {"uri": base + q, "name": name, "submodule": True, "mimeType": T_SUBMODULE, "isCollection": False}
             elif denied(rel):
                 kid = {"uri": base + q, "name": name, "redacted": True, "isCollection": False}
             else:
@@ -3087,10 +3455,10 @@ class Namespace:
     def _read_git(self, ref: Ref) -> dict:
         if ref.site is None:
             body = {"uri": f"{ROOT}git/", "children": [
-                {"uri": f"{ROOT}git/{r}/", "name": r + "/", "mimeType": "application/json", "isCollection": True,
+                {"uri": f"{ROOT}git/{r}/", "name": r + "/", "mimeType": T_LISTING, "isCollection": True,
                  "title": f"github.com/tinymachines/{r}"} for r in sorted(self.git)
             ]}
-            return self._result(f"{ROOT}git/", "application/json", json.dumps(body, indent=1), [link("up", ROOT)])
+            return self._result(f"{ROOT}git/", T_LISTING, json.dumps(body, indent=1), [link("up", ROOT)])
         repo = ref.site
         as_ = ref.facets.get("as", "tree" if ref.is_collection else "raw")
         if as_ not in AS_GIT:
@@ -3130,7 +3498,7 @@ class Namespace:
                 body["depth"] = depth
             if nxt:
                 body["nextCursor"] = nxt
-            return self._result(_cursored(body["uri"] + q + deep, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
+            return self._result(_cursored(body["uri"] + q + deep, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), self._git_links(repo, at, path, True, head))
         if not path:
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"the root of {repo} is a tree; read {ROOT}git/{repo}/", nearest=[f"{ROOT}git/{repo}/"])
         if as_ == "log":
@@ -3154,7 +3522,7 @@ class Namespace:
             if pinned:
                 # A submodule answers stat and log, not blame: no link to a refusal.
                 links = [ln for ln in links if "as=blame" not in ln["href"]]
-            return self._result(body["uri"], "application/json", json.dumps(body, indent=1), links)
+            return self._result(body["uri"], T_LOG, json.dumps(body, indent=1), links)
         try:
             kind = run_git(self._git_dir(repo), "cat-file", "-t", f"{commit}:{path}").strip()
         except TmError:
@@ -3168,13 +3536,13 @@ class Namespace:
         links = self._git_links(repo, at, path, False, head)
         if as_ == "stat":
             stat = {"uri": base, "path": path, "at": at, "commit": commit, "type": kind, "size": size, "mimeType": mime, "text": is_text(mime)}
-            return self._result(f"{base}{q}{sep}as=stat", "application/json", json.dumps(stat, indent=1), links + [link("alternate", base + q)])
+            return self._result(f"{base}{q}{sep}as=stat", T_STAT, json.dumps(stat, indent=1), links + [link("alternate", base + q)])
         if as_ == "blame":
             out = run_git(self._git_dir(repo), "blame", "-l", "--root", "--date=short", commit, "--", path)
             if len(out.encode()) > READ_CAP:
                 raise TmError(RESOURCE_NOT_FOUND, "too-large", f"blame of {path} is over the cap; read the file in ranges and the log instead",
                               size=len(out.encode()), log=f"{base}{q}{sep}as=log")
-            return self._result(f"{base}{q}{sep}as=blame", "text/plain", out, links)
+            return self._result(f"{base}{q}{sep}as=blame", T_BLAME, out, links)
         span = span_of(ref)
         start, end = 0, size
         if span and span[0] == "range":
@@ -3416,13 +3784,13 @@ class Namespace:
         out = []
         for seg, e in sorted(kids.items()):
             if e["page"]:
-                child = {"uri": f"{ROOT}http/{site}{quote(prefix + seg)}", "name": seg, "mimeType": "text/html", "isCollection": False}
+                child = {"uri": f"{ROOT}http/{site}{quote(prefix + seg)}", "name": seg, "mimeType": T_PAGE, "isCollection": False}
                 title = self.page_title(site, prefix + seg)
                 if title:
                     child["title"] = title
                 out.append(child)
             if e["below"]:
-                out.append({"uri": f"{ROOT}http/{site}{quote(prefix + seg)}/", "name": seg + "/", "mimeType": "application/json", "isCollection": True})
+                out.append({"uri": f"{ROOT}http/{site}{quote(prefix + seg)}/", "name": seg + "/", "mimeType": T_LISTING, "isCollection": True})
         return out
 
     def _http_complete(self, site: str, typed: str) -> list[str]:
@@ -3501,9 +3869,9 @@ class Namespace:
     async def _read_http(self, ref: Ref) -> dict:
         if ref.site is None:
             body = {"uri": f"{ROOT}http/", "children": [
-                {"uri": f"{ROOT}http/{s}/", "name": s, "mimeType": "application/json", "isCollection": True} for s in self.sites
+                {"uri": f"{ROOT}http/{s}/", "name": s, "mimeType": T_LISTING, "isCollection": True} for s in self.sites
             ]}
-            return self._result(f"{ROOT}http/", "application/json", json.dumps(body, indent=1), [link("up", ROOT)])
+            return self._result(f"{ROOT}http/", T_LISTING, json.dumps(body, indent=1), [link("up", ROOT)])
         # A page's text is what a reader wants first, so it is the default
         # (TM-4); the HTML a visitor gets, nav and flight payload and all, is
         # one facet away.
@@ -3530,7 +3898,7 @@ class Namespace:
             body = {"uri": ref.uri, "children": chunk}
             if nxt:
                 body["nextCursor"] = nxt
-            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._http_links(site, path, True))
+            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), self._http_links(site, path, True))
         if path == "/" and ref.uri.endswith("/") and not (set(ref.facets) - {"cursor"}):
             # The site root is both the front page and the top collection;
             # the collection is what a cold client wants first.
@@ -3543,34 +3911,37 @@ class Namespace:
             # Its other versions too (TM-20), or /ja's link to it goes unanswered.
             page = [ln for ln in self._http_links(site, "/", False)
                     if ln["rel"].startswith("tm:") or (ln["rel"] == "alternate" and "?as=" not in ln["href"])]
-            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), "application/json", json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
+            return self._result(_cursored(ref.uri, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
         status, ctype, data = await self.fetch(site, path)
         base = f"{ROOT}http/{site}{quote(path)}"
         links = self._http_links(site, path, False)
+        bare = ctype.split(";")[0].strip() or "application/octet-stream"
         if as_ == "stat":
-            stat = {"uri": base, "status": status, "contentType": ctype, "size": len(data),
+            # tinypeek#23: the stat says what the thing reads as, a page as a
+            # page; contentType stays what the front door said.
+            stat = {"uri": base, "status": status, "contentType": ctype, "mimeType": T_PAGE if bare == "text/html" else http_type(bare), "size": len(data),
                     "fetched": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-            return self._result(f"{base}?as=stat", "application/json", json.dumps(stat, indent=1), links)
+            return self._result(f"{base}?as=stat", T_STAT, json.dumps(stat, indent=1), links)
         if status == 404:
             raise self._http_missing(site, path)
         if status >= 400:
             raise TmError(RESOURCE_NOT_FOUND, "unreachable", f"{site}{path} answered {status}", status=status)
         if 300 <= status < 400:
             raise TmError(RESOURCE_NOT_FOUND, "redirect", f"{site}{path} redirects; the visitor would be sent on", status=status)
-        mime = ctype.split(";")[0].strip() or "application/octet-stream"
+        mime = bare
         if as_ == "text" and mime == "text/html":
             # tinypeek#8: a page's text is held to the byte cap like every
             # other read. It was the one read with no cap, and the default one.
             text = page_text(data.decode("utf-8", errors="replace")).encode()
             if span and span[0] == "range":
                 start, end = byte_range(span[1], len(text))
-                return self._result(f"{base}?as=text&range={start}-{end}", "text/plain", text[start:end].decode("utf-8", errors="replace"), links)
+                return self._result(f"{base}?as=text&range={start}-{end}", T_PAGE, text[start:end].decode("utf-8", errors="replace"), links)
             if span:
-                uri, _, piece = cut(span, text, "text/plain", f"{base}?as=text")
-                return self._result(uri, "text/plain", piece.decode("utf-8", errors="replace"), links)
+                uri, _, piece = cut(span, text, T_PAGE, f"{base}?as=text")
+                return self._result(uri, T_PAGE, piece.decode("utf-8", errors="replace"), links)
             if len(text) > READ_CAP:
                 raise _too_large(f"the text of {site}{path}", len(text), f"{base}?as=text", stat=f"{base}?as=stat")
-            return self._result(f"{base}?as=text" if asked else base, "text/plain", text.decode("utf-8"), links)
+            return self._result(f"{base}?as=text" if asked else base, T_PAGE, text.decode("utf-8"), links)
         if span:
             raise TmError(BAD_PARAMS, "bad-facet", f"{span[0]} reads a page's text, and {site}{path} is {mime}, not a page")
         if as_ == "text" and asked:
@@ -3581,7 +3952,7 @@ class Namespace:
                           size=len(data), stat=f"{base}?as=stat", text=f"{base}?as=text")
         if not is_text(mime):
             raise TmError(RESOURCE_NOT_FOUND, "binary", f"{site}{path} is {mime}", mimeType=mime, stat=f"{base}?as=stat")
-        return self._result(base, mime, data.decode("utf-8", errors="replace"), links)
+        return self._result(base, http_type(mime), data.decode("utf-8", errors="replace"), links)
 
     def _http_missing(self, site: str, path: str) -> TmError:
         clean = path.rstrip("/") or "/"
