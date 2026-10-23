@@ -192,6 +192,8 @@ MCP_SERVERS_FILE = "api/mcp_servers.json"
 SITES_FILE = "api/sites.json"        # the sites this box serves and where each one's page list comes from (tinypeek#24)
 SITEMAP_TTL_S = 300                  # how long a site's sitemap and robots are kept before they are read again
 SITEMAP_INDEX_CAP = 20               # sitemaps followed from one sitemap index
+SITE_MANIFEST = "/.well-known/tm-manifest.json"   # a site's link manifest, where it publishes one (tinypeek#9)
+SITE_MANIFEST_CAP = 256 * 1024      # bytes; a bigger one is ignored whole
 MCP_TTL_S = 300
 MCP_RETRY_S = 60
 MCP_TIMEOUT_S = 10.0
@@ -2919,6 +2921,11 @@ class Kinds:
 # ---------------------------------------------------------------------------
 
 
+def _repo_path(p: str) -> bool:
+    """A path inside a repository, as git ls-files prints one."""
+    return bool(p) and not p.startswith("/") and "\\" not in p and ".." not in p.split("/") and "" not in p.split("/")
+
+
 class Sitemap:
     """A site served through the front door whose build is not on this box.
     Its pages are the URLs of its sitemap.xml, read over loopback like a
@@ -2930,6 +2937,7 @@ class Sitemap:
     asked for."""
 
     EXTRA = ("/robots.txt", "/sitemap.xml")   # the lists themselves read as themselves
+    FIELDS = ("repository", "commit")         # what a manifest says of the whole site
     clock = staticmethod(time.monotonic)
 
     def __init__(self, ns: "Namespace", site: str, what: str = ""):
@@ -2937,6 +2945,7 @@ class Sitemap:
         self.pages: dict[str, str | None] | None = None   # path -> lastmod, as the sitemap says
         self.sources: list[str] = ["/sitemap.xml"]         # the sitemap files the list came from
         self.rules: list[str] = []                         # robots Disallow prefixes
+        self.manifest: dict | None = None                  # the site's link manifest, as taken (tinypeek#9)
         self.read_at: float | None = None
 
     async def refresh(self) -> None:
@@ -2960,7 +2969,49 @@ class Sitemap:
                 raise
         else:
             self.pages, self.sources = pages, sources
+        status, _, body = await self.ns.fetch(self.site, SITE_MANIFEST)
+        if status == 200:
+            self.manifest = self._manifest(body)
+        elif status == 404:
+            self.manifest = None
         self.read_at = now
+
+    def _manifest(self, body: bytes) -> dict | None:
+        """The manifest as taken, or None when the reader does not take it:
+        a version it does not know, another site's, too big or not JSON is
+        ignored whole. Only pages the sitemap lists and robots allows are
+        kept, so it can name a page's files and never add a page or open a
+        fence; a path out of the repository is dropped."""
+        if len(body) > SITE_MANIFEST_CAP:
+            return None
+        try:
+            m = json.loads(body)
+        except ValueError:
+            return None
+        if not isinstance(m, dict) or m.get("tm_manifest") != 1 or m.get("site") != self.site or not isinstance(m.get("pages"), dict):
+            return None
+        out: dict = {k: m[k] for k in self.FIELDS if isinstance(m.get(k), str)}
+        pages: dict[str, dict] = {}
+        for path, entry in m["pages"].items():
+            if not isinstance(entry, dict) or path not in (self.pages or {}) or self.denied(path):
+                continue
+            got: dict = {}
+            if isinstance(entry.get("title"), str) and entry["title"].strip():
+                got["title"] = entry["title"].strip()
+            for key in ("source", "reads"):
+                files = [f for f in entry.get(key) or [] if isinstance(f, str) and _repo_path(f)]
+                if files:
+                    got[key] = files
+            if got:
+                pages[path] = got
+        out["pages"] = pages
+        return out
+
+    def page(self, path: str) -> dict:
+        """What the manifest says of one page, and of the site it is on."""
+        if self.manifest is None or path not in self.manifest["pages"]:
+            return {}
+        return {**{k: self.manifest[k] for k in self.FIELDS if k in self.manifest}, **self.manifest["pages"][path]}
 
     async def _walk(self, path: str, pages: dict, sources: list[str]) -> None:
         status, _, body = await self.ns.fetch(self.site, path)
@@ -3012,7 +3063,8 @@ class Sitemap:
         return None
 
     def known(self, path: str) -> bool:
-        return path in (self.pages or {}) or path in self.EXTRA or path in self.sources
+        return (path in (self.pages or {}) or path in self.EXTRA or path in self.sources
+                or (path == SITE_MANIFEST and self.manifest is not None))
 
     def lastmod(self, path: str) -> str | None:
         return (self.pages or {}).get(path)
@@ -5039,7 +5091,11 @@ class Namespace:
         return self._built[site][1]
 
     def page_title(self, site: str, path: str) -> str | None:
-        """A page's title, from the HTML its build wrote."""
+        """A page's title, from the HTML its build wrote, or for a site built
+        elsewhere from its manifest (tinypeek#9)."""
+        sm = self.sitemaps.get(site)
+        if sm is not None:
+            return sm.page(path).get("title")
         d = self.build_dir(site)
         if d is None:
             return None
@@ -5292,6 +5348,8 @@ class Namespace:
             # no join to this checkout: no source, no data, no other version.
             if is_dir and clean == "/":
                 links.append(link("describedby", f"{ROOT}http/{site}/sitemap.xml", title="the page list the site publishes"))
+                if self.sitemaps[site].manifest is not None:
+                    links.append(link("describedby", f"{ROOT}http/{site}{SITE_MANIFEST}", title="the link manifest the site publishes"))
             if not is_dir:
                 links.append(link("collection", up))
                 links.append(link("describedby", f"{base}?as=stat"))
@@ -5404,6 +5462,8 @@ class Namespace:
                     "fetched": datetime.now(timezone.utc).isoformat(timespec="seconds")}
             if sm is not None and sm.lastmod(path):
                 stat["lastmod"] = sm.lastmod(path)   # as the site's sitemap says
+            if sm is not None:
+                stat.update(sm.page(path))           # as the site's manifest says (tinypeek#9)
             return self._result(f"{base}?as=stat", T_STAT, json.dumps(stat, indent=1), links)
         if status == 404:
             raise self._http_missing(site, path)

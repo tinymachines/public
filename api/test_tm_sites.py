@@ -39,6 +39,7 @@ class Site:
         self.sitemap = SITEMAP
         self.sitemap_status = 200
         self.robots = ROBOTS
+        self.manifest: bytes | None = None   # /.well-known/tm-manifest.json, none unless a test gives one
 
     async def fetch(self, site: str, path: str):
         if site != SITE:
@@ -48,6 +49,8 @@ class Site:
             return self.sitemap_status, "application/xml", self.sitemap if self.sitemap_status == 200 else b"down"
         if path == "/robots.txt":
             return 200, "text/plain", self.robots
+        if path == tm.SITE_MANIFEST:
+            return (200, "application/json", self.manifest) if self.manifest is not None else (404, "text/html", b"<html>nope</html>")
         if path.startswith("/api/"):
             return 200, "application/json", b'{"entropy": "spent"}'
         if path in ("/", "/about", "/projects", "/projects/alpha", "/visitors", "/hidden"):
@@ -86,10 +89,10 @@ def test_the_root_lists_the_sitemap_pages(repo):
     r = rels(links)
     assert r["describedby"] == [f"{ROOT}http/{SITE}/sitemap.xml"], "the list the site publishes"
     assert "tm:data" not in r, "no record of this checkout is read by a page built elsewhere"
-    assert sorted(site.calls) == ["/robots.txt", "/sitemap.xml"], "the list costs the site two reads, and no page"
+    assert sorted(site.calls) == sorted(["/robots.txt", "/sitemap.xml", tm.SITE_MANIFEST]), "the list costs the site three reads, and no page"
     deeper = json.loads(read(ns, f"{ROOT}http/{SITE}/projects/")[0]["text"])
     assert [k["uri"] for k in deeper["children"]] == [f"{ROOT}http/{SITE}/projects/alpha"]
-    assert sorted(site.calls) == ["/robots.txt", "/sitemap.xml"], "the second listing came from the cached list"
+    assert sorted(site.calls) == sorted(["/robots.txt", "/sitemap.xml", tm.SITE_MANIFEST]), "the second listing came from the cached list"
     assert all("elsewhere" not in k["uri"] for k in body["children"]), "a URL on another host is not a page of this site"
 
 
@@ -121,7 +124,7 @@ def test_nothing_unlisted_or_disallowed_is_ever_fetched(repo):
     assert e.reason == "denied", "listed and disallowed: robots wins, before any facet"
     e = refusal(ns, f"{ROOT}http/{SITE}/api/")
     assert e.reason == "denied"
-    assert sorted(site.calls) == ["/robots.txt", "/sitemap.xml"], f"only the two lists were asked for, not {site.calls}"
+    assert sorted(site.calls) == sorted(["/robots.txt", "/sitemap.xml", tm.SITE_MANIFEST]), f"only the three lists were asked for, not {site.calls}"
     c, _ = read(ns, f"{ROOT}http/{SITE}/robots.txt")
     assert c["mimeType"] == "text/plain" and "Disallow" in c["text"]
     c, _ = read(ns, f"{ROOT}http/{SITE}/sitemap.xml")
@@ -197,3 +200,72 @@ def test_the_crawler_reads_the_site_and_holds_the_fence(repo, monkeypatch, capsy
     assert run(mod.crawl(2000, repo, ns)) == 1
     out = capsys.readouterr().out
     assert "robots disallows" in out, out
+
+
+MANIFEST = {
+    "tm_manifest": 1, "site": SITE, "repository": "someone/example.site", "commit": "abc123",
+    "pages": {
+        "/about": {"title": "About me", "source": ["app/about/page.tsx"], "reads": ["data/about.json"], "x-mine": 1},
+        "/projects/alpha": {"title": "Alpha", "source": ["app/projects/[p]/page.tsx", "../../etc/passwd", "/abs"]},
+        "/hidden": {"title": "Not in the sitemap"},
+        "/visitors": {"title": "Disallowed", "source": ["app/visitors/page.tsx"]},
+    },
+}
+
+
+def with_manifest(repo: Path, manifest) -> tuple[Namespace, Site]:
+    ns, site = make(repo)
+    site.manifest = manifest if isinstance(manifest, bytes) else json.dumps(manifest).encode()
+    return ns, site
+
+
+def test_the_manifest_titles_a_page_and_names_its_files(repo):
+    ns, site = with_manifest(repo, MANIFEST)
+    c, links = read(ns, f"{ROOT}http/{SITE}/")
+    kids = {k["name"]: k for k in json.loads(c["text"])["children"]}
+    assert kids["about"]["title"] == "About me" and "title" not in kids["projects"]
+    assert f"{ROOT}http/{SITE}{tm.SITE_MANIFEST}" in rels(links)["describedby"], "the root links the manifest, as it links the sitemap"
+    st = json.loads(read(ns, f"{ROOT}http/{SITE}/about?as=stat")[0]["text"])
+    assert st["title"] == "About me"
+    assert st["source"] == ["app/about/page.tsx"] and st["reads"] == ["data/about.json"]
+    assert st["repository"] == "someone/example.site" and st["commit"] == "abc123"
+    assert "x-mine" not in st, "a key of the site's own is not carried"
+    alpha = json.loads(read(ns, f"{ROOT}http/{SITE}/projects/alpha?as=stat")[0]["text"])
+    assert alpha["source"] == ["app/projects/[p]/page.tsx"], "a path out of the repository, or absolute, is dropped"
+    _, plinks = read(ns, f"{ROOT}http/{SITE}/about?as=stat")
+    assert "tm:source" not in rels(plinks) and "tm:data" not in rels(plinks), "with no git mount for the repository, fields, not links"
+    c, _ = read(ns, f"{ROOT}http/{SITE}{tm.SITE_MANIFEST}")
+    assert json.loads(c["text"])["tm_manifest"] == 1, "the file reads as itself"
+
+
+def test_the_manifest_cannot_add_a_page_or_open_a_fence(repo):
+    ns, site = with_manifest(repo, MANIFEST)
+    assert refusal(ns, f"{ROOT}http/{SITE}/hidden?as=stat").reason == "not-found"
+    assert "/hidden" not in site.calls, "a page only the manifest names is not fetched"
+    assert refusal(ns, f"{ROOT}http/{SITE}/visitors?as=stat").reason == "denied"
+    kids = json.loads(read(ns, f"{ROOT}http/{SITE}/")[0]["text"])["children"]
+    assert "title" not in next(k for k in kids if k["name"] == "visitors"), "a disallowed page's entry is not used"
+
+
+@pytest.mark.parametrize("bad", [
+    {**MANIFEST, "tm_manifest": 2},
+    {**MANIFEST, "site": "elsewhere.example"},
+    {**MANIFEST, "pages": ["/about"]},
+    b"{not json",
+    json.dumps({**MANIFEST, "pad": "x" * tm.SITE_MANIFEST_CAP}).encode(),
+])
+def test_a_manifest_the_reader_does_not_take_is_ignored_whole(repo, bad):
+    ns, site = with_manifest(repo, bad)
+    kids = json.loads(read(ns, f"{ROOT}http/{SITE}/")[0]["text"])["children"]
+    assert not any("title" in k for k in kids)
+    st = json.loads(read(ns, f"{ROOT}http/{SITE}/about?as=stat")[0]["text"])
+    assert "title" not in st and "source" not in st
+    _, links = read(ns, f"{ROOT}http/{SITE}/")
+    assert f"{ROOT}http/{SITE}{tm.SITE_MANIFEST}" not in rels(links).get("describedby", [])
+
+
+def test_the_manifest_is_read_with_the_lists(repo):
+    ns, site = with_manifest(repo, MANIFEST)
+    read(ns, f"{ROOT}http/{SITE}/")
+    read(ns, f"{ROOT}http/{SITE}/about?as=stat")
+    assert site.calls.count(tm.SITE_MANIFEST) == 1, "kept as long as the sitemap is"
