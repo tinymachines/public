@@ -338,6 +338,12 @@ test("the note states what the record measured", async ({ page }) => {
   }
   expect(record.start_press.seen_frame - record.start_press.landed_frame).toBe(record.start_press.frames);
   expect(record.reset.seen_frame - record.reset.landed_frame).toBe(record.reset.frames);
+  // The HLS lag is measured now, and the note says the figure, each run's
+  // median behind it, and why it is what it is.
+  expect(record.hls_lag).not.toBeNull();
+  await expect(note).toContainText(`about ${record.hls_lag} s`);
+  for (const run of record.hls_lag_how.runs) await expect(note, String(run.median_s)).toContainText(String(run.median_s));
+  await expect(note).toContainText("frame 0 line");
 });
 
 // ---------------------------------------------------------------------------

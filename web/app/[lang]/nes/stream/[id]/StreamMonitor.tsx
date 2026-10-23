@@ -382,7 +382,15 @@ function Measured({ m }: { m: StreamMonitorRecord }) {
         on: {m.start_press.why}. Reset on {m.reset.cart} landed at <span className="data">{m.reset.landed_frame}</span> and the picture changed at{" "}
         <span className="data">{m.reset.seen_frame}</span>, <span className="data">{m.reset.frames}</span> frames on, <span className="data">{m.reset.hold_frames}</span>{" "}
         of them the hold: {m.reset.why}.{" "}
-        {m.hls_lag === null ? "The HLS lag on this box is not measured yet; the ledger's picture lag line is the live reading." : `The HLS lag on this box measured ${m.hls_lag} s.`}
+        {m.hls_lag === null || !m.hls_lag_how ? (
+          "The HLS lag on this box is not measured yet; the ledger's picture lag line is the live reading."
+        ) : (
+          <>
+            The HLS lag on this box, read on {m.hls_lag_how.measured} through this page&rsquo;s own player, is about{" "}
+            <span className="data">{m.hls_lag}</span> s ({m.hls_lag_how.runs.map((r) => r.median_s).join(" and ")} s over {m.hls_lag_how.runs.length} runs):{" "}
+            {m.hls_lag_how.why}.
+          </>
+        )}
       </p>
     </section>
   );
