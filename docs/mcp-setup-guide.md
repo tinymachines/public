@@ -188,7 +188,10 @@ A site this box serves but did not build is listed from the `sitemap.xml` it
 publishes, and its `robots.txt` is the fence: only a listed page is ever
 fetched, a path the sitemap does not name is `not-found` before any request
 leaves, and a path under a `Disallow` is `denied` with the rule. Its pages
-read as pages, with no link to a source, since this box did not build them.
+read as pages. Where the site publishes a link manifest at
+`/.well-known/tm-manifest.json`, a page takes its title from it and its stat
+names the files that make it; the manifest can describe a listed page, never
+add one.
 
 Two addresses serve a host with no modules at all, a terminal or a print
 page. `tm://tinymachines/manifest` is the visual language as data, a shape

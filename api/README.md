@@ -451,10 +451,13 @@ Disallow is the deny list. Only a listed page is ever fetched; a path the
 sitemap does not name is `not-found` before any request leaves, and a path
 under a Disallow is `denied` with the rule, whatever is asked. Which sites
 the mount answers for, and whether each one's list is its build here or its
-sitemap, is `api/sites.json`. Such a site's pages carry no `tm:source` and
-no title: the join from a page built elsewhere to its code is the
-manifest's, reopened as tinypeek#9. The crawler reads every listed page and
-probes each robots rule.
+sitemap, is `api/sites.json`. Where the site publishes a link manifest at
+`/.well-known/tm-manifest.json` (tinypeek#9, v0.29), read with the two lists
+and kept as long, a listed page takes its title from it and its stat carries
+the repository files the manifest names. It cannot add a page or open a
+fence, and a file the reader does not take is ignored whole. Links into the
+site's repository wait on a git mount for it. The crawler reads every listed
+page and probes each robots rule.
 
 Two addresses for a host with no modules (tinylens#2, spec section 15).
 `tm://tinymachines/manifest` is the visual language as data, a shape per
