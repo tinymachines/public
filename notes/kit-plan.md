@@ -164,6 +164,10 @@ converter page of the sprite maker. Nothing in this repository changes until it
 is live and checked; then `/sprites` here becomes a link, and the allowlisted
 nginx location is retired with the owner's word.
 
+**The desk's sign-in plan, 2026-10-23:** `notes/desk-move.md` answers decision 4 below. Measured, the move is one
+shelf of 19 cartridges whose owner is already on the account service under the same GitHub id; it recommends the
+shelf stay in the roof's API and take a passkey alongside GitHub through a link table, before any app exists.
+
 ## 6. Decisions that are the owner's
 
 Not taken here, and nothing above proceeds until they are.
