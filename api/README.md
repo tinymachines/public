@@ -444,6 +444,18 @@ entry lists. The map reads from two files and costs the server nothing; the
 crawler samples each mapped collection at three children a run
 (`entity/<kind>/?as=set` inlines a listing).
 
+A site this box serves but did not build (tinypeek#24, spec section 8) is
+listed from what the site publishes: its `sitemap.xml`, read through the
+front door and kept five minutes, is the page list, and its `robots.txt`
+Disallow is the deny list. Only a listed page is ever fetched; a path the
+sitemap does not name is `not-found` before any request leaves, and a path
+under a Disallow is `denied` with the rule, whatever is asked. Which sites
+the mount answers for, and whether each one's list is its build here or its
+sitemap, is `api/sites.json`. Such a site's pages carry no `tm:source` and
+no title: the join from a page built elsewhere to its code is the
+manifest's, reopened as tinypeek#9. The crawler reads every listed page and
+probes each robots rule.
+
 The git mount offers this repository and the siblings checked out beside it,
 under their GitHub names, all public under github.com/tinymachines. It runs
 git itself, read-only, with every argument passed as an argument, a ref
