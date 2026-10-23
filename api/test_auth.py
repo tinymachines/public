@@ -101,7 +101,7 @@ def test_auth_state_reports_configuration(client, monkeypatch):
     monkeypatch.delenv("TM_GITHUB_CLIENT_ID", raising=False)
     monkeypatch.delenv("TM_GITHUB_CLIENT_SECRET", raising=False)
     monkeypatch.setattr(auth, "credentials", lambda: None)
-    assert client.get("/v1/auth").json() == {"github": False}
+    assert client.get("/v1/auth").json() == {"github": False, "passkey": None}
     assert client.get("/v1/auth/github").status_code == 503
 
 

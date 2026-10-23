@@ -33,10 +33,10 @@ declares them.
 | `POST /v1/tokens` | Mint a free registry token, once. Rate-limited per address and per day; 503 where no registry is configured |
 | `GET /v1/projects` | The projects, their surfaces, and how much of the move has happened |
 | `GET /v1/visitors` | Who visited, from the nginx logs, over the last thirty days: reads per site and per day, pages, referrers, how much was automated. No address in it; 404 until the first snapshot |
-| `GET /v1/auth` | Which ways of signing in this deployment offers (today: GitHub, where configured) |
+| `GET /v1/auth` | Which ways of signing in this deployment offers: GitHub, where configured, and a passkey on the kit's account service, with who is signed in that way and whether that passkey opens an account here |
 | `GET /v1/auth/github` | Start a GitHub sign-in; redirects there and back to `next` |
 | `GET /v1/auth/github/callback` | Where GitHub returns the browser; opens the session cookie |
-| `POST /v1/auth/logout` | Forget the session |
+| `POST /v1/auth/logout` | Forget the GitHub session, and end a passkey session on the account service |
 | `GET /v1/status` | Which pieces are answering, **measured** |
 | `POST /mcp` | The same surface, spoken to a language model |
 | `GET /mcp` | 405 with `Allow: POST`. There is no stream to open |
@@ -53,6 +53,21 @@ exists at all and why GitHub is the first way in.
 | `POST /v1/me/tokens` | Mint a registry token held by this account, counted against the account rather than the address |
 | `POST /v1/me/tokens/{token_id}/reissue` | Revoke a lost token in the registry and move its page to a new one, returned once |
 | `DELETE /v1/me/tokens/{token_id}` | Revoke. The page stays |
+
+**A passkey opens the same account (2026-10-23, `notes/desk-move.md` step A).**
+Every route that asks for a signed-in person (`auth.current_user`) takes the
+GitHub session first and then a passkey session the kit's account service
+vouches for, but the passkey opens an account here only through a row of
+`account_links` (migration 9): one account on the service, one user here, the
+same person because both sides recorded the same GitHub numeric id when they
+signed in with GitHub. `scripts/link-accounts.py` writes the rows, a dry run
+first, and the owner runs it; nothing writes them on a request. A passkey with
+no row opens nothing, and `GET /v1/auth` says so (`passkey.linked`), so a page
+can tell the person rather than offer the same sign-in again. `GET /v1/me`
+says which way the request came (`user.via`). The service being down is
+nobody for the passkey side, never an error for the GitHub side. The tests
+play the service as down unless they play it themselves (`conftest.py`),
+because its default address is the box's live loopback port.
 
 An account can also keep a shelf of its own cartridges, so that every menu on
 the site that asks for a `.nes` can offer them by name. A cartridge answers

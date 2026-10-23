@@ -41,6 +41,29 @@ assert str(db.path()).startswith(_TMP.name), (
 
 
 @pytest.fixture(autouse=True)
+def no_account_service(monkeypatch):
+    """The kit's account service is down unless a test plays it.
+
+    Since migration 9 every signed-in route may ask the service who a cookie
+    belongs to (auth.current_user). Its default address is the box's loopback
+    port, where the LIVE service answers: a test that forgot to play it would
+    look local and be asking production. So the default here is a transport
+    that refuses every call, and a test that wants the service swaps in its own
+    (test_operators, test_account_links) after this runs.
+    """
+    import httpx
+    import kitaccounts
+
+    def refuse(request):
+        raise httpx.ConnectError("no account service in tests", request=request)
+
+    monkeypatch.setattr(kitaccounts, "transport", lambda: httpx.MockTransport(refuse))
+    kitaccounts.forget()
+    yield
+    kitaccounts.forget()
+
+
+@pytest.fixture(autouse=True)
 def fresh_db():
     """Empty tables before each test.
 
@@ -51,6 +74,7 @@ def fresh_db():
     conn = db.connect()
     with conn:
         conn.execute("DELETE FROM operators")
+        conn.execute("DELETE FROM account_links")
         conn.execute("DELETE FROM api_keys")
         conn.execute("DELETE FROM users")
         conn.execute("DELETE FROM token_mints")

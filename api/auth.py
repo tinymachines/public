@@ -57,9 +57,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 import db
+import kitaccounts
 import mint as mint_mod
 from admin import connection, require_dev
-from models import AuthState, Me, MeLimits, MeToken, MeUser, MintedToken, NewToken
+from models import AuthState, Me, MeLimits, MeToken, MeUser, MintedToken, NewToken, PasskeyState
 
 router = APIRouter(prefix="/v1", tags=["account"])
 
@@ -169,21 +170,59 @@ def _set_session(resp: Response, request: Request, raw: str) -> None:
 
 
 def current_user(request: Request, conn: sqlite3.Connection) -> Optional[sqlite3.Row]:
+    """The user behind this request: the GitHub session first, then a passkey.
+
+    A passkey session is the kit's account service's, on this host
+    (api/kitaccounts.py). It opens a user here only through a row of
+    account_links, which says the two are one person (db.py, migration 9;
+    notes/desk-move.md). Which way it came is left on request.state.via, for
+    /v1/me to say.
+    """
     raw = request.cookies.get(SESSION_COOKIE)
-    if not raw:
+    if raw:
+        row = conn.execute(
+            "SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id "
+            "WHERE s.sha256 = ? AND s.expires_at > ? AND u.disabled_at IS NULL",
+            (_sha(raw), _now().isoformat(timespec="seconds")),
+        ).fetchone()
+        if row is not None:
+            request.state.via = "github"
+            return row
+    who = passkey_member(request)
+    if who is None:
         return None
     row = conn.execute(
-        "SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id "
-        "WHERE s.sha256 = ? AND s.expires_at > ? AND u.disabled_at IS NULL",
-        (_sha(raw), _now().isoformat(timespec="seconds")),
+        "SELECT u.* FROM account_links a JOIN users u ON u.id = a.user_id "
+        "WHERE a.account_id = ? AND u.disabled_at IS NULL",
+        (who.id,),
     ).fetchone()
+    if row is not None:
+        request.state.via = "passkey"
     return row
+
+
+def passkey_member(request: Request) -> Optional[kitaccounts.Member]:
+    """The account service's answer for this request, or None.
+
+    A service that cannot be asked is nobody here, not a 503: every page asks
+    who is signed in, and the GitHub session and the signed-out reader must
+    not break because the passkey side is down. The service's 403, a write
+    from another site, is passed on as it stands.
+    """
+    if not request.headers.get("cookie"):
+        return None
+    try:
+        return kitaccounts.member(request)
+    except HTTPException as e:
+        if e.status_code == 503:
+            return None
+        raise
 
 
 def require_user(request: Request, conn: sqlite3.Connection = Depends(connection)) -> sqlite3.Row:
     row = current_user(request, conn)
     if row is None:
-        raise HTTPException(status_code=401, detail="Not signed in. GET /v1/auth/github starts a sign-in.")
+        raise HTTPException(status_code=401, detail="Not signed in. GET /v1/auth/github starts a sign-in, or a passkey through GET /v1/auth's passkey.home.")
     # A state change from another origin is refused even though Lax cookies
     # already keep it out; the header is cheap to check and the rule is
     # cheap to state. The site is the apex and its subdomains over https:
@@ -303,11 +342,22 @@ def upsert_github_user(conn: sqlite3.Connection, gh: dict) -> str:
     "/auth",
     response_model=AuthState,
     summary="Which ways of signing in this deployment offers",
-    description="`github` is true where a GitHub OAuth app is configured beside this service; "
-                "the site shows a sign-in button on that answer and the public mint alone otherwise.",
+    description="`github` is true where a GitHub OAuth app is configured beside this service. "
+                "`passkey` says where a passkey sign-in happens for this host, who is signed in that way, "
+                "and whether that account opens an account here; null where the account service cannot be asked. "
+                "The site shows a sign-in button for each way that is on, and the public mint alone otherwise.",
 )
-def auth_state() -> AuthState:
-    return AuthState(github=enabled())
+def auth_state(request: Request, conn: sqlite3.Connection = Depends(connection)) -> AuthState:
+    where = kitaccounts.auth_state(request)
+    passkey = None
+    if where:
+        who = passkey_member(request)
+        linked = bool(who) and conn.execute(
+            "SELECT 1 FROM account_links a JOIN users u ON u.id = a.user_id WHERE a.account_id = ? AND u.disabled_at IS NULL",
+            (who.id,),
+        ).fetchone() is not None
+        passkey = PasskeyState(home=where["home"], site=where["site"], handle=who.handle if who else None, linked=linked)
+    return AuthState(github=enabled(), passkey=passkey)
 
 
 @router.get(
@@ -379,13 +429,21 @@ def github_callback(request: Request, code: str, state: str, conn: sqlite3.Conne
     "/auth/logout",
     summary="Sign out",
     status_code=204,
-    description="Forgets the session the cookie names and clears the cookie. Idempotent.",
+    description="Forgets the GitHub session the cookie names and clears the cookie, and ends a passkey session on the account service. Idempotent.",
 )
 def logout(request: Request, conn: sqlite3.Connection = Depends(connection)) -> Response:
     raw = request.cookies.get(SESSION_COOKIE)
     if raw:
         with conn:
             conn.execute("DELETE FROM sessions WHERE sha256 = ?", (_sha(raw),))
+    # A passkey session ends on the account service, which alone knows its
+    # cookie's name; its Set-Cookie is carried back. That is one sign-in for
+    # the whole site, so the stream desk is signed out too. A service that
+    # cannot be asked whether there is one is left alone: the GitHub half
+    # still ends, and the menu shows whatever is still signed in.
+    ending: list[str] = []
+    if passkey_member(request) is not None:
+        ending = kitaccounts.sign_out(request)
     resp = Response(status_code=204)
     # Both shapes: the one set with the domain and the host-only one from
     # before it, so a sign-out leaves nothing that still names a session.
@@ -393,6 +451,8 @@ def logout(request: Request, conn: sqlite3.Connection = Depends(connection)) -> 
     domain = _domain(request)
     if domain:
         resp.delete_cookie(SESSION_COOKIE, path="/", domain=domain)
+    for c in ending:
+        resp.headers.append("set-cookie", c)
     return resp
 
 
@@ -407,13 +467,13 @@ def _tokens(conn: sqlite3.Connection, uid: str) -> list[MeToken]:
     ]
 
 
-def _me(conn: sqlite3.Connection, user: sqlite3.Row) -> Me:
+def _me(conn: sqlite3.Connection, user: sqlite3.Row, via: str = "github") -> Me:
     login = conn.execute("SELECT * FROM logins WHERE user_id = ? ORDER BY last_at DESC", (user["id"],)).fetchone()
     tokens = _tokens(conn, user["id"])
     active = sum(1 for t in tokens if t.revoked_at is None)
     return Me(
         user=MeUser(id=user["id"], handle=user["handle"], name=user["first_name"], pic=user["pic"],
-                    provider=login["provider"] if login else "github", login=login["login"] if login else user["handle"]),
+                    provider=login["provider"] if login else "github", login=login["login"] if login else user["handle"], via=via),
         tokens=tokens,
         limits=MeLimits(active_max=active_max(), active=active, remaining=max(0, active_max() - active)),
     )
@@ -427,8 +487,8 @@ def _me(conn: sqlite3.Connection, user: sqlite3.Row) -> Me:
                 "and how many more it may mint.",
     responses={401: {"description": "Nobody."}},
 )
-def me(user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Me:
-    return _me(conn, user)
+def me(request: Request, user: sqlite3.Row = Depends(require_user), conn: sqlite3.Connection = Depends(connection)) -> Me:
+    return _me(conn, user, getattr(request.state, "via", "github"))
 
 
 @router.get(

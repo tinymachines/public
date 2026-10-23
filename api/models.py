@@ -773,10 +773,20 @@ class MintsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class PasskeyState(BaseModel):
+    """A passkey sign-in on the kit's shared account service, for this host."""
+
+    home: str = Field(description="The accounts site. A sign-in is `{home}/?site={site}&next={page}`: the ceremony runs there and the browser comes back here signed in.", examples=["https://accounts.tinymachines.ai"])
+    site: str = Field(description="This host's id on the account service.", examples=["tinymachines"])
+    handle: Optional[str] = Field(description="Who is signed in with a passkey on this host now, by their handle on the account service; null for nobody.", examples=["ada"])
+    linked: bool = Field(description="Whether that passkey opens an account here: true once the account is linked to one (the same person, matched by GitHub id). A signed-in passkey that is not linked opens no shelf and no tokens.")
+
+
 class AuthState(BaseModel):
     """Which ways of signing in this deployment offers."""
 
     github: bool = Field(description="True where a GitHub OAuth app is configured beside this service. `GET /v1/auth/github` starts it.")
+    passkey: Optional[PasskeyState] = Field(default=None, description="The passkey sign-in for this host, or null where the account service cannot be asked or does not know this host.")
 
 
 class MeUser(BaseModel):
@@ -786,6 +796,7 @@ class MeUser(BaseModel):
     pic: Optional[str] = Field(description="An avatar URL, if the provider gave one.")
     provider: str = Field(description="Where the identity comes from.", examples=["github"])
     login: str = Field(description="The login at the provider.", examples=["ada"])
+    via: str = Field(default="github", description="How this request is signed in: `github`, the GitHub session, or `passkey`, a passkey session on the account service linked to this account.", examples=["passkey"])
 
 
 class MeToken(BaseModel):

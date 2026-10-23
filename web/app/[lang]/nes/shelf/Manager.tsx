@@ -20,6 +20,8 @@ const L = {
     signedOutH: "Sign in to see your shelf",
     signedOut: "The shelf belongs to an account, so that your cartridges follow you from page to page and from one machine to the next.",
     signIn: "Sign in with GitHub",
+    passkey: "Sign in with a passkey",
+    unlinked: "You are signed in with a passkey, but it is not linked to an account here yet, so it opens no shelf. Sign in with GitHub to reach yours.",
     noSignIn: "Sign-in is switched off on this server, so there is no shelf here.",
     noShelfH: "This account's shelf is closed",
     noShelf: "Every account has a shelf unless we have closed it, and we have closed this one. What is on it is still yours to fetch or delete. Ask us if that seems wrong.",
@@ -72,6 +74,8 @@ const L = {
     signedOutH: "サインインすると棚が見える",
     signedOut: "棚はアカウントに付く。だからカートリッジはページからページへ、機械から機械へとついてくる。",
     signIn: "GitHub でサインイン",
+    passkey: "パスキーでサインイン",
+    unlinked: "パスキーでサインインしているが、このサイトのアカウントにはまだつながっていないので、棚は開かない。自分の棚は GitHub でサインインすると見える。",
     noSignIn: "このサーバではサインインが切ってあるので、ここに棚はない。",
     noShelfH: "このアカウントの棚は閉じられている",
     noShelf: "棚はどのアカウントにもあるが、私たちが閉じることがあり、この棚は閉じてある。載っているものは今も取り出せるし消せる。おかしいと思ったら声をかけてほしい。",
@@ -220,6 +224,9 @@ export function Manager({ lang }: { lang: Lang }) {
   const S = L[lang];
   const [shelf, setShelf] = useState<Shelf | null>(null);
   const [github, setGithub] = useState(true);
+  // The passkey way in, from GET /v1/auth: where the ceremony runs, and
+  // whether a passkey already signed in opens nothing here (notes/desk-move.md).
+  const [passkey, setPasskey] = useState<{ href: string; unlinked: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -256,6 +263,12 @@ export function Manager({ lang }: { lang: Lang }) {
     void (async () => {
       const a = await fetch("/api/v1/auth", { cache: "no-store" }).then((r) => (r.ok ? r.json() : { github: false })).catch(() => ({ github: false }));
       setGithub(!!a.github);
+      if (a.passkey) {
+        setPasskey({
+          href: `${a.passkey.home}/?${new URLSearchParams({ site: a.passkey.site, next: window.location.href })}`,
+          unlinked: !!a.passkey.handle && !a.passkey.linked,
+        });
+      }
       try {
         setShelf(await listShelf());
       } catch (e) {
@@ -292,10 +305,14 @@ export function Manager({ lang }: { lang: Lang }) {
     return (
       <div className="prose shelf" data-shelf-state="signed-out">
         <h2>{S.signedOutH}</h2>
-        {github ? (
+        {github || passkey ? (
           <>
             <p>{S.signedOut}</p>
-            <p><a className="btn btn-primary" href={`/api/v1/auth/github?next=${encodeURIComponent(here)}`}>{S.signIn}</a></p>
+            {passkey?.unlinked ? <p className="notice" data-shelf-unlinked>{S.unlinked}</p> : null}
+            <p className="toolbar">
+              {github ? <a className="btn btn-primary" href={`/api/v1/auth/github?next=${encodeURIComponent(here)}`}>{S.signIn}</a> : null}{" "}
+              {passkey && !passkey.unlinked ? <a className="btn" data-shelf-passkey href={passkey.href}>{S.passkey}</a> : null}
+            </p>
           </>
         ) : (
           <p className="notice">{S.noSignIn}</p>

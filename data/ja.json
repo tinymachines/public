@@ -217,6 +217,8 @@
  "What you see": "見えているもの",
  "Close": "閉じる",
  "Sign in with GitHub": "GitHub でサインイン",
+ "Sign in with a passkey": "パスキーでサインイン",
+ "with a passkey, not linked to an account here yet": "(パスキーで。このサイトのアカウントにはまだつながっていない)",
  "Signed in as": "サインイン中:",
  "your tokens": "あなたのトークン",
  "your cartridges": "あなたのカートリッジ",

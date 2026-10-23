@@ -95,6 +95,19 @@ alongside GitHub.
   session; an unlinked one is told it has no shelf, never handed another's;
   a link to a disabled user opens nothing. Each sabotaged once.
 
+**Step A built, 2026-10-23,** on the owner's "yes to step A, build it": migration 9
+(`account_links`), the passkey branch in `auth.current_user`, `passkey` on
+`GET /v1/auth`, `via` on `GET /v1/me`, sign-out on both sides, the menu and
+the shelf page offering the passkey in both languages, and
+`scripts/link-accounts.py`. Its tests are `api/test_account_links.py` (nine,
+seven sabotages each went red once) and `web/e2e/passkey.spec.ts` (four). The
+tests now play the account service as down unless they play it themselves,
+because its default address is the box's live port. The sprite generator's
+check in `deploy/tinymachines.ai.nginx` now passes the scheme, without which a
+passkey session would not be recognised there; that file is installed by
+hand. What is left of step A is the owner's: deploy it, then run the script's
+dry run and its write against the live files.
+
 **Step B, the desk as an app on the kit.** Private and in the kit's kiosk
 look, as decided for every carved-out app on 2026-10-20.
 

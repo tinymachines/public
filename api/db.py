@@ -279,6 +279,23 @@ MIGRATIONS: list[str] = [
         removed_at  TEXT
     );
     """,
+    # 2026-10-23: a passkey onto an account here (notes/desk-move.md, step A).
+    # A row says that an account on the kit's account service is the same
+    # person as a user here, matched once by GitHub's numeric id, which both
+    # sides recorded when that person signed in with GitHub. With a row, the
+    # passkey session the service vouches for opens this user's shelf, tokens
+    # and all, as the GitHub session does. Nothing else moves: no user row, no
+    # cartridge, no file. Undo is deleting the rows. One account per user and
+    # one user per account, so a link can never fan out. Filled by
+    # scripts/link-accounts.py, which the owner runs; never by a request.
+    """
+    CREATE TABLE account_links (
+        account_id  TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        github_id   TEXT NOT NULL,
+        linked_at   TEXT NOT NULL
+    );
+    """,
 ]
 
 

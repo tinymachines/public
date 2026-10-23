@@ -171,6 +171,8 @@ function localizedSections(lang: Lang): Section[] {
 function accountWords(lang: Lang) {
   return {
     signIn: t(lang, "Sign in with GitHub"),
+    passkey: t(lang, "Sign in with a passkey"),
+    unlinked: t(lang, "with a passkey, not linked to an account here yet"),
     signedIn: t(lang, "Signed in as"),
     tokens: t(lang, "your tokens"),
     carts: t(lang, "your cartridges"),

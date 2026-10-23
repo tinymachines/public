@@ -387,6 +387,11 @@ server {
         proxy_pass_request_body off;
         proxy_set_header Content-Length "";
         proxy_set_header Host $host;
+        # The scheme too: a passkey session is the account service's, and it
+        # names the site by scheme and Host together (api/kitaccounts.py). With
+        # the Host alone the API reads http, the service knows no such site,
+        # and a passkey reader is sent to sign in again (notes/desk-move.md).
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
     location @sprites_signin {
         default_type application/json;

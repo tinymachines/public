@@ -102,13 +102,15 @@ def test_the_migration_opened_the_shelves_that_were_closed_by_default():
     conn = db.connect()
     with conn:
         # A file at version 4 has no revisions table (migration 6), no
-        # blocks table (7) and no operators table (8) either: the rollback
+        # blocks table (7), no operators table (8) and no account links (9)
+        # either: the rollback
         # drops what the later migrations made, then the count of what runs
         # is everything after 4. A migration added after this one has to be
         # dropped here too, or its CREATE TABLE fails on the second run.
         conn.execute("DROP TABLE IF EXISTS cart_revisions")
         conn.execute("DROP TABLE IF EXISTS cart_blocks")
         conn.execute("DROP TABLE IF EXISTS operators")
+        conn.execute("DROP TABLE IF EXISTS account_links")
         conn.execute("PRAGMA user_version = 4")
         stamp = db.now()
         conn.execute("INSERT INTO users (id, email, handle, first_name, carts_max, created_at, updated_at) VALUES ('u_old', 'old@example.org', 'old', 'Old', 0, ?, ?)", (stamp, stamp))

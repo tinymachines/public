@@ -36,7 +36,7 @@ export function Menu({
   sections = [],
   label = "Menu",
   close = "Close",
-  account = { signIn: "Sign in with GitHub", signedIn: "Signed in as", tokens: "your tokens", carts: "your cartridges", signOut: "sign out" },
+  account = { signIn: "Sign in with GitHub", passkey: "Sign in with a passkey", unlinked: "with a passkey, not linked to an account here yet", signedIn: "Signed in as", tokens: "your tokens", carts: "your cartridges", signOut: "sign out" },
   hard = false,
 }: {
   groups: MenuGroup[];
@@ -51,7 +51,7 @@ export function Menu({
   /** What the same button says while the panel is open: it closes it. */
   close?: string;
   /** The account row's words, translated by the caller. */
-  account?: { signIn: string; signedIn: string; tokens: string; carts: string; signOut: string };
+  account?: { signIn: string; passkey: string; unlinked: string; signedIn: string; tokens: string; carts: string; signOut: string };
   /** Every link a full navigation: set by a page whose module must not survive the leave. */
   hard?: boolean;
 }) {
@@ -72,21 +72,37 @@ export function Menu({
   // click, which an onClick on each link would not.
   // The account row at the foot of the panel. Asked once per opening, so a
   // sign-in on another tab shows the next time the menu opens; null until
-  // answered, and absent where GitHub sign-in is not configured.
-  const [who, setWho] = useState<{ enabled: boolean; login: string | null; shelf?: boolean } | null>(null);
+  // answered, and absent where no way of signing in is on. Two ways in: GitHub,
+  // and a passkey on the kit's account service, which opens an account here
+  // once it is linked to one (notes/desk-move.md). A passkey that is signed in
+  // but not linked is said as such, with its own sign-out, rather than shown
+  // as signed out and offered the same sign-in again.
+  const [who, setWho] = useState<{
+    enabled: boolean;
+    login: string | null;
+    shelf?: boolean;
+    github?: boolean;
+    passkey?: string | null;
+    unlinked?: string | null;
+  } | null>(null);
   useEffect(() => {
     if (!open) return;
     let live = true;
     (async () => {
       try {
         const a = await fetch("/api/v1/auth", { cache: "no-store" }).then((r) => (r.ok ? r.json() : { github: false }));
-        if (!a.github) { if (live) setWho({ enabled: false, login: null }); return; }
+        const pk: { home: string; site: string; handle: string | null; linked: boolean } | null = a.passkey ?? null;
+        if (!a.github && !pk) { if (live) setWho({ enabled: false, login: null }); return; }
+        // Where the passkey ceremony runs: the accounts site, which sends the
+        // browser back to this page signed in. Read from the answer, never typed.
+        const passkey = pk ? `${pk.home}/?${new URLSearchParams({ site: pk.site, next: window.location.href })}` : null;
+        const unlinked = pk && pk.handle && !pk.linked ? pk.handle : null;
         const m = await fetch("/api/v1/me", { cache: "no-store" });
         const login = m.ok ? ((await m.json()).user?.login ?? null) : null;
         // A shelf an admin closed is not offered; every other account has one, so its
         // link is shown only to an account that has one (lib/shelf.ts).
         const shelf = login ? await listShelf().then((x) => x.state === "open" && x.limits.max > 0).catch(() => false) : false;
-        if (live) setWho({ enabled: true, login, shelf });
+        if (live) setWho({ enabled: true, login, shelf, github: !!a.github, passkey, unlinked });
       } catch { if (live) setWho({ enabled: false, login: null }); }
     })();
     return () => { live = false; };
@@ -241,8 +257,17 @@ export function Menu({
                   ) : null}
                   <button type="button" className="linkish" onClick={signOut}>{account.signOut}</button>
                 </>
+              ) : who.unlinked ? (
+                <>
+                  <span data-menu-unlinked>{account.signedIn} <b>{who.unlinked}</b> {account.unlinked}</span>
+                  {who.github ? <a className="menu-signin" href={`/api/v1/auth/github?next=${encodeURIComponent(here)}`}>{account.signIn}</a> : null}
+                  <button type="button" className="linkish" onClick={signOut}>{account.signOut}</button>
+                </>
               ) : (
-                <a className="menu-signin" href={`/api/v1/auth/github?next=${encodeURIComponent(here)}`}>{account.signIn}</a>
+                <>
+                  {who.github ? <a className="menu-signin" href={`/api/v1/auth/github?next=${encodeURIComponent(here)}`}>{account.signIn}</a> : null}
+                  {who.passkey ? <a className="menu-signin" data-menu-passkey href={who.passkey}>{account.passkey}</a> : null}
+                </>
               )}
             </div>
           ) : null}
