@@ -13,7 +13,7 @@ import pytest
 import tm
 from tm import ROOT, Namespace, TmError
 
-from test_tm import canned_fetch, read, refusal, rels, repo, run  # noqa: F401  (repo is the fixture)
+from test_tm import canned_fetch, git, read, refusal, rels, repo, run  # noqa: F401  (repo is the fixture)
 
 SITE = "example.site"
 
@@ -269,3 +269,65 @@ def test_the_manifest_is_read_with_the_lists(repo):
     read(ns, f"{ROOT}http/{SITE}/")
     read(ns, f"{ROOT}http/{SITE}/about?as=stat")
     assert site.calls.count(tm.SITE_MANIFEST) == 1, "kept as long as the sitemap is"
+
+
+def site_repo(repo: Path) -> Path:
+    """The site's own repository, checked out beside the namespace's."""
+    d = repo.parent / SITE
+    for f, text in (("app/about/page.tsx", "export default 1\n"), ("data/about.json", "{}\n"),
+                    ("app/projects/[p]/page.tsx", "export default 2\n")):
+        (d / f).parent.mkdir(parents=True, exist_ok=True)
+        (d / f).write_text(text)
+    git(d, "init", "-q", "-b", "main")
+    git(d, "add", ".")
+    git(d, "commit", "-q", "-m", "the site")
+    return d
+
+
+def mounted(repo: Path) -> tuple[Namespace, Site]:
+    site = Site()
+    m = {**MANIFEST, "pages": {**MANIFEST["pages"], "/projects": {"source": ["app/gone.tsx"]}}}
+    site.manifest = json.dumps(m).encode()
+    ns = Namespace(repo, fetch=site.fetch, sitemap_sites={SITE: {"what": "w"}}, git_repos={"public": repo, SITE: site_repo(repo)})
+    return ns, site
+
+
+def test_with_the_repository_mounted_the_files_are_links_both_ways(repo):
+    ns, site = mounted(repo)
+    _, links = read(ns, f"{ROOT}http/{SITE}/about?as=stat")
+    r = rels(links)
+    assert r["tm:source"] == [f"{ROOT}git/{SITE}/app/about/page.tsx"]
+    assert r["tm:data"] == [f"{ROOT}git/{SITE}/data/about.json"]
+    assert all(ln.get("confidence") == "exact" for ln in links if ln["rel"] in ("tm:source", "tm:data"))
+    _, back = read(ns, f"{ROOT}git/{SITE}/app/about/page.tsx")
+    assert f"{ROOT}http/{SITE}/about" in rels(back)["tm:renders-as"], "the file names its page back"
+    _, data = read(ns, f"{ROOT}git/{SITE}/data/about.json")
+    assert f"{ROOT}http/{SITE}/about" in rels(data)["tm:read-by"]
+    _, alpha = read(ns, f"{ROOT}http/{SITE}/projects/alpha?as=stat")
+    assert rels(alpha)["tm:source"] == [f"{ROOT}git/{SITE}/app/projects/%5Bp%5D/page.tsx"]
+
+
+def test_a_file_the_repository_does_not_track_is_named_not_linked(repo):
+    ns, site = mounted(repo)
+    c, links = read(ns, f"{ROOT}http/{SITE}/projects?as=stat")
+    assert json.loads(c["text"])["source"] == ["app/gone.tsx"], "the field says what the manifest said"
+    assert "tm:source" not in rels(links), "a link would not resolve"
+
+
+def test_a_git_read_of_the_site_repository_reads_the_manifest_first(repo):
+    ns, site = mounted(repo)
+    _, back = read(ns, f"{ROOT}git/{SITE}/app/about/page.tsx")
+    assert f"{ROOT}http/{SITE}/about" in rels(back)["tm:renders-as"], "the inverse does not wait on a read of the site"
+    listing = json.loads(read(ns, f"{ROOT}git/")[0]["text"])["children"]
+    assert next(c for c in listing if c["name"] == SITE + "/")["title"] == "github.com/someone/example.site", "named as the manifest names it"
+
+
+def test_the_crawler_holds_the_manifest_links_both_ways(repo, capsys):
+    from test_tm import _crawler
+    mod = _crawler()
+    (repo / "notes" / "escape.md").unlink()
+    site = Site()
+    site.manifest = json.dumps(MANIFEST).encode()
+    ns = Namespace(repo, fetch=site.fetch, sitemap_sites={SITE: {"what": "w"}}, sites=tm.SITES[:1],
+                   git_repos={SITE: site_repo(repo)})
+    assert run(mod.crawl(4000, repo, ns)) == 0, capsys.readouterr().out

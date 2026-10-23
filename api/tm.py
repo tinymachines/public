@@ -90,7 +90,8 @@ SITES = ("tinymachines.ai", "beta.tinymachines.ai")
 # the working tree); its HEAD is the boarded commit.
 # tinypeek is the protocol's own repository (public since 2026-10-09), so the
 # namespace serves its spec.
-GIT_SIBLINGS = ("nes", "nes-bench", "nes-bus", "ntsc-crt", "halfphi", "2a03", "2c02", "tinypeek")
+GIT_OWNED = {"bradley.io": "isenbek/bradley.io"}   # a sibling not in the tinymachines org, by its GitHub name
+GIT_SIBLINGS = ("nes", "nes-bench", "nes-bus", "ntsc-crt", "halfphi", "2a03", "2c02", "tinypeek", "bradley.io")
 GIT_TIMEOUT_S = 15
 LOG_DEFAULT, LOG_MAX = 20, 100
 TREE_DEPTH_MAX = 8      # levels a git tree lists in one read (?depth=); 1 is the plain listing
@@ -2946,6 +2947,7 @@ class Sitemap:
         self.sources: list[str] = ["/sitemap.xml"]         # the sitemap files the list came from
         self.rules: list[str] = []                         # robots Disallow prefixes
         self.manifest: dict | None = None                  # the site's link manifest, as taken (tinypeek#9)
+        self.tracked: set[str] = set()                     # the files its repository tracks at HEAD, where it is mounted
         self.read_at: float | None = None
 
     async def refresh(self) -> None:
@@ -2974,7 +2976,28 @@ class Sitemap:
             self.manifest = self._manifest(body)
         elif status == 404:
             self.manifest = None
+        self.tracked = set()
+        name = self.repo_name()
+        if name:
+            try:
+                self.tracked = set(run_git(self.ns.git[name], "ls-tree", "-r", "--name-only", "HEAD").splitlines())
+            except TmError:
+                pass
         self.read_at = now
+
+    def repo_name(self) -> str | None:
+        """The git mount's name for the repository the manifest names, where
+        it is mounted: a page built elsewhere links only into what is."""
+        full = (self.manifest or {}).get("repository") or ""
+        name = full.rpartition("/")[2]
+        return name if name and name in self.ns.git else None
+
+    def files(self, path: str) -> list[tuple[str, str]]:
+        """(rel, file) for each file the manifest names for a page that its
+        repository tracks; a name that is not tracked stays a field."""
+        got = self.page(path)
+        return [(rel, f) for key, rel in (("source", "tm:source"), ("reads", "tm:data"))
+                for f in got.get(key, []) if f in self.tracked]
 
     def _manifest(self, body: bytes) -> dict | None:
         """The manifest as taken, or None when the reader does not take it:
@@ -4289,6 +4312,13 @@ class Namespace:
         if ref.mount == "fs":
             return self._read_fs(ref)
         if ref.mount == "git":
+            for sm in self.sitemaps.values():
+                if sm.read_at is None or ref.site is None or sm.repo_name() == ref.site:
+                    # The inverse of a manifest's links is read from the manifest.
+                    try:
+                        await sm.refresh()
+                    except TmError:
+                        pass
             return self._read_git(ref)
         return await self._read_http(ref)
 
@@ -4938,6 +4968,17 @@ class Namespace:
                     for script, conf in self.graph.writers_of(name):
                         if script == clean:
                             links.append(link("tm:generates", f"{ROOT}fs/data/{quote(name)}", conf, title="a record this script writes"))
+        if head:
+            # tinypeek#9: a site built elsewhere names its files in its manifest.
+            for site, sm in self.sitemaps.items():
+                if sm.repo_name() != repo:
+                    continue
+                for page in sorted((sm.manifest or {}).get("pages", {})):
+                    for rel, f in sm.files(page):
+                        if f == clean:
+                            back = "tm:renders-as" if rel == "tm:source" else "tm:read-by"
+                            links.append(link(back, f"{ROOT}http/{site}{quote(page)}", "exact",
+                                              title=f"{page}, a page on {site} " + ("this file makes" if back == "tm:renders-as" else "that reads this")))
         pulled = self.origins.by_git.get((repo, clean))
         if pulled:
             # The origin of a pulled page generates its copy here and the pages
@@ -4950,11 +4991,19 @@ class Namespace:
                     links.append(link("tm:generates", f"{ROOT}http/{site}{page}", "exact", title=f"the page it becomes on {site}"))
         return links
 
+    def repo_full(self, name: str) -> str:
+        """owner/name on GitHub: the tinymachines org's, or as the manifest of
+        the site it builds names it."""
+        for sm in self.sitemaps.values():
+            if sm.repo_name() == name:
+                return sm.manifest["repository"]
+        return GIT_OWNED.get(name, f"tinymachines/{name}")
+
     def _read_git(self, ref: Ref) -> dict:
         if ref.site is None:
             body = {"uri": f"{ROOT}git/", "children": [
                 {"uri": f"{ROOT}git/{r}/", "name": r + "/", "mimeType": T_LISTING, "isCollection": True,
-                 "title": f"github.com/tinymachines/{r}"} for r in sorted(self.git)
+                 "title": f"github.com/{self.repo_full(r)}"} for r in sorted(self.git)
             ]}
             return self._result(f"{ROOT}git/", T_LISTING, json.dumps(body, indent=1), [link("up", ROOT)])
         repo = ref.site
@@ -5204,6 +5253,9 @@ class Namespace:
             return uri
         if ref.mount != "http" or ref.site is None:
             return None
+        if ref.site in self.sitemaps:
+            # A page built elsewhere is named back by itself (tinypeek#9): no route stands for it here.
+            return f"{ROOT}http/{ref.site}{quote(ref.path)}"
         if ref.is_collection:
             return f"{ROOT}http/{self.sites[0]}{quote(ref.path)}"
         clean = ref.path.rstrip("/") or "/"
@@ -5346,6 +5398,10 @@ class Namespace:
         if site in self.sitemaps:
             # tinypeek#24: a page built elsewhere has the links a page has and
             # no join to this checkout: no source, no data, no other version.
+            if clean == SITE_MANIFEST:
+                # The manifest is a file of the site, not of a /.well-known/ it lists.
+                up = f"{ROOT}http/{site}/"
+                links = [link("up", up)]
             if is_dir and clean == "/":
                 links.append(link("describedby", f"{ROOT}http/{site}/sitemap.xml", title="the page list the site publishes"))
                 if self.sitemaps[site].manifest is not None:
@@ -5354,6 +5410,13 @@ class Namespace:
                 links.append(link("collection", up))
                 links.append(link("describedby", f"{base}?as=stat"))
                 links.append(link("alternate", f"{base}?as=rendered", title="the HTML a visitor gets"))
+            if not is_dir or clean == "/":
+                # tinypeek#9: what the site's manifest names, where its repository is mounted.
+                sm = self.sitemaps[site]
+                name = sm.repo_name()
+                for rel, f in sm.files(clean):
+                    links.append(link(rel, f"{ROOT}git/{name}/{quote(f)}", "exact",
+                                      title="a file that makes this page" if rel == "tm:source" else "data this page reads"))
             return links
         if is_dir and site == self.sites[0] and clean != "/":
             # A collection that stands for a dynamic route's pages carries
