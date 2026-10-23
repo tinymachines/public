@@ -56,7 +56,13 @@ run
 [ "$DRY" -eq 1 ] && exit 0
 
 if [ "$YES" -ne 1 ]; then
-  read -r -p "Write these links? [y/N] " answer
+  # No terminal to ask on (a `!` line in a Claude session, a pipe): say so
+  # rather than stop on the failed read with nothing said.
+  if [ ! -t 0 ] || ! read -r -p "Write these links? [y/N] " answer; then
+    echo
+    echo "Nothing written: there is no terminal to ask on. Run it again with --yes to write."
+    exit 1
+  fi
   case "$answer" in y|Y|yes) ;; *) echo "Nothing written."; exit 0 ;; esac
 fi
 
