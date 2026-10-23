@@ -281,7 +281,9 @@ def test_a_read_on_the_mount_costs_what_a_git_read_does():
 def test_the_real_configuration_names_public_endpoints_and_no_token():
     conf = json.loads((Path(__file__).resolve().parent / "mcp_servers.json").read_text())
     names = [k for k in conf if not k.startswith("_")]
-    assert names == ["campaignbrain", "resume", "terrapulse"]
+    # Campaign Brain was removed on 2026-10-23: the only token for it was the
+    # fleet's own key, and what it unlocks would be published (tinypeek#25).
+    assert names == ["resume", "terrapulse"]
     for name in names:
         s = conf[name]
         assert s["endpoint"].startswith("https://") and s["transport"] in ("streamable-http", "sse") and s["what"]

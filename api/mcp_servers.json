@@ -1,11 +1,5 @@
 {
  "_": "The MCP servers the mcp mount reads (tinypeek#22, spec section 13). endpoint and transport are the server's public door; what is one line for a listing; auth, where present, names the variable in the service's environment that holds the Authorization header's whole value (scheme and token), and never the value itself. A server with no auth is read anonymously.",
- "campaignbrain": {
-  "endpoint": "https://mcp.campaignbrain.dev/sse",
-  "transport": "sse",
-  "auth": "TM_MCP_CAMPAIGNBRAIN_AUTH",
-  "what": "the Campaign Brain service catalog: its services, categories, guides and handbook"
- },
  "resume": {
   "endpoint": "https://bradley.io/api/resume/mcp",
   "transport": "streamable-http",
