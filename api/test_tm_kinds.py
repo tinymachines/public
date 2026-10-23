@@ -236,7 +236,7 @@ def test_the_registry_is_a_mount_the_grammar_already_fits(ents):
     got = ents.complete({"ref": {"type": "ref/resource", "uri": tmpl["kinds"]["uriTemplate"]}, "argument": {"name": "kind", "value": "p"}})
     assert got["completion"]["values"] == ["pattern"], "completions are the kinds served, not the vocabulary"
     got = ents.complete({"ref": {"type": "ref/resource", "uri": tmpl["kinds"]["uriTemplate"]}, "argument": {"name": "as", "value": ""}})
-    assert got["completion"]["values"] == ["stat", "links"]
+    assert got["completion"]["values"] == ["stat", "links", "blocks"]
 
 
 # ---------------------------------------------------------------------------

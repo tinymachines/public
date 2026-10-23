@@ -456,6 +456,21 @@ no title: the join from a page built elsewhere to its code is the
 manifest's, reopened as tinypeek#9. The crawler reads every listed page and
 probes each robots rule.
 
+Two addresses for a host with no modules (tinylens#2, spec section 15).
+`tm://tinymachines/manifest` is the visual language as data, a shape per
+mount, a colour family per link relation and the handles a kind offers, read
+from one file of the checkout, `notes/manifest.json`, so every host draws
+with the same one and a change to it is a commit. `?as=blocks` on anything
+that reads composes it into `application/vnd.tm.blocks+json`: an ordered list
+of blocks from a closed vocabulary (heading, note, kv, list, table, timeline,
+diff, code, media, question, finding, trail, link), every block naming the
+address it came from, the body naming every read it was built from. A
+pattern, a game and a lesson compose as the lens composed them, a pattern
+reading its members through `?as=set` in one read; every other kind has a
+generic composition, so nothing is blank; the links no block placed come
+last as `link` blocks. The crawler reads each kind it meets as blocks once
+and holds the vocabulary.
+
 The git mount offers this repository and the siblings checked out beside it,
 under their GitHub names, all public under github.com/tinymachines. It runs
 git itself, read-only, with every argument passed as an argument, a ref

@@ -115,12 +115,12 @@ PAGE_EXT = (".md", ".mdx")
 
 # `links` is every mount's: the namespace answers it before a mount is asked
 # (tinypeek#2), so it is listed here for what a client is told and offered.
-AS_FS = ("raw", "stat", "links")
-AS_HTTP = ("rendered", "text", "stat", "links")
-AS_GIT = ("raw", "log", "blame", "tree", "stat", "links")
-AS_ENTITY = ("stat", "links", "set")
-AS_MCP = ("stat", "links")
-AS_KINDS = ("stat", "links")
+AS_FS = ("raw", "stat", "links", "blocks")
+AS_HTTP = ("rendered", "text", "stat", "links", "blocks")
+AS_GIT = ("raw", "log", "blame", "tree", "stat", "links", "blocks")
+AS_ENTITY = ("stat", "links", "set", "blocks")
+AS_MCP = ("stat", "links", "blocks")
+AS_KINDS = ("stat", "links", "blocks")
 # tinypeek#13: what each mount's URI can say after the ?. The templates name
 # these and a read refuses any other, so the two are one fact. The root and
 # the list of hosts take ?as=links only; cursor= rides with ?as=links anywhere.
@@ -138,6 +138,7 @@ PARAMS: dict[str, tuple[str, ...]] = {
     "entity": ("at", "as", "rel", "min", "cursor"),
     "mcp": ("as", "range", "lines", "pointer", "rel", "min", "cursor"),
     "kinds": ("as", "rel", "min", "cursor"),
+    "manifest": ("as", "rel", "min"),
 }
 # rel= and min= narrow a set of links; they ride with ?as=links and, on the
 # entity mount, with ?as=set (tinypeek#23), which inlines what they keep.
@@ -237,6 +238,8 @@ T_TRAIL = tm_type("trail")
 T_SET = tm_type("set")
 T_KIND = tm_type("kind")
 T_MAP = tm_type("map")
+T_MANIFEST = tm_type("manifest")
+T_BLOCKS = tm_type("blocks")
 T_PAGE = tm_type("page", text=True)
 T_BLAME = tm_type("blame", text=True)
 
@@ -263,7 +266,14 @@ KINDS: dict[str, str] = {
     "set": "a set and its members in one read (?as=set)",
     "kind": "one kind this host has served: its media types, how often, and the links it carried",
     "map": "an MCP server's map: which of its tools read as addresses, derived from its schemas and corrected by an override",
+    "manifest": "the visual language as data: a shape per mount, a colour family per link relation, the handles a kind offers (tm://<host>/manifest)",
+    "blocks": "any read composed into an ordered list of blocks from a closed vocabulary, for a host with no modules (?as=blocks)",
 }
+MANIFEST_FILE = "notes/manifest.json"   # the manifest's one source, served and versioned through the namespace (tinylens#2)
+BLOCK_TYPES = ("heading", "note", "kv", "list", "table", "timeline", "diff", "code", "media", "question", "finding", "trail", "link")
+BLOCK_CAP = 200          # blocks in one ?as=blocks read; past it the list closes with a link to the thing
+BLOCK_PAGES = 20         # pages of a set a composition will read for its members
+NES_FPS = 60.0988        # NTSC frame rate: how a count of frames becomes time, as the lens had it
 SET_CAP = 25            # members a page of ?as=set inlines
 
 META_LINKS = "tinymachines.ai/links"
@@ -627,6 +637,8 @@ class Ref:
             return f"{ROOT}fs/{quote(self.path)}"
         if self.mount == "git":
             return f"{ROOT}git/{self.site}/{quote(self.path)}" if self.site else f"{ROOT}git/"
+        if self.mount == "manifest":
+            return f"{ROOT}manifest"
         if self.mount in ("offbox", "entity", "mcp", "kinds"):
             return f"{ROOT}{self.mount}/{quote(self.path)}"
         return f"{ROOT}http/{self.site}{quote(self.path)}"
@@ -670,6 +682,8 @@ def parse(uri: str) -> Ref:
         return Ref("mcp", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "kinds":
         return Ref("kinds", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
+    if mount == "manifest" and not rest and not trailing:
+        return Ref("manifest", None, "", facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -2995,6 +3009,433 @@ class Sitemap:
     def lastmod(self, path: str) -> str | None:
         return (self.pages or {}).get(path)
 
+# ---------------------------------------------------------------------------
+# ?as=blocks: any read composed into blocks from a closed vocabulary, so a host
+# with no modules at all renders every kind (tinylens#2, spec section 15).
+# ---------------------------------------------------------------------------
+
+
+def pointer(uri: str, *keys: Any) -> str:
+    """A piece's address: the thing with ?pointer= to a field (RFC 6901)."""
+    path = "".join("/" + str(k).replace("~", "~0").replace("/", "~1") for k in keys)
+    return f"{uri}{'&' if '?' in uri else '?'}pointer={quote(path, safe='/~')}"
+
+
+def _num(n: Any) -> str:
+    return f"{n:,}" if isinstance(n, (int, float)) and not isinstance(n, bool) else str(n)
+
+
+def _names(items: list[str], most: int = 3) -> str:
+    shown = items[:most]
+    more = len(items) - len(shown)
+    if len(shown) > 1:
+        head = ", ".join(shown[:-1]) + (", " if more else " and ") + shown[-1]
+    else:
+        head = shown[0] if shown else ""
+    return f"{head} and {more} more" if more else head
+
+
+def _words(key: str) -> str:
+    return re.sub(r"[-_]+", " ", key)
+
+
+def pair_up(ours: Any, theirs: Any, path: str = "") -> list[dict]:
+    """Two records that share a shape, value by value, as the lens paired a
+    lesson's measures with the game's."""
+    out: list[dict] = []
+    if ours is None or theirs is None or not isinstance(ours, (dict, list)) or not isinstance(theirs, (dict, list)):
+        out.append({"path": path, "ours": ours, "theirs": theirs, "same": ours == theirs})
+        return out
+    if isinstance(ours, list) and isinstance(theirs, list):
+        for i in range(max(len(ours), len(theirs))):
+            o = ours[i] if i < len(ours) else None
+            t = theirs[i] if i < len(theirs) else None
+            out.extend(pair_up(o, t, f"{path}{' ' if path else ''}{i + 1}"))
+        return out
+    if isinstance(ours, dict) and isinstance(theirs, dict):
+        for k, v in ours.items():
+            if k in theirs:
+                out.extend(pair_up(v, theirs[k], f"{path} {k}" if path else k))
+    return out
+
+
+class Blocks:
+    """A composition of one read into blocks. Every block has a `type` from
+    BLOCK_TYPES and `from`, the address of what it came from; the body lists
+    every read it was built from. The blocks are of the thing (at a ref, or a
+    piece of it), never of another representation: a read has one `as`. The three compositions the lens had
+    (pattern, game, lesson) are here as they were, a pattern reading its
+    members through ?as=set in one read; every other kind has a generic
+    composition, so nothing is ever blank; the thing's links that no block
+    placed come last as `link` blocks, so a page can navigate."""
+
+    LANGS = {".md": "markdown", ".py": "python", ".js": "javascript", ".ts": "typescript", ".json": "json", ".sh": "bash",
+             ".html": "html", ".css": "css", ".txt": "text", ".s": "asm", ".asm": "asm", ".toml": "toml", ".yml": "yaml", ".yaml": "yaml"}
+
+    def __init__(self, ns: "Namespace"):
+        self.ns = ns
+
+    # -- block makers --------------------------------------------------------
+
+    @staticmethod
+    def heading(text: str, frm: str, level: int = 1) -> dict:
+        return {"type": "heading", "level": level, "text": text, "from": frm}
+
+    @staticmethod
+    def note(text: str, frm: str) -> dict:
+        return {"type": "note", "text": text, "from": frm}
+
+    @staticmethod
+    def link_block(ln: dict, frm: str) -> dict:
+        out = {"type": "link", "href": ln["href"], "rel": ln["rel"], "from": frm}
+        for k in ("title", "type", "confidence", "count"):
+            if k in ln:
+                out["title" if k == "title" else k] = ln[k]
+        if "type" in ln:
+            out["target_type"] = ln["type"]   # `type` is the block's own; the target's type rides beside it
+            out["type"] = "link"
+        return out
+
+    # -- the read -------------------------------------------------------------
+
+    async def read(self, ref: Ref) -> dict:
+        ns = self.ns
+        inner_facets = {k: v for k, v in ref.facets.items() if k != "as"}
+        inner = ref.uri + (("?" + urlencode(inner_facets)) if inner_facets else "")
+        reads = [inner]
+        try:
+            got = await ns._read_typed(inner)
+        except TmError as e:
+            if e.reason not in ("binary", "too-large"):
+                raise
+            # The thing is there and will not read whole: say so in blocks,
+            # with its links from the stat, and where its bytes or ranges are.
+            stat_uri = e.data.get("stat") or f"{inner}{'&' if '?' in inner else '?'}as=stat"
+            st = await ns._read_typed(stat_uri)
+            reads.append(stat_uri)
+            links = st["_meta"][META_LINKS]
+            mime = e.data.get("mimeType") or json.loads(st["contents"][0]["text"]).get("mimeType") or "application/octet-stream"
+            blocks = [self.heading(self.name(inner), inner)]
+            if e.reason == "binary" or not is_text(mime):
+                blocks.append({"type": "media", "href": f"{inner}{'&' if '?' in inner else '?'}as=raw", "mimeType": mime, "alt": self.name(inner), "from": inner})
+            else:
+                blocks.append(self.note(e.message, inner))
+                for key in ("text", "range", "lines"):
+                    if e.data.get(key):
+                        blocks.append({"type": "link", "href": e.data[key], "rel": "alternate", "title": f"read it by {key}", "from": inner})
+            return self.finish(ref, inner, mime, self.name(inner), blocks, links, reads)
+        c = got["contents"][0]
+        links = got["_meta"][META_LINKS]
+        mime = c["mimeType"]
+        kind = kind_of(mime)
+        text = c.get("text")
+        body = None
+        if is_json(mime) and isinstance(text, str) and text[:1] in ("{", "["):
+            try:
+                body = json.loads(text)
+            except ValueError:
+                body = None
+        me = c["uri"]
+        title = self.title(body, me)
+        blocks: list[dict] = []
+        placed: set[str] = set()
+        if kind == "listing":
+            blocks += self.listing(me, body or {}, title, placed)
+        elif kind == "pattern" and isinstance(body, dict):
+            blocks += await self.pattern(me, body, links, title, placed, reads)
+        elif kind == "game" and isinstance(body, dict):
+            blocks += self.game(me, body, links, title, placed)
+        elif kind == "lesson" and isinstance(body, dict):
+            blocks += self.lesson(me, body, links, title, placed)
+        elif kind == "trail" and isinstance(body, dict):
+            blocks += self.trail(me, body, title, placed)
+        elif kind == "page" and isinstance(text, str):
+            blocks += self.page(me, text, title)
+        elif body is not None:
+            blocks += self.generic(me, body, title, placed)
+        elif isinstance(text, str):
+            lang = self.LANGS.get(Path(ref.path).suffix.lower()) if ref.path else None
+            code = {"type": "code", "text": text, "from": me}
+            if lang:
+                code["lang"] = lang
+            blocks += [self.heading(title, me), code]
+        else:
+            blocks += [self.heading(title, me), {"type": "media", "href": f"{me}{'&' if '?' in me else '?'}as=raw", "mimeType": mime, "alt": title, "from": me}]
+        for ln in links:
+            if ln["href"] not in placed and ln["rel"] != "tm:links":
+                blocks.append(self.link_block(ln, me))
+        return self.finish(ref, me, mime, title, blocks, links, reads)
+
+    def finish(self, ref: Ref, me: str, mime: str, title: str, blocks: list[dict], links: list[dict], reads: list[str]) -> dict:
+        if len(blocks) > BLOCK_CAP:
+            blocks = blocks[:BLOCK_CAP - 1] + [{"type": "link", "href": me, "rel": "alternate", "from": me,
+                                               "title": f"cut at {BLOCK_CAP - 1} blocks; the rest is in the thing itself"}]
+        body = {"uri": ref.uri, "of": me, "mimeType": mime, "title": title, "blocks": blocks, "reads": reads}
+        out = f"{me}{'&' if '?' in me else '?'}as=blocks"
+        return self.ns._result(out, T_BLOCKS, json.dumps(body, indent=1), list(links))
+
+    # -- names ------------------------------------------------------------------
+
+    @staticmethod
+    def name(uri: str) -> str:
+        ref = parse(uri)
+        if ref.mount == "tm":
+            return "every host"
+        if ref.mount == "":
+            return HOST
+        if ref.mount == "manifest":
+            return "manifest"
+        if ref.mount == "http":
+            return ref.path if ref.path != "/" else (ref.site or "")
+        segs = [p for p in ref.path.split("/") if p]
+        if ref.mount == "git":
+            segs = [ref.site or ""] + segs
+        if not segs:
+            return f"{ref.mount}/"
+        tail = segs[-1] + ("/" if ref.is_collection else "")
+        as_ = ref.facets.get("as")
+        return f"{tail} ?as={as_}" if as_ else tail
+
+    def title(self, body: Any, uri: str) -> str:
+        if isinstance(body, dict):
+            for k in ("title", "name", "key", "subject"):
+                v = body.get(k)
+                if isinstance(v, str) and v:
+                    return v
+        return self.name(uri)
+
+    # -- compositions ------------------------------------------------------------
+
+    def listing(self, me: str, body: dict, title: str, placed: set[str]) -> list[dict]:
+        out = [self.heading(title, me)]
+        for key in ("children", "mounts", "hosts", "members", "items"):
+            kids = body.get(key)
+            if isinstance(kids, list) and kids:
+                items = []
+                for k in kids:
+                    if not isinstance(k, dict) or not isinstance(k.get("uri"), str):
+                        continue
+                    item: dict[str, Any] = {"text": k.get("title") or k.get("name") or k.get("what") or self.name(k["uri"]), "href": k["uri"]}
+                    for a, b in (("mimeType", "type"), ("count", "count"), ("what", "note")):
+                        if a in k:
+                            item[b] = k[a]
+                    if k.get("redacted"):
+                        item["note"] = "redacted"
+                    items.append(item)
+                    placed.add(k["uri"])
+                if items:
+                    out.append({"type": "list", "items": items, "from": me})
+        if isinstance(body.get("total"), int):
+            out.append(self.note(f"{_num(body['total'])} in all.", me))
+        for key, rel in (("front_page", "alternate"), ("next", "next"), ("manifest", "describedby")):
+            if isinstance(body.get(key), str):
+                out.append({"type": "link", "href": body[key], "rel": rel, "title": _words(key), "from": pointer(me, key)})
+                placed.add(body[key])
+        return out
+
+    def generic(self, me: str, body: Any, title: str, placed: set[str]) -> list[dict]:
+        out = [self.heading(title, me)]
+        if isinstance(body, list):
+            body = {"items": body}
+        rows = []
+        for k, v in body.items():
+            if k == "uri":
+                continue
+            if v is None or isinstance(v, (str, int, float, bool)):
+                rows.append({"key": k, "value": v, "from": pointer(me, k)})
+        if rows:
+            out.append({"type": "kv", "rows": rows, "from": me})
+        for k, v in body.items():
+            if isinstance(v, list) and v:
+                if all(isinstance(x, dict) for x in v):
+                    out.append(self.table(pointer(me, k), v, k))
+                    placed.update(x["uri"] for x in v if isinstance(x.get("uri"), str))
+                elif all(x is None or isinstance(x, (str, int, float, bool)) for x in v):
+                    out.append(self.heading(_words(k), pointer(me, k), 2))
+                    out.append({"type": "list", "items": [{"text": str(x)} for x in v], "from": pointer(me, k)})
+                else:
+                    out.append(self.heading(_words(k), pointer(me, k), 2))
+                    out.append({"type": "code", "text": json.dumps(v, indent=1), "lang": "json", "from": pointer(me, k)})
+            elif isinstance(v, dict) and v:
+                out.append(self.heading(_words(k), pointer(me, k), 2))
+                if all(x is None or isinstance(x, (str, int, float, bool)) for x in v.values()):
+                    out.append({"type": "kv", "rows": [{"key": kk, "value": vv, "from": pointer(me, k, kk)} for kk, vv in v.items()], "from": pointer(me, k)})
+                else:
+                    out.append({"type": "code", "text": json.dumps(v, indent=1), "lang": "json", "from": pointer(me, k)})
+        return out
+
+    @staticmethod
+    def table(frm: str, items: list[dict], what: str | None = None) -> dict:
+        columns: list[str] = []
+        for x in items[:50]:
+            for k, v in x.items():
+                if k not in columns and (v is None or isinstance(v, (str, int, float, bool))):
+                    columns.append(k)
+        rows = [[x.get(c) if (x.get(c) is None or isinstance(x.get(c), (str, int, float, bool))) else json.dumps(x.get(c)) for c in columns] for x in items]
+        out: dict[str, Any] = {"type": "table", "columns": columns, "rows": rows, "from": frm}
+        if what:
+            out["title"] = _words(what)
+        hrefs = [x.get("uri") for x in items]
+        if all(isinstance(h, str) for h in hrefs):
+            out["hrefs"] = hrefs
+        return out
+
+    def page(self, me: str, text: str, title: str) -> list[dict]:
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        out = [self.heading(title, me)]
+        for l in lines[:60]:
+            out.append(self.note(l, me))
+        if len(lines) > 60:
+            out.append({"type": "link", "href": me, "rel": "alternate", "title": f"{_num(len(lines) - 60)} more lines in the text itself", "from": me})
+        return out
+
+    def trail(self, me: str, body: dict, title: str, placed: set[str]) -> list[dict]:
+        out = [self.heading(title, me)]
+        if isinstance(body.get("note"), str) and body["note"]:
+            out.append(self.note(body["note"], pointer(me, "note")))
+        steps = []
+        for i, st in enumerate(body.get("steps", [])):
+            href = st.get("uri") if isinstance(st, dict) else st
+            if not isinstance(href, str):
+                continue
+            step = {"href": href}
+            if isinstance(st, dict) and isinstance(st.get("note"), str):
+                step["title"] = st["note"]
+            steps.append(step)
+            placed.add(href)
+        out.append({"type": "trail", "steps": steps, "from": pointer(me, "steps")})
+        return out
+
+    async def pattern(self, me: str, b: dict, links: list[dict], title: str, placed: set[str], reads: list[str]) -> list[dict]:
+        key = b.get("key") or title
+        instances = [ln for ln in links if ln["rel"] == "tm:instance"]
+        members: dict[str, dict] = {}
+        at = f"{me}{'&' if '?' in me else '?'}as=set&rel=tm:instance"
+        for _ in range(BLOCK_PAGES):
+            try:
+                got = await self.ns._read_typed(at)
+            except TmError:
+                break
+            reads.append(at)
+            page = json.loads(got["contents"][0]["text"])
+            for m in page.get("members", []):
+                if isinstance(m, dict) and isinstance(m.get("uri"), str):
+                    members[m["uri"]] = m
+            at = page.get("next")
+            if not isinstance(at, str):
+                break
+        rows = []
+        for ln in instances:
+            m = members.get(ln["href"])
+            rb = m.get("body") if isinstance(m, dict) else None
+            if not isinstance(rb, dict):
+                rows.append({"uri": ln["href"], "name": ln.get("title"), "missing": (m or {}).get("error", {}).get("message", "not read") if isinstance(m, dict) else "not read"})
+                continue
+            ev = [i.get("evidence") or {} for i in rb.get("is", []) if isinstance(i, dict) and i.get("pattern") == key]
+            game = rb.get("game")
+            rows.append({"uri": ln["href"], "game": game.get("name") if isinstance(game, dict) else game, "name": rb.get("name"),
+                         "where": f"{rb.get('bank', '')} {rb.get('address', '')}".strip(), "entered": rb.get("entered"), "evidence": ev})
+        read_ = [r for r in rows if "missing" not in r]
+        numeric: list[str] = []
+        label = None
+        for r in read_:
+            for e in r["evidence"]:
+                for k, v in e.items():
+                    if isinstance(v, (int, float)) and not isinstance(v, bool) and k not in numeric:
+                        numeric.append(k)
+                    if isinstance(v, str) and k != "by" and label is None:
+                        label = k
+        out = [self.heading(key, me)]
+        demonstrated = b.get("demonstrated_by") or []
+        out.append(self.note(f"Found {_num(b.get('count', 0))} times in {_num(b.get('routines', 0))} routines across {_num(b.get('games', 0))} games, and used in {_num(len(demonstrated))} of our lessons.", me))
+        for k in numeric:
+            pts = [(e[k], r["game"]) for r in read_ for e in r["evidence"] if isinstance(e.get(k), (int, float)) and not isinstance(e.get(k), bool)]
+            vals = [v for v, _ in pts]
+            lo, hi = min(vals), max(vals)
+            counts: dict[Any, int] = {}
+            for v in vals:
+                counts[v] = counts.get(v, 0) + 1
+            mode, mode_n = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0]
+            games_at = lambda v: sorted({g for x, g in pts if x == v and g}, key=lambda g: [g2 for _, g2 in pts].index(g))
+            if lo == hi:
+                out.append(self.note(f"Every one shows {_words(k)} {_num(lo)}.", me))
+            else:
+                out.append(self.note(f"{_words(k).capitalize()} runs from {_num(lo)} ({_names(games_at(lo))}) to {_num(hi)} ({_names(games_at(hi))}), and is most often {_num(mode)}: {mode_n} of {len(vals)}.", me))
+        if len(read_) < len(rows):
+            out.append(self.note(f"{len(rows) - len(read_)} of the {len(rows)} routines could not be read, and are left out of these numbers.", me))
+        columns = ["game", "routine", "where", "entered"] + numeric + ([label] if label else [])
+        table_rows = []
+        for r in rows:
+            if "missing" in r:
+                table_rows.append([None, r.get("name"), r["missing"], None] + [None] * (len(numeric) + (1 if label else 0)))
+                continue
+            first = r["evidence"][0] if r["evidence"] else {}
+            table_rows.append([r["game"], r["name"], r["where"], r["entered"]] + [first.get(k) for k in numeric] + ([first.get(label)] if label else []))
+        out.append({"type": "table", "title": "the routines it was found in", "columns": columns, "rows": table_rows, "hrefs": [r["uri"] for r in rows], "from": me})
+        placed.update(r["uri"] for r in rows)
+        for key_, what in (("found_in", "the games"), ("demonstrated_by", "the lessons")):
+            items = [{"text": g.get("name") or g.get("title") or self.name(g["uri"]), "href": g["uri"], **({"count": g["count"]} if "count" in g else {})}
+                     for g in b.get(key_) or [] if isinstance(g, dict) and isinstance(g.get("uri"), str)]
+            if items:
+                out.append(self.heading(what, pointer(me, key_), 2))
+                out.append({"type": "list", "items": items, "from": pointer(me, key_)})
+                placed.update(i["href"] for i in items)
+        return out
+
+    def game(self, me: str, b: dict, links: list[dict], title: str, placed: set[str]) -> list[dict]:
+        exhibits = {self.name(ln["href"]): ln["href"] for ln in links if ln["rel"] == "tm:exhibits"}
+        patterns = sorted(((k, v) for k, v in (b.get("patterns") or {}).items() if isinstance(v, (int, float))), key=lambda kv: (-kv[1], kv[0]))
+        frames = b.get("frames")
+        out = [self.heading(title, me)]
+        kicker = f"A game the autopsy played{', mapper ' + str(b['mapper']) if isinstance(b.get('mapper'), (int, float)) else ''}"
+        out.append(self.note(kicker, me))
+        if isinstance(frames, (int, float)):
+            minutes = frames / NES_FPS / 60
+            out.append(self.note(f"Played on our console for {_num(frames)} frames, about {_num(round(minutes))} minutes at the NES's {NES_FPS} frames a second, running {_num(b.get('instructions', 0))} instructions.", me))
+        if patterns:
+            total = sum(v for _, v in patterns)
+            out.append(self.note(f"It shows {len(patterns)} of the patterns, {_num(total)} times in all; {patterns[0][0]} most of all ({_num(patterns[0][1])}).", me))
+            hrefs = [exhibits.get(k) for k, _ in patterns]
+            table: dict[str, Any] = {"type": "table", "title": "the patterns it shows", "columns": ["pattern", "count"], "rows": [[k, v] for k, v in patterns], "from": pointer(me, "patterns")}
+            if all(isinstance(h, str) for h in hrefs):
+                table["hrefs"] = hrefs
+                placed.update(hrefs)
+            out.append(table)
+        lessons = [{"text": ln.get("title") or self.name(ln["href"]), "href": ln["href"]} for ln in links if ln["rel"] == "tm:measured-by"]
+        if lessons:
+            out.append(self.note(f"{len(lessons)} of our lessons were measured beside it.", me))
+            out.append({"type": "list", "items": lessons, "from": me})
+            placed.update(i["href"] for i in lessons)
+        return out
+
+    def lesson(self, me: str, b: dict, links: list[dict], title: str, placed: set[str]) -> list[dict]:
+        out = [self.heading(title, me)]
+        out.append(self.note(f"A lesson{' about ' + b['topic'] if isinstance(b.get('topic'), str) else ''}", me))
+        if isinstance(b.get("description"), str) and b["description"]:
+            out.append(self.note(b["description"], pointer(me, "description")))
+        if isinstance(b.get("instructions"), (int, float)):
+            out.append(self.note(f"The cartridge is {_num(b['instructions'])} instructions in {_num(b.get('code_bytes', 0))} bytes.", me))
+        against = b.get("against") if isinstance(b.get("against"), dict) else None
+        pairs = pair_up(b["measures"], against) if isinstance(b.get("measures"), (dict, list)) and against else []
+        if against and not pairs and isinstance(against.get("game"), str):
+            out.append(self.note(f"Measured against {against['game']}.", pointer(me, "against")))
+        if pairs:
+            same = sum(1 for p in pairs if p["same"])
+            differ = len(pairs) - same
+            out.append(self.note(f"Of {len(pairs)} numbers measured on both, {same} match {against.get('game') or 'the game'} exactly{f' and {differ} differ' if differ else ''}.", me))
+            out.append({"type": "diff", "rows": pairs, "from": pointer(me, "measures")})
+        data = next((ln["href"] for ln in links if ln["rel"] == "tm:data"), None)
+        for i, pic in enumerate(b.get("pictures") or []):
+            if isinstance(pic, dict):
+                src = pointer(data, "pictures", i, "png") if data else pointer(me, "pictures", i, "png")
+                out.append({"type": "media", "href": src, "mimeType": "image/png", "alt": f"frame {pic.get('frame', i)}", "from": pointer(me, "pictures", i)})
+        demonstrates = [ln for ln in links if ln["rel"] == "tm:demonstrates"]
+        if demonstrates:
+            out.append({"type": "table", "title": "the patterns it demonstrates", "columns": ["pattern", "count"],
+                        "rows": [[self.name(ln["href"]), ln.get("count", 1)] for ln in demonstrates], "hrefs": [ln["href"] for ln in demonstrates], "from": me})
+            placed.update(ln["href"] for ln in demonstrates)
+        return out
+
 
 class Namespace:
     def __init__(
@@ -3021,6 +3462,11 @@ class Namespace:
         self.trails = Trails(self)
         self.mcp = Mcp(self, mcp_servers, mcp_transport)
         self.kinds = Kinds(self, kinds_file)
+        self.blocks = Blocks(self)
+
+    def manifest_file(self) -> Path | None:
+        f = self.repo / MANIFEST_FILE
+        return f if f.is_file() else None
 
     def _sites_file(self) -> dict[str, dict]:
         """The sites of SITES_FILE whose page list is a sitemap (tinypeek#24).
@@ -3239,6 +3685,8 @@ class Namespace:
             items.append({"uri": f"{ROOT}git/{name}/", "name": name, "title": f"tinymachines/{name} at HEAD", "mimeType": T_LISTING})
         for site in self.all_sites:
             items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": T_LISTING})
+        if self.manifest_file():
+            items.append({"uri": f"{ROOT}manifest", "name": "manifest", "title": "the visual language as data", "mimeType": T_MANIFEST})
         for kind in ENTITY_KINDS:
             items.append({"uri": Entities.uri(kind, collection=True), "name": f"entity/{kind}/", "mimeType": T_LISTING})
         for key in self.entities.keys("game"):
@@ -3308,9 +3756,7 @@ class Namespace:
     async def read(self, uri: str) -> dict:
         try:
             ref = parse(uri)
-            check_params(ref, self.mcp.takes(ref))
-            got = await self._read_links(ref) if ref.facets.get("as") == "links" else self._bounded(await self._read(uri), ref)
-            got["_meta"][META_LINKS] = self._typed(got["_meta"][META_LINKS])
+            got = await self.blocks.read(ref) if ref.facets.get("as") == "blocks" else await self._read_typed(uri, ref)
             self.kinds.record(got["contents"][0]["mimeType"], got["_meta"][META_LINKS])
             return got
         except OSError as e:
@@ -3331,6 +3777,47 @@ class Namespace:
             # kind of thing it was, never the message: an exception's text is
             # written for the box's owner and can hold a path on it.
             raise TmError(INTERNAL, "internal", f"the server failed on this read ({type(e).__name__})") from None
+
+
+    # -- the manifest (tinylens#2, spec section 15) -----------------------------
+
+    def _read_manifest(self, ref: Ref) -> dict:
+        """The visual language as data, from one file of the checkout, served
+        at one address so every host reads the same one and a change to it is
+        a commit with history. The server requires the three keys the lens
+        reads and serves the rest as written."""
+        f = self.manifest_file()
+        if f is None:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"no manifest is published on this host ({MANIFEST_FILE} is not there)", nearest=[ROOT])
+        try:
+            doc = json.loads(f.read_text())
+        except ValueError:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{MANIFEST_FILE} is not JSON, so no manifest is published", nearest=[ROOT, f"{ROOT}fs/{MANIFEST_FILE}"]) from None
+        missing = [k for k in ("version", "shapes", "families", "handles") if not isinstance(doc, dict) or k not in doc]
+        if missing:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{MANIFEST_FILE} is not a manifest: it lacks {', '.join(missing)}", nearest=[ROOT, f"{ROOT}fs/{MANIFEST_FILE}"])
+        me = f"{ROOT}manifest"
+        links = [link("up", ROOT), link("describedby", f"{me}?as=stat"),
+                 link("tm:data", f"{ROOT}fs/{MANIFEST_FILE}", "exact", title="the file this manifest is read from")]
+        as_ = ref.facets.get("as")
+        if as_ == "stat":
+            st = f.stat()
+            stat = {"uri": me, "mimeType": T_MANIFEST, "size": st.st_size, "version": doc["version"],
+                    "modified": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(timespec="seconds")}
+            return self._result(f"{me}?as=stat", T_STAT, json.dumps(stat, indent=1), links)
+        if as_:
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; the manifest offers stat, links, blocks")
+        body = {"uri": me, "source": f"{ROOT}fs/{MANIFEST_FILE}", **{k: v for k, v in doc.items() if k != "uri"}}
+        return self._result(me, T_MANIFEST, json.dumps(body, indent=1), links)
+
+    async def _read_typed(self, uri: str, ref: Ref | None = None) -> dict:
+        """One read with its links bounded and typed, not yet counted as
+        served: what `read` answers, and what a composition reads from."""
+        ref = ref or parse(uri)
+        check_params(ref, self.mcp.takes(ref))
+        got = await self._read_links(ref) if ref.facets.get("as") == "links" else self._bounded(await self._read(uri), ref)
+        got["_meta"][META_LINKS] = self._typed(got["_meta"][META_LINKS])
+        return got
 
     # -- a link set, bounded and paged (tinypeek#2) ------------------------
 
@@ -3390,9 +3877,11 @@ class Namespace:
         as_ = ref.facets.get("as")
         if as_:
             return {"stat": T_STAT, "links": T_LINKS, "log": T_LOG, "blame": T_BLAME, "tree": T_LISTING,
-                    "rendered": "text/html", "text": T_PAGE, "set": T_SET}.get(as_)
+                    "rendered": "text/html", "text": T_PAGE, "set": T_SET, "blocks": T_BLOCKS}.get(as_)
         if ref.mount in ("tm", ""):
             return T_LISTING
+        if ref.mount == "manifest":
+            return T_MANIFEST
         parts = [p for p in ref.path.split("/") if p]
         if ref.mount == "mcp":
             if len(parts) <= 1:
@@ -3503,6 +3992,8 @@ class Namespace:
 
     async def _read_mount(self, uri: str) -> dict:
         ref = parse(uri)
+        if ref.mount == "manifest":
+            return self._read_manifest(ref)
         if ref.mount == "tm":
             if ref.facets:
                 raise TmError(BAD_PARAMS, "bad-facet", f"the list of hosts takes no facet but as=links; read {TOP}")
@@ -3520,10 +4011,14 @@ class Namespace:
                 {"uri": f"{ROOT}mcp/", "what": "the MCP servers this box reads, each with its tools, resources and prompts as things with addresses"},
                 {"uri": f"{ROOT}kinds/", "what": "the kinds of thing this host has served, each with its media type, measured as they go out"},
             ], "start_here": self.start_here()}
+            # tinylens#2: the visual language this host's panels draw with, where one is published.
+            manifest = [link("describedby", f"{ROOT}manifest", title="the visual language as data: shapes, families, handles")] if self.manifest_file() else []
+            if manifest:
+                body["manifest"] = f"{ROOT}manifest"
             # TM-12: the documents a fresh session should read first.
             return self._result(ROOT, T_LISTING, json.dumps(body, indent=1),
                                 [link("up", TOP, title="the hosts this server answers for")]
-                                + [link("collection", f"{ROOT}{m}/") for m in MOUNTS]
+                                + [link("collection", f"{ROOT}{m}/") for m in MOUNTS] + manifest
                                 + [link("help", s["uri"], title=s["what"]) for s in body["start_here"]])
         if ref.mount == "offbox":
             return self._read_offbox(ref)
@@ -3676,6 +4171,8 @@ class Namespace:
             links.extend(self._origin_links(clean))
             links.extend(self._record_links(clean))
             links.extend(self.mcp.inbound(clean))
+            if clean == MANIFEST_FILE and self.manifest_file():
+                links.append(link("tm:read-by", f"{ROOT}manifest", "exact", title="the manifest this file is served as"))
         return links
 
     def _record_links(self, rel: str) -> list[dict]:
@@ -4440,8 +4937,8 @@ class Namespace:
         ref = parse(uri)
         if ref.mount == "entity":
             return self.entities.stands_for(ref)
-        if ref.mount == "mcp":
-            # A map is read from its files and names itself back (tinyhelper#6).
+        if ref.mount in ("mcp", "manifest"):
+            # A map, and the manifest, are read from files and name themselves back (tinyhelper#6, tinylens#2).
             return uri
         if ref.mount != "http" or ref.site is None:
             return None

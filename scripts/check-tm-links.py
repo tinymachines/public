@@ -244,6 +244,7 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
         return mime
 
     kinds_served: set[str] = set()
+    composed: set[str] = set()   # tinylens#2: the kinds read as blocks, one read each
     typed = 0
     reads = 0
     mapped_reads = 0
@@ -278,6 +279,34 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
             mime = st.get("mimeType") or (st.get("contentType", "").split(";")[0].strip() or None)
             if claimed[uri] != mime:
                 problems.append(f"{uri}: listed as {claimed[uri]}, read as {mime}")
+        # tinylens#2: every kind composes into blocks, so each kind the walk
+        # meets is read once as blocks and held to the vocabulary.
+        st_text = got["content"].get("text") or ""
+        kind_here = tm.kind_of((json.loads(st_text).get("mimeType") if got["content"].get("mimeType") == tm.T_STAT and st_text.startswith("{") else got["content"].get("mimeType")) or "")
+        st_status = json.loads(st_text).get("status") if got["content"].get("mimeType") == tm.T_STAT and st_text.startswith("{") else None
+        # A page whose stat reports what the site answered (a 404, a redirect)
+        # resolves as a stat and has nothing to compose.
+        if kind_here and kind_here not in composed and "as=" not in urlsplit(uri).query and (st_status is None or 200 <= st_status < 300):
+            composed.add(kind_here)
+            burl = f"{uri}{'&' if '?' in uri else '?'}as=blocks"
+            try:
+                br = await ns.read(burl)
+                bc = br["contents"][0]
+                if bc.get("mimeType") != tm.T_BLOCKS:
+                    problems.append(f"{burl}: reads as {bc.get('mimeType')}, not blocks")
+                else:
+                    bb = json.loads(bc["text"])
+                    for blk in bb.get("blocks", []):
+                        if blk.get("type") not in tm.BLOCK_TYPES:
+                            problems.append(f"{burl}: block type {blk.get('type')!r} is not in the vocabulary")
+                            break
+                        if not str(blk.get("from", "")).startswith("tm://"):
+                            problems.append(f"{burl}: a {blk.get('type')} block names no address it came from")
+                            break
+                    if not bb.get("blocks"):
+                        problems.append(f"{burl}: no blocks at all")
+            except tm.TmError as e:
+                problems.append(f"{burl}: does not read as blocks ({e.reason}: {e.message[:120]})")
         text = got["content"].get("text") or ""
         if uri.endswith("/") and tm.is_json(got["content"].get("mimeType") or "") and text.startswith("{"):
             body = json.loads(text)
@@ -404,7 +433,9 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     except tm.TmError as e:
         problems.append(f"kinds/: the registry does not read ({e.reason})")
     print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {mapped_reads} mapped reads"
-          + (f" (waited out {waited} 429s)" if waited else "") + f", {len(kinds_served)} kinds served")
+          + (f" (waited out {waited} 429s)" if waited else "") + f", {len(kinds_served)} kinds served, {len(composed)} kinds read as blocks")
+    if not composed:
+        problems.append("no kind was read as blocks, so the compositions were checked on nothing (tinylens#2)")
     for line in site_lines:
         print(line)
     unread = [u for u, _ in queue if u not in seen]

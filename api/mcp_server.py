@@ -62,7 +62,7 @@ The same server is also a read-only namespace, tm://, spoken as MCP resources:
 start by reading tm://tinymachines/ (the mounts), then read any URI ending in /
 to list its children, and read a file or page to get it. Seven mounts: fs/ is
 the repository's docs/, data/ and notes/; git/<repo>/ is a repository at any ref or time
-(?at=, a branch, tag, commit or ISO date, which fs and entity/ take too, an entity as its records had it; with ?as=log, blame, tree, stat); http/<site>/ is what a visitor gets from a site this box serves (one built elsewhere is listed from its own sitemap and fenced by its robots), a page read as its text (?as=rendered for the HTML). A piece of a thing has an address and reads:
+(?at=, a branch, tag, commit or ISO date, which fs and entity/ take too, an entity as its records had it; with ?as=log, blame, tree, stat); http/<site>/ is what a visitor gets from a site this box serves (one built elsewhere is listed from its own sitemap and fenced by its robots), a page read as its text (?as=rendered for the HTML). ?as=blocks on anything composes it into blocks from a closed vocabulary for a host with no modules, and tm://tinymachines/manifest is the visual language as data. A piece of a thing has an address and reads:
 ?lines=FIRST-LAST is lines of a file or a page's text, ?pointer=/a/0/b is what a JSON pointer names in a JSON file,
 ?range=START-END is bytes; the answer's uri keeps the span, so a quote keeps where it came from;
 offbox/ names the places a build chain leaves this box; entity/ holds the

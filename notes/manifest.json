@@ -1,0 +1,56 @@
+{
+ "_": "The visual language as data (tinylens#2, spec section 15), served at tm://tinymachines/manifest. Lifted from tinylens kit/scene.js on 2026-10-23 as a first copy; the lens owns the content and revises it here, one commit a change.",
+ "version": 1,
+ "shapes": {
+  "tm": "star",
+  "host": "ring",
+  "fs": "square",
+  "git": "chamfer",
+  "http": "round",
+  "entity": "pill",
+  "offbox": "dashed",
+  "mcp": "hex",
+  "kinds": "round",
+  "default": "round"
+ },
+ "families": {
+  "plumbing": [
+   "up",
+   "collection",
+   "alternate",
+   "describedby",
+   "version-history",
+   "latest-version",
+   "next",
+   "tm:links"
+  ],
+  "listed": [
+   "listed",
+   "at",
+   "mentions"
+  ],
+  "nearest": [
+   "nearest"
+  ],
+  "by_confidence": {
+   "inferred": "inferred",
+   "generated": "inferred",
+   "default": "exact"
+  }
+ },
+ "handles": {
+  "history": {
+   "rel": "version-history",
+   "label": "history"
+  },
+  "views": {
+   "rel": "alternate",
+   "same_base": true,
+   "label": "{n} views"
+  },
+  "listing": {
+   "collection": true,
+   "label": "listing"
+  }
+ }
+}

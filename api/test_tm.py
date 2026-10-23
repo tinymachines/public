@@ -309,7 +309,7 @@ def test_completion_is_a_listing_filtered_by_what_was_typed(ns):
     assert complete(fs_t, "path", "docs/nope/x") == []
     assert complete(http_t, "site", "beta") == ["beta.tinymachines.ai"]
     assert complete(http_t, "as", "t") == ["text"]
-    assert complete(fs_t, "as", "") == ["raw", "stat", "links"]
+    assert complete(fs_t, "as", "") == ["raw", "stat", "links", "blocks"]
     assert complete(http_t, "path", "/docs/nes/p", site="tinymachines.ai") == ["/docs/nes/pile"]
     assert complete(http_t, "path", "/docs/n", site="tinymachines.ai") == ["/docs/nes", "/docs/nes/"]
     with pytest.raises(TmError):
@@ -612,7 +612,7 @@ def test_git_completion_offers_refs_and_tree_paths(gns):
     assert complete("path", "docs/n", repo="public") == ["docs/nes/"]
     assert complete("path", "docs/nes/", repo="public", at="v1") == ["docs/nes/alone.md", "docs/nes/index.md"]
     assert complete("path", "x", repo="nope") == []
-    assert complete("as", "b") == ["blame"]
+    assert complete("as", "b") == ["blame", "blocks"]
 
 
 # ---------------------------------------------------------------------------
@@ -1542,7 +1542,7 @@ def test_tm16_templates_resources_and_completions_know_the_mount(ents):
     assert comp(et, "key", "a", kind="game") == ["abc"]
     assert comp(rt, "key", "") == ["abc", "def"]
     assert comp(rt, "routine", "b1", key="abc") == ["b1-A000"]
-    assert comp(et, "as", "") == ["stat", "links", "set"]
+    assert comp(et, "as", "") == ["stat", "links", "set", "blocks"]
 
 
 def test_tm16_a_checkout_without_the_records_has_an_empty_mount_not_a_broken_one(gns):
