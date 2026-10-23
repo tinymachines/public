@@ -46,7 +46,8 @@
   "views": {
    "rel": "alternate",
    "same_base": true,
-   "label": "{n} views"
+   "label": "{n} views",
+   "label_one": "{n} view"
   },
   "listing": {
    "collection": true,

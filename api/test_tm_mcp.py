@@ -262,7 +262,7 @@ def test_mcp_refusals_teach(repo):
 def test_the_grammar_names_the_mount(repo):
     ns = make(repo, Fake())
     tmpl = {t["name"]: t for t in ns.templates()}
-    assert tmpl["mcp"]["uriTemplate"] == f"{ROOT}mcp/{{server}}{{/path*}}{{?as,range,lines,pointer,rel,min,cursor}}"
+    assert tmpl["mcp"]["uriTemplate"] == f"{ROOT}mcp/{{server}}{{/path*}}{{?as,view,range,lines,pointer,rel,min,cursor}}"
     names = [r["name"] for r in ns.list_resources(None)["resources"]]
     assert "mcp" in names and "mcp/fake/" in names
     done = ns.complete({"ref": {"type": "ref/resource", "uri": tmpl["mcp"]["uriTemplate"]}, "argument": {"name": "server", "value": "f"}})

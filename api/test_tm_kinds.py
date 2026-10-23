@@ -228,7 +228,7 @@ def test_the_registry_is_a_mount_the_grammar_already_fits(ents):
     body = json.loads(read(ents, ROOT)[0]["text"])
     assert K in {m["uri"] for m in body["mounts"]}
     tmpl = {t["name"]: t for t in ents.templates()}
-    assert tmpl["kinds"]["uriTemplate"] == f"{K}{{kind}}{{?as,rel,min,cursor}}" and tmpl["kinds"]["mimeType"] == tm.T_KIND
+    assert tmpl["kinds"]["uriTemplate"] == f"{K}{{kind}}{{?as,view,rel,min,cursor}}" and tmpl["kinds"]["mimeType"] == tm.T_KIND
     assert tmpl["hosts"]["mimeType"] == tmpl["root"]["mimeType"] == tm.T_LISTING
     assert "mimeType" not in tmpl["entity"] and "mimeType" not in tmpl["mcp"], "a template whose matches differ in kind claims none"
     assert any(r["uri"] == K for r in ents.list_resources(None)["resources"])

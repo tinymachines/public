@@ -130,15 +130,15 @@ SPANS = ("range", "lines", "pointer")
 # tinypeek#17: rel= and min= filter the set behind ?as=links, on every mount,
 # and ride only with it (LINKS_ONLY, check_params), as cursor= does there.
 PARAMS: dict[str, tuple[str, ...]] = {
-    "tm": ("as", "rel", "min"), "": ("as", "rel", "min"),
-    "fs": ("at", "as", "range", "lines", "pointer", "rel", "min", "cursor"),
-    "git": ("at", "as", "n", "depth", "range", "lines", "pointer", "rel", "min", "cursor"),
-    "http": ("as", "range", "lines", "rel", "min", "cursor"),
-    "offbox": ("as", "rel", "min"),
-    "entity": ("at", "as", "rel", "min", "cursor"),
-    "mcp": ("as", "range", "lines", "pointer", "rel", "min", "cursor"),
-    "kinds": ("as", "rel", "min", "cursor"),
-    "manifest": ("as", "rel", "min"),
+    "tm": ("as", "view", "rel", "min"), "": ("as", "view", "rel", "min"),
+    "fs": ("at", "as", "view", "range", "lines", "pointer", "rel", "min", "cursor"),
+    "git": ("at", "as", "view", "n", "depth", "range", "lines", "pointer", "rel", "min", "cursor"),
+    "http": ("as", "view", "range", "lines", "rel", "min", "cursor"),
+    "offbox": ("as", "view", "rel", "min"),
+    "entity": ("at", "as", "view", "rel", "min", "cursor"),
+    "mcp": ("as", "view", "range", "lines", "pointer", "rel", "min", "cursor"),
+    "kinds": ("as", "view", "rel", "min", "cursor"),
+    "manifest": ("as", "view", "rel", "min"),
 }
 # rel= and min= narrow a set of links; they ride with ?as=links and, on the
 # entity mount, with ?as=set (tinypeek#23), which inlines what they keep.
@@ -272,6 +272,7 @@ KINDS: dict[str, str] = {
 MANIFEST_FILE = "notes/manifest.json"   # the manifest's one source, served and versioned through the namespace (tinylens#2)
 BLOCK_TYPES = ("heading", "note", "kv", "list", "table", "timeline", "diff", "code", "media", "question", "finding", "trail", "link")
 BLOCK_CAP = 200          # blocks in one ?as=blocks read; past it the list closes with a link to the thing
+BLOCK_VIEWS = ("stat", "links", "log", "blame", "tree", "set")   # the facets ?as=blocks&view= composes
 BLOCK_PAGES = 20         # pages of a set a composition will read for its members
 NES_FPS = 60.0988        # NTSC frame rate: how a count of frames becomes time, as the lens had it
 SET_CAP = 25            # members a page of ?as=set inlines
@@ -472,22 +473,25 @@ def json_pointer(spec: str, doc, here: str) -> object:
     piece that is there."""
     if spec and not spec.startswith("/"):
         raise TmError(BAD_PARAMS, "bad-facet", "pointer=/a/0/b, a JSON pointer (RFC 6901): empty, or starting with /")
-    here, at = doc, ""
+    node, at = doc, ""
     for raw in spec.split("/")[1:]:
         token = raw.replace("~1", "/").replace("~0", "~")
-        if isinstance(here, dict) and token in here:
-            here = here[token]
-        elif isinstance(here, list) and re.fullmatch(r"0|[1-9]\d*", token) and int(token) < len(here):
-            here = here[int(token)]
+        if isinstance(node, dict) and token in node:
+            node = node[token]
+        elif isinstance(node, list) and re.fullmatch(r"0|[1-9]\d*", token) and int(token) < len(node):
+            node = node[int(token)]
         else:
+            # nearest is an address: the document's, or the piece the pointer
+            # held as far as it went. (Before 2026-10-23 a miss at the top
+            # offered the document itself here, past the read cap.)
             data: dict = {"at": at, "nearest": [here if not at else f"{here}{'&' if '?' in here else '?'}pointer={at}"]}
-            if isinstance(here, dict):
-                data["keys"] = list(here)[:LIST_CAP]
-            elif isinstance(here, list):
-                data["length"] = len(here)
+            if isinstance(node, dict):
+                data["keys"] = list(node)[:LIST_CAP]
+            elif isinstance(node, list):
+                data["length"] = len(node)
             raise TmError(RESOURCE_NOT_FOUND, "not-found", f"pointer {spec}: nothing at {raw!r} below {at or 'the document'}", **data)
         at += "/" + raw
-    return here
+    return node
 
 
 def span_of(ref: "Ref") -> tuple[str, str] | None:
@@ -648,7 +652,11 @@ def parse(uri: str) -> Ref:
     if not isinstance(uri, str):
         raise TmError(BAD_PARAMS, "bad-uri", "uri must be a string")
     parts = urlsplit(uri)
-    facets = {k: v for k, v in parse_qsl(parts.query, keep_blank_values=True)}
+    pairs = parse_qsl(parts.query, keep_blank_values=True)
+    facets = {k: v for k, v in pairs}
+    twice = sorted({k for k, _ in pairs if sum(1 for k2, _ in pairs if k2 == k) > 1})
+    if twice:
+        raise TmError(BAD_PARAMS, "bad-facet", f"{', '.join(twice)} given twice; a read takes each parameter once")
     if parts.scheme == "tm" and uri.startswith(TOP) and parts.netloc == "" and parts.path in ("", "/"):
         return Ref("tm", None, "", facets)
     # A host compares without case (RFC 3986); a path keeps its own.
@@ -3016,9 +3024,116 @@ class Sitemap:
 
 
 def pointer(uri: str, *keys: Any) -> str:
-    """A piece's address: the thing with ?pointer= to a field (RFC 6901)."""
+    """A piece's address: the thing with ?pointer= to a field (RFC 6901).
+    An address that is a piece already goes deeper, one pointer a read."""
     path = "".join("/" + str(k).replace("~", "~0").replace("/", "~1") for k in keys)
+    m = re.search(r"([?&])pointer=([^&]*)", uri)
+    if m:
+        return uri[:m.start(2)] + m[2] + quote(path, safe="/~") + uri[m.end(2):]
     return f"{uri}{'&' if '?' in uri else '?'}pointer={quote(path, safe='/~')}"
+
+
+class _PageBlocks(HTMLParser):
+    """A page's body as blocks: h1 to h3 as headings (deeper ones as level
+    3), a paragraph as a note, a list as a list, a table as a table, a
+    listing as code, inside <main> or <article>, the site's navigation left
+    out, as the page's text leaves it out."""
+
+    SKIP = _Text.SKIP
+    BODY = _Text.BODY
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.out: list[dict] = []
+        self.skip = self.in_main = 0
+        self.buf: list[str] | None = None
+        self.tag: str | None = None
+        self.items: list[dict] | None = None
+        self.table: list[list[str]] | None = None
+        self.head: list[str] | None = None
+        self.row: list[str] | None = None
+        self.pre = 0
+
+    @classmethod
+    def of(cls, html_: str) -> list[dict]:
+        p = cls()
+        p.feed(html_)
+        p.close()
+        return p.out
+
+    def _text(self) -> str:
+        t = "".join(self.buf or [])
+        return t if self.pre else re.sub(r"\s+", " ", t).strip()
+
+    def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag in self.SKIP:
+            self.skip += 1
+            return
+        if tag in self.BODY:
+            self.in_main += 1
+            return
+        if self.skip or not self.in_main:
+            return
+        if tag in ("ul", "ol"):
+            self.items = []
+        elif tag == "table":
+            self.table, self.head = [], None
+        elif tag == "tr" and self.table is not None:
+            self.row = []
+        elif tag in ("h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "pre", "td", "th", "blockquote", "figcaption", "dt", "dd"):
+            if tag == "pre":
+                self.pre += 1
+            self.tag, self.buf = tag, []
+        elif tag == "br" and self.buf is not None:
+            self.buf.append("\n" if self.pre else " ")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self.SKIP and self.skip:
+            self.skip -= 1
+            return
+        if tag in self.BODY and self.in_main:
+            self.in_main -= 1
+            return
+        if self.skip or not self.in_main:
+            return
+        if tag == self.tag and self.buf is not None:
+            text = self._text()
+            if tag == "pre":
+                self.pre -= 1
+            self.buf, self.tag = None, None
+            if not text:
+                return
+            if tag in ("td", "th") and self.row is not None:
+                self.row.append(text)
+                if tag == "th" and self.head is None and self.table == []:
+                    pass
+            elif tag == "li" and self.items is not None:
+                self.items.append({"text": text})
+            elif tag[0] == "h" and tag[1:].isdigit():
+                self.out.append({"type": "heading", "level": min(int(tag[1]), 3), "text": text})
+            elif tag == "pre":
+                self.out.append({"type": "code", "text": text})
+            else:
+                self.out.append({"type": "note", "text": text})
+        elif tag in ("ul", "ol") and self.items is not None:
+            if self.items:
+                self.out.append({"type": "list", "items": self.items})
+            self.items = None
+        elif tag == "tr" and self.row is not None and self.table is not None:
+            if self.row:
+                self.table.append(self.row)
+            self.row = None
+        elif tag == "table" and self.table is not None:
+            rows = self.table
+            if rows:
+                width = max(len(r) for r in rows)
+                head, body = (rows[0], rows[1:]) if len(rows) > 1 else ([f"{i + 1}" for i in range(width)], rows)
+                self.out.append({"type": "table", "columns": head, "rows": body})
+            self.table = None
+
+    def handle_data(self, data: str) -> None:
+        if self.buf is not None and not self.skip:
+            self.buf.append(data)
 
 
 def _num(n: Any) -> str:
@@ -3063,7 +3178,8 @@ class Blocks:
     """A composition of one read into blocks. Every block has a `type` from
     BLOCK_TYPES and `from`, the address of what it came from; the body lists
     every read it was built from. The blocks are of the thing (at a ref, or a
-    piece of it), never of another representation: a read has one `as`. The three compositions the lens had
+    piece of it), or with view= of one of its facets (BLOCK_VIEWS): a log as a
+    timeline, a link set as a list, a set as a table, a stat as a kv. The three compositions the lens had
     (pattern, game, lesson) are here as they were, a pattern reading its
     members through ?as=set in one read; every other kind has a generic
     composition, so nothing is ever blank; the thing's links that no block
@@ -3100,8 +3216,14 @@ class Blocks:
 
     async def read(self, ref: Ref) -> dict:
         ns = self.ns
-        inner_facets = {k: v for k, v in ref.facets.items() if k != "as"}
-        inner = ref.uri + (("?" + urlencode(inner_facets)) if inner_facets else "")
+        view = ref.facets.get("view")
+        if view is not None and view not in BLOCK_VIEWS:
+            raise TmError(BAD_PARAMS, "bad-facet", f"view={view!r}; ?as=blocks composes the thing, or with view= one of {', '.join(BLOCK_VIEWS)}")
+        inner_facets = {k: v for k, v in ref.facets.items() if k not in ("as", "view")}
+        if view:
+            inner_facets["as"] = view
+        inner = ref.uri + (("?" + urlencode(inner_facets, safe="/:")) if inner_facets else "")
+        self.view = view
         reads = [inner]
         try:
             got = await ns._read_typed(inner)
@@ -3120,9 +3242,14 @@ class Blocks:
                 blocks.append({"type": "media", "href": f"{inner}{'&' if '?' in inner else '?'}as=raw", "mimeType": mime, "alt": self.name(inner), "from": inner})
             else:
                 blocks.append(self.note(e.message, inner))
+                # A link block is an address: the first piece of each span, not its template.
+                firsts = {"range": f"0-{READ_CAP - 1}", "lines": "1-200"}
                 for key in ("text", "range", "lines"):
-                    if e.data.get(key):
-                        blocks.append({"type": "link", "href": e.data[key], "rel": "alternate", "title": f"read it by {key}", "from": inner})
+                    href = e.data.get(key)
+                    if href:
+                        href = re.sub(r"\{[a-z]+\}-\{[a-z]+\}", firsts.get(key, ""), href)
+                        blocks.append({"type": "link", "href": href, "rel": "alternate", "title": f"the first piece, by {key}" if key != "text" else "its text", "from": inner})
+            blocks += [self.link_block(ln, inner) for ln in links if ln["rel"] != "describedby" or "as=stat" not in ln["href"]]
             return self.finish(ref, inner, mime, self.name(inner), blocks, links, reads)
         c = got["contents"][0]
         links = got["_meta"][META_LINKS]
@@ -3149,8 +3276,16 @@ class Blocks:
             blocks += self.lesson(me, body, links, title, placed)
         elif kind == "trail" and isinstance(body, dict):
             blocks += self.trail(me, body, title, placed)
+        elif kind == "log" and isinstance(body, dict):
+            blocks += self.log(me, body, title, placed)
+        elif kind == "links" and isinstance(body, dict):
+            blocks += self.link_list(me, links, body, title, placed)
+        elif kind == "set" and isinstance(body, dict):
+            blocks += self.set_(me, body, title, placed)
+        elif kind == "blame" and isinstance(text, str):
+            blocks += [self.heading(title, me), {"type": "code", "text": text, "from": me}]
         elif kind == "page" and isinstance(text, str):
-            blocks += self.page(me, text, title)
+            blocks += await self.page(me, text, title, reads)
         elif body is not None:
             blocks += self.generic(me, body, title, placed)
         elif isinstance(text, str):
@@ -3162,7 +3297,7 @@ class Blocks:
         else:
             blocks += [self.heading(title, me), {"type": "media", "href": f"{me}{'&' if '?' in me else '?'}as=raw", "mimeType": mime, "alt": title, "from": me}]
         for ln in links:
-            if ln["href"] not in placed and ln["rel"] != "tm:links":
+            if ln["href"] not in placed:
                 blocks.append(self.link_block(ln, me))
         return self.finish(ref, me, mime, title, blocks, links, reads)
 
@@ -3171,7 +3306,11 @@ class Blocks:
             blocks = blocks[:BLOCK_CAP - 1] + [{"type": "link", "href": me, "rel": "alternate", "from": me,
                                                "title": f"cut at {BLOCK_CAP - 1} blocks; the rest is in the thing itself"}]
         body = {"uri": ref.uri, "of": me, "mimeType": mime, "title": title, "blocks": blocks, "reads": reads}
-        out = f"{me}{'&' if '?' in me else '?'}as=blocks"
+        view = getattr(self, "view", None)
+        if view:
+            out = re.sub(rf"([?&])as={view}\b", rf"\1as=blocks&view={view}", me) if f"as={view}" in me else f"{me}{'&' if '?' in me else '?'}as=blocks&view={view}"
+        else:
+            out = f"{me}{'&' if '?' in me else '?'}as=blocks"
         return self.ns._result(out, T_BLOCKS, json.dumps(body, indent=1), list(links))
 
     # -- names ------------------------------------------------------------------
@@ -3280,7 +3419,26 @@ class Blocks:
             out["hrefs"] = hrefs
         return out
 
-    def page(self, me: str, text: str, title: str) -> list[dict]:
+    async def page(self, me: str, text: str, title: str, reads: list[str]) -> list[dict]:
+        """A page from its HTML, so its headings, lists, tables and listings
+        keep their shape; from its text, a note a line, where the HTML will
+        not read (over the cap, or not HTML)."""
+        rendered = f"{me.split('?')[0]}?as=rendered"
+        try:
+            got = await self.ns._read_typed(rendered)
+            html_ = got["contents"][0].get("text")
+        except TmError:
+            html_ = None
+        if isinstance(html_, str):
+            reads.append(rendered)
+            out = [dict(b, **{"from": me}) for b in _PageBlocks.of(html_)]
+            if out:
+                if out[0]["type"] != "heading":
+                    out.insert(0, self.heading(title, me))
+                return out[:BLOCK_CAP - 20]
+        return self.page_lines(me, text, title)
+
+    def page_lines(self, me: str, text: str, title: str) -> list[dict]:
         lines = [l.strip() for l in text.splitlines() if l.strip()]
         out = [self.heading(title, me)]
         for l in lines[:60]:
@@ -3304,6 +3462,52 @@ class Blocks:
             steps.append(step)
             placed.add(href)
         out.append({"type": "trail", "steps": steps, "from": pointer(me, "steps")})
+        return out
+
+    def log(self, me: str, body: dict, title: str, placed: set[str]) -> list[dict]:
+        events = []
+        for c in body.get("commits", []):
+            if not isinstance(c, dict):
+                continue
+            ev = {"at": c.get("committed") or c.get("date") or "", "text": f"{c.get('short', '')} {c.get('subject', '')} ({c.get('author', '')})".strip()}
+            if isinstance(c.get("uri"), str):
+                ev["href"] = c["uri"]
+                placed.add(c["uri"])
+            events.append(ev)
+        events.sort(key=lambda e: e["at"])
+        return [self.heading(title, me), {"type": "timeline", "events": events, "from": pointer(me, "commits")}]
+
+    def link_list(self, me: str, links: list[dict], body: dict, title: str, placed: set[str]) -> list[dict]:
+        items = []
+        for ln in links:
+            if ln["rel"] in ("next", "up") and ln["href"].endswith("as=links"):
+                continue
+            item = {"text": ln.get("title") or self.name(ln["href"]), "href": ln["href"], "rel": ln["rel"]}
+            for k in ("type", "confidence", "count"):
+                if k in ln:
+                    item[k] = ln[k]
+            items.append(item)
+            placed.add(ln["href"])
+        out = [self.heading(title, me), {"type": "list", "items": items, "from": me}]
+        if isinstance(body.get("total"), int):
+            out.append(self.note(f"{_num(len(items))} of {_num(body['total'])} links on this page.", me))
+        return out
+
+    def set_(self, me: str, body: dict, title: str, placed: set[str]) -> list[dict]:
+        out = [self.heading(title, me)]
+        flat = []
+        for m in body.get("members", []):
+            if not isinstance(m, dict):
+                continue
+            row = {"uri": m.get("uri")}
+            if isinstance(m.get("body"), dict):
+                row.update({k: v for k, v in m["body"].items() if k != "uri" and (v is None or isinstance(v, (str, int, float, bool)))})
+            flat.append(row)
+        if flat:
+            out.append(self.table(pointer(me, "members"), flat, "members"))
+            placed.update(r["uri"] for r in flat if isinstance(r["uri"], str))
+        if isinstance(body.get("total"), int):
+            out.append(self.note(f"{_num(body.get('returned', len(flat)))} of {_num(body['total'])} members on this page.", me))
         return out
 
     async def pattern(self, me: str, b: dict, links: list[dict], title: str, placed: set[str], reads: list[str]) -> list[dict]:
@@ -3401,7 +3605,7 @@ class Blocks:
                 table["hrefs"] = hrefs
                 placed.update(hrefs)
             out.append(table)
-        lessons = [{"text": ln.get("title") or self.name(ln["href"]), "href": ln["href"]} for ln in links if ln["rel"] == "tm:measured-by"]
+        lessons = [{"text": self.name(ln["href"]), "href": ln["href"]} for ln in links if ln["rel"] == "tm:measured-by"]
         if lessons:
             out.append(self.note(f"{len(lessons)} of our lessons were measured beside it.", me))
             out.append({"type": "list", "items": lessons, "from": me})
@@ -3428,7 +3632,7 @@ class Blocks:
         for i, pic in enumerate(b.get("pictures") or []):
             if isinstance(pic, dict):
                 src = pointer(data, "pictures", i, "png") if data else pointer(me, "pictures", i, "png")
-                out.append({"type": "media", "href": src, "mimeType": "image/png", "alt": f"frame {pic.get('frame', i)}", "from": pointer(me, "pictures", i)})
+                out.append({"type": "media", "href": src, "mimeType": "image/png", "encoding": "base64", "alt": f"frame {pic.get('frame', i)}", "from": pointer(me, "pictures", i)})
         demonstrates = [ln for ln in links if ln["rel"] == "tm:demonstrates"]
         if demonstrates:
             out.append({"type": "table", "title": "the patterns it demonstrates", "columns": ["pattern", "count"],
@@ -3756,6 +3960,8 @@ class Namespace:
     async def read(self, uri: str) -> dict:
         try:
             ref = parse(uri)
+            if "view" in ref.facets and ref.facets.get("as") != "blocks":
+                raise TmError(BAD_PARAMS, "bad-facet", f"view={ref.facets['view']!r} names the facet ?as=blocks composes; it goes with as=blocks")
             got = await self.blocks.read(ref) if ref.facets.get("as") == "blocks" else await self._read_typed(uri, ref)
             self.kinds.record(got["contents"][0]["mimeType"], got["_meta"][META_LINKS])
             return got
