@@ -1,0 +1,15 @@
+{
+ "_": "The sites the http mount answers for (tinypeek#24, spec sections 5 and 8). pages says where a site's page list comes from: build, the site's prerender manifest on this box (the two tinymachines sites, which the code names); sitemap, the sitemap.xml the site publishes, read through the front door and fenced by its robots.txt. what is one line for a listing.",
+ "tinymachines.ai": {
+  "pages": "build",
+  "what": "the tinymachines notebook, tools and autopsy"
+ },
+ "beta.tinymachines.ai": {
+  "pages": "build",
+  "what": "the same site, the build ahead of live"
+ },
+ "bradley.io": {
+  "pages": "sitemap",
+  "what": "the owner's own site: work, projects, instruments and writing"
+ }
+}

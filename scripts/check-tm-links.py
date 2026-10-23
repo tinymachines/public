@@ -147,6 +147,16 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     ns = ns or tm.Namespace(repo)
     seen: dict[str, dict] = {}
     problems: list[str] = []
+    # tinypeek#24: every request the http mount makes, so a site's robots
+    # fence can be held against what was actually asked for, not what the
+    # mount says it asks for.
+    fetched: list[tuple[str, str]] = []
+    inner_fetch = ns.fetch
+
+    async def recording_fetch(site: str, path: str):
+        fetched.append((site, path))
+        return await inner_fetch(site, path)
+    ns.fetch = recording_fetch
     queue = deque([(tm.TOP, None)])
     claimed: dict[str, str] = {}
 
@@ -353,6 +363,34 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
     # must have read some of it, or the maps were checked on nothing.
     if mapped_reads == 0 and any(ns.mcp.map(n) is not None for n in ns.mcp.names()):
         problems.append("a map is derived and no mapped read was made, so no map was checked (tinyhelper#6)")
+    # tinypeek#24: a site listed from its sitemap was read, and its robots
+    # held: a disallowed path reads as denied, and nothing under a rule was
+    # ever fetched, the probes included.
+    site_lines: list[str] = []
+    for site, sm in ns.sitemaps.items():
+        def is_page(g: dict) -> bool:
+            # The walk reads a page as its stat, which says what the page reads as.
+            if not g.get("ok"):
+                return False
+            mime = g["content"].get("mimeType")
+            if mime == tm.T_STAT and (g["content"].get("text") or "").startswith("{"):
+                mime = json.loads(g["content"]["text"]).get("mimeType")
+            return mime == tm.T_PAGE
+        pages_read = len({identity(u) for u, g in seen.items() if u.startswith(f"{tm.ROOT}http/{site}/") and is_page(g)})
+        held = 0
+        for rule in sm.rules:
+            probe = f"{tm.ROOT}http/{site}{rule}"
+            got = await get(probe)
+            if got["ok"] or got["reason"] != "denied":
+                problems.append(f"{probe}: the site's robots disallows {rule} and the read was not refused as denied ({'it read' if got['ok'] else got['reason']})")
+            else:
+                held += 1
+        for s, p in fetched:
+            if s == site and any(p.startswith(r) for r in sm.rules):
+                problems.append(f"{site}{p} was fetched, and the site's robots disallows it")
+        if pages_read == 0:
+            problems.append(f"{site}: no page of the site was read, so it was checked on nothing (tinypeek#24)")
+        site_lines.append(f"  {site}: {pages_read} pages read, {held} rules held")
     # tinypeek#23: the registry lists what the walk was served, and each kind reads.
     try:
         reg = json.loads((await ns.read(f"{tm.ROOT}kinds/"))["contents"][0]["text"])
@@ -367,6 +405,8 @@ async def crawl(budget: int, repo: Path = ROOT, ns=None) -> int:
         problems.append(f"kinds/: the registry does not read ({e.reason})")
     print(f"check-tm-links: {reads} URIs read, {len(seen)} resolved or refused, {typed} typed links followed, {mapped_reads} mapped reads"
           + (f" (waited out {waited} 429s)" if waited else "") + f", {len(kinds_served)} kinds served")
+    for line in site_lines:
+        print(line)
     unread = [u for u, _ in queue if u not in seen]
     if unread:
         problems.append(f"the budget of {budget} reads ran out with {len(unread)} URIs still queued and unchecked; raise --budget")

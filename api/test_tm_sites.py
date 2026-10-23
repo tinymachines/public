@@ -1,0 +1,199 @@
+"""A second site on the http mount, listed from its sitemap and fenced by its
+robots (tinypeek#24, spec sections 5 and 8). Nothing of the site's build is
+on this box; the list is what the site publishes, and a path it does not
+list, or robots disallows, is never fetched."""
+from __future__ import annotations
+
+import asyncio
+import json
+from pathlib import Path
+
+import pytest
+
+import tm
+from tm import ROOT, Namespace, TmError
+
+from test_tm import canned_fetch, read, refusal, rels, repo, run  # noqa: F401  (repo is the fixture)
+
+SITE = "example.site"
+
+SITEMAP = b"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>https://example.site</loc><lastmod>2026-10-23T03:41:34.210Z</lastmod></url>
+<url><loc>https://example.site/about</loc><lastmod>2026-10-20T00:00:00Z</lastmod></url>
+<url><loc>https://example.site/projects</loc><lastmod>2026-10-21T00:00:00Z</lastmod></url>
+<url><loc>https://example.site/projects/alpha</loc><lastmod>2026-10-22T00:00:00Z</lastmod></url>
+<url><loc>https://example.site/visitors</loc><lastmod>2026-10-22T00:00:00Z</lastmod></url>
+<url><loc>https://elsewhere.example/other</loc></url>
+</urlset>
+"""
+
+ROBOTS = b"User-Agent: *\nAllow: /\nDisallow: /api/\nDisallow: /visitors\n\nSitemap: https://example.site/sitemap.xml\n"
+
+
+class Site:
+    """The second site as its front door would answer, every request kept."""
+
+    def __init__(self):
+        self.calls: list[str] = []
+        self.sitemap = SITEMAP
+        self.sitemap_status = 200
+        self.robots = ROBOTS
+
+    async def fetch(self, site: str, path: str):
+        if site != SITE:
+            return await canned_fetch(site, path)
+        self.calls.append(path)
+        if path == "/sitemap.xml":
+            return self.sitemap_status, "application/xml", self.sitemap if self.sitemap_status == 200 else b"down"
+        if path == "/robots.txt":
+            return 200, "text/plain", self.robots
+        if path.startswith("/api/"):
+            return 200, "application/json", b'{"entropy": "spent"}'
+        if path in ("/", "/about", "/projects", "/projects/alpha", "/visitors", "/hidden"):
+            name = path.strip("/") or "home"
+            return 200, "text/html; charset=utf-8", f"<html><head><title>{name} · example</title></head><body><main><h1>{name}</h1><p>text of {name}</p></main></body></html>".encode()
+        return 404, "text/html", b"<html>nope</html>"
+
+
+def make(repo: Path, **kw) -> tuple[Namespace, Site]:
+    site = Site()
+    ns = Namespace(repo, fetch=site.fetch, sitemap_sites={SITE: {"what": "a site served here, built elsewhere"}}, **kw)
+    return ns, site
+
+
+def test_the_site_is_listed_beside_the_built_ones(repo):
+    ns, site = make(repo)
+    body = json.loads(read(ns, f"{ROOT}http/")[0]["text"])
+    assert {c["name"] for c in body["children"]} == set(tm.SITES) | {SITE}
+    listed = [r for r in ns.list_resources(None)["resources"] if r["uri"] == f"{ROOT}http/{SITE}/"]
+    assert listed and listed[0]["title"] == f"{SITE}, page by page"
+    got = ns.complete({"ref": {"type": "ref/resource", "uri": "tm://{host}/http/{site}{/path*}"}, "argument": {"name": "site", "value": "ex"}})
+    assert got["completion"]["values"] == [SITE]
+    assert site.calls == [], "listing the sites asks the site nothing"
+
+
+def test_the_root_lists_the_sitemap_pages(repo):
+    ns, site = make(repo)
+    c, links = read(ns, f"{ROOT}http/{SITE}/")
+    body = json.loads(c["text"])
+    kids = {k["name"]: k for k in body["children"]}
+    assert set(kids) == {"about", "projects", "projects/", "visitors"}, "a page, a page that is also a collection, and a disallowed page"
+    assert kids["projects"]["isCollection"] is False and kids["projects/"]["isCollection"] is True
+    assert kids["visitors"]["redacted"] is True, "robots disallows it: listed, never read"
+    assert "title" not in kids["about"], "no build here, so no title until the manifest"
+    assert body["front_page"] == f"{ROOT}http/{SITE}/?as=text"
+    r = rels(links)
+    assert r["describedby"] == [f"{ROOT}http/{SITE}/sitemap.xml"], "the list the site publishes"
+    assert "tm:data" not in r, "no record of this checkout is read by a page built elsewhere"
+    assert sorted(site.calls) == ["/robots.txt", "/sitemap.xml"], "the list costs the site two reads, and no page"
+    deeper = json.loads(read(ns, f"{ROOT}http/{SITE}/projects/")[0]["text"])
+    assert [k["uri"] for k in deeper["children"]] == [f"{ROOT}http/{SITE}/projects/alpha"]
+    assert sorted(site.calls) == ["/robots.txt", "/sitemap.xml"], "the second listing came from the cached list"
+    assert all("elsewhere" not in k["uri"] for k in body["children"]), "a URL on another host is not a page of this site"
+
+
+def test_a_listed_page_reads_with_the_links_a_page_has_and_no_more(repo):
+    ns, site = make(repo)
+    c, links = read(ns, f"{ROOT}http/{SITE}/projects/alpha")
+    assert c["mimeType"] == tm.T_PAGE and "text of projects/alpha" in c["text"]
+    r = rels(links)
+    assert r["up"] == [f"{ROOT}http/{SITE}/projects/"] and r["collection"] == r["up"]
+    assert r["describedby"] == [f"{ROOT}http/{SITE}/projects/alpha?as=stat"]
+    assert r["alternate"] == [f"{ROOT}http/{SITE}/projects/alpha?as=rendered"], "no other language, no other site"
+    assert set(r) == {"up", "collection", "describedby", "alternate"}, "no tm:source: this checkout did not build it"
+    c, _ = read(ns, f"{ROOT}http/{SITE}/projects/alpha?as=stat")
+    stat = json.loads(c["text"])
+    assert stat["mimeType"] == tm.T_PAGE and stat["lastmod"] == "2026-10-22T00:00:00Z", "the sitemap's lastmod rides on the stat"
+    _, links = read(ns, f"{ROOT}http/{tm.SITES[0]}/docs/nes/pile")
+    assert not any(SITE in ln["href"] for ln in links), "a built page has no version on a site built elsewhere"
+    _, links = read(ns, f"{ROOT}http/{SITE}/about?as=stat")
+    assert tm.SITES[0] not in json.dumps(links)
+
+
+def test_nothing_unlisted_or_disallowed_is_ever_fetched(repo):
+    ns, site = make(repo)
+    e = refusal(ns, f"{ROOT}http/{SITE}/hidden")
+    assert e.reason == "not-found" and f"{ROOT}http/{SITE}/about" in e.data["nearest"]
+    e = refusal(ns, f"{ROOT}http/{SITE}/api/trng")
+    assert e.reason == "denied" and "Disallow: /api/" in e.message, "the rule that denied it"
+    e = refusal(ns, f"{ROOT}http/{SITE}/visitors?as=stat")
+    assert e.reason == "denied", "listed and disallowed: robots wins, before any facet"
+    e = refusal(ns, f"{ROOT}http/{SITE}/api/")
+    assert e.reason == "denied"
+    assert sorted(site.calls) == ["/robots.txt", "/sitemap.xml"], f"only the two lists were asked for, not {site.calls}"
+    c, _ = read(ns, f"{ROOT}http/{SITE}/robots.txt")
+    assert c["mimeType"] == "text/plain" and "Disallow" in c["text"]
+    c, _ = read(ns, f"{ROOT}http/{SITE}/sitemap.xml")
+    assert c["mimeType"] == "application/xml"
+
+
+def test_the_list_is_kept_and_re_read_on_its_interval(repo, monkeypatch):
+    ns, site = make(repo)
+    read(ns, f"{ROOT}http/{SITE}/about")
+    read(ns, f"{ROOT}http/{SITE}/")
+    assert site.calls.count("/sitemap.xml") == 1
+    site.sitemap = SITEMAP.replace(b"</urlset>", b"<url><loc>https://example.site/new</loc></url></urlset>")
+    now = ns.sitemaps[SITE].read_at
+    monkeypatch.setattr(tm.Sitemap, "clock", staticmethod(lambda: now + tm.SITEMAP_TTL_S + 1))
+    kids = json.loads(read(ns, f"{ROOT}http/{SITE}/")[0]["text"])["children"]
+    assert "new" in {k["name"] for k in kids} and site.calls.count("/sitemap.xml") == 2
+    site.sitemap_status = 500
+    monkeypatch.setattr(tm.Sitemap, "clock", staticmethod(lambda: now + 2 * tm.SITEMAP_TTL_S + 2))
+    kids = json.loads(read(ns, f"{ROOT}http/{SITE}/")[0]["text"])["children"]
+    assert "new" in {k["name"] for k in kids}, "a list that stops answering keeps the last one read"
+    fresh, fresh_site = make(repo)
+    fresh_site.sitemap_status = 500
+    e = refusal(fresh, f"{ROOT}http/{SITE}/")
+    assert e.reason == "unreachable" and "sitemap.xml answered 500" in e.message
+    assert fresh.sitemaps[SITE].read_at is None, "nothing kept, so the next read asks again"
+
+
+def test_a_sitemap_index_is_followed_on_the_same_host(repo):
+    ns, site = make(repo)
+    site.sitemap = (b'<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    b"<sitemap><loc>https://example.site/sitemap-pages.xml</loc></sitemap>"
+                    b"<sitemap><loc>https://elsewhere.example/sitemap.xml</loc></sitemap></sitemapindex>")
+    inner = SITEMAP
+    orig = site.fetch
+
+    async def fetch(s, p):
+        if s == SITE and p == "/sitemap-pages.xml":
+            site.calls.append(p)
+            return 200, "application/xml", inner
+        return await orig(s, p)
+    ns.fetch = fetch
+    kids = json.loads(read(ns, f"{ROOT}http/{SITE}/")[0]["text"])["children"]
+    assert "about" in {k["name"] for k in kids}
+    assert "/sitemap-pages.xml" in site.calls and not any("elsewhere" in c for c in site.calls)
+
+
+def test_the_sites_file_names_the_site(repo):
+    (repo / "api").mkdir()
+    (repo / "api" / tm.SITES_FILE.rsplit("/", 1)[1]).write_text(json.dumps({
+        "_": "note", "tinymachines.ai": {"pages": "build", "what": "here"}, SITE: {"pages": "sitemap", "what": "there"}}))
+    site = Site()
+    ns = Namespace(repo, fetch=site.fetch)
+    assert set(ns.sitemaps) == {SITE} and ns.sites == tm.SITES, "a build site stays a build site; the sitemap one is read from the file"
+    e = refusal(ns, f"{ROOT}http/nowhere.example/")
+    assert e.reason == "not-found" and f"{ROOT}http/{SITE}/" in e.data["nearest"]
+    assert ns.target_type(f"{ROOT}http/{SITE}/about") == tm.T_PAGE
+
+
+def test_the_crawler_reads_the_site_and_holds_the_fence(repo, monkeypatch, capsys):
+    from test_tm import _crawler
+    mod = _crawler()
+    (repo / "notes" / "escape.md").unlink()
+    # One built site, as the other crawler tests do: a test earlier in the
+    # suite leaves a beta build beside the temp checkouts, which the beta
+    # site would otherwise read.
+    ns, site = make(repo, git_repos={}, sites=tm.SITES[:1])
+    assert run(mod.crawl(2000, repo, ns)) == 0, capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert f"{SITE}: 3 pages read, 2 rules held" in out, out
+    assert not any(c.startswith("/api/") or c == "/visitors" for c in site.calls), site.calls
+    ns, site = make(repo, git_repos={}, sites=tm.SITES[:1])
+    monkeypatch.setattr(tm.Sitemap, "denied", lambda self, path: None)
+    assert run(mod.crawl(2000, repo, ns)) == 1
+    out = capsys.readouterr().out
+    assert "robots disallows" in out, out

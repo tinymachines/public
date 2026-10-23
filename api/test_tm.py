@@ -122,12 +122,15 @@ def test_a_wrong_host_mount_or_site_names_the_right_ones():
         ("tm://elsewhere/fs/", ROOT),
         ("https://tinymachines.ai/docs", ROOT),
         ("tm://tinymachines/svn/x", f"{ROOT}fs/"),
-        ("tm://tinymachines/http/example.com/", f"{ROOT}http/tinymachines.ai/"),
     ]:
         with pytest.raises(TmError) as e:
             parse(uri)
         assert e.value.reason == "not-found"
         assert expect in e.value.data["nearest"], uri
+    # A site is the namespace's to know, since v0.25 some come from a file
+    # (tinypeek#24), so the grammar parses any site and the read refuses it.
+    e = refusal(Namespace(REPO, fetch=canned_fetch, sitemap_sites={}), "tm://tinymachines/http/example.com/")
+    assert e.reason == "not-found" and f"{ROOT}http/tinymachines.ai/" in e.data["nearest"]
 
 
 def test_a_link_cannot_get_its_confidence_wrong():

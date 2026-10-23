@@ -63,6 +63,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urljoin, urlsplit
+from xml.etree import ElementTree
 
 import httpx
 
@@ -187,6 +188,9 @@ NO_PAST = {
 # tools asks it once; a failure stands for less, so a server that comes back
 # is seen to.
 MCP_SERVERS_FILE = "api/mcp_servers.json"
+SITES_FILE = "api/sites.json"        # the sites this box serves and where each one's page list comes from (tinypeek#24)
+SITEMAP_TTL_S = 300                  # how long a site's sitemap and robots are kept before they are read again
+SITEMAP_INDEX_CAP = 20               # sitemaps followed from one sitemap index
 MCP_TTL_S = 300
 MCP_RETRY_S = 60
 MCP_TIMEOUT_S = 10.0
@@ -379,7 +383,7 @@ def is_json(mime: str) -> bool:
 
 
 def is_text(mime: str) -> bool:
-    return mime.startswith("text/") or is_json(mime) or mime == "image/svg+xml"
+    return mime.startswith("text/") or is_json(mime) or mime.endswith("/xml") or mime.endswith("+xml")
 
 
 def http_type(mime: str) -> str:
@@ -670,12 +674,6 @@ def parse(uri: str) -> Ref:
         if not rest:
             return Ref("http", None, "", facets)
         site, pages = rest[0], rest[1:]
-        if site not in SITES:
-            raise TmError(
-                RESOURCE_NOT_FOUND, "not-found",
-                f"{site!r} is not a site this box serves",
-                nearest=[f"{ROOT}http/{s}/" for s in SITES],
-            )
         path = "/" + "/".join(pages) + ("/" if trailing and pages else "")
         if not pages:
             path = "/"
@@ -2893,6 +2891,111 @@ class Kinds:
         return self.ns._result(me, T_KIND, text, links)
 
 
+# ---------------------------------------------------------------------------
+# A site this box serves but did not build: its page list is what it
+# publishes (tinypeek#24).
+# ---------------------------------------------------------------------------
+
+
+class Sitemap:
+    """A site served through the front door whose build is not on this box.
+    Its pages are the URLs of its sitemap.xml, read over loopback like a
+    page and kept SITEMAP_TTL_S; a sitemap index is followed to the sitemaps
+    it names on the same host. What its robots.txt disallows is never
+    fetched, listed or not, and reads as denied with the rule. A path the
+    sitemap does not name is not a page this box knows, decided before any
+    request leaves, so nothing behind the site that is not a page is ever
+    asked for."""
+
+    EXTRA = ("/robots.txt", "/sitemap.xml")   # the lists themselves read as themselves
+    clock = staticmethod(time.monotonic)
+
+    def __init__(self, ns: "Namespace", site: str, what: str = ""):
+        self.ns, self.site, self.what = ns, site, what
+        self.pages: dict[str, str | None] | None = None   # path -> lastmod, as the sitemap says
+        self.sources: list[str] = ["/sitemap.xml"]         # the sitemap files the list came from
+        self.rules: list[str] = []                         # robots Disallow prefixes
+        self.read_at: float | None = None
+
+    async def refresh(self) -> None:
+        """Read the two lists if the kept ones are older than SITEMAP_TTL_S.
+        A sitemap that stops answering keeps the last list read; one that
+        never answered refuses the site as unreachable, in its own words."""
+        now = self.clock()
+        if self.read_at is not None and now - self.read_at < SITEMAP_TTL_S:
+            return
+        status, _, body = await self.ns.fetch(self.site, "/robots.txt")
+        if status == 200:
+            self.rules = self._rules(body.decode("utf-8", errors="replace"))
+        elif status == 404:
+            self.rules = []
+        pages: dict[str, str | None] = {}
+        sources: list[str] = []
+        try:
+            await self._walk("/sitemap.xml", pages, sources)
+        except TmError:
+            if self.pages is None:
+                raise
+        else:
+            self.pages, self.sources = pages, sources
+        self.read_at = now
+
+    async def _walk(self, path: str, pages: dict, sources: list[str]) -> None:
+        status, _, body = await self.ns.fetch(self.site, path)
+        if status != 200:
+            raise TmError(RESOURCE_NOT_FOUND, "unreachable", f"{self.site}{path} answered {status}, so the site's pages cannot be listed", status=status)
+        sources.append(path)
+        try:
+            root = ElementTree.fromstring(body)
+        except ElementTree.ParseError as e:
+            raise TmError(RESOURCE_NOT_FOUND, "unreachable", f"{self.site}{path} is not a sitemap ({e})") from e
+        kind = root.tag.rsplit("}", 1)[-1]
+        for node in root:
+            loc = lastmod = None
+            for child in node:
+                tag = child.tag.rsplit("}", 1)[-1]
+                if tag == "loc":
+                    loc = (child.text or "").strip()
+                elif tag == "lastmod":
+                    lastmod = (child.text or "").strip() or None
+            if not loc:
+                continue
+            parts = urlsplit(loc)
+            if parts.netloc.lower() != self.site:
+                continue   # another host's page is not a page of this site
+            where = unquote(parts.path) or "/"
+            where = where.rstrip("/") or "/"
+            if kind == "sitemapindex":
+                if len(sources) < SITEMAP_INDEX_CAP and where not in sources:
+                    await self._walk(where, pages, sources)
+            else:
+                pages[where] = lastmod
+
+    @staticmethod
+    def _rules(text: str) -> list[str]:
+        out: list[str] = []
+        for line in text.splitlines():
+            line = line.split("#", 1)[0].strip()
+            key, _, value = line.partition(":")
+            if key.strip().lower() == "disallow" and value.strip():
+                out.append(value.strip())
+        return out
+
+    def denied(self, path: str) -> str | None:
+        """The robots rule a path falls under, or None. A rule is a prefix,
+        as robots.txt reads it."""
+        for rule in self.rules:
+            if path.startswith(rule):
+                return f"Disallow: {rule}"
+        return None
+
+    def known(self, path: str) -> bool:
+        return path in (self.pages or {}) or path in self.EXTRA or path in self.sources
+
+    def lastmod(self, path: str) -> str | None:
+        return (self.pages or {}).get(path)
+
+
 class Namespace:
     def __init__(
         self,
@@ -2903,10 +3006,13 @@ class Namespace:
         mcp_servers: dict | None = None,
         mcp_transport: httpx.AsyncBaseTransport | None = None,
         kinds_file: Path | None = None,
+        sitemap_sites: dict[str, dict] | None = None,
     ):
         self.repo = repo.resolve()
         self.fetch = fetch
         self.sites = sites
+        conf = sitemap_sites if sitemap_sites is not None else self._sites_file()
+        self.sitemaps = {name: Sitemap(self, name, str(c.get("what", ""))) for name, c in conf.items()}
         self.git = {k: v.resolve() for k, v in (git_repos if git_repos is not None else git_repos_beside(self.repo)).items()}
         self.origins = Origins(self.repo)
         self.graph = SiteGraph(self.repo)
@@ -2915,6 +3021,21 @@ class Namespace:
         self.trails = Trails(self)
         self.mcp = Mcp(self, mcp_servers, mcp_transport)
         self.kinds = Kinds(self, kinds_file)
+
+    def _sites_file(self) -> dict[str, dict]:
+        """The sites of SITES_FILE whose page list is a sitemap (tinypeek#24).
+        A site with a build on this box is one of `sites` and is not read
+        from the file; the file only adds."""
+        try:
+            got = json.loads((self.repo / SITES_FILE).read_text())
+        except (OSError, ValueError):
+            return {}
+        return {k: v for k, v in got.items() if isinstance(v, dict) and v.get("pages") == "sitemap" and k not in self.sites}
+
+    @property
+    def all_sites(self) -> tuple[str, ...]:
+        """Every site the http mount answers for: those built here, then those listed from a sitemap."""
+        return tuple(self.sites) + tuple(self.sitemaps)
 
     # -- the tool-shaped door --------------------------------------------
 
@@ -3116,7 +3237,7 @@ class Namespace:
                 items.append({"uri": f"{ROOT}fs/{quote(rel)}", "name": rel, "mimeType": T_LISTING})
         for name in sorted(self.git):
             items.append({"uri": f"{ROOT}git/{name}/", "name": name, "title": f"tinymachines/{name} at HEAD", "mimeType": T_LISTING})
-        for site in self.sites:
+        for site in self.all_sites:
             items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": T_LISTING})
         for kind in ENTITY_KINDS:
             items.append({"uri": Entities.uri(kind, collection=True), "name": f"entity/{kind}/", "mimeType": T_LISTING})
@@ -3141,7 +3262,7 @@ class Namespace:
         tmpl = ref.get("uri", "")
         ctx = ((params.get("context") or {}).get("arguments") or {})
         if name == "site":
-            values = [s for s in self.sites if s.startswith(value)]
+            values = [s for s in self.all_sites if s.startswith(value)]
         elif name == "repo":
             values = [r for r in sorted(self.git) if r.startswith(value)]
         elif name == "as":
@@ -3174,7 +3295,7 @@ class Namespace:
             values = self._fs_complete(value)
         elif name == "path" and "/http/" in tmpl:
             site = ctx.get("site") or self.sites[0]
-            if site not in self.sites:
+            if site not in self.all_sites:
                 values = []
             else:
                 values = self._http_complete(site, value)
@@ -4186,6 +4307,8 @@ class Namespace:
     def build_dir(self, site: str) -> Path | None:
         """Where the build that serves a site lives: this checkout for live,
         the beta worktree beside it for beta."""
+        if site not in self.sites:
+            return None   # a sitemap site has no build here (tinypeek#24)
         d = (self.repo / "web" / ".next") if site == self.sites[0] else (self.repo.parent / "public-beta" / "web" / ".next")
         return d if (d / "prerender-manifest.json").is_file() else None
 
@@ -4366,7 +4489,11 @@ class Namespace:
         The crawl is a measurement with a date on it, which is why it is a
         record and not a list typed here. Where the site's build is on this
         box, its prerender manifest is the list instead: every page, the
-        dynamic ones included (TM-3)."""
+        dynamic ones included (TM-3). A site built elsewhere is listed from
+        its sitemap, as last read (tinypeek#24)."""
+        sm = self.sitemaps.get(site)
+        if sm is not None:
+            return sorted(sm.pages or {})
         b = self.built(site)
         if b is not None:
             return sorted(b)
@@ -4407,12 +4534,15 @@ class Namespace:
             else:
                 entry["page"] = True
         out = []
+        sm = self.sitemaps.get(site)
         for seg, e in sorted(kids.items()):
             if e["page"]:
                 child = {"uri": f"{ROOT}http/{site}{quote(prefix + seg)}", "name": seg, "mimeType": T_PAGE, "isCollection": False}
                 title = self.page_title(site, prefix + seg)
                 if title:
                     child["title"] = title
+                if sm is not None and sm.denied(prefix + seg):
+                    child["redacted"] = True   # the sitemap lists it, robots disallows it: listed, never read
                 out.append(child)
             if e["below"]:
                 out.append({"uri": f"{ROOT}http/{site}{quote(prefix + seg)}/", "name": seg + "/", "mimeType": T_LISTING, "isCollection": True})
@@ -4454,6 +4584,16 @@ class Namespace:
         up = f"{ROOT}http/{site}{quote(parent)}/" if parent else f"{ROOT}http/{site}/"
         base = f"{ROOT}http/{site}{quote(clean)}"
         links = [link("up", up if clean != "/" else f"{ROOT}http/")]
+        if site in self.sitemaps:
+            # tinypeek#24: a page built elsewhere has the links a page has and
+            # no join to this checkout: no source, no data, no other version.
+            if is_dir and clean == "/":
+                links.append(link("describedby", f"{ROOT}http/{site}/sitemap.xml", title="the page list the site publishes"))
+            if not is_dir:
+                links.append(link("collection", up))
+                links.append(link("describedby", f"{base}?as=stat"))
+                links.append(link("alternate", f"{base}?as=rendered", title="the HTML a visitor gets"))
+            return links
         if is_dir and site == self.sites[0] and clean != "/":
             # A collection that stands for a dynamic route's pages carries
             # their reading, the inverse of the records' one link (TM-18).
@@ -4494,17 +4634,28 @@ class Namespace:
     async def _read_http(self, ref: Ref) -> dict:
         if ref.site is None:
             body = {"uri": f"{ROOT}http/", "children": [
-                {"uri": f"{ROOT}http/{s}/", "name": s, "mimeType": T_LISTING, "isCollection": True} for s in self.sites
+                {"uri": f"{ROOT}http/{s}/", "name": s, "mimeType": T_LISTING, "isCollection": True} for s in self.all_sites
             ]}
             return self._result(f"{ROOT}http/", T_LISTING, json.dumps(body, indent=1), [link("up", ROOT)])
         # A page's text is what a reader wants first, so it is the default
         # (TM-4); the HTML a visitor gets, nav and flight payload and all, is
         # one facet away.
+        if ref.site not in self.all_sites:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{ref.site!r} is not a site this box serves",
+                          nearest=[f"{ROOT}http/{s}/" for s in self.all_sites])
         asked = ref.facets.get("as")
         as_ = asked or "text"
         if as_ not in AS_HTTP:
             raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; http offers {', '.join(AS_HTTP)}")
         site, path = ref.site, ref.path
+        sm = self.sitemaps.get(site)
+        if sm is not None:
+            # tinypeek#24: the site's own lists first, and its robots before
+            # any facet: a disallowed path is not offered, whatever is asked.
+            await sm.refresh()
+            rule = sm.denied(path) or sm.denied(path.rstrip("/") or "/")
+            if rule:
+                raise TmError(RESOURCE_NOT_FOUND, "denied", f"{site}{path} is under a rule of the site's robots.txt ({rule}); it is not offered")
         span = span_of(ref)
         if span and (as_ != "text" or ref.is_collection):
             # tinypeek#8: a range is of a page's text, and so are its lines
@@ -4537,6 +4688,8 @@ class Namespace:
             page = [ln for ln in self._http_links(site, "/", False)
                     if ln["rel"].startswith("tm:") or (ln["rel"] == "alternate" and "?as=" not in ln["href"])]
             return self._result(_cursored(ref.uri, ref.facets.get("cursor")), T_LISTING, json.dumps(body, indent=1), self._http_links(site, "/", True) + page)
+        if sm is not None and not sm.known(path):
+            raise self._http_missing(site, path)   # not a page the site lists: nothing is asked for
         status, ctype, data = await self.fetch(site, path)
         base = f"{ROOT}http/{site}{quote(path)}"
         links = self._http_links(site, path, False)
@@ -4546,6 +4699,8 @@ class Namespace:
             # page; contentType stays what the front door said.
             stat = {"uri": base, "status": status, "contentType": ctype, "mimeType": T_PAGE if bare == "text/html" else http_type(bare), "size": len(data),
                     "fetched": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+            if sm is not None and sm.lastmod(path):
+                stat["lastmod"] = sm.lastmod(path)   # as the site's sitemap says
             return self._result(f"{base}?as=stat", T_STAT, json.dumps(stat, indent=1), links)
         if status == 404:
             raise self._http_missing(site, path)
