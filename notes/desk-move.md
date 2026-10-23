@@ -105,8 +105,11 @@ tests now play the account service as down unless they play it themselves,
 because its default address is the box's live port. The sprite generator's
 check in `deploy/tinymachines.ai.nginx` now passes the scheme, without which a
 passkey session would not be recognised there; that file is installed by
-hand. What is left of step A is the owner's: deploy it, then run the script's
-dry run and its write against the live files.
+hand. The owner deployed it at `20e5e1e` and ran `scripts/link-passkey.sh
+--yes` the same evening: 2 links written, 0 clashes, 0 accounts missing on the
+service. Read back read-only afterwards: `account_links` holds 2 rows, and the
+linked accounts reach 19 cartridges, the same shelf as before. Step A is done;
+what remains to see is the owner's own passkey sign-in opening it.
 
 **Step B, the desk as an app on the kit.** Private and in the kit's kiosk
 look, as decided for every carved-out app on 2026-10-20.
