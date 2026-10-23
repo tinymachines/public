@@ -206,6 +206,9 @@ def test_a_view_composes_with_view_and_nothing_else_composes_twice(gns, ns):
     assert tl["events"] and all(set(e) >= {"at", "text", "href"} for e in tl["events"]) and tl["events"][0]["at"] <= tl["events"][-1]["at"]
     c, _ = read(gns, f"{ROOT}git/public/docs/nes/alone.md?as=blocks&view=log")
     assert c["uri"] == f"{ROOT}git/public/docs/nes/alone.md?as=blocks&view=log", "the echo spells the view"
+    # A view's own parameters ride along, and the answer names the view: of and mimeType are the view's.
+    _, _, one = blocks(gns, f"{ROOT}git/public/docs/nes/alone.md?view=log&n=1")
+    assert one["of"] == f"{ROOT}git/public/docs/nes/alone.md?as=log&n=1" and len(of_type(one, "timeline")[0]["events"]) == 1
     _, _, st = blocks(ns, f"{ROOT}fs/docs/nes/pile.md?view=stat")
     assert any(r["key"] == "size" for r in of_type(st, "kv")[0]["rows"])
     _, _, lk = blocks(ns, f"{ROOT}fs/docs/nes/pile.md?view=links")
