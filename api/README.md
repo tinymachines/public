@@ -455,9 +455,10 @@ sitemap, is `api/sites.json`. Where the site publishes a link manifest at
 `/.well-known/tm-manifest.json` (tinypeek#9, v0.29), read with the two lists
 and kept as long, a listed page takes its title from it and its stat carries
 the repository files the manifest names. It cannot add a page or open a
-fence, and a file the reader does not take is ignored whole. Links into the
-site's repository wait on a git mount for it. The crawler reads every listed
-page and probes each robots rule.
+fence, and a file the reader does not take is ignored whole. The site's
+repository is mounted in git as `bradley.io`, so each file it names that the
+repository tracks is a `tm:source` or `tm:data` link, and the file names the
+page back. The crawler reads every listed page and probes each robots rule.
 
 Two addresses for a host with no modules (tinylens#2, spec section 15).
 `tm://tinymachines/manifest` is the visual language as data, a shape per
