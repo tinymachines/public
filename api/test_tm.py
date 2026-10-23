@@ -41,7 +41,8 @@ async def canned_fetch(site: str, path: str) -> tuple[int, str, bytes]:
             b"<ul><li>one</li><li>two</li></ul></main><footer>foot</footer></body></html>"
         )
     if path == "/docs/nes/table":
-        return 200, "text/html; charset=utf-8", b"<html><body><main><h2>Rows</h2><table><tr><th>a</th><th>b</th></tr><tr><td>1</td><td>2</td></tr></table></main></body></html>"
+        return 200, "text/html; charset=utf-8", (b"<html><body><main><h2>Rows</h2><table><tr><th>a</th><th>b</th></tr><tr><td>1</td><td>2</td></tr></table>"
+            b"<table><thead><tr><th></th><th>ours</th><th>theirs</th></tr></thead><tbody><tr><td>walk</td><td>38</td><td>40</td></tr></tbody></table></main></body></html>")
     if path == "/ja/docs/nes/pile":
         return 200, "text/html; charset=utf-8", b"<html><body><nav>menu</nav><article><h1>Pile</h1><pre>a  b\n c</pre></article></body></html>"
     if path == "/docs":
@@ -820,6 +821,22 @@ def test_tm6_a_lesson_page_and_its_cartridge_source_are_one_link_apart_both_ways
     for back in (f"{ROOT}git/public/lessons/jump/prg.s", f"{ROOT}git/public/lessons/jump/"):
         _, bl = read(built, back)
         assert f"{ROOT}http/tinymachines.ai/autopsy/lessons/jump" in rels(bl)["tm:renders-as"], back
+        titles = [ln["title"] for ln in bl if ln["rel"] == "tm:renders-as"]
+        assert len(set(titles)) == len(titles), f"each page is named, not one set of words for all: {titles}"
+
+
+def test_a_route_names_each_page_it_renders(built):
+    route = built.repo / "web" / "app" / "[lang]" / "autopsy" / "games" / "[game]" / "page.tsx"
+    route.parent.mkdir(parents=True, exist_ok=True)
+    route.write_text("export default function Page() {}\n")
+    git(built.repo, "add", "-f", "web")
+    git(built.repo, "commit", "-q", "-m", "a route")
+    _, links = read(built, f"{ROOT}git/public/web/app/%5Blang%5D/autopsy/games/%5Bgame%5D/page.tsx")
+    pages = [ln for ln in links if ln["rel"] == "tm:renders-as"]
+    assert len(pages) >= 2, pages
+    titles = [ln["title"] for ln in pages]
+    assert len(set(titles)) == len(titles), titles
+    assert any("/autopsy/games/abc" in t for t in titles), titles
 
 
 def test_tm10_no_mount_root_goes_up_to_itself(ns):

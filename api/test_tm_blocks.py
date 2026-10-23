@@ -250,6 +250,8 @@ def test_a_too_large_thing_links_a_first_range_and_keeps_its_links(ns, repo):
     assert not any("{" in h for h in hrefs), "a link block is an address, not a template"
     assert f"{ROOT}fs/data/huge.json?range=0-{tm.READ_CAP - 1}" in hrefs
     assert any(b["rel"] == "up" for b in of_type(body, "link")), "its own links, from its stat"
+    placed = {b["href"] for b in of_type(body, "link")}
+    assert not [ln["href"] for ln in links if ln["href"] not in placed], "every link of the answer is in a block, its stat too"
 
 
 def test_a_page_keeps_its_headings_lists_tables_and_code(ns):
@@ -274,3 +276,5 @@ def test_a_page_table_is_a_table(ns, monkeypatch):
     c, _ = read(ns, f"{ROOT}http/tinymachines.ai/docs/nes/table?as=blocks")
     t = of_type(json.loads(c["text"]), "table")[0]
     assert t["columns"] == ["a", "b"] and t["rows"] == [["1", "2"]]
+    corner = of_type(json.loads(c["text"]), "table")[1]
+    assert corner["columns"] == ["", "ours", "theirs"] and corner["rows"] == [["walk", "38", "40"]], "a row header has a column, empty or not"

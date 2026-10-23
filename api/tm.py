@@ -1373,7 +1373,7 @@ class Entities:
                               title="a lesson measured beside this game" if how == "exact" else "a lesson measured beside a game of this name"))
         for site in self.ns.sites:
             for pg in self.game_pages(site, key):
-                links.append(link("tm:renders-as", f"{ROOT}http/{site}{quote(pg)}", "exact", title=f"this game's page on {site}"))
+                links.append(link("tm:renders-as", f"{ROOT}http/{site}{quote(pg)}", "exact", title=f"{pg}, this game's page on {site}"))
         links.append(link("tm:data", self._record("autopsy", f"/games/{g['i']}"), "exact", title="the record this game is read from"))
         return body, links
 
@@ -3101,13 +3101,13 @@ class _PageBlocks(HTMLParser):
             if tag == "pre":
                 self.pre -= 1
             self.buf, self.tag = None, None
+            if tag in ("td", "th") and self.row is not None:
+                # An empty cell keeps its column, as a row header's corner does.
+                self.row.append(text)
+                return
             if not text:
                 return
-            if tag in ("td", "th") and self.row is not None:
-                self.row.append(text)
-                if tag == "th" and self.head is None and self.table == []:
-                    pass
-            elif tag == "li" and self.items is not None:
+            if tag == "li" and self.items is not None:
                 self.items.append({"text": text})
             elif tag[0] == "h" and tag[1:].isdigit():
                 self.out.append({"type": "heading", "level": min(int(tag[1]), 3), "text": text})
@@ -3120,7 +3120,7 @@ class _PageBlocks(HTMLParser):
                 self.out.append({"type": "list", "items": self.items})
             self.items = None
         elif tag == "tr" and self.row is not None and self.table is not None:
-            if self.row:
+            if any(self.row):
                 self.table.append(self.row)
             self.row = None
         elif tag == "table" and self.table is not None:
@@ -3249,7 +3249,7 @@ class Blocks:
                     if href:
                         href = re.sub(r"\{[a-z]+\}-\{[a-z]+\}", firsts.get(key, ""), href)
                         blocks.append({"type": "link", "href": href, "rel": "alternate", "title": f"the first piece, by {key}" if key != "text" else "its text", "from": inner})
-            blocks += [self.link_block(ln, inner) for ln in links if ln["rel"] != "describedby" or "as=stat" not in ln["href"]]
+            blocks += [self.link_block(ln, inner) for ln in links]
             return self.finish(ref, inner, mime, self.name(inner), blocks, links, reads)
         c = got["contents"][0]
         links = got["_meta"][META_LINKS]
@@ -4373,7 +4373,7 @@ class Namespace:
                     pages.append("/ja" + page)
                 for site in self.sites:
                     for pg in (q for q in pages if self.serves(site, q)):
-                        links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the page this file becomes on {site}"))
+                        links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"{pg}, the page this file becomes on {site}"))
             links.extend(self._origin_links(clean))
             links.extend(self._record_links(clean))
             links.extend(self.mcp.inbound(clean))
@@ -4858,7 +4858,7 @@ class Namespace:
             if key:
                 for site in self.sites:
                     for pg in self.lesson_pages(site, key):
-                        links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"the lesson page this cartridge's source becomes on {site}"))
+                        links.append(link("tm:renders-as", f"{ROOT}http/{site}{pg}", "exact", title=f"{pg}, the lesson page this cartridge's source becomes on {site}"))
         if is_dir:
             return links + (self.entities.inbound("git", repo, clean, True) if head else [])
         sep = "&" if q else "?"
@@ -4875,7 +4875,7 @@ class Namespace:
             # build's prerender manifest), dynamic routes included.
             for site in self.sites:
                 for page in self.pages_of_route(site, clean):
-                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"a page this route renders on {site}"))
+                    links.append(link("tm:renders-as", f"{ROOT}http/{site}{page}", "exact", title=f"{page}, a page this route renders on {site}"))
             for node, d in sorted(self.lineage().items()):
                 if clean in d.get("generated_by", []):
                     links.append(link("tm:generates", f"{ROOT}offbox/{quote(node)}", "exact", title="what it makes, kept off this box"))
