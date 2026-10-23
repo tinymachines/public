@@ -110,6 +110,12 @@ tm://tinymachines/mcp/terrapulse/map               that server's map: which of i
                                                    read as addresses, and how sure each is
 tm://tinymachines/kinds/pattern                    one kind of thing this host has served,
                                                    counted: its media type and its links
+tm://tinymachines/http/bradley.io/                 a site this box serves and did not build,
+                                                   listed from the sitemap it publishes
+tm://tinymachines/manifest                         the visual language as data: a shape per
+                                                   mount, a colour per link relation
+tm://tinymachines/entity/pattern/pad-poll?as=blocks  anything, composed into plain blocks
+                                                   for a screen with no code on it
 ```
 
 A URI ending in `/` is a collection, and reading one returns its children
@@ -177,6 +183,23 @@ which link relations; it is measured, so a kind never served is not there.
 A link may carry its target's `type`. On the entity mount `?as=set&rel=<rel>`
 reads the things behind one link relation inlined, a page at a time, which
 saves a client one read a member.
+
+A site this box serves but did not build is listed from the `sitemap.xml` it
+publishes, and its `robots.txt` is the fence: only a listed page is ever
+fetched, a path the sitemap does not name is `not-found` before any request
+leaves, and a path under a `Disallow` is `denied` with the rule. Its pages
+read as pages, with no link to a source, since this box did not build them.
+
+Two addresses serve a host with no modules at all, a terminal or a print
+page. `tm://tinymachines/manifest` is the visual language as data, a shape
+per mount, a colour family per link relation, the handles a kind offers,
+read from one file so every viewer draws the same one. `?as=blocks` on any
+address composes it into an ordered list of blocks from a closed vocabulary
+(`heading`, `note`, `kv`, `list`, `table`, `timeline`, `diff`, `code`,
+`media`, `question`, `finding`, `trail`, `link`), every block naming the
+address it came from and the body naming every read it was built from, so a
+page that renders blocks and nothing else shows every kind without looking
+at a body.
 
 Every read carries links. A notebook page links to the markdown it is
 rendered from (`tm:source`), the markdown links back to its page

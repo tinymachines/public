@@ -210,10 +210,10 @@ def test_the_registry_persists_outside_the_checkout_and_refuses_a_place_inside_i
     assert json.loads(f.read_text())["kinds"]["lesson"]["served"] == 1
     # Where the service finds it: the state directory, never the checkout.
     monkeypatch.delenv("TM_KINDS_FILE", raising=False)
-    state = tmp_path.parent / (tmp_path.name + "-state")   # beside the checkout, as the service's state directory is
+    state = ents.repo.parent / "state"   # beside the checkout, as the service's state directory is
     monkeypatch.setenv("STATE_DIRECTORY", str(state))
     assert tm.kinds_file_from_env(ents.repo) == state / "tm-kinds.json"
-    monkeypatch.setenv("STATE_DIRECTORY", str(tmp_path / "svc"))
+    monkeypatch.setenv("STATE_DIRECTORY", str(ents.repo / "svc"))
     assert tm.kinds_file_from_env(ents.repo) is None, "the checkout is the repo here, and a place under it is refused"
     monkeypatch.setenv("TM_KINDS_FILE", str(ents.repo / "notes" / "kinds.json"))
     assert tm.kinds_file_from_env(ents.repo) is None and "not be kept under the checkout" in capsys.readouterr().out

@@ -54,7 +54,11 @@ async def canned_fetch(site: str, path: str) -> tuple[int, str, bytes]:
 
 @pytest.fixture
 def repo(tmp_path: Path) -> Path:
-    """A small checkout with the three roots and the things the rules refuse."""
+    """A small checkout with the three roots and the things the rules refuse.
+    It sits one level down so its parent is this test's own: a beta worktree a
+    test writes beside it (`public-beta`) is seen by no other test."""
+    tmp_path = tmp_path / "public"
+    tmp_path.mkdir()
     (tmp_path / "docs" / "nes").mkdir(parents=True)
     (tmp_path / "docs" / "ja" / "nes").mkdir(parents=True)
     (tmp_path / "docs" / "styles").mkdir()
