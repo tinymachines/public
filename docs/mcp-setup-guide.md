@@ -114,6 +114,8 @@ tm://tinymachines/http/bradley.io/                 a site this box serves and di
                                                    listed from the sitemap it publishes
 tm://tinymachines/manifest                         the visual language as data: a shape per
                                                    mount, a colour per link relation
+tm://tinymachines/renderers/                       the module that draws each media type,
+                                                   by address and sha256
 tm://tinymachines/entity/pattern/pad-poll?as=blocks  anything, composed into plain blocks
                                                    for a screen with no code on it
 ```

@@ -86,6 +86,8 @@ tm://tinymachines/http/bradley.io/                 この箱が配信するが�
                                                    サイトが公開するサイトマップから並べる
 tm://tinymachines/manifest                         視覚言語をデータにしたもの。マウントごとの形、
                                                    リンク関係ごとの色
+tm://tinymachines/renderers/                       メディア型ごとに、それを描くモジュール。
+                                                   アドレスと sha256 で
 tm://tinymachines/entity/pattern/pad-poll?as=blocks  何でも、コードのない画面のための
                                                    素のブロックに組み立てたもの
 tm://tinymachines/entity/pattern/pad-poll          解剖が見つけたパターン。それを持つ

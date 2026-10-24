@@ -490,6 +490,13 @@ generic composition, so nothing is blank; the links no block placed come
 last as `link` blocks. The crawler reads each kind it meets as blocks once
 and holds the vocabulary.
 
+For a host that has modules (tinylens#3), `tm://tinymachines/renderers/` is
+the renderer registry: for each media type, the module that draws it, its
+sha256, the manifest it was built against, its fallback and the reads its
+host makes for it. The registry and the modules are the lens's, copied into
+`notes/renderers/` with the digests they were built with; a module is served
+at `tm://tinymachines/renderers/<module>` only while its bytes match.
+
 The git mount offers this repository and the siblings checked out beside it,
 under their GitHub names, all public under github.com/tinymachines. It runs
 git itself, read-only, with every argument passed as an argument, a ref
