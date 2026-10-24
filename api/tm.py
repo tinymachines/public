@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import base64
 import fnmatch
+import hashlib
 import html
 import json
 import mimetypes
@@ -140,6 +141,7 @@ PARAMS: dict[str, tuple[str, ...]] = {
     "mcp": ("as", "view", "range", "lines", "pointer", "rel", "min", "cursor"),
     "kinds": ("as", "view", "rel", "min", "cursor"),
     "manifest": ("as", "view", "rel", "min"),
+    "renderers": ("as", "view", "rel", "min"),
 }
 # rel= and min= narrow a set of links; they ride with ?as=links and, on the
 # entity mount, with ?as=set (tinypeek#23), which inlines what they keep.
@@ -243,6 +245,7 @@ T_KIND = tm_type("kind")
 T_MAP = tm_type("map")
 T_MANIFEST = tm_type("manifest")
 T_BLOCKS = tm_type("blocks")
+T_RENDERERS = tm_type("renderers")
 T_PAGE = tm_type("page", text=True)
 T_BLAME = tm_type("blame", text=True)
 
@@ -271,7 +274,10 @@ KINDS: dict[str, str] = {
     "map": "an MCP server's map: which of its tools read as addresses, derived from its schemas and corrected by an override",
     "manifest": "the visual language as data: a shape per mount, a colour family per link relation, the handles a kind offers (tm://<host>/manifest)",
     "blocks": "any read composed into an ordered list of blocks from a closed vocabulary, for a host with no modules (?as=blocks)",
+    "renderers": "the renderer registry: the module that draws each media type, by address and sha256 (tm://<host>/renderers/)",
 }
+RENDERERS_DIR = "notes/renderers"   # the registry and its modules, the lens's (tinylens#3)
+RENDERERS_FILE = f"{RENDERERS_DIR}/registry.json"
 MANIFEST_FILE = "notes/manifest.json"   # the manifest's one source, served and versioned through the namespace (tinylens#2)
 BLOCK_TYPES = ("heading", "note", "kv", "list", "table", "timeline", "diff", "code", "media", "question", "finding", "trail", "link")
 BLOCK_CAP = 200          # blocks in one ?as=blocks read; past it the list closes with a link to the thing
@@ -646,6 +652,8 @@ class Ref:
             return f"{ROOT}git/{self.site}/{quote(self.path)}" if self.site else f"{ROOT}git/"
         if self.mount == "manifest":
             return f"{ROOT}manifest"
+        if self.mount == "renderers":
+            return f"{ROOT}renderers/{quote(self.path)}"
         if self.mount in ("offbox", "entity", "mcp", "kinds"):
             return f"{ROOT}{self.mount}/{quote(self.path)}"
         return f"{ROOT}http/{self.site}{quote(self.path)}"
@@ -695,6 +703,8 @@ def parse(uri: str) -> Ref:
         return Ref("kinds", None, "/".join(rest) + ("/" if trailing and rest else ""), facets)
     if mount == "manifest" and not rest and not trailing:
         return Ref("manifest", None, "", facets)
+    if mount == "renderers" and (rest or trailing) and len(rest) <= 1:
+        return Ref("renderers", None, rest[0] if rest else "", facets)
     if mount == "http":
         if not rest:
             return Ref("http", None, "", facets)
@@ -3399,6 +3409,8 @@ class Blocks:
             return HOST
         if ref.mount == "manifest":
             return "manifest"
+        if ref.mount == "renderers":
+            return ref.path or "renderers"
         if ref.mount == "http":
             return ref.path if ref.path != "/" else (ref.site or "")
         segs = [p for p in ref.path.split("/") if p]
@@ -3441,7 +3453,7 @@ class Blocks:
                     out.append({"type": "list", "items": items, "from": me})
         if isinstance(body.get("total"), int):
             out.append(self.note(f"{_num(body['total'])} in all.", me))
-        for key, rel in (("front_page", "alternate"), ("next", "next"), ("manifest", "describedby")):
+        for key, rel in (("front_page", "alternate"), ("next", "next"), ("manifest", "describedby"), ("renderers", "describedby")):
             if isinstance(body.get(key), str):
                 out.append({"type": "link", "href": body[key], "rel": rel, "title": _words(key), "from": pointer(me, key)})
                 placed.add(body[key])
@@ -3743,6 +3755,17 @@ class Namespace:
         self.kinds = Kinds(self, kinds_file)
         self.blocks = Blocks(self)
 
+    def renderers_file(self) -> Path | None:
+        f = self.repo / RENDERERS_FILE
+        return f if f.is_file() else None
+
+    def _renderer_files(self) -> dict[str, dict]:
+        """module file -> its entry, for a registry that reads; {} for one that does not."""
+        try:
+            return {e["module"]: e for e in self._registry()["renderers"]}
+        except TmError:
+            return {}
+
     def manifest_file(self) -> Path | None:
         f = self.repo / MANIFEST_FILE
         return f if f.is_file() else None
@@ -3922,6 +3945,17 @@ class Namespace:
                 ),
             },
             {
+                "uriTemplate": f"{ROOT}renderers/{{module}}{_q('renderers')}",
+                "name": "renderers",
+                "title": "The module that draws a media type",
+                "description": (
+                    "renderers/ is the registry: for each media type, the module that draws it as a panel (an address here and its sha256), "
+                    "the manifest it was built against, the media type to fall back to, and the reads its host makes for it. "
+                    "renderers/<module> is the module itself, served only while its bytes match the sha256 the registry names."
+                ),
+                "mimeType": T_RENDERERS,
+            },
+            {
                 "uriTemplate": f"{ROOT}kinds/{{kind}}{_q('kinds')}",
                 "name": "kinds",
                 "title": "A kind of thing this host has served",
@@ -3966,6 +4000,8 @@ class Namespace:
             items.append({"uri": f"{ROOT}http/{site}/", "name": site, "title": f"{site}, page by page", "mimeType": T_LISTING})
         if self.manifest_file():
             items.append({"uri": f"{ROOT}manifest", "name": "manifest", "title": "the visual language as data", "mimeType": T_MANIFEST})
+        if self.renderers_file():
+            items.append({"uri": f"{ROOT}renderers/", "name": "renderers", "title": "the renderer registry", "mimeType": T_RENDERERS})
         for kind in ENTITY_KINDS:
             items.append({"uri": Entities.uri(kind, collection=True), "name": f"entity/{kind}/", "mimeType": T_LISTING})
         for key in self.entities.keys("game"):
@@ -4091,6 +4127,73 @@ class Namespace:
         body = {"uri": me, "source": f"{ROOT}fs/{MANIFEST_FILE}", **{k: v for k, v in doc.items() if k != "uri"}}
         return self._result(me, T_MANIFEST, json.dumps(body, indent=1), links)
 
+    # -- the renderer registry (tinylens#3, spec section 15) --------------------
+
+    REGISTRY_KEYS = ("mimeType", "name", "module", "sha256")
+
+    def _registry(self) -> dict:
+        """The registry as written, held to its shape: each entry names a
+        media type, a module file beside the registry and that file's
+        sha256. One bad entry refuses the whole, as a manifest without its
+        keys does, so a host never draws with half a registry."""
+        f = self.renderers_file()
+        if f is None:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"no renderer registry is published on this host ({RENDERERS_FILE} is not there)", nearest=[ROOT])
+        try:
+            doc = json.loads(f.read_text())
+        except ValueError:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{RENDERERS_FILE} is not JSON, so no registry is published", nearest=[ROOT, f"{ROOT}fs/{RENDERERS_FILE}"]) from None
+        entries = doc.get("renderers") if isinstance(doc, dict) else None
+        if not isinstance(entries, list):
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{RENDERERS_FILE} is not a registry: it has no renderers list", nearest=[ROOT, f"{ROOT}fs/{RENDERERS_FILE}"])
+        for i, e in enumerate(entries):
+            bad = [k for k in self.REGISTRY_KEYS if not isinstance(e, dict) or not isinstance(e.get(k), str)]
+            if not bad and (not re.fullmatch(r"[a-z0-9][a-z0-9._-]*\.m?js", e["module"]) or not re.fullmatch(r"[0-9a-f]{64}", e["sha256"])):
+                bad = ["module" if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*\.m?js", e["module"]) else "sha256"]
+            if bad:
+                raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{RENDERERS_FILE} entry {i} has no good {', '.join(bad)} (a module is a .js file beside the registry, a sha256 is 64 hex digits)",
+                              nearest=[ROOT, f"{ROOT}fs/{RENDERERS_FILE}"])
+        return doc
+
+    def _read_renderers(self, ref: Ref) -> dict:
+        doc = self._registry()
+        me = f"{ROOT}renderers/"
+        as_ = ref.facets.get("as")
+        if as_ and as_ != "stat":
+            raise TmError(BAD_PARAMS, "bad-facet", f"as={as_!r}; the registry and its modules offer stat, links, blocks")
+        if not ref.path:
+            links = [link("up", ROOT), link("describedby", f"{me}?as=stat"),
+                     link("tm:data", f"{ROOT}fs/{RENDERERS_FILE}", "exact", title="the file this registry is read from")]
+            links += [link("item", f"{me}{quote(e['module'])}", title=f"the module that draws {e['mimeType']}") for e in doc["renderers"]]
+            if as_ == "stat":
+                st = self.renderers_file().stat()
+                stat = {"uri": me, "mimeType": T_RENDERERS, "size": st.st_size, "renderers": len(doc["renderers"]),
+                        "modified": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(timespec="seconds")}
+                return self._result(f"{me}?as=stat", T_STAT, json.dumps(stat, indent=1), links)
+            body = {"uri": me, "source": f"{ROOT}fs/{RENDERERS_FILE}", **{k: v for k, v in doc.items() if k not in ("uri", "renderers")},
+                    "renderers": [{**e, "module": f"{me}{quote(e['module'])}"} for e in doc["renderers"]]}
+            return self._result(me, T_RENDERERS, json.dumps(body, indent=1), links)
+        entry = {e["module"]: e for e in doc["renderers"]}.get(ref.path)
+        if entry is None:
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"the registry names no module {ref.path!r}", nearest=[me] + [f"{me}{quote(m['module'])}" for m in doc["renderers"]][:5])
+        f = self.repo / RENDERERS_DIR / ref.path
+        if not f.is_file():
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"the registry names {ref.path}, and {RENDERERS_DIR}/{ref.path} is not there", nearest=[me])
+        data = f.read_bytes()
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != entry["sha256"]:
+            # A host runs what it is given; a module that is not the one the registry names is not given.
+            raise TmError(RESOURCE_NOT_FOUND, "not-found", f"{ref.path}'s sha256 is {digest}, and the registry names {entry['sha256']}; it is not served until they agree", nearest=[me])
+        uri = f"{me}{quote(ref.path)}"
+        links = [link("up", me), link("collection", me), link("describedby", f"{uri}?as=stat"),
+                 link("tm:data", f"{ROOT}fs/{RENDERERS_DIR}/{quote(ref.path)}", "exact", title="the file this module is read from")]
+        if as_ == "stat":
+            stat = {"uri": uri, "mimeType": "text/javascript", "size": len(data), "sha256": digest, "renders": entry["mimeType"]}
+            return self._result(f"{uri}?as=stat", T_STAT, json.dumps(stat, indent=1), links)
+        if len(data) > READ_CAP:
+            raise _too_large(f"the module {ref.path}", len(data), uri)
+        return self._result(uri, "text/javascript", data.decode("utf-8", errors="replace"), links)
+
     async def _read_typed(self, uri: str, ref: Ref | None = None) -> dict:
         """One read with its links bounded and typed, not yet counted as
         served: what `read` answers, and what a composition reads from."""
@@ -4163,6 +4266,8 @@ class Namespace:
             return T_LISTING
         if ref.mount == "manifest":
             return T_MANIFEST
+        if ref.mount == "renderers":
+            return "text/javascript" if ref.path else T_RENDERERS
         parts = [p for p in ref.path.split("/") if p]
         if ref.mount == "mcp":
             if len(parts) <= 1:
@@ -4275,6 +4380,8 @@ class Namespace:
         ref = parse(uri)
         if ref.mount == "manifest":
             return self._read_manifest(ref)
+        if ref.mount == "renderers":
+            return self._read_renderers(ref)
         if ref.mount == "tm":
             if ref.facets:
                 raise TmError(BAD_PARAMS, "bad-facet", f"the list of hosts takes no facet but as=links; read {TOP}")
@@ -4296,6 +4403,10 @@ class Namespace:
             manifest = [link("describedby", f"{ROOT}manifest", title="the visual language as data: shapes, families, handles")] if self.manifest_file() else []
             if manifest:
                 body["manifest"] = f"{ROOT}manifest"
+            # tinylens#3: the module that draws each media type, where a registry is published.
+            if self.renderers_file():
+                body["renderers"] = f"{ROOT}renderers/"
+                manifest = manifest + [link("describedby", f"{ROOT}renderers/", title="the renderer registry: the module that draws each media type")]
             # TM-12: the documents a fresh session should read first.
             return self._result(ROOT, T_LISTING, json.dumps(body, indent=1),
                                 [link("up", TOP, title="the hosts this server answers for")]
@@ -4461,6 +4572,13 @@ class Namespace:
             links.extend(self.mcp.inbound(clean))
             if clean == MANIFEST_FILE and self.manifest_file():
                 links.append(link("tm:read-by", f"{ROOT}manifest", "exact", title="the manifest this file is served as"))
+            if clean.startswith(RENDERERS_DIR + "/") and self.renderers_file():
+                served = self._renderer_files()
+                name = clean[len(RENDERERS_DIR) + 1:]
+                if clean == RENDERERS_FILE:
+                    links.append(link("tm:read-by", f"{ROOT}renderers/", "exact", title="the registry this file is served as"))
+                elif name in served:
+                    links.append(link("tm:read-by", f"{ROOT}renderers/{quote(name)}", "exact", title="the module this file is served as"))
         return links
 
     def _record_links(self, rel: str) -> list[dict]:
@@ -5248,7 +5366,7 @@ class Namespace:
         ref = parse(uri)
         if ref.mount == "entity":
             return self.entities.stands_for(ref)
-        if ref.mount in ("mcp", "manifest"):
+        if ref.mount in ("mcp", "manifest", "renderers"):
             # A map, and the manifest, are read from files and name themselves back (tinyhelper#6, tinylens#2).
             return uri
         if ref.mount != "http" or ref.site is None:

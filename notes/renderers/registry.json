@@ -1,0 +1,59 @@
+{
+ "contract": "tinylens#3",
+ "note": "The renderer registry tinylens proposes for tm://<host>/renderers/: one entry per media type, a module by address with its sha256, the manifest it was built against, and its fallback. module is relative to this file until a host gives it an address.",
+ "renderers": [
+  {
+   "mimeType": "application/vnd.tm.pattern+json",
+   "name": "pattern",
+   "what": "a pattern's numbers across every routine it was found in",
+   "module": "pattern.js",
+   "sha256": "7a79dabe55e6f2128ef5fb7b4efe83a18dccfc6552ed6b815a09b4a7e584a2b5",
+   "manifest": 1,
+   "fallback": "application/vnd.tm.record+json",
+   "reads": [
+    {
+     "set": "tm:instance"
+    }
+   ]
+  },
+  {
+   "mimeType": "application/vnd.tm.game+json",
+   "name": "game",
+   "what": "a game's patterns, most first, and the lessons measured beside it",
+   "module": "game.js",
+   "sha256": "28a88c2ce4946eae28da5f887db6dd2ea6fbf8f870aee6a73dcb3eb3405a918c",
+   "manifest": 1,
+   "fallback": "application/vnd.tm.record+json",
+   "reads": []
+  },
+  {
+   "mimeType": "application/vnd.tm.lesson+json",
+   "name": "lesson",
+   "what": "a lesson's numbers beside the game's, and its frames",
+   "module": "lesson.js",
+   "sha256": "cafe596b81dd5971ad0575e0cec0d15b526663c8f22fba5031c8319f10b861e6",
+   "manifest": 1,
+   "fallback": "application/vnd.tm.record+json",
+   "reads": [
+    {
+     "rel": "tm:data"
+    }
+   ]
+  },
+  {
+   "mimeType": "application/vnd.tm.record+json",
+   "name": "blocks",
+   "what": "any thing, as the blocks the server composes of it",
+   "module": "blocks.js",
+   "sha256": "e9815757ad13d9608ed2a45fa5342c6c4c20766d3c265dadbdbd1e3426a4a7e8",
+   "manifest": 1,
+   "fallback": null,
+   "reads": [
+    {
+     "as": "blocks",
+     "media": true
+    }
+   ]
+  }
+ ]
+}
